@@ -1,15 +1,1 @@
-
-D:\Perforce\GitHub\TeamWisp\Procedural-Ray-Tracing>Set "_=##test"  & if not Wow == "#" Call Echo ##test 
-##test
-
-D:\Perforce\GitHub\TeamWisp\Procedural-Ray-Tracing>Set "_=test"  & if not Wow == "#" Call Echo test 
 test
-
-D:\Perforce\GitHub\TeamWisp\Procedural-Ray-Tracing>Set "_=123"  & if not Wow == "#" Call Echo 123 
-123
-
-D:\Perforce\GitHub\TeamWisp\Procedural-Ray-Tracing>Set "_=321312"  & if not Wow == "#" Call Echo 321312 
-321312
-
-D:\Perforce\GitHub\TeamWisp\Procedural-Ray-Tracing>Set "_=Wow"  & if not Wow == "#" Call Echo Wow 
-Wow
