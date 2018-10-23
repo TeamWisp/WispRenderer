@@ -12,7 +12,7 @@ namespace wr
 		virtual ~D3D12RenderSystem();
 
 		virtual void Init(std::optional<std::shared_ptr<Window>> const & window) final;
-		virtual std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::framegraph & frame_graph) final;
+		virtual std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph & frame_graph) final;
 		virtual void Resize(std::int32_t width, std::int32_t height) final;
 
 		virtual std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;

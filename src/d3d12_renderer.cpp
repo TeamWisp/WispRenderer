@@ -24,7 +24,7 @@ void wr::D3D12RenderSystem::Init(std::optional<std::shared_ptr<Window>> const & 
 {
 }
 
-std::unique_ptr<wr::Texture> wr::D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::framegraph& frame_graph)
+std::unique_ptr<wr::Texture> wr::D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph& frame_graph)
 {
 	using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 	recursive_func_t recursive_render = [this, &recursive_render](std::shared_ptr<Node> const & parent)
@@ -36,7 +36,7 @@ std::unique_ptr<wr::Texture> wr::D3D12RenderSystem::Render(std::shared_ptr<Scene
 		}
 	};
 
-	frame_graph.execute();
+	frame_graph.Execute(*this, *scene_graph.get());
 
 	recursive_render(scene_graph->GetRootNode());
 

@@ -1,81 +1,68 @@
 #pragma once
 
 #include <functional>
-#include "scene_graph.hpp"
 
-namespace wr
+#include "task.hpp"
+
+namespace wr::fg
 {
-	namespace fg
+
+	class FrameGraph
 	{
-		using setup_func_type = std::function<void(RenderSystem&)>;
-		using execute_func_type = std::function<void(RenderSystem&, SceneGraph&)>;
+		friend class BaseTask;
+	public:
+		FrameGraph() {}
+		virtual ~FrameGraph() = default;
 
-		class BaseTask;
-
-		class FrameGraph
-		{
-		public:
-			explicit FrameGraph(wr::RenderSystem& render_system) {}
-			virtual ~FrameGraph() = default;
-
-			FrameGraph(const FrameGraph&) = delete;
-			FrameGraph(FrameGraph&&) = default;
-			FrameGraph& operator=(const FrameGraph&) = delete;
-			FrameGraph& operator=(FrameGraph&&) = default;
-
-			std::vector<std::unique_ptr<BaseTask>> tasks;
-
-			template<typename T>
-			void AddTask(std::string const & name, setup_func_type setup, execute_func_type execute)
-			{
-				tasks.push_back(std::make_unique<Task<T>>(name, setup, execute));
-			}
-
-			template<typename T>
-			auto GetData()
-			{
-				for (auto& task : tasks)
-				{
-					if (typeid(T) == task->data_type_info)
-					{
-						return static_cast<T*>(task->data);
-					}
-				}
-			}
-		};
-
-		class BaseTask
-		{
-			friend class FrameGraph;
-		public:
-			BaseTask(const std::type_info& data_type_info, std::string const & name, setup_func_type setup, execute_func_type execute)
-				: data_type_info(data_type_info),
-				setup(setup), execute(execute), name(name) {}
-		private:
-			setup_func_type setup;
-			execute_func_type execute;
-
-			std::string name;
-			bool cull_imune;
-			std::size_t ref_count;
-
-			void* data;
-			const std::type_info& data_type_info;
-		};
+		FrameGraph(const FrameGraph&) = delete;
+		FrameGraph(FrameGraph&&) = default;
+		FrameGraph& operator=(const FrameGraph&) = delete;
+		FrameGraph& operator=(FrameGraph&&) = default;
 
 		template<typename T>
-		class Task : public BaseTask
+		void AddTask(std::string const & name, decltype(Task<T>::setup_func_type) setup, decltype(Task<T>::execute_func_type) execute)
 		{
-		public:
-			Task(std::string const & name, setup_func_type setup, execute_func_type execute) : BaseTask(typeid(T), name, setup, execute) {}
-		};
+			tasks.push_back(std::make_unique<Task<T>>(this, name, setup, execute));
+		}
 
-		class Resource
+		void AddTask(std::unique_ptr<BaseTask> task)
 		{
-			std::size_t id;
-			std::string name;
-			std::size_t ref_count;
-		};
+			task->SetFrameGraph(this);
+			tasks.push_back(std::move(task));
+		}
 
-	}
-}
+		void Setup(RenderSystem & render_system)
+		{
+			for (auto& task : tasks)
+			{
+				task->Setup(render_system);
+			}
+		}
+
+		void Execute(RenderSystem & render_system, SceneGraph & scene_graph)
+		{
+			for (auto& task : tasks)
+			{
+				task->Execute(render_system, scene_graph);
+			}
+		}
+
+		template<typename T>
+		auto GetData()
+		{
+			for (auto& task : tasks)
+			{
+				if (typeid(T) == task->data_type_info)
+				{
+					return static_cast<T*>(task->data);
+				}
+			}
+		}
+
+	private:
+		std::vector<std::unique_ptr<BaseTask>> tasks;
+		std::vector<std::unique_ptr<ResourceBase>> resources;
+
+	};
+
+} /* fg::wr */
