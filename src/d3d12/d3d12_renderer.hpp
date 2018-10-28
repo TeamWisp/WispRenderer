@@ -1,6 +1,8 @@
 #pragma once
 
-#include "renderer.hpp"
+#include "../renderer.hpp"
+
+#include "d3d12_structs.hpp"
 
 namespace wr
 {
@@ -25,6 +27,9 @@ namespace wr
 		void Render_AnimNode(wr::AnimNode* node);
 
 	private:
+		d3d12::Device* m_device;
+		d3d12::RenderWindow<>* m_render_window;
+		d3d12::CommandQueue* m_default_queue;
 
 	};
 

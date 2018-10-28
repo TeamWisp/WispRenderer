@@ -61,7 +61,7 @@ namespace wr::fg
 
 	private:
 		std::vector<std::unique_ptr<BaseTask>> tasks;
-		std::vector<std::unique_ptr<ResourceBase>> resources;
+		//std::vector<std::unique_ptr<ResourceBase>> resources;
 
 	};
 

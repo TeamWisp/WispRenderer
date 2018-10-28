@@ -1,6 +1,6 @@
 #pragma once
 
-#include "resource_pool.hpp"
+#include "../resource_pool.hpp"
 
 namespace wr
 {

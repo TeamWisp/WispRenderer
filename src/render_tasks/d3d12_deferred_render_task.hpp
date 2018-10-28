@@ -1,8 +1,8 @@
 #pragma once
 
-#include "task.hpp"
-#include "resource.hpp"
-#include "frame_graph.hpp"
+#include "../frame_graph/task.hpp"
+#include "../resource.hpp"
+#include "../frame_graph/frame_graph.hpp"
 
 namespace wr::fg
 {

@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "renderer.hpp"
+#include "../renderer.hpp"
 
 wr::SceneGraph::SceneGraph(std::shared_ptr<RenderSystem> const & render_system)
 	: m_render_system(render_system), m_root(std::make_shared<Node>())

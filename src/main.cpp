@@ -1,7 +1,10 @@
-#include "d3d12_renderer.hpp"
-#include "scene_graph.hpp"
-#include "d3d12_deferred_render_task.hpp"
-#include "frame_graph.hpp"
+#include "d3d12/d3d12_renderer.hpp"
+#include "scene_graph/scene_graph.hpp"
+#include "render_tasks/d3d12_deferred_render_task.hpp"
+#include "frame_graph/frame_graph.hpp"
+
+#include "d3d12/d3d12_structs.hpp"
+#include "d3d12/d3d12_functions.hpp"
 
 int main()
 {

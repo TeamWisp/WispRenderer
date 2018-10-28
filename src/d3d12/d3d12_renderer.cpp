@@ -2,10 +2,13 @@
 
 #include <iostream>
 
+#include "../scene_graph/scene_graph.hpp"
+#include "../frame_graph/frame_graph.hpp"
+#include "../render_tasks/d3d12_deferred_render_task.hpp"
+
 #include "d3d12_resource_pool.hpp"
-#include "scene_graph.hpp"
-#include "fg/framegraph.hpp"
-#include "d3d12_deferred_render_task.hpp"
+#include "d3d12_functions.hpp"
+
 
 LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Render_MeshNode)
 LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::AnimNode, Init_AnimNode, Render_AnimNode)
@@ -22,6 +25,7 @@ wr::D3D12RenderSystem::~D3D12RenderSystem()
 
 void wr::D3D12RenderSystem::Init(std::optional<std::shared_ptr<Window>> const & window)
 {
+	m_device = d3d12::CreateDevice();
 }
 
 std::unique_ptr<wr::Texture> wr::D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph& frame_graph)
