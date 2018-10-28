@@ -1,5 +1,7 @@
 #include "d3d12_functions.hpp"
 
+#include "d3d12_defines.hpp"
+
 namespace d3d12
 {
 
@@ -11,9 +13,12 @@ namespace d3d12
 
 	void Destroy(Device* device)
 	{
-		device->m_adapter->Release();
-		device->m_native->Release();
-		device->m_dxgi_factory->Release();
+		SAFE_RELEASE(device->m_adapter);
+		SAFE_RELEASE(device->m_native);
+		SAFE_RELEASE(device->m_dxgi_factory);
+#ifdef _DEBUG
+		SAFE_RELEASE(device->m_debug_controller);
+#endif
 	}
 
 	/* === CommandQueue ===*/
@@ -29,7 +34,7 @@ namespace d3d12
 
 	void Destroy(CommandQueue* cmd_queue)
 	{
-		cmd_queue->m_native->Release();
-	}
+		SAFE_RELEASE(cmd_queue->m_native);
+	}	
 
 } /* d3d12 */
