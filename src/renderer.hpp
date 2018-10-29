@@ -29,7 +29,7 @@ namespace wr
 	class MaterialPool;
 	class ModelPool;
 
-	class RenderSystem : public std::enable_shared_from_this<RenderSystem>
+	class RenderSystem
 	{
 	public:
 		RenderSystem();
