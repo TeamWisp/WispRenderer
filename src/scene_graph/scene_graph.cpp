@@ -14,7 +14,7 @@ wr::SceneGraph::~SceneGraph()
 	RemoveChildren(GetRootNode());
 }
 
-std::shared_ptr<wr::Node> const & wr::SceneGraph::GetRootNode()
+std::shared_ptr<wr::Node> & wr::SceneGraph::GetRootNode()
 {
 	return m_root;
 }

@@ -1,14 +1,13 @@
 #pragma once
 
 #include "../frame_graph/task.hpp"
-#include "../resource.hpp"
 #include "../frame_graph/frame_graph.hpp"
 
 namespace wr::fg
 {
 
 	struct DeferredTaskData
-	{
+	{	
 		bool in_boolean;
 		int out_integer;
 	};
@@ -34,6 +33,7 @@ namespace wr::fg
 		auto ptr = std::make_unique<Task<DeferredTaskData>>(nullptr, "Deferred Render Task",
 			[](RenderSystem & render_system, Task<DeferredTaskData> & task, DeferredTaskData & data) { SetupDeferredTask(render_system, task, data); },
 			[](RenderSystem & render_system, Task<DeferredTaskData> & task, SceneGraph & scene_graph, DeferredTaskData & data) { ExecuteDeferredTask(render_system, task, scene_graph, data); });
+
 		return ptr;
 	}
 }

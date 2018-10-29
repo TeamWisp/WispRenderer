@@ -41,10 +41,10 @@ namespace wr
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
-		//SceneGraph& operator=(SceneGraph&&) = delete;
-		//SceneGraph& operator=(SceneGraph const &) = delete;
+		SceneGraph& operator=(SceneGraph&&) = delete;
+		SceneGraph& operator=(SceneGraph const &) = delete;
 
-		std::shared_ptr<Node> const & GetRootNode();
+		std::shared_ptr<Node> & GetRootNode();
 		template<typename T, typename... Args>
 		std::shared_ptr<T> CreateChild(std::shared_ptr<Node> const & parent = nullptr, Args... args);
 		std::vector<std::shared_ptr<Node>> GetChildren(std::shared_ptr<Node> const & parent = nullptr);
