@@ -5,7 +5,7 @@ pipeline {
             steps {
                 echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
 				bat '''cd "%WORKSPACE%\\Scripts
-				call JenkinsWebhook.bat ":bulb: Release Build %BUILD_NUMBER% started."
+				call JenkinsWebhook.bat ":bulb: Building Pull Request. Jenkins build nr: %BUILD_NUMBER%"
 				cd "%WORKSPACE%
 				cmake ./RayTracingLib/
 				cmake --build ./RayTracingLib/ --target RayTracingLib'''
@@ -13,7 +13,7 @@ pipeline {
 				bat '''mkdir builds
 				move ./RayTracingLib/Debug "./builds/build_%BUILD_NUMBER%"
 				cd "%WORKSPACE%\\Scripts
-				call "JenkinsWebhook.bat" ":white_check_mark: Release Build %BUILD_NUMBER% succeeded!"'''
+				call "JenkinsWebhook.bat" ":white_check_mark: Pull request build %BUILD_NUMBER% succeeded!"'''
             }
         }
     }
