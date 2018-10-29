@@ -16,8 +16,8 @@ namespace wr::fg
 	{
 		friend class FrameGraph;
 	public:
-		BaseTask(const std::type_info& data_type_info, FrameGraph* frame_graph, std::string const & name)
-			: data_type_info(data_type_info), frame_graph(frame_graph), name(name)
+		BaseTask(FrameGraph* frame_graph, std::string const & name)
+			: frame_graph(frame_graph), name(name), cull_immune(false)
 		{
 		}
 
@@ -28,10 +28,10 @@ namespace wr::fg
 
 		virtual ~BaseTask() = default;
 
-		//BaseTask(const BaseTask&) = delete;
-		//BaseTask(BaseTask&&) = default;
-		//BaseTask& operator=(const BaseTask&) = delete;
-		//BaseTask& operator=(BaseTask&&) = default;
+		BaseTask(const BaseTask&) = delete;
+		BaseTask(BaseTask&&) = default;
+		BaseTask& operator=(const BaseTask&) = delete;
+		BaseTask& operator=(BaseTask&&) = default;
 
 		/*
 		template<typename T>
@@ -63,11 +63,11 @@ namespace wr::fg
 		FrameGraph* frame_graph;
 
 		std::string name;
-		bool cull_imune;
-		std::size_t ref_count;
+		bool cull_immune;
+		//std::size_t ref_count;
 
-		void* data;
-		const std::type_info& data_type_info;
+		//void* data;
+		//const std::type_info& data_type_info;
 	};
 
 } /* wr::fg */
