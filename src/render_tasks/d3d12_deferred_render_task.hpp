@@ -31,7 +31,9 @@ namespace wr::fg
 	
 	inline std::unique_ptr<Task<DeferredTaskData>> GetDeferredTask()
 	{
-		auto ptr = std::make_unique<Task<DeferredTaskData>>(nullptr, "Deferred Render Task", &SetupDeferredTask, &ExecuteDeferredTask);
+		auto ptr = std::make_unique<Task<DeferredTaskData>>(nullptr, "Deferred Render Task",
+			[](RenderSystem & render_system, Task<DeferredTaskData> & task, DeferredTaskData & data) { SetupDeferredTask(render_system, task, data); },
+			[](RenderSystem & render_system, Task<DeferredTaskData> & task, SceneGraph & scene_graph, DeferredTaskData & data) { ExecuteDeferredTask(render_system, task, scene_graph, data); });
 		return ptr;
 	}
 }
