@@ -16,8 +16,8 @@ namespace wr::fg
 	{
 		friend class FrameGraph;
 	public:
-		BaseTask(FrameGraph* frame_graph, std::string const & name)
-			: frame_graph(frame_graph), name(name), cull_immune(false)
+		BaseTask(const std::type_info& data_type_info, FrameGraph* frame_graph, std::string const & name)
+			: data_type_info(data_type_info), frame_graph(frame_graph), name(name)
 		{
 		}
 
@@ -67,7 +67,7 @@ namespace wr::fg
 		//std::size_t ref_count;
 
 		//void* data;
-		//const std::type_info& data_type_info;
+		const std::type_info& data_type_info;
 	};
 
 } /* wr::fg */

@@ -19,7 +19,7 @@ namespace wr::fg
 		using execute_func_type = std::function<void(RenderSystem&, Task<T>&, SceneGraph&, T&)>;
 
 		Task(FrameGraph* frame_graph, std::string const & name, setup_func_type setup, execute_func_type execute)
-			: BaseTask(frame_graph, name), setup(setup), execute(execute) {}
+			: BaseTask(typeid(T), frame_graph, name), setup(setup), execute(execute) {}
 
 		virtual ~Task() = default;
 
