@@ -1,32 +1,32 @@
 #include "resource_pool.hpp"
 
-wr::MaterialPool::MaterialPool(std::size_t size_in_mb)
+namespace wr
 {
-}
 
-wr::MaterialPool::~MaterialPool()
-{
-}
+	MaterialPool::MaterialPool(std::size_t size_in_mb) : m_size_in_mb(size_in_mb)
+	{
+	}
 
-wr::MaterialHandle wr::MaterialPool::Load(std::string_view path, TextureType type)
-{
-	return MaterialHandle();
-}
+	//! Loads a material
+	MaterialHandle MaterialPool::Load(std::string_view path, TextureType type)
+	{
+		return MaterialHandle();
+	}
 
-wr::ModelPool::ModelPool(std::size_t size_in_mb)
-{
-}
+	ModelPool::ModelPool(std::size_t size_in_mb) : m_size_in_mb(size_in_mb)
+	{
+	}
 
-wr::ModelPool::~ModelPool()
-{
-}
+	//! Loads a model without materials
+	ModelHandle ModelPool::Load(std::string_view path, ModelType type)
+	{
+		return ModelHandle();
+	}
 
-wr::ModelHandle wr::ModelPool::Load(std::string_view path, ModelType type)
-{
-	return wr::ModelHandle();
-}
+	//! Loads a model with materials
+	std::pair<ModelHandle, std::vector<MaterialHandle>> ModelPool::LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type)
+	{
+		return std::pair<ModelHandle, std::vector<MaterialHandle>>();
+	}
 
-std::pair<wr::ModelHandle, std::vector<wr::MaterialHandle>> wr::ModelPool::LoadWithMaterials(wr::MaterialPool* material_pool, std::string_view path, ModelType type)
-{
-	return std::pair<ModelHandle, std::vector<MaterialHandle>>();
-}
+} /* wr */

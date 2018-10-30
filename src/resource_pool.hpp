@@ -25,7 +25,7 @@ namespace wr
 	{
 	public:
 		explicit MaterialPool(std::size_t size_in_mb);
-		virtual ~MaterialPool();
+		virtual ~MaterialPool() = default;
 
 		MaterialPool(MaterialPool const &) = delete;
 		MaterialPool& operator=(MaterialPool const &) = delete;
@@ -42,13 +42,15 @@ namespace wr
 		virtual TextureHandle LoadPNG(std::string_view path) = 0;
 		virtual TextureHandle LoadDDS(std::string_view path) = 0;
 		virtual TextureHandle LoadHDR(std::string_view path) = 0;
+
+		std::size_t m_size_in_mb;
 	};
 
 	class ModelPool
 	{
 	public:
 		explicit ModelPool(std::size_t size_in_mb);
-		virtual ~ModelPool();
+		virtual ~ModelPool() = default;
 
 		ModelPool(ModelPool const &) = delete;
 		ModelPool& operator=(ModelPool const &) = delete;
@@ -63,5 +65,7 @@ namespace wr
 	
 	protected:
 		virtual ModelHandle LoadFBX(std::string_view path, ModelType type) = 0;
+
+		std::size_t m_size_in_mb;
 	};
 }

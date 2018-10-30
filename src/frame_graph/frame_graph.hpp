@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "task.hpp"
+#include "render_task.hpp"
 
 namespace wr::fg
 {
@@ -20,49 +20,37 @@ namespace wr::fg
 		FrameGraph& operator=(FrameGraph&&) = default;
 
 		template<typename T>
-		void AddTask(std::string const & name, decltype(Task<T>::setup_func_type) setup, decltype(Task<T>::execute_func_type) execute)
-		{
-			tasks.push_back(std::make_unique<Task<T>>(this, name, setup, execute));
-		}
-
-		void AddTask(std::unique_ptr<BaseTask> task)
-		{
-			task->SetFrameGraph(this);
-			tasks.push_back(std::move(task));
-		}
-
-		void Setup(RenderSystem & render_system)
-		{
-			for (auto& task : tasks)
-			{
-				task->Setup(render_system);
-			}
-		}
-
-		void Execute(RenderSystem & render_system, SceneGraph & scene_graph)
-		{
-			for (auto& task : tasks)
-			{
-				task->Execute(render_system, scene_graph);
-			}
-		}
+		void AddTask(std::string const & name, decltype(RenderTask<T>::setup_func_type) setup, decltype(RenderTask<T>::execute_func_type) execute);
+		void AddTask(std::unique_ptr<BaseRenderTask> task);
+		void Setup(RenderSystem & render_system);
+		void Execute(RenderSystem & render_system, SceneGraph & scene_graph);
 
 		template<typename T>
-		auto GetData()
-		{
-			for (auto& task : tasks)
-			{
-				if (typeid(T) == task->data_type_info)
-				{
-					return static_cast<T*>(task->data);
-				}
-			}
-		}
+		auto GetData();
 
 	private:
-		std::vector<std::unique_ptr<BaseTask>> tasks;
-		//std::vector<std::unique_ptr<ResourceBase>> resources;
+		std::vector<std::unique_ptr<BaseRenderTask>> m_tasks;
 
 	};
+
+	//! Used to add a task by creating a new one.
+	template<typename T>
+	void FrameGraph::AddTask(std::string const & name, decltype(RenderTask<T>::setup_func_type) setup, decltype(RenderTask<T>::execute_func_type) execute)
+	{
+		tasks.push_back(std::make_unique<Task<T>>(this, name, setup, execute));
+	}
+
+	//! Used to obtain data from a previously run render task.
+	template<typename T>
+	auto FrameGraph::GetData()
+	{
+		for (auto& task : tasks)
+		{
+			if (typeid(T) == task->data_type_info)
+			{
+				return static_cast<T*>(task->data);
+			}
+		}
+	}
 
 } /* fg::wr */

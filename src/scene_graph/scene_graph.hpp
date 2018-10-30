@@ -4,10 +4,7 @@
 #include <functional>
 #include <memory>
 
-#define DECL_SUBNODE(node_type) \
-static std::function<void(RenderSystem*, Node*)> init_func_impl; \
-static std::function<void(RenderSystem*, Node*)> render_func_impl; \
-node_type() { Init = init_func_impl; Render = render_func_impl; }
+#include "../util/defines.hpp"
 
 namespace wr
 {
@@ -52,9 +49,14 @@ namespace wr
 
 	private:
 		std::shared_ptr<RenderSystem> const & m_render_system;
+		//! The root node of the hiararchical tree.
 		std::shared_ptr<Node> m_root;
 	};
 
+	//! Creates a child into the scene graph
+	/*
+	  If the parent is a nullptr the child will be created on the root node.
+	*/
 	template<typename T, typename... Args>
 	std::shared_ptr<T> SceneGraph::CreateChild(std::shared_ptr<Node> const & parent, Args... args)
 	{

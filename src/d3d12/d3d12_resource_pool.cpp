@@ -1,58 +1,63 @@
 #include "d3d12_resource_pool.hpp"
 
-wr::D3D12MaterialPool::D3D12MaterialPool(std::size_t size_in_mb) : MaterialPool(size_in_mb)
+namespace wr
 {
-}
 
-wr::D3D12MaterialPool::~D3D12MaterialPool()
-{
-}
+	D3D12MaterialPool::D3D12MaterialPool(std::size_t size_in_mb) : MaterialPool(size_in_mb)
+	{
+	}
 
-void wr::D3D12MaterialPool::Evict()
-{
-}
+	D3D12MaterialPool::~D3D12MaterialPool()
+	{
+	}
 
-void wr::D3D12MaterialPool::MakeResident()
-{
-}
+	void D3D12MaterialPool::Evict()
+	{
+	}
 
-wr::MaterialHandle wr::D3D12MaterialPool::LoadMaterial(std::string_view path)
-{
-	return MaterialHandle();
-}
+	void D3D12MaterialPool::MakeResident()
+	{
+	}
 
-wr::TextureHandle wr::D3D12MaterialPool::LoadPNG(std::string_view path)
-{
-	return TextureHandle();
-}
+	MaterialHandle D3D12MaterialPool::LoadMaterial(std::string_view path)
+	{
+		return MaterialHandle();
+	}
 
-wr::TextureHandle wr::D3D12MaterialPool::LoadDDS(std::string_view path)
-{
-	return TextureHandle();
-}
+	TextureHandle D3D12MaterialPool::LoadPNG(std::string_view path)
+	{
+		return TextureHandle();
+	}
 
-wr::TextureHandle wr::D3D12MaterialPool::LoadHDR(std::string_view path)
-{
-	return TextureHandle();
-}
+	TextureHandle D3D12MaterialPool::LoadDDS(std::string_view path)
+	{
+		return TextureHandle();
+	}
 
-wr::D3D12ModelPool::D3D12ModelPool(std::size_t size_in_mb) : ModelPool(size_in_mb)
-{
-}
+	TextureHandle D3D12MaterialPool::LoadHDR(std::string_view path)
+	{
+		return TextureHandle();
+	}
 
-wr::D3D12ModelPool::~D3D12ModelPool()
-{
-}
+	D3D12ModelPool::D3D12ModelPool(std::size_t size_in_mb) : ModelPool(size_in_mb)
+	{
+	}
 
-void wr::D3D12ModelPool::Evict()
-{
-}
+	D3D12ModelPool::~D3D12ModelPool()
+	{
+	}
 
-void wr::D3D12ModelPool::MakeResident()
-{
-}
+	void D3D12ModelPool::Evict()
+	{
+	}
 
-wr::ModelHandle wr::D3D12ModelPool::LoadFBX(std::string_view path, ModelType type)
-{
-	return ModelHandle();
-}
+	void D3D12ModelPool::MakeResident()
+	{
+	}
+
+	ModelHandle D3D12ModelPool::LoadFBX(std::string_view path, ModelType type)
+	{
+		return ModelHandle();
+	}
+
+} /* wr */

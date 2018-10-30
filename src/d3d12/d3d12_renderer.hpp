@@ -10,8 +10,7 @@ namespace wr
 	class D3D12RenderSystem : public RenderSystem
 	{
 	public:
-		D3D12RenderSystem();
-		virtual ~D3D12RenderSystem();
+		virtual ~D3D12RenderSystem() = default;
 
 		virtual void Init(std::optional<std::shared_ptr<Window>> const & window) final;
 		virtual std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph & frame_graph) final;

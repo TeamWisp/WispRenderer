@@ -24,14 +24,17 @@ file(GLOB RT_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/render_tasks/*.hpp" [CONFI
 file(GLOB RT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/render_tasks/*.cpp" [CONFIGURE_DEPENDS])
 file(GLOB D3D12_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/d3d12/*.hpp" [CONFIGURE_DEPENDS])
 file(GLOB D3D12_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/d3d12/*.cpp" [CONFIGURE_DEPENDS])
+file(GLOB UTIL_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/util/*.hpp" [CONFIGURE_DEPENDS])
+file(GLOB UTIL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/util/*.cpp" [CONFIGURE_DEPENDS])
 
 source_group("High Level API" FILES ${SOURCES} ${HEADERS})
 source_group("Frame Graph" FILES ${FG_SOURCES} ${FG_HEADERS})
 source_group("Scene Graph" FILES ${SG_SOURCES} ${SG_HEADERS})
 source_group("Render Tasks" FILES ${RT_SOURCES} ${RT_HEADERS})
 source_group("D3D12" FILES ${D3D12_SOURCES} ${D3D12_HEADERS})
+source_group("Utility" FILES ${UTIL_SOURCES} ${UTIL_HEADERS})
 
-add_executable(EnginePrototype ${HEADERS} ${SOURCES}  ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
+add_executable(EnginePrototype ${HEADERS} ${SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES}  ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
 target_link_libraries(EnginePrototype dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
 set_target_properties(EnginePrototype PROPERTIES CXX_STANDARD 17)
 
