@@ -1,11 +1,9 @@
 #include "d3d12_renderer.hpp"
 
-#include <iostream>
-
 #include "../util/defines.hpp"
+#include "../util/log.hpp"
 #include "../scene_graph/scene_graph.hpp"
 #include "../frame_graph/frame_graph.hpp"
-#include "../render_tasks/d3d12_deferred_render_task.hpp"
 
 #include "d3d12_resource_pool.hpp"
 #include "d3d12_functions.hpp"
@@ -15,10 +13,17 @@ LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::AnimNode, Init_AnimNode, Render_An
 
 namespace wr
 {
+	D3D12RenderSystem::~D3D12RenderSystem()
+	{
+		delete m_device;
+		delete m_default_queue;
+		delete m_render_window;
+	}
 
-	void D3D12RenderSystem::Init(std::optional<std::shared_ptr<Window>> const & window)
+	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
 		m_device = d3d12::CreateDevice();
+		m_default_queue = d3d12::CreateCommandQueue(m_device, d3d12::CmdListType::CMD_LIST_DIRECT);
 	}
 
 	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph& frame_graph)
@@ -56,22 +61,22 @@ namespace wr
 
 	void D3D12RenderSystem::Init_MeshNode(MeshNode* node)
 	{
-		std::cout << "initmiesh\n";
+		LOG("init mesh");
 	}
 
 	void D3D12RenderSystem::Init_AnimNode(AnimNode* node)
 	{
-		std::cout << "initanim\n";
+		LOG("init anim");
 	}
 
 	void D3D12RenderSystem::Render_MeshNode(MeshNode* node)
 	{
-		std::cout << "rendermesh\n";
+		LOG("render mesh");
 	}
 
 	void D3D12RenderSystem::Render_AnimNode(AnimNode* node)
 	{
-		std::cout << "renderanim\n";
+		LOG("render anim");
 	}
 
 } /*  */

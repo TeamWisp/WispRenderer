@@ -61,15 +61,14 @@ namespace d3d12
 	struct Device
 	{
 		IDXGIAdapter4* m_adapter;
-		ID3D12Device5* m_native;
-		IDXGIFactory7* m_dxgi_factory;
+		ID3D12Device4* m_native;
+		IDXGIFactory6* m_dxgi_factory;
 		D3D_FEATURE_LEVEL m_feature_level;
 
-#ifdef _DEBUG
 		SYSTEM_INFO m_sys_info;
-		DXGI_ADAPTER_DESC1 m_adapter_info;
+		DXGI_ADAPTER_DESC3 m_adapter_info;
 		ID3D12Debug3* m_debug_controller;
-#endif
+		ID3D12InfoQueue* m_info_queue;
 	};
 
 	struct CommandQueue

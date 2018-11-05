@@ -33,7 +33,7 @@ namespace wr
 	class SceneGraph
 	{
 	public:
-		explicit SceneGraph(std::shared_ptr<RenderSystem> const & render_system);
+		explicit SceneGraph(RenderSystem* render_system);
 		~SceneGraph();
 
 		SceneGraph(SceneGraph&&) = delete;
@@ -48,7 +48,7 @@ namespace wr
 		void RemoveChildren(std::shared_ptr<Node> const & parent);
 
 	private:
-		std::shared_ptr<RenderSystem> const & m_render_system;
+		RenderSystem* m_render_system;
 		//! The root node of the hiararchical tree.
 		std::shared_ptr<Node> m_root;
 	};
