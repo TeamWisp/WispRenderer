@@ -2,9 +2,11 @@
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include <vector>
 #include <array>
 
 #include "d3d12_enums.hpp"
+#include "d3d12_settings.hpp"
 #include "d3dx12.hpp"
 
 namespace d3d12
@@ -19,6 +21,7 @@ namespace d3d12
 			Format m_dsv_format;
 			std::array<Format, 8> m_rtv_formats;
 			unsigned int m_num_rtv_formats;
+			float m_clear_color[4] = { 1, 1, 1, 1 };
 		};
 
 		struct PipelineStateDesc
@@ -76,22 +79,19 @@ namespace d3d12
 		ID3D12CommandQueue* m_native;
 	};
 
-	template<int N>
 	struct CommandList
 	{
-		std::array<ID3D12CommandAllocator*, N> m_allocators;
+		std::vector<ID3D12CommandAllocator*> m_allocators;
 		ID3D12GraphicsCommandList4* m_native;
 	};
 
-	using VCommandList = CommandList<3>;
-
-	template<int N>
 	struct RenderTarget
 	{
 		desc::RenderTargetDesc m_create_info;
 		unsigned int m_frame_idx;
+		unsigned int m_num_render_targets;
 
-		std::array<ID3D12Resource*, N> m_render_targets;
+		std::vector<ID3D12Resource*> m_render_targets;
 		ID3D12DescriptorHeap* m_rtv_descriptor_heap;
 		unsigned int m_rtv_descriptor_increment_size;
 
@@ -99,8 +99,7 @@ namespace d3d12
 		ID3D12DescriptorHeap* m_depth_stencil_resource_heap;
 	};
 
-	template <int N = 3>
-	struct RenderWindow : public RenderTarget<N>
+	struct RenderWindow : public RenderTarget
 	{
 		IDXGISwapChain4* m_swap_chain;
 	};
@@ -160,12 +159,12 @@ namespace d3d12
 
 	struct DescHeapCPUHandle
 	{
-		D3D12_GPU_DESCRIPTOR_HANDLE m_native;
+		D3D12_CPU_DESCRIPTOR_HANDLE m_native;
 	};
 
 	struct DescHeapGPUHandle
 	{
-		D3D12_CPU_DESCRIPTOR_HANDLE m_native;
+		D3D12_GPU_DESCRIPTOR_HANDLE m_native;
 	};
 
 } /* d3d12 */

@@ -27,7 +27,7 @@ namespace wr
 
 	private:
 		d3d12::Device* m_device;
-		d3d12::RenderWindow<>* m_render_window;
+		std::optional<d3d12::RenderWindow*> m_render_window;
 		d3d12::CommandQueue* m_default_queue;
 
 	};

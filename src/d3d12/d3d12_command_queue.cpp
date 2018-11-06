@@ -2,7 +2,6 @@
 
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
-#include "d3d12_settings.hpp"
 
 namespace d3d12
 {
@@ -10,7 +9,7 @@ namespace d3d12
 	CommandQueue* CreateCommandQueue(Device* device, CmdListType type)
 	{
 		auto cmd_queue = new CommandQueue();
-		auto n_device = device->m_native;
+		const auto n_device = device->m_native;
 
 		D3D12_COMMAND_QUEUE_DESC cmd_queue_desc = {};
 		cmd_queue_desc.Flags = settings::enable_gpu_timeout ? D3D12_COMMAND_QUEUE_FLAG_NONE : D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT;
@@ -23,7 +22,7 @@ namespace d3d12
 		return cmd_queue;
 	}
 
-	void Execute(CommandQueue* cmd_queue, std::vector<VCommandList> const & cmd_lists, VFence* fence)
+	void Execute(CommandQueue* cmd_queue, std::vector<CommandList> const & cmd_lists, VFence* fence)
 	{
 		std::vector<ID3D12CommandList*> native_lists;
 		native_lists.resize(cmd_lists.size());
@@ -40,6 +39,7 @@ namespace d3d12
 	void Destroy(CommandQueue* cmd_queue)
 	{
 		SAFE_RELEASE(cmd_queue->m_native);
+		delete cmd_queue;
 	}	
 
 } /* d3d12 */

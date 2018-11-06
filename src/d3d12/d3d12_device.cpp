@@ -4,7 +4,6 @@
 
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
-#include "d3d12_settings.hpp"
 
 namespace d3d12
 {
@@ -122,6 +121,7 @@ namespace d3d12
 		SAFE_RELEASE(device->m_dxgi_factory);
 		SAFE_RELEASE(device->m_debug_controller);
 		SAFE_RELEASE(device->m_info_queue);
+		delete device;
 	}
 
 } /* d3d12 */

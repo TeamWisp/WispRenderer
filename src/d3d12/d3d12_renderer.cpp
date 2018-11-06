@@ -4,6 +4,7 @@
 #include "../util/log.hpp"
 #include "../scene_graph/scene_graph.hpp"
 #include "../frame_graph/frame_graph.hpp"
+#include "../window.hpp"
 
 #include "d3d12_resource_pool.hpp"
 #include "d3d12_functions.hpp"
@@ -17,13 +18,18 @@ namespace wr
 	{
 		delete m_device;
 		delete m_default_queue;
-		delete m_render_window;
+		if (m_render_window.has_value()) delete m_render_window.value();
 	}
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
 		m_device = d3d12::CreateDevice();
 		m_default_queue = d3d12::CreateCommandQueue(m_device, d3d12::CmdListType::CMD_LIST_DIRECT);
+
+		if (window.has_value())
+		{
+			m_render_window = d3d12::CreateRenderWindow(m_device, window.value()->GetWindowHandle(), m_default_queue, d3d12::settings::num_back_buffers);
+		}
 	}
 
 	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph& frame_graph)
@@ -41,6 +47,11 @@ namespace wr
 		frame_graph.Execute(*this, *scene_graph.get());
 
 		recursive_render(scene_graph->GetRootNode());
+
+		if (m_render_window.has_value())
+		{
+			d3d12::Present(m_render_window.value(), m_default_queue, m_device);
+		}
 
 		return std::unique_ptr<Texture>();
 	}
