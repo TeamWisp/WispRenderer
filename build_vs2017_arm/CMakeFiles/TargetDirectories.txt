@@ -1,5 +1,0 @@
-C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_arm/CMakeFiles/EnginePrototype.dir
-C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_arm/CMakeFiles/ALL_BUILD.dir
-C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_arm/CMakeFiles/ZERO_CHECK.dir
-C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_arm/deps/fmt/CMakeFiles/fmt.dir
-C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_arm/deps/fmt/CMakeFiles/ALL_BUILD.dir

@@ -1,6 +1,0 @@
--- Version: 5.2.2
--- Build type: Release
--- CXX_STANDARD: 11
--- Configuring done
--- Generating done
--- Build files have been written to: C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64
