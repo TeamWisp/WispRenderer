@@ -28,11 +28,11 @@ int main()
 	frame_graph.AddTask(wr::fg::GetDeferredTask());
 	frame_graph.Setup(*render_system);
 
-	auto texture = render_system->Render(scene_graph, frame_graph);
-
 	while (window->IsRunning())
 	{
 		window->PollEvents();
+
+		auto texture = render_system->Render(scene_graph, frame_graph);
 	}
 
 	return 0;

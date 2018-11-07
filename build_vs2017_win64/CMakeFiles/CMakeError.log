@@ -1,0 +1,180 @@
+Performing C++ SOURCE FILE Test has_std_0x_flag failed with the following output:
+Change Dir: C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp
+
+Run Build Command:"C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/MSBuild/15.0/Bin/MSBuild.exe" "cmTC_857e9.vcxproj" "/p:Configuration=Debug" "/p:Platform=x64" "/p:VisualStudioVersion=15.0"
+Microsoft (R) Build Engine version 15.8.168+ga8fba1ebd7 for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 11/7/2018 5:40:53 PM.
+Project "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_857e9.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "cmTC_857e9.dir\Debug\".
+  Creating directory "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\".
+  Creating directory "cmTC_857e9.dir\Debug\cmTC_857e9.tlog\".
+InitializeBuildStatus:
+  Creating "cmTC_857e9.dir\Debug\cmTC_857e9.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.15.26726\bin\HostX86\x64\CL.exe /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D has_std_0x_flag /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_857e9.dir\Debug\\" /Fd"cmTC_857e9.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue  -std=c++0x "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\src.cxx"
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.15.26726 for x64
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D has_std_0x_flag /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_857e9.dir\Debug\\" /Fd"cmTC_857e9.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue  -std=c++0x "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\src.cxx"
+  src.cxx
+  
+cl : Command line warning D9002: ignoring unknown option '-std=c++0x' [C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_857e9.vcxproj]
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.15.26726\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\cmTC_857e9.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp/Debug/cmTC_857e9.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp/Debug/cmTC_857e9.lib" /MACHINE:X64  /machine:x64 cmTC_857e9.dir\Debug\src.obj
+  cmTC_857e9.vcxproj -> C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\cmTC_857e9.exe
+FinalizeBuildStatus:
+  Deleting file "cmTC_857e9.dir\Debug\cmTC_857e9.tlog\unsuccessfulbuild".
+  Touching "cmTC_857e9.dir\Debug\cmTC_857e9.tlog\cmTC_857e9.lastbuildstate".
+Done Building Project "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_857e9.vcxproj" (default targets).
+
+Build succeeded.
+
+"C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_857e9.vcxproj" (default target) (1) ->
+(ClCompile target) -> 
+  cl : Command line warning D9002: ignoring unknown option '-std=c++0x' [C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_857e9.vcxproj]
+
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.57
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test has_std_0x_flag failed with the following output:
+Change Dir: C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp
+
+Run Build Command:"C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/MSBuild/15.0/Bin/MSBuild.exe" "cmTC_9f598.vcxproj" "/p:Configuration=Debug" "/p:Platform=x64" "/p:VisualStudioVersion=15.0"
+Microsoft (R) Build Engine version 15.8.168+ga8fba1ebd7 for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 11/7/2018 5:41:43 PM.
+Project "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_9f598.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "cmTC_9f598.dir\Debug\".
+  Creating directory "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\".
+  Creating directory "cmTC_9f598.dir\Debug\cmTC_9f598.tlog\".
+InitializeBuildStatus:
+  Creating "cmTC_9f598.dir\Debug\cmTC_9f598.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.15.26726\bin\HostX86\x64\CL.exe /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D has_std_0x_flag /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_9f598.dir\Debug\\" /Fd"cmTC_9f598.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue  -std=c++0x "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\src.cxx"
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.15.26726 for x64
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D has_std_0x_flag /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_9f598.dir\Debug\\" /Fd"cmTC_9f598.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue  -std=c++0x "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\src.cxx"
+  src.cxx
+  
+cl : Command line warning D9002: ignoring unknown option '-std=c++0x' [C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_9f598.vcxproj]
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.15.26726\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\cmTC_9f598.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp/Debug/cmTC_9f598.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp/Debug/cmTC_9f598.lib" /MACHINE:X64  /machine:x64 cmTC_9f598.dir\Debug\src.obj
+  cmTC_9f598.vcxproj -> C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\cmTC_9f598.exe
+FinalizeBuildStatus:
+  Deleting file "cmTC_9f598.dir\Debug\cmTC_9f598.tlog\unsuccessfulbuild".
+  Touching "cmTC_9f598.dir\Debug\cmTC_9f598.tlog\cmTC_9f598.lastbuildstate".
+Done Building Project "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_9f598.vcxproj" (default targets).
+
+Build succeeded.
+
+"C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_9f598.vcxproj" (default target) (1) ->
+(ClCompile target) -> 
+  cl : Command line warning D9002: ignoring unknown option '-std=c++0x' [C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_9f598.vcxproj]
+
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.58
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test has_std_17_flag failed with the following output:
+Change Dir: C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp
+
+Run Build Command:"C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/MSBuild/15.0/Bin/MSBuild.exe" "cmTC_d5fa8.vcxproj" "/p:Configuration=Debug" "/p:Platform=x64" "/p:VisualStudioVersion=15.0"
+Microsoft (R) Build Engine version 15.8.168+ga8fba1ebd7 for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 11/7/2018 6:31:39 PM.
+Project "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d5fa8.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "cmTC_d5fa8.dir\Debug\".
+  Creating directory "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\".
+  Creating directory "cmTC_d5fa8.dir\Debug\cmTC_d5fa8.tlog\".
+InitializeBuildStatus:
+  Creating "cmTC_d5fa8.dir\Debug\cmTC_d5fa8.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.15.26726\bin\HostX86\x64\CL.exe /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D has_std_17_flag /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /std:c++17 /Fo"cmTC_d5fa8.dir\Debug\\" /Fd"cmTC_d5fa8.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue  -std=c++17 "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\src.cxx"
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.15.26726 for x64
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D has_std_17_flag /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /std:c++17 /Fo"cmTC_d5fa8.dir\Debug\\" /Fd"cmTC_d5fa8.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue  -std=c++17 "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\src.cxx"
+  src.cxx
+  
+cl : Command line warning D9002: ignoring unknown option '-std=c++17' [C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d5fa8.vcxproj]
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.15.26726\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\cmTC_d5fa8.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp/Debug/cmTC_d5fa8.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp/Debug/cmTC_d5fa8.lib" /MACHINE:X64  /machine:x64 cmTC_d5fa8.dir\Debug\src.obj
+  cmTC_d5fa8.vcxproj -> C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\cmTC_d5fa8.exe
+FinalizeBuildStatus:
+  Deleting file "cmTC_d5fa8.dir\Debug\cmTC_d5fa8.tlog\unsuccessfulbuild".
+  Touching "cmTC_d5fa8.dir\Debug\cmTC_d5fa8.tlog\cmTC_d5fa8.lastbuildstate".
+Done Building Project "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d5fa8.vcxproj" (default targets).
+
+Build succeeded.
+
+"C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d5fa8.vcxproj" (default target) (1) ->
+(ClCompile target) -> 
+  cl : Command line warning D9002: ignoring unknown option '-std=c++17' [C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d5fa8.vcxproj]
+
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.00
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test has_std_1z_flag failed with the following output:
+Change Dir: C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp
+
+Run Build Command:"C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/MSBuild/15.0/Bin/MSBuild.exe" "cmTC_d315d.vcxproj" "/p:Configuration=Debug" "/p:Platform=x64" "/p:VisualStudioVersion=15.0"
+Microsoft (R) Build Engine version 15.8.168+ga8fba1ebd7 for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 11/7/2018 6:31:40 PM.
+Project "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d315d.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "cmTC_d315d.dir\Debug\".
+  Creating directory "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\".
+  Creating directory "cmTC_d315d.dir\Debug\cmTC_d315d.tlog\".
+InitializeBuildStatus:
+  Creating "cmTC_d315d.dir\Debug\cmTC_d315d.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.15.26726\bin\HostX86\x64\CL.exe /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D has_std_1z_flag /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /std:c++17 /Fo"cmTC_d315d.dir\Debug\\" /Fd"cmTC_d315d.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue  -std=c++1z "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\src.cxx"
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.15.26726 for x64
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D has_std_1z_flag /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /std:c++17 /Fo"cmTC_d315d.dir\Debug\\" /Fd"cmTC_d315d.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue  -std=c++1z "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\src.cxx"
+  src.cxx
+  
+cl : Command line warning D9002: ignoring unknown option '-std=c++1z' [C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d315d.vcxproj]
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.15.26726\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\cmTC_d315d.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp/Debug/cmTC_d315d.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/build_vs2017_win64/CMakeFiles/CMakeTmp/Debug/cmTC_d315d.lib" /MACHINE:X64  /machine:x64 cmTC_d315d.dir\Debug\src.obj
+  cmTC_d315d.vcxproj -> C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\Debug\cmTC_d315d.exe
+FinalizeBuildStatus:
+  Deleting file "cmTC_d315d.dir\Debug\cmTC_d315d.tlog\unsuccessfulbuild".
+  Touching "cmTC_d315d.dir\Debug\cmTC_d315d.tlog\cmTC_d315d.lastbuildstate".
+Done Building Project "C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d315d.vcxproj" (default targets).
+
+Build succeeded.
+
+"C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d315d.vcxproj" (default target) (1) ->
+(ClCompile target) -> 
+  cl : Command line warning D9002: ignoring unknown option '-std=c++1z' [C:\Users\Viktor\Documents\Workspaces\Procedural-Ray-Tracing\build_vs2017_win64\CMakeFiles\CMakeTmp\cmTC_d315d.vcxproj]
+
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.57
+
+Source file was:
+int main() { return 0; }

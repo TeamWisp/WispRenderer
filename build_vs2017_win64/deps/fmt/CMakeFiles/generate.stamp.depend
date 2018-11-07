@@ -1,0 +1,7 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.13/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake
+C:/Program Files/CMake/share/cmake-3.13/Modules/CheckCXXCompilerFlag.cmake
+C:/Program Files/CMake/share/cmake-3.13/Modules/CheckCXXSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-3.13/Modules/CheckSymbolExists.cmake
+C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/deps/fmt/CMakeLists.txt
+C:/Users/Viktor/Documents/Workspaces/Procedural-Ray-Tracing/deps/fmt/support/cmake/cxx14.cmake
