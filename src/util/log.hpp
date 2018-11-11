@@ -55,11 +55,10 @@ namespace util::internal
 		str += "\n";
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
-		HANDLE hConsole;
 		if (color != 0)
 		{
-			hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-			SetConsoleTextAttribute(hConsole, color);
+			auto console = GetStdHandle(STD_OUTPUT_HANDLE);
+			SetConsoleTextAttribute(console, color);
 		}
 #endif
 
@@ -68,7 +67,8 @@ namespace util::internal
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 		if (color != 0)
 		{
-			SetConsoleTextAttribute(hConsole, 7);
+			auto console = GetStdHandle(STD_OUTPUT_HANDLE);
+			SetConsoleTextAttribute(console, 7);
 		}
 #endif
 	}

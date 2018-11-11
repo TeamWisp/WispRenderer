@@ -1,7 +1,7 @@
 #include "d3d12/d3d12_renderer.hpp"
 #include "window.hpp"
 #include "scene_graph/scene_graph.hpp"
-#include "render_tasks/d3d12_deferred_render_task.hpp"
+#include "render_tasks/d3d12_test_render_task.hpp"
 #include "frame_graph/frame_graph.hpp"
 
 #include "d3d12/d3d12_structs.hpp"
@@ -25,15 +25,19 @@ int main()
 	auto resource_manager = render_system->CreateMaterialPool(1);
 
 	wr::fg::FrameGraph frame_graph;
-	frame_graph.AddTask(wr::fg::GetDeferredTask());
+	frame_graph.AddTask(wr::fg::GetTestTask());
 	frame_graph.Setup(*render_system);
 
 	while (window->IsRunning())
 	{
 		window->PollEvents();
-
 		auto texture = render_system->Render(scene_graph, frame_graph);
 	}
 
 	return 0;
+}
+
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	main();
 }

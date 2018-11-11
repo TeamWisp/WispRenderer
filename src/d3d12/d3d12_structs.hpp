@@ -21,7 +21,7 @@ namespace d3d12
 			Format m_dsv_format;
 			std::array<Format, 8> m_rtv_formats;
 			unsigned int m_num_rtv_formats;
-			float m_clear_color[4] = { 1, 1, 1, 1 };
+			float m_clear_color[4] = { 1, 0, 1, 1 };
 		};
 
 		struct PipelineStateDesc
@@ -32,7 +32,7 @@ namespace d3d12
 
 			PipelineType m_type = PipelineType::GRAPHICS_PIPELINE;
 			CullMode m_cull_mode = CullMode::CULL_BACK;
-			bool m_depth_eenabled = false;
+			bool m_depth_enabled = false;
 			bool m_counter_clockwise = true;
 			TopologyType m_topology_type = TopologyType::TRIANGLE;
 
@@ -63,9 +63,9 @@ namespace d3d12
 
 	struct Device
 	{
-		IDXGIAdapter4* m_adapter;
+		IDXGIAdapter1* m_adapter;
 		ID3D12Device4* m_native;
-		IDXGIFactory6* m_dxgi_factory;
+		IDXGIFactory5* m_dxgi_factory;
 		D3D_FEATURE_LEVEL m_feature_level;
 
 		SYSTEM_INFO m_sys_info;
@@ -82,7 +82,7 @@ namespace d3d12
 	struct CommandList
 	{
 		std::vector<ID3D12CommandAllocator*> m_allocators;
-		ID3D12GraphicsCommandList4* m_native;
+		ID3D12GraphicsCommandList3* m_native;
 	};
 
 	struct RenderTarget
@@ -104,15 +104,12 @@ namespace d3d12
 		IDXGISwapChain4* m_swap_chain;
 	};
 
-	template<int N>
 	struct Fence
 	{
-		std::array<ID3D12Fence1*, N> m_native;
+		ID3D12Fence1* m_native;
 		HANDLE m_fence_event;
-		std::array<UINT64, N> m_fence_value;
+		UINT64 m_fence_value;
 	};
-
-	using VFence = Fence<3>;
 
 	struct RootSignature
 	{
@@ -123,17 +120,13 @@ namespace d3d12
 	struct Shader
 	{
 		ID3DBlob* m_native;
-#ifdef _DEBUG
 		std::string m_path;
+		std::string m_entry;
 		ShaderType m_type;
-#endif
 	};
 
 	struct PipelineState
 	{
-#ifdef _DEBUG
-		desc::PipelineStateDesc m_desc;
-#endif
 		PipelineType m_type;
 		ID3D12PipelineState* m_native;
 		RootSignature* m_root_signature;
@@ -141,7 +134,7 @@ namespace d3d12
 		Shader* m_pixel_shader;
 		Shader* m_compute_shader;
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE m_topology_type;
-		std::vector<D3D12_INPUT_ELEMENT_DESC> m_input_layout;
+		std::vector<D3D12_INPUT_ELEMENT_DESC> m_input_layout; // TODO: This should be defaulted.
 	};
 
 	struct Viewport
@@ -165,6 +158,17 @@ namespace d3d12
 	struct DescHeapGPUHandle
 	{
 		D3D12_GPU_DESCRIPTOR_HANDLE m_native;
+	};
+
+	struct StagingBuffer
+	{
+		ID3D12Resource* m_buffer;
+		ID3D12Resource* m_staging;
+		unsigned int m_size;
+		unsigned int m_stride_in_bytes;
+		void* m_data;
+		ResourceState m_target_resource_state;
+		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 	};
 
 } /* d3d12 */

@@ -22,18 +22,18 @@ namespace d3d12
 		return cmd_queue;
 	}
 
-	void Execute(CommandQueue* cmd_queue, std::vector<CommandList> const & cmd_lists, VFence* fence)
+	void Execute(CommandQueue* cmd_queue, std::vector<CommandList*> const & cmd_lists, Fence* fence)
 	{
 		std::vector<ID3D12CommandList*> native_lists;
 		native_lists.resize(cmd_lists.size());
 		for (auto i = 0; i < native_lists.size(); i++)
 		{
-			native_lists[i] = cmd_lists[i].m_native;
+			native_lists[i] = cmd_lists[i]->m_native;
 		}
 
 		cmd_queue->m_native->ExecuteCommandLists(native_lists.size(), native_lists.data());
 
-		// Signal(fence, cmd_queue);
+		Signal(fence, cmd_queue);
 	}
 
 	void Destroy(CommandQueue* cmd_queue)
