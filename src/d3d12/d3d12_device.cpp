@@ -15,7 +15,8 @@ namespace d3d12
 			if (!(settings::enable_debug_layer & settings::DebugLayer::DISABLE)) // If the debug layer isn't disabled
 			{
 				// Setup debug layers
-				if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&device->m_debug_controller))))
+				ID3D12Debug* temp_debug_controller;
+				if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&temp_debug_controller))) && SUCCEEDED(temp_debug_controller->QueryInterface(IID_PPV_ARGS(&device->m_debug_controller))))
 				{
 					if (settings::enable_debug_layer & settings::DebugLayer::ENABLE_WITH_GPU_VALIDATION) // If GPU validation is requested.
 					{
@@ -43,26 +44,23 @@ namespace d3d12
 		{
 			DXGI_ADAPTER_DESC3 desc;
 			GetNativeSystemInfo(&device->m_sys_info);
-			//device->m_adapter->GetDesc3(&desc);
+			device->m_adapter->GetDesc3(&desc);
 		}
 
 		void CreateFactory(Device* device)
 		{
-			//TRY_M(CreateDXGIFactory2(settings::enable_debug_factory ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&device->m_dxgi_factory)),
-				//"Failed to create DXGIFactory.");
-
-			TRY_M(CreateDXGIFactory(IID_PPV_ARGS(&device->m_dxgi_factory)),
+			TRY_M(CreateDXGIFactory2(settings::enable_debug_factory ? DXGI_CREATE_FACTORY_DEBUG : 0, IID_PPV_ARGS(&device->m_dxgi_factory)),
 				"Failed to create DXGIFactory.");
 		}
 
 		void FindAdapter(Device* device)
 		{
-			IDXGIAdapter1* adapter = nullptr;
+			IDXGIAdapter4* adapter = nullptr;
 			int adapter_idx = 0;
 
 			// Find a compatible adapter.
-			//while (device->m_dxgi_factory->EnumAdapterByGpuPreference(adapter_idx, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)) != DXGI_ERROR_NOT_FOUND)
-			while ((device->m_dxgi_factory)->EnumAdapters1(adapter_idx, &adapter) != DXGI_ERROR_NOT_FOUND)
+			while (device->m_dxgi_factory->EnumAdapterByGpuPreference(adapter_idx, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)) != DXGI_ERROR_NOT_FOUND)
+			//while ((device->m_dxgi_factory)->EnumAdapters1(adapter_idx, &adapter) != DXGI_ERROR_NOT_FOUND)
 			{
 				DXGI_ADAPTER_DESC1 desc;
 				adapter->GetDesc1(&desc);

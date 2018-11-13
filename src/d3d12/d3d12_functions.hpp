@@ -29,12 +29,12 @@ namespace d3d12
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	//void BindCompute(CommandList& cmd_list, PipelineState* pipeline_state);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
-	// void Bind(CommandList* cmd_list, ConstantBuffer* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
+	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	// void BindCompute(CommandList* cmd_list, ConstantBuffer* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	// void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 	void Bind(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	//void BindCompute(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
-	void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> heaps);
+	void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> const & heaps);
 	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer);
 	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset = 0);
 	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count);
@@ -106,9 +106,30 @@ namespace d3d12
 	void Destroy(PipelineState* pipeline_state);
 
 	// Staging Buffer
-	StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t stride, ResourceState resource_state);
+	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t stride, ResourceState resource_state);
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list);
 	void FreeStagingBuffer(StagingBuffer* buffer);
 	void Destroy(StagingBuffer* buffer);
+
+	// Heap
+	[[nodiscard]] Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
+	[[nodiscard]] Heap<HeapOptimization::BIG_BUFFERS>* CreateHeap_BBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
+	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	void MapHeap(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
+	void MapHeap(Heap<HeapOptimization::BIG_BUFFERS>* heap);
+	void UnmapHeap(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
+	void UnmapHeap(Heap<HeapOptimization::BIG_BUFFERS>* heap);
+	void MakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
+	void MakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap);
+	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap, Fence* fence); // Untested
+	void EnqueueMakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap, Fence* fence);  // Untested
+	void Evict(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
+	void Evict(Heap<HeapOptimization::BIG_BUFFERS>* heap);
+	void Destroy(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
+	void Destroy(Heap<HeapOptimization::BIG_BUFFERS>* heap);
+
+	// Resources
+	void UpdateConstantBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes);
 
 } /* d3d12 */

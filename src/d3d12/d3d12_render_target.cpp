@@ -130,7 +130,7 @@ namespace d3d12
 
 	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle)
 	{
-		ID3D12Device* n_device;
+		decltype(Device::m_native) n_device;
 		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));
 
 		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -147,7 +147,7 @@ namespace d3d12
 
 	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8])
 	{
-		ID3D12Device* n_device;
+		decltype(Device::m_native) n_device;
 		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));
 
 		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -167,7 +167,7 @@ namespace d3d12
 
 	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format)
 	{
-		ID3D12Device* n_device;
+		decltype(Device::m_native) n_device;
 		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));
 
 		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);

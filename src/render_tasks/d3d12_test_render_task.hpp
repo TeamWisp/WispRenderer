@@ -5,6 +5,9 @@
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 
+#define BIG_BUFFER
+#define NUM_ITTERATIONS 1000
+
 namespace wr::fg
 {
 
@@ -37,8 +40,16 @@ namespace wr::fg
 				const auto vb = n_render_system.m_vertex_buffer;
 				const auto viewport = n_render_system.m_viewport;
 				const auto device = n_render_system.m_device;
+				const auto frame_idx = render_window->m_frame_idx;
+				const auto cb = n_render_system.m_cb;
 
-				auto frame_idx = render_window->m_frame_idx;
+				// Update CB
+				temp::ConstantBufferData data;
+				data.m_color[0] = 1;
+				data.m_color[1] = 1;
+				data.m_color[2] = 0;
+				d3d12::UpdateConstantBuffer(cb, frame_idx, &data, sizeof(temp::ConstantBufferData));
+
 				d3d12::WaitFor(fences[frame_idx]);
 
 				d3d12::Begin(cmd_list, frame_idx);
@@ -49,6 +60,8 @@ namespace wr::fg
 				d3d12::BindRenderTargetVersioned(cmd_list, render_window, frame_idx, true, true);
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindVertexBuffer(cmd_list, vb);
+
+				d3d12::BindConstantBuffer(cmd_list, cb, 0, frame_idx);
 
 				d3d12::Draw(cmd_list, 4, 1);
 

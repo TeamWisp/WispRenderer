@@ -3,6 +3,7 @@
 #include "../renderer.hpp"
 
 #include "d3d12_structs.hpp"
+#include <chrono>
 
 namespace wr
 {
@@ -37,6 +38,9 @@ namespace wr
 		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_fences;
 
 		// temporary
+		d3d12::Heap<d3d12::HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
+		d3d12::HeapResource* m_cb;
+
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::PipelineState* m_pipeline_state;
@@ -44,6 +48,46 @@ namespace wr
 		d3d12::Shader* m_vertex_shader;
 		d3d12::Shader* m_pixel_shader;
 		d3d12::StagingBuffer* m_vertex_buffer;
+
+		// temp profiling
+		std::uint32_t frames;
+		std::uint32_t framerate;
+		std::chrono::time_point<std::chrono::high_resolution_clock> prev;
+		void UpdateFramerate();
+		void PerfOutput_Framerate();
+
+		std::vector<std::uint32_t> captured_framerates;
 	};
+
+	namespace temp
+	{
+		struct ConstantBufferData
+		{
+			float m_color[3];
+		};
+
+		struct Vertex
+		{
+			float m_pos[3];
+
+			static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout()
+			{
+				std::vector<D3D12_INPUT_ELEMENT_DESC> layout = {
+					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, m_pos), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+				};
+
+				return layout;
+			}
+		};
+
+		static const constexpr float size = 0.5f;
+		static const constexpr Vertex quad_vertices[] = {
+			{ -size, -size, 0.f },
+			{ size, -size, 0.f },
+			{ -size, size, 0.f },
+			{ size, size, 0.f },
+		};
+
+	} /* temp */
 
 } /* wr */

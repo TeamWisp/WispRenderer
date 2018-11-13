@@ -28,6 +28,29 @@ namespace d3d12
 		CMD_LIST_COPY = (int)D3D12_COMMAND_LIST_TYPE_COPY,
 	};
 
+	enum HeapOptimization
+	{
+		SMALL_BUFFERS = 0,
+		SMALL_STATIC_BUFFERS = 1,
+		BIG_BUFFERS = 2,
+		BIG_STATIC_BUFFERS = 3,
+	};
+
+	enum class HeapType
+	{
+		HEAP_DEFAULT = (int)D3D12_HEAP_TYPE_DEFAULT,
+		HEAP_READBACK = (int)D3D12_HEAP_TYPE_READBACK,
+		HEAP_UPLOAD = (int)D3D12_HEAP_TYPE_UPLOAD,
+		HEAP_CUSTOM = (int)D3D12_HEAP_TYPE_CUSTOM,
+	};
+
+	enum class ResourceType
+	{
+		BUFFER,
+		TEXTURE,
+		RT_DS,
+	};
+
 	enum class TopologyType
 	{
 		TRIANGLE = (int)D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,

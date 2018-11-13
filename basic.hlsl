@@ -12,7 +12,12 @@ VS_OUTPUT main_vs(float3 pos : POSITION)
     return output;
 }
 
+cbuffer RTProperties : register(b0)
+{
+	float3 color;
+};
+
 float4 main_ps(VS_OUTPUT input) : SV_TARGET
 {
-	return float4(1, 0, 0, 0);
+	return float4(color, 1);
 }

@@ -168,6 +168,11 @@ namespace d3d12
 		cmd_list->m_native->IASetIndexBuffer(&view);
 	}
 
+	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx)
+	{
+		cmd_list->m_native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer->m_gpu_addresses[frame_idx]);
+	}
+
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology)
 	{
 		cmd_list->m_native->IASetPrimitiveTopology(topology);

@@ -18,3 +18,9 @@ r->SetName(std::wstring(std::wstring(n) + L" (line: " + std::to_wstring(__LINE__
 //! This macro is used to name d3d12 resources with a placeholder name. TODO: "Unamed Resource" should be "Unamed [typename]"
 #define NAME_D3D12RESOURCE(r) { auto temp = std::string(__FILE__); \
 r->SetName(std::wstring(L"Unnamed Resource (line: " + std::to_wstring(__LINE__) + L" file: " + std::wstring(temp.begin(), temp.end())).c_str()); }
+
+template<typename T, typename A>
+constexpr inline T SizeAlign(T size, A alignment)
+{
+	return (size + (alignment - 1U)) & ~(alignment - 1U);
+}

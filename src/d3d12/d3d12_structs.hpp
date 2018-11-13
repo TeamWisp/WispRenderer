@@ -3,6 +3,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <vector>
+#include <optional>
 #include <array>
 
 #include "d3d12_enums.hpp"
@@ -63,14 +64,14 @@ namespace d3d12
 
 	struct Device
 	{
-		IDXGIAdapter1* m_adapter;
+		IDXGIAdapter4* m_adapter;
 		ID3D12Device4* m_native;
-		IDXGIFactory5* m_dxgi_factory;
+		IDXGIFactory6* m_dxgi_factory;
 		D3D_FEATURE_LEVEL m_feature_level;
 
 		SYSTEM_INFO m_sys_info;
 		DXGI_ADAPTER_DESC3 m_adapter_info;
-		ID3D12Debug3* m_debug_controller;
+		ID3D12Debug1* m_debug_controller;
 		ID3D12InfoQueue* m_info_queue;
 	};
 
@@ -171,4 +172,54 @@ namespace d3d12
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 	};
 
+	struct HeapResource;
+	namespace detail
+	{
+
+		/*! Fallback detail structure */
+		template<HeapOptimization O>
+		struct Heap
+		{
+			
+		};
+
+		/*! Small Buffer Optimization */
+		// TODO: Which one should we version? The heap or the resource? test perf!
+		template<>
+		struct Heap<HeapOptimization::SMALL_BUFFERS>
+		{
+			std::vector<HeapResource*> m_resources;
+			ID3D12Resource* m_native;
+		};
+
+		/*! Big Buffer Optimization */
+		// TODO: Which one should we version? The heap or the resource? test perf!
+		template<>
+		struct Heap<HeapOptimization::BIG_BUFFERS>
+		{
+			std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>> m_resources;
+			ID3D12Heap* m_native;
+		};
+
+	} /* detail */
+
+	template<HeapOptimization O>
+	struct Heap : detail::Heap<O>
+	{
+		unsigned int m_versioning_count;
+		std::uint64_t m_current_offset;
+	};
+
+	struct HeapResource
+	{
+		std::vector<D3D12_GPU_VIRTUAL_ADDRESS> m_gpu_addresses;
+		std::optional<std::vector<std::uint8_t*>> m_cpu_addresses;
+		std::uint64_t m_unaligned_size;
+		std::uint64_t m_begin_offset;
+		std::size_t m_heap_vector_location;
+	};
+
 } /* d3d12 */
+
+// Heap contains template functions.
+#include "d3d12_heap.hpp"
