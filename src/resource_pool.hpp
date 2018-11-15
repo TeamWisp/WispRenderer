@@ -8,6 +8,7 @@ namespace wr
 	struct TextureHandle {};
 	struct ModelHandle {};
 	struct MaterialHandle {};
+	struct ConstantBufferHandle {};
 
 	enum class TextureType
 	{
@@ -68,4 +69,5 @@ namespace wr
 
 		std::size_t m_size_in_mb;
 	};
+
 }

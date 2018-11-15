@@ -4,14 +4,18 @@
 /*!
   This macro is used to link a initialization and a render function to a specific node type.
 */
-#define LINK_NODE_FUNCTION(renderer_type, node_type, init_function, render_function) \
+#define LINK_NODE_FUNCTION(renderer_type, node_type, init_function, update_function, render_function) \
 decltype(node_type::init_func_impl) node_type::init_func_impl = [](wr::RenderSystem* render_system, Node* node) \
 { \
 	static_cast<renderer_type*>(render_system)->init_function(static_cast<node_type*>(node)); \
 }; \
+decltype(node_type::update_func_impl) node_type::update_func_impl = [](wr::RenderSystem* render_system, Node* node) \
+{ \
+	static_cast<renderer_type*>(render_system)->update_function(static_cast<node_type*>(node)); \
+}; \
 decltype(node_type::render_func_impl) node_type::render_func_impl = [](wr::RenderSystem* render_system, Node* node) \
 { \
-	static_cast<renderer_type*>(render_system)->render_function(static_cast<node_type*>(node)); \
+static_cast<renderer_type*>(render_system)->render_function(static_cast<node_type*>(node)); \
 };
 
 //! Declare Subnode Properties
@@ -21,5 +25,11 @@ decltype(node_type::render_func_impl) node_type::render_func_impl = [](wr::Rende
 */
 #define DECL_SUBNODE(node_type) \
 static std::function<void(RenderSystem*, Node*)> init_func_impl; \
+static std::function<void(RenderSystem*, Node*)> update_func_impl; \
 static std::function<void(RenderSystem*, Node*)> render_func_impl; \
-node_type() { Init = init_func_impl; Render = render_func_impl; }
+node_type() { Init = init_func_impl; Update = update_func_impl; Render = render_func_impl; }
+
+#define SUBMODE_CONSTRUCTOR Init = init_func_impl; Update = update_func_impl; Render = render_func_impl;
+
+//! World Up
+static constexpr float world_up[3] = {0, 1, 0};

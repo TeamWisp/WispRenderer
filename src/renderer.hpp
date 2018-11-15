@@ -14,8 +14,6 @@ namespace wr
 	class Texture {};
 	class Window;
 	class SceneGraph;
-	struct MeshNode;
-	struct AnimNode;
 	class MaterialPool;
 	class ModelPool;
 

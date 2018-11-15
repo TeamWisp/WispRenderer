@@ -12,8 +12,8 @@
 #include "d3d12_resource_pool.hpp"
 #include "d3d12_functions.hpp"
 
-LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Render_MeshNode)
-LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::AnimNode, Init_AnimNode, Render_AnimNode)
+LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Update_MeshNode, Render_MeshNode)
+LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::CameraNode, Init_CameraNode, Update_CameraNode, Render_CameraNode)
 
 namespace wr
 {
@@ -51,13 +51,13 @@ namespace wr
 
 		// Temporary
 		// Create Constant Buffer Heap
-		constexpr auto sbo_size = SizeAlign(sizeof(temp::ConstantBufferData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto bbo_size = SizeAlign(sizeof(temp::ConstantBufferData), 65536) * d3d12::settings::num_back_buffers;
+		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::Model_CBData), 256);
+		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256);
+		constexpr auto sbo_size = model_cbs_size + cam_cbs_size * d3d12::settings::num_back_buffers;
 		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, d3d12::ResourceType::BUFFER, d3d12::settings::num_back_buffers);
-		//m_cb_heap = d3d12::CreateHeap_BBO(m_device, bbo_size, d3d12::ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
 		// Create Constant Buffer
-		m_cb = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::ConstantBufferData));
+		m_cb = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::Model_CBData));
 		d3d12::MapHeap(m_cb_heap);
 
 		// Load Shaders.
@@ -70,8 +70,9 @@ namespace wr
 
 		d3d12::desc::RootSignatureDesc rs_desc;
 		rs_desc.m_samplers.push_back({ d3d12::TextureFilter::FILTER_LINEAR, d3d12::TextureAddressMode::TAM_MIRROR });
-		rs_desc.m_parameters.resize(1);
-		rs_desc.m_parameters[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+		rs_desc.m_parameters.resize(2);
+		rs_desc.m_parameters[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+		rs_desc.m_parameters[1].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
 		m_root_signature = d3d12::CreateRootSignature(rs_desc);
 		d3d12::FinalizeRootSignature(m_root_signature, m_device);
@@ -117,8 +118,6 @@ namespace wr
 
 	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph& frame_graph)
 	{
-		UpdateFramerate();
-
 		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 		recursive_func_t recursive_render = [this, &recursive_render](std::shared_ptr<Node> const & parent)
 		{
@@ -128,6 +127,18 @@ namespace wr
 				recursive_render(node);
 			}
 		};
+		recursive_func_t recursive_update = [this, &recursive_update](std::shared_ptr<Node> const & parent)
+		{
+			for (auto & node : parent->m_children)
+			{
+				node->Update(this, node.get());
+				recursive_update(node);
+			}
+		};
+
+		UpdateFramerate();
+
+		recursive_update(scene_graph->GetRootNode());
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
@@ -155,19 +166,39 @@ namespace wr
 		//LOG("init mesh");
 	}
 
-	void D3D12RenderSystem::Init_AnimNode(AnimNode* node)
+	void wr::D3D12RenderSystem::Init_CameraNode(CameraNode * node)
 	{
-		//LOG("init anim");
+		auto camera_cb = new D3D12ConstantBufferHandle();
+		camera_cb->m_native = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::ProjectionView_CBData));
+		node->m_camera_cb = camera_cb;
+	}
+
+	void wr::D3D12RenderSystem::Update_MeshNode(MeshNode * node)
+	{
+
+	}
+
+	void wr::D3D12RenderSystem::Update_CameraNode(CameraNode * node)
+	{
+		if (!node->RequiresUpdate(GetFrameIdx())) return;
+
+		node->UpdateTemp(GetFrameIdx());
+
+		temp::ProjectionView_CBData data;
+		data.m_projection = node->m_projection;
+		data.m_view = node->m_view;
+
+		auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_camera_cb);
+
+		d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
 	}
 
 	void D3D12RenderSystem::Render_MeshNode(MeshNode* node)
 	{
-		//LOG("render mesh");
 	}
 
-	void D3D12RenderSystem::Render_AnimNode(AnimNode* node)
+	void wr::D3D12RenderSystem::Render_CameraNode(CameraNode * node)
 	{
-		//LOG("render anim");
 	}
 
 	unsigned int D3D12RenderSystem::GetFrameIdx()

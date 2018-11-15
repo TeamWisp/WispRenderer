@@ -34,7 +34,7 @@ namespace d3d12
 			PipelineType m_type = PipelineType::GRAPHICS_PIPELINE;
 			CullMode m_cull_mode = CullMode::CULL_BACK;
 			bool m_depth_enabled = false;
-			bool m_counter_clockwise = true;
+			bool m_counter_clockwise = false;
 			TopologyType m_topology_type = TopologyType::TRIANGLE;
 
 			std::vector<D3D12_INPUT_ELEMENT_DESC> m_input_layout;
@@ -189,6 +189,7 @@ namespace d3d12
 		struct Heap<HeapOptimization::SMALL_BUFFERS>
 		{
 			std::vector<HeapResource*> m_resources;
+			std::uint8_t* m_cpu_address;
 			ID3D12Resource* m_native;
 		};
 
@@ -206,6 +207,7 @@ namespace d3d12
 	template<HeapOptimization O>
 	struct Heap : detail::Heap<O>
 	{
+		bool m_mapped;
 		unsigned int m_versioning_count;
 		std::uint64_t m_current_offset;
 	};

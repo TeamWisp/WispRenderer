@@ -2,11 +2,17 @@
 
 #include "../renderer.hpp"
 
-#include "d3d12_structs.hpp"
+#include <DirectXMath.h>
 #include <chrono>
+
+#include "d3d12_structs.hpp"
 
 namespace wr
 {
+
+	struct MeshNode;
+	struct AnimNode;
+	struct CameraNode;
 
 	class D3D12RenderSystem : public RenderSystem
 	{
@@ -20,11 +26,14 @@ namespace wr
 		virtual std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
 		virtual std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
 
-		void Init_MeshNode(wr::MeshNode* node);
-		void Init_AnimNode(wr::AnimNode* node);
+		void Init_MeshNode(MeshNode* node);
+		void Init_CameraNode(CameraNode* node);
 
-		void Render_MeshNode(wr::MeshNode* node);
-		void Render_AnimNode(wr::AnimNode* node);
+		void Update_MeshNode(MeshNode* node);
+		void Update_CameraNode(CameraNode* node);
+
+		void Render_MeshNode(MeshNode* node);
+		void Render_CameraNode(CameraNode* node);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -61,9 +70,15 @@ namespace wr
 
 	namespace temp
 	{
-		struct ConstantBufferData
+		struct ProjectionView_CBData
 		{
-			float m_color[3];
+			DirectX::XMMATRIX m_view;
+			DirectX::XMMATRIX m_projection;
+		};
+
+		struct Model_CBData
+		{
+			DirectX::XMMATRIX m_model;
 		};
 
 		struct Vertex

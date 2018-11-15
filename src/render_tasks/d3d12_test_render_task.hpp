@@ -2,6 +2,7 @@
 
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
+#include "../d3d12/d3d12_resource_pool.hpp"
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 
@@ -44,11 +45,13 @@ namespace wr::fg
 				const auto cb = n_render_system.m_cb;
 
 				// Update CB
-				temp::ConstantBufferData data;
-				data.m_color[0] = 1;
-				data.m_color[1] = 1;
-				data.m_color[2] = 0;
-				d3d12::UpdateConstantBuffer(cb, frame_idx, &data, sizeof(temp::ConstantBufferData));
+				temp::Model_CBData data;
+				DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslation(0, 0, 0);
+				DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationRollPitchYaw(0, 0, 0);
+				DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScaling(1, 1, 1);
+				data.m_model = scale_mat * rotation_mat * translation_mat;
+
+				d3d12::UpdateConstantBuffer(cb, frame_idx, &data, sizeof(temp::Model_CBData));
 
 				d3d12::WaitFor(fences[frame_idx]);
 
@@ -61,7 +64,10 @@ namespace wr::fg
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindVertexBuffer(cmd_list, vb);
 
-				d3d12::BindConstantBuffer(cmd_list, cb, 0, frame_idx);
+				d3d12::BindConstantBuffer(cmd_list, cb, 1, frame_idx);
+
+				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
+				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 0, frame_idx);
 
 				d3d12::Draw(cmd_list, 4, 1);
 

@@ -8,7 +8,7 @@ namespace d3d12
 	Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
 	{
 		auto heap = new Heap<HeapOptimization::SMALL_BUFFERS>();
-
+		heap->m_mapped = false;
 		heap->m_versioning_count = versioning_count;
 		heap->m_current_offset = 0;
 
@@ -32,6 +32,7 @@ namespace d3d12
 	Heap<HeapOptimization::BIG_BUFFERS>* CreateHeap_BBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
 	{
 		auto heap = new Heap<HeapOptimization::BIG_BUFFERS>();
+		heap->m_mapped = false;
 		heap->m_versioning_count = versioning_count;
 		heap->m_current_offset = 0;
 
@@ -74,6 +75,17 @@ namespace d3d12
 			cb->m_gpu_addresses[i] = heap->m_native->GetGPUVirtualAddress() + heap->m_current_offset;
 			heap->m_current_offset += aligned_size;
 		}
+
+		// If the heap is supposed to be mapped immediatly map the new resource.
+		if (heap->m_mapped)
+		{
+			cb->m_cpu_addresses = std::vector<std::uint8_t*>(heap->m_versioning_count);
+			auto&& addresses = cb->m_cpu_addresses.value();
+			for (auto i = 0; i < heap->m_versioning_count; i++)
+			{
+				addresses[i] = heap->m_cpu_address + (cb->m_begin_offset + (SizeAlign(cb->m_unaligned_size, 255) * i));
+			}
+		}
 		
 		cb->m_heap_vector_location = heap->m_resources.size();
 		heap->m_resources.push_back(cb);
@@ -103,8 +115,22 @@ namespace d3d12
 			heap->m_current_offset += aligned_size_in_bytes;
 
 			cb->m_gpu_addresses[i] = temp_resources[i]->GetGPUVirtualAddress();
-
 		}
+
+		// If the heap is supposed to be mapped immediatly map the new resource.
+		if (heap->m_mapped)
+		{
+			cb->m_cpu_addresses = std::vector<std::uint8_t*>(heap->m_versioning_count);
+			auto&& addresses = cb->m_cpu_addresses.value();
+
+			CD3DX12_RANGE read_range(0, 0);
+			for (auto i = 0; i < heap->m_versioning_count; i++)
+			{
+				TRY_M(temp_resources[i]->Map(0, &read_range, reinterpret_cast<void**>(&addresses[i])),
+					"Failed to map resource.");
+			}
+		}
+
 		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
 
 		return cb;
@@ -112,10 +138,14 @@ namespace d3d12
 
 	void MapHeap(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
 	{
+		heap->m_mapped = true;
+
 		CD3DX12_RANGE read_range(0, 0);
 		std::uint8_t* address;
 		TRY_M(heap->m_native->Map(0, &read_range, reinterpret_cast<void**>(&address)),
 			"Failed to map resource.");
+
+		heap->m_cpu_address = address;
 
 		for (auto& handle : heap->m_resources)
 		{
@@ -131,6 +161,8 @@ namespace d3d12
 
 	void MapHeap(Heap<HeapOptimization::BIG_BUFFERS>* heap)
 	{
+		heap->m_mapped = true;
+
 		for (auto resource : heap->m_resources)
 		{
 			resource.first->m_cpu_addresses = std::vector<std::uint8_t*>(heap->m_versioning_count);
@@ -147,6 +179,8 @@ namespace d3d12
 
 	void UnmapHeap(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
 	{
+		heap->m_mapped = false;
+
 		CD3DX12_RANGE read_range(0, 0);
 		heap->m_native->Unmap(0, &read_range);
 
@@ -159,6 +193,8 @@ namespace d3d12
 
 	void UnmapHeap(Heap<HeapOptimization::BIG_BUFFERS>* heap)
 	{
+		heap->m_mapped = false;
+
 		CD3DX12_RANGE read_range(0, 0);
 
 		for (auto& resource : heap->m_resources)

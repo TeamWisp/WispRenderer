@@ -15,14 +15,15 @@ int main()
 
 	render_system->Init(window.get());
 
+	auto resource_manager = render_system->CreateMaterialPool(1);
 	auto scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
 	scene_graph->CreateChild<wr::MeshNode>();
-	auto some_node = scene_graph->CreateChild<wr::MeshNode>();
-	scene_graph->CreateChild<wr::MeshNode>(some_node);
-	scene_graph->CreateChild<wr::AnimNode>();
 
-	auto resource_manager = render_system->CreateMaterialPool(1);
+	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 1.74f, (float)window->GetWidth() / (float)window->GetHeight());
+	camera->SetPosition(0, 0, -5);
+
+	scene_graph->Init();
 
 	wr::fg::FrameGraph frame_graph;
 	frame_graph.AddTask(wr::fg::GetTestTask());

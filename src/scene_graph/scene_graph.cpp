@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "../renderer.hpp"
+#include "../util/log.hpp"
 
 namespace wr
 {
@@ -33,6 +34,35 @@ namespace wr
 	void SceneGraph::RemoveChildren(std::shared_ptr<Node> const & parent)
 	{
 		parent->m_children.clear();
+	}
+
+	std::shared_ptr<CameraNode> SceneGraph::GetActiveCamera()
+	{
+		for (auto& camera_node : m_camera_nodes)
+		{
+			if (camera_node->m_active)
+			{
+				return camera_node;
+			}
+		}
+
+		LOGW("Failed to obtain a active camera node.");
+		return nullptr;
+	}
+
+	void SceneGraph::Init()
+	{
+		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
+		recursive_func_t recursive_init = [this, &recursive_init](std::shared_ptr<Node> const & parent)
+		{
+			for (auto & node : parent->m_children)
+			{
+				node->Init(m_render_system, node.get());
+				recursive_init(node);
+			}
+		};
+
+		recursive_init(GetRootNode());
 	}
 
 } /* wr */
