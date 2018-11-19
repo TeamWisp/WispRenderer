@@ -12,7 +12,7 @@ pipeline {
 				
 				bat '''mkdir builds
 				move ./RayTracingLib/Debug "./builds/build_%BUILD_NUMBER%"
-				cd "%WORKSPACE%\\Scripts
+				cd "%WORKSPACE%\\scripts
 				call "JenkinsWebhook.bat" ":white_check_mark: Pull Request Build Succesfull!! Jenkins build nr: %BUILD_NUMBER%"'''
             }
         }
