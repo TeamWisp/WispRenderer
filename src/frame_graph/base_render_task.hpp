@@ -9,7 +9,7 @@ namespace wr
 	class SceneGraph;
 } /* wr */
 
-namespace wr::fg
+namespace wr
 {
 
 	class BaseRenderTask
@@ -38,4 +38,4 @@ namespace wr::fg
 		const std::type_info& m_data_type_info;
 	};
 
-} /* wr::fg */
+} /* wr */

@@ -5,6 +5,8 @@
 #include "../renderer.hpp"
 #include "../util/log.hpp"
 
+#include "camera_node.hpp"
+
 namespace wr
 {
 

@@ -3,10 +3,10 @@
 #include <optional>
 #include <memory>
 
-namespace wr::fg
+namespace wr
 {
 	class FrameGraph;
-} /* wr::fg */
+} /* wr */
 
 namespace wr
 {
@@ -32,7 +32,7 @@ namespace wr
 		virtual std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) = 0;
 
 		virtual void Init(std::optional<Window*> window) = 0;
-		virtual std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph & frame_graph) = 0;
+		virtual std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
 		virtual void Resize(std::int32_t width, std::int32_t height) = 0;
 
 	};

@@ -60,3 +60,23 @@ target_link_libraries(EnginePrototype fmt)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT EnginePrototype)
 set_target_properties(EnginePrototype PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
+
+## Generate Include Directory
+macro(configure_files srcDir destDir)
+    message(STATUS "Configuring directory ${destDir}")
+    make_directory(${destDir})
+
+	file(GLOB_RECURSE templateFiles RELATIVE ${srcDir} ${srcDir}/*)
+    foreach(templateFile ${templateFiles})
+        set(srcTemplatePath ${srcDir}/${templateFile})
+        if(NOT IS_DIRECTORY ${srcTemplatePath})
+            message(STATUS "Configuring file ${templateFile}")
+            configure_file(
+                    ${srcTemplatePath}
+                    ${destDir}/${templateFile}
+                    @ONLY)
+        endif(NOT IS_DIRECTORY ${srcTemplatePath})
+    endforeach(templateFile)
+endmacro(configure_files)
+
+#configure_files("${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/include")

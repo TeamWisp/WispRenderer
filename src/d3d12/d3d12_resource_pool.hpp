@@ -30,31 +30,31 @@ namespace wr
 	{
 	public:
 		explicit D3D12MaterialPool(std::size_t size_in_mb);
-		virtual ~D3D12MaterialPool() final;
+		~D3D12MaterialPool() final;
 		
-		virtual void Evict() final;
-		virtual void MakeResident() final;
+		void Evict() final;
+		void MakeResident() final;
 	
 	protected:
-		virtual MaterialHandle LoadMaterial(std::string_view path) final;
-		virtual TextureHandle LoadPNG(std::string_view path) final;
-		virtual TextureHandle LoadDDS(std::string_view path) final;
-		virtual TextureHandle LoadHDR(std::string_view path) final;
+		MaterialHandle LoadMaterial(std::string_view path) final;
+		TextureHandle LoadPNG(std::string_view path) final;
+		TextureHandle LoadDDS(std::string_view path) final;
+		TextureHandle LoadHDR(std::string_view path) final;
 	};
 
 	class D3D12ModelPool : public ModelPool
 	{
 	public:
 		explicit D3D12ModelPool(D3D12RenderSystem& render_system, std::size_t size_in_mb);
-		virtual ~D3D12ModelPool() final;
+		~D3D12ModelPool() final;
 
-		virtual void Evict() final;
-		virtual void MakeResident() final;
+		void Evict() final;
+		void MakeResident() final;
 
 	protected:
-		virtual Model* LoadFBX(std::string_view path, ModelType type) final;
-		virtual Mesh* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
-		virtual Mesh* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;
+		Model* LoadFBX(std::string_view path, ModelType type) final;
+		Mesh* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
+		Mesh* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;
 
 		D3D12RenderSystem& m_render_system;
 	};

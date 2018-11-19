@@ -49,16 +49,16 @@ REM ##### GEN PROJECTS #####
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
-cmake -G "Visual Studio 15 2017 Win64" ..
+cmake -G "Visual Studio 15 2017" -A x64 ..
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0
 
 :genVS15Win32
-call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 ARM Project. ####"
-mkdir build_vs2017_arm
-cd build_vs2017_arm
-cmake -G "Visual Studio 15 2017 ARM" ..
+call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
+mkdir build_vs2017_win32
+cd build_vs2017_win32
+cmake -G "Visual Studio 15 2017" -A Win32 ..
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0

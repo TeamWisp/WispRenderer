@@ -4,7 +4,7 @@
 
 #include "render_task.hpp"
 
-namespace wr::fg
+namespace wr
 {
 
 	class FrameGraph
@@ -53,4 +53,4 @@ namespace wr::fg
 		}
 	}
 
-} /* fg::wr */
+} /* wr */

@@ -8,6 +8,7 @@
 namespace wr
 {
 
+	//! Default Vertex
 	struct Vertex
 	{
 		float m_pos[3];

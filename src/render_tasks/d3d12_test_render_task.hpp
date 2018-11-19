@@ -5,11 +5,9 @@
 #include "../d3d12/d3d12_resource_pool.hpp"
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
+#include "../scene_graph/camera_node.hpp"
 
-#define BIG_BUFFER
-#define NUM_ITTERATIONS 1000
-
-namespace wr::fg
+namespace wr
 {
 
 	struct DeferredTaskData
@@ -78,4 +76,5 @@ namespace wr::fg
 
 		return ptr;
 	}
-}
+
+} /* wr */

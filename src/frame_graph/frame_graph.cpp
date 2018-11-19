@@ -1,6 +1,6 @@
 #include "frame_graph.hpp"
 
-namespace wr::fg
+namespace wr
 {
 
 	//! Adds a task without creating it.
@@ -28,4 +28,4 @@ namespace wr::fg
 		}
 	}
 
-} /* wr::fg */
+} /* wr */

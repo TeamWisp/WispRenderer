@@ -3,7 +3,7 @@
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 
-namespace wr::fg
+namespace wr
 {
 
 	struct DeferredTaskData
@@ -37,4 +37,5 @@ namespace wr::fg
 
 		return ptr;
 	}
-}
+
+} /* wr */

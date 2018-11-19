@@ -10,7 +10,7 @@ namespace wr
 
 } /* wr */
 
-namespace wr::fg
+namespace wr
 {
 
 	template<typename T>
@@ -23,7 +23,7 @@ namespace wr::fg
 		RenderTask(FrameGraph* frame_graph, std::string const & name, setup_func_type setup, execute_func_type execute)
 			: BaseRenderTask(typeid(T), frame_graph, name), m_setup(setup), m_execute(execute) {}
 
-		virtual ~RenderTask() = default;
+		~RenderTask() final = default;
 
 		//! Invokes the bound setup function ptr.
 		/*
@@ -52,4 +52,4 @@ namespace wr::fg
 		execute_func_type m_execute;
 	};
 
-} /* wr::fg */
+} /* wr */

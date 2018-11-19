@@ -3,7 +3,6 @@
 #include "../renderer.hpp"
 
 #include <DirectXMath.h>
-#include <chrono>
 
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
@@ -12,20 +11,19 @@ namespace wr
 {
 
 	struct MeshNode;
-	struct AnimNode;
 	struct CameraNode;
 
 	class D3D12RenderSystem : public RenderSystem
 	{
 	public:
-		virtual ~D3D12RenderSystem();
+		~D3D12RenderSystem() final;
 
-		virtual void Init(std::optional<Window*> window) final;
-		virtual std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph & frame_graph) final;
-		virtual void Resize(std::int32_t width, std::int32_t height) final;
+		void Init(std::optional<Window*> window) final;
+		std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
+		void Resize(std::int32_t width, std::int32_t height) final;
 
-		virtual std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
-		virtual std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
+		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
+		std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 		void RenderSceneGraph(SceneGraph const & scene_graph);
@@ -60,15 +58,6 @@ namespace wr
 		d3d12::Shader* m_vertex_shader;
 		d3d12::Shader* m_pixel_shader;
 		d3d12::StagingBuffer* m_vertex_buffer;
-
-		// temp profiling
-		std::uint32_t frames;
-		std::uint32_t framerate;
-		std::chrono::time_point<std::chrono::high_resolution_clock> prev;
-		void UpdateFramerate();
-		void PerfOutput_Framerate();
-
-		std::vector<std::uint32_t> captured_framerates;
 	};
 
 	namespace temp

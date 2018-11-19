@@ -2,7 +2,7 @@
 
 #include "frame_graph.hpp"
 
-namespace wr::fg
+namespace wr
 {
 
 	BaseRenderTask::BaseRenderTask(const std::type_info& data_type_info, FrameGraph* frame_graph, std::string const & name)
@@ -16,4 +16,4 @@ namespace wr::fg
 		m_frame_graph = frame_graph;
 	}
 
-} /* wr::fg */
+} /* wr */

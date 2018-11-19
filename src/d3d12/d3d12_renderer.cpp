@@ -1,7 +1,5 @@
 #include "d3d12_renderer.hpp"
 
-#include <fstream> // temp
-
 #include "../util/defines.hpp"
 #include "../util/log.hpp"
 #include "../scene_graph/scene_graph.hpp"
@@ -11,6 +9,9 @@
 #include "d3d12_defines.hpp"
 #include "d3d12_resource_pool.hpp"
 #include "d3d12_functions.hpp"
+
+#include "../scene_graph/mesh_node.hpp"
+#include "../scene_graph/camera_node.hpp"
 
 //LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Update_MeshNode, Render_MeshNode)
 
@@ -38,8 +39,6 @@ namespace wr
 		{
 			d3d12::WaitFor(fence);
 		}
-
-		PerfOutput_Framerate();
 
 		d3d12::Destroy(m_cb_heap);
 		d3d12::Destroy(m_device);
@@ -130,12 +129,9 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 		m_fences[frame_idx]->m_fence_value++;
 		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
-
-		// Start counting the framerate.
-		prev = std::chrono::high_resolution_clock::now();
 	}
 
-	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph& frame_graph)
+	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
 		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 		recursive_func_t recursive_update = [this, &recursive_update](std::shared_ptr<Node> const & parent)
@@ -146,8 +142,6 @@ namespace wr
 				recursive_update(node);
 			}
 		};
-
-		UpdateFramerate();
 
 		recursive_update(scene_graph->GetRootNode());
 
@@ -307,49 +301,6 @@ namespace wr
 			LOGW("Called `D3D12RenderSystem::GetRenderWindow` without a window!");
 			return nullptr;
 		}
-	}
-
-	void D3D12RenderSystem::UpdateFramerate()
-	{
-		frames++;
-		auto now = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> diff = now - prev;
-
-		if (diff.count() >= 1)
-		{
-			prev = std::chrono::high_resolution_clock::now();
-			framerate = frames;
-			captured_framerates.push_back(framerate);
-			frames = 0;
-		}
-	}
-
-	void D3D12RenderSystem::PerfOutput_Framerate()
-	{
-		std::ofstream file;
-		file.open("perf_framerate.txt");
-
-		// Calc average fps
-		int fps_sum = 0;
-		for (auto fps : captured_framerates)
-			fps_sum += fps;
-		int average_fps = fps_sum / captured_framerates.size();
-
-		// Calc average frame time
-		/*int frametime_sum = 0;
-		for (auto frametime : captured_frametimes)
-			frametime_sum += frametime;
-		int average_frametime = frametime_sum / captured_frametimes.size();*/
-
-		//file << "Average frametime over " << captured_frametimes.size() << ": " << average_frametime << '\n';
-		file << "Average framerate over " << captured_framerates.size() << ": " << average_fps << '\n';
-
-		for (auto fps : captured_framerates)
-		{
-			file << fps << '\n';
-		}
-
-		file.close();
 	}
 
 } /*  */
