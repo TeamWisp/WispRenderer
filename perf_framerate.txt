@@ -1,3 +1,0 @@
-Average framerate over 2: 476
-5
-947
