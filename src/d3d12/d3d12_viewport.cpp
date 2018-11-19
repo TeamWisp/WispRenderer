@@ -10,8 +10,8 @@ namespace d3d12
 		// Define viewport.
 		viewport.m_viewport.TopLeftX = 0;
 		viewport.m_viewport.TopLeftY = 0;
-		viewport.m_viewport.Width = width;
-		viewport.m_viewport.Height = height;
+		viewport.m_viewport.Width = static_cast<float>(width);
+		viewport.m_viewport.Height = static_cast<float>(height);
 		viewport.m_viewport.MinDepth = 0.0f;
 		viewport.m_viewport.MaxDepth = 1.0f;
 
