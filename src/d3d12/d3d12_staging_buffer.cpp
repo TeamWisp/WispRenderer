@@ -31,7 +31,8 @@ namespace d3d12
 			IID_PPV_ARGS(&buffer->m_staging));
 		NAME_D3D12RESOURCE(buffer->m_staging);
 
-		buffer->m_data = data;
+		buffer->m_data = malloc(size);
+		memcpy(buffer->m_data, data, size);
 
 		return buffer;
 	}

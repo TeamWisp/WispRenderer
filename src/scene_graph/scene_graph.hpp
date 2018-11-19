@@ -14,17 +14,44 @@ namespace wr
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
+		Node() : m_requires_update{ true, true, true }
+		{
+
+		}
+
 		std::shared_ptr<Node> m_parent;
 		std::vector<std::shared_ptr<Node>> m_children;
 
 		std::function<void(RenderSystem*, Node*)> Init;
 		std::function<void(RenderSystem*, Node*)> Update;
 		std::function<void(RenderSystem*, Node*)> Render;
+
+		void SignalChange()
+		{
+			m_requires_update = { true, true, true };
+		}
+
+		bool RequiresUpdate(unsigned int frame_idx)
+		{
+			return m_requires_update[frame_idx];
+		}
+
+		std::vector<bool> m_requires_update;
 	};
 
 	struct MeshNode : Node
 	{
 		DECL_SUBNODE(MeshNode); // TODO: Should be able to dissalow default constructor.
+
+		MeshNode(Model* model)
+			: Node(), m_model(model)
+		{
+			SUBMODE_CONSTRUCTOR
+		}
+
+		Model* m_model;
+
+		ConstantBufferHandle* m_transform_cb;
 	};
 
 	struct CameraNode : Node
@@ -32,8 +59,8 @@ namespace wr
 		DECL_SUBNODE(CameraNode);
 
 		CameraNode(float fov, float aspect_ratio)
-			: m_active(true),
-			m_requires_update{ true, true, true },
+			: Node(),
+			m_active(true),
 			m_pos{ 0, 0, 0},
 			m_euler{ 0, 0, 0 },
 			m_frustum_near(0.1f),
@@ -42,11 +69,6 @@ namespace wr
 			m_aspect_ratio(aspect_ratio)
 		{
 			SUBMODE_CONSTRUCTOR
-		}
-
-		void SignalChange()
-		{
-			m_requires_update = { true, true, true };
 		}
 
 		void SetPosition(float x, float y, float z)
@@ -78,13 +100,7 @@ namespace wr
 			m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
 		}
 
-		bool RequiresUpdate(unsigned int frame_idx)
-		{
-			return m_requires_update[frame_idx];
-		}
-
 		bool m_active;
-		std::vector<bool> m_requires_update;
 
 		float m_pos[3];
 		float m_euler[3];
@@ -111,14 +127,12 @@ namespace wr
 		SceneGraph& operator=(SceneGraph&&) = delete;
 		SceneGraph& operator=(SceneGraph const &) = delete;
 
-		std::shared_ptr<Node> & GetRootNode();
+		std::shared_ptr<Node> GetRootNode() const;
 		template<typename T, typename... Args>
 		std::shared_ptr<T> CreateChild(std::shared_ptr<Node> const & parent = nullptr, Args... args);
 		std::vector<std::shared_ptr<Node>> GetChildren(std::shared_ptr<Node> const & parent = nullptr);
 		void RemoveChildren(std::shared_ptr<Node> const & parent);
 		std::shared_ptr<CameraNode> GetActiveCamera();
-
-		void Init();
 
 	private:
 		RenderSystem* m_render_system;

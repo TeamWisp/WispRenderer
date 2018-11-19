@@ -18,15 +18,16 @@ namespace wr
 	}
 
 	//! Loads a model without materials
-	ModelHandle ModelPool::Load(std::string_view path, ModelType type)
+	Model* ModelPool::Load(std::string_view path, ModelType type)
 	{
-		return ModelHandle();
+		return new Model();
 	}
 
 	//! Loads a model with materials
-	std::pair<ModelHandle, std::vector<MaterialHandle>> ModelPool::LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type)
+	std::pair<Model*, std::vector<MaterialHandle>> ModelPool::LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type)
 	{
-		return std::pair<ModelHandle, std::vector<MaterialHandle>>();
+		auto model = new Model();
+		return std::pair<Model*, std::vector<MaterialHandle>>();
 	}
 
 } /* wr */

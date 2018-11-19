@@ -12,13 +12,33 @@
 #include "d3d12_resource_pool.hpp"
 #include "d3d12_functions.hpp"
 
-LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Update_MeshNode, Render_MeshNode)
+//LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Update_MeshNode, Render_MeshNode)
+
+decltype(wr::MeshNode::init_func_impl) wr::MeshNode::init_func_impl = [](wr::RenderSystem* render_system, wr::Node* node)
+{
+static_cast<wr::D3D12RenderSystem*>(render_system)->Init_MeshNode(static_cast<wr::MeshNode*>(node));
+};
+decltype(wr::MeshNode::update_func_impl) wr::MeshNode::update_func_impl = [](wr::RenderSystem* render_system, wr::Node* node)
+{
+static_cast<wr::D3D12RenderSystem*>(render_system)->Update_MeshNode(static_cast<wr::MeshNode*>(node));
+};
+decltype(wr::MeshNode::render_func_impl) wr::MeshNode::render_func_impl = [](wr::RenderSystem* render_system, wr::Node* node)
+{
+static_cast<wr::D3D12RenderSystem*>(render_system)->Render_MeshNode(static_cast<wr::MeshNode*>(node));
+};
+
 LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::CameraNode, Init_CameraNode, Update_CameraNode, Render_CameraNode)
 
 namespace wr
 {
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
+		// wait for end
+		for (auto& fence : m_fences)
+		{
+			d3d12::WaitFor(fence);
+		}
+
 		PerfOutput_Framerate();
 
 		d3d12::Destroy(m_cb_heap);
@@ -57,7 +77,6 @@ namespace wr
 		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, d3d12::ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
 		// Create Constant Buffer
-		m_cb = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::Model_CBData));
 		d3d12::MapHeap(m_cb_heap);
 
 		// Load Shaders.
@@ -82,7 +101,7 @@ namespace wr
 		pso_desc.m_dsv_format = d3d12::Format::UNKNOWN;
 		pso_desc.m_num_rtv_formats = 1;
 		pso_desc.m_rtv_formats[0] = d3d12::Format::R8G8B8A8_UNORM;
-		pso_desc.m_input_layout = temp::Vertex::GetInputLayout();
+		pso_desc.m_input_layout = wr::Vertex::GetInputLayout();
 
 		m_pipeline_state = d3d12::CreatePipelineState();
 		d3d12::SetVertexShader(m_pipeline_state, m_vertex_shader);
@@ -94,7 +113,7 @@ namespace wr
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
 		// Create screen quad
-		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(temp::Vertex), sizeof(temp::Vertex), d3d12::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex), sizeof(Vertex), d3d12::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, d3d12::CmdListType::CMD_LIST_DIRECT);
@@ -119,14 +138,6 @@ namespace wr
 	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, fg::FrameGraph& frame_graph)
 	{
 		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
-		recursive_func_t recursive_render = [this, &recursive_render](std::shared_ptr<Node> const & parent)
-		{
-			for (auto & node : parent->m_children)
-			{
-				node->Render(this, node.get());
-				recursive_render(node);
-			}
-		};
 		recursive_func_t recursive_update = [this, &recursive_update](std::shared_ptr<Node> const & parent)
 		{
 			for (auto & node : parent->m_children)
@@ -142,8 +153,6 @@ namespace wr
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
-		recursive_render(scene_graph->GetRootNode());
-
 		return std::unique_ptr<Texture>();
 	}
 
@@ -158,12 +167,61 @@ namespace wr
 
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t size_in_mb)
 	{
-		return std::make_shared<D3D12ModelPool>(size_in_mb);
+		return std::make_shared<D3D12ModelPool>(*this, size_in_mb);
+	}
+
+	void D3D12RenderSystem::InitSceneGraph(SceneGraph& scene_graph)
+	{
+		auto frame_idx = GetFrameIdx();
+		d3d12::WaitFor(m_fences[frame_idx]);
+		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+
+		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
+		recursive_func_t recursive_init = [this, &recursive_init](std::shared_ptr<Node> const & parent)
+		{
+			for (auto & node : parent->m_children)
+			{
+				node->Init(this, node.get());
+				recursive_init(node);
+			}
+		};
+		recursive_init(scene_graph.GetRootNode());
+
+		d3d12::End(m_direct_cmd_list);
+
+		// Execute
+		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
+		m_fences[frame_idx]->m_fence_value++;
+		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
+	}
+
+	void D3D12RenderSystem::RenderSceneGraph(SceneGraph const & scene_graph)
+	{
+		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
+		recursive_func_t recursive_render = [this, &recursive_render](std::shared_ptr<Node> const & parent)
+		{
+			for (auto & node : parent->m_children)
+			{
+				node->Render(this, node.get());
+				recursive_render(node);
+			}
+		};
+
+		recursive_render(scene_graph.GetRootNode());
 	}
 
 	void D3D12RenderSystem::Init_MeshNode(MeshNode* node)
 	{
-		//LOG("init mesh");
+		auto transform_cb = new D3D12ConstantBufferHandle();
+		transform_cb->m_native = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::Model_CBData));
+		node->m_transform_cb = transform_cb;
+
+		for (auto& mesh : node->m_model->m_meshes)
+		{
+			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
+			d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
+		}
 	}
 
 	void wr::D3D12RenderSystem::Init_CameraNode(CameraNode * node)
@@ -175,7 +233,19 @@ namespace wr
 
 	void wr::D3D12RenderSystem::Update_MeshNode(MeshNode * node)
 	{
+		if (!node->RequiresUpdate(GetFrameIdx())) return;
 
+		//node->UpdateTemp(GetFrameIdx());
+
+		temp::Model_CBData data;
+		DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslation(0, 0, 0);
+		DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationRollPitchYaw(0, 0, 0);
+		DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScaling(1, 1, 1);
+		data.m_model = scale_mat * rotation_mat * translation_mat;
+
+		auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_transform_cb);
+
+		d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
 	}
 
 	void wr::D3D12RenderSystem::Update_CameraNode(CameraNode * node)
@@ -195,6 +265,18 @@ namespace wr
 
 	void D3D12RenderSystem::Render_MeshNode(MeshNode* node)
 	{
+		for (auto& mesh : node->m_model->m_meshes)
+		{
+			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
+			auto frame_idx = GetFrameIdx();
+
+			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_transform_cb);
+
+			d3d12::BindVertexBuffer(m_direct_cmd_list, n_mesh->m_vertex_buffer);
+			d3d12::BindConstantBuffer(m_direct_cmd_list, d3d12_cb_handle->m_native, 1, frame_idx);
+
+			d3d12::Draw(m_direct_cmd_list, 4, 1);
+		}
 	}
 
 	void wr::D3D12RenderSystem::Render_CameraNode(CameraNode * node)

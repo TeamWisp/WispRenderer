@@ -5,6 +5,7 @@
 #include <DirectXMath.h>
 #include <chrono>
 
+#include "../vertex.hpp"
 #include "d3d12_structs.hpp"
 
 namespace wr
@@ -25,6 +26,9 @@ namespace wr
 
 		virtual std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
 		virtual std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
+
+		void InitSceneGraph(SceneGraph& scene_graph);
+		void RenderSceneGraph(SceneGraph const & scene_graph);
 
 		void Init_MeshNode(MeshNode* node);
 		void Init_CameraNode(CameraNode* node);
@@ -48,7 +52,6 @@ namespace wr
 
 		// temporary
 		d3d12::Heap<d3d12::HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
-		d3d12::HeapResource* m_cb;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
@@ -79,20 +82,6 @@ namespace wr
 		struct Model_CBData
 		{
 			DirectX::XMMATRIX m_model;
-		};
-
-		struct Vertex
-		{
-			float m_pos[3];
-
-			static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout()
-			{
-				std::vector<D3D12_INPUT_ELEMENT_DESC> layout = {
-					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, m_pos), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				};
-
-				return layout;
-			}
 		};
 
 		static const constexpr float size = 0.5f;

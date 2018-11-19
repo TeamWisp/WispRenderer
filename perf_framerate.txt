@@ -1,4 +1,3 @@
-Average framerate over 3: 1196
-1259
-1392
-938
+Average framerate over 2: 476
+5
+947

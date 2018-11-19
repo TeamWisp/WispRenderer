@@ -19,7 +19,7 @@ namespace wr
 	}
 
 	//! Used to obtain the root node.
-	std::shared_ptr<Node> & SceneGraph::GetRootNode()
+	std::shared_ptr<Node> SceneGraph::GetRootNode() const
 	{
 		return m_root;
 	}
@@ -48,21 +48,6 @@ namespace wr
 
 		LOGW("Failed to obtain a active camera node.");
 		return nullptr;
-	}
-
-	void SceneGraph::Init()
-	{
-		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
-		recursive_func_t recursive_init = [this, &recursive_init](std::shared_ptr<Node> const & parent)
-		{
-			for (auto & node : parent->m_children)
-			{
-				node->Init(m_render_system, node.get());
-				recursive_init(node);
-			}
-		};
-
-		recursive_init(GetRootNode());
 	}
 
 } /* wr */

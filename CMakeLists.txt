@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 
 project(EnginePrototype)
 
