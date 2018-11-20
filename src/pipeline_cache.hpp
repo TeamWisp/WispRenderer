@@ -38,6 +38,11 @@ namespace wr
 		PipelineCache();
 		virtual ~PipelineCache() = default;
 
+		PipelineCache(PipelineCache const &) = delete;
+		PipelineCache& operator=(PipelineCache const &) = delete;
+		PipelineCache(PipelineCache&&) = delete;
+		PipelineCache& operator=(PipelineCache&&) = delete;
+
 		template<typename VT>
 		static PipelineHandle RegisterPipelineDescription(PipelineDescription description);
 
