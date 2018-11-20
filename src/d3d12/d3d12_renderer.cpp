@@ -72,7 +72,10 @@ namespace wr
 		// Create Constant Buffer Heap
 		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::Model_CBData), 256);
 		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256);
-		constexpr auto sbo_size = model_cbs_size + cam_cbs_size * d3d12::settings::num_back_buffers;
+		constexpr auto sbo_size = 
+			model_cbs_size * 1 /* TODO: Make this more dynamic; right now it only supports 1 model */ 
+			+ cam_cbs_size * d3d12::settings::num_back_buffers;
+
 		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, d3d12::ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
 		// Create Constant Buffer
@@ -229,13 +232,10 @@ namespace wr
 	{
 		if (!node->RequiresUpdate(GetFrameIdx())) return;
 
-		//node->UpdateTemp(GetFrameIdx());
+		node->UpdateTemp(GetFrameIdx());
 
 		temp::Model_CBData data;
-		DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslation(0, 0, 0);
-		DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationRollPitchYaw(0, 0, 0);
-		DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScaling(1, 1, 1);
-		data.m_model = scale_mat * rotation_mat * translation_mat;
+		data.m_model = node->m_transform;
 
 		auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_transform_cb);
 

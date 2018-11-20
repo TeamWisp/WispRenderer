@@ -31,6 +31,9 @@ void WispEntry()
 
 	auto mesh_node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
 
+	auto mesh_node_2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
+	mesh_node_2->SetPosition({ -2, -2, 5 });
+
 	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 1.74f, (float)window->GetWidth() / (float)window->GetHeight());
 	camera->SetPosition(0, 0, -5);
 
