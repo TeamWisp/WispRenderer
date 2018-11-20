@@ -6,7 +6,8 @@ int main() \
 	func(); \
 	return 0; \
 } \
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) \
+int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int) \
 { \
 	main(); \
+	return 0; \
 }

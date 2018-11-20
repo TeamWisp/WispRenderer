@@ -13,21 +13,7 @@
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
 
-//LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Update_MeshNode, Render_MeshNode)
-
-decltype(wr::MeshNode::init_func_impl) wr::MeshNode::init_func_impl = [](wr::RenderSystem* render_system, wr::Node* node)
-{
-static_cast<wr::D3D12RenderSystem*>(render_system)->Init_MeshNode(static_cast<wr::MeshNode*>(node));
-};
-decltype(wr::MeshNode::update_func_impl) wr::MeshNode::update_func_impl = [](wr::RenderSystem* render_system, wr::Node* node)
-{
-static_cast<wr::D3D12RenderSystem*>(render_system)->Update_MeshNode(static_cast<wr::MeshNode*>(node));
-};
-decltype(wr::MeshNode::render_func_impl) wr::MeshNode::render_func_impl = [](wr::RenderSystem* render_system, wr::Node* node)
-{
-static_cast<wr::D3D12RenderSystem*>(render_system)->Render_MeshNode(static_cast<wr::MeshNode*>(node));
-};
-
+LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Update_MeshNode, Render_MeshNode)
 LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::CameraNode, Init_CameraNode, Update_CameraNode, Render_CameraNode)
 
 namespace wr
