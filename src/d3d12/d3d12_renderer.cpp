@@ -72,9 +72,6 @@ namespace wr
 		m_pixel_shader = d3d12::LoadShader(d3d12::ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
 
 		// Create Root Signature
-		CD3DX12_DESCRIPTOR_RANGE  desc_table_ranges;
-		desc_table_ranges.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
-
 		d3d12::desc::RootSignatureDesc rs_desc;
 		rs_desc.m_samplers.push_back({ d3d12::TextureFilter::FILTER_LINEAR, d3d12::TextureAddressMode::TAM_MIRROR });
 		rs_desc.m_parameters.resize(2);
