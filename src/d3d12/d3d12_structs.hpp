@@ -222,6 +222,3 @@ namespace d3d12
 	};
 
 } /* d3d12 */
-
-// Heap contains template functions.
-#include "d3d12_heap.hpp"
