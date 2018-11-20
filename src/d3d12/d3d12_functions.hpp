@@ -4,7 +4,7 @@
 
 #include "d3d12_structs.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	// Device
@@ -132,4 +132,4 @@ namespace d3d12
 	// Resources
 	void UpdateConstantBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes);
 
-} /* d3d12 */
+} /* wr::d3d12 */

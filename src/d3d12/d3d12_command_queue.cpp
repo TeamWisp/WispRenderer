@@ -3,7 +3,7 @@
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	CommandQueue* CreateCommandQueue(Device* device, CmdListType type)
@@ -42,4 +42,4 @@ namespace d3d12
 		delete cmd_queue;
 	}	
 
-} /* d3d12 */
+} /* wr::d3d12 */

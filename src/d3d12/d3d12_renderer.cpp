@@ -9,6 +9,7 @@
 #include "d3d12_defines.hpp"
 #include "d3d12_resource_pool.hpp"
 #include "d3d12_functions.hpp"
+#include "d3d12_pipeline_cache.hpp"
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -41,12 +42,15 @@ namespace wr
 		auto x = (heapSize / heapAlignment + ((heapSize % heapAlignment) != 0 ? 1 : 0))*(heapAlignment);
 
 		m_device = d3d12::CreateDevice();
-		m_direct_queue = d3d12::CreateCommandQueue(m_device, d3d12::CmdListType::CMD_LIST_DIRECT);
+		m_direct_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
 
 		if (window.has_value())
 		{
 			m_render_window = d3d12::CreateRenderWindow(m_device, window.value()->GetWindowHandle(), m_direct_queue, d3d12::settings::num_back_buffers);
 		}
+
+		m_pipeline_cache = new D3D12PipelineCache(*this);
+		m_pipeline_cache->PreparePipelines();
 
 		// Create fences
 		for (auto i = 0; i < m_fences.size(); i++)
@@ -59,21 +63,21 @@ namespace wr
 		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::Model_CBData), 256);
 		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256);
 		constexpr auto sbo_size = model_cbs_size + cam_cbs_size * d3d12::settings::num_back_buffers;
-		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, d3d12::ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
 		// Create Constant Buffer
 		d3d12::MapHeap(m_cb_heap);
 
 		// Load Shaders.
-		m_vertex_shader = d3d12::LoadShader(d3d12::ShaderType::VERTEX_SHADER, "basic.hlsl", "main_vs");
-		m_pixel_shader = d3d12::LoadShader(d3d12::ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
+		m_vertex_shader = d3d12::LoadShader(ShaderType::VERTEX_SHADER, "basic.hlsl", "main_vs");
+		m_pixel_shader = d3d12::LoadShader(ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
 
 		// Create Root Signature
 		CD3DX12_DESCRIPTOR_RANGE  desc_table_ranges;
 		desc_table_ranges.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
 		d3d12::desc::RootSignatureDesc rs_desc;
-		rs_desc.m_samplers.push_back({ d3d12::TextureFilter::FILTER_LINEAR, d3d12::TextureAddressMode::TAM_MIRROR });
+		rs_desc.m_samplers.push_back({ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_MIRROR });
 		rs_desc.m_parameters.resize(2);
 		rs_desc.m_parameters[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 		rs_desc.m_parameters[1].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
@@ -83,9 +87,9 @@ namespace wr
 
 		// Create Pipeline State
 		d3d12::desc::PipelineStateDesc pso_desc;
-		pso_desc.m_dsv_format = d3d12::Format::UNKNOWN;
+		pso_desc.m_dsv_format = Format::UNKNOWN;
 		pso_desc.m_num_rtv_formats = 1;
-		pso_desc.m_rtv_formats[0] = d3d12::Format::R8G8B8A8_UNORM;
+		pso_desc.m_rtv_formats[0] = Format::R8G8B8A8_UNORM;
 		pso_desc.m_input_layout = wr::Vertex::GetInputLayout();
 
 		m_pipeline_state = d3d12::CreatePipelineState();
@@ -98,10 +102,10 @@ namespace wr
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
 		// Create screen quad
-		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex), sizeof(Vertex), d3d12::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 
 		// Create Command List
-		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, d3d12::CmdListType::CMD_LIST_DIRECT);
+		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;

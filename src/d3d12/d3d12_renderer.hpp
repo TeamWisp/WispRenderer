@@ -12,6 +12,7 @@ namespace wr
 
 	struct MeshNode;
 	struct CameraNode;
+	struct D3D12PipelineCache;
 
 	class D3D12RenderSystem : public RenderSystem
 	{
@@ -49,7 +50,7 @@ namespace wr
 		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_fences;
 
 		// temporary
-		d3d12::Heap<d3d12::HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
+		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
@@ -58,6 +59,9 @@ namespace wr
 		d3d12::Shader* m_vertex_shader;
 		d3d12::Shader* m_pixel_shader;
 		d3d12::StagingBuffer* m_vertex_buffer;
+
+	private:
+		D3D12PipelineCache* m_pipeline_cache;
 	};
 
 	namespace temp

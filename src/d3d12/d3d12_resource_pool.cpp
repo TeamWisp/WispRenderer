@@ -73,7 +73,7 @@ namespace wr
 		auto mesh = new D3D12Mesh();
 		auto device = m_render_system.m_device;
 
-		mesh->m_vertex_buffer = d3d12::CreateStagingBuffer(device, vertices_data, vertex_size * num_vertices, vertex_size, d3d12::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		mesh->m_vertex_buffer = d3d12::CreateStagingBuffer(device, vertices_data, vertex_size * num_vertices, vertex_size, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 
 		return mesh;
 	}
