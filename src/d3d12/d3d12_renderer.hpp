@@ -12,7 +12,6 @@ namespace wr
 
 	struct MeshNode;
 	struct CameraNode;
-	struct D3D12PipelineCache;
 
 	class D3D12RenderSystem : public RenderSystem
 	{
@@ -25,6 +24,10 @@ namespace wr
 
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
+
+		void PrepareRootSignatureRegistry() final;
+		void PrepareShaderRegistry() final;
+		void PreparePipelineRegistry() final;
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 		void RenderSceneGraph(SceneGraph const & scene_graph);
@@ -59,9 +62,6 @@ namespace wr
 		d3d12::Shader* m_vertex_shader;
 		d3d12::Shader* m_pixel_shader;
 		d3d12::StagingBuffer* m_vertex_buffer;
-
-	private:
-		D3D12PipelineCache* m_pipeline_cache;
 	};
 
 	namespace temp
