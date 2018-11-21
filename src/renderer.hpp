@@ -3,6 +3,8 @@
 #include <optional>
 #include <memory>
 
+#include "engine_registry.hpp"
+
 namespace wr
 {
 	class FrameGraph;
@@ -16,6 +18,7 @@ namespace wr
 	class SceneGraph;
 	class MaterialPool;
 	class ModelPool;
+	class PipelineRegistry;
 
 	class RenderSystem
 	{
@@ -30,6 +33,10 @@ namespace wr
 
 		virtual std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) = 0;
 		virtual std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) = 0;
+
+		virtual void PrepareRootSignatureRegistry() = 0;
+		virtual void PrepareShaderRegistry() = 0;
+		virtual void PreparePipelineRegistry() = 0;
 
 		virtual void Init(std::optional<Window*> window) = 0;
 		virtual std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;

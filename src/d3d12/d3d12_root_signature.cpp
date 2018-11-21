@@ -14,7 +14,7 @@ namespace wr::d3d12
 		return root_signature;
 	}
 
-	void FinalizeRootSignature(RootSignature* root_signature, Device* device)
+	void FinalizeRootSignature(d3d12::RootSignature* root_signature, Device* device)
 	{
 		auto n_device = device->m_native;
 
