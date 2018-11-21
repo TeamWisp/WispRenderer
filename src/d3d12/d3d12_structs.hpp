@@ -170,6 +170,7 @@ namespace wr::d3d12
 		void* m_data;
 		ResourceState m_target_resource_state;
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
+		bool m_is_staged;
 	};
 
 	struct HeapResource;

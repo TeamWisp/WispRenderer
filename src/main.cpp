@@ -6,7 +6,7 @@
 void WispEntry()
 {
 	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
-	auto window = std::make_unique<wr::Window>(GetModuleHandle(nullptr), "D3D12 Test App", 400, 400);
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 400, 400);
 
 	render_system->Init(window.get());
 
@@ -18,10 +18,10 @@ void WispEntry()
 		static const constexpr float size = 0.5f;
 		mesh.m_indices = std::nullopt;
 		mesh.m_vertices = {
-			{ -size, -size, 0.f },
-			{ size, -size, 0.f },
-			{ -size, size, 0.f },
-			{ size, size, 0.f },
+			{ -size, -size, 0, 0, 0, 0, 1, 0 },
+			{ size, -size, 0, 1, 0, 0, 1, 0 },
+			{ -size, size, 0, 0, 1, 0, 1, 0 },
+			{ size, size, 0, 1, 1, 0, 1, 0 },
 		};
 
 		model = model_pool->LoadCustom<wr::Vertex>({ mesh });
@@ -30,6 +30,9 @@ void WispEntry()
 	auto scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
 	auto mesh_node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
+
+	auto mesh_node_2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
+	mesh_node_2->SetPosition({ -2, -2, 5 });
 
 	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 1.74f, (float)window->GetWidth() / (float)window->GetHeight());
 	camera->SetPosition(0, 0, -5);

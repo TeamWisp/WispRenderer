@@ -294,7 +294,7 @@ namespace wr::d3d12
 		if (buffer->m_cpu_addresses.has_value())
 		{
 			auto&& addresses = buffer->m_cpu_addresses.value();
-			std::memcpy(addresses[frame_idx], data, buffer->m_unaligned_size);
+			std::memcpy(addresses[frame_idx], data, size_in_bytes);
 		}
 		else
 		{

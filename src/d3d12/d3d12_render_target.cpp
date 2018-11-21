@@ -7,7 +7,7 @@
 namespace wr::d3d12
 {
 	
-	RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor)
+	RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer)
 	{
 		auto render_target = new RenderTarget();
 		const auto n_device = device->m_native;
@@ -33,7 +33,7 @@ namespace wr::d3d12
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 				D3D12_HEAP_FLAG_NONE,
 				&resource_desc,
-				D3D12_RESOURCE_STATE_PRESENT,
+				is_back_buffer ? D3D12_RESOURCE_STATE_PRESENT : D3D12_RESOURCE_STATE_RENDER_TARGET,
 				&optimized_clear_value, // optimizes draw call
 				IID_PPV_ARGS(&render_target->m_render_targets[i])
 			), "Failed to create render target.");
@@ -190,7 +190,7 @@ namespace wr::d3d12
 		}
 		DestroyRenderTargetViews((*render_target));
 
-		auto new_render_target = CreateRenderTarget(device, cmd_queue, width, height, (*render_target)->m_create_info);
+		auto new_render_target = CreateRenderTarget(device, cmd_queue, width, height, (*render_target)->m_create_info, true);
 	}
 
 	void IncrementFrameIdx(RenderTarget* render_target)
