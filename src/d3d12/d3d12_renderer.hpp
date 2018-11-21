@@ -3,15 +3,35 @@
 #include "../renderer.hpp"
 
 #include <DirectXMath.h>
+#include <unordered_map>
 
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
 
 namespace wr
 {
-
+	struct Model;
 	struct MeshNode;
 	struct CameraNode;
+	struct D3D12ConstantBufferHandle;
+
+	namespace temp
+	{
+		struct ProjectionView_CBData
+		{
+			DirectX::XMMATRIX m_view;
+			DirectX::XMMATRIX m_projection;
+		};
+
+		static const constexpr float size = 0.5f;
+		static const constexpr Vertex quad_vertices[] = {
+			{ -size, -size, 0.f },
+			{ size, -size, 0.f },
+			{ -size, size, 0.f },
+			{ size, size, 0.f },
+		};
+
+	} /* temp */
 
 	class D3D12RenderSystem : public RenderSystem
 	{
@@ -26,7 +46,7 @@ namespace wr
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
 
 		void InitSceneGraph(SceneGraph& scene_graph);
-		void RenderSceneGraph(SceneGraph const & scene_graph);
+		void RenderSceneGraph(SceneGraph& scene_graph);
 
 		void Init_MeshNode(MeshNode* node);
 		void Init_CameraNode(CameraNode* node);
@@ -36,6 +56,8 @@ namespace wr
 
 		void Render_MeshNode(MeshNode* node);
 		void Render_CameraNode(CameraNode* node);
+
+		void RenderMeshBatches(SceneGraph& scene_graph);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -58,29 +80,7 @@ namespace wr
 		d3d12::Shader* m_vertex_shader;
 		d3d12::Shader* m_pixel_shader;
 		d3d12::StagingBuffer* m_vertex_buffer;
+
 	};
-
-	namespace temp
-	{
-		struct ProjectionView_CBData
-		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_projection;
-		};
-
-		struct Model_CBData
-		{
-			DirectX::XMMATRIX m_model;
-		};
-
-		static const constexpr float size = 0.5f;
-		static const constexpr Vertex quad_vertices[] = {
-			{ -size, -size, 0.f },
-			{ size, -size, 0.f },
-			{ -size, size, 0.f },
-			{ size, size, 0.f },
-		};
-
-	} /* temp */
 
 } /* wr */

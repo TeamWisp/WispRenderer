@@ -6,6 +6,13 @@
 #include "../util/log.hpp"
 
 #include "camera_node.hpp"
+#include "mesh_node.hpp"
+
+//TODO: Make platform independent
+#include "../d3d12/d3d12_defines.hpp"
+#include "../d3d12/d3d12_functions.hpp"
+#include "../d3d12/d3d12_renderer.hpp"
+#include "../d3d12/d3d12_resource_pool.hpp"
 
 namespace wr
 {
@@ -50,6 +57,34 @@ namespace wr
 
 		LOGW("Failed to obtain a active camera node.");
 		return nullptr;
+	}
+
+	temp::MeshBatches& SceneGraph::GetBatches() { return m_batches; }
+
+	void SceneGraph::Optimize() {
+
+		for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
+
+			auto node = m_mesh_nodes[i];
+			auto it = m_batches.find(node->m_model);
+
+			//Insert new if doesn't exist
+			if (it == m_batches.end()) {
+				auto transform_cb = new D3D12ConstantBufferHandle();
+				transform_cb->m_native = d3d12::AllocConstantBuffer(dynamic_cast<D3D12RenderSystem*>(m_render_system)->m_cb_heap, sizeof(temp::Model_CBData));
+				m_batches[node->m_model].batchBuffer = transform_cb;
+				it = m_batches.find(node->m_model);
+			}
+
+			//Replace data in buffer
+			temp::MeshBatch &batch = it->second;
+			unsigned int &offset = batch.num_instances;
+			batch.data.instances[offset] = { node->m_transform };
+			++offset;
+
+		}
+
+
 	}
 
 } /* wr */

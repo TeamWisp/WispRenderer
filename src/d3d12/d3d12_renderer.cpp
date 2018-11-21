@@ -36,10 +36,6 @@ namespace wr
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
-		auto heapSize = 32;
-		auto heapAlignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		auto x = (heapSize / heapAlignment + ((heapSize % heapAlignment) != 0 ? 1 : 0))*(heapAlignment);
-
 		m_device = d3d12::CreateDevice();
 		m_direct_queue = d3d12::CreateCommandQueue(m_device, d3d12::CmdListType::CMD_LIST_DIRECT);
 
@@ -56,11 +52,11 @@ namespace wr
 
 		// Temporary
 		// Create Constant Buffer Heap
-		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::Model_CBData), 256);
-		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256);
+		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::Model_CBData), 256) * d3d12::settings::num_back_buffers;
+		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
 		constexpr auto sbo_size = 
-			model_cbs_size * 1 /* TODO: Make this more dynamic; right now it only supports 1 model */ 
-			+ cam_cbs_size * d3d12::settings::num_back_buffers;
+			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */ 
+			+ cam_cbs_size;
 
 		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, d3d12::ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
@@ -176,7 +172,7 @@ namespace wr
 		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
 	}
 
-	void D3D12RenderSystem::RenderSceneGraph(SceneGraph const & scene_graph)
+	void D3D12RenderSystem::RenderSceneGraph(SceneGraph& scene_graph)
 	{
 		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 		recursive_func_t recursive_render = [this, &recursive_render](std::shared_ptr<Node> const & parent)
@@ -189,14 +185,12 @@ namespace wr
 		};
 
 		recursive_render(scene_graph.GetRootNode());
+		RenderMeshBatches(scene_graph);
+
 	}
 
 	void D3D12RenderSystem::Init_MeshNode(MeshNode* node)
 	{
-		auto transform_cb = new D3D12ConstantBufferHandle();
-		transform_cb->m_native = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::Model_CBData));
-		node->m_transform_cb = transform_cb;
-
 		for (auto& mesh : node->m_model->m_meshes)
 		{
 			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
@@ -217,12 +211,6 @@ namespace wr
 
 		node->UpdateTemp(GetFrameIdx());
 
-		temp::Model_CBData data;
-		data.m_model = node->m_transform;
-
-		auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_transform_cb);
-
-		d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
 	}
 
 	void wr::D3D12RenderSystem::Update_CameraNode(CameraNode * node)
@@ -242,17 +230,52 @@ namespace wr
 
 	void D3D12RenderSystem::Render_MeshNode(MeshNode* node)
 	{
-		for (auto& mesh : node->m_model->m_meshes)
-		{
-			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-			auto frame_idx = GetFrameIdx();
+	}
 
-			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_transform_cb);
+	//Render batches
+	void D3D12RenderSystem::RenderMeshBatches(SceneGraph& scene_graph)
+	{
+		
+		auto &batches = scene_graph.GetBatches();
 
-			d3d12::BindVertexBuffer(m_direct_cmd_list, n_mesh->m_vertex_buffer);
-			d3d12::BindConstantBuffer(m_direct_cmd_list, d3d12_cb_handle->m_native, 1, frame_idx);
+		//Update if it isn't already
 
-			d3d12::Draw(m_direct_cmd_list, 4, 1);
+		bool should_update = batches.size() == 0;
+
+		for(auto &elem : batches)
+			if (elem.second.num_instances == 0) {
+				should_update = true;
+				break;
+			}
+
+		if(should_update)
+			scene_graph.Optimize();
+
+		//Render batches
+		for (auto &elem : scene_graph.GetBatches()) {
+
+			Model *model = elem.first;
+			temp::MeshBatch &batch = elem.second;
+
+			//Update object data
+			d3d12::UpdateConstantBuffer(batch.batchBuffer->m_native, GetFrameIdx(), &batch.data, sizeof(batch.data));
+
+			//Bind object data
+			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batchBuffer);
+			d3d12::BindConstantBuffer(m_direct_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
+
+			//Render meshes
+			for (auto& mesh : model->m_meshes)
+			{
+				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
+				d3d12::BindVertexBuffer(m_direct_cmd_list, n_mesh->m_vertex_buffer);
+
+				//TODO: Don't hardcode the vertices; and support indices
+				d3d12::Draw(m_direct_cmd_list, 4, batch.num_instances);
+			}
+
+			//Reset instances
+			batch.num_instances = 0;
 		}
 	}
 
