@@ -1,7 +1,16 @@
+
+struct VS_INPUT
+{
+	float3 pos : POSITION;
+	float2 uv : TEXCOORD;
+	float3 normal : NORMAL;
+};
+
 struct VS_OUTPUT
 {
 	float4 pos : SV_POSITION;
 	float2 uv : TEXCOORD;
+	float3 normal : NORMAL;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -15,20 +24,24 @@ cbuffer ObjectProperties : register(b1)
 	float4x4 model;
 };
 
-VS_OUTPUT main_vs(float3 pos : POSITION)
+VS_OUTPUT main_vs(VS_INPUT input)
 {
 	VS_OUTPUT output;
 
+	float3 pos = input.pos;
+
+	//TODO: Use precalculated MVP or at least VP
 	float4x4 vm = mul(view, model);
 	float4x4 mvp = mul(projection, vm);
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
-	output.uv = 0.5 * (pos.xy + float2(1.0, 1.0));
+	output.uv = input.uv;
+	output.normal = normalize(mul(model, float4(input.normal, 0.f))).xyz;
 
 	return output;
 }
 
 float4 main_ps(VS_OUTPUT input) : SV_TARGET
 {
-	return float4(1, 0, 0, 1);
+	return float4(input.uv, 0, 1);
 }

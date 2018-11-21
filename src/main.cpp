@@ -18,10 +18,10 @@ void WispEntry()
 		static const constexpr float size = 0.5f;
 		mesh.m_indices = std::nullopt;
 		mesh.m_vertices = {
-			{ -size, -size, 0.f },
-			{ size, -size, 0.f },
-			{ -size, size, 0.f },
-			{ size, size, 0.f },
+			{ -size, -size, 0, 0, 0, 0, 1, 0 },
+			{ size, -size, 0, 1, 0, 0, 1, 0 },
+			{ -size, size, 0, 0, 1, 0, 1, 0 },
+			{ size, size, 0, 1, 1, 0, 1, 0 },
 		};
 
 		model = model_pool->LoadCustom<wr::Vertex>({ mesh });
