@@ -198,6 +198,10 @@ namespace ImGui
     // Styles
     IMGUI_API void          StyleColorsDark(ImGuiStyle* dst = NULL);    // new, recommended style (default)
     IMGUI_API void          StyleColorsClassic(ImGuiStyle* dst = NULL); // classic imgui style
+	IMGUI_API void          StyleColorsDarkCodz1(ImGuiStyle* dst = NULL); // https://github.com/codz01
+	IMGUI_API void          StyleColorsCherry(ImGuiStyle* dst = NULL); // https://github.com/ocornut/imgui/issues/707
+	IMGUI_API void          StyleColorsLightGreen(ImGuiStyle* dst = NULL); // https://github.com/ocornut/imgui/pull/1776
+	IMGUI_API void          StyleColorsUE(ImGuiStyle* dst = NULL); // https://github.com/ocornut/imgui/issues/707
     IMGUI_API void          StyleColorsLight(ImGuiStyle* dst = NULL);   // best used with borders and a custom, thicker font
 
     // Windows

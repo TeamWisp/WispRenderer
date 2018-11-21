@@ -37,6 +37,7 @@ namespace wr
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			data.out_descriptor_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
 
+			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
 			ImGuiIO& io = ImGui::GetIO(); (void)io;
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
@@ -51,7 +52,7 @@ namespace wr
 				d3d12::GetCPUHandle(data.out_descriptor_heap).m_native,
 				d3d12::GetGPUHandle(data.out_descriptor_heap).m_native);
 
-			ImGui::StyleColorsLight();
+			ImGui::StyleColorsCherry();
 		}
 
 		inline void ExecuteImGuiTask(RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, SceneGraph & scene_graph, ImGuiTaskData & data)
