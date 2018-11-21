@@ -18,7 +18,6 @@ namespace wr
 	class SceneGraph;
 	class MaterialPool;
 	class ModelPool;
-	class PipelineRegistry;
 
 	class RenderSystem
 	{

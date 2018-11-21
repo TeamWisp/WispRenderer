@@ -62,10 +62,6 @@ namespace wr
 		d3d12::Shader* m_vertex_shader;
 		d3d12::Shader* m_pixel_shader;
 		d3d12::StagingBuffer* m_vertex_buffer;
-
-	private:
-		//D3D12PipelineRegistry* m_pipeline_registry;
-		//D3D12ShaderRegistry* m_shader_registry;
 	};
 
 	namespace temp
