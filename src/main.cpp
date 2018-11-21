@@ -6,7 +6,7 @@
 void WispEntry()
 {
 	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
-	auto window = std::make_unique<wr::Window>(GetModuleHandle(nullptr), "D3D12 Test App", 400, 400);
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 400, 400);
 
 	render_system->Init(window.get());
 
