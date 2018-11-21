@@ -3,7 +3,7 @@
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 	CommandList* CreateCommandList(Device* device, unsigned int num_allocators, CmdListType type)
 	{
@@ -226,4 +226,4 @@ namespace d3d12
 		delete cmd_list;
 	}	
 
-} /* d3d12 */
+} /* wr::d3d12 */

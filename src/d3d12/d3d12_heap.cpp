@@ -2,7 +2,7 @@
 
 #include "d3d12_defines.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
@@ -302,4 +302,4 @@ namespace d3d12
 		}
 	}
 
-} /* d3d12 */
+} /* wr::d3d12 */

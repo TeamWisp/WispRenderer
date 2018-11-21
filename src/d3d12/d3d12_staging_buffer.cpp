@@ -2,7 +2,7 @@
 
 #include "d3d12_defines.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	StagingBuffer* CreateStagingBuffer(Device* device, void* data, uint64_t size, uint64_t stride, ResourceState resource_state)
@@ -71,4 +71,4 @@ namespace d3d12
 		delete buffer;
 	}
 
-} /* d3d12 */
+} /* wr::d3d12 */

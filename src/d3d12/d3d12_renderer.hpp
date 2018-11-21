@@ -13,8 +13,7 @@ namespace wr
 	struct Model;
 	struct MeshNode;
 	struct CameraNode;
-	struct D3D12ConstantBufferHandle;
-
+  
 	namespace temp
 	{
 		struct ProjectionView_CBData
@@ -71,7 +70,7 @@ namespace wr
 		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_fences;
 
 		// temporary
-		d3d12::Heap<d3d12::HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
+		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;

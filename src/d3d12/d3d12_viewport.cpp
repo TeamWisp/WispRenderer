@@ -1,6 +1,6 @@
 #include "d3d12_functions.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	Viewport CreateViewport(int width, int height)
@@ -24,4 +24,4 @@ namespace d3d12
 		return viewport;
 	}
 
-} /* d3d12 */
+} /* wr::d3d12 */
