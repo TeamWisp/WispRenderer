@@ -40,6 +40,8 @@ namespace wr
 		virtual void Init(std::optional<Window*> window) = 0;
 		virtual std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
 		virtual void Resize(std::int32_t width, std::int32_t height) = 0;
+		
+		std::optional<Window*> m_window;
 	};
 
 } /* wr */

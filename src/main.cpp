@@ -2,6 +2,46 @@
 
 #include "wisp.hpp"
 #include "render_tasks/d3d12_test_render_task.hpp"
+#include "render_tasks/d3d12_imgui_render_task.hpp"
+
+bool a;
+bool b;
+bool c;
+
+void RenderEditor()
+{
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+
+	ImGui::DockSpaceOverViewport(true, nullptr, ImGuiDockNodeFlags_PassthruDockspace);
+
+	auto& io = ImGui::GetIO();
+
+	// Create dockable background
+	ImGui::Begin("Hello World");
+	ImGui::End();
+
+	ImGui::Begin("Hello Me");
+	ImGui::Text("Mouse Pos: (%f, %f)", io.MousePos.x, io.MousePos.y);
+	ImGui::Checkbox("Checkbox 1", &b);
+	ImGui::Checkbox("Checkbox 2", &c);
+	ImGui::Button("Button 5");
+	ImGui::End();
+
+	ImGui::Begin("Hello You");
+	ImGui::Button("Button 0");
+	ImGui::Button("Button 1");
+	ImGui::Button("Button 2");
+	ImGui::Checkbox("Checkbox 0", &a);
+	ImGui::Button("Button 3");
+	ImGui::End();
+}
 
 void WispEntry()
 {
@@ -41,6 +81,7 @@ void WispEntry()
 
 	wr::FrameGraph frame_graph;
 	frame_graph.AddTask(wr::GetTestTask());
+	//frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 
 	while (window->IsRunning())

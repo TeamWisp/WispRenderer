@@ -39,6 +39,7 @@ namespace wr
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
+		m_window = window;
 		m_device = d3d12::CreateDevice();
 		m_direct_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
 

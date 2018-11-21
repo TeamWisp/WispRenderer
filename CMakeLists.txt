@@ -10,7 +10,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-##### DEPENDENCIES #####
+##### SOURCES #####
 file(GLOB HEADERS [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
 file(GLOB SOURCES [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 file(GLOB FG_HEADERS [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/frame_graph/*.hpp")
@@ -23,6 +23,8 @@ file(GLOB D3D12_HEADERS [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/d3d
 file(GLOB D3D12_SOURCES [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/d3d12/*.cpp")
 file(GLOB UTIL_HEADERS [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/util/*.hpp")
 file(GLOB UTIL_SOURCES [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/util/*.cpp")
+file(GLOB IMGUI_HEADERS [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/*.hpp")
+file(GLOB IMGUI_SOURCES [CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/*.cpp")
 
 source_group("High Level API" FILES ${SOURCES} ${HEADERS})
 source_group("Frame Graph" FILES ${FG_SOURCES} ${FG_HEADERS})
@@ -30,6 +32,7 @@ source_group("Scene Graph" FILES ${SG_SOURCES} ${SG_HEADERS})
 source_group("Render Tasks" FILES ${RT_SOURCES} ${RT_HEADERS})
 source_group("D3D12" FILES ${D3D12_SOURCES} ${D3D12_HEADERS})
 source_group("Utility" FILES ${UTIL_SOURCES} ${UTIL_HEADERS})
+source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
 ## dependencies ##
 add_subdirectory(deps/fmt)
@@ -46,7 +49,7 @@ if (MSVC)
 	target_compile_options(fmt PRIVATE /W0)
 endif()
 
-add_executable(EnginePrototype ${HEADERS} ${SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES}  ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
+add_executable(EnginePrototype ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
 target_link_libraries(EnginePrototype dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
 set_target_properties(EnginePrototype PROPERTIES CXX_STANDARD 17)
 set_target_properties(EnginePrototype PROPERTIES CXX_EXTENSIONS OFF)

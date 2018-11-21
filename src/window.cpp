@@ -2,6 +2,9 @@
 
 #include "util/log.hpp"
 
+#include "imgui/imgui.hpp"
+#include "imgui/imgui_impl_win32.hpp"
+
 namespace wr
 {
 
@@ -137,6 +140,10 @@ namespace wr
 
 	LRESULT CALLBACK Window::WindowProc(HWND handle, UINT msg, WPARAM w_param, LPARAM l_param)
 	{
+		extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		if (ImGui_ImplWin32_WndProcHandler(handle, msg, w_param, l_param))
+			return true;
+
 		Window* window = (Window*)GetWindowLongPtr(handle, GWLP_USERDATA);
 		if (window) return window->WindowProc_Impl(handle, msg, w_param, l_param);
 
