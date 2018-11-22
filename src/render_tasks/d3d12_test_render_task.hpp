@@ -43,7 +43,7 @@ namespace wr
 				d3d12::WaitFor(fences[frame_idx]);
 
 				d3d12::Begin(cmd_list, frame_idx);
-				d3d12::Transition(cmd_list, render_window, frame_idx, d3d12::ResourceState::PRESENT, d3d12::ResourceState::RENDER_TARGET);
+				d3d12::Transition(cmd_list, render_window, frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
 
 				d3d12::BindPipeline(cmd_list, pso);
 				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
@@ -55,7 +55,7 @@ namespace wr
 
 				n_render_system.RenderSceneGraph(scene_graph);
 
-				d3d12::Transition(cmd_list, render_window, frame_idx, d3d12::ResourceState::RENDER_TARGET, d3d12::ResourceState::PRESENT);
+				d3d12::Transition(cmd_list, render_window, frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
 				d3d12::End(cmd_list);
 
 				d3d12::Execute(queue, { cmd_list }, fences[frame_idx]);

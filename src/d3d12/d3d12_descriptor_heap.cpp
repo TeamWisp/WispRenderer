@@ -4,7 +4,7 @@
 #include "d3d12_defines.hpp"
 #include "d3dx12.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 	
 	DescriptorHeap* CreateDescriptorHeap(Device* device, desc::DescriptorHeapDesc const & descriptor)
@@ -69,4 +69,4 @@ namespace d3d12
 		delete desc_heap;
 	}
 
-} /* d3d12 */
+} /* wr::d3d12 */

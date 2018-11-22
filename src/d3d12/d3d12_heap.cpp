@@ -2,7 +2,7 @@
 
 #include "d3d12_defines.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 	static inline std::uint64_t IndexFromBit(std::uint64_t frame) {
 		return frame / (8 * 8);
@@ -911,7 +911,7 @@ namespace d3d12
 		if (buffer->m_cpu_addresses.has_value())
 		{
 			auto&& addresses = buffer->m_cpu_addresses.value();
-			std::memcpy(addresses[frame_idx], data, buffer->m_unaligned_size);
+			std::memcpy(addresses[frame_idx], data, size_in_bytes);
 		}
 		else
 		{
@@ -919,4 +919,4 @@ namespace d3d12
 		}
 	}
 
-} /* d3d12 */
+} /* wr::d3d12 */

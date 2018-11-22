@@ -2,7 +2,7 @@
 
 #include "d3d12_defines.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	StagingBuffer* CreateStagingBuffer(Device* device, void* data, uint64_t size, uint64_t stride, ResourceState resource_state)
@@ -12,6 +12,7 @@ namespace d3d12
 		buffer->m_target_resource_state = resource_state;
 		buffer->m_size = size;
 		buffer->m_stride_in_bytes = stride;
+		buffer->m_is_staged = false;
 
 		device->m_native->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -39,6 +40,9 @@ namespace d3d12
 
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list)
 	{
+
+		if (buffer->m_is_staged) return;
+
 		// store vertex buffer in upload heap
 		D3D12_SUBRESOURCE_DATA vertex_data = {};
 		vertex_data.pData = buffer->m_data;
@@ -51,11 +55,13 @@ namespace d3d12
 		cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, D3D12_RESOURCE_STATE_COPY_DEST, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state));
 
 		buffer->m_gpu_address = buffer->m_buffer->GetGPUVirtualAddress();
+		buffer->m_is_staged = true;
 	}
 
 	void FreeStagingBuffer(StagingBuffer* buffer)
 	{
 		SAFE_RELEASE(buffer->m_staging);
+		buffer->m_is_staged = false;
 	}
 
 	void Destroy(StagingBuffer* buffer)
@@ -65,4 +71,4 @@ namespace d3d12
 		delete buffer;
 	}
 
-} /* d3d12 */
+} /* wr::d3d12 */

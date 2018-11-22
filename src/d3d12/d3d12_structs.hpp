@@ -10,7 +10,7 @@
 #include "d3d12_settings.hpp"
 #include "d3dx12.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	namespace desc
@@ -22,7 +22,7 @@ namespace d3d12
 			Format m_dsv_format;
 			std::array<Format, 8> m_rtv_formats;
 			unsigned int m_num_rtv_formats;
-			float m_clear_color[4] = { 1, 0, 1, 1 };
+			float m_clear_color[4] = { 0, 0, 0, 1 };
 		};
 
 		struct PipelineStateDesc
@@ -170,6 +170,7 @@ namespace d3d12
 		void* m_data;
 		ResourceState m_target_resource_state;
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
+		bool m_is_staged;
 	};
 
 	struct HeapResource;
@@ -239,4 +240,4 @@ namespace d3d12
 		std::size_t m_heap_vector_location;
 	};
 
-} /* d3d12 */
+} /* wr::d3d12 */

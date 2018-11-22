@@ -41,6 +41,32 @@ namespace wr
 	};
 
 	struct CameraNode;
+	struct MeshNode;
+
+	//TODO: Make platform independent
+	struct D3D12ConstantBufferHandle;
+
+	namespace temp {
+
+		struct ObjectData {
+			DirectX::XMMATRIX m_model;
+		};
+
+		struct MeshBatch_CBData
+		{
+			std::vector<ObjectData> objects;
+		};
+
+		struct MeshBatch
+		{
+			unsigned int num_instances = 0;
+			D3D12ConstantBufferHandle* batchBuffer;
+			MeshBatch_CBData data;
+		};
+
+		using MeshBatches = std::unordered_map<Model*, MeshBatch>;
+
+	}
 
 	class SceneGraph
 	{
@@ -60,12 +86,18 @@ namespace wr
 		void RemoveChildren(std::shared_ptr<Node> const & parent);
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
+		void Optimize();
+		temp::MeshBatches& GetBatches();
+
 	private:
 		RenderSystem* m_render_system;
 		//! The root node of the hiararchical tree.
 		std::shared_ptr<Node> m_root;
 
+		temp::MeshBatches m_batches;
+
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
+		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
 	};
 
 	//! Creates a child into the scene graph
@@ -84,6 +116,10 @@ namespace wr
 		if constexpr (std::is_same<T, CameraNode>::value)
 		{
 			m_camera_nodes.push_back(new_node);
+		}
+		else if constexpr (std::is_same<T, MeshNode>::value)
+		{
+			m_mesh_nodes.push_back(new_node);
 		}
 
 		return new_node;

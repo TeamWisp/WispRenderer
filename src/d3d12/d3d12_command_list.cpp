@@ -3,7 +3,7 @@
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 	CommandList* CreateCommandList(Device* device, unsigned int num_allocators, CmdListType type)
 	{
@@ -132,6 +132,19 @@ namespace d3d12
 		cmd_list->m_native->SetGraphicsRootSignature(pipeline_state->m_root_signature->m_native);
 	}
 
+	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps)
+	{
+		auto num = heaps.size();
+		std::vector<ID3D12DescriptorHeap*> n_heaps(num);
+
+		for (decltype(num) i = 0; i < num; i++)
+		{
+			n_heaps[i] = heaps[i]->m_native;
+		}
+
+		cmd_list->m_native->SetDescriptorHeaps(num, n_heaps.data());
+	}
+
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport)
 	{
 		cmd_list->m_native->RSSetViewports(1, &viewport.m_viewport);
@@ -226,4 +239,4 @@ namespace d3d12
 		delete cmd_list;
 	}	
 
-} /* d3d12 */
+} /* wr::d3d12 */

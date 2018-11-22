@@ -9,9 +9,27 @@
 
 namespace wr
 {
-
 	struct MeshNode;
 	struct CameraNode;
+	struct D3D12ConstantBufferHandle;
+
+	namespace temp
+	{
+		struct ProjectionView_CBData
+		{
+			DirectX::XMMATRIX m_view;
+			DirectX::XMMATRIX m_projection;
+		};
+
+		static const constexpr float size = 0.5f;
+		static const constexpr Vertex quad_vertices[] = {
+			{ -size, -size, 0.f },
+			{ size, -size, 0.f },
+			{ -size, size, 0.f },
+			{ size, size, 0.f },
+		};
+
+	} /* temp */
 
 	class D3D12RenderSystem : public RenderSystem
 	{
@@ -25,8 +43,12 @@ namespace wr
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
 
+		void PrepareRootSignatureRegistry() final;
+		void PrepareShaderRegistry() final;
+		void PreparePipelineRegistry() final;
+
 		void InitSceneGraph(SceneGraph& scene_graph);
-		void RenderSceneGraph(SceneGraph const & scene_graph);
+		void RenderSceneGraph(SceneGraph& scene_graph);
 
 		void Init_MeshNode(MeshNode* node);
 		void Init_CameraNode(CameraNode* node);
@@ -36,6 +58,8 @@ namespace wr
 
 		void Render_MeshNode(MeshNode* node);
 		void Render_CameraNode(CameraNode* node);
+
+		void RenderMeshBatches(SceneGraph& scene_graph);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -49,7 +73,7 @@ namespace wr
 		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_fences;
 
 		// temporary
-		d3d12::Heap<d3d12::HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
+		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
@@ -58,29 +82,7 @@ namespace wr
 		d3d12::Shader* m_vertex_shader;
 		d3d12::Shader* m_pixel_shader;
 		d3d12::StagingBuffer* m_vertex_buffer;
+
 	};
-
-	namespace temp
-	{
-		struct ProjectionView_CBData
-		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_projection;
-		};
-
-		struct Model_CBData
-		{
-			DirectX::XMMATRIX m_model;
-		};
-
-		static const constexpr float size = 0.5f;
-		static const constexpr Vertex quad_vertices[] = {
-			{ -size, -size, 0.f },
-			{ size, -size, 0.f },
-			{ -size, size, 0.f },
-			{ size, size, 0.f },
-		};
-
-	} /* temp */
 
 } /* wr */
