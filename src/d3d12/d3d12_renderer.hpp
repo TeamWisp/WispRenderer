@@ -3,14 +3,12 @@
 #include "../renderer.hpp"
 
 #include <DirectXMath.h>
-#include <unordered_map>
 
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
 
 namespace wr
 {
-	struct Model;
 	struct MeshNode;
 	struct CameraNode;
 	struct D3D12ConstantBufferHandle;

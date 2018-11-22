@@ -52,7 +52,7 @@ namespace wr
 
 		// Temporary
 		// Create Constant Buffer Heap
-		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::Model_CBData), 256) * d3d12::settings::num_back_buffers;
+		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
 		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
 		constexpr auto sbo_size = 
 			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */ 
@@ -236,13 +236,13 @@ namespace wr
 	void D3D12RenderSystem::RenderMeshBatches(SceneGraph& scene_graph)
 	{
 		
-		auto &batches = scene_graph.GetBatches();
+		auto& batches = scene_graph.GetBatches();
 
 		//Update if it isn't already
 
 		bool should_update = batches.size() == 0;
 
-		for(auto &elem : batches)
+		for(auto& elem : batches)
 			if (elem.second.num_instances == 0) {
 				should_update = true;
 				break;
@@ -254,11 +254,8 @@ namespace wr
 		//Render batches
 		for (auto &elem : scene_graph.GetBatches()) {
 
-			Model *model = elem.first;
-			temp::MeshBatch &batch = elem.second;
-
-			//Update object data
-			d3d12::UpdateConstantBuffer(batch.batchBuffer->m_native, GetFrameIdx(), &batch.data, sizeof(batch.data));
+			Model* model = elem.first;
+			temp::MeshBatch& batch = elem.second;
 
 			//Bind object data
 			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batchBuffer);

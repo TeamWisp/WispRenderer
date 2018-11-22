@@ -59,9 +59,15 @@ namespace wr
 		return nullptr;
 	}
 
-	temp::MeshBatches& SceneGraph::GetBatches() { return m_batches; }
+	temp::MeshBatches& SceneGraph::GetBatches() 
+	{ 
+		return m_batches; 
+	}
 
-	void SceneGraph::Optimize() {
+	void SceneGraph::Optimize() 
+	{
+		D3D12RenderSystem* d3d12_render_system = dynamic_cast<D3D12RenderSystem*>(m_render_system);
+		constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
 
 		for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
 
@@ -70,21 +76,31 @@ namespace wr
 
 			//Insert new if doesn't exist
 			if (it == m_batches.end()) {
+
 				auto transform_cb = new D3D12ConstantBufferHandle();
-				transform_cb->m_native = d3d12::AllocConstantBuffer(dynamic_cast<D3D12RenderSystem*>(m_render_system)->m_cb_heap, sizeof(temp::Model_CBData));
-				m_batches[node->m_model].batchBuffer = transform_cb;
+				transform_cb->m_native = d3d12::AllocConstantBuffer(d3d12_render_system->m_cb_heap, sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
+
+				auto& batch = m_batches[node->m_model]; 
+				batch.batchBuffer = transform_cb;
+				batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
+
 				it = m_batches.find(node->m_model);
 			}
 
 			//Replace data in buffer
-			temp::MeshBatch &batch = it->second;
-			unsigned int &offset = batch.num_instances;
-			batch.data.instances[offset] = { node->m_transform };
+			temp::MeshBatch& batch = it->second;
+			unsigned int& offset = batch.num_instances;
+			batch.data.objects[offset] = { node->m_transform };
 			++offset;
 
 		}
 
-
+		//Update object data
+		for (auto& elem : m_batches)
+		{
+			temp::MeshBatch& batch = elem.second;
+			d3d12::UpdateConstantBuffer(batch.batchBuffer->m_native, d3d12_render_system->GetFrameIdx(), batch.data.objects.data(), sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
+		}
 	}
 
 } /* wr */

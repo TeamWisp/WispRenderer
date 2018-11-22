@@ -8,8 +8,6 @@
 #include "../util/defines.hpp"
 #include "../resource_pool.hpp"
 
-#define MAX_INSTANCE_COUNT 768
-
 namespace wr
 {
 	class RenderSystem;
@@ -53,19 +51,19 @@ namespace wr
 			DirectX::XMMATRIX m_model;
 		};
 
-		struct Model_CBData
+		struct MeshBatch_CBData
 		{
-			ObjectData instances[MAX_INSTANCE_COUNT];
+			std::vector<ObjectData> objects;
 		};
 
 		struct MeshBatch
 		{
 			unsigned int num_instances = 0;
 			D3D12ConstantBufferHandle* batchBuffer;
-			Model_CBData data;
+			MeshBatch_CBData data;
 		};
 
-		typedef std::unordered_map<Model*, MeshBatch> MeshBatches;
+		using MeshBatches = std::unordered_map<Model*, MeshBatch>;
 
 	}
 
@@ -88,7 +86,7 @@ namespace wr
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
 		void Optimize();
-		temp::MeshBatches &GetBatches();
+		temp::MeshBatches& GetBatches();
 
 	private:
 		RenderSystem* m_render_system;

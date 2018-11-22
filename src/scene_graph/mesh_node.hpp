@@ -1,7 +1,6 @@
 #pragma once
 
 #include "scene_graph.hpp"
-#include <unordered_map>
 
 namespace wr
 {
