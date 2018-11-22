@@ -12,7 +12,7 @@ namespace wr
 		CameraNode(float fov, float aspect_ratio)
 			: Node(),
 			m_active(true),
-			m_pos{ 0, 0, 0 },
+			m_pos{ 0, 0, 0},
 			m_euler{ 0, 0, 0 },
 			m_frustum_near(0.1f),
 			m_frustum_far(640.f),
