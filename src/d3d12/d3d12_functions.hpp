@@ -46,7 +46,7 @@ namespace wr::d3d12
 	void Destroy(CommandList* cmd_list);
 
 	// RenderTarget
-	[[nodiscard]] RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer);
+	[[nodiscard]] RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer = false);
 	void SetName(RenderTarget* render_target, std::wstring name);
 	void SetName(RenderTarget* render_target, std::string name);
 	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
