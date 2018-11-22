@@ -115,20 +115,35 @@ namespace wr::d3d12
 	// Heap
 	[[nodiscard]] Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
 	[[nodiscard]] Heap<HeapOptimization::BIG_BUFFERS>* CreateHeap_BBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
+	[[nodiscard]] Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* CreateHeap_SSBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
+	[[nodiscard]] Heap<HeapOptimization::BIG_STATIC_BUFFERS>* CreateHeap_BSBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	[[nodiscard]] HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	[[nodiscard]] HeapResource* AllocGenericBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	void DeallocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, HeapResource* heapResource);
+	void DeallocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, HeapResource* heapResource);
+	void DeallocBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, HeapResource* heapResource);
 	void MapHeap(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
 	void MapHeap(Heap<HeapOptimization::BIG_BUFFERS>* heap);
 	void UnmapHeap(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
 	void UnmapHeap(Heap<HeapOptimization::BIG_BUFFERS>* heap);
 	void MakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
 	void MakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap);
+	void MakeResident(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap);
+	void MakeResident(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap);
 	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap, Fence* fence); // Untested
 	void EnqueueMakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap, Fence* fence);  // Untested
+	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap, Fence* fence); // Untested
+	void EnqueueMakeResident(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, Fence* fence);  // Untested
 	void Evict(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
 	void Evict(Heap<HeapOptimization::BIG_BUFFERS>* heap);
+	void Evict(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap);
+	void Evict(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap);
 	void Destroy(Heap<HeapOptimization::SMALL_BUFFERS>* heap);
 	void Destroy(Heap<HeapOptimization::BIG_BUFFERS>* heap);
+	void Destroy(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap);
+	void Destroy(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap);
 
 	// Resources
 	void UpdateConstantBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes);
