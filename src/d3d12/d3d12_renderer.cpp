@@ -9,6 +9,9 @@
 #include "d3d12_defines.hpp"
 #include "d3d12_resource_pool.hpp"
 #include "d3d12_functions.hpp"
+#include "d3d12_pipeline_registry.hpp"
+#include "d3d12_shader_registry.hpp"
+#include "d3d12_root_signature_registry.hpp"
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -36,13 +39,22 @@ namespace wr
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
+		m_window = window;
 		m_device = d3d12::CreateDevice();
-		m_direct_queue = d3d12::CreateCommandQueue(m_device, d3d12::CmdListType::CMD_LIST_DIRECT);
+		m_direct_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
 
 		if (window.has_value())
 		{
 			m_render_window = d3d12::CreateRenderWindow(m_device, window.value()->GetWindowHandle(), m_direct_queue, d3d12::settings::num_back_buffers);
 		}
+
+		PrepareShaderRegistry();
+		PrepareRootSignatureRegistry();
+		PreparePipelineRegistry();
+
+		LOG("Num Root Signatures: {}", RootSignatureRegistry::Get().m_objects.size());
+		LOG("Num Shaders: {}", ShaderRegistry::Get().m_objects.size());
+		LOG("Num Pipelines: {}", PipelineRegistry::Get().m_objects.size());
 
 		// Create fences
 		for (auto i = 0; i < m_fences.size(); i++)
@@ -58,18 +70,18 @@ namespace wr
 			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */ 
 			+ cam_cbs_size;
 
-		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, d3d12::ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
 		// Create Constant Buffer
 		d3d12::MapHeap(m_cb_heap);
 
 		// Load Shaders.
-		m_vertex_shader = d3d12::LoadShader(d3d12::ShaderType::VERTEX_SHADER, "basic.hlsl", "main_vs");
-		m_pixel_shader = d3d12::LoadShader(d3d12::ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
+		m_vertex_shader = d3d12::LoadShader(ShaderType::VERTEX_SHADER, "basic.hlsl", "main_vs");
+		m_pixel_shader = d3d12::LoadShader(ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
 
 		// Create Root Signature
 		d3d12::desc::RootSignatureDesc rs_desc;
-		rs_desc.m_samplers.push_back({ d3d12::TextureFilter::FILTER_LINEAR, d3d12::TextureAddressMode::TAM_MIRROR });
+		rs_desc.m_samplers.push_back({ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_MIRROR });
 		rs_desc.m_parameters.resize(2);
 		rs_desc.m_parameters[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 		rs_desc.m_parameters[1].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
@@ -79,9 +91,9 @@ namespace wr
 
 		// Create Pipeline State
 		d3d12::desc::PipelineStateDesc pso_desc;
-		pso_desc.m_dsv_format = d3d12::Format::UNKNOWN;
+		pso_desc.m_dsv_format = Format::UNKNOWN;
 		pso_desc.m_num_rtv_formats = 1;
-		pso_desc.m_rtv_formats[0] = d3d12::Format::R8G8B8A8_UNORM;
+		pso_desc.m_rtv_formats[0] = Format::R8G8B8A8_UNORM;
 		pso_desc.m_input_layout = wr::Vertex::GetInputLayout();
 
 		m_pipeline_state = d3d12::CreatePipelineState();
@@ -94,10 +106,10 @@ namespace wr
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
 		// Create screen quad
-		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex), sizeof(Vertex), d3d12::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 
 		// Create Command List
-		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, d3d12::CmdListType::CMD_LIST_DIRECT);
+		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -144,6 +156,88 @@ namespace wr
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t size_in_mb)
 	{
 		return std::make_shared<D3D12ModelPool>(*this, size_in_mb);
+	}
+
+	void D3D12RenderSystem::PreparePipelineRegistry()
+	{
+		auto& registry = PipelineRegistry::Get();
+
+
+		for (auto desc : registry.m_descriptions)
+		{
+			d3d12::desc::PipelineStateDesc n_desc;
+			n_desc.m_counter_clockwise = desc.second.m_counter_clockwise;
+			n_desc.m_cull_mode = desc.second.m_cull_mode;
+			n_desc.m_depth_enabled = desc.second.m_depth_enabled;
+			n_desc.m_dsv_format = desc.second.m_dsv_format;
+			n_desc.m_input_layout = desc.second.m_input_layout;
+			n_desc.m_num_rtv_formats = desc.second.m_num_rtv_formats;
+			n_desc.m_rtv_formats = desc.second.m_rtv_formats;
+			n_desc.m_topology_type = desc.second.m_topology_type;
+			n_desc.m_type = desc.second.m_type;
+
+			auto n_pipeline = d3d12::CreatePipelineState();
+
+			if (desc.second.m_vertex_shader_handle.has_value())
+			{
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
+				d3d12::SetVertexShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+			}
+			if (desc.second.m_pixel_shader_handle.has_value())
+			{
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
+				d3d12::SetFragmentShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+			}
+			if (desc.second.m_compute_shader_handle.has_value())
+			{
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
+				d3d12::SetComputeShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+			}
+			{
+				auto obj = RootSignatureRegistry::Get().Find(desc.second.m_root_signature_handle);
+				d3d12::SetRootSignature(n_pipeline, static_cast<D3D12RootSignature*>(obj)->m_native);
+			}
+
+			d3d12::FinalizePipeline(n_pipeline, m_device, n_desc);
+
+			D3D12Pipeline* pipeline = new D3D12Pipeline();
+			pipeline->m_native = n_pipeline;
+
+			registry.m_objects.insert({ desc.first, pipeline });
+		}
+	}
+
+	void D3D12RenderSystem::PrepareRootSignatureRegistry()
+	{
+		auto& registry = RootSignatureRegistry::Get();
+
+		for (auto desc : registry.m_descriptions)
+		{
+			auto rs = new D3D12RootSignature();
+			d3d12::desc::RootSignatureDesc n_desc;
+			n_desc.m_parameters = desc.second.m_parameters;
+			n_desc.m_samplers = desc.second.m_samplers;
+
+			auto n_rs = d3d12::CreateRootSignature(n_desc);
+			d3d12::FinalizeRootSignature(n_rs, m_device);
+			rs->m_native = n_rs;
+
+			registry.m_objects.insert({ desc.first, rs });
+		}
+	}
+
+	void D3D12RenderSystem::PrepareShaderRegistry()
+	{
+		auto& registry = ShaderRegistry::Get();
+
+		for (auto desc : registry.m_descriptions)
+		{
+			auto shader = new D3D12Shader();
+			auto n_shader = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
+			shader->m_native = n_shader;
+
+			registry.m_objects.insert({ desc.first, shader });
+		}
 	}
 
 	void D3D12RenderSystem::InitSceneGraph(SceneGraph& scene_graph)

@@ -4,7 +4,7 @@
 #include "d3d12_defines.hpp"
 #include "d3dx12.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 	
 	RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer)
@@ -225,4 +225,4 @@ namespace d3d12
 		delete render_target;
 	}
 
-} /* d3d12 */
+} /* wr::d3d12 */

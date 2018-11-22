@@ -10,7 +10,7 @@
 #include "d3d12_settings.hpp"
 #include "d3dx12.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	namespace desc
@@ -222,4 +222,4 @@ namespace d3d12
 		std::size_t m_heap_vector_location;
 	};
 
-} /* d3d12 */
+} /* wr::d3d12 */

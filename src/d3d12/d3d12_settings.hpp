@@ -3,7 +3,7 @@
 #include <d3d12.h>
 #include <cstdint>
 
-namespace d3d12::settings
+namespace wr::d3d12::settings
 {
 
 	enum DebugLayer
@@ -26,4 +26,4 @@ namespace d3d12::settings
 	static const constexpr std::uint8_t num_back_buffers = 3;
 	static const constexpr std::uint32_t num_instances_per_batch = 768U;
 
-} /* d3d12::settings */
+} /* wr::d3d12::settings */

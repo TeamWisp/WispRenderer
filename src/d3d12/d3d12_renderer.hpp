@@ -43,6 +43,10 @@ namespace wr
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
 
+		void PrepareRootSignatureRegistry() final;
+		void PrepareShaderRegistry() final;
+		void PreparePipelineRegistry() final;
+
 		void InitSceneGraph(SceneGraph& scene_graph);
 		void RenderSceneGraph(SceneGraph& scene_graph);
 
@@ -69,7 +73,7 @@ namespace wr
 		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_fences;
 
 		// temporary
-		d3d12::Heap<d3d12::HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
+		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;

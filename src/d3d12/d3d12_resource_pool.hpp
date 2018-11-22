@@ -2,7 +2,7 @@
 
 #include "../resource_pool.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 	struct HeapResource;
 	struct StagingBuffer;
@@ -58,4 +58,4 @@ namespace wr
 
 		D3D12RenderSystem& m_render_system;
 	};
-}
+} /* wr::d3d12 */

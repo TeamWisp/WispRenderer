@@ -4,7 +4,7 @@
 
 #include "d3d12_structs.hpp"
 
-namespace d3d12
+namespace wr::d3d12
 {
 
 	// Device
@@ -27,6 +27,7 @@ namespace d3d12
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
+	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps);
 	//void BindCompute(CommandList& cmd_list, PipelineState* pipeline_state);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
@@ -132,4 +133,4 @@ namespace d3d12
 	// Resources
 	void UpdateConstantBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes);
 
-} /* d3d12 */
+} /* wr::d3d12 */

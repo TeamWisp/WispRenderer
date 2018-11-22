@@ -1,8 +1,9 @@
 #pragma once
 
 #include <dxgi1_6.h>
+#include <d3d12.h>
 
-namespace d3d12
+namespace wr
 {
 
 	enum class PipelineType
@@ -215,4 +216,4 @@ namespace d3d12
 		D32_FLOAT_S8X24_UINT = (int)DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
 	};
 
-} /* d3d12 */
+} /* wr */
