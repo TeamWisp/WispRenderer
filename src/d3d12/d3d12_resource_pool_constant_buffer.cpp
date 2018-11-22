@@ -36,7 +36,7 @@ namespace wr {
 	void D3D12ConstantBufferPool::WriteConstantBufferData(ConstantBufferHandle * handle, size_t size, size_t offset, std::uint8_t * data)
 	{
 		auto frame_index = m_render_system->GetFrameIdx();
-		std::uint8_t* cpu_address = static_cast<D3D12ConstantBufferHandle*>(handle)->m_native->m_cpu_addresses[frame_index];
+		std::uint8_t* cpu_address = static_cast<D3D12ConstantBufferHandle*>(handle)->m_native->m_cpu_addresses->operator[](frame_index);
 		memcpy(cpu_address + offset, data, size);
 	}
 	void D3D12ConstantBufferPool::DeallocateConstantBuffer(ConstantBufferHandle* handle)
