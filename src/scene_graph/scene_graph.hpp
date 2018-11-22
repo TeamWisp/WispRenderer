@@ -6,7 +6,8 @@
 #include <DirectXMath.h>
 
 #include "../util/defines.hpp"
-#include "../resource_pool.hpp"
+#include "../resource_pool_material.hpp"
+#include "../resource_pool_model.hpp"
 
 namespace wr
 {

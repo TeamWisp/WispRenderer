@@ -4,13 +4,15 @@
 
 namespace wr::d3d12
 {
-	struct HeapResource;
-	struct StagingBuffer;
+
 }
 
 namespace wr
 {
 
+<<<<<<< HEAD
+}
+=======
 	class D3D12RenderSystem;
 
 	struct D3D12TextureHandle : TextureHandle { };
@@ -59,3 +61,4 @@ namespace wr
 		D3D12RenderSystem& m_render_system;
 	};
 } /* wr::d3d12 */
+>>>>>>> 4e53b147c8b258f297f33cfe6639ae70b4a1b987
