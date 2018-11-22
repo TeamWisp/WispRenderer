@@ -42,5 +42,6 @@ namespace wr {
 	void D3D12ConstantBufferPool::DeallocateConstantBuffer(ConstantBufferHandle* handle)
 	{
 		d3d12::DeallocConstantBuffer(m_heap, static_cast<D3D12ConstantBufferHandle*>(handle)->m_native);
+		delete handle;
 	}
 } /* wr */
