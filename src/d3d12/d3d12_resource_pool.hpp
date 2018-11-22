@@ -1,27 +1,22 @@
 #pragma once
 
 #include "../resource_pool.hpp"
+#include "../resource_pool_constant_buffer.hpp"
 
 namespace wr::d3d12
 {
-
+	struct HeapResource;
+	struct StagingBuffer;
 }
 
 namespace wr
 {
 
-<<<<<<< HEAD
-}
-=======
 	class D3D12RenderSystem;
 
 	struct D3D12TextureHandle : TextureHandle { };
 
 	struct D3D12MaterialHandle : MaterialHandle { };
-
-	struct D3D12ConstantBufferHandle : ConstantBufferHandle {
-		d3d12::HeapResource* m_native;
-	};
 
 	struct D3D12Mesh : Mesh
 	{
@@ -33,10 +28,10 @@ namespace wr
 	public:
 		explicit D3D12MaterialPool(std::size_t size_in_mb);
 		~D3D12MaterialPool() final;
-		
+
 		void Evict() final;
 		void MakeResident() final;
-	
+
 	protected:
 		MaterialHandle LoadMaterial(std::string_view path) final;
 		TextureHandle LoadPNG(std::string_view path) final;
@@ -61,4 +56,3 @@ namespace wr
 		D3D12RenderSystem& m_render_system;
 	};
 } /* wr::d3d12 */
->>>>>>> 4e53b147c8b258f297f33cfe6639ae70b4a1b987

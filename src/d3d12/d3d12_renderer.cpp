@@ -8,6 +8,7 @@
 
 #include "d3d12_defines.hpp"
 #include "d3d12_resource_pool.hpp"
+#include "d3d12_resource_pool_constant_buffer.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"

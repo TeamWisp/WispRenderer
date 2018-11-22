@@ -7,6 +7,7 @@
 
 #include "../util/defines.hpp"
 #include "../resource_pool.hpp"
+#include "../resource_pool_constant_buffer.hpp"
 
 namespace wr
 {

@@ -11,7 +11,6 @@ namespace wr
 {
 	struct TextureHandle {};
 	struct MaterialHandle {};
-	struct ConstantBufferHandle {};
 
 	struct Mesh
 	{

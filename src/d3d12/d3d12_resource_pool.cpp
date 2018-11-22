@@ -6,11 +6,10 @@
 namespace wr
 {
 
-	
+	D3D12MaterialPool::D3D12MaterialPool(std::size_t size_in_mb) : MaterialPool(size_in_mb)
+	{
+	}
 
-<<<<<<< HEAD
-	
-=======
 	D3D12MaterialPool::~D3D12MaterialPool()
 	{
 	}
@@ -78,6 +77,5 @@ namespace wr
 
 		return mesh;
 	}
->>>>>>> 4e53b147c8b258f297f33cfe6639ae70b4a1b987
 
 } /* wr */
