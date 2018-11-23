@@ -32,5 +32,6 @@ namespace wr::d3d12::settings
 	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE_WITH_GPU_VALIDATION;
 	static const constexpr char* default_shader_model = "5.0";
 	static const constexpr std::uint8_t num_back_buffers = 3;
+	static const constexpr std::uint32_t num_instances_per_batch = 768U;
 
 } /* wr::d3d12::settings */

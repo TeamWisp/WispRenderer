@@ -4,7 +4,7 @@
 
 namespace wr
 {
-	
+
 	struct MeshNode : Node
 	{
 		DECL_SUBNODE(MeshNode); // TODO: Should be able to dissalow default constructor.
@@ -44,7 +44,6 @@ namespace wr
 		//Transformation
 		DirectX::XMMATRIX m_transform;
 
-		ConstantBufferHandle* m_transform_cb;
 	};
 
 } /* wr */

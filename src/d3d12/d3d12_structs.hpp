@@ -203,6 +203,21 @@ namespace wr::d3d12
 			ID3D12Heap* m_native;
 		};
 
+		template<>
+		struct Heap<HeapOptimization::SMALL_STATIC_BUFFERS>
+		{
+			std::vector<HeapResource*> m_resources;
+			D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
+			ID3D12Resource* m_native;
+		};
+
+		template<>
+		struct Heap<HeapOptimization::BIG_STATIC_BUFFERS> 
+		{
+			std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>> m_resources;
+			ID3D12Heap* m_native;
+		};
+
 	} /* detail */
 
 	template<HeapOptimization O>
@@ -211,6 +226,9 @@ namespace wr::d3d12
 		bool m_mapped;
 		unsigned int m_versioning_count;
 		std::uint64_t m_current_offset;
+		std::uint64_t m_heap_size;
+		std::uint64_t m_alignment;
+		std::vector<std::uint64_t> m_page_frames;
 	};
 
 	struct HeapResource
