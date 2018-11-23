@@ -67,33 +67,6 @@ namespace wr
 		// Create Constant Buffer
 		d3d12::MapHeap(m_cb_heap);
 
-		// Load Shaders.
-		m_vertex_shader = d3d12::LoadShader(ShaderType::VERTEX_SHADER, "basic.hlsl", "main_vs");
-		m_pixel_shader = d3d12::LoadShader(ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
-
-		// Create Root Signature
-		d3d12::desc::RootSignatureDesc rs_desc;
-		rs_desc.m_samplers.push_back({ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_MIRROR });
-		rs_desc.m_parameters.resize(2);
-		rs_desc.m_parameters[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-		rs_desc.m_parameters[1].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-
-		m_root_signature = d3d12::CreateRootSignature(rs_desc);
-		d3d12::FinalizeRootSignature(m_root_signature, m_device);
-
-		// Create Pipeline State
-		d3d12::desc::PipelineStateDesc pso_desc;
-		pso_desc.m_dsv_format = Format::UNKNOWN;
-		pso_desc.m_num_rtv_formats = 1;
-		pso_desc.m_rtv_formats[0] = Format::R8G8B8A8_UNORM;
-		pso_desc.m_input_layout = wr::Vertex::GetInputLayout();
-
-		m_pipeline_state = d3d12::CreatePipelineState();
-		d3d12::SetVertexShader(m_pipeline_state, m_vertex_shader);
-		d3d12::SetFragmentShader(m_pipeline_state, m_pixel_shader);
-		d3d12::SetRootSignature(m_pipeline_state, m_root_signature);
-		d3d12::FinalizePipeline(m_pipeline_state, m_device, pso_desc);
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
