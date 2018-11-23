@@ -7,7 +7,7 @@ pipeline {
 				bat '''cd "%WORKSPACE%\\Scripts
 				call JenkinsWebhook.bat ":bulb: Building Pull Request. Jenkins build nr: %BUILD_NUMBER%"
 				cd "%WORKSPACE%
-				install -j "%WORKSPACE%"
+				install -j "%WORKSPACE%
 				cmake --build ./build_vs2017_win32
 				cmake --build ./build_vs2017_win64'''
 				
