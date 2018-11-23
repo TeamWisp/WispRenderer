@@ -49,10 +49,10 @@ void RenderEditor()
 	if (open1)
 	{
 		ImGui::Begin("ImGui Details", &open1);
-		ImGui::Text("Mouse Pos: (%f, %f)", io.MousePos.x, io.MousePos.y);
-		ImGui::Text("Framerate: %f", io.Framerate);
+		ImGui::Text("Mouse Pos: (%0.f, %0.f)", io.MousePos.x, io.MousePos.y);
+		ImGui::Text("Framerate: %.0f", io.Framerate);
 		ImGui::Text("Delta: %f", io.DeltaTime);
-		ImGui::Text("Delta: {%f, %f}", io.DisplaySize.x, io.DisplaySize.y);
+		ImGui::Text("Display Size: (%.0f, %.0f)", io.DisplaySize.x, io.DisplaySize.y);
 		ImGui::End();
 	}
 
@@ -71,6 +71,7 @@ void RenderEditor()
 	wr::imgui::window::PipelineRegistry();
 	wr::imgui::window::RootSignatureRegistry();
 	wr::imgui::window::D3D12HardwareInfo(*render_system.get());
+	wr::imgui::window::D3D12Settings();
 }
 
 void WispEntry()

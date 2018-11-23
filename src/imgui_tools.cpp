@@ -39,6 +39,18 @@ namespace wr::imgui::internal
 		}
 	}
 
+	inline std::string FeatureLevelToStr(D3D_FEATURE_LEVEL level)
+	{
+		switch (level)
+		{
+		case D3D_FEATURE_LEVEL_11_0: return "D3D_FEATURE_LEVEL_11_0";
+		case D3D_FEATURE_LEVEL_11_1: return "D3D_FEATURE_LEVEL_11_1";
+		case D3D_FEATURE_LEVEL_12_0: return "D3D_FEATURE_LEVEL_12_0";
+		case D3D_FEATURE_LEVEL_12_1: return "D3D_FEATURE_LEVEL_12_1";
+		default: return "Unknown";
+		}
+	}
+
 	template<typename T>
 	inline void AddressText(T* obj)
 	{
@@ -107,15 +119,31 @@ namespace wr::imgui::window
 				std::wstring wdesc(dx_info.Description);
 				std::string desc(wdesc.begin(), wdesc.end());
 
+				ImGui::Text("Feature Level: %s", internal::FeatureLevelToStr(render_system.m_device->m_feature_level).c_str());
 				ImGui::Text("Description: %s", desc.c_str());
 				ImGui::Text("Vendor ID: %i", dx_info.VendorId);
 				ImGui::Text("Device ID: %i", dx_info.DeviceId);
 				ImGui::Text("Subsystem ID: %i", dx_info.SubSysId);
-				ImGui::Text("Dedicated Video Memory: %s", internal::DecimalToHex(dx_info.DedicatedVideoMemory).c_str());
-				ImGui::Text("Dedicated System Memory: %s", internal::DecimalToHex(dx_info.DedicatedSystemMemory).c_str());
-				ImGui::Text("Shared System Memory: %s", internal::DecimalToHex(dx_info.SharedSystemMemory).c_str());
+				ImGui::Text("Dedicated Video Memory: %.3f", dx_info.DedicatedVideoMemory / 1024.f / 1024.f / 1024.f);
+				ImGui::Text("Dedicated System Memory: %.3f", dx_info.DedicatedSystemMemory);
+				ImGui::Text("Shared System Memory: %.3f", dx_info.SharedSystemMemory / 1024.f / 1024.f / 1024.f);
 			}
 
+			ImGui::End();
+		}
+	}
+
+	void D3D12Settings()
+	{
+		if (open_d3d12_settings)
+		{
+			ImGui::Begin("DirectX 12 Settings", &open_d3d12_settings);
+			ImGui::Text("Num back buffers: %d", d3d12::settings::num_back_buffers);
+			ImGui::Text("Back buffer format: %s", FormatToStr(d3d12::settings::back_buffer_format).c_str());
+			ImGui::Text("Shader Model: %s", d3d12::settings::default_shader_model);
+			ImGui::Text("Debug Factory: %s", internal::BooltoStr(d3d12::settings::enable_debug_factory).c_str());
+			ImGui::Text("Enable GPU Timeout: %s", internal::BooltoStr(d3d12::settings::enable_gpu_timeout).c_str());
+			ImGui::Text("Num instances per batch: %d", d3d12::settings::num_instances_per_batch);
 			ImGui::End();
 		}
 	}
@@ -214,6 +242,11 @@ namespace wr::imgui::window
 						ImGui::Text("Depth Enabled: %s", internal::BooltoStr(desc.second.m_depth_enabled).c_str());
 						ImGui::Text("Counter Clockwise Winding Order: %s", internal::BooltoStr(desc.second.m_counter_clockwise).c_str());
 						ImGui::Text("Num RTV Formats: %d", desc.second.m_num_rtv_formats);
+						for (auto i = 0; i < desc.second.m_num_rtv_formats; i++)
+						{
+							std::string text = "Format[" + std::to_string(i) + "]: %s";
+							ImGui::Text(text.c_str(), FormatToStr(desc.second.m_rtv_formats[i]).c_str());
+						}
 
 						ImGui::TreePop();
 					}

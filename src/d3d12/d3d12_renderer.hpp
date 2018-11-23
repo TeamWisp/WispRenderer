@@ -98,11 +98,6 @@ namespace wr
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
-		d3d12::PipelineState* m_pipeline_state;
-		d3d12::RootSignature* m_root_signature;
-		d3d12::Shader* m_vertex_shader;
-		d3d12::Shader* m_pixel_shader;
-		d3d12::StagingBuffer* m_vertex_buffer;
 
 	};
 
