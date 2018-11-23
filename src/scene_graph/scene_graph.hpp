@@ -132,7 +132,7 @@ namespace wr
 	{
 		if constexpr (std::is_same<T, CameraNode>::value)
 		{
-			for (uint32_t i = 0, j = m_camera_nodes.size(); i < j; ++i)
+			for (size_t i = 0, j = m_camera_nodes.size(); i < j; ++i)
 			{
 				if (m_camera_nodes[i] == node)
 				{
@@ -143,7 +143,7 @@ namespace wr
 		}
 		else if constexpr (std::is_same<T, MeshNode>::value)
 		{
-			for (uint32_t i = 0, j = m_mesh_nodes.size(); i < j; ++i)
+			for (size_t i = 0, j = m_mesh_nodes.size(); i < j; ++i)
 			{
 				if (m_mesh_nodes[i] == node)
 				{
