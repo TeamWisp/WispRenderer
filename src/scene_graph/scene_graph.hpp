@@ -86,6 +86,9 @@ namespace wr
 		void RemoveChildren(std::shared_ptr<Node> const & parent);
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
+		template<typename T>
+		void DestroyNode(std::shared_ptr<T> node);
+
 		void Optimize();
 		temp::MeshBatches& GetBatches();
 
@@ -123,6 +126,36 @@ namespace wr
 		}
 
 		return new_node;
+	}
+
+	template<typename T>
+	void SceneGraph::DestroyNode(std::shared_ptr<T> node) 
+	{
+		if constexpr (std::is_same<T, CameraNode>::value)
+		{
+			for (size_t i = 0, j = m_camera_nodes.size(); i < j; ++i)
+			{
+				if (m_camera_nodes[i] == node)
+				{
+					m_camera_nodes.erase(m_camera_nodes.begin() + i);
+					break;
+				}
+			}
+		}
+		else if constexpr (std::is_same<T, MeshNode>::value)
+		{
+			for (size_t i = 0, j = m_mesh_nodes.size(); i < j; ++i)
+			{
+				if (m_mesh_nodes[i] == node)
+				{
+					m_mesh_nodes.erase(m_mesh_nodes.begin() + i);
+					break;
+				}
+			}
+		}
+
+		node.reset();
+
 	}
 
 } /* wr */

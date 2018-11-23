@@ -11,7 +11,7 @@ namespace wr
 	{
 	public:
 		FrameGraph() {}
-		virtual ~FrameGraph() = default;
+		virtual ~FrameGraph();
 
 		FrameGraph(const FrameGraph&) = delete;
 		FrameGraph(FrameGraph&&) = default;
@@ -23,6 +23,7 @@ namespace wr
 		void AddTask(std::unique_ptr<BaseRenderTask> task);
 		void Setup(RenderSystem & render_system);
 		void Execute(RenderSystem & render_system, SceneGraph & scene_graph);
+		void Destroy();
 
 		template<typename T>
 		std::vector<T*> GetAllCommandLists() const

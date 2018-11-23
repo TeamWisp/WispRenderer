@@ -39,6 +39,8 @@ namespace wr
 		virtual void PrepareShaderRegistry() = 0;
 		virtual void PreparePipelineRegistry() = 0;
 
+		virtual void WaitForAllPreviousWork() = 0;
+
 		virtual CommandList* GetDirectCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetComputeCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetCopyCommandList(unsigned int num_allocators) = 0;
