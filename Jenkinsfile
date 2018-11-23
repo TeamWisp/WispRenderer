@@ -9,7 +9,7 @@ pipeline {
 				cd "%WORKSPACE%
 				install -j
 				cmake --build ./build_vs2017_win32
-				cmake --build ./build_vs2017_win64
+				cmake --build ./build_vs2017_win64'''
 				
 				bat '''mkdir builds
 				//move ./RayTracingLib/Debug "./builds/build_%BUILD_NUMBER%"
