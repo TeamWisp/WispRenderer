@@ -101,6 +101,9 @@ namespace wr
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 
+		d3d12::StagingBuffer* m_vertex_buffer;
+		d3d12::RenderTarget* m_gbuffer;
+
 	};
 
 } /* wr */

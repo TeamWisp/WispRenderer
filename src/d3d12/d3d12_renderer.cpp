@@ -67,67 +67,6 @@ namespace wr
 		// Create Constant Buffer
 		d3d12::MapHeap(m_cb_heap);
 
-		//G-buffer preparation pipeline and shaders
-
-		// Load Shaders
-		m_vertex_shader = d3d12::LoadShader(ShaderType::VERTEX_SHADER, "basic.hlsl", "main_vs");
-		m_pixel_shader = d3d12::LoadShader(ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
-
-		// Create Root Signature
-		d3d12::desc::RootSignatureDesc rs_desc;
-		rs_desc.m_samplers.push_back({ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_MIRROR });
-		rs_desc.m_parameters.resize(2);
-		rs_desc.m_parameters[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-		rs_desc.m_parameters[1].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-
-		m_root_signature = d3d12::CreateRootSignature(rs_desc);
-		d3d12::FinalizeRootSignature(m_root_signature, m_device);
-
-		// Create Pipeline State
-		d3d12::desc::PipelineStateDesc pso_desc;
-		pso_desc.m_dsv_format = Format::D32_FLOAT;
-		pso_desc.m_num_rtv_formats = 2;
-		pso_desc.m_rtv_formats = { Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_SNORM };
-		pso_desc.m_input_layout = wr::Vertex::GetInputLayout();
-		pso_desc.m_depth_enabled = true;
-		pso_desc.m_counter_clockwise = true;
-
-		m_pipeline_state = d3d12::CreatePipelineState();
-		d3d12::SetVertexShader(m_pipeline_state, m_vertex_shader);
-		d3d12::SetFragmentShader(m_pipeline_state, m_pixel_shader);
-		d3d12::SetRootSignature(m_pipeline_state, m_root_signature);
-		d3d12::FinalizePipeline(m_pipeline_state, m_device, pso_desc);
-
-		//Lighting pipeline and shaders
-
-		// Load Shaders
-		m_lighting_vertex_shader = d3d12::LoadShader(ShaderType::VERTEX_SHADER, "lighting.hlsl", "main_vs");
-		m_lighting_pixel_shader = d3d12::LoadShader(ShaderType::PIXEL_SHADER, "lighting.hlsl", "main_ps");
-
-		// Create Root Signature
-		rs_desc = {};
-		rs_desc.m_samplers.push_back({ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP });
-		rs_desc.m_descriptorRanges = {
-			{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0 }
-		};
-
-		m_lighting_root_signature = d3d12::CreateRootSignature(rs_desc);
-		d3d12::FinalizeRootSignature(m_lighting_root_signature, m_device);
-
-		// Create Pipeline State
-		pso_desc = {};
-		pso_desc.m_counter_clockwise = true;
-		pso_desc.m_dsv_format = Format::UNKNOWN;
-		pso_desc.m_num_rtv_formats = 1;
-		pso_desc.m_rtv_formats[0] = Format::R8G8B8A8_UNORM;
-		pso_desc.m_input_layout = wr::Vertex2D::GetInputLayout();
-
-		m_lighting_pipeline_state = d3d12::CreatePipelineState();
-		d3d12::SetVertexShader(m_lighting_pipeline_state, m_lighting_vertex_shader);
-		d3d12::SetFragmentShader(m_lighting_pipeline_state, m_lighting_pixel_shader);
-		d3d12::SetRootSignature(m_lighting_pipeline_state, m_lighting_root_signature);
-		d3d12::FinalizePipeline(m_lighting_pipeline_state, m_device, pso_desc);
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 

@@ -36,7 +36,7 @@ namespace wr
 			if (n_render_system.m_render_window.has_value())
 			{
 				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
-				const auto lighting_pso = n_render_system.m_lighting_pipeline_state;
+				const auto lighting_pso = (D3D12Pipeline*) PipelineRegistry::Get().Find(pipelines::lighting);
 				const auto viewport = n_render_system.m_viewport;
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 				const auto gbuffer = n_render_system.m_gbuffer;
@@ -47,7 +47,6 @@ namespace wr
 				//Render deferred
 				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 				d3d12::BindRenderTarget(cmd_list, gbuffer, n_render_system.GetFrameIdx());
-				cmd_list->m_native->SetGraphicsRootSignature(pso->m_root_signature->m_native);
 
 				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 0, frame_idx);
@@ -55,7 +54,7 @@ namespace wr
 				n_render_system.RenderSceneGraph(scene_graph, cmd_list);
 
 				//Render lighting
-				d3d12::BindPipeline(cmd_list, lighting_pso);
+				d3d12::BindPipeline(cmd_list, lighting_pso->m_native);
 				d3d12::BindRenderTargetVersioned(cmd_list, n_render_system.m_render_window.value(), n_render_system.GetFrameIdx());
 				d3d12::BindVertexBuffer(cmd_list, n_render_system.m_vertex_buffer);
 				d3d12::Draw(cmd_list, 6, 1);
