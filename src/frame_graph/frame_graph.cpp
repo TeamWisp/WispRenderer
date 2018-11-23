@@ -2,7 +2,10 @@
 
 namespace wr
 {
-
+	FrameGraph::~FrameGraph()
+	{
+		Destroy();
+	}
 	//! Adds a task without creating it.
 	void FrameGraph::AddTask(std::unique_ptr<BaseRenderTask> task)
 	{
@@ -26,6 +29,15 @@ namespace wr
 		{
 			task->Execute(render_system, scene_graph);
 		}
+	}
+
+	void FrameGraph::Destroy()
+	{
+		for (auto& task : m_tasks)
+		{
+			task.reset();
+		}
+		m_tasks.clear();
 	}
 
 } /* wr */

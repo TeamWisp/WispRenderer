@@ -20,11 +20,15 @@ namespace wr
 	public:
 		using setup_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&)>;
 		using execute_func_type = std::function<void(RenderSystem&, RenderTask<T>&, SceneGraph&, T&)>;
+		using destroy_func_type = std::function<void(RenderTask<T>&, T&)>;
 
-		RenderTask(FrameGraph* frame_graph, std::string const & name, RenderTaskType type, RenderTargetProperties rt_properties, setup_func_type setup, execute_func_type execute)
-			: BaseRenderTask(typeid(T), frame_graph, name, type, rt_properties), m_setup(setup), m_execute(execute) {}
+		RenderTask(FrameGraph* frame_graph, std::string const & name, RenderTaskType type, RenderTargetProperties rt_properties, setup_func_type setup, execute_func_type execute, destroy_func_type destroy)
+			: BaseRenderTask(typeid(T), frame_graph, name, type, rt_properties), m_setup(setup), m_execute(execute), m_destroy(destroy) {}
 
-		~RenderTask() final = default;
+		~RenderTask() final
+		{
+			m_destroy(*this, m_data);
+		}
 
 		//! Invokes the bound setup function ptr.
 		/*
@@ -77,6 +81,8 @@ namespace wr
 		setup_func_type m_setup;
 		//! The execute function ptr.
 		execute_func_type m_execute;
+		//! The destroy function ptr.
+		destroy_func_type m_destroy;
 	};
 
 } /* wr */

@@ -58,6 +58,8 @@ namespace wr
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
 
+		void WaitForAllPreviousWork() final;
+
 		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;

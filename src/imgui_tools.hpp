@@ -1,5 +1,10 @@
 #pragma once
 
+namespace wr
+{
+	class D3D12RenderSystem;
+}
+
 namespace wr::imgui
 {
 
@@ -13,7 +18,9 @@ namespace wr::imgui
 		void ShaderRegistry();
 		void PipelineRegistry();
 		void RootSignatureRegistry();
+		void D3D12HardwareInfo(D3D12RenderSystem& render_system);
 
+		static bool open_hardware_info = true;
 		static bool open_shader_registry = true;
 		static bool open_pipeline_registry = true;
 		static bool open_root_signature_registry = true;

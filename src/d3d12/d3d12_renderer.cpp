@@ -23,12 +23,6 @@ namespace wr
 {
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
-		// wait for end
-		for (auto& fence : m_fences)
-		{
-			d3d12::WaitFor(fence);
-		}
-
 		d3d12::Destroy(m_cb_heap);
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
@@ -42,6 +36,8 @@ namespace wr
 		m_window = window;
 		m_device = d3d12::CreateDevice();
 		m_direct_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
+		m_compute_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_COMPUTE);
+		m_copy_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_COPY);
 
 		if (window.has_value())
 		{
@@ -51,10 +47,6 @@ namespace wr
 		PrepareShaderRegistry();
 		PrepareRootSignatureRegistry();
 		PreparePipelineRegistry();
-
-		LOG("Num Root Signatures: {}", RootSignatureRegistry::Get().m_objects.size());
-		LOG("Num Shaders: {}", ShaderRegistry::Get().m_objects.size());
-		LOG("Num Pipelines: {}", PipelineRegistry::Get().m_objects.size());
 
 		// Create fences
 		for (auto i = 0; i < m_fences.size(); i++)
@@ -222,6 +214,14 @@ namespace wr
 			pipeline->m_native = n_pipeline;
 
 			registry.m_objects.insert({ desc.first, pipeline });
+		}
+	}
+
+	void D3D12RenderSystem::WaitForAllPreviousWork()
+	{
+		for (auto& fence : m_fences)
+		{
+			d3d12::WaitFor(fence);
 		}
 	}
 

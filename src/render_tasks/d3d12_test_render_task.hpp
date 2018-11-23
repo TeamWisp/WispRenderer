@@ -49,6 +49,10 @@ namespace wr
 			}
 		}
 
+		inline void DestroyTestTask(RenderTask<DeferredTaskData> & task, DeferredTaskData& data)
+		{
+		}
+
 	} /* internal */
 	
 
@@ -68,7 +72,9 @@ namespace wr
 				true
 			},
 			[](RenderSystem & render_system, RenderTask<DeferredTaskData> & task, DeferredTaskData & data) { internal::SetupDeferredTask(render_system, task, data); },
-			[](RenderSystem & render_system, RenderTask<DeferredTaskData> & task, SceneGraph & scene_graph, DeferredTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); });
+			[](RenderSystem & render_system, RenderTask<DeferredTaskData> & task, SceneGraph & scene_graph, DeferredTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
+			[](RenderTask<DeferredTaskData> & task, DeferredTaskData & data) { internal::DestroyTestTask(task, data); }
+		);
 
 		return ptr;
 	}
