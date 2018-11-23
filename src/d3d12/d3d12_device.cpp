@@ -1,6 +1,7 @@
 #include "d3d12_functions.hpp"
 
 #include <DXGIDebug.h>
+#include <functional>
 
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
@@ -42,9 +43,8 @@ namespace wr::d3d12
 
 		void GetSysInfo(Device* device)
 		{
-			DXGI_ADAPTER_DESC3 desc;
 			GetNativeSystemInfo(&device->m_sys_info);
-			device->m_adapter->GetDesc3(&desc);
+			device->m_adapter->GetDesc3(&device->m_adapter_info);
 		}
 
 		void CreateFactory(Device* device)
@@ -72,9 +72,30 @@ namespace wr::d3d12
 					continue;
 				}
 
-				// Create a device to test if the adapter supports the specified feature level.
-				HRESULT hr = D3D12CreateDevice(adapter, settings::feature_level, _uuidof(ID3D12Device), nullptr);
-				if (SUCCEEDED(hr))
+				std::function<bool(int)> recursive_dc = [&](int i) -> bool
+				{
+					// Create a device to test if the adapter supports the specified feature level.
+					HRESULT hr = D3D12CreateDevice(adapter, settings::possible_feature_levels[i], _uuidof(ID3D12Device), nullptr);
+					if (SUCCEEDED(hr))
+					{
+						device->m_feature_level = settings::possible_feature_levels[i];
+						return true;
+					}
+
+					if (i + 1 >= settings::possible_feature_levels.size())
+					{
+						return false;
+					}
+					else
+					{
+						i++;
+						recursive_dc(i);
+					}
+
+					return true;
+				};
+
+				if (recursive_dc(0))
 				{
 					break;
 				}
@@ -86,7 +107,10 @@ namespace wr::d3d12
 			{
 				device->m_dxgi_factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter));
 
-				TRY_M(D3D12CreateDevice(adapter, settings::feature_level, _uuidof(ID3D12Device), nullptr),
+				LOGW("Using Warp Adapter!");
+
+				device->m_feature_level = settings::possible_feature_levels[0];
+				TRY_M(D3D12CreateDevice(adapter, settings::possible_feature_levels[0], _uuidof(ID3D12Device), nullptr),
 					"Failed to create warp adapter.");
 			}
 
@@ -107,11 +131,14 @@ namespace wr::d3d12
 		internal::CreateFactory(device);
 		internal::FindAdapter(device);
 
-		TRY_M(D3D12CreateDevice(device->m_adapter, settings::feature_level, IID_PPV_ARGS(&device->m_native)),
+		TRY_M(D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),
 			"Failed to create D3D12Device.");
 
 		internal::EnableGpuErrorBreaking(device);
 		internal::GetSysInfo(device);
+
+		std::wstring g = device->m_adapter_info.Description;
+		LOG("{}", std::string(g.begin(), g.end()));
 
 		return device;
 	}
