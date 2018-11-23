@@ -12,7 +12,10 @@ pipeline {
 					cd %WORKSPACE%\\Scripts
 					call JenkinsWebhook.bat ":x: Pull Request Build Failed!! Jenskins build nr: %BUILD_NUMBER% - install failed"
 					EXIT 1
-				) 
+				)'''
+
+				bat '''
+				cd "%WORKSPACE%
 				cmake --build ./build_vs2017_win32
 				if errorlevel 1 (
 					cd %WORKSPACE%\\Scripts
