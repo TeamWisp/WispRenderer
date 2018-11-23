@@ -444,7 +444,7 @@ namespace wr
 				d3d12::BindVertexBuffer(cmd_list, n_mesh->m_vertex_buffer);
 
 				//TODO: Don't hardcode the vertices; and support indices
-				d3d12::Draw(cmd_list, 4, batch.num_instances);
+				d3d12::Draw(cmd_list, 36, batch.num_instances);
 			}
 
 			//Reset instances

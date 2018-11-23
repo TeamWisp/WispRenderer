@@ -38,7 +38,7 @@ namespace wr
 
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindPipeline(cmd_list, pso);
-				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 				cmd_list->m_native->SetGraphicsRootSignature(pso->m_root_signature->m_native);
 
