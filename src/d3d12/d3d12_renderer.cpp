@@ -7,9 +7,7 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "d3d12_resource_pool_model.hpp"
-#include "d3d12_resource_pool_material.hpp"
-#include "d3d12_resource_pool_constant_buffer.hpp"
+#include "d3d12_resource_pool.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"
@@ -129,6 +127,9 @@ namespace wr
 
 	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
+		auto frame_idx = GetFrameIdx();
+		d3d12::WaitFor(m_fences[frame_idx]);
+
 		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 		recursive_func_t recursive_update = [this, &recursive_update](std::shared_ptr<Node> const & parent)
 		{
@@ -143,6 +144,21 @@ namespace wr
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
+		auto cmd_lists = frame_graph.GetAllCommandLists<D3D12CommandList>();
+		std::vector<d3d12::CommandList*> n_cmd_lists;
+		for (auto& list : cmd_lists)
+		{
+			n_cmd_lists.push_back(list);
+		}
+
+		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
+		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
+
+		if (m_render_window.has_value())
+		{
+			d3d12::Present(m_render_window.value(), m_device);
+		}
+
 		return std::unique_ptr<Texture>();
 	}
 
@@ -155,9 +171,9 @@ namespace wr
 		return std::make_shared<D3D12MaterialPool>(size_in_mb);
 	}
 
-	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)
+	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t size_in_mb)
 	{
-		return std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
+		return std::make_shared<D3D12ModelPool>(*this, size_in_mb);
 	}
 
 	void D3D12RenderSystem::PreparePipelineRegistry()
@@ -207,6 +223,70 @@ namespace wr
 
 			registry.m_objects.insert({ desc.first, pipeline });
 		}
+	}
+
+	CommandList* D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
+	{
+		if (properties.m_is_render_window)
+		{
+			if (!m_render_window.has_value())
+			{
+				LOGC("Tried using a render task which depends on the render window.");
+				return nullptr;
+			}
+			return (D3D12RenderTarget*)m_render_window.value();
+		}
+		else
+		{
+			d3d12::desc::RenderTargetDesc desc;
+			desc.m_create_dsv_buffer = properties.m_create_dsv_buffer;
+			desc.m_num_rtv_formats = properties.m_num_rtv_formats;
+			desc.m_rtv_formats = properties.m_rtv_formats;
+			desc.m_dsv_format = properties.m_dsv_format;
+
+			if (!properties.width.has_value() || !properties.height.has_value())
+			{
+				LOGC("Render target is not the render window and is missing dimensions.");
+			}
+
+			return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.width.value(), properties.height.value(), desc, false);
+		}
+	}
+
+	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto frame_idx = GetFrameIdx();
+	
+		d3d12::Begin(n_cmd_list, frame_idx);
+		d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
+		d3d12::BindRenderTargetVersioned(n_cmd_list, n_render_target, frame_idx, render_target.second.m_clear, render_target.second.m_clear_depth);
+	}
+
+	void D3D12RenderSystem::StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto frame_idx = GetFrameIdx();
+
+		d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
+		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()
@@ -268,7 +348,7 @@ namespace wr
 		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
 	}
 
-	void D3D12RenderSystem::RenderSceneGraph(SceneGraph& scene_graph)
+	void D3D12RenderSystem::RenderSceneGraph(SceneGraph& scene_graph, D3D12CommandList* cmd_list)
 	{
 		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 		recursive_func_t recursive_render = [this, &recursive_render](std::shared_ptr<Node> const & parent)
@@ -281,7 +361,7 @@ namespace wr
 		};
 
 		recursive_render(scene_graph.GetRootNode());
-		RenderMeshBatches(scene_graph);
+		RenderMeshBatches(scene_graph, cmd_list);
 
 	}
 
@@ -290,8 +370,7 @@ namespace wr
 		for (auto& mesh : node->m_model->m_meshes)
 		{
 			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-			static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->StageMesh(n_mesh, m_direct_cmd_list);
-			//d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
+			d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
 		}
 	}
 
@@ -330,7 +409,7 @@ namespace wr
 	}
 
 	//Render batches
-	void D3D12RenderSystem::RenderMeshBatches(SceneGraph& scene_graph)
+	void D3D12RenderSystem::RenderMeshBatches(SceneGraph& scene_graph, D3D12CommandList* cmd_list)
 	{
 		
 		auto& batches = scene_graph.GetBatches();
@@ -356,20 +435,16 @@ namespace wr
 
 			//Bind object data
 			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batchBuffer);
-			d3d12::BindConstantBuffer(m_direct_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
+			d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
 
 			//Render meshes
 			for (auto& mesh : model->m_meshes)
 			{
 				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-				d3d12::BindVertexBuffer(m_direct_cmd_list, 
-					static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer(), 
-					n_mesh->m_vertex_staging_buffer_offset,
-					n_mesh->m_vertex_staging_buffer_size,
-					n_mesh->m_vertex_Staging_buffer_stride);
+				d3d12::BindVertexBuffer(cmd_list, n_mesh->m_vertex_buffer);
 
 				//TODO: Don't hardcode the vertices; and support indices
-				d3d12::Draw(m_direct_cmd_list, 4, batch.num_instances);
+				d3d12::Draw(cmd_list, 4, batch.num_instances);
 			}
 
 			//Reset instances

@@ -7,7 +7,7 @@
 namespace wr::d3d12
 {
 	
-	RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer)
+	RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer)
 	{
 		auto render_target = new RenderTarget();
 		const auto n_device = device->m_native;
@@ -43,11 +43,11 @@ namespace wr::d3d12
 			n_device->GetCopyableFootprints(&resource_desc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
 		}
 
-		CreateRenderTargetViews(render_target, device, cmd_queue, width, height);
+		CreateRenderTargetViews(render_target, device, width, height);
 
 		if (descriptor.m_create_dsv_buffer)
 		{
-			CreateDepthStencilBuffer(render_target, device, cmd_queue, width, height);
+			CreateDepthStencilBuffer(render_target, device, width, height);
 		}
 
 		return render_target;
@@ -66,7 +66,7 @@ namespace wr::d3d12
 		SetName(render_target, std::wstring(name.begin(), name.end()));
 	}
 
-	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height)
+	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height)
 	{
 		const auto n_device = device->m_native;
 
@@ -91,7 +91,7 @@ namespace wr::d3d12
 		}
 	}
 
-	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height)
+	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height)
 	{
 		const auto n_device = device->m_native;
 		auto depth_format = DXGI_FORMAT_R32_TYPELESS;
@@ -182,7 +182,7 @@ namespace wr::d3d12
 		Offset(handle, 1, increment_size);
 	}
 
-	void Resize(RenderTarget** render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height)
+	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height)
 	{
 		if ((*render_target)->m_create_info.m_dsv_format == Format::UNKNOWN && (*render_target)->m_create_info.m_create_dsv_buffer)
 		{
@@ -190,7 +190,7 @@ namespace wr::d3d12
 		}
 		DestroyRenderTargetViews((*render_target));
 
-		auto new_render_target = CreateRenderTarget(device, cmd_queue, width, height, (*render_target)->m_create_info, true);
+		auto new_render_target = CreateRenderTarget(device, width, height, (*render_target)->m_create_info, true);
 	}
 
 	void IncrementFrameIdx(RenderTarget* render_target)

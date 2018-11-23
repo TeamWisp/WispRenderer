@@ -9,6 +9,11 @@
 
 namespace wr
 {
+	namespace d3d12
+	{
+		struct CommandList;
+	}
+  
 	struct MeshNode;
 	struct CameraNode;
 	struct D3D12ConstantBufferHandle;
@@ -31,6 +36,12 @@ namespace wr
 
 	} /* temp */
 
+	//! D3D12 platform independend Command List implementation
+	struct D3D12CommandList : CommandList, d3d12::CommandList {};
+
+	//! D3D12 platform independend Render Target implementation
+	struct D3D12RenderTarget : RenderTarget, d3d12::RenderTarget {};
+
 	class D3D12RenderSystem : public RenderSystem
 	{
 	public:
@@ -47,8 +58,16 @@ namespace wr
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
 
+		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
+		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
+
+		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+
 		void InitSceneGraph(SceneGraph& scene_graph);
-		void RenderSceneGraph(SceneGraph& scene_graph);
+		void RenderSceneGraph(SceneGraph& scene_graph, D3D12CommandList* cmd_list);
 
 		void Init_MeshNode(MeshNode* node);
 		void Init_CameraNode(CameraNode* node);
@@ -59,7 +78,7 @@ namespace wr
 		void Render_MeshNode(MeshNode* node);
 		void Render_CameraNode(CameraNode* node);
 
-		void RenderMeshBatches(SceneGraph& scene_graph);
+		void RenderMeshBatches(SceneGraph& scene_graph, D3D12CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
