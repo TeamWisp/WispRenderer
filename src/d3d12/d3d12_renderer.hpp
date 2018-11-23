@@ -61,13 +61,13 @@ namespace wr
 		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
-		RenderTarget* GetRenderTarget(std::optional<std::pair<unsigned int, unsigned int>> size, bool render_window) final;
+		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
 
-		void StartRenderTask(CommandList* cmd_list, RenderTarget* render_target) final;
-		void StopRenderTask(CommandList* cmd_list, RenderTarget* render_target) final;
+		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 
 		void InitSceneGraph(SceneGraph& scene_graph);
-		void RenderSceneGraph(SceneGraph& scene_graph);
+		void RenderSceneGraph(SceneGraph& scene_graph, D3D12CommandList* cmd_list);
 
 		void Init_MeshNode(MeshNode* node);
 		void Init_CameraNode(CameraNode* node);
@@ -78,7 +78,7 @@ namespace wr
 		void Render_MeshNode(MeshNode* node);
 		void Render_CameraNode(CameraNode* node);
 
-		void RenderMeshBatches(SceneGraph& scene_graph);
+		void RenderMeshBatches(SceneGraph& scene_graph, D3D12CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();

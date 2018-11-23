@@ -63,12 +63,6 @@ namespace wr
 			if (n_render_system.m_render_window.has_value())
 			{
 				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
-				const auto queue = n_render_system.m_direct_queue;
-				const auto render_window = n_render_system.GetRenderWindow();
-				const auto pso = n_render_system.m_pipeline_state;
-				const auto viewport = n_render_system.m_viewport;
-				const auto device = n_render_system.m_device;
-				const auto frame_idx = render_window->m_frame_idx;
 
 				// Prepare imgui
 				ImGui_ImplDX12_NewFrame();
@@ -97,7 +91,18 @@ namespace wr
 	//! Used to create a new defferred task.
 	[[nodiscard]] inline std::unique_ptr<RenderTask<ImGuiTaskData>> GetImGuiTask(std::function<void()> imgui_func)
 	{
-		auto ptr = std::make_unique<RenderTask<ImGuiTaskData>>(nullptr, "ImGui Render Task", RenderTaskType::DIRECT, std::nullopt,
+		auto ptr = std::make_unique<RenderTask<ImGuiTaskData>>(nullptr, "ImGui Render Task", RenderTaskType::DIRECT,
+			RenderTargetProperties {
+				true,
+				std::nullopt,
+				std::nullopt,
+				false,
+				Format::UNKNOWN,
+				{ Format::R8G8B8A8_UNORM },
+				1,
+				false,
+				false
+			},
 			[imgui_func](RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, ImGuiTaskData & data) { data.in_imgui_func = imgui_func; internal::SetupImGuiTask(render_system, task, data); },
 			[](RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, SceneGraph & scene_graph, ImGuiTaskData & data) { internal::ExecuteImGuiTask(render_system, task, scene_graph, data); });
 

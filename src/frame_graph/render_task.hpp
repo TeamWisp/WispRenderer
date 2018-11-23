@@ -21,8 +21,8 @@ namespace wr
 		using setup_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&)>;
 		using execute_func_type = std::function<void(RenderSystem&, RenderTask<T>&, SceneGraph&, T&)>;
 
-		RenderTask(FrameGraph* frame_graph, std::string const & name, RenderTaskType type, std::optional<std::pair<unsigned int, unsigned int>> size, setup_func_type setup, execute_func_type execute)
-			: BaseRenderTask(typeid(T), frame_graph, name, type, size), m_setup(setup), m_execute(execute) {}
+		RenderTask(FrameGraph* frame_graph, std::string const & name, RenderTaskType type, RenderTargetProperties rt_properties, setup_func_type setup, execute_func_type execute)
+			: BaseRenderTask(typeid(T), frame_graph, name, type, rt_properties), m_setup(setup), m_execute(execute) {}
 
 		~RenderTask() final = default;
 
@@ -48,13 +48,13 @@ namespace wr
 				break;
 			}
 
-			m_render_target = render_system.GetRenderTarget(m_size, true);
+			m_render_target = render_system.GetRenderTarget(m_rt_properties);
 
-			render_system.StartRenderTask(m_cmd_list, m_render_target);
+			//render_system.StartRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 
 			m_setup(render_system, *this, m_data);
 
-			render_system.StopRenderTask(m_cmd_list, m_render_target);
+			//render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 		}
 
 		//! Invokes the bound execute function ptr.
@@ -63,11 +63,11 @@ namespace wr
 		*/
 		void Execute(wr::RenderSystem& render_system, SceneGraph& scene_graph) final
 		{
-			render_system.StartRenderTask(m_cmd_list, m_render_target);
+			render_system.StartRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 
 			m_execute(render_system, *this, scene_graph, m_data);
 
-			render_system.StopRenderTask(m_cmd_list, m_render_target);
+			render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 		}
 
 	private:
