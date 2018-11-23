@@ -216,4 +216,38 @@ namespace wr
 		D32_FLOAT_S8X24_UINT = (int)DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
 	};
 
+	static inline std::string FormatToStr(Format format)
+	{
+		switch (format)
+		{
+		case Format::UNKNOWN: return "UNKNOWN";
+		case Format::R32G32B32A32_FLOAT: return "R32G32B32A32_FLOAT";
+		case Format::R32G32B32A32_UINT: return "R32G32B32A32_UINT";
+		case Format::R32G32B32A32_SINT: return "R32G32B32A32_SINT";
+		case Format::R32G32B32_FLOAT: return "R32G32B32_FLOAT";
+		case Format::R32G32B32_UINT: return "R32G32B32_UINT";
+		case Format::R32G32B32_SINT: return "R32G32B32_SINT";
+		case Format::R16G16B16A16_FLOAT: return "R16G16B16A16_FLOAT";
+		case Format::R16G16B16A16_UINT: return "R16G16B16A16_UINT";
+		case Format::R16G16B16A16_SINT: return "R16G16B16A16_SINT";
+		case Format::R16G16B16A16_UNORM: return "R16G16B16A16_UNORM";
+		case Format::R16G16B16A16_SNORM: return "R16G16B16A16_SNORM";
+		case Format::R32G32_FLOAT: return "R32G32_FLOAT";
+		case Format::R32G32_UINT: return "R32G32_UINT";
+		case Format::R32G32_SINT: return "R32G32_SINT";
+		case Format::R8G8B8A8_UNORM: return "R8G8B8A8_UNORM";
+		case Format::R8G8B8A8_UNORM_SRGB: return "R8G8B8A8_UNORM_SRGB";
+		case Format::R8G8B8A8_SNORM: return "R8G8B8A8_SNORM";
+		case Format::R8G8B8A8_UINT: return "R8G8B8A8_UINT";
+		case Format::R8G8B8A8_SINT: return "R8G8B8A8_SINT";
+		case Format::D32_FLOAT: return "D32_FLOAT";
+		case Format::R32_UINT: return "R32_UINT";
+		case Format::R32_SINT: return "R32_SINT";
+		case Format::R32_FLOAT: return "R32_FLOAT";
+		case Format::D24_UNFORM_S8_UINT: return "D24_UNFORM_S8_UINT";
+		case Format::R8_UNORM: return "R8_UNORM";
+		default: return "UNKNOWN (DEFAULT SWITCH STATEMENT)";
+		}
+	}
+
 } /* wr */

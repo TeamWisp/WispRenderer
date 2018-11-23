@@ -48,7 +48,7 @@ namespace wr
 			ImGui_ImplWin32_Init(n_render_system.m_window.value()->GetWindowHandle());
 			ImGui_ImplDX12_Init(n_render_system.m_device->m_native,
 				d3d12::settings::num_back_buffers,
-				d3d12::settings::back_buffer_format,
+				(DXGI_FORMAT)d3d12::settings::back_buffer_format,
 				d3d12::GetCPUHandle(data.out_descriptor_heap).m_native,
 				d3d12::GetGPUHandle(data.out_descriptor_heap).m_native);
 
