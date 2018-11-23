@@ -3,6 +3,7 @@
 #include "wisp.hpp"
 #include "render_tasks/d3d12_test_render_task.hpp"
 #include "render_tasks/d3d12_imgui_render_task.hpp"
+#include "imgui_tools.hpp"
 
 bool main_menu = true;
 bool open0 = true;
@@ -21,6 +22,7 @@ void RenderEditor()
 			ImGui::MenuItem("Logging Example", nullptr, &open2);
 			ImGui::EndMenu();
 		}
+		wr::imgui::menu::Registries();
 		ImGui::EndMainMenuBar();
 	}
 
@@ -61,6 +63,11 @@ void RenderEditor()
 		if (ImGui::Button("LOGC (Critical)")) LOGC(message_buffer);
 		ImGui::End();
 	}
+
+	wr::imgui::window::ShaderRegistry();
+	wr::imgui::window::PipelineRegistry();
+	wr::imgui::window::RootSignatureRegistry();
+
 }
 
 void WispEntry()
