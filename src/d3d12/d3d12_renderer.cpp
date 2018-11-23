@@ -7,7 +7,9 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "d3d12_resource_pool.hpp"
+#include "d3d12_resource_pool_material.hpp"
+#include "d3d12_resource_pool_model.hpp"
+#include "d3d12_resource_pool_constant_buffer.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"
@@ -171,9 +173,9 @@ namespace wr
 		return std::make_shared<D3D12MaterialPool>(size_in_mb);
 	}
 
-	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t size_in_mb)
+	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)
 	{
-		return std::make_shared<D3D12ModelPool>(*this, size_in_mb);
+		return std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
 	}
 
 	void D3D12RenderSystem::PreparePipelineRegistry()
@@ -370,7 +372,8 @@ namespace wr
 		for (auto& mesh : node->m_model->m_meshes)
 		{
 			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-			d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
+			static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->StageMesh(n_mesh, m_direct_cmd_list);
+			//d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
 		}
 	}
 
@@ -441,7 +444,11 @@ namespace wr
 			for (auto& mesh : model->m_meshes)
 			{
 				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-				d3d12::BindVertexBuffer(cmd_list, n_mesh->m_vertex_buffer);
+				d3d12::BindVertexBuffer(cmd_list, 
+					static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer(),
+					n_mesh->m_vertex_staging_buffer_offset,
+					n_mesh->m_vertex_staging_buffer_size,
+					n_mesh->m_vertex_Staging_buffer_stride);
 
 				//TODO: Don't hardcode the vertices; and support indices
 				d3d12::Draw(cmd_list, 4, batch.num_instances);
