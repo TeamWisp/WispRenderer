@@ -153,6 +153,8 @@ namespace wr
 			}
 		}
 
+		node.reset();
+
 	}
 
 } /* wr */
