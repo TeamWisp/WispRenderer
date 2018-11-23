@@ -136,7 +136,7 @@ namespace wr
 			{
 				if (m_camera_nodes[i] == node)
 				{
-					m_camera_nodes.erase(i);
+					m_camera_nodes.erase(m_camera_nodes.begin() + i);
 					break;
 				}
 			}
@@ -147,7 +147,7 @@ namespace wr
 			{
 				if (m_mesh_nodes[i] == node)
 				{
-					m_mesh_nodes.erase(i);
+					m_mesh_nodes.erase(m_mesh_nodes.begin() + i);
 					break;
 				}
 			}
