@@ -24,6 +24,9 @@ namespace wr
 	struct D3D12Mesh : Mesh
 	{
 		d3d12::StagingBuffer* m_vertex_buffer;
+		d3d12::StagingBuffer* m_index_buffer;
+		uint32_t m_vertex_count;
+		uint32_t m_index_count;
 	};
 
 	class D3D12MaterialPool : public MaterialPool

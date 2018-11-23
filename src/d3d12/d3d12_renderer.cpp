@@ -371,6 +371,11 @@ namespace wr
 		{
 			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
 			d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
+
+			if (n_mesh->m_index_buffer != nullptr)
+			{
+				d3d12::StageBuffer(n_mesh->m_index_buffer, m_direct_cmd_list);
+			}
 		}
 	}
 
@@ -443,8 +448,15 @@ namespace wr
 				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
 				d3d12::BindVertexBuffer(cmd_list, n_mesh->m_vertex_buffer);
 
-				//TODO: Don't hardcode the vertices; and support indices
-				d3d12::Draw(cmd_list, 36, batch.num_instances);
+				if (n_mesh->m_index_buffer != nullptr) 
+				{
+					d3d12::BindIndexBuffer(cmd_list, n_mesh->m_index_buffer);
+					d3d12::DrawIndexed(cmd_list, n_mesh->m_index_count, batch.num_instances);
+				}
+				else 
+				{
+					d3d12::Draw(cmd_list, n_mesh->m_vertex_count, batch.num_instances);
+				}
 			}
 
 			//Reset instances

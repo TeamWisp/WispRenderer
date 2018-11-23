@@ -65,7 +65,15 @@ namespace wr
 
 	Mesh* D3D12ModelPool::LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size)
 	{
-		return new Mesh();
+		auto mesh = new D3D12Mesh();
+		auto device = m_render_system.m_device;
+
+		mesh->m_vertex_buffer = d3d12::CreateStagingBuffer(device, vertices_data, vertex_size * num_vertices, vertex_size, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		mesh->m_index_buffer = d3d12::CreateStagingBuffer(device, indices_data, num_indices * index_size, index_size, ResourceState::INDEX_BUFFER);
+		mesh->m_vertex_count = num_vertices;
+		mesh->m_index_count = num_indices;
+
+		return mesh;
 	}
 
 	Mesh* D3D12ModelPool::LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size)
@@ -74,6 +82,9 @@ namespace wr
 		auto device = m_render_system.m_device;
 
 		mesh->m_vertex_buffer = d3d12::CreateStagingBuffer(device, vertices_data, vertex_size * num_vertices, vertex_size, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		mesh->m_index_buffer = nullptr;
+		mesh->m_vertex_count = num_vertices;
+		mesh->m_index_count = 0;
 
 		return mesh;
 	}
