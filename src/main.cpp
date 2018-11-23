@@ -11,6 +11,8 @@ bool open1 = true;
 bool open2 = true;
 char message_buffer[600];
 
+std::unique_ptr<wr::D3D12RenderSystem> render_system;
+
 void RenderEditor()
 {
 	if (main_menu && ImGui::BeginMainMenuBar())
@@ -68,12 +70,12 @@ void RenderEditor()
 	wr::imgui::window::ShaderRegistry();
 	wr::imgui::window::PipelineRegistry();
 	wr::imgui::window::RootSignatureRegistry();
-
+	wr::imgui::window::D3D12HardwareInfo(*render_system.get());
 }
 
 void WispEntry()
 {
-	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	render_system = std::make_unique<wr::D3D12RenderSystem>();
 	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
 
 	render_system->Init(window.get());
@@ -98,11 +100,10 @@ void WispEntry()
 	auto scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
 	auto mesh_node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-
 	auto mesh_node_2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-	mesh_node_2->SetPosition({ -2, -2, 5 });
-
 	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 1.74f, (float)window->GetWidth() / (float)window->GetHeight());
+
+	mesh_node_2->SetPosition({ -2, -2, 5 });
 	camera->SetPosition(0, 0, -5);
 
 	render_system->InitSceneGraph(*scene_graph.get());
@@ -117,8 +118,8 @@ void WispEntry()
 		window->PollEvents();
 		auto texture = render_system->Render(scene_graph, frame_graph);
 	}
-	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished.
 
+	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 	frame_graph.Destroy();
 	render_system.reset();
 }

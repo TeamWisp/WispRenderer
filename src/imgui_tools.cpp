@@ -5,9 +5,10 @@
 #include <sstream>
 #include <optional>
 
-#include "d3d12/d3d12_shader_registry.hpp"
-#include "d3d12/d3d12_pipeline_registry.hpp"
-#include "d3d12/d3d12_root_signature_registry.hpp"
+#include "shader_registry.hpp"
+#include "pipeline_registry.hpp"
+#include "root_signature_registry.hpp"
+#include "d3d12/d3d12_renderer.hpp"
 
 namespace wr::imgui::internal
 {
@@ -17,6 +18,14 @@ namespace wr::imgui::internal
 		auto address(reinterpret_cast<int>(obj));
 		std::stringstream ss;
 		ss << std::hex << address;
+		return ss.str();
+	}
+
+	template <typename T>
+	inline std::string DecimalToHex(const T decimal)
+	{
+		std::stringstream ss;
+		ss << std::hex << decimal;
 		return ss.str();
 	}
 
@@ -67,6 +76,49 @@ namespace wr::imgui::menu
 
 namespace wr::imgui::window
 {
+
+	void D3D12HardwareInfo(D3D12RenderSystem& render_system)
+	{
+		auto os_info = render_system.m_device->m_sys_info;
+		auto dx_info = render_system.m_device->m_adapter_info;
+
+		if (open_hardware_info)
+		{
+			ImGui::Begin("Hardware Info", &open_hardware_info);
+			if (ImGui::CollapsingHeader("System Information", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Text("Page Size: %i", os_info.dwPageSize);
+				ImGui::Text("Application Address Range: %s - %s", internal::DecimalToHex(os_info.lpMinimumApplicationAddress).c_str(), internal::DecimalToHex(os_info.lpMaximumApplicationAddress).c_str());
+				ImGui::Text("Active Processor Mask: %i", os_info.dwActiveProcessorMask);
+				ImGui::Text("Processor Count: %i", os_info.dwNumberOfProcessors);
+
+				switch (os_info.wProcessorArchitecture)
+				{
+				case 9: ImGui::Text("Processor Architecture: %s", "PROCESSOR_ARCHITECTURE_AMD64"); break;
+				case 5: ImGui::Text("Processor Architecture: %s", "PROCESSOR_ARCHITECTURE_ARM"); break;
+				case 6: ImGui::Text("Processor Architecture: %s", "PROCESSOR_ARCHITECTURE_IA64"); break;
+				case 0: ImGui::Text("Processor Architecture: %s", "PROCESSOR_ARCHITECTURE_INTEL"); break;
+				default: ImGui::Text("Processor Architecture: %s", "Unknown"); break;
+				}
+			}
+
+			if (ImGui::CollapsingHeader("Graphics Adapter Information", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				std::wstring wdesc(dx_info.Description);
+				std::string desc(wdesc.begin(), wdesc.end());
+
+				ImGui::Text("Description: %s", desc.c_str());
+				ImGui::Text("Vendor ID: %i", dx_info.VendorId);
+				ImGui::Text("Device ID: %i", dx_info.DeviceId);
+				ImGui::Text("Subsystem ID: %i", dx_info.SubSysId);
+				ImGui::Text("Dedicated Video Memory: %s", internal::DecimalToHex(dx_info.DedicatedVideoMemory).c_str());
+				ImGui::Text("Dedicated System Memory: %s", internal::DecimalToHex(dx_info.DedicatedSystemMemory).c_str());
+				ImGui::Text("Shared System Memory: %s", internal::DecimalToHex(dx_info.SharedSystemMemory).c_str());
+			}
+
+			ImGui::End();
+		}
+	}
 
 	void ShaderRegistry()
 	{

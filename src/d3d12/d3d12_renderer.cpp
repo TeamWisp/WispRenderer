@@ -48,10 +48,6 @@ namespace wr
 		PrepareRootSignatureRegistry();
 		PreparePipelineRegistry();
 
-		LOG("Num Root Signatures: {}", RootSignatureRegistry::Get().m_objects.size());
-		LOG("Num Shaders: {}", ShaderRegistry::Get().m_objects.size());
-		LOG("Num Pipelines: {}", PipelineRegistry::Get().m_objects.size());
-
 		// Create fences
 		for (auto i = 0; i < m_fences.size(); i++)
 		{
