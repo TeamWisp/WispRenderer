@@ -57,7 +57,7 @@ REM ##### DOWNLOAD DEPS #####
 REM ##### DOWNLOAD DEPS #####
 :downloadDepsServer
 call :colorEcho %header_color% "## Downloading Dependencies ##"
-cd %2
+cd %~dp2
 git submodule init
 git submodule update 
 EXIT /B 0
@@ -75,7 +75,7 @@ EXIT /B 0
 
 :genVS15Win64Server
 call :colorEcho %header_color% "## Generating Visual Studio 15 2017 Win64 Project. ##"
-cd %2
+cd %~dp2
 mkdir build_vs2017_win64
 cd build_vs2017_win64
 cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A x64 ..
@@ -94,7 +94,7 @@ EXIT /B 0
 
 :genVS15Win32Server
 call :colorEcho %header_color% "## Generating Visual Studio 15 2017 Win32 Project. ##"
-cd %2
+cd %~dp2
 mkdir build_vs2017_win32
 cd build_vs2017_win32
 cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A Win32 ..
