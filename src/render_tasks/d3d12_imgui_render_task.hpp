@@ -85,6 +85,13 @@ namespace wr
 			}
 		}
 
+		inline void DestroyImGuiTask(RenderTask<ImGuiTaskData> & task, ImGuiTaskData& data)
+		{
+			ImGui_ImplDX12_Shutdown();
+			ImGui_ImplWin32_Shutdown();
+			ImGui::DestroyContext();
+		}
+
 	} /* internal */
 	
 
@@ -104,7 +111,9 @@ namespace wr
 				false
 			},
 			[imgui_func](RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, ImGuiTaskData & data) { data.in_imgui_func = imgui_func; internal::SetupImGuiTask(render_system, task, data); },
-			[](RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, SceneGraph & scene_graph, ImGuiTaskData & data) { internal::ExecuteImGuiTask(render_system, task, scene_graph, data); });
+			[](RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, SceneGraph & scene_graph, ImGuiTaskData & data) { internal::ExecuteImGuiTask(render_system, task, scene_graph, data); },
+			[](RenderTask<ImGuiTaskData> & task, ImGuiTaskData & data) { internal::DestroyImGuiTask(task, data); }
+		);
 
 		return ptr;
 	}

@@ -17,6 +17,7 @@ void RenderEditor()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
+			if (ImGui::MenuItem("Exit", "ALT+F4")) std::exit(0);
 			ImGui::MenuItem("Theme", nullptr, &open0);
 			ImGui::MenuItem("ImGui Details", nullptr, &open1);
 			ImGui::MenuItem("Logging Example", nullptr, &open2);
@@ -116,6 +117,10 @@ void WispEntry()
 		window->PollEvents();
 		auto texture = render_system->Render(scene_graph, frame_graph);
 	}
+	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished.
+
+	frame_graph.Destroy();
+	render_system.reset();
 }
 
 WISP_ENTRY(WispEntry)
