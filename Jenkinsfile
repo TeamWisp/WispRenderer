@@ -9,21 +9,21 @@ pipeline {
 				cd "%WORKSPACE%
 				install -j "%WORKSPACE%" 
 				if errorlevel 1 (
-					cd %WORKSPACE%\\Scripts
+					cd %WORKSPACE%\\Scripts 
 					call JenkinsWebhook.bat ":x: Pull Request Build Failed!! Jenskins build nr: %BUILD_NUMBER% - install failed"
 					EXIT 1
 				)'''
 
 				bat '''
 				cd "%WORKSPACE%
-				cmake --build ./build_vs2017_win32
+				cmake --build ./build_vs2017_win32 
 				if errorlevel 1 (
-					cd %WORKSPACE%\\Scripts
+					cd %WORKSPACE%\\Scripts 
 					call JenkinsWebhook.bat ":x: Pull Request Build Failed!! Jenskins build nr: %BUILD_NUMBER% - 32bit build failed"
 				)
-				cmake --build ./build_vs2017_win64
+				cmake --build ./build_vs2017_win64 
 				if errorlevel 1 (
-					cd %WORKSPACE%\\Scripts
+					cd %WORKSPACE%\\Scripts 
 					call JenkinsWebhook.bat ":x: Pull Request Build Failed!! Jenskins build nr: %BUILD_NUMBER% - 64bit build failed"
 					EXIT 1
 				)
