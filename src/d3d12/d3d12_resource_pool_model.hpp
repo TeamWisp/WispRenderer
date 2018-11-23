@@ -1,11 +1,13 @@
 #pragma once
 
 #include "../resource_pool_model.hpp"
+#include "d3d12_structs.hpp"
 
 namespace wr::d3d12
 {
 	struct HeapResource;
 	struct StagingBuffer;
+	struct CommandList;
 }
 
 namespace wr
@@ -15,22 +17,47 @@ namespace wr
 
 	struct D3D12Mesh : Mesh
 	{
-		d3d12::StagingBuffer* m_vertex_buffer;
+		D3D12_GPU_VIRTUAL_ADDRESS m_vertex_buffer_base_address;
+		std::size_t m_vertex_staging_buffer_offset;
+		std::size_t m_vertex_staging_buffer_size;
+		std::size_t m_vertex_Staging_buffer_stride;
+		D3D12_GPU_VIRTUAL_ADDRESS m_index_buffer_base_address;
+		std::size_t m_index_staging_buffer_offset;
+		std::size_t m_index_staging_buffer_size;
 	};
 
 	class D3D12ModelPool : public ModelPool
 	{
 	public:
-		explicit D3D12ModelPool(D3D12RenderSystem& render_system, std::size_t size_in_mb);
+		explicit D3D12ModelPool(D3D12RenderSystem& render_system, 
+			std::size_t vertex_buffer_pool_size_in_mb,
+			std::size_t index_buffer_pool_size_in_mb);
 		~D3D12ModelPool() final;
 
 		void Evict() final;
 		void MakeResident() final;
 
+		void StageMesh(Mesh* mesh, d3d12::CommandList* cmd_list);
+
+		d3d12::StagingBuffer* GetVertexStagingBuffer();
+		d3d12::StagingBuffer* GetIndexStagingBuffer();
+
 	protected:
 		Model* LoadFBX(std::string_view path, ModelType type) final;
 		Mesh* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
 		Mesh* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;
+
+		void DestroyModel(Model* model) final;
+		void DestroyMesh(Mesh* mesh) final;
+
+		d3d12::StagingBuffer* m_vertex_buffer;
+		d3d12::StagingBuffer* m_index_buffer;
+
+		std::vector<std::uint64_t> m_vertex_buffer_bitmap;
+		std::vector<std::uint64_t> m_index_buffer_bitmap;
+
+		std::uint64_t m_vertex_buffer_size;
+		std::uint64_t m_index_buffer_size;
 
 		D3D12RenderSystem& m_render_system;
 	};

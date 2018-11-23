@@ -41,7 +41,7 @@ namespace wr
 		void Resize(std::int32_t width, std::int32_t height) final;
 
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
-		std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
+		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb) final;
 
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;

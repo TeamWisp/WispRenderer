@@ -151,7 +151,7 @@ namespace wr::d3d12
 		cmd_list->m_native->RSSetScissorRects(1, &viewport.m_scissor_rect);
 	}
 
-	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer)
+	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size, std::size_t stride)
 	{
 		if (!buffer->m_gpu_address)
 		{
@@ -159,14 +159,14 @@ namespace wr::d3d12
 		}
 
 		D3D12_VERTEX_BUFFER_VIEW view;
-		view.BufferLocation = buffer->m_gpu_address;
-		view.StrideInBytes = buffer->m_stride_in_bytes;
-		view.SizeInBytes = buffer->m_size;
+		view.BufferLocation = buffer->m_gpu_address + offset;
+		view.StrideInBytes = stride;
+		view.SizeInBytes = size;
 
 		cmd_list->m_native->IASetVertexBuffers(0, 1, &view);
 	}
 
-	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset)
+	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset, unsigned int size)
 	{
 		if (!buffer->m_gpu_address)
 		{
@@ -174,9 +174,9 @@ namespace wr::d3d12
 		}
 
 		D3D12_INDEX_BUFFER_VIEW view;
-		view.BufferLocation = buffer->m_gpu_address;
+		view.BufferLocation = buffer->m_gpu_address + offset;
 		view.Format = DXGI_FORMAT_R32_UINT;
-		view.SizeInBytes = buffer->m_size;
+		view.SizeInBytes = size;
 
 		cmd_list->m_native->IASetIndexBuffer(&view);
 	}

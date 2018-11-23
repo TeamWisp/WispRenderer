@@ -10,8 +10,11 @@
 
 namespace wr
 {
+	class ModelPool;
+
 	struct Mesh
 	{
+		ModelPool* m_model_pool;
 	};
 
 	template<typename TV, typename TI = std::uint32_t>
@@ -35,7 +38,8 @@ namespace wr
 	class ModelPool
 	{
 	public:
-		explicit ModelPool(std::size_t size_in_mb);
+		explicit ModelPool(std::size_t vertex_buffer_pool_size_in_mb,
+			std::size_t index_buffer_pool_size_in_mb);
 		virtual ~ModelPool() = default;
 
 		ModelPool(ModelPool const &) = delete;
@@ -48,6 +52,9 @@ namespace wr
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
 
+		void Destroy(Model* model);
+		void Destroy(Mesh* mesh);
+
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
 
@@ -56,7 +63,11 @@ namespace wr
 		virtual Mesh* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
 		virtual Mesh* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) = 0;
 
-		std::size_t m_size_in_mb;
+		virtual void DestroyModel(Model* model) = 0;
+		virtual void DestroyMesh(Mesh* mesh) = 0;
+
+		std::size_t m_vertex_buffer_pool_size_in_mb;
+		std::size_t m_index_buffer_pool_size_in_mb;
 	};
 
 	template<typename TV, typename TI>

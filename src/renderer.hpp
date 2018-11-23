@@ -31,7 +31,7 @@ namespace wr
 		RenderSystem& operator=(RenderSystem&&) = delete;
 
 		virtual std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) = 0;
-		virtual std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) = 0;
+		virtual std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb) = 0;
 
 		virtual void PrepareRootSignatureRegistry() = 0;
 		virtual void PrepareShaderRegistry() = 0;
