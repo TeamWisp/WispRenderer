@@ -59,7 +59,7 @@ namespace wr
 		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
 		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
 		constexpr auto sbo_size = 
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */ 
+			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 models */ 
 			+ cam_cbs_size;
 
 		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
@@ -67,7 +67,9 @@ namespace wr
 		// Create Constant Buffer
 		d3d12::MapHeap(m_cb_heap);
 
-		// Load Shaders.
+		//G-buffer preparation pipeline and shaders
+
+		// Load Shaders
 		m_vertex_shader = d3d12::LoadShader(ShaderType::VERTEX_SHADER, "basic.hlsl", "main_vs");
 		m_pixel_shader = d3d12::LoadShader(ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
 
@@ -83,10 +85,12 @@ namespace wr
 
 		// Create Pipeline State
 		d3d12::desc::PipelineStateDesc pso_desc;
-		pso_desc.m_dsv_format = Format::UNKNOWN;
-		pso_desc.m_num_rtv_formats = 1;
-		pso_desc.m_rtv_formats[0] = Format::R8G8B8A8_UNORM;
+		pso_desc.m_dsv_format = Format::D32_FLOAT;
+		pso_desc.m_num_rtv_formats = 2;
+		pso_desc.m_rtv_formats = { Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_SNORM };
 		pso_desc.m_input_layout = wr::Vertex::GetInputLayout();
+		pso_desc.m_depth_enabled = true;
+		pso_desc.m_counter_clockwise = true;
 
 		m_pipeline_state = d3d12::CreatePipelineState();
 		d3d12::SetVertexShader(m_pipeline_state, m_vertex_shader);
@@ -94,14 +98,49 @@ namespace wr
 		d3d12::SetRootSignature(m_pipeline_state, m_root_signature);
 		d3d12::FinalizePipeline(m_pipeline_state, m_device, pso_desc);
 
+		//Lighting pipeline and shaders
+
+		// Load Shaders
+		m_lighting_vertex_shader = d3d12::LoadShader(ShaderType::VERTEX_SHADER, "lighting.hlsl", "main_vs");
+		m_lighting_pixel_shader = d3d12::LoadShader(ShaderType::PIXEL_SHADER, "lighting.hlsl", "main_ps");
+
+		// Create Root Signature
+		rs_desc = {};
+		rs_desc.m_samplers.push_back({ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP });
+		rs_desc.m_descriptorRanges = {
+			{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0 }
+		};
+
+		m_lighting_root_signature = d3d12::CreateRootSignature(rs_desc);
+		d3d12::FinalizeRootSignature(m_lighting_root_signature, m_device);
+
+		// Create Pipeline State
+		pso_desc = {};
+		pso_desc.m_counter_clockwise = true;
+		pso_desc.m_dsv_format = Format::UNKNOWN;
+		pso_desc.m_num_rtv_formats = 1;
+		pso_desc.m_rtv_formats[0] = Format::R8G8B8A8_UNORM;
+		pso_desc.m_input_layout = wr::Vertex2D::GetInputLayout();
+
+		m_lighting_pipeline_state = d3d12::CreatePipelineState();
+		d3d12::SetVertexShader(m_lighting_pipeline_state, m_lighting_vertex_shader);
+		d3d12::SetFragmentShader(m_lighting_pipeline_state, m_lighting_pixel_shader);
+		d3d12::SetRootSignature(m_lighting_pipeline_state, m_lighting_root_signature);
+		d3d12::FinalizePipeline(m_lighting_pipeline_state, m_device, pso_desc);
+
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
 		// Create screen quad
-		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, sizeof(temp::quad_vertices), sizeof(Vertex2D), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
+
+		if (m_render_window.has_value())
+		{
+			Resize(m_render_window.value()->m_width, m_render_window.value()->m_height);
+		}
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -109,7 +148,7 @@ namespace wr
 
 		// Stage screen quad
 		d3d12::StageBuffer(m_vertex_buffer, m_direct_cmd_list);
-
+		
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
@@ -156,6 +195,14 @@ namespace wr
 
 	void D3D12RenderSystem::Resize(std::int32_t width, std::int32_t height)
 	{
+		if (m_gbuffer != nullptr)
+		{
+			delete m_gbuffer;
+		}
+
+		//Create Render Target
+		m_gbuffer = d3d12::CreateRenderTarget(m_device, (uint32_t)width, (uint32_t)height, { true, Format::D32_FLOAT, { Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_SNORM }, 2, { 0, 0, 0, 0 } });
+
 	}
 
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
@@ -171,7 +218,6 @@ namespace wr
 	void D3D12RenderSystem::PreparePipelineRegistry()
 	{
 		auto& registry = PipelineRegistry::Get();
-
 
 		for (auto desc : registry.m_descriptions)
 		{
@@ -299,6 +345,7 @@ namespace wr
 			d3d12::desc::RootSignatureDesc n_desc;
 			n_desc.m_parameters = desc.second.m_parameters;
 			n_desc.m_samplers = desc.second.m_samplers;
+			n_desc.m_descriptorRanges = desc.second.m_descriptorRanges;
 
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
 			d3d12::FinalizeRootSignature(n_rs, m_device);

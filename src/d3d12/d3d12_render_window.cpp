@@ -41,6 +41,9 @@ namespace wr::d3d12
 		unsigned int width = static_cast<decltype(width)>(r.right - r.left);
 		unsigned int height = static_cast<decltype(height)>(r.bottom - r.top);
 
+		render_window->m_width = width;
+		render_window->m_height = height;
+
 		const auto swap_chain_desc = internal::GetSwapChainDesc(width, height, num_back_buffers);
 
 		IDXGISwapChain1* temp_swap_chain;

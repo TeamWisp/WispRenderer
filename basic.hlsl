@@ -52,7 +52,16 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	return output;
 }
 
-float4 main_ps(VS_OUTPUT input) : SV_TARGET
+struct PS_OUTPUT
 {
-	return float4(input.uv, 0, 1);
+	float4 diffuse : SV_TARGET0;
+	float4 normal : SV_TARGET1;
+};
+
+PS_OUTPUT main_ps(VS_OUTPUT input)
+{
+	PS_OUTPUT output;
+	output.diffuse = float4(input.uv, 0, 1);
+	output.normal = float4(input.normal, 0);
+	return output;
 }

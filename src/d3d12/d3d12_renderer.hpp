@@ -26,12 +26,14 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 		};
 
-		static const constexpr float size = 0.5f;
-		static const constexpr Vertex quad_vertices[] = {
-			{ -size, -size, 0.f },
-			{ size, -size, 0.f },
-			{ -size, size, 0.f },
-			{ size, size, 0.f },
+		static const constexpr float size = 1.f;
+		static const constexpr Vertex2D quad_vertices[] = {
+			{ -size, -size },
+			{ size, -size },
+			{ size, size },
+			{ size, size },
+			{ -size, size },
+			{ -size, -size }
 		};
 
 	} /* temp */
@@ -99,9 +101,14 @@ namespace wr
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::PipelineState* m_pipeline_state;
+		d3d12::PipelineState* m_lighting_pipeline_state;
 		d3d12::RootSignature* m_root_signature;
+		d3d12::RootSignature* m_lighting_root_signature;
 		d3d12::Shader* m_vertex_shader;
 		d3d12::Shader* m_pixel_shader;
+		d3d12::RenderTarget* m_gbuffer = nullptr;
+		d3d12::Shader* m_lighting_vertex_shader;
+		d3d12::Shader* m_lighting_pixel_shader;
 		d3d12::StagingBuffer* m_vertex_buffer;
 
 	};

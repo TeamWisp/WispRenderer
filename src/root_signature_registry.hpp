@@ -19,6 +19,7 @@ namespace wr
 	{
 		std::vector<CD3DX12_ROOT_PARAMETER> m_parameters; // TODO: Write platform independend version.
 		std::vector<d3d12::desc::SamplerDesc> m_samplers; // TODO: Move to platform independed location
+		std::vector<CD3DX12_DESCRIPTOR_RANGE> m_descriptorRanges; // TODO: Move to platform independed location
 	};
 
 	class RootSignatureRegistry : public internal::Registry<RootSignatureRegistry, RootSignature, RootSignatureDescription>

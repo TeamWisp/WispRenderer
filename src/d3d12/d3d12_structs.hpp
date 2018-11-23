@@ -51,6 +51,7 @@ namespace wr::d3d12
 		{
 			std::vector<CD3DX12_ROOT_PARAMETER> m_parameters;
 			std::vector<desc::SamplerDesc> m_samplers;
+			std::vector<CD3DX12_DESCRIPTOR_RANGE> m_descriptorRanges;
 		};
 
 		struct DescriptorHeapDesc
@@ -91,6 +92,8 @@ namespace wr::d3d12
 		desc::RenderTargetDesc m_create_info;
 		unsigned int m_frame_idx;
 		unsigned int m_num_render_targets;
+	
+		uint32_t m_width, m_height;
 
 		std::vector<ID3D12Resource*> m_render_targets;
 		ID3D12DescriptorHeap* m_rtv_descriptor_heap;

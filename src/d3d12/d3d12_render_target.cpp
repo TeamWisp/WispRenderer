@@ -12,6 +12,8 @@ namespace wr::d3d12
 		auto render_target = new RenderTarget();
 		const auto n_device = device->m_native;
 
+		render_target->m_width = width;
+		render_target->m_height = height;
 		render_target->m_render_targets.resize(descriptor.m_num_rtv_formats);
 		render_target->m_create_info = descriptor;
 		render_target->m_num_render_targets = descriptor.m_num_rtv_formats;
