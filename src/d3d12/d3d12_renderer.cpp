@@ -70,18 +70,12 @@ namespace wr
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
-		// Create screen quad
-		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
-
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
-
-		// Stage screen quad
-		d3d12::StageBuffer(m_vertex_buffer, m_direct_cmd_list);
 
 		// Execute
 		d3d12::End(m_direct_cmd_list);
