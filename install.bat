@@ -81,7 +81,6 @@ cd build_vs2017_win64
 cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A x64 ..
 if errorlevel 1 (
   call :colorecho %red% "CMake finished with errors"
-  EXIT 1
 )
 cd ..
 EXIT /B 0
@@ -103,7 +102,6 @@ cd build_vs2017_win32
 cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A Win32 ..
 if errorlevel 1 (
   call :colorecho %red% "CMake finished with errors"
-  EXIT 1
 )
 cd ..
 EXIT /B 0
