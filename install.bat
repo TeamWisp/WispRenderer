@@ -23,12 +23,19 @@ call :colorEcho %title_color% "==================================="
 call :colorEcho %title_color% "           Wisp Installer          "
 call :colorEcho %title_color% "==================================="
 
-call :downloadDeps
-
-call :genVS15Win64 
-REM >> test.txt 2>&1
-call :genVS15Win32 
-REM >> test.txt 2>&1
+if "%1" == "-j" ( 
+  call :downloadDepsServer
+  call :genVS15Win64Server 
+  REM >> test.txt 2>&1
+  call :genVS15Win32Server 
+  REM >> test.txt 2>&1
+) else (
+  call :downloadDeps
+  call :genVS15Win64 
+  REM >> test.txt 2>&1
+  call :genVS15Win32 
+  REM >> test.txt 2>&1
+)
 
 call :colorEcho %light_green% "Installation Finished!"
 if "%1" == "-j" ( 
@@ -47,6 +54,15 @@ git submodule update
 EXIT /B 0
 REM ##### DOWNLOAD DEPS #####
 
+REM ##### DOWNLOAD DEPS #####
+:downloadDepsServer
+call :colorEcho %header_color% "#### Downloading Dependencies ####"
+cd %2
+git submodule init
+git submodule update 
+EXIT /B 0
+REM ##### DOWNLOAD DEPS #####
+
 REM ##### GEN PROJECTS #####
 :genVS15Win64
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
@@ -57,8 +73,28 @@ if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0
 
+:genVS15Win64Server
+call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
+cd %2
+mkdir build_vs2017_win64
+cd build_vs2017_win64
+cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A x64 ..
+if errorlevel 1 call :colorecho %red% "CMake finished with errors"
+cd ..
+EXIT /B 0
+
 :genVS15Win32
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
+mkdir build_vs2017_win32
+cd build_vs2017_win32
+cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A Win32 ..
+if errorlevel 1 call :colorecho %red% "CMake finished with errors"
+cd ..
+EXIT /B 0
+
+:genVS15Win32Server
+call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
+cd %2
 mkdir build_vs2017_win32
 cd build_vs2017_win32
 cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A Win32 ..
