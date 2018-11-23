@@ -17,7 +17,7 @@ namespace wr::d3d12
 			DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = {};
 			swap_chain_desc.Width = width;
 			swap_chain_desc.Height = height;
-			swap_chain_desc.Format = settings::back_buffer_format;
+			swap_chain_desc.Format = (DXGI_FORMAT)settings::back_buffer_format;
 			swap_chain_desc.SampleDesc = sample_desc;
 			swap_chain_desc.BufferCount = num_back_buffers;
 			swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;

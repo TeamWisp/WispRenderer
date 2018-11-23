@@ -22,7 +22,7 @@ namespace wr::d3d12::settings
 		D3D_FEATURE_LEVEL_11_0
 	};
 
-	static const constexpr DXGI_FORMAT back_buffer_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	static const constexpr Format back_buffer_format = Format::R8G8B8A8_UNORM;
 	static const constexpr DXGI_SWAP_EFFECT flip_mode = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	static const constexpr DXGI_SWAP_CHAIN_FLAG swapchain_flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	static const constexpr DXGI_SCALING swapchain_scaling = DXGI_SCALING_STRETCH;
