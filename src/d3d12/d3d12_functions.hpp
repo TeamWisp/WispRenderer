@@ -46,17 +46,17 @@ namespace wr::d3d12
 	void Destroy(CommandList* cmd_list);
 
 	// RenderTarget
-	[[nodiscard]] RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer);
+	[[nodiscard]] RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer);
 	void SetName(RenderTarget* render_target, std::wstring name);
 	void SetName(RenderTarget* render_target, std::string name);
-	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
-	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
+	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
+	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
 	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle);
 	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
 	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	// void CreateUAVFromTexture(Texture* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	// void CreateSRVFromTexture(Texture* tex, DescHeapCPUHandle& handle);
-	void Resize(RenderTarget** render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
+	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height);
 	void IncrementFrameIdx(RenderTarget* render_target);
 	void DestroyDepthStencilBuffer(RenderTarget* render_target);
 	void DestroyRenderTargetViews(RenderTarget* render_target);
@@ -65,8 +65,8 @@ namespace wr::d3d12
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, IUnknown* window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
-	void Resize(RenderWindow* render_window, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
-	void Present(RenderWindow* render_window, CommandQueue* cmd_queue, Device* device);
+	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height);
+	void Present(RenderWindow* render_window, Device* device);
 	void Destroy(RenderWindow* render_window);
 
 	// Descriptor Heap

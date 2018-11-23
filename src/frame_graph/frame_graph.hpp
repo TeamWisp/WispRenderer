@@ -9,7 +9,6 @@ namespace wr
 
 	class FrameGraph
 	{
-		friend class BaseTask;
 	public:
 		FrameGraph() {}
 		virtual ~FrameGraph() = default;
@@ -24,6 +23,20 @@ namespace wr
 		void AddTask(std::unique_ptr<BaseRenderTask> task);
 		void Setup(RenderSystem & render_system);
 		void Execute(RenderSystem & render_system, SceneGraph & scene_graph);
+
+		template<typename T>
+		std::vector<T*> GetAllCommandLists() const
+		{
+			static_assert(std::is_base_of<CommandList, T>::value, "Type must be child of wr::CommandList");
+
+			std::vector<T*> retval;
+			for (auto& task : m_tasks)
+			{
+				retval.push_back(task->GetCommandList<T>().first);
+			}
+
+			return retval;
+		}
 
 		template<typename T>
 		auto GetData();

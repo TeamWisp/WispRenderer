@@ -127,6 +127,9 @@ namespace wr
 
 	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
+		auto frame_idx = GetFrameIdx();
+		d3d12::WaitFor(m_fences[frame_idx]);
+
 		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 		recursive_func_t recursive_update = [this, &recursive_update](std::shared_ptr<Node> const & parent)
 		{
@@ -140,6 +143,21 @@ namespace wr
 		recursive_update(scene_graph->GetRootNode());
 
 		frame_graph.Execute(*this, *scene_graph.get());
+
+		auto cmd_lists = frame_graph.GetAllCommandLists<D3D12CommandList>();
+		std::vector<d3d12::CommandList*> n_cmd_lists;
+		for (auto& list : cmd_lists)
+		{
+			n_cmd_lists.push_back(list);
+		}
+
+		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
+		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
+
+		if (m_render_window.has_value())
+		{
+			d3d12::Present(m_render_window.value(), m_device);
+		}
 
 		return std::unique_ptr<Texture>();
 	}
@@ -205,6 +223,69 @@ namespace wr
 
 			registry.m_objects.insert({ desc.first, pipeline });
 		}
+	}
+
+	CommandList* D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	RenderTarget* D3D12RenderSystem::GetRenderTarget(std::optional<std::pair<unsigned int, unsigned int>> size, bool render_window)
+	{
+		if (render_window)
+		{
+			if (!m_render_window.has_value())
+			{
+				LOGC("Tried using a render task which depends on the render window.");
+				return nullptr;
+			}
+			return (D3D12RenderTarget*)m_render_window.value();
+		}
+		else
+		{
+			if (!size.has_value())
+			{
+				LOGC("Render task tried creating a render target which is not the render window without specifying the size.");
+				return nullptr;
+			}
+			d3d12::desc::RenderTargetDesc desc;
+			desc.m_create_dsv_buffer = false;
+			desc.m_num_rtv_formats = 1;
+			desc.m_rtv_formats[0] = Format::R8G8B8A8_UINT;
+			desc.m_dsv_format = Format::UNKNOWN;
+			return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, size.value().first, size.value().second, desc, false);
+		}
+	}
+
+	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, RenderTarget* render_target)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target);
+		auto frame_idx = GetFrameIdx();
+	
+		d3d12::Begin(n_cmd_list, frame_idx);
+		d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
+		d3d12::BindRenderTargetVersioned(n_cmd_list, n_render_target, frame_idx, true, true);
+	}
+
+	void D3D12RenderSystem::StopRenderTask(CommandList* cmd_list, RenderTarget* render_target)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target);
+		auto frame_idx = GetFrameIdx();
+
+		d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
+		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()

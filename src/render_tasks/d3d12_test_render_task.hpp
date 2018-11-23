@@ -60,7 +60,7 @@ namespace wr
 
 				d3d12::Execute(queue, { cmd_list }, fences[frame_idx]);
 				d3d12::Signal(fences[frame_idx], queue);
-				d3d12::Present(render_window, queue, device);
+				d3d12::Present(render_window, device);
 			}
 		}
 
@@ -70,7 +70,7 @@ namespace wr
 	//! Used to create a new defferred task.
 	[[nodiscard]] inline std::unique_ptr<RenderTask<DeferredTaskData>> GetTestTask()
 	{
-		auto ptr = std::make_unique<RenderTask<DeferredTaskData>>(nullptr, "Deferred Render Task",
+		auto ptr = std::make_unique<RenderTask<DeferredTaskData>>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT, std::nullopt,
 			[](RenderSystem & render_system, RenderTask<DeferredTaskData> & task, DeferredTaskData & data) { internal::SetupDeferredTask(render_system, task, data); },
 			[](RenderSystem & render_system, RenderTask<DeferredTaskData> & task, SceneGraph & scene_graph, DeferredTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); });
 
