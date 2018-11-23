@@ -2,7 +2,10 @@
 
 #include <functional>
 #include <string>
+#include <array>
 #include <optional>
+
+#include "../platform_independend_structs.hpp"
 
 namespace wr
 {
@@ -27,7 +30,7 @@ namespace wr
 	{
 		friend class FrameGraph;
 	public:
-		BaseRenderTask(const std::type_info& data_type_info, FrameGraph* frame_graph, std::string const & name, RenderTaskType type, std::optional<std::pair<unsigned int, unsigned int>> size);
+		BaseRenderTask(const std::type_info& data_type_info, FrameGraph* frame_graph, std::string const & name, RenderTaskType type, RenderTargetProperties rt_properties);
 		virtual ~BaseRenderTask() = default;
 
 		BaseRenderTask(const BaseRenderTask&) = delete;
@@ -70,8 +73,8 @@ namespace wr
 		RenderTarget* m_render_target;
 		//! The type of render task
 		RenderTaskType m_type;
-		//! Render Target Size
-		std::optional<std::pair<unsigned int, unsigned int>> m_size;
+		//! Render Target Properties
+		RenderTargetProperties m_rt_properties;
 	};
 
 } /* wr */

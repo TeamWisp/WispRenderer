@@ -100,7 +100,7 @@ void WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	//frame_graph.AddTask(wr::GetTestTask());
+	frame_graph.AddTask(wr::GetTestTask());
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 
