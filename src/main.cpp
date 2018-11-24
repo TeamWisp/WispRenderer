@@ -1,5 +1,5 @@
 #include <memory>
-
+#include <algorithm>
 #include "wisp.hpp"
 #include "render_tasks/d3d12_test_render_task.hpp"
 #include "render_tasks/d3d12_imgui_render_task.hpp"
@@ -9,9 +9,12 @@ bool main_menu = true;
 bool open0 = true;
 bool open1 = true;
 bool open2 = true;
+bool open_console = false;
 char message_buffer[600];
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
+
+static wr::imgui::special::DebugConsole debug_console;
 
 void RenderEditor()
 {
@@ -64,6 +67,11 @@ void RenderEditor()
 		if (ImGui::Button("LOGW (Warning)")) LOGW(message_buffer);
 		if (ImGui::Button("LOGE (Error)")) LOGE(message_buffer);
 		if (ImGui::Button("LOGC (Critical)")) LOGC(message_buffer);
+
+		if (ImGui::Button("C LOG (Message)")) debug_console.AddLog(message_buffer);
+		if (ImGui::Button("C LOGW (Warning)")) debug_console.AddLog(message_buffer);
+		if (ImGui::Button("C LOGE (Error)")) debug_console.AddLog(message_buffer);
+		if (ImGui::Button("C LOGC (Critical)")) debug_console.AddLog(message_buffer);
 		ImGui::End();
 	}
 
@@ -72,12 +80,28 @@ void RenderEditor()
 	wr::imgui::window::RootSignatureRegistry();
 	wr::imgui::window::D3D12HardwareInfo(*render_system.get());
 	wr::imgui::window::D3D12Settings();
+
+	debug_console.Draw("Console", &open_console);
 }
 
 void WispEntry()
 {
+	// ImGui Logging
+	util::log_callback::impl = [&](std::string const & str)
+	{
+		debug_console.AddLog(str.c_str());
+	};
+
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
 	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods) {
+		if (action == WM_KEYUP && key == 0xC0)
+		{
+			open_console = !open_console;
+			debug_console.EmptyInput();
+		}
+	});
 
 	render_system->Init(window.get());
 
