@@ -191,10 +191,10 @@ void WispEntry()
 	{
 		mesh_node->SetRotation({ sin(t/2.f) * 20.f, -t * 10, 0});
 
-		mesh_node_1->SetRotation({ -t, 0, sin(t) * 20 });
+		mesh_node_1->SetRotation({ t, 0, sin(-t) * 20 });
 		mesh_node_2->SetRotation({ t, 0, sin(t) * 20 });
-		mesh_node_3->SetRotation({ t, 0, sin(-t) * 20 });
-		mesh_node_4->SetRotation({ -t, 0, sin(-t) * 20 });
+		mesh_node_3->SetRotation({ -t, 0, sin(-t) * 20 });
+		mesh_node_4->SetRotation({ -t, 0, sin(t) * 20 });
 
 		t += 10.f * ImGui::GetIO().DeltaTime;
 
