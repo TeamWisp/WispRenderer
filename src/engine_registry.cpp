@@ -38,13 +38,13 @@ namespace wr
 		shaders::basic_ps,
 		std::nullopt,
 		root_signatures::basic,
-		Format::UNKNOWN,
+		Format::D32_FLOAT,
 		{ Format::R8G8B8A8_UNORM },
 		1,
 		PipelineType::GRAPHICS_PIPELINE,
 		CullMode::CULL_BACK,
-		false,
 		true,
+		false,
 		TopologyType::TRIANGLE
 	});
 

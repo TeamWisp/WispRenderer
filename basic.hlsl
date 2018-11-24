@@ -54,5 +54,6 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 
 float4 main_ps(VS_OUTPUT input) : SV_TARGET
 {
-	return float4(input.uv, 0, 1);
+	float diff = max(dot(input.normal, float3(0, 0, -1)), 0.0);
+	return float4(diff * input.uv, 0, 1);
 }
