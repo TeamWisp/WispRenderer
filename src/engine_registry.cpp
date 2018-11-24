@@ -44,7 +44,7 @@ namespace wr
 		PipelineType::GRAPHICS_PIPELINE,
 		CullMode::CULL_BACK,
 		false,
-		false,
+		true,
 		TopologyType::TRIANGLE
 	});
 
