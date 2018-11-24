@@ -42,11 +42,11 @@ namespace wr
 				const auto gbuffer = n_render_system.m_gbuffer;
 
 				d3d12::BindViewport(cmd_list, viewport);
-				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 				//Render deferred
 				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 				d3d12::BindRenderTarget(cmd_list, gbuffer, n_render_system.GetFrameIdx());
+				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 0, frame_idx);
@@ -77,8 +77,8 @@ namespace wr
 				true,
 				std::nullopt,
 				std::nullopt,
-				false,
-				Format::UNKNOWN,
+				true,
+				Format::D32_FLOAT,
 				{ Format::R8G8B8A8_UNORM },
 				1,
 				true,

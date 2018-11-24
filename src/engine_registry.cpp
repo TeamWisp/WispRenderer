@@ -81,8 +81,8 @@ namespace wr
 		1,
 		PipelineType::GRAPHICS_PIPELINE,
 		CullMode::CULL_BACK,
-		false,
 		true,
+		false,
 		TopologyType::TRIANGLE
 	});
 

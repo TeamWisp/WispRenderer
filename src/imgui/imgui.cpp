@@ -1912,6 +1912,12 @@ ImGuiTextFilter::ImGuiTextFilter(const char* default_filter)
     }
 }
 
+IMGUI_API void ImGuiTextFilter::SetInputFilter(const char* filter)
+{
+	ImStrncpy(InputBuf, filter, IM_ARRAYSIZE(InputBuf));
+	Build();
+}
+
 bool ImGuiTextFilter::Draw(const char* label, float width)
 {
     if (width != 0.0f)
