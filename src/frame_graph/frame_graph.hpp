@@ -33,14 +33,14 @@ namespace wr
 			std::vector<T*> retval;
 			for (auto& task : m_tasks)
 			{
-				retval.push_back(task->GetCommandList<T>().first);
+				retval.push_back(task->GetCommandList<T>(true).first);
 			}
 
 			return retval;
 		}
 
 		template<typename T>
-		auto GetData();
+		auto& GetData();
 
 	private:
 		std::vector<std::unique_ptr<BaseRenderTask>> m_tasks;
@@ -56,13 +56,13 @@ namespace wr
 
 	//! Used to obtain data from a previously run render task.
 	template<typename T>
-	auto FrameGraph::GetData()
+	auto& FrameGraph::GetData()
 	{
 		for (auto& task : m_tasks)
 		{
-			if (typeid(T) == task->data_type_info)
+			if (typeid(T) == task->m_data_type_info)
 			{
-				return static_cast<T*>(task->data);
+				return static_cast<T*>(task.get())->GetData();
 			}
 		}
 	}

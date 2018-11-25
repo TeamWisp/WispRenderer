@@ -1,5 +1,7 @@
 #include "frame_graph.hpp"
 
+#include "../settings.hpp"
+
 namespace wr
 {
 	FrameGraph::~FrameGraph()
@@ -18,7 +20,20 @@ namespace wr
 	{
 		for (auto& task : m_tasks)
 		{
-			task->Setup(render_system);
+			if (settings::use_multithreading && task->m_allow_multithreading)
+			{
+				task->WaitForCompletion();
+				std::future<void> f = std::async(std::launch::async, [this, &task, &render_system]
+				{
+					task->Setup(render_system);
+				});
+				task->SetFuture(f);
+			}
+			else
+			{
+				non_multithreading:
+				task->Setup(render_system);
+			}
 		}
 	}
 
@@ -27,7 +42,18 @@ namespace wr
 	{
 		for (auto& task : m_tasks)
 		{
-			task->Execute(render_system, scene_graph);
+			if (settings::use_multithreading && task->m_allow_multithreading) // TODO: make constexpr.
+			{
+				task->WaitForCompletion();
+				std::future<void> f = std::async(std::launch::async, [&]
+				{
+					task->Execute(render_system, scene_graph);
+				});
+				task->SetFuture(f);
+			} else
+			{
+				task->Execute(render_system, scene_graph);
+			}
 		}
 	}
 

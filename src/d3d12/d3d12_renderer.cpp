@@ -148,6 +148,11 @@ namespace wr
 		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
+	wr::CommandList * D3D12RenderSystem::GetBundleCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_BUNDLE);
+	}
+
 	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
 	{
 		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
