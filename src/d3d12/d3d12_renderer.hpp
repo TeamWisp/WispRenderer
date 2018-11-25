@@ -63,6 +63,7 @@ namespace wr
 		void WaitForAllPreviousWork() final;
 
 		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;

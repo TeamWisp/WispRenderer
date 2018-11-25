@@ -9,6 +9,8 @@
 #include "../d3d12/d3d12_pipeline_registry.hpp"
 #include "../engine_registry.hpp"
 
+#include "d3d12_imgui_render_task.hpp"
+
 namespace wr
 {
 
@@ -16,11 +18,12 @@ namespace wr
 	{
 		D3D12Pipeline* in_pipeline;
 	};
+	using TestRenderTask_t = RenderTask<DeferredTaskData>;
 	
 	namespace internal
 	{
 
-		inline void SetupDeferredTask(RenderSystem & render_system, RenderTask<DeferredTaskData> & task, DeferredTaskData & data)
+		inline void SetupDeferredTask(RenderSystem & render_system, TestRenderTask_t & task, DeferredTaskData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 
@@ -28,9 +31,11 @@ namespace wr
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::basic);
 		}
 
-		inline void ExecuteDeferredTask(RenderSystem & render_system, RenderTask<DeferredTaskData> & task, SceneGraph & scene_graph, DeferredTaskData & data)
+		inline void ExecuteDeferredTask(RenderSystem & render_system, TestRenderTask_t & task, SceneGraph & scene_graph, DeferredTaskData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+
+			auto& datao = task.GetFrameGraph()->GetData<wr::ImGuiRenderTask_t>();
 
 			// Temp rendering
 			if (n_render_system.m_render_window.has_value())
@@ -62,7 +67,7 @@ namespace wr
 			}
 		}
 
-		inline void DestroyTestTask(RenderTask<DeferredTaskData> & task, DeferredTaskData& data)
+		inline void DestroyTestTask(TestRenderTask_t & task, DeferredTaskData& data)
 		{
 		}
 
@@ -70,9 +75,9 @@ namespace wr
 	
 
 	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<RenderTask<DeferredTaskData>> GetTestTask()
+	[[nodiscard]] inline std::unique_ptr<TestRenderTask_t> GetTestTask()
 	{
-		auto ptr = std::make_unique<RenderTask<DeferredTaskData>>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT,
+		auto ptr = std::make_unique<TestRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT, true,
 			RenderTargetProperties{
 				true,
 				std::nullopt,
@@ -84,9 +89,9 @@ namespace wr
 				true,
 				true
 			},
-			[](RenderSystem & render_system, RenderTask<DeferredTaskData> & task, DeferredTaskData & data) { internal::SetupDeferredTask(render_system, task, data); },
-			[](RenderSystem & render_system, RenderTask<DeferredTaskData> & task, SceneGraph & scene_graph, DeferredTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
-			[](RenderTask<DeferredTaskData> & task, DeferredTaskData & data) { internal::DestroyTestTask(task, data); }
+			[](RenderSystem & render_system, TestRenderTask_t & task, DeferredTaskData & data) { internal::SetupDeferredTask(render_system, task, data); },
+			[](RenderSystem & render_system, TestRenderTask_t & task, SceneGraph & scene_graph, DeferredTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
+			[](TestRenderTask_t & task, DeferredTaskData & data) { internal::DestroyTestTask(task, data); }
 		);
 
 		return ptr;

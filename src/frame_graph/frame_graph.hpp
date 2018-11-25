@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "render_task.hpp"
+#include "../util/thread_pool.hpp"
 
 namespace wr
 {
@@ -10,7 +11,7 @@ namespace wr
 	class FrameGraph
 	{
 	public:
-		FrameGraph() {}
+		FrameGraph() : m_thread_pool(settings::num_frame_graph_threads) {}
 		virtual ~FrameGraph();
 
 		FrameGraph(const FrameGraph&) = delete;
@@ -33,18 +34,23 @@ namespace wr
 			std::vector<T*> retval;
 			for (auto& task : m_tasks)
 			{
-				retval.push_back(task->GetCommandList<T>().first);
+				retval.push_back(task->GetCommandList<T>(true).first);
 			}
 
 			return retval;
 		}
 
 		template<typename T>
-		auto GetData();
+		auto& GetData();
 
 	private:
 		std::vector<std::unique_ptr<BaseRenderTask>> m_tasks;
+		// Non owning reference to a task in the m_tasks vector.
+		std::vector<BaseRenderTask*> m_multi_threaded_tasks;
+		// Non owning reference to a task in the m_tasks vector.
+		std::vector<BaseRenderTask*> m_single_threaded_tasks;
 
+		util::ThreadPool m_thread_pool;
 	};
 
 	//! Used to add a task by creating a new one.
@@ -56,13 +62,13 @@ namespace wr
 
 	//! Used to obtain data from a previously run render task.
 	template<typename T>
-	auto FrameGraph::GetData()
+	auto& FrameGraph::GetData()
 	{
 		for (auto& task : m_tasks)
 		{
-			if (typeid(T) == task->data_type_info)
+			if (typeid(T) == task->m_data_type_info)
 			{
-				return static_cast<T*>(task->data);
+				return static_cast<T*>(task.get())->GetData();
 			}
 		}
 	}

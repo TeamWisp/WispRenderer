@@ -42,6 +42,7 @@ namespace wr
 		virtual void WaitForAllPreviousWork() = 0;
 
 		virtual CommandList* GetDirectCommandList(unsigned int num_allocators) = 0;
+		virtual CommandList* GetBundleCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetComputeCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetCopyCommandList(unsigned int num_allocators) = 0;
 		virtual RenderTarget* GetRenderTarget(RenderTargetProperties properties) = 0;

@@ -458,7 +458,7 @@ namespace wr::imgui::special
 		ImGuiContext& g = *ImGui::GetCurrentContext();
 		ImGuiViewport* viewport = g.Viewports[0];
 
-		ImGui::SetNextWindowSize(ImVec2(viewport->Size.x / 2, 200), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, 200), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, bg_col);

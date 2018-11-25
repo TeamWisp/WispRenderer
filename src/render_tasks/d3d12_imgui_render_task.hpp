@@ -18,11 +18,13 @@ namespace wr
 		std::function<void()> in_imgui_func;
 		d3d12::DescriptorHeap* out_descriptor_heap;
 	};
+
+	using ImGuiRenderTask_t = RenderTask<ImGuiTaskData>;
 	
 	namespace internal
 	{
 
-		inline void SetupImGuiTask(RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, ImGuiTaskData & data)
+		inline void SetupImGuiTask(RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 
@@ -55,7 +57,7 @@ namespace wr
 			ImGui::StyleColorsCherry();
 		}
 
-		inline void ExecuteImGuiTask(RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, SceneGraph & scene_graph, ImGuiTaskData & data)
+		inline void ExecuteImGuiTask(RenderSystem & render_system, ImGuiRenderTask_t & task, SceneGraph & scene_graph, ImGuiTaskData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 
@@ -85,7 +87,7 @@ namespace wr
 			}
 		}
 
-		inline void DestroyImGuiTask(RenderTask<ImGuiTaskData> & task, ImGuiTaskData& data)
+		inline void DestroyImGuiTask(ImGuiRenderTask_t & task, ImGuiTaskData& data)
 		{
 			ImGui_ImplDX12_Shutdown();
 			ImGui_ImplWin32_Shutdown();
@@ -96,9 +98,9 @@ namespace wr
 	
 
 	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<RenderTask<ImGuiTaskData>> GetImGuiTask(std::function<void()> imgui_func)
+	[[nodiscard]] inline std::unique_ptr<ImGuiRenderTask_t> GetImGuiTask(std::function<void()> imgui_func)
 	{
-		auto ptr = std::make_unique<RenderTask<ImGuiTaskData>>(nullptr, "ImGui Render Task", RenderTaskType::DIRECT,
+		auto ptr = std::make_unique<ImGuiRenderTask_t>(nullptr, "ImGui Render Task", RenderTaskType::DIRECT, false,
 			RenderTargetProperties {
 				true,
 				std::nullopt,
@@ -110,9 +112,9 @@ namespace wr
 				false,
 				false
 			},
-			[imgui_func](RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, ImGuiTaskData & data) { data.in_imgui_func = imgui_func; internal::SetupImGuiTask(render_system, task, data); },
-			[](RenderSystem & render_system, RenderTask<ImGuiTaskData> & task, SceneGraph & scene_graph, ImGuiTaskData & data) { internal::ExecuteImGuiTask(render_system, task, scene_graph, data); },
-			[](RenderTask<ImGuiTaskData> & task, ImGuiTaskData & data) { internal::DestroyImGuiTask(task, data); }
+			[imgui_func](RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data) { data.in_imgui_func = imgui_func; internal::SetupImGuiTask(render_system, task, data); },
+			[](RenderSystem & render_system, ImGuiRenderTask_t & task, SceneGraph & scene_graph, ImGuiTaskData & data) { internal::ExecuteImGuiTask(render_system, task, scene_graph, data); },
+			[](ImGuiRenderTask_t & task, ImGuiTaskData & data) { internal::DestroyImGuiTask(task, data); }
 		);
 
 		return ptr;
