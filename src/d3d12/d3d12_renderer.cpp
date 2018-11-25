@@ -70,12 +70,18 @@ namespace wr
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
+		// Create screen quad
+		m_fullscreen_quad_vb = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex2D), sizeof(Vertex2D), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+		// Stage fullscreen quad
+		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
 
 		// Execute
 		d3d12::End(m_direct_cmd_list);
@@ -177,17 +183,28 @@ namespace wr
 		else
 		{
 			d3d12::desc::RenderTargetDesc desc;
+			desc.m_initial_state = properties.m_state_finished.value_or(ResourceState::RENDER_TARGET);
 			desc.m_create_dsv_buffer = properties.m_create_dsv_buffer;
 			desc.m_num_rtv_formats = properties.m_num_rtv_formats;
 			desc.m_rtv_formats = properties.m_rtv_formats;
 			desc.m_dsv_format = properties.m_dsv_format;
 
-			if (!properties.width.has_value() || !properties.height.has_value())
+			if (properties.width.has_value() || properties.height.has_value())
 			{
-				LOGC("Render target is not the render window and is missing dimensions.");
+				return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.width.value(), properties.height.value(), desc);
 			}
-
-			return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.width.value(), properties.height.value(), desc, false);
+			else if (m_window.has_value())
+			{
+				auto retval = (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
+				for (auto i = 0; i < retval->m_render_targets.size(); i++)
+					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
+				return retval;
+			}
+			else
+			{
+				LOGC("Render target doesn't have a width or height specified. And there is no window to take the window size from. Hence can't create a proper render target.");
+				return nullptr;
+			}
 		}
 	}
 
@@ -198,8 +215,28 @@ namespace wr
 		auto frame_idx = GetFrameIdx();
 	
 		d3d12::Begin(n_cmd_list, frame_idx);
-		d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
-		d3d12::BindRenderTargetVersioned(n_cmd_list, n_render_target, frame_idx, render_target.second.m_clear, render_target.second.m_clear_depth);
+
+		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
+		{
+			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
+		}
+		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
+		{
+			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_finished.value(), render_target.second.m_state_execute.value());
+		}
+		else
+		{
+			LOGW("A render target has no transitions specified. Is this correct?");
+		}
+
+		if (render_target.second.m_is_render_window)
+		{
+			d3d12::BindRenderTargetVersioned(n_cmd_list, n_render_target, frame_idx, render_target.second.m_clear, render_target.second.m_clear_depth);
+		}
+		else
+		{
+			d3d12::BindRenderTarget(n_cmd_list, n_render_target, render_target.second.m_clear, render_target.second.m_clear_depth);
+		}
 	}
 
 	void D3D12RenderSystem::StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
@@ -208,7 +245,19 @@ namespace wr
 		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 
-		d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
+		if (render_target.second.m_is_render_window)
+		{
+			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
+		}
+		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
+		{
+			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.value(), render_target.second.m_state_finished.value());
+		}
+		else
+		{
+			LOGW("A render target has no transitions specified. Is this correct?");
+		}
+
 		d3d12::End(n_cmd_list);
 	}
 
@@ -374,6 +423,7 @@ namespace wr
 
 		temp::ProjectionView_CBData data;
 		data.m_projection = node->m_projection;
+		data.m_inverse_projection = node->m_inverse_projection;
 		data.m_view = node->m_view;
 
 		auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_camera_cb);

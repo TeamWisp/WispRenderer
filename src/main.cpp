@@ -3,6 +3,8 @@
 #include "wisp.hpp"
 #include "render_tasks/d3d12_test_render_task.hpp"
 #include "render_tasks/d3d12_imgui_render_task.hpp"
+#include "render_tasks/d3d12_deferred_main.hpp"
+#include "render_tasks/d3d12_deferred_composition.hpp"
 #include "imgui_tools.hpp"
 
 bool main_menu = true;
@@ -166,7 +168,7 @@ void WispEntry()
 	auto mesh_node_2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
 	auto mesh_node_3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
 	auto mesh_node_4 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 1.74f, (float)window->GetWidth() / (float)window->GetHeight());
+	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 1.2217, (float)window->GetWidth() / (float)window->GetHeight());
 
 	{
 		float dist = 4;
@@ -181,7 +183,8 @@ void WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	frame_graph.AddTask(wr::GetTestTask());
+	frame_graph.AddTask(wr::GetDeferredMainTask());
+	frame_graph.AddTask(wr::GetDeferredCompositionTask());
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 

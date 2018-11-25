@@ -41,7 +41,7 @@ namespace wr
 		}
 
 		template<typename T>
-		auto& GetData();
+		auto GetData();
 
 	private:
 		std::vector<std::unique_ptr<BaseRenderTask>> m_tasks;
@@ -62,13 +62,13 @@ namespace wr
 
 	//! Used to obtain data from a previously run render task.
 	template<typename T>
-	auto& FrameGraph::GetData()
+	auto FrameGraph::GetData()
 	{
 		for (auto& task : m_tasks)
 		{
 			if (typeid(T) == task->m_data_type_info)
 			{
-				return static_cast<T*>(task.get())->GetData();
+				return static_cast<RenderTask<T>*>(task.get())->GetData();
 			}
 		}
 	}

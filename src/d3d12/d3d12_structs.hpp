@@ -18,6 +18,7 @@ namespace wr::d3d12
 		
 		struct RenderTargetDesc
 		{
+			ResourceState m_initial_state = ResourceState::RENDER_TARGET;
 			bool m_create_dsv_buffer = true;
 			Format m_dsv_format;
 			std::array<Format, 8> m_rtv_formats;

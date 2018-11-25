@@ -18,6 +18,13 @@ namespace wr
 	class RenderTask : public BaseRenderTask
 	{
 	public:
+		struct Data
+		{
+			RenderTarget* m_render_target;
+			RenderTargetProperties m_rt_properties;
+			T& m_data;
+		};
+
 		using setup_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&)>;
 		using execute_func_type = std::function<void(RenderSystem&, RenderTask<T>&, SceneGraph&, T&)>;
 		using destroy_func_type = std::function<void(RenderTask<T>&, T&)>;
@@ -57,11 +64,11 @@ namespace wr
 
 			m_render_target = render_system.GetRenderTarget(m_rt_properties);
 
-			render_system.StartRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
+			//render_system.StartRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 
 			m_setup(render_system, *this, m_data);
 
-			render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
+			//render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 		}
 
 		//! Invokes the bound execute function ptr.
@@ -77,13 +84,13 @@ namespace wr
 			render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 		}
 
-		T& GetData()
+		Data GetData()
 		{
 			if constexpr (settings::use_multithreading)
 			{
 				WaitForCompletion();
 			}
-			return m_data;
+			return Data{ m_render_target, m_rt_properties, m_data };
 		}
 
 	private:

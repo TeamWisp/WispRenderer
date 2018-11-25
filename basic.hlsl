@@ -21,6 +21,7 @@ cbuffer CameraProperties : register(b0)
 {
 	float4x4 view;
 	float4x4 projection;
+	float4x4 inv_projection;
 };
 
 struct ObjectData
@@ -47,13 +48,21 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
 	output.uv = input.uv;
-	output.normal = normalize(mul(inst.model, float4(input.normal, 0.f))).xyz;
+	output.normal = normalize(mul(vm, input.normal)).xyz;
 
 	return output;
 }
 
-float4 main_ps(VS_OUTPUT input) : SV_TARGET
+struct PS_OUTPUT
 {
-	float diff = max(dot(input.normal, float3(0, 0, -1)), 0.0);
-	return float4(diff * input.uv, 0, 1);
+	float4 albedo : SV_TARGET0;
+	float4 normal : SV_TARGET1;
+};
+
+PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
+{
+	PS_OUTPUT output;
+	output.albedo = float4(1, 1, 0, 1);
+	output.normal = float4(input.normal, 1);
+	return output;
 }

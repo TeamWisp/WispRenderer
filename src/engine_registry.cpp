@@ -17,7 +17,21 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
 		},
 		{
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_MIRROR }
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER }
+		}
+	});
+
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> ranges
+	{ 
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0); return r; }(),
+	};
+	REGISTER(root_signatures::deferred_composition) = RootSignatureRegistry::Get().Register({
+		{
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_PIXEL); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(ranges.size(), ranges.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }(),
+		},
+		{
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
 		}
 	});
 
@@ -33,18 +47,45 @@ namespace wr
 		ShaderType::PIXEL_SHADER
 	});
 
-	REGISTER(pipelines::basic) = PipelineRegistry::Get().Register<Vertex>({
+	REGISTER(shaders::fullscreen_quad_vs) = ShaderRegistry::Get().Register({
+		"fullscreen_quad.hlsl",
+		"main_vs",
+		ShaderType::VERTEX_SHADER
+	});
+
+	REGISTER(shaders::deferred_composition_ps) = ShaderRegistry::Get().Register({
+		"deferred_composition.hlsl",
+		"main_ps",
+		ShaderType::PIXEL_SHADER
+	});
+
+	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<Vertex>({
 		shaders::basic_vs,
 		shaders::basic_ps,
 		std::nullopt,
 		root_signatures::basic,
 		Format::D32_FLOAT,
-		{ Format::R8G8B8A8_UNORM },
-		1,
+		{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },
+		3,
 		PipelineType::GRAPHICS_PIPELINE,
 		CullMode::CULL_BACK,
 		true,
 		false,
+		TopologyType::TRIANGLE
+	});
+
+	REGISTER(pipelines::deferred_composition) = PipelineRegistry::Get().Register<Vertex2D>({
+		shaders::fullscreen_quad_vs,
+		shaders::deferred_composition_ps,
+		std::nullopt,
+		root_signatures::deferred_composition,
+		Format::UNKNOWN,
+		{ Format::R8G8B8A8_UNORM },
+		1,
+		PipelineType::GRAPHICS_PIPELINE,
+		CullMode::CULL_BACK,
+		false,
+		true,
 		TopologyType::TRIANGLE
 	});
 
