@@ -196,7 +196,7 @@ void WispEntry()
 		mesh_node_3->SetRotation({ -t, 0, sin(-t) * 20 });
 		mesh_node_4->SetRotation({ -t, 0, sin(t) * 20 });
 
-		t += 10.f;// * ImGui::GetIO().DeltaTime;
+		t += 10.f * ImGui::GetIO().DeltaTime;
 
 		window->PollEvents();
 		auto texture = render_system->Render(scene_graph, frame_graph);
