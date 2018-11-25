@@ -164,19 +164,33 @@ void WispEntry()
 	auto scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
 	auto mesh_node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-	auto mesh_node_1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-	auto mesh_node_2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-	auto mesh_node_3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-	auto mesh_node_4 = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
 	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 1.2217, (float)window->GetWidth() / (float)window->GetHeight());
 
+	// #### background cubes
+	std::vector<std::pair<std::shared_ptr<wr::MeshNode>, int>> bg_nodes(500);
+	float distance = 20;
+	float cube_size = 2.5f;
+
+	float start_x = -30;
+	float start_y = -18;
+	float max_column_width = 30;
+
+	int column = 0;
+	int row = 0;
+
+	srand(time(0));
+	int rand_max = 15;
+
+	for (auto& node : bg_nodes)
 	{
-		float dist = 4;
-		mesh_node_1->SetPosition({ dist, dist, dist });
-		mesh_node_2->SetPosition({ -dist, dist, dist });
-		mesh_node_3->SetPosition({ dist, -dist, dist });
-		mesh_node_4->SetPosition({ -dist, -dist, dist });
+		node.first = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
+		node.first->SetPosition({ start_x + (cube_size * column), start_y + (cube_size * row), distance });
+		node.second = (rand() % rand_max + 0);
+
+		column++;
+		if (column > max_column_width) { column = 0; row++; }
 	}
+	// ### background cubes
 
 	camera->SetPosition(0, 0, -5);
 
@@ -194,10 +208,34 @@ void WispEntry()
 	{
 		mesh_node->SetRotation({ sin(t/2.f) * 20.f, -t * 10, 0});
 
-		mesh_node_1->SetRotation({ t, 0, sin(-t) * 20 });
-		mesh_node_2->SetRotation({ t, 0, sin(t) * 20 });
-		mesh_node_3->SetRotation({ -t, 0, sin(-t) * 20 });
-		mesh_node_4->SetRotation({ -t, 0, sin(t) * 20 });
+		for (auto& node : bg_nodes)
+		{
+			float speed = 16 + node.second;
+			switch (node.second)
+			{
+			case 0:	node.first->SetRotation({ t, 0, sin(t) * speed });	break;
+			case 1:	node.first->SetRotation({ t, 0, sin(-t) * speed }); break;
+			case 2: node.first->SetRotation({ -t, 0, sin(t) * speed });	break;
+			case 3: node.first->SetRotation({ -t, 0, sin(-t) * speed }); break;
+
+			case 4:	node.first->SetRotation({ t, sin(t) * speed, 0 });	break;
+			case 5:	node.first->SetRotation({ t, sin(-t) * speed, 0 }); break;
+			case 6: node.first->SetRotation({ -t, sin(t) * speed, 0 });	break;
+			case 7: node.first->SetRotation({ -t, sin(-t) * speed, 0}); break;
+
+			case 8:	node.first->SetRotation({ sin(t) * speed, t, 0 });	break;
+			case 9:	node.first->SetRotation({ sin(-t) * speed, t, 0 }); break;
+			case 10: node.first->SetRotation({ sin(t) * speed, t, 0 });	break;
+			case 11: node.first->SetRotation({ sin(-t) * speed, t, 0 }); break;
+
+			case 12: node.first->SetRotation({ sin(t) * speed, 0, t });	break;
+			case 13: node.first->SetRotation({ sin(-t) * speed, 0, t }); break;
+			case 14: node.first->SetRotation({ sin(t) * speed, 0, -t });	break;
+			case 15: node.first->SetRotation({ sin(-t) * speed, 0, -t }); break;
+				
+				break;
+			}
+		}
 
 		t += 10.f * ImGui::GetIO().DeltaTime;
 
