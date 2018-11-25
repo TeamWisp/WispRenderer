@@ -24,14 +24,15 @@ namespace wr
 		{
 			DirectX::XMMATRIX m_view;
 			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_inverse_projection;
 		};
 
-		static const constexpr float size = 0.5f;
-		static const constexpr Vertex quad_vertices[] = {
-			{ -size, -size, 0.f },
-			{ size, -size, 0.f },
-			{ -size, size, 0.f },
-			{ size, size, 0.f },
+		static const constexpr float size = 1.0f;
+		static const constexpr Vertex2D quad_vertices[] = {
+			{ -size, -size },
+			{ size, -size },
+			{ -size, size },
+			{ size, size },
 		};
 
 	} /* temp */
@@ -99,6 +100,7 @@ namespace wr
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
+		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 
 	};
 

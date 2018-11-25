@@ -105,6 +105,8 @@ namespace wr
 				true,
 				std::nullopt,
 				std::nullopt,
+				std::nullopt,
+				std::nullopt,
 				false,
 				Format::UNKNOWN,
 				{ Format::R8G8B8A8_UNORM },

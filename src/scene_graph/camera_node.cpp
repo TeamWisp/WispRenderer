@@ -30,6 +30,7 @@ namespace wr
 
 		m_view = DirectX::XMMatrixLookAtRH(pos, DirectX::XMVectorAdd(pos, forward), up);
 		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
+		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 	}
 
 } /* wr */
