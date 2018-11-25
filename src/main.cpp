@@ -88,7 +88,7 @@ void RenderEditor()
 	wr::imgui::window::D3D12HardwareInfo(*render_system.get());
 	wr::imgui::window::D3D12Settings();
 }
-
+#include "util/thread_pool.hpp"
 void WispEntry()
 {
 	// ImGui Logging
@@ -196,7 +196,7 @@ void WispEntry()
 		mesh_node_3->SetRotation({ -t, 0, sin(-t) * 20 });
 		mesh_node_4->SetRotation({ -t, 0, sin(t) * 20 });
 
-		t += 10.f * ImGui::GetIO().DeltaTime;
+		t += 10.f;// * ImGui::GetIO().DeltaTime;
 
 		window->PollEvents();
 		auto texture = render_system->Render(scene_graph, frame_graph);

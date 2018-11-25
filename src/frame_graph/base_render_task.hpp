@@ -34,7 +34,7 @@ namespace wr
 		friend class FrameGraph;
 	public:
 		BaseRenderTask(const std::type_info& data_type_info, FrameGraph* frame_graph, std::string const & name, RenderTaskType type, bool allow_multithreading, RenderTargetProperties rt_properties);
-		virtual ~BaseRenderTask() = default;
+		virtual ~BaseRenderTask();
 
 		BaseRenderTask(const BaseRenderTask&) = delete;
 		BaseRenderTask(BaseRenderTask&&) = default;

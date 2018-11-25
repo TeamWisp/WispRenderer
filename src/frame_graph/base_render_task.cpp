@@ -23,6 +23,11 @@ namespace wr
 	{
 	}
 
+	BaseRenderTask::~BaseRenderTask()
+	{
+		WaitForCompletion();
+	}
+
 	void BaseRenderTask::SetFuture(std::future<void>& future)
 	{
 		m_future = std::move(future);

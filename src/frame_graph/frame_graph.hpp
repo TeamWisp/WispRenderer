@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "render_task.hpp"
+#include "../util/thread_pool.hpp"
 
 namespace wr
 {
@@ -10,7 +11,7 @@ namespace wr
 	class FrameGraph
 	{
 	public:
-		FrameGraph() {}
+		FrameGraph() : m_thread_pool(settings::num_frame_graph_threads) {}
 		virtual ~FrameGraph();
 
 		FrameGraph(const FrameGraph&) = delete;
@@ -44,7 +45,12 @@ namespace wr
 
 	private:
 		std::vector<std::unique_ptr<BaseRenderTask>> m_tasks;
+		// Non owning reference to a task in the m_tasks vector.
+		std::vector<BaseRenderTask*> m_multi_threaded_tasks;
+		// Non owning reference to a task in the m_tasks vector.
+		std::vector<BaseRenderTask*> m_single_threaded_tasks;
 
+		util::ThreadPool m_thread_pool;
 	};
 
 	//! Used to add a task by creating a new one.
