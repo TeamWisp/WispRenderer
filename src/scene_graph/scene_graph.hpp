@@ -11,6 +11,7 @@
 namespace wr
 {
 	class RenderSystem;
+	struct CommandList;
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
@@ -21,10 +22,6 @@ namespace wr
 
 		std::shared_ptr<Node> m_parent;
 		std::vector<std::shared_ptr<Node>> m_children;
-
-		std::function<void(RenderSystem*, Node*)> Init;
-		std::function<void(RenderSystem*, Node*)> Update;
-		std::function<void(RenderSystem*, Node*)> Render;
 
 		void SignalChange()
 		{
@@ -73,6 +70,13 @@ namespace wr
 		explicit SceneGraph(RenderSystem* render_system);
 		~SceneGraph();
 
+		// Impl Functions
+		static std::function<void(RenderSystem*, temp::MeshBatches&, CommandList*)> m_render_meshes_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_init_meshes_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_init_cameras_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
+
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
 		SceneGraph& operator=(SceneGraph&&) = delete;
@@ -84,6 +88,10 @@ namespace wr
 		std::vector<std::shared_ptr<Node>> GetChildren(std::shared_ptr<Node> const & parent = nullptr);
 		void RemoveChildren(std::shared_ptr<Node> const & parent);
 		std::shared_ptr<CameraNode> GetActiveCamera();
+
+		void Init();
+		void Update();
+		void Render(CommandList* cmd_list);
 
 		template<typename T>
 		void DestroyNode(std::shared_ptr<T> node);

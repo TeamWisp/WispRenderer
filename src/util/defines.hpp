@@ -4,32 +4,11 @@
 /*!
   This macro is used to link a initialization and a render function to a specific node type.
 */
-#define LINK_NODE_FUNCTION(renderer_type, node_type, init_function, update_function, render_function) \
-decltype(node_type::init_func_impl) node_type::init_func_impl = [](wr::RenderSystem* render_system, Node* node) \
-{ \
-	static_cast<renderer_type*>(render_system)->init_function(static_cast<node_type*>(node)); \
-}; \
+#define LINK_NODE_FUNCTION(renderer_type, node_type, update_function) \
 decltype(node_type::update_func_impl) node_type::update_func_impl = [](wr::RenderSystem* render_system, Node* node) \
 { \
 	static_cast<renderer_type*>(render_system)->update_function(static_cast<node_type*>(node)); \
-}; \
-decltype(node_type::render_func_impl) node_type::render_func_impl = [](wr::RenderSystem* render_system, Node* node) \
-{ \
-static_cast<renderer_type*>(render_system)->render_function(static_cast<node_type*>(node)); \
 };
-
-//! Declare Subnode Properties
-/*!
-  This macro is used to declare the properties and constructor nessesary to be able to
-  link functions to it using the `LINK_NODE_FUNCTION` macro.
-*/
-#define DECL_SUBNODE(node_type) \
-static std::function<void(RenderSystem*, Node*)> init_func_impl; \
-static std::function<void(RenderSystem*, Node*)> update_func_impl; \
-static std::function<void(RenderSystem*, Node*)> render_func_impl; \
-node_type() : Node() { Init = init_func_impl; Update = update_func_impl; Render = render_func_impl; }
-
-#define SUBMODE_CONSTRUCTOR Init = init_func_impl; Update = update_func_impl; Render = render_func_impl;
 
 //! World Up
 static constexpr float world_up[3] = {0, 1, 0};
@@ -66,3 +45,32 @@ public: \
 DEFINE_HAS_METHOD(GetInputLayout)
 
 #define IS_PROPER_VERTEX_CLASS(type) static_assert(HasMethod_GetInputLayout<type, std::vector<D3D12_INPUT_ELEMENT_DESC>()>::value, "Could not locate the required type::GetInputLayout function. If intelisense gives you this error ignore it.");
+
+//! Defines to make linking to sg easier.
+#define LINK_SG_RENDER_MESHES(renderer_type, function) \
+decltype(wr::SceneGraph::m_render_meshes_func_impl) wr::SceneGraph::m_render_meshes_func_impl = [](wr::RenderSystem* render_system, wr::temp::MeshBatches& nodes, wr::CommandList* cmd_list) \
+{ \
+	static_cast<renderer_type*>(render_system)->function(nodes, cmd_list); \
+};
+
+#define LINK_SG_INIT_MESHES(renderer_type, function) \
+decltype(wr::SceneGraph::m_init_meshes_func_impl) wr::SceneGraph::m_init_meshes_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::MeshNode>>& nodes) \
+{ \
+	static_cast<renderer_type*>(render_system)->function(nodes); \
+};
+#define LINK_SG_INIT_CAMERAS(renderer_type, function) \
+decltype(wr::SceneGraph::m_init_cameras_func_impl) wr::SceneGraph::m_init_cameras_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::CameraNode>>& nodes) \
+{ \
+	static_cast<renderer_type*>(render_system)->function(nodes); \
+};
+
+#define LINK_SG_UPDATE_MESHES(renderer_type, function) \
+decltype(wr::SceneGraph::m_update_meshes_func_impl) wr::SceneGraph::m_update_meshes_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::MeshNode>>& nodes) \
+{ \
+	static_cast<renderer_type*>(render_system)->function(nodes); \
+};
+#define LINK_SG_UPDATE_CAMERAS(renderer_type, function) \
+decltype(wr::SceneGraph::m_update_cameras_func_impl) wr::SceneGraph::m_update_cameras_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::CameraNode>>& nodes) \
+{ \
+	static_cast<renderer_type*>(render_system)->function(nodes); \
+};
