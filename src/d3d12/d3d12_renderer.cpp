@@ -18,11 +18,14 @@
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
 
-LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::MeshNode, Init_MeshNode, Update_MeshNode, Render_MeshNode)
-LINK_NODE_FUNCTION(wr::D3D12RenderSystem, wr::CameraNode, Init_CameraNode, Update_CameraNode, Render_CameraNode)
-
 namespace wr
 {
+	LINK_SG_RENDER_MESHES(D3D12RenderSystem, Render_MeshNodes)
+	LINK_SG_INIT_MESHES(D3D12RenderSystem, Init_MeshNodes)
+	LINK_SG_INIT_CAMERAS(D3D12RenderSystem, Init_CameraNodes)
+	LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
+	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
+
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
 		d3d12::Destroy(m_cb_heap);
@@ -97,17 +100,7 @@ namespace wr
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
 
-		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
-		recursive_func_t recursive_update = [this, &recursive_update](std::shared_ptr<Node> const & parent)
-		{
-			for (auto & node : parent->m_children)
-			{
-				node->Update(this, node.get());
-				recursive_update(node);
-			}
-		};
-
-		recursive_update(scene_graph->GetRootNode());
+		scene_graph->Update();
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
@@ -351,17 +344,7 @@ namespace wr
 		d3d12::WaitFor(m_fences[frame_idx]);
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
 
-
-		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
-		recursive_func_t recursive_init = [this, &recursive_init](std::shared_ptr<Node> const & parent)
-		{
-			for (auto & node : parent->m_children)
-			{
-				node->Init(this, node.get());
-				recursive_init(node);
-			}
-		};
-		recursive_init(scene_graph.GetRootNode());
+		scene_graph.Init();
 
 		d3d12::End(m_direct_cmd_list);
 
@@ -371,95 +354,76 @@ namespace wr
 		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
 	}
 
-	void D3D12RenderSystem::RenderSceneGraph(SceneGraph& scene_graph, D3D12CommandList* cmd_list)
+	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
-		recursive_func_t recursive_render = [this, &recursive_render](std::shared_ptr<Node> const & parent)
+		for (auto& node : nodes)
 		{
-			for (auto & node : parent->m_children)
+			for (auto& mesh : node->m_model->m_meshes)
 			{
-				node->Render(this, node.get());
-				recursive_render(node);
+				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
+				d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
+
+				if (n_mesh->m_index_buffer != nullptr)
+				{
+					d3d12::StageBuffer(n_mesh->m_index_buffer, m_direct_cmd_list);
+				}
 			}
-		};
-
-		recursive_render(scene_graph.GetRootNode());
-		RenderMeshBatches(scene_graph, cmd_list);
-
-	}
-
-	void D3D12RenderSystem::Init_MeshNode(MeshNode* node)
-	{
-		for (auto& mesh : node->m_model->m_meshes)
-		{
-			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-			static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->StageMesh(n_mesh, m_direct_cmd_list);
 		}
 	}
 
-	void wr::D3D12RenderSystem::Init_CameraNode(CameraNode * node)
+	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
-		auto camera_cb = new D3D12ConstantBufferHandle();
-		camera_cb->m_native = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::ProjectionView_CBData));
-		node->m_camera_cb = camera_cb;
+		for (auto& node : nodes)
+		{
+			auto camera_cb = new D3D12ConstantBufferHandle();
+			camera_cb->m_native = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::ProjectionView_CBData));
+			node->m_camera_cb = camera_cb;
+		}
 	}
 
-	void wr::D3D12RenderSystem::Update_MeshNode(MeshNode * node)
+	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		if (!node->RequiresUpdate(GetFrameIdx())) return;
+		for (auto& node : nodes)
+		{
+			if (!node->RequiresUpdate(GetFrameIdx())) return;
 
-		node->UpdateTemp(GetFrameIdx());
-
+			node->UpdateTemp(GetFrameIdx());
+		}
 	}
 
-	void wr::D3D12RenderSystem::Update_CameraNode(CameraNode * node)
+	void D3D12RenderSystem::Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
-		if (!node->RequiresUpdate(GetFrameIdx())) return;
+		for (auto& node : nodes)
+		{
+			if (!node->RequiresUpdate(GetFrameIdx())) return;
 
-		node->UpdateTemp(GetFrameIdx());
+			node->UpdateTemp(GetFrameIdx());
 
-		temp::ProjectionView_CBData data;
-		data.m_projection = node->m_projection;
-		data.m_inverse_projection = node->m_inverse_projection;
-		data.m_view = node->m_view;
+			temp::ProjectionView_CBData data;
+			data.m_projection = node->m_projection;
+			data.m_inverse_projection = node->m_inverse_projection;
+			data.m_view = node->m_view;
 
-		auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_camera_cb);
+			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_camera_cb);
 
-		d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
+			d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
+		}
 	}
 
-	void D3D12RenderSystem::Render_MeshNode(MeshNode* node)
+	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list)
 	{
-	}
-
-	//Render batches
-	void D3D12RenderSystem::RenderMeshBatches(SceneGraph& scene_graph, D3D12CommandList* cmd_list)
-	{
-		
-		auto& batches = scene_graph.GetBatches();
-
-		//Update if it isn't already
-
-		bool should_update = batches.size() == 0;
-
-		for(auto& elem : batches)
-			if (elem.second.num_instances == 0) {
-				should_update = true;
-				break;
-			}
-
-		if(should_update)
-			scene_graph.Optimize();
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
 
 		//Render batches
-		for (auto &elem : scene_graph.GetBatches()) {
+		for (auto& elem : batches)
+		{
 
 			Model* model = elem.first;
 			temp::MeshBatch& batch = elem.second;
 
 			//Bind object data
 			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batchBuffer);
-			d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
+			d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
 
 			//Render meshes
 			for (auto& mesh : model->m_meshes)
@@ -479,19 +443,15 @@ namespace wr
 						n_mesh->m_index_staging_buffer_size);
 					d3d12::DrawIndexed(cmd_list, n_mesh->m_index_count, batch.num_instances);
 				}
-				else 
+				else
 				{
-					d3d12::Draw(cmd_list, n_mesh->m_vertex_count, batch.num_instances);
+					d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances);
 				}
 			}
 
 			//Reset instances
 			batch.num_instances = 0;
 		}
-	}
-
-	void wr::D3D12RenderSystem::Render_CameraNode(CameraNode * node)
-	{
 	}
 
 	unsigned int D3D12RenderSystem::GetFrameIdx()
