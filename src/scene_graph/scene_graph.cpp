@@ -13,6 +13,7 @@
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_resource_pool.hpp"
+#include "../d3d12/d3d12_resource_pool_constant_buffer.hpp"
 
 namespace wr
 {
@@ -57,6 +58,37 @@ namespace wr
 
 		LOGW("Failed to obtain a active camera node.");
 		return nullptr;
+	}
+
+	void SceneGraph::Init()
+	{
+		m_init_meshes_func_impl(m_render_system, m_mesh_nodes); 
+		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
+	}
+
+	void SceneGraph::Update()
+	{
+		m_update_meshes_func_impl(m_render_system, m_mesh_nodes);
+		m_update_cameras_func_impl(m_render_system, m_camera_nodes);
+	}
+
+	void SceneGraph::Render(CommandList* cmd_list)
+	{
+		bool should_update = m_batches.size() == 0;
+
+		for (auto& elem : m_batches)
+		{
+			if (elem.second.num_instances == 0)
+			{
+				should_update = true;
+				break;
+			}
+		}
+
+		if (should_update)
+			Optimize();
+
+		m_render_meshes_func_impl(m_render_system, m_batches, cmd_list);
 	}
 
 	temp::MeshBatches& SceneGraph::GetBatches() 

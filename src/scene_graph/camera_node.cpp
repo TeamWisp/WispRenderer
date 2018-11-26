@@ -12,6 +12,15 @@ namespace wr
 		SignalChange();
 	}
 
+	void CameraNode::SetFov(float deg)
+	{
+
+		m_fov = deg / 180 * 3.1415926535f;
+
+		SignalChange();
+
+	}
+
 	void CameraNode::UpdateTemp(unsigned int frame_idx)
 	{
 		m_requires_update[frame_idx] = false;
@@ -30,6 +39,7 @@ namespace wr
 
 		m_view = DirectX::XMMatrixLookAtRH(pos, DirectX::XMVectorAdd(pos, forward), up);
 		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
+		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 	}
 
 } /* wr */

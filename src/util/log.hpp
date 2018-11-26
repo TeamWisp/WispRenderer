@@ -2,7 +2,8 @@
 
 #define LOG_PRINT_TIME
 //#define LOG_PRINT_THREAD
-#define LOG_PRINT_LOC
+#define LOG_CALLBACK
+//#define LOG_PRINT_LOC
 #define LOG_PRINT_COLORS
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
@@ -16,10 +17,31 @@
 #include "fmt/format.h"
 #include "fmt/time.h"
 
+#ifdef LOG_CALLBACK
+#include <functional>
+#endif
+
 #define LOG_BREAK DebugBreak();
+
+#ifdef LOG_CALLBACK
+namespace util
+{
+	struct log_callback
+	{
+		static std::function<void(std::string const &)> impl;
+	};
+};
+#endif
 
 namespace util::internal
 {
+#ifdef LOG_CALLBACK
+	//struct callback
+	//{
+		
+	//};
+#endif
+
 	enum class MSGB_ICON
 	{
 		CRITICAL_ERROR = MB_OK | MB_ICONERROR
@@ -71,6 +93,11 @@ namespace util::internal
 			SetConsoleTextAttribute(console, 7);
 		}
 #endif
+
+#ifdef LOG_CALLBACK
+		auto f_str = fmt::format(str, args...);
+		if (log_callback::impl != nullptr) log_callback::impl(f_str);
+#endif
 	}
 
 	template <typename S, typename... Args>
@@ -117,6 +144,6 @@ namespace util::internal
 
 #define LOG(csr, ...)  { util::internal::log_impl(7, 'I', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
 #define LOGW(csr, ...) { util::internal::log_impl(6, 'W', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
-#define LOGE(csr, ...) { util::internal::log_impl(4, 'E', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); LOG_BREAK }
+#define LOGE(csr, ...) { util::internal::log_impl(4, 'E', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
 #define LOGC(csr, ...) { util::internal::log_impl(71, 'C', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); LOG_BREAK }
 //#define LOGC(csr, ...) { util::internal::log_msgb_impl(util::internal::MSGB_ICON::CRITICAL_ERROR, __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }

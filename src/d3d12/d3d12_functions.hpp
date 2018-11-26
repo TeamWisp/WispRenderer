@@ -22,7 +22,7 @@ namespace wr::d3d12
 	void SetName(CommandList* cmd_list, std::wstring const & name);
 	void Begin(CommandList* cmd_list, unsigned int frame_idx);
 	void End(CommandList* cmd_list);
-	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true, bool clear_depth = true);
+	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetVersioned(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
@@ -33,30 +33,31 @@ namespace wr::d3d12
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	// void BindCompute(CommandList* cmd_list, ConstantBuffer* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	// void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
-	void Bind(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
+	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	//void BindCompute(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> const & heaps);
-	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer);
-	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset = 0);
+	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size, std::size_t m_stride);
+	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset, unsigned int size);
 	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count);
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
 
 	// RenderTarget
-	[[nodiscard]] RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer = false);
+	[[nodiscard]] RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor);
 	void SetName(RenderTarget* render_target, std::wstring name);
 	void SetName(RenderTarget* render_target, std::string name);
-	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
-	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
+	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
+	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
 	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle);
 	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
 	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	// void CreateUAVFromTexture(Texture* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	// void CreateSRVFromTexture(Texture* tex, DescHeapCPUHandle& handle);
-	void Resize(RenderTarget** render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
+	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height);
 	void IncrementFrameIdx(RenderTarget* render_target);
 	void DestroyDepthStencilBuffer(RenderTarget* render_target);
 	void DestroyRenderTargetViews(RenderTarget* render_target);
@@ -65,8 +66,8 @@ namespace wr::d3d12
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, IUnknown* window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
-	void Resize(RenderWindow* render_window, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height);
-	void Present(RenderWindow* render_window, CommandQueue* cmd_queue, Device* device);
+	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height);
+	void Present(RenderWindow* render_window, Device* device);
 	void Destroy(RenderWindow* render_window);
 
 	// Descriptor Heap
@@ -107,9 +108,13 @@ namespace wr::d3d12
 	void Destroy(PipelineState* pipeline_state);
 
 	// Staging Buffer
-	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t stride, ResourceState resource_state);
+	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t m_stride, ResourceState resource_state);
+	void UpdateStagingBuffer(StagingBuffer* buffer, void* data, std::uint64_t size, std::uint64_t offset);
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list);
+	void StageBufferRegion(StagingBuffer* buffer, std::uint64_t size, std::uint64_t offset, CommandList* cmd_list);
 	void FreeStagingBuffer(StagingBuffer* buffer);
+	void Evict(StagingBuffer* buffer);
+	void MakeResident(StagingBuffer* buffer);
 	void Destroy(StagingBuffer* buffer);
 
 	// Heap
@@ -119,7 +124,7 @@ namespace wr::d3d12
 	[[nodiscard]] Heap<HeapOptimization::BIG_STATIC_BUFFERS>* CreateHeap_BSBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes);
-	[[nodiscard]] HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	[[nodiscard]] HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride);
 	[[nodiscard]] HeapResource* AllocGenericBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	void DeallocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, HeapResource* heapResource);
 	void DeallocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, HeapResource* heapResource);
@@ -147,5 +152,12 @@ namespace wr::d3d12
 
 	// Resources
 	void UpdateConstantBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes);
+	void UpdateStructuredBuffer(HeapResource* buffer,
+		unsigned int frame_idx,
+		void* data,
+		std::uint64_t size_in_bytes,
+		std::uint64_t offset,
+		std::uint64_t stride,
+		CommandList* cmd_list);
 
 } /* wr::d3d12 */

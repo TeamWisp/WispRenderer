@@ -4,11 +4,18 @@
 
 #include <DirectXMath.h>
 
+#include "../scene_graph/scene_graph.hpp"
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
 
+
 namespace wr
 {
+	namespace d3d12
+	{
+		struct CommandList;
+	}
+  
 	struct MeshNode;
 	struct CameraNode;
 	struct D3D12ConstantBufferHandle;
@@ -19,17 +26,24 @@ namespace wr
 		{
 			DirectX::XMMATRIX m_view;
 			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_inverse_projection;
 		};
 
-		static const constexpr float size = 0.5f;
-		static const constexpr Vertex quad_vertices[] = {
-			{ -size, -size, 0.f },
-			{ size, -size, 0.f },
-			{ -size, size, 0.f },
-			{ size, size, 0.f },
+		static const constexpr float size = 1.0f;
+		static const constexpr Vertex2D quad_vertices[] = {
+			{ -size, -size },
+			{ size, -size },
+			{ -size, size },
+			{ size, size },
 		};
 
 	} /* temp */
+
+	//! D3D12 platform independend Command List implementation
+	struct D3D12CommandList : CommandList, d3d12::CommandList {};
+
+	//! D3D12 platform independend Render Target implementation
+	struct D3D12RenderTarget : RenderTarget, d3d12::RenderTarget {};
 
 	class D3D12RenderSystem : public RenderSystem
 	{
@@ -41,25 +55,32 @@ namespace wr
 		void Resize(std::int32_t width, std::int32_t height) final;
 
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
-		std::shared_ptr<ModelPool> CreateModelPool(std::size_t size_in_mb) final;
+		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb) final;
 
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
 
+		void WaitForAllPreviousWork() final;
+
+		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
+		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
+
+		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+
 		void InitSceneGraph(SceneGraph& scene_graph);
-		void RenderSceneGraph(SceneGraph& scene_graph);
 
-		void Init_MeshNode(MeshNode* node);
-		void Init_CameraNode(CameraNode* node);
+		void Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
+		void Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 
-		void Update_MeshNode(MeshNode* node);
-		void Update_CameraNode(CameraNode* node);
+		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
+		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 
-		void Render_MeshNode(MeshNode* node);
-		void Render_CameraNode(CameraNode* node);
-
-		void RenderMeshBatches(SceneGraph& scene_graph);
+		void Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -77,11 +98,7 @@ namespace wr
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
-		d3d12::PipelineState* m_pipeline_state;
-		d3d12::RootSignature* m_root_signature;
-		d3d12::Shader* m_vertex_shader;
-		d3d12::Shader* m_pixel_shader;
-		d3d12::StagingBuffer* m_vertex_buffer;
+		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 
 	};
 

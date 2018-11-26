@@ -4,29 +4,38 @@
 
 namespace wr::d3d12
 {
-	static inline std::uint64_t IndexFromBit(std::uint64_t frame) {
-		return frame / (8 * 8);
-	}
-	static inline std::uint64_t OffsetFromBit(std::uint64_t frame) {
-		return frame % (8 * 8);
-	}
+	namespace internal 
+	{
+		inline std::uint64_t IndexFromBit(std::uint64_t frame) 
+		{
+			return frame / (8 * 8);
+		}
 
-	static void SetFrame(std::vector<uint64_t>* frames, std::uint64_t frame) {
-		std::uint64_t idx = IndexFromBit(frame);
-		std::uint64_t off = OffsetFromBit(frame);
-		frames->operator[](idx) |= (1Ui64 << off);
-	}
+		inline std::uint64_t OffsetFromBit(std::uint64_t frame) 
+		{
+			return frame % (8 * 8);
+		}
 
-	static void ClearFrame(std::vector<uint64_t>* frames, std::uint64_t frame) {
-		std::uint64_t idx = IndexFromBit(frame);
-		std::uint64_t off = OffsetFromBit(frame);
-		frames->operator[](idx) &= ~(1Ui64 << off);
-	}
+		void SetPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		{
+			std::uint64_t idx = IndexFromBit(frame);
+			std::uint64_t off = OffsetFromBit(frame);
+			bitmap->operator[](idx) |= (1Ui64 << off);
+		}
 
-	static bool TestFrame(std::vector<uint64_t>* frames, std::uint64_t frame) {
-		std::uint64_t idx = IndexFromBit(frame);
-		std::uint64_t off = OffsetFromBit(frame);
-		return (frames->operator[](idx) & (1Ui64 << off));
+		void ClearPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		{
+			std::uint64_t idx = IndexFromBit(frame);
+			std::uint64_t off = OffsetFromBit(frame);
+			bitmap->operator[](idx) &= ~(1Ui64 << off);
+		}
+
+		bool TestPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		{
+			std::uint64_t idx = IndexFromBit(frame);
+			std::uint64_t off = OffsetFromBit(frame);
+			return (bitmap->operator[](idx) & (1Ui64 << off));
+		}
 	}
 
 	Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
@@ -43,10 +52,11 @@ namespace wr::d3d12
 
 		auto page_frame_count = SizeAlign(heap->m_heap_size / heap->m_alignment, 64) / 64;
 
-		heap->m_page_frames.resize(page_frame_count);
+		heap->m_bitmap.resize(page_frame_count);
 
-		for (int i = 0; i < heap->m_page_frames.size(); ++i) {
-			heap->m_page_frames[i] = 0xffffffffffffffff;
+		for (int i = 0; i < heap->m_bitmap.size(); ++i) 
+		{
+			heap->m_bitmap[i] = 0xffffffffffffffff;
 		}
 
 		auto heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
@@ -78,10 +88,11 @@ namespace wr::d3d12
 
 		auto page_frame_count = SizeAlign(heap->m_heap_size / heap->m_alignment, 64) / 64;
 
-		heap->m_page_frames.resize(page_frame_count);
+		heap->m_bitmap.resize(page_frame_count);
 
-		for (int i = 0; i < heap->m_page_frames.size(); ++i) {
-			heap->m_page_frames[i] = 0xffffffffffffffff;
+		for (int i = 0; i < heap->m_bitmap.size(); ++i) 
+		{
+			heap->m_bitmap[i] = 0xffffffffffffffff;
 		}
 
 		D3D12_HEAP_PROPERTIES heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
@@ -123,10 +134,11 @@ namespace wr::d3d12
 
 		auto page_frame_count = SizeAlign(heap->m_heap_size / heap->m_alignment, 64) / 64;
 
-		heap->m_page_frames.resize(page_frame_count);
+		heap->m_bitmap.resize(page_frame_count);
 
-		for (int i = 0; i < heap->m_page_frames.size(); ++i) {
-			heap->m_page_frames[i] = 0xffffffffffffffff;
+		for (int i = 0; i < heap->m_bitmap.size(); ++i) 
+		{
+			heap->m_bitmap[i] = 0xffffffffffffffff;
 		}
 
 		auto heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
@@ -140,6 +152,20 @@ namespace wr::d3d12
 			nullptr,
 			IID_PPV_ARGS(&heap->m_native)),
 			"Failed to create small buffer optimized heap.");
+
+		heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		resource_desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size, D3D12_RESOURCE_FLAG_NONE);
+
+		TRY_M(device->m_native->CreateCommittedResource(
+			&heap_properties,
+			D3D12_HEAP_FLAG_NONE,
+			&resource_desc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&heap->m_staging_buffer)),
+			"Failed to create small buffer optimized heap.");
+
+		heap->m_staging_buffer->Map(0, &CD3DX12_RANGE(0, 0), reinterpret_cast<void**>(&heap->m_cpu_address));
 
 		return heap;
 	}
@@ -158,10 +184,11 @@ namespace wr::d3d12
 
 		auto page_frame_count = SizeAlign(heap->m_heap_size / heap->m_alignment, 64) / 64;
 
-		heap->m_page_frames.resize(page_frame_count);
+		heap->m_bitmap.resize(page_frame_count);
 
-		for (int i = 0; i < heap->m_page_frames.size(); ++i) {
-			heap->m_page_frames[i] = 0xffffffffffffffff;
+		for (int i = 0; i < heap->m_bitmap.size(); ++i) 
+		{
+			heap->m_bitmap[i] = 0xffffffffffffffff;
 		}
 
 		D3D12_HEAP_PROPERTIES heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
@@ -186,6 +213,20 @@ namespace wr::d3d12
 		TRY_M(device->m_native->CreateHeap(&desc, IID_PPV_ARGS(&heap->m_native)),
 			"Failed to create heap.");
 
+		heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		auto resource_desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size, D3D12_RESOURCE_FLAG_NONE);
+
+		TRY_M(device->m_native->CreateCommittedResource(
+			&heap_properties,
+			D3D12_HEAP_FLAG_NONE,
+			&resource_desc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&heap->m_staging_buffer)),
+			"Failed to create heap staging buffer.");
+
+		heap->m_staging_buffer->Map(0, &CD3DX12_RANGE(0, 0), reinterpret_cast<void**>(&heap->m_cpu_address));
+
 		return heap;
 	}
 
@@ -205,56 +246,70 @@ namespace wr::d3d12
 		bool found = false;
 		int free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= IndexFromBit(frame_count); ++i) {
-			if (heap->m_page_frames[i] != 0Ui64) {
-				for (std::uint64_t j = 0; j < 64; ++j) {
+		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i) 
+		{
+			if (heap->m_bitmap[i] != 0Ui64) 
+			{
+				for (std::uint64_t j = 0; j < 64; ++j) 
+				{
 					std::uint64_t to_test = 1Ui64 << j;
 					if (i * 64 + j >= frame_count)
 						break;
 
-					if ((heap->m_page_frames[i] & to_test)) {
-						if (counting) {
+					if ((heap->m_bitmap[i] & to_test))
+					{
+						if (counting) 
+						{
 							free_frames++;
-							if (free_frames == needed_frames) {
+							if (free_frames == needed_frames) 
+							{
 								found = true;
 								break;
 							}
 						}
-						else {
-							if (needed_frames == 1) {
+						else
+						{
+							if (needed_frames == 1) 
+							{
 								found = true;
 								start_frame = i * 64 + j;
 								break;
 							}
-							else {
+							else 
+							{
 								start_frame = i * 64 + j;
 								counting = true;
 								free_frames = 1;
 							}
 						}
 					}
-					else {
+					else 
+					{
 						counting = 0;
 						free_frames = 0;
 					}
 				}
 			}
-			else {
+			else 
+			{
 				counting = false;
 				free_frames = 0;
 			}
-			if (found == true) {
+			if (found == true)
+			{
 				break;
 			}
 		}
 
-		if (found == false) {
+		if (found == false)
+		{
 			delete cb;
 			return nullptr;
 		}
 
-		for (std::uint64_t i = 0; i < needed_frames; ++i) {
-			ClearFrame(&(heap->m_page_frames), start_frame + i);
+		for (std::uint64_t i = 0; i < needed_frames; ++i) 
+		{
+			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -281,6 +336,9 @@ namespace wr::d3d12
 		cb->m_heap_vector_location = heap->m_resources.size();
 		heap->m_resources.push_back(cb);
 
+		cb->m_heap_sbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::SMALL_BUFFERS;
+
 		return cb;
 	}
 
@@ -301,56 +359,70 @@ namespace wr::d3d12
 		bool found = false;
 		int free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= IndexFromBit(frame_count); ++i) {
-			if (heap->m_page_frames[i] != 0Ui64) {
-				for (std::uint64_t j = 0; j < 64; ++j) {
+		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i)
+		{
+			if (heap->m_bitmap[i] != 0Ui64) 
+			{
+				for (std::uint64_t j = 0; j < 64; ++j) 
+				{
 					std::uint64_t to_test = 1Ui64 << j;
 					if (i * 64 + j >= frame_count)
 						break;
 
-					if ((heap->m_page_frames[i] & to_test)) {
-						if (counting) {
+					if ((heap->m_bitmap[i] & to_test)) 
+					{
+						if (counting)
+						{
 							free_frames++;
-							if (free_frames == needed_frames) {
+							if (free_frames == needed_frames)
+							{
 								found = true;
 								break;
 							}
 						}
-						else {
-							if (needed_frames == 1) {
+						else 
+						{
+							if (needed_frames == 1)
+							{
 								found = true;
 								start_frame = i * 64 + j;
 								break;
 							}
-							else {
+							else 
+							{
 								start_frame = i * 64 + j;
 								counting = true;
 								free_frames = 1;
 							}
 						}
 					}
-					else {
+					else 
+					{
 						counting = 0;
 						free_frames = 0;
 					}
 				}
 			}
-			else {
+			else
+			{
 				counting = false;
 				free_frames = 0;
 			}
-			if (found == true) {
+			if (found == true) 
+			{
 				break;
 			}
 		}
 
-		if (found == false) {
+		if (found == false) 
+		{
 			delete cb;
 			return nullptr;
 		}
 
-		for (std::uint64_t i = 0; i < needed_frames; ++i) {
-			ClearFrame(&(heap->m_page_frames), start_frame + i);
+		for (std::uint64_t i = 0; i < needed_frames; ++i) 
+		{
+			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -358,6 +430,8 @@ namespace wr::d3d12
 		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_NONE);
 		cb->m_gpu_addresses.resize(heap->m_versioning_count);
 		cb->m_heap_vector_location = heap->m_resources.size();
+
+		cb->m_begin_offset = heap->m_current_offset;
 
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
 		for (auto i = 0; i < heap->m_versioning_count; i++)
@@ -386,15 +460,19 @@ namespace wr::d3d12
 
 		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
 
+		cb->m_heap_bbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::BIG_BUFFERS;
+
 		return cb;
 	}
 
-	HeapResource * AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes)
+	HeapResource * AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride)
 	{
 		auto cb = new HeapResource();
 		decltype(Device::m_native) n_device;
 		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
 		cb->m_unaligned_size = size_in_bytes;
+		cb->m_stride = stride;
 
 		auto aligned_size_in_bytes = SizeAlign(size_in_bytes, 65536);
 
@@ -406,56 +484,70 @@ namespace wr::d3d12
 		bool found = false;
 		int free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= IndexFromBit(frame_count); ++i) {
-			if (heap->m_page_frames[i] != 0Ui64) {
-				for (std::uint64_t j = 0; j < 64; ++j) {
+		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i) 
+		{
+			if (heap->m_bitmap[i] != 0Ui64)
+			{
+				for (std::uint64_t j = 0; j < 64; ++j) 
+				{
 					std::uint64_t to_test = 1Ui64 << j;
 					if (i * 64 + j >= frame_count)
 						break;
 
-					if ((heap->m_page_frames[i] & to_test)) {
-						if (counting) {
+					if ((heap->m_bitmap[i] & to_test)) 
+					{
+						if (counting) 
+						{
 							free_frames++;
-							if (free_frames == needed_frames) {
+							if (free_frames == needed_frames)
+							{
 								found = true;
 								break;
 							}
 						}
-						else {
-							if (needed_frames == 1) {
+						else
+						{
+							if (needed_frames == 1)
+							{
 								found = true;
 								start_frame = i * 64 + j;
 								break;
 							}
-							else {
+							else 
+							{
 								start_frame = i * 64 + j;
 								counting = true;
 								free_frames = 1;
 							}
 						}
 					}
-					else {
+					else 
+					{
 						counting = 0;
 						free_frames = 0;
 					}
 				}
 			}
-			else {
+			else 
+			{
 				counting = false;
 				free_frames = 0;
 			}
-			if (found == true) {
+			if (found == true) 
+			{
 				break;
 			}
 		}
 
-		if (found == false) {
+		if (found == false) 
+		{
 			delete cb;
 			return nullptr;
 		}
 
-		for (std::uint64_t i = 0; i < needed_frames; ++i) {
-			ClearFrame(&(heap->m_page_frames), start_frame + i);
+		for (std::uint64_t i = 0; i < needed_frames; ++i) 
+		{
+			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -463,6 +555,8 @@ namespace wr::d3d12
 		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 		cb->m_gpu_addresses.resize(heap->m_versioning_count);
 		cb->m_heap_vector_location = heap->m_resources.size();
+
+		cb->m_begin_offset = heap->m_current_offset;
 
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
 		for (auto i = 0; i < heap->m_versioning_count; i++)
@@ -476,6 +570,9 @@ namespace wr::d3d12
 		}
 
 		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
+
+		cb->m_heap_bsbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::BIG_STATIC_BUFFERS;
 
 		return cb;
 	}
@@ -497,56 +594,70 @@ namespace wr::d3d12
 		bool found = false;
 		int free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= IndexFromBit(frame_count); ++i) {
-			if (heap->m_page_frames[i] != 0Ui64) {
-				for (std::uint64_t j = 0; j < 64; ++j) {
+		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i)
+		{
+			if (heap->m_bitmap[i] != 0Ui64) 
+			{
+				for (std::uint64_t j = 0; j < 64; ++j) 
+				{
 					std::uint64_t to_test = 1Ui64 << j;
 					if (i * 64 + j >= frame_count)
 						break;
 
-					if ((heap->m_page_frames[i] & to_test)) {
-						if (counting) {
+					if ((heap->m_bitmap[i] & to_test)) 
+					{
+						if (counting) 
+						{
 							free_frames++;
-							if (free_frames == needed_frames) {
+							if (free_frames == needed_frames) 
+							{
 								found = true;
 								break;
 							}
 						}
-						else {
-							if (needed_frames == 1) {
+						else
+						{
+							if (needed_frames == 1) 
+							{
 								found = true;
 								start_frame = i * 64 + j;
 								break;
 							}
-							else {
+							else 
+							{
 								start_frame = i * 64 + j;
 								counting = true;
 								free_frames = 1;
 							}
 						}
 					}
-					else {
+					else 
+					{
 						counting = 0;
 						free_frames = 0;
 					}
 				}
 			}
-			else {
+			else 
+			{
 				counting = false;
 				free_frames = 0;
 			}
-			if (found == true) {
+			if (found == true) 
+			{
 				break;
 			}
 		}
 
-		if (found == false) {
+		if (found == false) 
+		{
 			delete cb;
 			return nullptr;
 		}
 
-		for (std::uint64_t i = 0; i < needed_frames; ++i) {
-			ClearFrame(&(heap->m_page_frames), start_frame + i);
+		for (std::uint64_t i = 0; i < needed_frames; ++i) 
+		{
+			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -554,6 +665,8 @@ namespace wr::d3d12
 		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_NONE);
 		cb->m_gpu_addresses.resize(heap->m_versioning_count);
 		cb->m_heap_vector_location = heap->m_resources.size();
+
+		cb->m_begin_offset = heap->m_current_offset;
 
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
 		for (auto i = 0; i < heap->m_versioning_count; i++)
@@ -568,6 +681,9 @@ namespace wr::d3d12
 
 		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
 
+		cb->m_heap_bsbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::BIG_STATIC_BUFFERS;
+
 		return cb;
 	}
 
@@ -577,27 +693,31 @@ namespace wr::d3d12
 
 		std::vector<HeapResource*>::iterator it;
 
-		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) {
+		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it)
+		{
 			if ((*it) == heapResource)
 				break;
 		}
 
-		if (it == heap->m_resources.end()) {
+		if (it == heap->m_resources.end()) 
+		{
 			return;
 		}
 		
 		heap->m_resources.erase(it);
 		
 
-		for (int i = 0; i < heap->m_resources.size(); ++i) {
+		for (int i = 0; i < heap->m_resources.size(); ++i)
+		{
 			heap->m_resources[i]->m_heap_vector_location = i;
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
 		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, 256) / heap->m_alignment * heap->m_versioning_count;
 
-		for (int i = 0; i < frame_count; ++i) {
-			SetFrame(&(heap->m_page_frames), frame + i);
+		for (int i = 0; i < frame_count; ++i) 
+		{
+			internal::SetPage(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;
@@ -607,31 +727,36 @@ namespace wr::d3d12
 	{
 		std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>>::iterator it;
 
-		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) {
+		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) 
+		{
 			if ((*it).first == heapResource)
 				break;
 		}
 
-		if (it == heap->m_resources.end()) {
+		if (it == heap->m_resources.end()) 
+		{
 			return;
 		}
 
 		
-		for (int i = 0; i < (*it).second.size(); ++i) {
+		for (int i = 0; i < (*it).second.size(); ++i) 
+		{
 			delete (*it).second[i];
 		}
 		heap->m_resources.erase(it);
 		
 
-		for (int i = 0; i < heap->m_resources.size(); ++i) {
+		for (int i = 0; i < heap->m_resources.size(); ++i) 
+		{
 			heap->m_resources[i].first->m_heap_vector_location = i;
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
 		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, heap->m_alignment) / heap->m_alignment * heap->m_versioning_count;
 
-		for (int i = 0; i < frame_count; ++i) {
-			SetFrame(&(heap->m_page_frames), frame + i);
+		for (int i = 0; i < frame_count; ++i) 
+		{
+			internal::SetPage(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;
@@ -642,30 +767,35 @@ namespace wr::d3d12
 	{
 		std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>>::iterator it;
 
-		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) {
+		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) 
+		{
 			if ((*it).first == heapResource)
 				break;
 		}
 
-		if (it == heap->m_resources.end()) {
+		if (it == heap->m_resources.end())
+		{
 			return;
 		}
 
-		for (int i = 0; i < (*it).second.size(); ++i) {
+		for (int i = 0; i < (*it).second.size(); ++i) 
+		{
 			delete (*it).second[i];
 		}
 		heap->m_resources.erase(it);
 
 
-		for (int i = 0; i < heap->m_resources.size(); ++i) {
+		for (int i = 0; i < heap->m_resources.size(); ++i) 
+		{
 			heap->m_resources[i].first->m_heap_vector_location = i;
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
 		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, heap->m_alignment) / heap->m_alignment * heap->m_versioning_count;
 
-		for (int i = 0; i < frame_count; ++i) {
-			SetFrame(&(heap->m_page_frames), frame + i);
+		for (int i = 0; i < frame_count; ++i) 
+		{
+			internal::SetPage(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;
@@ -883,6 +1013,7 @@ namespace wr::d3d12
 		//UnmapHeap(heap);
 
 		SAFE_RELEASE(heap->m_native);
+		SAFE_RELEASE(heap->m_staging_buffer);
 		for (auto& resource : heap->m_resources)
 		{
 			delete resource;
@@ -895,6 +1026,7 @@ namespace wr::d3d12
 		//UnmapHeap(heap);
 
 		SAFE_RELEASE(heap->m_native);
+		SAFE_RELEASE(heap->m_staging_buffer);
 		for (auto& resource : heap->m_resources)
 		{
 			delete resource.first;
@@ -916,6 +1048,43 @@ namespace wr::d3d12
 		else
 		{
 			LOGW("Tried updating a unmapped constant buffer resource!");
+		}
+	}
+
+	void UpdateStructuredBuffer(HeapResource * buffer, unsigned int frame_idx, void * data, std::uint64_t size_in_bytes, std::uint64_t offset, std::uint64_t stride, CommandList * cmd_list)
+	{
+		if (buffer->m_resource_heap_optimization != HeapOptimization::BIG_STATIC_BUFFERS)
+		{
+			return;
+		}
+
+		std::size_t aligned_size = SizeAlign(buffer->m_unaligned_size, 65536);
+
+		memcpy(buffer->m_heap_bsbo->m_cpu_address + buffer->m_begin_offset + offset + aligned_size * frame_idx, data, size_in_bytes);
+
+		buffer->m_stride = stride;
+
+		if (size_in_bytes != 0) {
+
+			ID3D12Resource* resource = buffer->m_heap_bsbo->m_resources[buffer->m_heap_vector_location].second[frame_idx];
+
+			cmd_list->m_native->ResourceBarrier(1, 
+				&CD3DX12_RESOURCE_BARRIER::Transition(resource, 
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 
+					D3D12_RESOURCE_STATE_COPY_DEST));
+
+			cmd_list->m_native->CopyBufferRegion(resource, 
+				offset, 
+				buffer->m_heap_bsbo->m_staging_buffer, 
+				buffer->m_begin_offset + offset + aligned_size * frame_idx, 
+				size_in_bytes);
+
+			// transition the vertex buffer data from copy destination state to vertex buffer state
+			cmd_list->m_native->ResourceBarrier(1, 
+				&CD3DX12_RESOURCE_BARRIER::Transition(resource, 
+					D3D12_RESOURCE_STATE_COPY_DEST, 
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+
 		}
 	}
 

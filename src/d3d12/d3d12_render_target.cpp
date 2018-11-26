@@ -7,7 +7,7 @@
 namespace wr::d3d12
 {
 	
-	RenderTarget* CreateRenderTarget(Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer)
+	RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor)
 	{
 		auto render_target = new RenderTarget();
 		const auto n_device = device->m_native;
@@ -33,7 +33,7 @@ namespace wr::d3d12
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 				D3D12_HEAP_FLAG_NONE,
 				&resource_desc,
-				is_back_buffer ? D3D12_RESOURCE_STATE_PRESENT : D3D12_RESOURCE_STATE_RENDER_TARGET,
+				(D3D12_RESOURCE_STATES)descriptor.m_initial_state,
 				&optimized_clear_value, // optimizes draw call
 				IID_PPV_ARGS(&render_target->m_render_targets[i])
 			), "Failed to create render target.");
@@ -43,11 +43,11 @@ namespace wr::d3d12
 			n_device->GetCopyableFootprints(&resource_desc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
 		}
 
-		CreateRenderTargetViews(render_target, device, cmd_queue, width, height);
+		CreateRenderTargetViews(render_target, device, width, height);
 
 		if (descriptor.m_create_dsv_buffer)
 		{
-			CreateDepthStencilBuffer(render_target, device, cmd_queue, width, height);
+			CreateDepthStencilBuffer(render_target, device, width, height);
 		}
 
 		return render_target;
@@ -66,7 +66,7 @@ namespace wr::d3d12
 		SetName(render_target, std::wstring(name.begin(), name.end()));
 	}
 
-	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height)
+	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height)
 	{
 		const auto n_device = device->m_native;
 
@@ -91,7 +91,7 @@ namespace wr::d3d12
 		}
 	}
 
-	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height)
+	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height)
 	{
 		const auto n_device = device->m_native;
 		auto depth_format = DXGI_FORMAT_R32_TYPELESS;
@@ -104,6 +104,7 @@ namespace wr::d3d12
 		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		TRY_M(n_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&render_target->m_depth_stencil_resource_heap)),
 			"Failed to create descriptor heap for depth buffer");
+		NAME_D3D12RESOURCE(render_target->m_depth_stencil_resource_heap)
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
 		depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -123,7 +124,7 @@ namespace wr::d3d12
 			&depthOptimizedClearValue,
 			IID_PPV_ARGS(&render_target->m_depth_stencil_buffer)
 		), "Failed to create commited resource.");
-		NAME_D3D12RESOURCE(render_target->m_depth_stencil_resource_heap)
+		NAME_D3D12RESOURCE(render_target->m_depth_stencil_buffer)
 
 		n_device->CreateDepthStencilView(render_target->m_depth_stencil_buffer, &depthStencilDesc, render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart());
 	}
@@ -182,7 +183,7 @@ namespace wr::d3d12
 		Offset(handle, 1, increment_size);
 	}
 
-	void Resize(RenderTarget** render_target, Device* device, CommandQueue* cmd_queue, unsigned int width, unsigned int height)
+	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height)
 	{
 		if ((*render_target)->m_create_info.m_dsv_format == Format::UNKNOWN && (*render_target)->m_create_info.m_create_dsv_buffer)
 		{
@@ -190,7 +191,7 @@ namespace wr::d3d12
 		}
 		DestroyRenderTargetViews((*render_target));
 
-		auto new_render_target = CreateRenderTarget(device, cmd_queue, width, height, (*render_target)->m_create_info, true);
+		auto new_render_target = CreateRenderTarget(device, width, height, (*render_target)->m_create_info);
 	}
 
 	void IncrementFrameIdx(RenderTarget* render_target)

@@ -49,7 +49,7 @@ if (MSVC)
 	target_compile_options(fmt PRIVATE /W0)
 endif()
 
-add_executable(EnginePrototype ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
+add_executable(EnginePrototype WIN32 ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
 target_link_libraries(EnginePrototype dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
 set_target_properties(EnginePrototype PROPERTIES CXX_STANDARD 17)
 set_target_properties(EnginePrototype PROPERTIES CXX_EXTENSIONS OFF)
