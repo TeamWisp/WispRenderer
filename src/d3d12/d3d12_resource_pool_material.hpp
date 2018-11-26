@@ -8,7 +8,8 @@ namespace wr::d3d12
 	struct StagingBuffer;
 }
 
-namespace wr {
+namespace wr 
+{
 	class D3D12RenderSystem;
 
 	struct D3D12TextureHandle : TextureHandle { };

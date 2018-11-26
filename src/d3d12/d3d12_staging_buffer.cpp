@@ -34,7 +34,8 @@ namespace wr::d3d12
 
 		buffer->m_data = malloc(size);
 
-		if (data != nullptr) {
+		if (data != nullptr) 
+		{
 			memcpy(buffer->m_data, data, size);
 		}
 
@@ -45,7 +46,7 @@ namespace wr::d3d12
 		return buffer;
 	}
 
-	void SetStagingBufferData(StagingBuffer* buffer, void * data, std::uint64_t size, std::uint64_t offset)
+	void UpdateStagingBuffer(StagingBuffer* buffer, void * data, std::uint64_t size, std::uint64_t offset)
 	{
 		memcpy(static_cast<std::uint8_t*>(buffer->m_data) + offset, data, size);
 	}
@@ -72,7 +73,8 @@ namespace wr::d3d12
 
 	void StageBufferRegion(StagingBuffer * buffer, std::uint64_t size, std::uint64_t offset, CommandList * cmd_list)
 	{
-		if (buffer->m_is_staged) {
+		if (buffer->m_is_staged)
+		{
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state, D3D12_RESOURCE_STATE_COPY_DEST));
 		}
 

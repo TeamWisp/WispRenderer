@@ -2,9 +2,11 @@
 #include "../resource_pool_constant_buffer.hpp"
 #include "d3d12_structs.hpp"
 
-namespace wr {
+namespace wr 
+{
 
-	struct D3D12ConstantBufferHandle : ConstantBufferHandle {
+	struct D3D12ConstantBufferHandle : ConstantBufferHandle 
+	{
 		d3d12::HeapResource* m_native;
 	};
 
@@ -24,7 +26,7 @@ namespace wr {
 		void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t* data) final;
 		void DeallocateConstantBuffer(ConstantBufferHandle* handle) final;
 
-		std::vector<ConstantBufferHandle*> m_constantBufferHandles;
+		std::vector<ConstantBufferHandle*> m_constant_buffer_handles;
 
 		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_heap;
 		D3D12RenderSystem* m_render_system;

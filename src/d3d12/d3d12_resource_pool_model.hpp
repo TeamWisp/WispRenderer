@@ -58,6 +58,8 @@ namespace wr
 		std::vector<std::uint64_t> m_vertex_buffer_bitmap;
 		std::vector<std::uint64_t> m_index_buffer_bitmap;
 
+		std::vector<Mesh*> m_mesh_handles;
+
 		std::uint64_t m_vertex_buffer_size;
 		std::uint64_t m_index_buffer_size;
 

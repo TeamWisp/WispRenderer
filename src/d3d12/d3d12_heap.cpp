@@ -4,29 +4,38 @@
 
 namespace wr::d3d12
 {
-	static inline std::uint64_t IndexFromBit(std::uint64_t frame) {
-		return frame / (8 * 8);
-	}
-	static inline std::uint64_t OffsetFromBit(std::uint64_t frame) {
-		return frame % (8 * 8);
-	}
+	namespace internal 
+	{
+		inline std::uint64_t IndexFromBit(std::uint64_t frame) 
+		{
+			return frame / (8 * 8);
+		}
 
-	static void SetFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) {
-		std::uint64_t idx = IndexFromBit(frame);
-		std::uint64_t off = OffsetFromBit(frame);
-		bitmap->operator[](idx) |= (1Ui64 << off);
-	}
+		inline std::uint64_t OffsetFromBit(std::uint64_t frame) 
+		{
+			return frame % (8 * 8);
+		}
 
-	static void ClearFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) {
-		std::uint64_t idx = IndexFromBit(frame);
-		std::uint64_t off = OffsetFromBit(frame);
-		bitmap->operator[](idx) &= ~(1Ui64 << off);
-	}
+		void SetFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		{
+			std::uint64_t idx = IndexFromBit(frame);
+			std::uint64_t off = OffsetFromBit(frame);
+			bitmap->operator[](idx) |= (1Ui64 << off);
+		}
 
-	static bool TestFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) {
-		std::uint64_t idx = IndexFromBit(frame);
-		std::uint64_t off = OffsetFromBit(frame);
-		return (bitmap->operator[](idx) & (1Ui64 << off));
+		void ClearFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		{
+			std::uint64_t idx = IndexFromBit(frame);
+			std::uint64_t off = OffsetFromBit(frame);
+			bitmap->operator[](idx) &= ~(1Ui64 << off);
+		}
+
+		bool TestFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		{
+			std::uint64_t idx = IndexFromBit(frame);
+			std::uint64_t off = OffsetFromBit(frame);
+			return (bitmap->operator[](idx) & (1Ui64 << off));
+		}
 	}
 
 	Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
@@ -45,7 +54,8 @@ namespace wr::d3d12
 
 		heap->m_bitmap.resize(page_frame_count);
 
-		for (int i = 0; i < heap->m_bitmap.size(); ++i) {
+		for (int i = 0; i < heap->m_bitmap.size(); ++i) 
+		{
 			heap->m_bitmap[i] = 0xffffffffffffffff;
 		}
 
@@ -80,7 +90,8 @@ namespace wr::d3d12
 
 		heap->m_bitmap.resize(page_frame_count);
 
-		for (int i = 0; i < heap->m_bitmap.size(); ++i) {
+		for (int i = 0; i < heap->m_bitmap.size(); ++i) 
+		{
 			heap->m_bitmap[i] = 0xffffffffffffffff;
 		}
 
@@ -125,7 +136,8 @@ namespace wr::d3d12
 
 		heap->m_bitmap.resize(page_frame_count);
 
-		for (int i = 0; i < heap->m_bitmap.size(); ++i) {
+		for (int i = 0; i < heap->m_bitmap.size(); ++i) 
+		{
 			heap->m_bitmap[i] = 0xffffffffffffffff;
 		}
 
@@ -160,7 +172,8 @@ namespace wr::d3d12
 
 		heap->m_bitmap.resize(page_frame_count);
 
-		for (int i = 0; i < heap->m_bitmap.size(); ++i) {
+		for (int i = 0; i < heap->m_bitmap.size(); ++i) 
+		{
 			heap->m_bitmap[i] = 0xffffffffffffffff;
 		}
 
@@ -205,56 +218,70 @@ namespace wr::d3d12
 		bool found = false;
 		int free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= IndexFromBit(frame_count); ++i) {
-			if (heap->m_bitmap[i] != 0Ui64) {
-				for (std::uint64_t j = 0; j < 64; ++j) {
+		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i) 
+		{
+			if (heap->m_bitmap[i] != 0Ui64) 
+			{
+				for (std::uint64_t j = 0; j < 64; ++j) 
+				{
 					std::uint64_t to_test = 1Ui64 << j;
 					if (i * 64 + j >= frame_count)
 						break;
 
-					if ((heap->m_bitmap[i] & to_test)) {
-						if (counting) {
+					if ((heap->m_bitmap[i] & to_test))
+					{
+						if (counting) 
+						{
 							free_frames++;
-							if (free_frames == needed_frames) {
+							if (free_frames == needed_frames) 
+							{
 								found = true;
 								break;
 							}
 						}
-						else {
-							if (needed_frames == 1) {
+						else
+						{
+							if (needed_frames == 1) 
+							{
 								found = true;
 								start_frame = i * 64 + j;
 								break;
 							}
-							else {
+							else 
+							{
 								start_frame = i * 64 + j;
 								counting = true;
 								free_frames = 1;
 							}
 						}
 					}
-					else {
+					else 
+					{
 						counting = 0;
 						free_frames = 0;
 					}
 				}
 			}
-			else {
+			else 
+			{
 				counting = false;
 				free_frames = 0;
 			}
-			if (found == true) {
+			if (found == true)
+			{
 				break;
 			}
 		}
 
-		if (found == false) {
+		if (found == false)
+		{
 			delete cb;
 			return nullptr;
 		}
 
-		for (std::uint64_t i = 0; i < needed_frames; ++i) {
-			ClearFrame(&(heap->m_bitmap), start_frame + i);
+		for (std::uint64_t i = 0; i < needed_frames; ++i) 
+		{
+			internal::ClearFrame(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -301,56 +328,70 @@ namespace wr::d3d12
 		bool found = false;
 		int free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= IndexFromBit(frame_count); ++i) {
-			if (heap->m_bitmap[i] != 0Ui64) {
-				for (std::uint64_t j = 0; j < 64; ++j) {
+		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i)
+		{
+			if (heap->m_bitmap[i] != 0Ui64) 
+			{
+				for (std::uint64_t j = 0; j < 64; ++j) 
+				{
 					std::uint64_t to_test = 1Ui64 << j;
 					if (i * 64 + j >= frame_count)
 						break;
 
-					if ((heap->m_bitmap[i] & to_test)) {
-						if (counting) {
+					if ((heap->m_bitmap[i] & to_test)) 
+					{
+						if (counting)
+						{
 							free_frames++;
-							if (free_frames == needed_frames) {
+							if (free_frames == needed_frames)
+							{
 								found = true;
 								break;
 							}
 						}
-						else {
-							if (needed_frames == 1) {
+						else 
+						{
+							if (needed_frames == 1)
+							{
 								found = true;
 								start_frame = i * 64 + j;
 								break;
 							}
-							else {
+							else 
+							{
 								start_frame = i * 64 + j;
 								counting = true;
 								free_frames = 1;
 							}
 						}
 					}
-					else {
+					else 
+					{
 						counting = 0;
 						free_frames = 0;
 					}
 				}
 			}
-			else {
+			else
+			{
 				counting = false;
 				free_frames = 0;
 			}
-			if (found == true) {
+			if (found == true) 
+			{
 				break;
 			}
 		}
 
-		if (found == false) {
+		if (found == false) 
+		{
 			delete cb;
 			return nullptr;
 		}
 
-		for (std::uint64_t i = 0; i < needed_frames; ++i) {
-			ClearFrame(&(heap->m_bitmap), start_frame + i);
+		for (std::uint64_t i = 0; i < needed_frames; ++i) 
+		{
+			internal::ClearFrame(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -406,56 +447,70 @@ namespace wr::d3d12
 		bool found = false;
 		int free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= IndexFromBit(frame_count); ++i) {
-			if (heap->m_bitmap[i] != 0Ui64) {
-				for (std::uint64_t j = 0; j < 64; ++j) {
+		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i) 
+		{
+			if (heap->m_bitmap[i] != 0Ui64)
+			{
+				for (std::uint64_t j = 0; j < 64; ++j) 
+				{
 					std::uint64_t to_test = 1Ui64 << j;
 					if (i * 64 + j >= frame_count)
 						break;
 
-					if ((heap->m_bitmap[i] & to_test)) {
-						if (counting) {
+					if ((heap->m_bitmap[i] & to_test)) 
+					{
+						if (counting) 
+						{
 							free_frames++;
-							if (free_frames == needed_frames) {
+							if (free_frames == needed_frames)
+							{
 								found = true;
 								break;
 							}
 						}
-						else {
-							if (needed_frames == 1) {
+						else
+						{
+							if (needed_frames == 1)
+							{
 								found = true;
 								start_frame = i * 64 + j;
 								break;
 							}
-							else {
+							else 
+							{
 								start_frame = i * 64 + j;
 								counting = true;
 								free_frames = 1;
 							}
 						}
 					}
-					else {
+					else 
+					{
 						counting = 0;
 						free_frames = 0;
 					}
 				}
 			}
-			else {
+			else 
+			{
 				counting = false;
 				free_frames = 0;
 			}
-			if (found == true) {
+			if (found == true) 
+			{
 				break;
 			}
 		}
 
-		if (found == false) {
+		if (found == false) 
+		{
 			delete cb;
 			return nullptr;
 		}
 
-		for (std::uint64_t i = 0; i < needed_frames; ++i) {
-			ClearFrame(&(heap->m_bitmap), start_frame + i);
+		for (std::uint64_t i = 0; i < needed_frames; ++i) 
+		{
+			internal::ClearFrame(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -497,56 +552,70 @@ namespace wr::d3d12
 		bool found = false;
 		int free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= IndexFromBit(frame_count); ++i) {
-			if (heap->m_bitmap[i] != 0Ui64) {
-				for (std::uint64_t j = 0; j < 64; ++j) {
+		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i)
+		{
+			if (heap->m_bitmap[i] != 0Ui64) 
+			{
+				for (std::uint64_t j = 0; j < 64; ++j) 
+				{
 					std::uint64_t to_test = 1Ui64 << j;
 					if (i * 64 + j >= frame_count)
 						break;
 
-					if ((heap->m_bitmap[i] & to_test)) {
-						if (counting) {
+					if ((heap->m_bitmap[i] & to_test)) 
+					{
+						if (counting) 
+						{
 							free_frames++;
-							if (free_frames == needed_frames) {
+							if (free_frames == needed_frames) 
+							{
 								found = true;
 								break;
 							}
 						}
-						else {
-							if (needed_frames == 1) {
+						else
+						{
+							if (needed_frames == 1) 
+							{
 								found = true;
 								start_frame = i * 64 + j;
 								break;
 							}
-							else {
+							else 
+							{
 								start_frame = i * 64 + j;
 								counting = true;
 								free_frames = 1;
 							}
 						}
 					}
-					else {
+					else 
+					{
 						counting = 0;
 						free_frames = 0;
 					}
 				}
 			}
-			else {
+			else 
+			{
 				counting = false;
 				free_frames = 0;
 			}
-			if (found == true) {
+			if (found == true) 
+			{
 				break;
 			}
 		}
 
-		if (found == false) {
+		if (found == false) 
+		{
 			delete cb;
 			return nullptr;
 		}
 
-		for (std::uint64_t i = 0; i < needed_frames; ++i) {
-			ClearFrame(&(heap->m_bitmap), start_frame + i);
+		for (std::uint64_t i = 0; i < needed_frames; ++i) 
+		{
+			internal::ClearFrame(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -577,27 +646,31 @@ namespace wr::d3d12
 
 		std::vector<HeapResource*>::iterator it;
 
-		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) {
+		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it)
+		{
 			if ((*it) == heapResource)
 				break;
 		}
 
-		if (it == heap->m_resources.end()) {
+		if (it == heap->m_resources.end()) 
+		{
 			return;
 		}
 		
 		heap->m_resources.erase(it);
 		
 
-		for (int i = 0; i < heap->m_resources.size(); ++i) {
+		for (int i = 0; i < heap->m_resources.size(); ++i)
+		{
 			heap->m_resources[i]->m_heap_vector_location = i;
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
 		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, 256) / heap->m_alignment * heap->m_versioning_count;
 
-		for (int i = 0; i < frame_count; ++i) {
-			SetFrame(&(heap->m_bitmap), frame + i);
+		for (int i = 0; i < frame_count; ++i) 
+		{
+			internal::SetFrame(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;
@@ -607,31 +680,36 @@ namespace wr::d3d12
 	{
 		std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>>::iterator it;
 
-		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) {
+		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) 
+		{
 			if ((*it).first == heapResource)
 				break;
 		}
 
-		if (it == heap->m_resources.end()) {
+		if (it == heap->m_resources.end()) 
+		{
 			return;
 		}
 
 		
-		for (int i = 0; i < (*it).second.size(); ++i) {
+		for (int i = 0; i < (*it).second.size(); ++i) 
+		{
 			delete (*it).second[i];
 		}
 		heap->m_resources.erase(it);
 		
 
-		for (int i = 0; i < heap->m_resources.size(); ++i) {
+		for (int i = 0; i < heap->m_resources.size(); ++i) 
+		{
 			heap->m_resources[i].first->m_heap_vector_location = i;
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
 		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, heap->m_alignment) / heap->m_alignment * heap->m_versioning_count;
 
-		for (int i = 0; i < frame_count; ++i) {
-			SetFrame(&(heap->m_bitmap), frame + i);
+		for (int i = 0; i < frame_count; ++i) 
+		{
+			internal::SetFrame(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;
@@ -642,30 +720,35 @@ namespace wr::d3d12
 	{
 		std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>>::iterator it;
 
-		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) {
+		for (it = heap->m_resources.begin(); it != heap->m_resources.end(); ++it) 
+		{
 			if ((*it).first == heapResource)
 				break;
 		}
 
-		if (it == heap->m_resources.end()) {
+		if (it == heap->m_resources.end())
+		{
 			return;
 		}
 
-		for (int i = 0; i < (*it).second.size(); ++i) {
+		for (int i = 0; i < (*it).second.size(); ++i) 
+		{
 			delete (*it).second[i];
 		}
 		heap->m_resources.erase(it);
 
 
-		for (int i = 0; i < heap->m_resources.size(); ++i) {
+		for (int i = 0; i < heap->m_resources.size(); ++i) 
+		{
 			heap->m_resources[i].first->m_heap_vector_location = i;
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
 		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, heap->m_alignment) / heap->m_alignment * heap->m_versioning_count;
 
-		for (int i = 0; i < frame_count; ++i) {
-			SetFrame(&(heap->m_bitmap), frame + i);
+		for (int i = 0; i < frame_count; ++i) 
+		{
+			internal::SetFrame(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;

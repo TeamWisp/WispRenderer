@@ -38,10 +38,6 @@ namespace wr::d3d12
 
 	void Destroy(CommandQueue* cmd_queue)
 	{
-		if (cmd_queue == nullptr) {
-			return;
-		}
-
 		SAFE_RELEASE(cmd_queue->m_native);
 		delete cmd_queue;
 	}	

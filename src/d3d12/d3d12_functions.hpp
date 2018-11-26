@@ -109,7 +109,7 @@ namespace wr::d3d12
 
 	// Staging Buffer
 	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t stride, ResourceState resource_state);
-	void SetStagingBufferData(StagingBuffer* buffer, void* data, std::uint64_t size, std::uint64_t offset);
+	void UpdateStagingBuffer(StagingBuffer* buffer, void* data, std::uint64_t size, std::uint64_t offset);
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list);
 	void StageBufferRegion(StagingBuffer* buffer, std::uint64_t size, std::uint64_t offset, CommandList* cmd_list);
 	void FreeStagingBuffer(StagingBuffer* buffer);

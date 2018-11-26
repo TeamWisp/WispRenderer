@@ -1,6 +1,7 @@
 #include "resource_pool_material.hpp"
 
-namespace wr {
+namespace wr 
+{
 	MaterialPool::MaterialPool(std::size_t size_in_mb) : m_size_in_mb(size_in_mb)
 	{
 	}

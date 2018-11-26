@@ -7,11 +7,13 @@
 
 #include "util/defines.hpp"
 
-namespace wr {
+namespace wr 
+{
 	
 	struct ConstantBufferHandle {};
 
-	class ConstantBufferPool {
+	class ConstantBufferPool
+	{
 	public:
 		explicit ConstantBufferPool(std::size_t size_in_mb);
 		virtual ~ConstantBufferPool() = default;
