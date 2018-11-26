@@ -115,10 +115,12 @@ namespace wr
 			d3d12_mesh->m_vertex_staging_buffer_size, 
 			d3d12_mesh->m_vertex_staging_buffer_offset, 
 			cmd_list);
-		d3d12::StageBufferRegion(m_index_buffer,
-			d3d12_mesh->m_index_staging_buffer_size,
-			d3d12_mesh->m_index_staging_buffer_offset,
-			cmd_list);
+		if (d3d12_mesh->m_index_staging_buffer_size != 0) {
+			d3d12::StageBufferRegion(m_index_buffer,
+				d3d12_mesh->m_index_staging_buffer_size,
+				d3d12_mesh->m_index_staging_buffer_offset,
+				cmd_list);
+		}
 	}
 
 	d3d12::StagingBuffer * D3D12ModelPool::GetVertexStagingBuffer()
@@ -203,7 +205,8 @@ namespace wr
 
 		mesh->m_vertex_staging_buffer_offset = start_frame * 65536;
 		mesh->m_vertex_staging_buffer_size = num_vertices * vertex_size;
-		mesh->m_vertex_Staging_buffer_stride = vertex_size;
+		mesh->m_vertex_staging_buffer_stride = vertex_size;
+		mesh->m_vertex_count = num_vertices;
 
 		mesh->m_vertex_buffer_base_address = m_vertex_buffer->m_gpu_address;
 
@@ -270,6 +273,7 @@ namespace wr
 
 		mesh->m_index_staging_buffer_offset = start_frame * 65536;
 		mesh->m_index_staging_buffer_size = num_indices * index_size;
+		mesh->m_index_count = num_indices;
 
 		mesh->m_index_buffer_base_address = m_index_buffer->m_gpu_address;
 
@@ -345,7 +349,8 @@ namespace wr
 
 		mesh->m_vertex_staging_buffer_offset = start_frame * 65536;
 		mesh->m_vertex_staging_buffer_size = num_vertices * vertex_size;
-		mesh->m_vertex_Staging_buffer_stride = vertex_size;
+		mesh->m_vertex_staging_buffer_stride = vertex_size;
+		mesh->m_vertex_count = num_vertices;
 
 		mesh->m_vertex_buffer_base_address = m_vertex_buffer->m_gpu_address;
 

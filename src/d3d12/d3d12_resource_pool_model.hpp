@@ -20,10 +20,12 @@ namespace wr
 		D3D12_GPU_VIRTUAL_ADDRESS m_vertex_buffer_base_address;
 		std::size_t m_vertex_staging_buffer_offset;
 		std::size_t m_vertex_staging_buffer_size;
-		std::size_t m_vertex_Staging_buffer_stride;
+		std::size_t m_vertex_staging_buffer_stride;
+		std::size_t m_vertex_count;
 		D3D12_GPU_VIRTUAL_ADDRESS m_index_buffer_base_address;
 		std::size_t m_index_staging_buffer_offset;
 		std::size_t m_index_staging_buffer_size;
+		std::size_t m_index_count;
 	};
 
 	class D3D12ModelPool : public ModelPool

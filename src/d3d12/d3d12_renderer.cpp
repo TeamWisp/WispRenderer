@@ -393,17 +393,7 @@ namespace wr
 		for (auto& mesh : node->m_model->m_meshes)
 		{
 			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-<<<<<<< HEAD
 			static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->StageMesh(n_mesh, m_direct_cmd_list);
-			//d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
-=======
-			d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
-
-			if (n_mesh->m_index_buffer != nullptr)
-			{
-				d3d12::StageBuffer(n_mesh->m_index_buffer, m_direct_cmd_list);
-			}
->>>>>>> 64bab31b2681e83160f3793d84dd5cd6fb01e7d1
 		}
 	}
 
@@ -479,11 +469,14 @@ namespace wr
 					static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer(),
 					n_mesh->m_vertex_staging_buffer_offset,
 					n_mesh->m_vertex_staging_buffer_size,
-					n_mesh->m_vertex_Staging_buffer_stride);
+					n_mesh->m_vertex_staging_buffer_stride);
 
-				if (n_mesh->m_index_buffer != nullptr) 
+				if (n_mesh->m_index_staging_buffer_size != 0)
 				{
-					d3d12::BindIndexBuffer(cmd_list, n_mesh->m_index_buffer);
+					d3d12::BindIndexBuffer(cmd_list, 
+						static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer(),
+						n_mesh->m_index_staging_buffer_offset,
+						n_mesh->m_index_staging_buffer_size);
 					d3d12::DrawIndexed(cmd_list, n_mesh->m_index_count, batch.num_instances);
 				}
 				else 
