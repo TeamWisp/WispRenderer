@@ -235,11 +235,21 @@ namespace wr::d3d12
 
 	struct HeapResource
 	{
+		union 
+		{
+			Heap<HeapOptimization::SMALL_BUFFERS>* heap_sbo;
+			Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap_ssbo;
+			Heap<HeapOptimization::BIG_BUFFERS>* heap_bbo;
+			Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap_bsbo;
+		};
+
 		std::vector<D3D12_GPU_VIRTUAL_ADDRESS> m_gpu_addresses;
 		std::optional<std::vector<std::uint8_t*>> m_cpu_addresses;
 		std::uint64_t m_unaligned_size;
 		std::uint64_t m_begin_offset;
 		std::size_t m_heap_vector_location;
+		std::size_t stride;
+		HeapOptimization resource_heap_optimization;
 	};
 
 } /* wr::d3d12 */

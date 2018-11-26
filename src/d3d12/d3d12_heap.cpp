@@ -16,21 +16,21 @@ namespace wr::d3d12
 			return frame % (8 * 8);
 		}
 
-		void SetFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		void SetPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
 		{
 			std::uint64_t idx = IndexFromBit(frame);
 			std::uint64_t off = OffsetFromBit(frame);
 			bitmap->operator[](idx) |= (1Ui64 << off);
 		}
 
-		void ClearFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		void ClearPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
 		{
 			std::uint64_t idx = IndexFromBit(frame);
 			std::uint64_t off = OffsetFromBit(frame);
 			bitmap->operator[](idx) &= ~(1Ui64 << off);
 		}
 
-		bool TestFrame(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		bool TestPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
 		{
 			std::uint64_t idx = IndexFromBit(frame);
 			std::uint64_t off = OffsetFromBit(frame);
@@ -281,7 +281,7 @@ namespace wr::d3d12
 
 		for (std::uint64_t i = 0; i < needed_frames; ++i) 
 		{
-			internal::ClearFrame(&(heap->m_bitmap), start_frame + i);
+			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -307,6 +307,8 @@ namespace wr::d3d12
 		
 		cb->m_heap_vector_location = heap->m_resources.size();
 		heap->m_resources.push_back(cb);
+
+		cb->
 
 		return cb;
 	}
@@ -391,7 +393,7 @@ namespace wr::d3d12
 
 		for (std::uint64_t i = 0; i < needed_frames; ++i) 
 		{
-			internal::ClearFrame(&(heap->m_bitmap), start_frame + i);
+			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -510,7 +512,7 @@ namespace wr::d3d12
 
 		for (std::uint64_t i = 0; i < needed_frames; ++i) 
 		{
-			internal::ClearFrame(&(heap->m_bitmap), start_frame + i);
+			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -615,7 +617,7 @@ namespace wr::d3d12
 
 		for (std::uint64_t i = 0; i < needed_frames; ++i) 
 		{
-			internal::ClearFrame(&(heap->m_bitmap), start_frame + i);
+			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
@@ -670,7 +672,7 @@ namespace wr::d3d12
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
-			internal::SetFrame(&(heap->m_bitmap), frame + i);
+			internal::SetPage(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;
@@ -709,7 +711,7 @@ namespace wr::d3d12
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
-			internal::SetFrame(&(heap->m_bitmap), frame + i);
+			internal::SetPage(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;
@@ -748,7 +750,7 @@ namespace wr::d3d12
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
-			internal::SetFrame(&(heap->m_bitmap), frame + i);
+			internal::SetPage(&(heap->m_bitmap), frame + i);
 		}
 
 		delete heapResource;

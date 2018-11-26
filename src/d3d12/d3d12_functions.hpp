@@ -152,5 +152,11 @@ namespace wr::d3d12
 
 	// Resources
 	void UpdateConstantBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes);
+	void UpdateStructuredBuffer(HeapResource* buffer,
+		unsigned int frame_idx,
+		void* data,
+		std::uint64_t size_in_bytes,
+		std::uint64_t offset, std::uint64_t stride,
+		CommandList* cmd_list);
 
 } /* wr::d3d12 */
