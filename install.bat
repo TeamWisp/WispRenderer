@@ -49,7 +49,7 @@ REM ##### GEN PROJECTS #####
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
-cmake -G "Visual Studio 15 2017" -A x64 ..
+cmake -G "Visual Studio 15 2017" -D ENABLE_UNIT_TEST:BOOL=TRUE -A x64 ..
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0
