@@ -164,7 +164,7 @@ void WispEntry()
 	auto scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
 	auto mesh_node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 1.2217, (float)window->GetWidth() / (float)window->GetHeight());
+	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 70.f, (float)window->GetWidth() / (float)window->GetHeight());
 
 	// #### background cubes
 	std::vector<std::pair<std::shared_ptr<wr::MeshNode>, int>> bg_nodes(500);
