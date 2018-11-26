@@ -7,7 +7,7 @@ pipeline {
 				bat '''cd "%WORKSPACE%\\Scripts"
 				call JenkinsWebhook.bat ":bulb: Building Pull Request. Jenkins build nr: %BUILD_NUMBER%"
 				cd "%WORKSPACE%
-				install -j "%WORKSPACE%" 
+				install -remote "%WORKSPACE%" 
 				if errorlevel 1 (
 					cd "%WORKSPACE%\\Scripts" 
 					JenkinsWebhook ":x: Pull Request Build Failed!! Jenskins build nr: %BUILD_NUMBER% - install failed"

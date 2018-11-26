@@ -23,22 +23,28 @@ call :colorEcho %title_color% "==================================="
 call :colorEcho %title_color% "           Wisp Installer          "
 call :colorEcho %title_color% "==================================="
 
-if "%1" == "-j" ( 
-  call :downloadDepsServer
-  call :genVS15Win64Server 
-  REM >> test.txt 2>&1
-  call :genVS15Win32Server 
-  REM >> test.txt 2>&1
-) else (
-  call :downloadDeps
-  call :genVS15Win64 
-  REM >> test.txt 2>&1
-  call :genVS15Win32 
-  REM >> test.txt 2>&1
+if "%1" == "-remote" ( 
+  cd %~dp2  
+) 
+if "%1" == "-help" (
+  echo This install.bat is use to complete the setup of the ray tracing git repository.
+  echo It will donwload all dependencies and use CMake to generate a MS Visual Studio project.
+  echo Options:
+  echo  -remote [s]
+  echo          Can be used to make this script run on build servers. It no longer needs any user input
+  echo          remote accepts one argument a directory path to supply your working directory.
+  echo          leave this argument blank to use the default directory.
+  goto :eof
 )
 
+call :downloadDeps
+call :genVS15Win64 
+REM >> test.txt 2>&1
+call :genVS15Win32 
+REM >> test.txt 2>&1
+
 call :colorEcho %light_green% "Installation Finished!"
-if "%1" == "-j" ( 
+if "%1" == "-remote" ( 
   goto :eof
 ) else (
   pause
