@@ -211,6 +211,8 @@ namespace wr::d3d12
 			std::vector<HeapResource*> m_resources;
 			D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 			ID3D12Resource* m_native;
+			ID3D12Resource* m_staging_buffer;
+			std::uint8_t* m_cpu_address;
 		};
 
 		template<>
@@ -218,6 +220,8 @@ namespace wr::d3d12
 		{
 			std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>> m_resources;
 			ID3D12Heap* m_native;
+			ID3D12Resource* m_staging_buffer;
+			std::uint8_t* m_cpu_address;
 		};
 
 	} /* detail */
