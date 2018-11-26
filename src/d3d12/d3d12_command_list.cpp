@@ -67,7 +67,7 @@ namespace wr::d3d12
 		cmd_list->m_native->Close();
 	}
 
-	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear, bool clear_depth)
+	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear, bool clear_depth)
 	{
 		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> handles;
 		handles.resize(render_target->m_render_targets.size());
@@ -186,6 +186,11 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer->m_gpu_addresses[frame_idx]);
 	}
 
+	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index)
+	{
+		cmd_list->m_native->SetGraphicsRootDescriptorTable(root_param_index, handle.m_native);
+	}
+
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology)
 	{
 		cmd_list->m_native->IASetPrimitiveTopology(topology);
@@ -204,7 +209,7 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to)
 	{
 		CD3DX12_RESOURCE_BARRIER end_transition = CD3DX12_RESOURCE_BARRIER::Transition(
-			render_target->m_render_targets[frame_index],
+			render_target->m_render_targets[frame_index % render_target->m_render_targets.size()],
 			(D3D12_RESOURCE_STATES)from,
 			(D3D12_RESOURCE_STATES)to
 		);
@@ -227,6 +232,16 @@ namespace wr::d3d12
 			barriers[i] = barrier;
 		}
 		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
+	}
+
+	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to)
+	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			render_target->m_depth_stencil_buffer,
+			(D3D12_RESOURCE_STATES)from,
+			(D3D12_RESOURCE_STATES)to
+		);
+		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
 
 	void Destroy(CommandList* cmd_list)

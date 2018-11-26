@@ -24,14 +24,15 @@ namespace wr
 		{
 			DirectX::XMMATRIX m_view;
 			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_inverse_projection;
 		};
 
-		static const constexpr float size = 0.5f;
-		static const constexpr Vertex quad_vertices[] = {
-			{ -size, -size, 0.f },
-			{ size, -size, 0.f },
-			{ -size, size, 0.f },
-			{ size, size, 0.f },
+		static const constexpr float size = 1.0f;
+		static const constexpr Vertex2D quad_vertices[] = {
+			{ -size, -size },
+			{ size, -size },
+			{ -size, size },
+			{ size, size },
 		};
 
 	} /* temp */
@@ -61,6 +62,7 @@ namespace wr
 		void WaitForAllPreviousWork() final;
 
 		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
@@ -98,11 +100,7 @@ namespace wr
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
-		d3d12::PipelineState* m_pipeline_state;
-		d3d12::RootSignature* m_root_signature;
-		d3d12::Shader* m_vertex_shader;
-		d3d12::Shader* m_pixel_shader;
-		d3d12::StagingBuffer* m_vertex_buffer;
+		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 
 	};
 

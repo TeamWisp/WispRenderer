@@ -16,6 +16,8 @@ namespace wr
 		bool m_is_render_window;
 		std::optional<unsigned int> width;
 		std::optional<unsigned int> height;
+		std::optional<ResourceState> m_state_execute;
+		std::optional<ResourceState> m_state_finished;
 		bool m_create_dsv_buffer;
 		Format m_dsv_format;
 		std::array<Format, 8> m_rtv_formats;

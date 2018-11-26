@@ -69,38 +69,11 @@ namespace wr
 		// Create Constant Buffer
 		d3d12::MapHeap(m_cb_heap);
 
-		// Load Shaders.
-		m_vertex_shader = d3d12::LoadShader(ShaderType::VERTEX_SHADER, "basic.hlsl", "main_vs");
-		m_pixel_shader = d3d12::LoadShader(ShaderType::PIXEL_SHADER, "basic.hlsl", "main_ps");
-
-		// Create Root Signature
-		d3d12::desc::RootSignatureDesc rs_desc;
-		rs_desc.m_samplers.push_back({ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_MIRROR });
-		rs_desc.m_parameters.resize(2);
-		rs_desc.m_parameters[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-		rs_desc.m_parameters[1].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-
-		m_root_signature = d3d12::CreateRootSignature(rs_desc);
-		d3d12::FinalizeRootSignature(m_root_signature, m_device);
-
-		// Create Pipeline State
-		d3d12::desc::PipelineStateDesc pso_desc;
-		pso_desc.m_dsv_format = Format::UNKNOWN;
-		pso_desc.m_num_rtv_formats = 1;
-		pso_desc.m_rtv_formats[0] = Format::R8G8B8A8_UNORM;
-		pso_desc.m_input_layout = wr::Vertex::GetInputLayout();
-
-		m_pipeline_state = d3d12::CreatePipelineState();
-		d3d12::SetVertexShader(m_pipeline_state, m_vertex_shader);
-		d3d12::SetFragmentShader(m_pipeline_state, m_pixel_shader);
-		d3d12::SetRootSignature(m_pipeline_state, m_root_signature);
-		d3d12::FinalizePipeline(m_pipeline_state, m_device, pso_desc);
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
 		// Create screen quad
-		m_vertex_buffer = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		m_fullscreen_quad_vb = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex2D), sizeof(Vertex2D), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
@@ -109,8 +82,8 @@ namespace wr
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
 
-		// Stage screen quad
-		d3d12::StageBuffer(m_vertex_buffer, m_direct_cmd_list);
+		// Stage fullscreen quad
+		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
 
 		// Execute
 		d3d12::End(m_direct_cmd_list);
@@ -170,10 +143,163 @@ namespace wr
 		return std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
 	}
 
+	void D3D12RenderSystem::WaitForAllPreviousWork()
+	{
+		for (auto& fence : m_fences)
+		{
+			d3d12::WaitFor(fence);
+		}
+	}
+
+	CommandList* D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	wr::CommandList * D3D12RenderSystem::GetBundleCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_BUNDLE);
+	}
+
+	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
+	{
+		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
+	{
+		if (properties.m_is_render_window)
+		{
+			if (!m_render_window.has_value())
+			{
+				LOGC("Tried using a render task which depends on the render window.");
+				return nullptr;
+			}
+			return (D3D12RenderTarget*)m_render_window.value();
+		}
+		else
+		{
+			d3d12::desc::RenderTargetDesc desc;
+			desc.m_initial_state = properties.m_state_finished.value_or(ResourceState::RENDER_TARGET);
+			desc.m_create_dsv_buffer = properties.m_create_dsv_buffer;
+			desc.m_num_rtv_formats = properties.m_num_rtv_formats;
+			desc.m_rtv_formats = properties.m_rtv_formats;
+			desc.m_dsv_format = properties.m_dsv_format;
+
+			if (properties.width.has_value() || properties.height.has_value())
+			{
+				return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.width.value(), properties.height.value(), desc);
+			}
+			else if (m_window.has_value())
+			{
+				auto retval = (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
+				for (auto i = 0; i < retval->m_render_targets.size(); i++)
+					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
+				return retval;
+			}
+			else
+			{
+				LOGC("Render target doesn't have a width or height specified. And there is no window to take the window size from. Hence can't create a proper render target.");
+				return nullptr;
+			}
+		}
+	}
+
+	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto frame_idx = GetFrameIdx();
+	
+		d3d12::Begin(n_cmd_list, frame_idx);
+
+		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
+		{
+			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
+		}
+		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
+		{
+			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_finished.value(), render_target.second.m_state_execute.value());
+		}
+		else
+		{
+			LOGW("A render target has no transitions specified. Is this correct?");
+		}
+
+		if (render_target.second.m_is_render_window)
+		{
+			d3d12::BindRenderTargetVersioned(n_cmd_list, n_render_target, frame_idx, render_target.second.m_clear, render_target.second.m_clear_depth);
+		}
+		else
+		{
+			d3d12::BindRenderTarget(n_cmd_list, n_render_target, render_target.second.m_clear, render_target.second.m_clear_depth);
+		}
+	}
+
+	void D3D12RenderSystem::StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto frame_idx = GetFrameIdx();
+
+		if (render_target.second.m_is_render_window)
+		{
+			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
+		}
+		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
+		{
+			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.value(), render_target.second.m_state_finished.value());
+		}
+		else
+		{
+			LOGW("A render target has no transitions specified. Is this correct?");
+		}
+
+		d3d12::End(n_cmd_list);
+	}
+
+
+	void D3D12RenderSystem::PrepareRootSignatureRegistry()
+	{
+		auto& registry = RootSignatureRegistry::Get();
+
+		for (auto desc : registry.m_descriptions)
+		{
+			auto rs = new D3D12RootSignature();
+			d3d12::desc::RootSignatureDesc n_desc;
+			n_desc.m_parameters = desc.second.m_parameters;
+			n_desc.m_samplers = desc.second.m_samplers;
+
+			auto n_rs = d3d12::CreateRootSignature(n_desc);
+			d3d12::FinalizeRootSignature(n_rs, m_device);
+			rs->m_native = n_rs;
+
+			registry.m_objects.insert({ desc.first, rs });
+		}
+	}
+
+	void D3D12RenderSystem::PrepareShaderRegistry()
+	{
+		auto& registry = ShaderRegistry::Get();
+
+		for (auto desc : registry.m_descriptions)
+		{
+			auto shader = new D3D12Shader();
+			auto n_shader = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
+			shader->m_native = n_shader;
+
+			registry.m_objects.insert({ desc.first, shader });
+		}
+	}
+
 	void D3D12RenderSystem::PreparePipelineRegistry()
 	{
 		auto& registry = PipelineRegistry::Get();
-
 
 		for (auto desc : registry.m_descriptions)
 		{
@@ -216,111 +342,6 @@ namespace wr
 			pipeline->m_native = n_pipeline;
 
 			registry.m_objects.insert({ desc.first, pipeline });
-		}
-	}
-
-	void D3D12RenderSystem::WaitForAllPreviousWork()
-	{
-		for (auto& fence : m_fences)
-		{
-			d3d12::WaitFor(fence);
-		}
-	}
-
-	CommandList* D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
-	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
-	}
-
-	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
-	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
-	}
-
-	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
-	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
-	}
-
-	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
-	{
-		if (properties.m_is_render_window)
-		{
-			if (!m_render_window.has_value())
-			{
-				LOGC("Tried using a render task which depends on the render window.");
-				return nullptr;
-			}
-			return (D3D12RenderTarget*)m_render_window.value();
-		}
-		else
-		{
-			d3d12::desc::RenderTargetDesc desc;
-			desc.m_create_dsv_buffer = properties.m_create_dsv_buffer;
-			desc.m_num_rtv_formats = properties.m_num_rtv_formats;
-			desc.m_rtv_formats = properties.m_rtv_formats;
-			desc.m_dsv_format = properties.m_dsv_format;
-
-			if (!properties.width.has_value() || !properties.height.has_value())
-			{
-				LOGC("Render target is not the render window and is missing dimensions.");
-			}
-
-			return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.width.value(), properties.height.value(), desc, false);
-		}
-	}
-
-	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
-	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
-		auto frame_idx = GetFrameIdx();
-	
-		d3d12::Begin(n_cmd_list, frame_idx);
-		d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
-		d3d12::BindRenderTargetVersioned(n_cmd_list, n_render_target, frame_idx, render_target.second.m_clear, render_target.second.m_clear_depth);
-	}
-
-	void D3D12RenderSystem::StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
-	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
-		auto frame_idx = GetFrameIdx();
-
-		d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
-		d3d12::End(n_cmd_list);
-	}
-
-	void D3D12RenderSystem::PrepareRootSignatureRegistry()
-	{
-		auto& registry = RootSignatureRegistry::Get();
-
-		for (auto desc : registry.m_descriptions)
-		{
-			auto rs = new D3D12RootSignature();
-			d3d12::desc::RootSignatureDesc n_desc;
-			n_desc.m_parameters = desc.second.m_parameters;
-			n_desc.m_samplers = desc.second.m_samplers;
-
-			auto n_rs = d3d12::CreateRootSignature(n_desc);
-			d3d12::FinalizeRootSignature(n_rs, m_device);
-			rs->m_native = n_rs;
-
-			registry.m_objects.insert({ desc.first, rs });
-		}
-	}
-
-	void D3D12RenderSystem::PrepareShaderRegistry()
-	{
-		auto& registry = ShaderRegistry::Get();
-
-		for (auto desc : registry.m_descriptions)
-		{
-			auto shader = new D3D12Shader();
-			auto n_shader = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
-			shader->m_native = n_shader;
-
-			registry.m_objects.insert({ desc.first, shader });
 		}
 	}
 
@@ -372,8 +393,17 @@ namespace wr
 		for (auto& mesh : node->m_model->m_meshes)
 		{
 			auto n_mesh = static_cast<D3D12Mesh*>(mesh);
+<<<<<<< HEAD
 			static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->StageMesh(n_mesh, m_direct_cmd_list);
 			//d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
+=======
+			d3d12::StageBuffer(n_mesh->m_vertex_buffer, m_direct_cmd_list);
+
+			if (n_mesh->m_index_buffer != nullptr)
+			{
+				d3d12::StageBuffer(n_mesh->m_index_buffer, m_direct_cmd_list);
+			}
+>>>>>>> 64bab31b2681e83160f3793d84dd5cd6fb01e7d1
 		}
 	}
 
@@ -400,6 +430,7 @@ namespace wr
 
 		temp::ProjectionView_CBData data;
 		data.m_projection = node->m_projection;
+		data.m_inverse_projection = node->m_inverse_projection;
 		data.m_view = node->m_view;
 
 		auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_camera_cb);
@@ -450,8 +481,15 @@ namespace wr
 					n_mesh->m_vertex_staging_buffer_size,
 					n_mesh->m_vertex_Staging_buffer_stride);
 
-				//TODO: Don't hardcode the vertices; and support indices
-				d3d12::Draw(cmd_list, 4, batch.num_instances);
+				if (n_mesh->m_index_buffer != nullptr) 
+				{
+					d3d12::BindIndexBuffer(cmd_list, n_mesh->m_index_buffer);
+					d3d12::DrawIndexed(cmd_list, n_mesh->m_index_count, batch.num_instances);
+				}
+				else 
+				{
+					d3d12::Draw(cmd_list, n_mesh->m_vertex_count, batch.num_instances);
+				}
 			}
 
 			//Reset instances

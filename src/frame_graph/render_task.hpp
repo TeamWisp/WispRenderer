@@ -18,12 +18,19 @@ namespace wr
 	class RenderTask : public BaseRenderTask
 	{
 	public:
+		struct Data
+		{
+			RenderTarget* m_render_target;
+			RenderTargetProperties m_rt_properties;
+			T& m_data;
+		};
+
 		using setup_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&)>;
 		using execute_func_type = std::function<void(RenderSystem&, RenderTask<T>&, SceneGraph&, T&)>;
 		using destroy_func_type = std::function<void(RenderTask<T>&, T&)>;
 
-		RenderTask(FrameGraph* frame_graph, std::string const & name, RenderTaskType type, RenderTargetProperties rt_properties, setup_func_type setup, execute_func_type execute, destroy_func_type destroy)
-			: BaseRenderTask(typeid(T), frame_graph, name, type, rt_properties), m_setup(setup), m_execute(execute), m_destroy(destroy) {}
+		RenderTask(FrameGraph* frame_graph, std::string const & name, RenderTaskType type, bool allow_multithreading, RenderTargetProperties rt_properties, setup_func_type setup, execute_func_type execute, destroy_func_type destroy)
+			: BaseRenderTask(typeid(T), frame_graph, name, type, allow_multithreading, rt_properties), m_setup(setup), m_execute(execute), m_destroy(destroy) {}
 
 		~RenderTask() final
 		{
@@ -46,6 +53,9 @@ namespace wr
 				break;
 			case RenderTaskType::COPY:
 				m_cmd_list = render_system.GetCopyCommandList(d3d12::settings::num_back_buffers);
+				break;
+			case RenderTaskType::BUNDLE:
+				m_cmd_list = render_system.GetBundleCommandList(1);
 				break;
 			default:
 				LOGC("Unknown render task type.");
@@ -72,6 +82,15 @@ namespace wr
 			m_execute(render_system, *this, scene_graph, m_data);
 
 			render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
+		}
+
+		Data GetData()
+		{
+			if constexpr (settings::use_multithreading)
+			{
+				WaitForCompletion();
+			}
+			return Data{ m_render_target, m_rt_properties, m_data };
 		}
 
 	private:

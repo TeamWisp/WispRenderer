@@ -37,6 +37,7 @@ namespace wr
 
 		DirectX::XMMATRIX m_view;
 		DirectX::XMMATRIX m_projection;
+		DirectX::XMMATRIX m_inverse_projection;
 
 		ConstantBufferHandle* m_camera_cb;
 	};

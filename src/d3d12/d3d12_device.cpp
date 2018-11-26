@@ -55,12 +55,12 @@ namespace wr::d3d12
 
 		void FindAdapter(Device* device)
 		{
-			IDXGIAdapter4* adapter = nullptr;
+			IDXGIAdapter1* adapter = nullptr;
 			int adapter_idx = 0;
 
 			// Find a compatible adapter.
-			while (device->m_dxgi_factory->EnumAdapterByGpuPreference(adapter_idx, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)) != DXGI_ERROR_NOT_FOUND)
-			//while ((device->m_dxgi_factory)->EnumAdapters1(adapter_idx, &adapter) != DXGI_ERROR_NOT_FOUND)
+			//while (device->m_dxgi_factory->EnumAdapterByGpuPreference(adapter_idx, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)) != DXGI_ERROR_NOT_FOUND)
+			while ((device->m_dxgi_factory)->EnumAdapters1(adapter_idx, &adapter) != DXGI_ERROR_NOT_FOUND)
 			{
 				DXGI_ADAPTER_DESC1 desc;
 				adapter->GetDesc1(&desc);
@@ -119,7 +119,7 @@ namespace wr::d3d12
 				LOGC("Failed to find hardware adapter or create warp adapter.");
 			}
 
-			device->m_adapter = adapter;
+			device->m_adapter = (IDXGIAdapter4*)adapter;
 		}
 	}
 

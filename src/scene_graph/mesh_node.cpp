@@ -12,7 +12,8 @@ namespace wr
 
 	void MeshNode::SetRotation(DirectX::XMVECTOR roll_pitch_yaw_deg) {
 		float to_deg = 3.1415926435f / 180.f;
-		DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMVectorMultiply(roll_pitch_yaw_deg, { to_deg, to_deg, to_deg }));
+		DirectX::XMVECTOR rotation = DirectX::XMVectorMultiply(roll_pitch_yaw_deg, { to_deg, to_deg, to_deg });
+		m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(rotation);
 		SignalChange();
 	}
 

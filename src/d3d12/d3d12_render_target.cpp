@@ -7,7 +7,7 @@
 namespace wr::d3d12
 {
 	
-	RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor, bool is_back_buffer)
+	RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor)
 	{
 		auto render_target = new RenderTarget();
 		const auto n_device = device->m_native;
@@ -33,7 +33,7 @@ namespace wr::d3d12
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 				D3D12_HEAP_FLAG_NONE,
 				&resource_desc,
-				is_back_buffer ? D3D12_RESOURCE_STATE_PRESENT : D3D12_RESOURCE_STATE_RENDER_TARGET,
+				(D3D12_RESOURCE_STATES)descriptor.m_initial_state,
 				&optimized_clear_value, // optimizes draw call
 				IID_PPV_ARGS(&render_target->m_render_targets[i])
 			), "Failed to create render target.");
@@ -104,6 +104,7 @@ namespace wr::d3d12
 		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		TRY_M(n_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&render_target->m_depth_stencil_resource_heap)),
 			"Failed to create descriptor heap for depth buffer");
+		NAME_D3D12RESOURCE(render_target->m_depth_stencil_resource_heap)
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
 		depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -123,7 +124,7 @@ namespace wr::d3d12
 			&depthOptimizedClearValue,
 			IID_PPV_ARGS(&render_target->m_depth_stencil_buffer)
 		), "Failed to create commited resource.");
-		NAME_D3D12RESOURCE(render_target->m_depth_stencil_resource_heap)
+		NAME_D3D12RESOURCE(render_target->m_depth_stencil_buffer)
 
 		n_device->CreateDepthStencilView(render_target->m_depth_stencil_buffer, &depthStencilDesc, render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart());
 	}
@@ -190,7 +191,7 @@ namespace wr::d3d12
 		}
 		DestroyRenderTargetViews((*render_target));
 
-		auto new_render_target = CreateRenderTarget(device, width, height, (*render_target)->m_create_info, true);
+		auto new_render_target = CreateRenderTarget(device, width, height, (*render_target)->m_create_info);
 	}
 
 	void IncrementFrameIdx(RenderTarget* render_target)
