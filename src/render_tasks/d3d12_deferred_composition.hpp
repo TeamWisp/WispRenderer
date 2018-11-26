@@ -71,7 +71,11 @@ namespace wr
 				auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap);
 				d3d12::BindDescriptorTable(cmd_list, gpu_handle, 1);
 
-				d3d12::BindVertexBuffer(cmd_list, n_render_system.m_fullscreen_quad_vb);
+				d3d12::BindVertexBuffer(cmd_list, 
+					n_render_system.m_fullscreen_quad_vb, 
+					0, 
+					n_render_system.m_fullscreen_quad_vb->m_size,
+					n_render_system.m_fullscreen_quad_vb->m_stride_in_bytes);
 
 				d3d12::Draw(cmd_list, 4, 1);
 
