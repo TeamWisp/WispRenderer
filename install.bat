@@ -74,7 +74,7 @@ REM ##### GEN PROJECTS #####
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
-cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A x64 ..
+cmake -G "Visual Studio 15 2017" -A x64 ..
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0
@@ -84,7 +84,7 @@ call :colorEcho %header_color% "## Generating Visual Studio 15 2017 Win64 Projec
 cd %~dp2
 mkdir build_vs2017_win64
 cd build_vs2017_win64
-cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A x64 ..
+cmake -G "Visual Studio 15 2017" -A x64 ..
 if errorlevel 1 (
   call :colorecho %red% "CMake finished with errors"
 )
@@ -95,7 +95,7 @@ EXIT /B 0
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
 mkdir build_vs2017_win32
 cd build_vs2017_win32
-cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A Win32 ..
+cmake -G "Visual Studio 15 2017" -A Win32 ..
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0
@@ -105,7 +105,7 @@ call :colorEcho %header_color% "## Generating Visual Studio 15 2017 Win32 Projec
 cd %~dp2
 mkdir build_vs2017_win32
 cd build_vs2017_win32
-cmake -DCMAKE_SYSTEM_VERSION=10.0.17763 -G "Visual Studio 15 2017" -A Win32 ..
+cmake -G "Visual Studio 15 2017" -A Win32 ..
 if errorlevel 1 (
   call :colorecho %red% "CMake finished with errors"
 )
