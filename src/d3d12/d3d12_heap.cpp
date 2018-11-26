@@ -308,8 +308,8 @@ namespace wr::d3d12
 		cb->m_heap_vector_location = heap->m_resources.size();
 		heap->m_resources.push_back(cb);
 
-		cb->heap_sbo = heap;
-		cb->resource_heap_optimization = HeapOptimization::SMALL_BUFFERS;
+		cb->m_heap_sbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::SMALL_BUFFERS;
 
 		return cb;
 	}
@@ -430,8 +430,8 @@ namespace wr::d3d12
 
 		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
 
-		cb->heap_bbo = heap;
-		cb->resource_heap_optimization = HeapOptimization::BIG_BUFFERS;
+		cb->m_heap_bbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::BIG_BUFFERS;
 
 		return cb;
 	}
@@ -538,8 +538,8 @@ namespace wr::d3d12
 
 		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
 
-		cb->heap_bsbo = heap;
-		cb->resource_heap_optimization = HeapOptimization::BIG_STATIC_BUFFERS;
+		cb->m_heap_bsbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::BIG_STATIC_BUFFERS;
 
 		return cb;
 	}
@@ -646,8 +646,8 @@ namespace wr::d3d12
 
 		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
 
-		cb->heap_bsbo = heap;
-		cb->resource_heap_optimization = HeapOptimization::BIG_STATIC_BUFFERS;
+		cb->m_heap_bsbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::BIG_STATIC_BUFFERS;
 
 		return cb;
 	}

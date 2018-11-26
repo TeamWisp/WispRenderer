@@ -36,7 +36,7 @@ namespace wr::d3d12
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	//void BindCompute(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> const & heaps);
-	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size, std::size_t stride);
+	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size, std::size_t m_stride);
 	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset, unsigned int size);
 	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count);
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count);
@@ -108,7 +108,7 @@ namespace wr::d3d12
 	void Destroy(PipelineState* pipeline_state);
 
 	// Staging Buffer
-	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t stride, ResourceState resource_state);
+	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t m_stride, ResourceState resource_state);
 	void UpdateStagingBuffer(StagingBuffer* buffer, void* data, std::uint64_t size, std::uint64_t offset);
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list);
 	void StageBufferRegion(StagingBuffer* buffer, std::uint64_t size, std::uint64_t offset, CommandList* cmd_list);
@@ -157,7 +157,7 @@ namespace wr::d3d12
 		void* data,
 		std::uint64_t size_in_bytes,
 		std::uint64_t offset,
-		std::uint64_t stride,
+		std::uint64_t m_stride,
 		CommandList* cmd_list);
 
 } /* wr::d3d12 */

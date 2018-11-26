@@ -237,10 +237,10 @@ namespace wr::d3d12
 	{
 		union 
 		{
-			Heap<HeapOptimization::SMALL_BUFFERS>* heap_sbo;
-			Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap_ssbo;
-			Heap<HeapOptimization::BIG_BUFFERS>* heap_bbo;
-			Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap_bsbo;
+			Heap<HeapOptimization::SMALL_BUFFERS>* m_heap_sbo;
+			Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* m_heap_ssbo;
+			Heap<HeapOptimization::BIG_BUFFERS>* m_heap_bbo;
+			Heap<HeapOptimization::BIG_STATIC_BUFFERS>* m_heap_bsbo;
 		};
 
 		std::vector<D3D12_GPU_VIRTUAL_ADDRESS> m_gpu_addresses;
@@ -248,8 +248,8 @@ namespace wr::d3d12
 		std::uint64_t m_unaligned_size;
 		std::uint64_t m_begin_offset;
 		std::size_t m_heap_vector_location;
-		std::size_t stride;
-		HeapOptimization resource_heap_optimization;
+		std::size_t m_stride;
+		HeapOptimization m_resource_heap_optimization;
 	};
 
 } /* wr::d3d12 */
