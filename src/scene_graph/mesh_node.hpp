@@ -7,8 +7,6 @@ namespace wr
 
 	struct MeshNode : Node
 	{
-		DECL_SUBNODE(MeshNode); // TODO: Should be able to dissalow default constructor.
-
 		MeshNode(Model* model);
 
 		//Takes roll, pitch and yaw from degrees and converts it to quaternion

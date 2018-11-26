@@ -7,7 +7,6 @@ namespace wr
 		: Node(), m_model(model), m_position{ 0, 0, 0, 1 },
 		m_rotation(DirectX::XMQuaternionRotationRollPitchYawFromVector({})), m_scale{ 1, 1, 1, 0 }
 	{
-		SUBMODE_CONSTRUCTOR
 	}
 
 	void MeshNode::SetRotation(DirectX::XMVECTOR roll_pitch_yaw_deg) {

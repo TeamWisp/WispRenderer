@@ -53,7 +53,7 @@ namespace wr
 				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 0, frame_idx);
 
-				n_render_system.RenderSceneGraph(scene_graph, cmd_list);
+				scene_graph.Render(cmd_list);
 			}
 		}
 

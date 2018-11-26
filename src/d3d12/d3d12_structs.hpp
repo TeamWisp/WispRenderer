@@ -171,6 +171,7 @@ namespace wr::d3d12
 		void* m_data;
 		ResourceState m_target_resource_state;
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
+		std::uint8_t* m_cpu_address;
 		bool m_is_staged;
 	};
 
@@ -210,6 +211,8 @@ namespace wr::d3d12
 			std::vector<HeapResource*> m_resources;
 			D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 			ID3D12Resource* m_native;
+			ID3D12Resource* m_staging_buffer;
+			std::uint8_t* m_cpu_address;
 		};
 
 		template<>
@@ -217,6 +220,8 @@ namespace wr::d3d12
 		{
 			std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>> m_resources;
 			ID3D12Heap* m_native;
+			ID3D12Resource* m_staging_buffer;
+			std::uint8_t* m_cpu_address;
 		};
 
 	} /* detail */
@@ -229,16 +234,26 @@ namespace wr::d3d12
 		std::uint64_t m_current_offset;
 		std::uint64_t m_heap_size;
 		std::uint64_t m_alignment;
-		std::vector<std::uint64_t> m_page_frames;
+		std::vector<std::uint64_t> m_bitmap;
 	};
 
 	struct HeapResource
 	{
+		union 
+		{
+			Heap<HeapOptimization::SMALL_BUFFERS>* m_heap_sbo;
+			Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* m_heap_ssbo;
+			Heap<HeapOptimization::BIG_BUFFERS>* m_heap_bbo;
+			Heap<HeapOptimization::BIG_STATIC_BUFFERS>* m_heap_bsbo;
+		};
+
 		std::vector<D3D12_GPU_VIRTUAL_ADDRESS> m_gpu_addresses;
 		std::optional<std::vector<std::uint8_t*>> m_cpu_addresses;
 		std::uint64_t m_unaligned_size;
 		std::uint64_t m_begin_offset;
 		std::size_t m_heap_vector_location;
+		std::size_t m_stride;
+		HeapOptimization m_resource_heap_optimization;
 	};
 
 } /* wr::d3d12 */

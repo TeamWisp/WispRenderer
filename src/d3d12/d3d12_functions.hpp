@@ -36,8 +36,8 @@ namespace wr::d3d12
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	//void BindCompute(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> const & heaps);
-	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer);
-	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset = 0);
+	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size, std::size_t m_stride);
+	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset, unsigned int size);
 	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count);
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
@@ -108,9 +108,13 @@ namespace wr::d3d12
 	void Destroy(PipelineState* pipeline_state);
 
 	// Staging Buffer
-	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t stride, ResourceState resource_state);
+	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t m_stride, ResourceState resource_state);
+	void UpdateStagingBuffer(StagingBuffer* buffer, void* data, std::uint64_t size, std::uint64_t offset);
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list);
+	void StageBufferRegion(StagingBuffer* buffer, std::uint64_t size, std::uint64_t offset, CommandList* cmd_list);
 	void FreeStagingBuffer(StagingBuffer* buffer);
+	void Evict(StagingBuffer* buffer);
+	void MakeResident(StagingBuffer* buffer);
 	void Destroy(StagingBuffer* buffer);
 
 	// Heap
@@ -120,7 +124,7 @@ namespace wr::d3d12
 	[[nodiscard]] Heap<HeapOptimization::BIG_STATIC_BUFFERS>* CreateHeap_BSBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes);
-	[[nodiscard]] HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	[[nodiscard]] HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride);
 	[[nodiscard]] HeapResource* AllocGenericBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	void DeallocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, HeapResource* heapResource);
 	void DeallocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, HeapResource* heapResource);
@@ -148,5 +152,12 @@ namespace wr::d3d12
 
 	// Resources
 	void UpdateConstantBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes);
+	void UpdateStructuredBuffer(HeapResource* buffer,
+		unsigned int frame_idx,
+		void* data,
+		std::uint64_t size_in_bytes,
+		std::uint64_t offset,
+		std::uint64_t stride,
+		CommandList* cmd_list);
 
 } /* wr::d3d12 */
