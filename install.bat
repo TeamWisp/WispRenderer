@@ -92,7 +92,7 @@ REM ##### GEN PROJECTS #####
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
-if "%ENABLE_UNIT_TEST%" (
+if "%ENABLE_UNIT_TEST%" == "1" (
   cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=TRUE -A x64 ..
 ) else (
   cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
