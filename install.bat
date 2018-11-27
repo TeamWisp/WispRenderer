@@ -45,7 +45,7 @@ if "%1" == "-help" (
 
 rem ##### pre install settings #####
 if "%is_remote%" == "1" (
-  cd %~dp2  
+  cd "%~dp2"  
   set enable_unit_test=1
 ) else (
   echo Do you want unit tests enabled? [Y/N]
