@@ -466,13 +466,14 @@ namespace wr::d3d12
 		return cb;
 	}
 
-	HeapResource * AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride)
+	HeapResource * AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride, bool used_as_uav)
 	{
 		auto cb = new HeapResource();
 		decltype(Device::m_native) n_device;
 		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
 		cb->m_unaligned_size = size_in_bytes;
 		cb->m_stride = stride;
+		cb->m_used_as_uav = used_as_uav;
 
 		auto aligned_size_in_bytes = SizeAlign(size_in_bytes, 65536);
 
@@ -551,8 +552,15 @@ namespace wr::d3d12
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
-
-		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+		CD3DX12_RESOURCE_DESC desc;
+		if (used_as_uav) 
+		{
+			desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+		}
+		else
+		{
+			desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_NONE);
+		}
 		cb->m_gpu_addresses.resize(heap->m_versioning_count);
 		cb->m_heap_vector_location = heap->m_resources.size();
 
@@ -561,8 +569,16 @@ namespace wr::d3d12
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
 		for (auto i = 0; i < heap->m_versioning_count; i++)
 		{
-			TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&temp_resources[i])),
-				"Failed to create constant buffer placed resource.");
+			if (used_as_uav)
+			{
+				TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&temp_resources[i])),
+					"Failed to create constant buffer placed resource.");
+			}
+			else
+			{
+				TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, nullptr, IID_PPV_ARGS(&temp_resources[i])),
+					"Failed to create constant buffer placed resource.");
+			}
 
 			heap->m_current_offset += aligned_size_in_bytes;
 
@@ -1068,10 +1084,16 @@ namespace wr::d3d12
 
 			ID3D12Resource* resource = buffer->m_heap_bsbo->m_resources[buffer->m_heap_vector_location].second[frame_idx];
 
-			cmd_list->m_native->ResourceBarrier(1, 
-				&CD3DX12_RESOURCE_BARRIER::Transition(resource, 
-					D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 
-					D3D12_RESOURCE_STATE_COPY_DEST));
+			if (buffer->m_used_as_uav)
+				cmd_list->m_native->ResourceBarrier(1,
+					&CD3DX12_RESOURCE_BARRIER::Transition(resource,
+						D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+						D3D12_RESOURCE_STATE_COPY_DEST));
+			else
+				cmd_list->m_native->ResourceBarrier(1,
+					&CD3DX12_RESOURCE_BARRIER::Transition(resource,
+						D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+						D3D12_RESOURCE_STATE_COPY_DEST));
 
 			cmd_list->m_native->CopyBufferRegion(resource, 
 				offset, 
@@ -1079,11 +1101,16 @@ namespace wr::d3d12
 				buffer->m_begin_offset + offset + aligned_size * frame_idx, 
 				size_in_bytes);
 
-			// transition the vertex buffer data from copy destination state to vertex buffer state
-			cmd_list->m_native->ResourceBarrier(1, 
-				&CD3DX12_RESOURCE_BARRIER::Transition(resource, 
-					D3D12_RESOURCE_STATE_COPY_DEST, 
-					D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+			if (buffer->m_used_as_uav)
+				cmd_list->m_native->ResourceBarrier(1,
+					&CD3DX12_RESOURCE_BARRIER::Transition(resource,
+						D3D12_RESOURCE_STATE_COPY_DEST,
+						D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+			else
+				cmd_list->m_native->ResourceBarrier(1,
+					&CD3DX12_RESOURCE_BARRIER::Transition(resource,
+						D3D12_RESOURCE_STATE_COPY_DEST,
+						D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 		}
 	}
