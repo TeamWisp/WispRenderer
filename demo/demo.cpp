@@ -102,7 +102,8 @@ void WispEntry()
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
 	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
 
-	window->SetKeyCallback([](int key, int action, int mods) {
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
 		if (action == WM_KEYUP && key == 0xC0)
 		{
 			open_console = !open_console;
@@ -128,7 +129,7 @@ void WispEntry()
 			4, 7, 6, 4, 10, 9, 8, 11,
 			10, 8, 14, 13, 12, 15, 14, 12,
 			18, 17, 16, 19, 18, 16, 22, 21,
-			20, 23, 22, 20 
+			20, 23, 22, 20
 		};
 
 		mesh.m_vertices = {
@@ -197,8 +198,8 @@ void WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-//	frame_graph.AddTask(wr::GetDeferredMainTask());
-//	frame_graph.AddTask(wr::GetDeferredCompositionTask());
+	//	frame_graph.AddTask(wr::GetDeferredMainTask());
+	//	frame_graph.AddTask(wr::GetDeferredCompositionTask());
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 
@@ -212,7 +213,7 @@ void WispEntry()
 
 	while (window->IsRunning())
 	{
-		mesh_node->SetRotation({ sin(t/2.f) * 20.f, -t * 10, 0});
+		mesh_node->SetRotation({ sin(t / 2.f) * 20.f, -t * 10, 0 });
 
 		for (auto& node : bg_nodes)
 		{
@@ -227,7 +228,7 @@ void WispEntry()
 			case 4:	node.first->SetRotation({ t, sin(t) * speed, 0 });	break;
 			case 5:	node.first->SetRotation({ t, sin(-t) * speed, 0 }); break;
 			case 6: node.first->SetRotation({ -t, sin(t) * speed, 0 });	break;
-			case 7: node.first->SetRotation({ -t, sin(-t) * speed, 0}); break;
+			case 7: node.first->SetRotation({ -t, sin(-t) * speed, 0 }); break;
 
 			case 8:	node.first->SetRotation({ sin(t) * speed, t, 0 });	break;
 			case 9:	node.first->SetRotation({ sin(-t) * speed, t, 0 }); break;
@@ -238,7 +239,7 @@ void WispEntry()
 			case 13: node.first->SetRotation({ sin(-t) * speed, 0, t }); break;
 			case 14: node.first->SetRotation({ sin(t) * speed, 0, -t });	break;
 			case 15: node.first->SetRotation({ sin(-t) * speed, 0, -t }); break;
-				
+
 				break;
 			}
 		}
