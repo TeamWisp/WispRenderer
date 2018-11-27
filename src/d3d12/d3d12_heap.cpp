@@ -552,15 +552,11 @@ namespace wr::d3d12
 		}
 
 		heap->m_current_offset = start_frame * heap->m_alignment;
-		CD3DX12_RESOURCE_DESC desc;
-		if (used_as_uav) 
-		{
-			desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-		}
-		else
-		{
-			desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_NONE);
-		}
+				
+		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(
+			aligned_size_in_bytes, 
+			used_as_uav ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE);
+
 		cb->m_gpu_addresses.resize(heap->m_versioning_count);
 		cb->m_heap_vector_location = heap->m_resources.size();
 
@@ -569,16 +565,14 @@ namespace wr::d3d12
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
 		for (auto i = 0; i < heap->m_versioning_count; i++)
 		{
-			if (used_as_uav)
-			{
-				TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&temp_resources[i])),
-					"Failed to create constant buffer placed resource.");
-			}
-			else
-			{
-				TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, nullptr, IID_PPV_ARGS(&temp_resources[i])),
-					"Failed to create constant buffer placed resource.");
-			}
+			TRY_M(n_device->CreatePlacedResource(
+				heap->m_native, 
+				heap->m_current_offset, 
+				&desc, 
+				used_as_uav ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 
+				nullptr, 
+				IID_PPV_ARGS(&temp_resources[i])),
+				"Failed to create constant buffer placed resource.");			
 
 			heap->m_current_offset += aligned_size_in_bytes;
 
@@ -1084,34 +1078,23 @@ namespace wr::d3d12
 
 			ID3D12Resource* resource = buffer->m_heap_bsbo->m_resources[buffer->m_heap_vector_location].second[frame_idx];
 
-			if (buffer->m_used_as_uav)
-				cmd_list->m_native->ResourceBarrier(1,
-					&CD3DX12_RESOURCE_BARRIER::Transition(resource,
-						D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-						D3D12_RESOURCE_STATE_COPY_DEST));
-			else
-				cmd_list->m_native->ResourceBarrier(1,
-					&CD3DX12_RESOURCE_BARRIER::Transition(resource,
-						D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-						D3D12_RESOURCE_STATE_COPY_DEST));
-
+			
+			cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(resource,
+					buffer->m_used_as_uav ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+					D3D12_RESOURCE_STATE_COPY_DEST));
+			
 			cmd_list->m_native->CopyBufferRegion(resource, 
 				offset, 
 				buffer->m_heap_bsbo->m_staging_buffer, 
 				buffer->m_begin_offset + offset + aligned_size * frame_idx, 
 				size_in_bytes);
 
-			if (buffer->m_used_as_uav)
-				cmd_list->m_native->ResourceBarrier(1,
-					&CD3DX12_RESOURCE_BARRIER::Transition(resource,
-						D3D12_RESOURCE_STATE_COPY_DEST,
-						D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
-			else
-				cmd_list->m_native->ResourceBarrier(1,
-					&CD3DX12_RESOURCE_BARRIER::Transition(resource,
-						D3D12_RESOURCE_STATE_COPY_DEST,
-						D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-
+			
+			cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(resource,
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					buffer->m_used_as_uav ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 		}
 	}
 
