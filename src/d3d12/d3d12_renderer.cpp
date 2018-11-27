@@ -84,12 +84,10 @@ namespace wr
 
 		// Create Light Buffer
 
-		constexpr uint64_t light_buffer_versioning = 1;	//TODO: Versioning d3d12::settings::num_back_buffers
-
 		uint64_t light_buffer_stride = sizeof(temp::Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
-		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 256) * light_buffer_versioning;
+		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 256) * d3d12::settings::num_back_buffers;
 
-		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, light_buffer_versioning);
+		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
 		m_light_buffer = d3d12::AllocStructuredBuffer(m_sb_heap, light_buffer_size, light_buffer_stride);
 
@@ -120,7 +118,7 @@ namespace wr
 		l1.col = { 0.25, 0.25, 0 };
 		l1.tid = (uint32_t)temp::LightType::DIRECTIONAL;
 
-		for (uint32_t n = 0; n < light_buffer_versioning; ++n)
+		for (uint32_t n = 0; n < d3d12::settings::num_back_buffers; ++n)
 		{
 			d3d12::UpdateStructuredBuffer(m_light_buffer, n, light_data, light_buffer_size, 0, light_buffer_stride, m_direct_cmd_list);
 		}

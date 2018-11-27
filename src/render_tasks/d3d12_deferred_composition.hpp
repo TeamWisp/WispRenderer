@@ -44,7 +44,6 @@ namespace wr
 			auto deferred_main_rt = data.out_deferred_main_rt = static_cast<D3D12RenderTarget*>(deferred_main_data.m_render_target);
 			d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
 			d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
-			d3d12::CreateSRVFromStructuredBuffer(n_render_system.GetLightBuffer(), cpu_handle, 0 /* TODO: Versioning */);
 		}
 
 		inline void ExecuteDeferredTask(RenderSystem & render_system, DeferredCompositionRenderTask_t & task, SceneGraph & scene_graph, DeferredCompositionTaskData & data)
@@ -58,6 +57,13 @@ namespace wr
 				const auto camera_node = scene_graph.GetActiveCamera();
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera_node->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
+
+				//Update light buffer handle
+
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, 3);
+				d3d12::CreateSRVFromStructuredBuffer(n_render_system.GetLightBuffer(), cpu_handle, n_render_system.GetFrameIdx());
+
+				//Render deferred
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::PIXEL_SHADER_RESOURCE);
 
