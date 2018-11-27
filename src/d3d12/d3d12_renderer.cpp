@@ -450,10 +450,10 @@ namespace wr
 	{
 		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
 
-		temp::Light& l0 = m_lights[0];
+		temp::Light& l1 = m_lights[1];
 		float perc = sin(time(0)) * 0.5f + 0.5f;
-		DirectX::XMVECTOR cdat = DirectX::XMVectorAdd(DirectX::XMVectorMultiply({ 0, 0, 0 }, { perc, perc, perc }), DirectX::XMVectorMultiply({ 1, 1, 0 }, { 1 - perc, 1 - perc, 1 - perc }));
-		memcpy(&l0.col, &cdat, 12);
+		DirectX::XMVECTOR cdat = DirectX::XMVectorAdd(DirectX::XMVectorMultiply({ 1, 0, 0 }, { perc, perc, perc }), DirectX::XMVectorMultiply({ 0, 1, 0 }, { 1 - perc, 1 - perc, 1 - perc }));
+		memcpy(&l1.col, &cdat, 12);
 
 		d3d12::UpdateStructuredBuffer(m_light_buffer, m_render_window.value()->m_frame_idx, m_lights, m_light_buffer->m_unaligned_size, 0, m_light_buffer->m_stride, n_cmd_list);
 
