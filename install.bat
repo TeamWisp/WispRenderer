@@ -46,7 +46,7 @@ if "%1" == "-help" (
 rem ##### pre install settings #####
 if "%is_remote%" == "1" (
   cd "%~dp2"  
-  echo current path: %cd% 
+  echo current path: "%cd%" 
   set enable_unit_test=1
 ) else (
   echo Do you want unit tests enabled? [Y/N]
@@ -91,7 +91,7 @@ REM ##### DOWNLOAD DEPS #####
 REM ##### GEN PROJECTS #####
 :genVS15Win64
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
-echo current path: %cd% 
+echo current path: "%cd%"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
 if "%ENABLE_UNIT_TEST%" == "1" (
@@ -105,7 +105,7 @@ EXIT /B 0
 
 :genVS15Win32
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
-echo current path: %cd% 
+echo current path: "%cd%" 
 mkdir build_vs2017_win32
 cd build_vs2017_win32
 if "%ENABLE_UNIT_TEST%" == "1" (
