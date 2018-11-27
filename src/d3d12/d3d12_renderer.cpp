@@ -90,7 +90,7 @@ namespace wr
 
 		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
-		m_light_buffer = d3d12::AllocStructuredBuffer(m_sb_heap, light_buffer_size, light_buffer_stride);
+		m_light_buffer = d3d12::AllocStructuredBuffer(m_sb_heap, light_buffer_size, light_buffer_stride, false);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -118,11 +118,6 @@ namespace wr
 		temp::Light& l2 = m_lights[2] = l0;
 		l1.col = { 0.25, 0.25, 0 };
 		l1.tid = (uint32_t)temp::LightType::DIRECTIONAL;
-
-		for (uint32_t n = 0; n < d3d12::settings::num_back_buffers; ++n)
-		{
-			d3d12::UpdateStructuredBuffer(m_light_buffer, n, m_lights, light_buffer_size, 0, light_buffer_stride, m_direct_cmd_list);
-		}
 
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
