@@ -90,9 +90,6 @@ namespace wr
 		inline void ResizeImGuiTask(ImGuiRenderTask_t & task, ImGuiTaskData & data, std::uint32_t width, std::uint32_t height)
 		{
 			ImGui_ImplDX12_InvalidateDeviceObjects();
-			//CleanupRenderTarget();
-			//ResizeSwapChain(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam));
-			//CreateRenderTarget();
 			ImGui_ImplDX12_CreateDeviceObjects();
 		}
 
