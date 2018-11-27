@@ -17,14 +17,20 @@ SET log_prefix="cmd_log_"
 SET log_suffix=".txt"
 REM ##### LOG NAMES #####
 
+REM ##### local vars #####
+set is_remote=0
+set enable_unit_test=0
+set windows_sdk_version=0
+
 REM ##### MAIN #####
 
 call :colorEcho %title_color% "==================================="
-call :colorEcho %title_color% "           Wisp Installer          "
+call :colorEcho %title_color% "==         Wisp Installer        =="
 call :colorEcho %title_color% "==================================="
 
+rem ##### argument handeling ######
 if "%1" == "-remote" ( 
-  cd %~dp2  
+  set is_remote=1
 ) 
 if "%1" == "-help" (
   echo This install.bat is use to complete the setup of the ray tracing git repository.
@@ -37,14 +43,35 @@ if "%1" == "-help" (
   goto :eof
 )
 
+rem ##### pre install settings #####
+if "%is_remote%" == "1" (
+  cd %~dp2  
+  set enable_unit_test=1
+) else (
+  echo Do you want unit tests enabled? [Y/N]
+  set /p enable_unit_input=
+  if "%enable_unit_input%" == "Y" AND "%enable_unit_input%" == "y" (
+    set enable_unit_test=1
+  )
+)
+
+FOR /F "delims=" %%i IN ('dir "C:\Program Files (x86)\Windows Kits\10\Include" /b /ad-h /t:c /o-d') DO (
+    SET windows_sdk_version=%%i
+    GOTO :found
+)
+call :colorEcho %red% No Windows SDK found in location: C:\Program Files (x86)\Windows Kits\10\Include
+EXIT 1
+:found
+echo Latest installed Windows SDK: %windows_sdk_version%
+echo Windows SDK required: 10.0.17763.0 or newer
+
+rem ##### install #####
 call :downloadDeps
 call :genVS15Win64 
-REM >> test.txt 2>&1
 call :genVS15Win32 
-REM >> test.txt 2>&1
 
 call :colorEcho %light_green% "Installation Finished!"
-if "%1" == "-remote" ( 
+if "%is_remote%" == "1" ( 
   goto :eof
 ) else (
   pause
@@ -60,34 +87,13 @@ git submodule update
 EXIT /B 0
 REM ##### DOWNLOAD DEPS #####
 
-REM ##### DOWNLOAD DEPS #####
-:downloadDepsServer
-call :colorEcho %header_color% "## Downloading Dependencies ##"
-cd %~dp2
-git submodule init
-git submodule update 
-EXIT /B 0
-REM ##### DOWNLOAD DEPS #####
-
 REM ##### GEN PROJECTS #####
 :genVS15Win64
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
-cmake -G "Visual Studio 15 2017" -D ENABLE_UNIT_TEST:BOOL=TRUE -A x64 ..
+cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -D ENABLE_UNIT_TEST:BOOL=TRUE -A x64 ..
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
-cd ..
-EXIT /B 0
-
-:genVS15Win64Server
-call :colorEcho %header_color% "## Generating Visual Studio 15 2017 Win64 Project. ##"
-cd %~dp2
-mkdir build_vs2017_win64
-cd build_vs2017_win64
-cmake -G "Visual Studio 15 2017" -A x64 ..
-if errorlevel 1 (
-  call :colorecho %red% "CMake finished with errors"
-)
 cd ..
 EXIT /B 0
 
@@ -95,20 +101,8 @@ EXIT /B 0
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
 mkdir build_vs2017_win32
 cd build_vs2017_win32
-cmake -G "Visual Studio 15 2017" -A Win32 ..
+cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A Win32 ..
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
-cd ..
-EXIT /B 0
-
-:genVS15Win32Server
-call :colorEcho %header_color% "## Generating Visual Studio 15 2017 Win32 Project. ##"
-cd %~dp2
-mkdir build_vs2017_win32
-cd build_vs2017_win32
-cmake -G "Visual Studio 15 2017" -A Win32 ..
-if errorlevel 1 (
-  call :colorecho %red% "CMake finished with errors"
-)
 cd ..
 EXIT /B 0
 REM ##### GEN CMAKE PROJECTS #####
