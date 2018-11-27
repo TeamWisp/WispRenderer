@@ -28,6 +28,7 @@ namespace wr
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
+		d3d12::Destroy(m_sb_heap);
 		d3d12::Destroy(m_cb_heap);
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
@@ -63,8 +64,8 @@ namespace wr
 		// Create Constant Buffer Heap
 		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
 		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size = 
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */ 
+		constexpr auto sbo_size =
+			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
 			+ cam_cbs_size;
 
 		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
@@ -81,9 +82,39 @@ namespace wr
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 
+		// Create Light Buffer
+
+		constexpr uint64_t light_buffer_versioning = 1;	//TODO: Versioning d3d12::settings::num_back_buffers
+
+		uint64_t light_buffer_stride = sizeof(temp::Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
+		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 256) * light_buffer_versioning;
+
+		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, light_buffer_versioning);
+
+		m_light_buffer = d3d12::AllocStructuredBuffer(m_sb_heap, light_buffer_size, light_buffer_stride);
+
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+		//Setup a temp light and submit it to the queue
+
+		temp::Light* light_data = new temp::Light[d3d12::settings::num_lights];
+
+		temp::Light &l = light_data[0];
+		l.pos = { 0, 0, -6 };
+		l.rad = 5.f;
+		l.col = { 1, 1, 0 };
+		l.tid = temp::LightType::POINT;
+		l.dir = { 0, 0, 1 };
+		l.ang = 40.f / 180.f * 3.1415926535f;
+
+		for (uint32_t n = 0; n < light_buffer_versioning; ++n)
+		{
+			d3d12::UpdateStructuredBuffer(m_light_buffer, n, light_data, light_buffer_size, 0, light_buffer_stride, m_direct_cmd_list);
+		}
+
+		delete[] light_data;
 
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
@@ -162,6 +193,11 @@ namespace wr
 	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
 		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	d3d12::HeapResource* D3D12RenderSystem::GetLightBuffer()
+	{
+		return m_light_buffer;
 	}
 
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)

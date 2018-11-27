@@ -3,14 +3,14 @@
 
 struct Light 
 {
-	float3 pos;			//Position in world space for cone & sphere
-	float rad;			//Radius for sphere, height for cone
+	float3 pos;			//Position in world space for spot & point
+	float rad;			//Radius for point, height for spot
 
 	float3 col;			//Color
 	uint tid;			//Type id; light_type_x
 
-	float3 dir;			//Direction for cone
-	float ang;			//Angle for cone; in radians
+	float3 dir;			//Direction for spot & directional
+	float ang;			//Angle for spot; in radians
 };
 
 StructuredBuffer<Light> lights : register(t3);
@@ -82,20 +82,10 @@ float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal)
 	float ambient = 0.1f;
 	float3 res = float3(ambient, ambient, ambient);
 
-	/*for (uint i = 0; i < numStructs; i++)
+	for (uint i = 0; i < 1 /* numStructs isn't a good idea; maybe numLights? */; i++)
 	{
 		res += shade(vpos, V, albedo, normal, lights[i]);
-	}*/
-
-	Light l;
-	l.pos = float3(0, 0, -5);
-	l.rad = 5.f;
-	l.col = float3(1, 0, 0);
-	l.tid = light_type_point;
-	l.dir = float3(0, 0, 1);
-	l.ang = radians(40.f);
-
-	res += shade(vpos, V, albedo, normal, l);
+	}
 
 	return res * albedo;
 

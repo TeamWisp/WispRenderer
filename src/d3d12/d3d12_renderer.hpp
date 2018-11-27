@@ -37,6 +37,23 @@ namespace wr
 			{ size, size },
 		};
 
+		enum class LightType : uint32_t 
+		{
+			POINT, DIRECTIONAL, SPOT, FREE
+		};
+
+		struct Light
+		{
+			DirectX::XMFLOAT3 pos = { 0, 0, 0 };			//Position in world space for spot & point
+			float rad = 5.f;								//Radius for point, height for spot
+
+			DirectX::XMFLOAT3 col = { 1, 1, 1 };			//Color (and strength)
+			LightType tid = LightType::POINT;				//Type id; LightType::x
+
+			DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
+			float ang = 40.f / 180.f * 3.1415926535f;		//Angle for spot; in radians
+		};
+
 	} /* temp */
 
 	//! D3D12 platform independend Command List implementation
@@ -68,6 +85,7 @@ namespace wr
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
+		d3d12::HeapResource* GetLightBuffer();
 
 		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
@@ -95,10 +113,12 @@ namespace wr
 
 		// temporary
 		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
+		d3d12::Heap<HeapOptimization::BIG_STATIC_BUFFERS>* m_sb_heap;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
+		d3d12::HeapResource* m_light_buffer;
 
 	};
 
