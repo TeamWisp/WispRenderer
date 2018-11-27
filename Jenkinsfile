@@ -14,7 +14,7 @@ pipeline {
 					EXIT 1
 				)'''
 
-				bat '''
+				/*bat '''
 				cd "%WORKSPACE%"
 				cmake --build ./build_vs2017_win32 
 				if errorlevel 1 (
@@ -22,7 +22,7 @@ pipeline {
 					JenkinsWebhook ":x: Pull Request Build Failed!! Jenskins build nr: %BUILD_NUMBER% - 32bit build failed"
 					EXIT 1
 				)
-				'''
+				'''*/
 
 				bat'''
 				cd "%WORKSPACE%"
