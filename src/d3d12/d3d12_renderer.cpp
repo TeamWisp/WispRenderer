@@ -101,13 +101,24 @@ namespace wr
 
 		temp::Light* light_data = new temp::Light[d3d12::settings::num_lights];
 
-		temp::Light &l = light_data[0];
-		l.pos = { 0, 0, -6 };
-		l.rad = 5.f;
-		l.col = { 1, 1, 0 };
-		l.tid = temp::LightType::POINT;
-		l.dir = { 0, 0, 1 };
-		l.ang = 40.f / 180.f * 3.1415926535f;
+		uint32_t light_count = 3;
+
+		temp::Light &l0 = light_data[0];
+		l0.pos = { 0, 0, -6 };
+		l0.rad = 5.f;
+		l0.col = { 1, 0, 0 };
+		l0.tid = (uint32_t) temp::LightType::POINT | (light_count << 2);		//First light stores light_count into tid as well as type id
+		l0.dir = { 0, 0, 1 };
+		l0.ang = 40.f / 180.f * 3.1415926535f;
+
+		temp::Light &l1 = light_data[1] = l0;
+		l1.col = { 1, 1, 0 };
+		l1.pos.y = 1;
+		l1.tid = (uint32_t) temp::LightType::SPOT;
+
+		temp::Light &l2 = light_data[2] = l0;
+		l1.col = { 0.25, 0.25, 0 };
+		l1.tid = (uint32_t)temp::LightType::DIRECTIONAL;
 
 		for (uint32_t n = 0; n < light_buffer_versioning; ++n)
 		{

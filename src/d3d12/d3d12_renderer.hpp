@@ -39,7 +39,7 @@ namespace wr
 
 		enum class LightType : uint32_t 
 		{
-			POINT, DIRECTIONAL, SPOT, FREE
+			POINT, DIRECTIONAL, SPOT, FREE /* MAX LighType value; but unused */
 		};
 
 		struct Light
@@ -48,7 +48,7 @@ namespace wr
 			float rad = 5.f;								//Radius for point, height for spot
 
 			DirectX::XMFLOAT3 col = { 1, 1, 1 };			//Color (and strength)
-			LightType tid = LightType::POINT;				//Type id; LightType::x
+			uint32_t tid = (uint32_t) LightType::POINT;		//Type id; LightType::x
 
 			DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
 			float ang = 40.f / 180.f * 3.1415926535f;		//Angle for spot; in radians

@@ -47,8 +47,10 @@ float3 world_to_view(float4 pos, float4x4 view) {
 
 float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal, Light light) 
 {
+	uint tid = light.tid & 3;
+
 	//Light direction (constant with directional, position dependent with other)
-	float3 light_dir = lerp(light.pos - vpos, -light.dir, light.tid == light_type_directional);
+	float3 light_dir = lerp(light.pos - vpos, -light.dir, tid == light_type_directional);
 	float light_dist = length(light_dir);
 	light_dir /= light_dist;
 
@@ -56,10 +58,10 @@ float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal, Light light)
 	float min_cos = cos(light.ang);
 	float max_cos = lerp(min_cos, 1, 0.5f);
 	float cos_angle = dot(light.dir, -light_dir);
-	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, light.tid != light_type_spot);
+	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
 
 	//Attenuation & spot intensity (only used with point or spot)
-	float intensity = spot_intensity * lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, light.tid == light_type_directional);
+	float intensity = spot_intensity * lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
 
 	//Light calculation
 	float3 L = world_to_view(float4(light_dir, 0), view);
@@ -74,15 +76,13 @@ float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal, Light light)
 
 float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal)
 {
-	/*uint numStructs;
-	uint stride;
 
-	lights.GetDimensions(numStructs, stride);*/
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
 	float ambient = 0.1f;
 	float3 res = float3(ambient, ambient, ambient);
 
-	for (uint i = 0; i < 1 /* numStructs isn't a good idea; maybe numLights? */; i++)
+	for (uint i = 0; i < light_count; i++)
 	{
 		res += shade(vpos, V, albedo, normal, lights[i]);
 	}
