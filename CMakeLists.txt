@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.13)
-option(ENABLE_UNIT_TEST "enables unit tests." OFF)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 
+add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 project(EnginePrototype)
+
+option(ENABLE_UNIT_TEST "enables unit tests." OFF)
 
 ##### OUTPUT DIRECTORIES #####
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
