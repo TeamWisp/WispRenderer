@@ -45,6 +45,10 @@ namespace wr
 		parent->m_children.clear();
 	}
 
+	//! Returns the active camera.
+	/*!
+		If there are multiple active cameras it will return the first one.
+	*/
 	std::shared_ptr<CameraNode> SceneGraph::GetActiveCamera()
 	{
 		for (auto& camera_node : m_camera_nodes)
@@ -59,18 +63,24 @@ namespace wr
 		return nullptr;
 	}
 
+	//! Initialize the scene graph
 	void SceneGraph::Init()
 	{
-		m_init_meshes_func_impl(m_render_system, m_mesh_nodes); 
+		m_init_meshes_func_impl(m_render_system, m_mesh_nodes);
 		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
 	}
 
+	//! Update the scene graph
 	void SceneGraph::Update()
 	{
 		m_update_meshes_func_impl(m_render_system, m_mesh_nodes);
 		m_update_cameras_func_impl(m_render_system, m_camera_nodes);
 	}
 
+	//! Render the scene graph
+	/*!
+		The user is expected to call `Optimize`. If they don't this function will do it manually.
+	*/
 	void SceneGraph::Render(CommandList* cmd_list)
 	{
 		bool should_update = m_batches.size() == 0;

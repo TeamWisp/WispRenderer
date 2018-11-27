@@ -139,6 +139,14 @@ namespace wr
 		}*/
 	}
 
+	void FrameGraph::Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height)
+	{
+		for (auto& task : m_tasks)
+		{
+			task->Resize(render_system, width, height);
+		}
+	}
+
 	void FrameGraph::Destroy()
 	{
 		for (auto& task : m_tasks)

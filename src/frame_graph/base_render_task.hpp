@@ -74,6 +74,7 @@ namespace wr
 
 		virtual void Setup(wr::RenderSystem&) = 0;
 		virtual void Execute(wr::RenderSystem&, SceneGraph&) = 0; // TODO This could be const.
+		virtual void Resize(wr::RenderSystem&, std::uint32_t, std::uint32_t) = 0;
 
 	protected:
 		FrameGraph* m_frame_graph;

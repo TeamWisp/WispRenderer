@@ -90,7 +90,7 @@ void RenderEditor()
 	wr::imgui::window::D3D12HardwareInfo(*render_system.get());
 	wr::imgui::window::D3D12Settings();
 }
-#include "util/thread_pool.hpp"
+
 void WispEntry()
 {
 	// ImGui Logging
@@ -197,10 +197,16 @@ void WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	frame_graph.AddTask(wr::GetDeferredMainTask());
-	frame_graph.AddTask(wr::GetDeferredCompositionTask());
+//	frame_graph.AddTask(wr::GetDeferredMainTask());
+//	frame_graph.AddTask(wr::GetDeferredCompositionTask());
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
+
+	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
+	{
+		frame_graph.Resize(*render_system.get(), width, height);
+		render_system->Resize(width, height);
+	});
 
 	float t = 0;
 
