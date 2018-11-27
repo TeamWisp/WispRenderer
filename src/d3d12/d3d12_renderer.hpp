@@ -120,6 +120,8 @@ namespace wr
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 		d3d12::HeapResource* m_light_buffer;
 
+		temp::Light* m_lights;
+
 	};
 
 } /* wr */
