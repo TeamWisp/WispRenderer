@@ -36,14 +36,21 @@ namespace wr
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_num_descriptors = 4;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
+			heap_desc.m_versions = d3d12::settings::num_back_buffers;
 			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
 
-			auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap);
+			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
+			{
 
-			auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
-			auto deferred_main_rt = data.out_deferred_main_rt = static_cast<D3D12RenderTarget*>(deferred_main_data.m_render_target);
-			d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
-			d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, i);
+
+				auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
+				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<D3D12RenderTarget*>(deferred_main_data.m_render_target);
+				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
+				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
+				d3d12::CreateSRVFromStructuredBuffer(n_render_system.GetLightBuffer(), cpu_handle, i);
+
+			}
 		}
 
 		inline void ExecuteDeferredTask(RenderSystem & render_system, DeferredCompositionRenderTask_t & task, SceneGraph & scene_graph, DeferredCompositionTaskData & data)
@@ -58,11 +65,6 @@ namespace wr
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera_node->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
 
-				//Update light buffer handle
-
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, 3);
-				d3d12::CreateSRVFromStructuredBuffer(n_render_system.GetLightBuffer(), cpu_handle, n_render_system.GetFrameIdx());
-
 				//Render deferred
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::PIXEL_SHADER_RESOURCE);
@@ -74,8 +76,8 @@ namespace wr
 
 				d3d12::BindConstantBuffer(cmd_list, camera_cb->m_native, 0, frame_idx);
 
-				d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap });
-				auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap);
+				d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
+				auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
 				d3d12::BindDescriptorTable(cmd_list, gpu_handle, 1);
 
 				d3d12::BindVertexBuffer(cmd_list, 

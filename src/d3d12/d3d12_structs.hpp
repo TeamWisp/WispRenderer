@@ -15,7 +15,7 @@ namespace wr::d3d12
 
 	namespace desc
 	{
-		
+
 		struct RenderTargetDesc
 		{
 			ResourceState m_initial_state = ResourceState::RENDER_TARGET;
@@ -59,6 +59,7 @@ namespace wr::d3d12
 			unsigned int m_num_descriptors;
 			DescriptorHeapType m_type;
 			bool m_shader_visible = true;
+			uint32_t m_versions = 1;
 		};
 
 	} /* desc */
@@ -148,7 +149,7 @@ namespace wr::d3d12
 	struct DescriptorHeap
 	{
 		desc::DescriptorHeapDesc m_create_info;
-		ID3D12DescriptorHeap* m_native;
+		std::vector<ID3D12DescriptorHeap*> m_native;
 		unsigned int m_increment_size;
 	};
 

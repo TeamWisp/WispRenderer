@@ -85,7 +85,7 @@ namespace wr
 		// Create Light Buffer
 
 		uint64_t light_buffer_stride = sizeof(temp::Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
-		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 256) * d3d12::settings::num_back_buffers;
+		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
 
 		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
@@ -397,6 +397,7 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 		m_fences[frame_idx]->m_fence_value++;
 		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
+
 	}
 
 	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
