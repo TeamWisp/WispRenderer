@@ -22,6 +22,10 @@ set is_remote=0
 set enable_unit_test=0
 set windows_sdk_version=0
 
+REM if left blank it stays in the root folder of the .bat file
+set workspace_path=""
+
+
 REM ##### MAIN #####
 
 call :colorEcho %title_color% "==================================="
@@ -44,9 +48,8 @@ if "%1" == "-help" (
 )
 
 rem ##### pre install settings #####
-if "%is_remote%" == "1" (
-  cd "%~dp2"  
-  echo current path: "%cd%" 
+if "%is_remote%" == "1" ( 
+  set workspace_path="%~dp2"  
   set enable_unit_test=1
 ) else (
   echo Do you want unit tests enabled? [Y/N]
@@ -82,6 +85,7 @@ REM ##### MAIN #####
 
 REM ##### DOWNLOAD DEPS #####
 :downloadDeps
+cd "%workspace_path%"
 call :colorEcho %header_color% "#### Downloading Dependencies ####"
 git submodule init
 git submodule update 
@@ -90,6 +94,7 @@ REM ##### DOWNLOAD DEPS #####
 
 REM ##### GEN PROJECTS #####
 :genVS15Win64
+cd "%workspace_path%"
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
 echo current path: "%cd%"
 mkdir build_vs2017_win64
@@ -104,6 +109,7 @@ cd ..
 EXIT /B 0
 
 :genVS15Win32
+cd "%workspace_path%"
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
 echo current path: "%cd%" 
 mkdir build_vs2017_win32
