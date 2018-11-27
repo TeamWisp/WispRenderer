@@ -69,32 +69,32 @@ add_subdirectory(demo)
 
 ## Unit Test ##
 if(ENABLE_UNIT_TEST)
-    add_executable(UnitTest WIN32 EXCLUDE_FROM_ALL ${HEADERS} 
-    ${SOURCES} 
-    ${IMGUI_HEADERS} 
-    ${IMGUI_SOURCES} 
-    ${UTIL_HEADERS} 
-    ${UTIL_SOURCES} 
-    ${RT_HEADERS} 
-    ${RT_SOURCES} 
-    ${FG_HEADERS} 
-    ${FG_SOURCES} 
-    ${SG_HEADERS} 
-    ${SG_SOURCES} 
-    ${D3D12_SOURCES} 
-    ${D3D12_HEADERS} )
+  ## add_executable(UnitTest WIN32 EXCLUDE_FROM_ALL ${HEADERS} 
+  ## ${SOURCES} 
+  ## ${IMGUI_HEADERS} 
+  ## ${IMGUI_SOURCES} 
+  ## ${UTIL_HEADERS} 
+  ## ${UTIL_SOURCES} 
+  ## ${RT_HEADERS} 
+  ## ${RT_SOURCES} 
+  ## ${FG_HEADERS} 
+  ## ${FG_SOURCES} 
+  ## ${SG_HEADERS} 
+  ## ${SG_SOURCES} 
+  ## ${D3D12_SOURCES} 
+  ## ${D3D12_HEADERS} )
 
-    target_link_libraries(UnitTest dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
-    set_target_properties(UnitTest PROPERTIES CXX_STANDARD 17)
-    set_target_properties(UnitTest PROPERTIES CXX_EXTENSIONS OFF)
-    set_target_properties(UnitTest PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)
-    if (MSVC)
-    target_compile_options(UnitTest PRIVATE /W4 /permissive- /MP /Gm-)
-    endif()
+  ## target_link_libraries(UnitTest dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
+  ## set_target_properties(UnitTest PROPERTIES CXX_STANDARD 17)
+  ## set_target_properties(UnitTest PROPERTIES CXX_EXTENSIONS OFF)
+  ## set_target_properties(UnitTest PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)
+  ## if (MSVC)
+  ## target_compile_options(UnitTest PRIVATE /W4 /permissive- /MP /Gm-)
+  ## endif()
 
-    target_include_directories(UnitTest PUBLIC deps/fmt/include)
-    target_link_libraries(UnitTest fmt)
-    set_target_properties(UnitTest PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
+  ## target_include_directories(UnitTest PUBLIC deps/fmt/include)
+  ## target_link_libraries(UnitTest fmt)
+  ## set_target_properties(UnitTest PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 endif(ENABLE_UNIT_TEST)
 
 ## Generate Include Directory
