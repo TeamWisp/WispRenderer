@@ -1,4 +1,4 @@
-@Echo on
+@Echo off
 
 REM ##### COLOR SUPPORT #####
 SETLOCAL EnableDelayedExpansion
