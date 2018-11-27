@@ -34,7 +34,7 @@ namespace wr
 
 			d3d12::desc::DescriptorHeapDesc heap_desc;
 			heap_desc.m_shader_visible = true;
-			heap_desc.m_num_descriptors = 3;
+			heap_desc.m_num_descriptors = 4;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
 
