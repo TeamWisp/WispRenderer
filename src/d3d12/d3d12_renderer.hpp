@@ -5,6 +5,7 @@
 #include <DirectXMath.h>
 
 #include "../scene_graph/scene_graph.hpp"
+#include "../scene_graph/light_node.hpp"
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
 
@@ -35,23 +36,6 @@ namespace wr
 			{ size, -size },
 			{ -size, size },
 			{ size, size },
-		};
-
-		enum class LightType : uint32_t 
-		{
-			POINT, DIRECTIONAL, SPOT, FREE /* MAX LighType value; but unused */
-		};
-
-		struct Light
-		{
-			DirectX::XMFLOAT3 pos = { 0, 0, 0 };			//Position in world space for spot & point
-			float rad = 5.f;								//Radius for point, height for spot
-
-			DirectX::XMFLOAT3 col = { 1, 1, 1 };			//Color (and strength)
-			uint32_t tid = (uint32_t) LightType::POINT;		//Type id; LightType::x
-
-			DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
-			float ang = 40.f / 180.f * 3.1415926535f;		//Angle for spot; in radians
 		};
 
 	} /* temp */
@@ -96,9 +80,11 @@ namespace wr
 
 		void Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
 		void Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
+		void Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes);
 
 		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
+		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, CommandList* cmd_list);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list);
 
@@ -122,7 +108,7 @@ namespace wr
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 		d3d12::HeapResource* m_light_buffer;
 
-		temp::Light* m_lights;
+		Light* m_lights;
 
 	};
 

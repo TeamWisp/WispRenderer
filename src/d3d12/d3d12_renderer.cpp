@@ -17,14 +17,17 @@
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
+#include "../scene_graph/light_node.hpp"
 
 namespace wr
 {
 	LINK_SG_RENDER_MESHES(D3D12RenderSystem, Render_MeshNodes)
 	LINK_SG_INIT_MESHES(D3D12RenderSystem, Init_MeshNodes)
 	LINK_SG_INIT_CAMERAS(D3D12RenderSystem, Init_CameraNodes)
+	LINK_SG_INIT_LIGHTS(D3D12RenderSystem, Init_LightNodes)
 	LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
 	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
+	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
@@ -85,7 +88,7 @@ namespace wr
 
 		// Create Light Buffer
 
-		uint64_t light_buffer_stride = sizeof(temp::Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
+		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
 		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
 
 		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
@@ -96,28 +99,8 @@ namespace wr
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
 
-		//Setup a temp light and submit it to the queue
-
-		m_lights = new temp::Light[d3d12::settings::num_lights];
-
-		uint32_t light_count = 3;
-
-		temp::Light& l0 = m_lights[0];
-		l0.pos = { 0, 0, -6 };
-		l0.rad = 5.f;
-		l0.col = { 1, 0, 0 };
-		l0.tid = (uint32_t) temp::LightType::POINT | (light_count << 2);		//First light stores light_count into tid as well as type id
-		l0.dir = { 0, 0, 1 };
-		l0.ang = 40.f / 180.f * 3.1415926535f;
-
-		temp::Light& l1 = m_lights[1] = l0;
-		l1.col = { 1, 1, 0 };
-		l1.pos.y = 1;
-		l1.tid = (uint32_t) temp::LightType::SPOT;
-
-		temp::Light& l2 = m_lights[2] = l0;
-		l1.col = { 0.25, 0.25, 0 };
-		l1.tid = (uint32_t)temp::LightType::DIRECTIONAL;
+		//Setup a light buffer (CPU)
+		m_lights = new Light[d3d12::settings::num_lights];
 
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
@@ -427,6 +410,10 @@ namespace wr
 		}
 	}
 
+	void D3D12RenderSystem::Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes)
+	{
+	}
+
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
 		for (auto& node : nodes)
@@ -456,16 +443,27 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list)
+	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
 
-		temp::Light& l1 = m_lights[1];
-		float perc = sin(time(0)) * 0.5f + 0.5f;
-		DirectX::XMVECTOR cdat = DirectX::XMVectorAdd(DirectX::XMVectorMultiply({ 1, 0, 0 }, { perc, perc, perc }), DirectX::XMVectorMultiply({ 0, 1, 0 }, { 1 - perc, 1 - perc, 1 - perc }));
-		memcpy(&l1.col, &cdat, 12);
+		uint32_t count = 0;
+
+		for (auto& node : nodes)
+		{
+			m_lights[count] = node->m_light;
+			++count;
+		}
+
+		m_lights[0].tid |= count << 2;
 
 		d3d12::UpdateStructuredBuffer(m_light_buffer, m_render_window.value()->m_frame_idx, m_lights, m_light_buffer->m_unaligned_size, 0, m_light_buffer->m_stride, n_cmd_list);
+
+	}
+
+	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
 
 		//Render batches
 		for (auto& elem : batches)
