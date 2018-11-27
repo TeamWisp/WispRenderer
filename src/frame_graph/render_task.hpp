@@ -17,6 +17,7 @@ namespace wr
 	template<typename T>
 	class RenderTask : public BaseRenderTask
 	{
+		friend class FrameGraph;
 	public:
 		struct Data
 		{
@@ -27,10 +28,23 @@ namespace wr
 
 		using setup_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&)>;
 		using execute_func_type = std::function<void(RenderSystem&, RenderTask<T>&, SceneGraph&, T&)>;
+		using resize_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&, std::uint32_t, std::uint32_t)>;
 		using destroy_func_type = std::function<void(RenderTask<T>&, T&)>;
 
-		RenderTask(FrameGraph* frame_graph, std::string const & name, RenderTaskType type, bool allow_multithreading, RenderTargetProperties rt_properties, setup_func_type setup, execute_func_type execute, destroy_func_type destroy)
-			: BaseRenderTask(typeid(T), frame_graph, name, type, allow_multithreading, rt_properties), m_setup(setup), m_execute(execute), m_destroy(destroy) {}
+		RenderTask(FrameGraph* frame_graph,
+			std::string const & name,
+			RenderTaskType type,
+			bool allow_multithreading,
+			RenderTargetProperties rt_properties,
+			setup_func_type setup,
+			execute_func_type execute,
+			resize_func_type resize,
+			destroy_func_type destroy)
+			: BaseRenderTask(typeid(T), frame_graph, name, type, allow_multithreading, rt_properties), 
+			m_setup(setup),
+			m_execute(execute), 
+			m_resize(resize),
+			m_destroy(destroy) {}
 
 		~RenderTask() final
 		{
@@ -84,6 +98,17 @@ namespace wr
 			render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 		}
 
+		void Resize(RenderSystem& render_system, std::uint32_t width, std::uint32_t height) final
+		{
+			if constexpr (settings::use_multithreading)
+			{
+				WaitForCompletion();
+			}
+
+			render_system.ResizeRenderTarget(m_render_target, width, height);
+			m_resize(render_system, *this, m_data, width, height);
+		}
+
 		Data GetData()
 		{
 			if constexpr (settings::use_multithreading)
@@ -100,6 +125,8 @@ namespace wr
 		setup_func_type m_setup;
 		//! The execute function ptr.
 		execute_func_type m_execute;
+		//! The destroy function ptr.
+		resize_func_type m_resize;
 		//! The destroy function ptr.
 		destroy_func_type m_destroy;
 	};

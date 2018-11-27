@@ -46,6 +46,7 @@ namespace wr
 		virtual CommandList* GetComputeCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetCopyCommandList(unsigned int num_allocators) = 0;
 		virtual RenderTarget* GetRenderTarget(RenderTargetProperties properties) = 0;
+		virtual void ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height) = 0;
 
 		virtual void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 		virtual void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;

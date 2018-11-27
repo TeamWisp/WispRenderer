@@ -124,6 +124,10 @@ namespace wr
 
 	void D3D12RenderSystem::Resize(std::int32_t width, std::int32_t height)
 	{
+		if (m_render_window.has_value())
+		{
+			d3d12::Resize(m_render_window.value(), m_device, width, height);
+		}
 	}
 
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
@@ -201,6 +205,12 @@ namespace wr
 				return nullptr;
 			}
 		}
+	}
+
+	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height)
+	{
+		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target);
+		d3d12::Resize((d3d12::RenderTarget**)&n_render_target, m_device, width, height);
 	}
 
 	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)

@@ -24,6 +24,7 @@ namespace wr
 		void AddTask(std::unique_ptr<BaseRenderTask> task);
 		void Setup(RenderSystem & render_system);
 		void Execute(RenderSystem & render_system, SceneGraph & scene_graph);
+		void Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height);
 		void Destroy();
 
 		template<typename T>
