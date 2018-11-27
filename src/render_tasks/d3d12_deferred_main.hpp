@@ -83,6 +83,7 @@ namespace wr
 			},
 			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, DeferredMainTaskData & data) { internal::SetupDeferredTask(render_system, task, data); },
 			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, SceneGraph & scene_graph, DeferredMainTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
+			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, DeferredMainTaskData & data, std::uint32_t width, std::uint32_t height) {},
 			[](DeferredMainRenderTask_t & task, DeferredMainTaskData & data) { internal::DestroyTestTask(task, data); }
 		);
 

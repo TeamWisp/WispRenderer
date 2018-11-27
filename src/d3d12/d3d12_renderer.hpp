@@ -87,6 +87,8 @@ namespace wr
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
 		d3d12::HeapResource* GetLightBuffer();
 
+		void ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height) final;
+
 		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 

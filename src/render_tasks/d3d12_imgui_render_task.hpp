@@ -87,6 +87,12 @@ namespace wr
 			}
 		}
 
+		inline void ResizeImGuiTask(ImGuiRenderTask_t & task, ImGuiTaskData & data, std::uint32_t width, std::uint32_t height)
+		{
+			ImGui_ImplDX12_InvalidateDeviceObjects();
+			ImGui_ImplDX12_CreateDeviceObjects();
+		}
+
 		inline void DestroyImGuiTask(ImGuiRenderTask_t & task, ImGuiTaskData& data)
 		{
 			ImGui_ImplDX12_Shutdown();
@@ -116,6 +122,7 @@ namespace wr
 			},
 			[imgui_func](RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data) { data.in_imgui_func = imgui_func; internal::SetupImGuiTask(render_system, task, data); },
 			[](RenderSystem & render_system, ImGuiRenderTask_t & task, SceneGraph & scene_graph, ImGuiTaskData & data) { internal::ExecuteImGuiTask(render_system, task, scene_graph, data); },
+			[](RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data, std::uint32_t width, std::uint32_t height) { internal::ResizeImGuiTask(task, data, width, height); },
 			[](ImGuiRenderTask_t & task, ImGuiTaskData & data) { internal::DestroyImGuiTask(task, data); }
 		);
 
