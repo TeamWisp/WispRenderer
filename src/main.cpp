@@ -117,7 +117,7 @@ void WispEntry()
 	render_system->Init(window.get());
 
 	// Load custom model
-	auto model_pool = render_system->CreateModelPool(1);
+	auto model_pool = render_system->CreateModelPool(1, 1);
 	wr::Model* model;
 	{
 		wr::MeshData<wr::Vertex> mesh;
