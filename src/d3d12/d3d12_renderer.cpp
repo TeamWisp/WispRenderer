@@ -391,6 +391,33 @@ namespace wr
 
 		scene_graph.Init();
 
+		temp::Light* light_data = new temp::Light[d3d12::settings::num_lights];
+
+		uint32_t light_count = 3;
+
+		temp::Light &l0 = light_data[0];
+		l0.pos = { 0, 0, -6 };
+		l0.rad = 5.f;
+		float perc = sin(time(0) / 10000.f) * 0.5f + 0.5f;
+		DirectX::XMVECTOR cdat = DirectX::XMVectorAdd(DirectX::XMVectorMultiply({ 1, 0, 0 }, { perc, perc, perc }), DirectX::XMVectorMultiply({ 0, 1, 0 }, { 1 - perc, 1 - perc, 1 - perc }));
+		memcpy(&l0.col, &cdat, 12);
+		l0.tid = (uint32_t)temp::LightType::POINT | (light_count << 2);		//First light stores light_count into tid as well as type id
+		l0.dir = { 0, 0, 1 };
+		l0.ang = 40.f / 180.f * 3.1415926535f;
+
+		temp::Light &l1 = light_data[1] = l0;
+		l1.col = { 1, 1, 0 };
+		l1.pos.y = 1;
+		l1.tid = (uint32_t)temp::LightType::SPOT;
+
+		temp::Light &l2 = light_data[2] = l0;
+		l1.col = { 0.25, 0.25, 0 };
+		l1.tid = (uint32_t)temp::LightType::DIRECTIONAL;
+
+		d3d12::UpdateStructuredBuffer(m_light_buffer, m_render_window.value()->m_frame_idx, m_light_buffer, m_light_buffer->m_unaligned_size, 0, m_light_buffer->m_stride, m_direct_cmd_list);
+
+		delete[] light_data;
+
 		d3d12::End(m_direct_cmd_list);
 
 		// Execute
