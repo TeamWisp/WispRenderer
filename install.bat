@@ -85,8 +85,8 @@ REM ##### MAIN #####
 
 REM ##### DOWNLOAD DEPS #####
 :downloadDeps
-cd "%workspace_path%"
 call :colorEcho %header_color% "#### Downloading Dependencies ####"
+cd "%workspace_path%"
 git submodule init
 git submodule update 
 EXIT /B 0
@@ -94,8 +94,8 @@ REM ##### DOWNLOAD DEPS #####
 
 REM ##### GEN PROJECTS #####
 :genVS15Win64
-cd "%workspace_path%"
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
+cd "%workspace_path%"
 echo current path: "%cd%"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
@@ -109,8 +109,8 @@ cd ..
 EXIT /B 0
 
 :genVS15Win32
-cd "%workspace_path%"
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
+cd "%workspace_path%"
 echo current path: "%cd%" 
 mkdir build_vs2017_win32
 cd build_vs2017_win32
