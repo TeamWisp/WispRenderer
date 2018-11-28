@@ -89,6 +89,7 @@ void RenderEditor()
 	wr::imgui::window::RootSignatureRegistry();
 	wr::imgui::window::D3D12HardwareInfo(*render_system.get());
 	wr::imgui::window::D3D12Settings();
+
 }
 
 void WispEntry()
