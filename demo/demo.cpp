@@ -91,7 +91,7 @@ void RenderEditor()
 	wr::imgui::window::D3D12Settings();
 }
 
-void WispEntry()
+int WispEntry()
 {
 	// ImGui Logging
 	util::log_callback::impl = [&](std::string const & str)
@@ -253,6 +253,7 @@ void WispEntry()
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 	frame_graph.Destroy();
 	render_system.reset();
+	return 0;
 }
 
 WISP_ENTRY(WispEntry)

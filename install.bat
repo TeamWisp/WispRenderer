@@ -52,10 +52,13 @@ if "%is_remote%" == "1" (
   set workspace_path="%~df2"  
   set enable_unit_test=1
 ) else (
-  echo Do you want unit tests enabled? [Y/N]
-  set /p enable_unit_input=
-  if "%enable_unit_input%" == "Y" AND "%enable_unit_input%" == "y" (
+  rem echo Do you want unit tests enabled? [Y/N]
+  choice /c yn /m "Do you want unit tests enabled?"
+  if errorlevel 2 (
+    echo no unit tests will be generated
+  ) else (
     set enable_unit_test=1
+        echo unit tests will be generated
   )
 )
 
@@ -100,8 +103,10 @@ echo current path: "%cd%"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
 if "%ENABLE_UNIT_TEST%" == "1" (
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=TRUE -A x64 ..
+  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
 ) else (
+  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
   cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
 )
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
@@ -115,7 +120,7 @@ echo current path: "%cd%"
 mkdir build_vs2017_win32
 cd build_vs2017_win32
 if "%ENABLE_UNIT_TEST%" == "1" (
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=TRUE -A Win32 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A Win32 ..
 ) else (
   cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A Win32 ..
 )

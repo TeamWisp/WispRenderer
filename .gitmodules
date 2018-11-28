@@ -1,3 +1,7 @@
 [submodule "deps/fmt"]
 	path = deps/fmt
 	url = https://github.com/fmtlib/fmt.git
+
+[submodule "deps/googletest"]
+	path = deps/googletest
+	url = https://github.com/abseil/googletest.git
