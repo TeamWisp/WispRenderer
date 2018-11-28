@@ -214,9 +214,9 @@ void WispEntry()
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
-		//render_system->WaitForAllPreviousWork();
-		//frame_graph.Resize(*render_system.get(), width, height);
-		//render_system->Resize(width, height);
+		render_system->WaitForAllPreviousWork();
+		frame_graph.Resize(*render_system.get(), width, height);
+		render_system->Resize(width, height);
 	});
 
 	float t = 0;
