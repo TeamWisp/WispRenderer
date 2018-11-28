@@ -1,14 +1,23 @@
 #include "../d3d12/d3d12_structs.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../renderer.hpp"
+#include "../window.hpp"
 #include "../d3d12/d3d12_renderer.hpp"
 
 TEST(HeapTest, SmallHeapCreation) 
 {
-	wr::D3D12RenderSystem* renderSystem = new wr::D3D12RenderSystem();
-	renderSystem->Init(nullptr);
+	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
+		
+	});
+
+	render_system->Init(window.get());
+
 	wr::d3d12::Heap<wr::HeapOptimization::SMALL_BUFFERS>* heap = wr::d3d12::CreateHeap_SBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		70000, wr::ResourceType::BUFFER,
 		3);
 
@@ -37,7 +46,7 @@ TEST(HeapTest, SmallHeapCreation)
 	wr::d3d12::Destroy(heap);
 
 	heap = wr::d3d12::CreateHeap_SBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		500, wr::ResourceType::BUFFER,
 		1);
 
@@ -65,15 +74,24 @@ TEST(HeapTest, SmallHeapCreation)
 
 	wr::d3d12::Destroy(heap);
 
-	delete renderSystem;
+	render_system.reset();
+	window.reset();
 }
 
 TEST(HeapTest, BigHeapCreation) 
 {
-	wr::D3D12RenderSystem* renderSystem = new wr::D3D12RenderSystem();
-	renderSystem->Init(nullptr);
+	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
+
+	});
+
+	render_system->Init(window.get());
+
 	wr::d3d12::Heap<wr::HeapOptimization::BIG_BUFFERS>* heap = wr::d3d12::CreateHeap_BBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		170000, wr::ResourceType::BUFFER,
 		3);
 
@@ -102,7 +120,7 @@ TEST(HeapTest, BigHeapCreation)
 	wr::d3d12::Destroy(heap);
 
 	heap = wr::d3d12::CreateHeap_BBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		16*1024*1024, wr::ResourceType::BUFFER,
 		1);
 
@@ -130,15 +148,24 @@ TEST(HeapTest, BigHeapCreation)
 
 	wr::d3d12::Destroy(heap);
 
-	delete renderSystem;
+	render_system.reset();
+	window.reset();
 }
 
 TEST(HeapTest, BigStaticHeapCreation)
 {
-	wr::D3D12RenderSystem* renderSystem = new wr::D3D12RenderSystem();
-	renderSystem->Init(nullptr);
+	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
+
+	});
+
+	render_system->Init(window.get());
+
 	wr::d3d12::Heap<wr::HeapOptimization::BIG_STATIC_BUFFERS>* heap = wr::d3d12::CreateHeap_BSBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		170000, wr::ResourceType::BUFFER,
 		3);
 
@@ -167,7 +194,7 @@ TEST(HeapTest, BigStaticHeapCreation)
 	wr::d3d12::Destroy(heap);
 
 	heap = wr::d3d12::CreateHeap_BSBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		16 * 1024 * 1024, wr::ResourceType::BUFFER,
 		1);
 
@@ -195,15 +222,24 @@ TEST(HeapTest, BigStaticHeapCreation)
 
 	wr::d3d12::Destroy(heap);
 
-	delete renderSystem;
+	render_system.reset();
+	window.reset();
 }
 
 TEST(HeapTest, SmallHeapAllocDealloc) 
 {
-	wr::D3D12RenderSystem* renderSystem = new wr::D3D12RenderSystem();
-	renderSystem->Init(nullptr);
+	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
+
+	});
+
+	render_system->Init(window.get());
+
 	wr::d3d12::Heap<wr::HeapOptimization::SMALL_BUFFERS>* heap = wr::d3d12::CreateHeap_SBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		70000, wr::ResourceType::BUFFER,
 		3);
 
@@ -293,15 +329,24 @@ TEST(HeapTest, SmallHeapAllocDealloc)
 	EXPECT_EQ(heap->m_bitmap[0], 0xFFFFFFFFFFFFFFFF) << "Allocator bit pattern is " << heap->m_bitmap[0] << " instead of 0xFFFFFFFFFFFFFFFF";
 
 	wr::d3d12::Destroy(heap);
-	delete renderSystem;
+	render_system.reset();
+	window.reset();
 }
 
 TEST(HeapTest, BigHeapAllocDealloc)
 {
-	wr::D3D12RenderSystem* renderSystem = new wr::D3D12RenderSystem();
-	renderSystem->Init(nullptr);
+	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
+
+	});
+
+	render_system->Init(window.get());
+
 	wr::d3d12::Heap<wr::HeapOptimization::BIG_BUFFERS>* heap = wr::d3d12::CreateHeap_BBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		32*1024*1024, wr::ResourceType::BUFFER,
 		3);
 
@@ -347,15 +392,24 @@ TEST(HeapTest, BigHeapAllocDealloc)
 	EXPECT_EQ(heap->m_bitmap[0], 0xFFFFFFFFFFFFFFFF) << "Allocator bit pattern is " << heap->m_bitmap[0] << " instead of 0xFFFFFFFFFFFFFFFF";
 
 	wr::d3d12::Destroy(heap);
-	delete renderSystem;
+	render_system.reset();
+	window.reset();
 }
 
 TEST(HeapTest, BigStaticHeapAllocDealloc) 
 {
-	wr::D3D12RenderSystem* renderSystem = new wr::D3D12RenderSystem();
-	renderSystem->Init(nullptr);
+	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
+
+	});
+
+	render_system->Init(window.get());
+
 	wr::d3d12::Heap<wr::HeapOptimization::BIG_STATIC_BUFFERS>* heap = wr::d3d12::CreateHeap_BSBO(
-		renderSystem->m_device,
+		render_system->m_device,
 		32 * 1024 * 1024, wr::ResourceType::BUFFER,
 		3);
 
@@ -403,5 +457,6 @@ TEST(HeapTest, BigStaticHeapAllocDealloc)
 	EXPECT_EQ(heap->m_bitmap[0], 0xFFFFFFFFFFFFFFFF) << "Allocator bit pattern is " << heap->m_bitmap[0] << " instead of 0xFFFFFFFFFFFFFFFF";
 
 	wr::d3d12::Destroy(heap);
-	delete renderSystem;
+	render_system.reset();
+	window.reset();
 }
