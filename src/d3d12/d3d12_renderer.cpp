@@ -104,14 +104,21 @@ namespace wr
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
-		m_fences[frame_idx]->m_fence_value++;
-		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
 	}
 
 	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
+		if (m_requested_fullscreen_state.has_value())
+		{
+			WaitForAllPreviousWork();
+			m_render_window.value()->m_swap_chain->SetFullscreenState(m_requested_fullscreen_state.value(), nullptr);
+			Resize(m_window.value()->GetWidth(), m_window.value()->GetHeight());
+			m_requested_fullscreen_state = std::nullopt;
+		}
+
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
+
 
 		scene_graph->Update();
 
@@ -125,7 +132,6 @@ namespace wr
 		}
 
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
-		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
 
 		if (m_render_window.has_value())
 		{
@@ -135,11 +141,14 @@ namespace wr
 		return std::unique_ptr<Texture>();
 	}
 
-	void D3D12RenderSystem::Resize(std::int32_t width, std::int32_t height)
+	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
 	{
+
+		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
+		
 		if (m_render_window.has_value())
 		{
-			d3d12::Resize(m_render_window.value(), m_device, width, height);
+			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
 		}
 	}
 
@@ -158,6 +167,7 @@ namespace wr
 		for (auto& fence : m_fences)
 		{
 			d3d12::WaitFor(fence);
+			Signal(fence, m_direct_queue);
 		}
 	}
 
@@ -225,10 +235,17 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height)
+	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height)
 	{
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target);
+		auto n_render_target = static_cast<D3D12RenderTarget*>(*render_target);
 		d3d12::Resize((d3d12::RenderTarget**)&n_render_target, m_device, width, height);
+
+		(*render_target) = n_render_target;
+	}
+
+	void D3D12RenderSystem::RequestFullscreenChange(bool fullscreen_state)
+	{
+		m_requested_fullscreen_state = fullscreen_state;
 	}
 
 	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
@@ -378,9 +395,6 @@ namespace wr
 
 		// Execute
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
-		m_fences[frame_idx]->m_fence_value++;
-		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
-
 	}
 
 	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)

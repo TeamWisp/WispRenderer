@@ -13,6 +13,8 @@ bool open1 = true;
 bool open2 = true;
 bool open_console = false;
 bool show_imgui = true;
+bool fullscreen = false;
+
 char message_buffer[600];
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
@@ -76,6 +78,13 @@ void RenderEditor()
 	if (open2)
 	{
 		ImGui::Begin("Logging Example", &open2);
+		
+		if (ImGui::Button("Toggle Fullscreen"))
+		{
+			fullscreen = !fullscreen;
+			render_system->RequestFullscreenChange(fullscreen);
+		}
+
 		ImGui::InputText("Message", message_buffer, 600);
 		if (ImGui::Button("LOG (Message)")) LOG(message_buffer);
 		if (ImGui::Button("LOGW (Warning)")) LOGW(message_buffer);
@@ -219,6 +228,7 @@ void WispEntry()
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
+		render_system->WaitForAllPreviousWork();
 		frame_graph.Resize(*render_system.get(), width, height);
 		render_system->Resize(width, height);
 	});

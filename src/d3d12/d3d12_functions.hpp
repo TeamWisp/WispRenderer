@@ -67,7 +67,7 @@ namespace wr::d3d12
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, IUnknown* window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
-	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height);
+	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height, bool fullscreen);
 	void Present(RenderWindow* render_window, Device* device);
 	void Destroy(RenderWindow* render_window);
 
@@ -87,6 +87,7 @@ namespace wr::d3d12
 
 	// Viewport
 	[[nodiscard]] Viewport CreateViewport(int width, int height);
+	void ResizeViewport(Viewport& viewport, int width, int height);
 
 	// Shader
 	[[nodiscard]] Shader* LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");

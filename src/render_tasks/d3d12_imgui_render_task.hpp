@@ -24,13 +24,19 @@ namespace wr
 	namespace internal
 	{
 
-		inline void SetupImGuiTask(RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data)
+		inline void SetupImGuiTask(RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data, bool resize)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 
 			if (!n_render_system.m_window.has_value())
 			{
 				LOGC("Tried using imgui without a window!");
+			}
+
+			if (resize)
+			{
+				ImGui_ImplDX12_CreateDeviceObjects();
+				return;
 			}
 
 			d3d12::desc::DescriptorHeapDesc heap_desc;
@@ -87,17 +93,18 @@ namespace wr
 			}
 		}
 
-		inline void ResizeImGuiTask(ImGuiRenderTask_t & task, ImGuiTaskData & data, std::uint32_t width, std::uint32_t height)
+		inline void DestroyImGuiTask(ImGuiRenderTask_t & task, ImGuiTaskData& data, bool resize)
 		{
-			ImGui_ImplDX12_InvalidateDeviceObjects();
-			ImGui_ImplDX12_CreateDeviceObjects();
-		}
-
-		inline void DestroyImGuiTask(ImGuiRenderTask_t & task, ImGuiTaskData& data)
-		{
-			ImGui_ImplDX12_Shutdown();
-			ImGui_ImplWin32_Shutdown();
-			ImGui::DestroyContext();
+			if (resize)
+			{
+				ImGui_ImplDX12_InvalidateDeviceObjects();
+			}
+			else
+			{
+				ImGui_ImplDX12_Shutdown();
+				ImGui_ImplWin32_Shutdown();
+				ImGui::DestroyContext();
+			}
 		}
 
 	} /* internal */
@@ -120,10 +127,9 @@ namespace wr
 				false,
 				false
 			},
-			[imgui_func](RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data) { data.in_imgui_func = imgui_func; internal::SetupImGuiTask(render_system, task, data); },
+			[imgui_func](RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data, bool resize) { data.in_imgui_func = imgui_func; internal::SetupImGuiTask(render_system, task, data, resize); },
 			[](RenderSystem & render_system, ImGuiRenderTask_t & task, SceneGraph & scene_graph, ImGuiTaskData & data) { internal::ExecuteImGuiTask(render_system, task, scene_graph, data); },
-			[](RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data, std::uint32_t width, std::uint32_t height) { internal::ResizeImGuiTask(task, data, width, height); },
-			[](ImGuiRenderTask_t & task, ImGuiTaskData & data) { internal::DestroyImGuiTask(task, data); }
+			[](ImGuiRenderTask_t & task, ImGuiTaskData & data, bool resize) { internal::DestroyImGuiTask(task, data, resize); }
 		);
 
 		return ptr;
