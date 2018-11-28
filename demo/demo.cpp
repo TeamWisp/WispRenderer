@@ -48,8 +48,6 @@ void RenderEditor()
 
 	ImGui::DockSpaceOverViewport(main_menu, nullptr, ImGuiDockNodeFlags_PassthruDockspace);
 
-	auto& io = ImGui::GetIO();
-
 	// Create dockable background
 	if (open0)
 	{
@@ -65,6 +63,7 @@ void RenderEditor()
 
 	if (open1)
 	{
+		auto& io = ImGui::GetIO();
 		ImGui::Begin("ImGui Details", &open1);
 		ImGui::Text("Mouse Pos: (%0.f, %0.f)", io.MousePos.x, io.MousePos.y);
 		ImGui::Text("Framerate: %.0f", io.Framerate);
@@ -84,6 +83,7 @@ void RenderEditor()
 		ImGui::End();
 	}
 
+	// Renderer build-in tools.
 	wr::imgui::window::ShaderRegistry();
 	wr::imgui::window::PipelineRegistry();
 	wr::imgui::window::RootSignatureRegistry();
