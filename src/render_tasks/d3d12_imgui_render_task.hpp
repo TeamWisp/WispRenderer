@@ -51,8 +51,8 @@ namespace wr
 			ImGui_ImplDX12_Init(n_render_system.m_device->m_native,
 				d3d12::settings::num_back_buffers,
 				(DXGI_FORMAT)d3d12::settings::back_buffer_format,
-				d3d12::GetCPUHandle(data.out_descriptor_heap, 0 /* TODO: Version here? */).m_native,
-				d3d12::GetGPUHandle(data.out_descriptor_heap, 0 /* TODO: Version here? */).m_native);
+				d3d12::GetCPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native,
+				d3d12::GetGPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native);
 
 			ImGui::StyleColorsCherry();
 		}

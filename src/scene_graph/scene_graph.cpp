@@ -69,7 +69,7 @@ namespace wr
 	{
 		m_init_meshes_func_impl(m_render_system, m_mesh_nodes);
 		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
-		m_init_lights_func_impl(m_render_system, m_light_nodes);
+		m_init_lights_func_impl(m_render_system, m_light_nodes, m_lights);
 	}
 
 	//! Update the scene graph
@@ -99,13 +99,18 @@ namespace wr
 		if (should_update)
 			Optimize();
 
-		m_update_lights_func_impl(m_render_system, m_light_nodes, cmd_list);
+		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, cmd_list);
 		m_render_meshes_func_impl(m_render_system, m_batches, cmd_list);
 	}
 
 	temp::MeshBatches& SceneGraph::GetBatches() 
 	{ 
 		return m_batches; 
+	}
+
+	std::vector<Light>& SceneGraph::GetLights()
+	{
+		return m_lights;
 	}
 
 	void SceneGraph::Optimize() 

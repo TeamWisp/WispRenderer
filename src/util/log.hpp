@@ -49,7 +49,7 @@ namespace util::internal
 	};
 
 	template <typename S, typename... Args>
-	inline void log_impl(int color, bool to_output, char type, std::string file, std::string func, int line, S const & format, Args const &... args)
+	inline void log_impl(int color, char type, std::string file, std::string func, int line, S const & format, Args const &... args)
 	{
 		std::string str = "";
 
@@ -147,8 +147,8 @@ namespace util::internal
 
 } /* internal */
 
-#define LOG(csr, ...)  { util::internal::log_impl(7, false, 'I', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
-#define LOGW(csr, ...) { util::internal::log_impl(6, false, 'W', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
-#define LOGE(csr, ...) { util::internal::log_impl(4, true, 'E', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
-#define LOGC(csr, ...) { util::internal::log_impl(71, true, 'C', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); LOG_BREAK }
+#define LOG(csr, ...)  { util::internal::log_impl(7, 'I', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
+#define LOGW(csr, ...) { util::internal::log_impl(6, 'W', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
+#define LOGE(csr, ...) { util::internal::log_impl(4, 'E', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
+#define LOGC(csr, ...) { util::internal::log_impl(71, 'C', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); LOG_BREAK }
 //#define LOGC(csr, ...) { util::internal::log_msgb_impl(util::internal::MSGB_ICON::CRITICAL_ERROR, __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }

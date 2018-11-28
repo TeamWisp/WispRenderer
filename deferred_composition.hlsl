@@ -45,7 +45,7 @@ float3 world_to_view(float4 pos, float4x4 view) {
 	return vpos.xyz;
 }
 
-float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal, Light light) 
+float3 shade_light(float3 vpos, float3 V, float3 albedo, float3 normal, Light light) 
 {
 	uint tid = light.tid & 3;
 
@@ -74,7 +74,7 @@ float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal, Light light)
 
 }
 
-float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal)
+float3 shade_pixel(float3 vpos, float3 V, float3 albedo, float3 normal)
 {
 
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
@@ -84,7 +84,7 @@ float3 shade(float3 vpos, float3 V, float3 albedo, float3 normal)
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += shade(vpos, V, albedo, normal, lights[i]);
+		res += shade_light(vpos, V, albedo, normal, lights[i]);
 	}
 
 	return res * albedo;
@@ -105,5 +105,5 @@ float4 main_ps(VS_OUTPUT input) : SV_TARGET
 	float3 V = normalize(-vpos);
 
 	//Do shading
-	return float4(shade(vpos, V, albedo, normal), 1.f);
+	return float4(shade_pixel(vpos, V, albedo, normal), 1.f);
 }

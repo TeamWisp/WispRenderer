@@ -31,7 +31,6 @@ namespace wr
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
-		delete[] m_lights;
 		d3d12::Destroy(m_sb_heap);
 		d3d12::Destroy(m_cb_heap);
 		d3d12::Destroy(m_device);
@@ -98,9 +97,6 @@ namespace wr
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
-
-		//Setup a light buffer (CPU)
-		m_lights = new Light[d3d12::settings::num_lights];
 
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
@@ -410,8 +406,9 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes)
+	void D3D12RenderSystem::Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights)
 	{
+		lights.resize(d3d12::settings::num_lights);
 	}
 
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
@@ -443,21 +440,20 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, CommandList* cmd_list)
+	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
 
-		uint32_t count = 0;
+		uint32_t count = 0, size = (uint32_t) nodes.size(), light_size = (uint32_t) lights.size();
 
-		for (auto& node : nodes)
+		for (; count < size && count < light_size; ++count)
 		{
-			m_lights[count] = node->m_light;
-			++count;
+			lights[count] = nodes[count]->m_light;
 		}
 
-		m_lights[0].tid |= count << 2;
+		lights[0].tid |= count << 2;
 
-		d3d12::UpdateStructuredBuffer(m_light_buffer, m_render_window.value()->m_frame_idx, m_lights, m_light_buffer->m_unaligned_size, 0, m_light_buffer->m_stride, n_cmd_list);
+		d3d12::UpdateStructuredBuffer(m_light_buffer, m_render_window.value()->m_frame_idx, lights.data(), m_light_buffer->m_unaligned_size, 0, m_light_buffer->m_stride, n_cmd_list);
 
 	}
 
