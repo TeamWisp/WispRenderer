@@ -57,7 +57,6 @@ namespace wr
 		LRESULT CALLBACK WindowProc_Impl(HWND, UINT, WPARAM, LPARAM);
 
 		KeyCallback m_key_callback;
-	public:
 		ResizeCallback m_resize_callback;
 
 		bool m_running;

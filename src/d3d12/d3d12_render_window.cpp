@@ -121,7 +121,6 @@ namespace wr::d3d12
 
 		CreateRenderTargetViews(render_window, device, width, height);
 		CreateDepthStencilBuffer(render_window, device, width, height);
-	
 	}
 
 	void Present(RenderWindow* render_window, Device* device)
