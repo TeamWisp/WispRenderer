@@ -16,15 +16,29 @@ cbuffer CameraProperties : register(b0)
 static uint min_depth = 0xFFFFFFFF;
 static uint max_depth = 0x0;
 
-float3 unpack_position(float2 uv, float depth, float4x4 proj_inv) {
+float3 unpack_position(float2 uv, float depth, float4x4 proj_inv) 
+{
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
 	const float4 vpos = mul(proj_inv, ndc);
 	return (vpos / vpos.w).xyz;
 }
 
-float3 world_to_view(float4 pos, float4x4 view) {
+float3 world_to_view(float4 pos, float4x4 view) 
+{
 	const float4 vpos = mul(view, pos);
 	return vpos.xyz;
+}
+
+//Spheremap Transform normal compression decode (aras-p.info)
+float3 decode_normal(half2 enc)
+{
+	half2 fenc = enc * 4 - 2;
+	half f = dot(fenc, fenc);
+	half g = sqrt(1 - f / 4);
+	float3 n;
+	n.xy = fenc * g;
+	n.z = 1 - f / 2;
+	return n;
 }
 
 float4 main_ps(VS_OUTPUT input) : SV_TARGET
@@ -33,7 +47,7 @@ float4 main_ps(VS_OUTPUT input) : SV_TARGET
 
 	// GBuffer contents
 	const float3 albedo = gbuffer_albedo.Sample(s0, uv).xyz;
-	const float3 normal = gbuffer_normal.Sample(s0, uv).xyz;
+	const float3 normal = decode_normal(gbuffer_normal.Sample(s0, uv).xy);
 	const float depth_f = gbuffer_depth.Sample(s0, uv).r;
 
 	// View position and camera position

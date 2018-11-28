@@ -59,13 +59,13 @@ namespace wr
 		ShaderType::PIXEL_SHADER
 	});
 
-	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<Vertex>({
+	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<CompressedVertex>({
 		shaders::basic_vs,
 		shaders::basic_ps,
 		std::nullopt,
 		root_signatures::basic,
 		Format::D32_FLOAT,
-		{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },
+		{ Format::R16G16B16A16_FLOAT, Format::R16G16_FLOAT },
 		3,
 		PipelineType::GRAPHICS_PIPELINE,
 		CullMode::CULL_BACK,
@@ -74,7 +74,7 @@ namespace wr
 		TopologyType::TRIANGLE
 	});
 
-	REGISTER(pipelines::deferred_composition) = PipelineRegistry::Get().Register<Vertex2D>({
+	REGISTER(pipelines::deferred_composition) = PipelineRegistry::Get().Register<ClipVertex2D>({
 		shaders::fullscreen_quad_vs,
 		shaders::deferred_composition_ps,
 		std::nullopt,

@@ -76,7 +76,7 @@ namespace wr
 				ResourceState::PIXEL_SHADER_RESOURCE,
 				true,
 				Format::D32_FLOAT,
-				{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },
+				{ Format::R16G16B16A16_FLOAT, Format::R16G16_FLOAT },
 				2,
 				true,
 				true

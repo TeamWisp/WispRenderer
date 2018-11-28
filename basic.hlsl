@@ -5,9 +5,8 @@
 
 struct VS_INPUT
 {
-	float3 pos : POSITION;
-	float2 uv : TEXCOORD;
-	float3 normal : NORMAL;
+	float4 pos : POSITION;
+	float4 normal : NORMAL;
 };
 
 struct VS_OUTPUT
@@ -34,11 +33,24 @@ cbuffer ObjectProperties : register(b1)
 	ObjectData instances[MAX_INSTANCES];
 };
 
+//Decode position from axis bounds
+float3 decode_pos(float3 pos)
+{
+	return pos * 2 - 1;
+}
+
+//Decode uv from axis bounds
+float2 decode_uv(float2 uv)
+{
+	return uv;
+}
+
 VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 {
 	VS_OUTPUT output;
 
-	float3 pos = input.pos;
+	float3 pos = decode_pos(input.pos.xyz);
+	float2 uv = decode_uv(float2(input.pos.w, input.normal.w));
 
 	ObjectData inst = instances[instid];
 
@@ -46,9 +58,9 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float4x4 vm = mul(view, inst.model);
 	float4x4 mvp = mul(projection, vm);
 	
-	output.pos =  mul(mvp, float4(pos, 1.0f));
-	output.uv = input.uv;
-	output.normal = normalize(mul(vm, input.normal)).xyz;
+	output.pos = mul(mvp, float4(pos, 1.0f));
+	output.uv = uv;
+	output.normal = normalize(mul(vm, input.normal.xyz * 2 - 1)).xyz;
 
 	return output;
 }
@@ -56,13 +68,20 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 struct PS_OUTPUT
 {
 	float4 albedo : SV_TARGET0;
-	float4 normal : SV_TARGET1;
+	half2 normal : SV_TARGET1;
 };
+
+//Spheremap Transform normal compression encode (aras-p.info)
+half2 encode_normal(float3 n)
+{
+	half p = sqrt(n.z * 8 + 8);
+	return half2(n.xy / p + 0.5);
+}
 
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
-	output.albedo = float4(1, 1, 0, 1);
-	output.normal = float4(input.normal, 1);
+	output.albedo = float4(input.uv, 0, 1);
+	output.normal = encode_normal(input.normal);
 	return output;
 }

@@ -29,12 +29,11 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 		};
 
-		static const constexpr float size = 1.0f;
-		static const constexpr Vertex2D quad_vertices[] = {
-			{ -size, -size },
-			{ size, -size },
-			{ -size, size },
-			{ size, size },
+		static const constexpr ClipVertex2D quad_vertices[] = {
+			{ -128, -128 },
+			{ 127, -128 },
+			{ -128, 127 },
+			{ 127, 127 }
 		};
 
 	} /* temp */

@@ -121,10 +121,9 @@ void WispEntry()
 	auto model_pool = render_system->CreateModelPool(1, 1);
 	wr::Model* model;
 	{
-		wr::MeshData<wr::Vertex> mesh;
-		static const constexpr float size = 0.5f;
+		wr::MeshData<wr::CompressedVertex> mesh;
 
-		mesh.m_indices = {
+		std::vector<uint32_t> indices = {
 			2, 1, 0, 3, 2, 0, 6, 5,
 			4, 7, 6, 4, 10, 9, 8, 11,
 			10, 8, 14, 13, 12, 15, 14, 12,
@@ -132,7 +131,7 @@ void WispEntry()
 			20, 23, 22, 20
 		};
 
-		mesh.m_vertices = {
+		std::vector<wr::Vertex> vertices = {
 			{ 1, 1, -1, 1, 1, 0, 0, -1 },
 			{ 1, -1, -1, 0, 1, 0, 0, -1 },
 			{ -1, -1, -1, 0, 0, 0, 0, -1 },
@@ -159,7 +158,13 @@ void WispEntry()
 			{ -1, 1, 1, 0, 0, 0, 1, 0 },
 		};
 
-		model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+		mesh.m_indices = indices;
+
+		wr::CompressedVertex::Details compression_details;
+
+		wr::CompressedVertex::CompressVertices(vertices, mesh.m_vertices, compression_details);
+
+		model = model_pool->LoadCustom<wr::CompressedVertex>({ mesh });
 	}
 
 	auto scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
