@@ -7,6 +7,7 @@
 
 #include "util/defines.hpp"
 #include "resource_pool_material.hpp"
+#include "vertex.hpp"
 
 namespace wr
 {
@@ -27,6 +28,7 @@ namespace wr
 	struct Model
 	{
 		std::vector<Mesh*> m_meshes;
+		CompressedVertex::Details m_compression_details;
 	};
 
 	enum class ModelType
@@ -50,7 +52,7 @@ namespace wr
 		[[nodiscard]] Model* Load(std::string_view path, ModelType type);
 		[[nodiscard]] std::pair<Model*, std::vector<MaterialHandle>> LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type);
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
+		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes, CompressedVertex::Details compression_details = {});
 
 		void Destroy(Model* model);
 		void Destroy(Mesh* mesh);
@@ -71,11 +73,12 @@ namespace wr
 	};
 
 	template<typename TV, typename TI>
-	Model* ModelPool::LoadCustom(std::vector<MeshData<TV, TI>> meshes)
+	Model* ModelPool::LoadCustom(std::vector<MeshData<TV, TI>> meshes, CompressedVertex::Details compression_details)
 	{
 		IS_PROPER_VERTEX_CLASS(TV);
 
 		auto model = new Model();
+		model->m_compression_details = compression_details;
 
 		for (auto& data : meshes)
 		{

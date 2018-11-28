@@ -46,7 +46,12 @@ namespace wr
 	namespace temp {
 
 		struct ObjectData {
+
 			DirectX::XMMATRIX m_model;
+			
+			uint32_t m_pad[3];
+			uint32_t m_model_id;
+
 		};
 
 		struct MeshBatch_CBData

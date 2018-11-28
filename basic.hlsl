@@ -1,7 +1,11 @@
 
-//48 KiB; 48 * 1024 / sizeof(MeshNode)
-//48 * 1024 / (4 * 4 * 4) = 48 * 1024 / 64 = 48 * 16 = 768
-#define MAX_INSTANCES 768
+//48 KiB; 48 * 1024 / sizeof(ObjectData)
+//48 * 1024 / 80 = 614
+#define MAX_INSTANCES 614
+
+//48 KiB; 48 * 1024 / sizeof(ModelData)
+//48 * 1024 / 48 = 1024
+#define MAX_MODELS 1024
 
 struct VS_INPUT
 {
@@ -26,6 +30,20 @@ cbuffer CameraProperties : register(b0)
 struct ObjectData
 {
 	float4x4 model;
+
+	uint3 pad;
+	uint model_id;
+};
+
+struct ModelData
+{
+	float3 pos_start;
+	uint is_defined;
+
+	float3 pos_length;
+	float pad_1;
+
+	float4 uv_start_length;
 };
 
 cbuffer ObjectProperties : register(b1)
@@ -33,26 +51,32 @@ cbuffer ObjectProperties : register(b1)
 	ObjectData instances[MAX_INSTANCES];
 };
 
-//Decode position from axis bounds
-float3 decode_pos(float3 pos)
+cbuffer MeshProperties : register(b2)
 {
-	return pos * 2 - 1;
+	ModelData models[MAX_MODELS];
+};
+
+//Decode position from axis bounds
+float3 decode_pos(float3 pos, float3 pos_start, float3 pos_length)
+{
+	return pos_start + pos * pos_length;
 }
 
 //Decode uv from axis bounds
-float2 decode_uv(float2 uv)
+float2 decode_uv(float2 uv, float4 uv_start_length)
 {
-	return uv;
+	return uv_start_length.xy + uv * uv_start_length.zw;
 }
 
 VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 {
 	VS_OUTPUT output;
 
-	float3 pos = decode_pos(input.pos.xyz);
-	float2 uv = decode_uv(float2(input.pos.w, input.normal.w));
-
 	ObjectData inst = instances[instid];
+	ModelData mod = models[inst.model_id];
+
+	float3 pos = decode_pos(input.pos.xyz, mod.pos_start, mod.pos_length);
+	float2 uv = decode_uv(float2(input.pos.w, input.normal.w), mod.uv_start_length);
 
 	//TODO: Use precalculated MVP or at least VP
 	float4x4 vm = mul(view, inst.model);

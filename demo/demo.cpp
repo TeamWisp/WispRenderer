@@ -164,7 +164,7 @@ void WispEntry()
 
 		wr::CompressedVertex::CompressVertices(vertices, mesh.m_vertices, compression_details);
 
-		model = model_pool->LoadCustom<wr::CompressedVertex>({ mesh });
+		model = model_pool->LoadCustom<wr::CompressedVertex>({ mesh }, compression_details);
 	}
 
 	auto scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());

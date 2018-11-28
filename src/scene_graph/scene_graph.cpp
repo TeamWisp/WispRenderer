@@ -111,6 +111,12 @@ namespace wr
 		D3D12RenderSystem* d3d12_render_system = dynamic_cast<D3D12RenderSystem*>(m_render_system);
 		constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
 
+		std::vector<Model*> models;
+		models.reserve(m_mesh_nodes.size());
+
+		std::vector<CompressedVertex::Details> mesh_details;
+		mesh_details.reserve(m_mesh_nodes.size());
+
 		for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
 
 			auto node = m_mesh_nodes[i];
@@ -132,7 +138,24 @@ namespace wr
 			//Replace data in buffer
 			temp::MeshBatch& batch = it->second;
 			unsigned int& offset = batch.num_instances;
-			batch.data.objects[offset] = { node->m_transform };
+			unsigned int j = 0;
+
+			if (node->m_model->m_compression_details.m_is_defined)
+			{
+				auto it = std::find(models.begin(), models.end(), node->m_model);
+
+				if (it == models.end())
+				{
+					j = models.size();
+					models.push_back(node->m_model);
+					mesh_details.push_back(node->m_model->m_compression_details);
+				}
+				else
+					j = unsigned int(it - models.begin());
+
+			}
+
+			batch.data.objects[offset] = { node->m_transform, { 0, 0, 0 }, j };
 			++offset;
 
 		}
