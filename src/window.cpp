@@ -178,7 +178,7 @@ namespace wr
 
 			return 0;
 		case WM_SIZE:
-			if (w_param != SIZE_MINIMIZED && w_param != SIZE_RESTORED)
+			if (w_param != SIZE_MINIMIZED)
 			{
 				if (RECT rect; m_resize_callback && GetClientRect(handle, &rect))
 				{
