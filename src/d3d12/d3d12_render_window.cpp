@@ -103,7 +103,7 @@ namespace wr::d3d12
 		return render_window;
 	}
 
-	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height)
+	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height, bool fullscreen)
 	{
 		DestroyDepthStencilBuffer(render_window);
 		DestroyRenderTargetViews(render_window);
@@ -119,6 +119,7 @@ namespace wr::d3d12
 
 		CreateRenderTargetViews(render_window, device, width, height);
 		CreateDepthStencilBuffer(render_window, device, width, height);
+	
 	}
 
 	void Present(RenderWindow* render_window, Device* device)

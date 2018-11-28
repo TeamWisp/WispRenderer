@@ -52,7 +52,7 @@ namespace wr
 
 		void Init(std::optional<Window*> window) final;
 		std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
-		void Resize(std::int32_t width, std::int32_t height) final;
+		void Resize(std::uint32_t width, std::uint32_t height) final;
 
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb) final;
@@ -68,7 +68,8 @@ namespace wr
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
-		void ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height) final;
+		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
+		void RequestFullscreenChange(bool fullscreen_state);
 
 		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
@@ -100,7 +101,8 @@ namespace wr
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
-
+	private:
+		std::optional<bool> m_requested_fullscreen_state;
 	};
 
 } /* wr */

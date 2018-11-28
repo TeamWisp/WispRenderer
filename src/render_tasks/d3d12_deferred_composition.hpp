@@ -83,6 +83,12 @@ namespace wr
 			}
 		}
 
+
+		inline void ResizeDeferredTask(DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data, std::uint32_t width, std::uint32_t height)
+		{
+			d3d12::Destroy(data.out_srv_heap);
+		}
+
 		inline void DestroyTestTask(DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData& data)
 		{
 			d3d12::Destroy(data.out_srv_heap);
@@ -108,10 +114,9 @@ namespace wr
 				true,
 				true
 			},
-			[](RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data) { internal::SetupDeferredTask(render_system, task, data); },
+			[](RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data, bool) { internal::SetupDeferredTask(render_system, task, data); },
 			[](RenderSystem & render_system, DeferredCompositionRenderTask_t & task, SceneGraph & scene_graph, DeferredCompositionTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
-			[](RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data, std::uint32_t width, std::uint32_t height) {},
-			[](DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data) { internal::DestroyTestTask(task, data); }
+			[](DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data, bool) { internal::DestroyTestTask(task, data); }
 		);
 
 		return ptr;

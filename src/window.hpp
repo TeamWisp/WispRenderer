@@ -47,6 +47,8 @@ namespace wr
 		std::int32_t GetHeight() const;
 		/*! Returns the native window handle (HWND)*/
 		HWND GetWindowHandle() const;
+		/*! Checks whether the window is fullscreen */
+		bool IsFullscreen() const;
 
 	private:
 		/*! WindowProc that calls `WindowProc_Impl` */
@@ -55,6 +57,7 @@ namespace wr
 		LRESULT CALLBACK WindowProc_Impl(HWND, UINT, WPARAM, LPARAM);
 
 		KeyCallback m_key_callback;
+	public:
 		ResizeCallback m_resize_callback;
 
 		bool m_running;
