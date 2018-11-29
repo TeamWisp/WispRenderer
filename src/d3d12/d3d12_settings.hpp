@@ -29,7 +29,7 @@ namespace wr::d3d12::settings
 	static const constexpr DXGI_ALPHA_MODE swapchain_alpha_mode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	static const constexpr bool enable_gpu_timeout = false;
 	static const constexpr bool enable_debug_factory = true;
-	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE_WITH_GPU_VALIDATION;
+	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;
 	static const constexpr char* default_shader_model = "5.0";
 	static const constexpr std::uint8_t num_back_buffers = 3;
 	static const constexpr std::uint32_t num_instances_per_batch = 768U;		//48 KiB for ObjectData[]

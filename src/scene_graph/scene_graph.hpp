@@ -16,9 +16,9 @@ namespace wr
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
-		Node() : m_requires_update{ true, true, true }
+		Node()
 		{
-
+			SignalChange();
 		}
 
 		std::shared_ptr<Node> m_parent;
@@ -26,7 +26,7 @@ namespace wr
 
 		void SignalChange()
 		{
-			m_requires_update = { true, true, true };
+			m_requires_update[0] = m_requires_update[1] = m_requires_update[2] = true;
 		}
 
 		bool RequiresUpdate(unsigned int frame_idx)
@@ -34,7 +34,7 @@ namespace wr
 			return m_requires_update[frame_idx];
 		}
 
-		std::vector<bool> m_requires_update;
+		std::bitset<3> m_requires_update;
 	};
 
 	struct CameraNode;
