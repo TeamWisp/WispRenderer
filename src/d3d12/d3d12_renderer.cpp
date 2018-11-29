@@ -37,7 +37,6 @@ namespace wr
 			m_structured_buffer_pools[i].reset();
 		}
 
-		d3d12::Destroy(m_cb_heap);
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
@@ -75,11 +74,6 @@ namespace wr
 		constexpr auto sbo_size =
 			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
 			+ cam_cbs_size;
-
-		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
-
-		// Create Constant Buffer
-		d3d12::MapHeap(m_cb_heap);
 
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
@@ -424,13 +418,11 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
+	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes, ConstantBufferPool* cb_pool)
 	{
 		for (auto& node : nodes)
 		{
-			auto camera_cb = new D3D12ConstantBufferHandle();
-			camera_cb->m_native = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::ProjectionView_CBData));
-			node->m_camera_cb = camera_cb;
+			node->m_camera_cb = cb_pool->Create(sizeof(temp::ProjectionView_CBData));
 		}
 	}
 
@@ -462,9 +454,7 @@ namespace wr
 			data.m_inverse_projection = node->m_inverse_projection;
 			data.m_view = node->m_view;
 
-			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_camera_cb);
-
-			d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
+			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &data);
 		}
 	}
 
@@ -499,7 +489,7 @@ namespace wr
 			temp::MeshBatch& batch = elem.second;
 
 			//Bind object data
-			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batchBuffer);
+			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batch_buffer);
 			d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
 
 			//Render meshes

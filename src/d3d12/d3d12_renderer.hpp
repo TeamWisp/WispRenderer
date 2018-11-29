@@ -82,7 +82,7 @@ namespace wr
 		void InitSceneGraph(SceneGraph& scene_graph);
 
 		void Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
-		void Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
+		void Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes, ConstantBufferPool* cb_pool);
 		void Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights);
 
 		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
@@ -101,9 +101,6 @@ namespace wr
 		d3d12::CommandQueue* m_compute_queue;
 		d3d12::CommandQueue* m_copy_queue;
 		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_fences;
-
-		// temporary
-		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;

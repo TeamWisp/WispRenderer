@@ -42,9 +42,6 @@ namespace wr
 	struct MeshNode;
 	struct LightNode;
 
-	//TODO: Make platform independent
-	struct D3D12ConstantBufferHandle;
-
 	enum class LightType : uint32_t
 	{
 		POINT, DIRECTIONAL, SPOT, FREE /* MAX LighType value; but unused */
@@ -76,7 +73,7 @@ namespace wr
 		struct MeshBatch
 		{
 			unsigned int num_instances = 0;
-			D3D12ConstantBufferHandle* batchBuffer;
+			ConstantBufferHandle* batch_buffer;
 			MeshBatch_CBData data;
 		};
 
@@ -93,7 +90,7 @@ namespace wr
 		// Impl Functions
 		static std::function<void(RenderSystem*, temp::MeshBatches&, CommandList*)> m_render_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_init_meshes_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_init_cameras_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&, ConstantBufferPool*)> m_init_cameras_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
@@ -131,7 +128,9 @@ namespace wr
 		temp::MeshBatches m_batches;
 		std::vector<Light> m_lights;
 
-		std::shared_ptr<StructuredBufferPool> m_structured_buffers;
+		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
+		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
+
 		StructuredBufferHandle* m_light_buffer;
 
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;

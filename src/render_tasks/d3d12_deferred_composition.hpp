@@ -61,8 +61,7 @@ namespace wr
 			{
 				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
-				const auto camera_node = scene_graph.GetActiveCamera();
-				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera_node->m_camera_cb);
+				const auto camera_cb = scene_graph.GetActiveCamera()->m_camera_cb;
 				const auto frame_idx = n_render_system.GetFrameIdx();
 
 				//Get light buffer
@@ -78,7 +77,7 @@ namespace wr
 				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-				d3d12::BindConstantBuffer(cmd_list, camera_cb->m_native, 0, frame_idx);
+				d3d12::BindConstantBuffer(cmd_list, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, 0, frame_idx);
 
 				d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
 				auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);

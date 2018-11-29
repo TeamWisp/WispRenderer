@@ -68,16 +68,32 @@ namespace wr
 	void SceneGraph::Init()
 	{
 		m_init_meshes_func_impl(m_render_system, m_mesh_nodes);
-		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
 		m_init_lights_func_impl(m_render_system, m_light_nodes, m_lights);
+
+		// Create constant buffer pool
+
+		constexpr auto model_size = sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch;
+		constexpr auto cam_size = sizeof(temp::ProjectionView_CBData);
+
+		constexpr auto model_cbs_size = SizeAlign(model_size, 256) * d3d12::settings::num_back_buffers;
+		constexpr auto cam_cbs_size = SizeAlign(cam_size, 256) * d3d12::settings::num_back_buffers;
+		constexpr auto sbo_size =
+			model_cbs_size /* TODO: Make this more dynamic; right now it only supports 1 model */
+			+ cam_cbs_size /* TODO: Allow more cameras; right now it only supports 1 camera */;
+
+		m_constant_buffer_pool = m_render_system->CreateConstantBufferPool((uint32_t) std::ceil(sbo_size / (1024 * 1024.f)));
+
+		// Initialize cameras
+
+		m_init_cameras_func_impl(m_render_system, m_camera_nodes, m_constant_buffer_pool.operator->());
 
 		// Create Light Buffer
 
 		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
 		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
 
-		m_structured_buffers = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
-		m_light_buffer = m_structured_buffers->Create(light_buffer_size, light_buffer_stride, false);
+		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
+		m_light_buffer = m_structured_buffer->Create(light_buffer_size, light_buffer_stride, false);
 
 	}
 
@@ -122,10 +138,12 @@ namespace wr
 		return m_light_buffer;
 	}
 
+
 	void SceneGraph::Optimize() 
 	{
-		D3D12RenderSystem* d3d12_render_system = dynamic_cast<D3D12RenderSystem*>(m_render_system);
 		constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
+
+		constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
 		for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
 
@@ -136,11 +154,10 @@ namespace wr
 			if (it == m_batches.end())
 			{
 
-				auto transform_cb = new D3D12ConstantBufferHandle();
-				transform_cb->m_native = d3d12::AllocConstantBuffer(d3d12_render_system->m_cb_heap, sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
+				ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
 
 				auto& batch = m_batches[node->m_model]; 
-				batch.batchBuffer = transform_cb;
+				batch.batch_buffer = object_buffer;
 				batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
 
 				it = m_batches.find(node->m_model);
@@ -158,7 +175,7 @@ namespace wr
 		for (auto& elem : m_batches)
 		{
 			temp::MeshBatch& batch = elem.second;
-			d3d12::UpdateConstantBuffer(batch.batchBuffer->m_native, d3d12_render_system->GetFrameIdx(), batch.data.objects.data(), sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
+			m_constant_buffer_pool->Update(batch.batch_buffer, model_size, 0, (uint8_t*) batch.data.objects.data());
 		}
 	}
 
