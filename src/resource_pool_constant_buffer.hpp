@@ -26,11 +26,12 @@ namespace wr
 		ConstantBufferPool(ConstantBufferPool&&) = delete;
 		ConstantBufferPool& operator=(ConstantBufferPool&&) = delete;
 
-		[[nodiscard]] ConstantBufferHandle* Load(std::size_t buffer_size);
+		[[nodiscard]] ConstantBufferHandle* Create(std::size_t buffer_size);
 
-		void Write(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t* data);
+		void Update(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t* data);
+		void Update(ConstantBufferHandle* handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t* data);
 
-		void Discard(ConstantBufferHandle* handle);
+		void Destroy(ConstantBufferHandle* handle);
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
@@ -38,6 +39,7 @@ namespace wr
 	protected:
 		virtual ConstantBufferHandle* AllocateConstantBuffer(std::size_t buffer_size) = 0;
 		virtual void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t* data) = 0;
+		virtual void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t* data) = 0;
 		virtual void DeallocateConstantBuffer(ConstantBufferHandle* handle) = 0;
 
 		std::size_t m_size_in_mb;
