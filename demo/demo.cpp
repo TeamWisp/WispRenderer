@@ -21,6 +21,8 @@ std::unique_ptr<wr::D3D12RenderSystem> render_system;
 
 static wr::imgui::special::DebugConsole debug_console;
 
+std::shared_ptr<wr::TexturePool> texture_pool;
+
 void RenderEditor()
 {
 	debug_console.Draw("Console", &open_console);
@@ -125,6 +127,13 @@ void WispEntry()
 	});
 
 	render_system->Init(window.get());
+
+	// Load texture
+	texture_pool = render_system->CreateTexturePool(2048, 1);
+
+	std::string_view path = "MaterialAlbedo.png";
+
+	texture_pool->Load(path, wr::TextureType::PNG, true);
 
 	// Load custom model
 	auto model_pool = render_system->CreateModelPool(1, 1);

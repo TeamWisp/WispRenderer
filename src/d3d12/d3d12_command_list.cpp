@@ -234,6 +234,29 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
 	}
 
+	void Transition(CommandList* cmd_list, std::vector<Texture*> const & textures, ResourceState from, ResourceState to)
+	{
+		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
+		//barriers.resize(textures.size());
+
+		for (auto i = 0; i < textures.size(); i++)
+		{
+			if (textures[i]->m_CurrentState != to)
+			{
+				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+					textures[i]->m_resource,
+					(D3D12_RESOURCE_STATES)from,
+					(D3D12_RESOURCE_STATES)to
+				);
+
+				textures[i]->m_CurrentState = to;
+
+				barriers.push_back(barrier);
+			}
+		}
+		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
+	}
+
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(

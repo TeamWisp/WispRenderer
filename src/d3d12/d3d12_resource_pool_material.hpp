@@ -12,7 +12,7 @@ namespace wr
 {
 	class D3D12RenderSystem;
 
-	struct D3D12TextureHandle : TextureHandle { };
+	struct D3D12TextureHandle;
 
 	struct D3D12MaterialHandle : MaterialHandle { };
 

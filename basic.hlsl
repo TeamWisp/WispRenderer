@@ -59,10 +59,16 @@ struct PS_OUTPUT
 	float4 normal : SV_TARGET1;
 };
 
+Texture2D material_albedo : register(t0);
+SamplerState s0 : register(s0);
+
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
-	output.albedo = float4(1, 1, 0, 1);
+	
+	float4 albedo = material_albedo.Sample(s0, input.uv);
+
+	output.albedo = float4(albedo.xyz, 1.0f);
 	output.normal = float4(input.normal, 1);
 	return output;
 }

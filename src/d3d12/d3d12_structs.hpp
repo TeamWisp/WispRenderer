@@ -26,6 +26,20 @@ namespace wr::d3d12
 			float m_clear_color[4] = { 0, 0, 0, 1 };
 		};
 
+		struct TextureDesc
+		{
+			ResourceState m_initial_state = ResourceState::COPY_DEST;
+			Format m_texture_format;
+
+			unsigned int m_width;
+			unsigned int m_height;
+			unsigned int m_depth;
+			unsigned int m_array_size;
+			unsigned int m_mip_levels;
+
+			bool m_is_cubemap;
+		};
+
 		struct PipelineStateDesc
 		{
 			Format m_dsv_format;
@@ -173,6 +187,27 @@ namespace wr::d3d12
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 		std::uint8_t* m_cpu_address;
 		bool m_is_staged;
+	};
+
+	struct Texture
+	{
+		size_t m_width;
+		size_t m_height;
+		size_t m_depth;
+		size_t m_array_size;
+		size_t m_mip_levels;
+
+		Format m_format;
+
+		ID3D12Resource* m_resource;
+		ID3D12Resource* m_intermediate;
+		ResourceState m_CurrentState;
+		DescHeapCPUHandle m_CpuDescriptorHandle;
+
+		uint8_t* m_allocated_memory;
+
+		bool m_need_mips;
+		bool m_is_cubemap;
 	};
 
 	struct HeapResource;

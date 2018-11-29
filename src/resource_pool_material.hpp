@@ -6,19 +6,12 @@
 #include <d3d12.h>
 
 #include "util/defines.hpp"
+#include "resource_pool_texture.hpp"
 
 namespace wr
 {
-	struct TextureHandle {};
 	struct MaterialHandle {};
 	
-	enum class TextureType
-	{
-		PNG,
-		DDS,
-		HDR
-	};
-
 	class MaterialPool
 	{
 	public:

@@ -3,6 +3,7 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_resource_pool.hpp"
+#include "../d3d12/d3d12_resource_pool_texture.hpp"
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -52,6 +53,19 @@ namespace wr
 
 				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 0, frame_idx);
+
+				auto texture_pool_raw = static_cast<D3D12TexturePool*>(n_render_system.m_texture_pool.get());
+				
+				if (texture_pool_raw)
+				{
+					texture_pool_raw->Stage(cmd_list);
+
+					wr::d3d12::DescriptorHeap* texture_heap = texture_pool_raw->GetHeap();
+					d3d12::BindDescriptorHeaps(cmd_list, { texture_heap });
+
+					wr::d3d12::DescHeapGPUHandle handle = d3d12::GetGPUHandle(texture_heap);
+					d3d12::BindDescriptorTable(cmd_list, handle, 2);
+				}
 
 				scene_graph.Render(cmd_list);
 			}
