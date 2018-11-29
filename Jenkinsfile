@@ -61,7 +61,7 @@ pipeline {
 					)
 					'''
 				}
-				catch{
+				catch( exc ){
 					has_failed = true
 					bat'''
 					cd "%WORKSPACE%\\Scripts" 
@@ -78,7 +78,7 @@ pipeline {
 					)
 					'''
 				}
-				catch{
+				catch( exc ){
 					has_failed = true
 					bat'''
 					cd "%WORKSPACE%\\Scripts" 
