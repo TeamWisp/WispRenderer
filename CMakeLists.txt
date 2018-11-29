@@ -36,6 +36,8 @@ source_group("D3D12" FILES ${D3D12_SOURCES} ${D3D12_HEADERS})
 source_group("Utility" FILES ${UTIL_SOURCES} ${UTIL_HEADERS})
 source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
+set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ## dependencies ##
 add_subdirectory(deps/fmt)
 add_subdirectory(deps/googletest)
