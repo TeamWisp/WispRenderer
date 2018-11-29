@@ -39,9 +39,27 @@ namespace wr
 
 	struct CameraNode;
 	struct MeshNode;
+	struct LightNode;
 
 	//TODO: Make platform independent
 	struct D3D12ConstantBufferHandle;
+
+	enum class LightType : uint32_t
+	{
+		POINT, DIRECTIONAL, SPOT, FREE /* MAX LighType value; but unused */
+	};
+
+	struct Light
+	{
+		DirectX::XMFLOAT3 pos = { 0, 0, 0 };			//Position in world space for spot & point
+		float rad = 5.f;								//Radius for point, height for spot
+
+		DirectX::XMFLOAT3 col = { 1, 1, 1 };			//Color (and strength)
+		uint32_t tid = (uint32_t)LightType::POINT;		//Type id; LightType::x
+
+		DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
+		float ang = 40.f / 180.f * 3.1415926535f;		//Angle for spot; in radians
+	};
 
 	namespace temp {
 
@@ -75,8 +93,10 @@ namespace wr
 		static std::function<void(RenderSystem*, temp::MeshBatches&, CommandList*)> m_render_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_init_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_init_cameras_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&, CommandList*)> m_update_lights_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -99,6 +119,7 @@ namespace wr
 
 		void Optimize();
 		temp::MeshBatches& GetBatches();
+		std::vector<Light>& GetLights();
 
 	private:
 		RenderSystem* m_render_system;
@@ -106,9 +127,11 @@ namespace wr
 		std::shared_ptr<Node> m_root;
 
 		temp::MeshBatches m_batches;
+		std::vector<Light> m_lights;
 
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
+		std::vector<std::shared_ptr<LightNode>> m_light_nodes;
 	};
 
 	//! Creates a child into the scene graph
@@ -131,6 +154,10 @@ namespace wr
 		else if constexpr (std::is_same<T, MeshNode>::value)
 		{
 			m_mesh_nodes.push_back(new_node);
+		}
+		else if constexpr (std::is_same<T, LightNode>::value)
+		{
+			m_light_nodes.push_back(new_node);
 		}
 
 		return new_node;
@@ -157,6 +184,17 @@ namespace wr
 				if (m_mesh_nodes[i] == node)
 				{
 					m_mesh_nodes.erase(m_mesh_nodes.begin() + i);
+					break;
+				}
+			}
+		}
+		else if constexpr (std::is_same<T, LightNode>::value)
+		{
+			for (size_t i = 0, j = m_light_nodes.size(); i < j; ++i)
+			{
+				if (m_light_nodes[i] == node)
+				{
+					m_light_nodes.erase(m_light_nodes.begin() + i);
 					break;
 				}
 			}

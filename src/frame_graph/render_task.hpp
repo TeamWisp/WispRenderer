@@ -2,6 +2,7 @@
 
 #include "base_render_task.hpp"
 #include "../renderer.hpp"
+#include "../d3d12/d3d12_renderer.hpp"
 
 namespace wr
 {
@@ -26,10 +27,9 @@ namespace wr
 			T& m_data;
 		};
 
-		using setup_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&)>;
+		using setup_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&, bool)>;
 		using execute_func_type = std::function<void(RenderSystem&, RenderTask<T>&, SceneGraph&, T&)>;
-		using resize_func_type = std::function<void(RenderSystem&, RenderTask<T>&, T&, std::uint32_t, std::uint32_t)>;
-		using destroy_func_type = std::function<void(RenderTask<T>&, T&)>;
+		using destroy_func_type = std::function<void(RenderTask<T>&, T&, bool)>;
 
 		RenderTask(FrameGraph* frame_graph,
 			std::string const & name,
@@ -38,17 +38,15 @@ namespace wr
 			RenderTargetProperties rt_properties,
 			setup_func_type setup,
 			execute_func_type execute,
-			resize_func_type resize,
 			destroy_func_type destroy)
 			: BaseRenderTask(typeid(T), frame_graph, name, type, allow_multithreading, rt_properties), 
 			m_setup(setup),
 			m_execute(execute), 
-			m_resize(resize),
 			m_destroy(destroy) {}
 
 		~RenderTask() final
 		{
-			m_destroy(*this, m_data);
+			m_destroy(*this, m_data, false);
 		}
 
 		//! Invokes the bound setup function ptr.
@@ -57,6 +55,8 @@ namespace wr
 		*/
 		void Setup(wr::RenderSystem& render_system) final
 		{
+
+
 			switch (m_type)
 			{
 			case RenderTaskType::DIRECT:
@@ -80,7 +80,7 @@ namespace wr
 
 			//render_system.StartRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 
-			m_setup(render_system, *this, m_data);
+			m_setup(render_system, *this, m_data, false);
 
 			//render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 		}
@@ -105,8 +105,14 @@ namespace wr
 				WaitForCompletion();
 			}
 
-			render_system.ResizeRenderTarget(m_render_target, width, height);
-			m_resize(render_system, *this, m_data, width, height);
+			m_destroy(*this, m_data, true);
+
+			if (!m_rt_properties.m_is_render_window)
+			{
+				render_system.ResizeRenderTarget(&m_render_target, width, height);
+			}
+
+			m_setup(render_system, *this, m_data, true);
 		}
 
 		Data GetData()
@@ -125,8 +131,6 @@ namespace wr
 		setup_func_type m_setup;
 		//! The execute function ptr.
 		execute_func_type m_execute;
-		//! The destroy function ptr.
-		resize_func_type m_resize;
 		//! The destroy function ptr.
 		destroy_func_type m_destroy;
 	};

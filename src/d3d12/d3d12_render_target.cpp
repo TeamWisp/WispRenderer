@@ -191,7 +191,7 @@ namespace wr::d3d12
 		}
 		DestroyRenderTargetViews((*render_target));
 
-		auto new_render_target = CreateRenderTarget(device, width, height, (*render_target)->m_create_info);
+		(*render_target) = CreateRenderTarget(device, width, height, (*render_target)->m_create_info);
 	}
 
 	void IncrementFrameIdx(RenderTarget* render_target)

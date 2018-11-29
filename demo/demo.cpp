@@ -13,6 +13,8 @@ bool open1 = true;
 bool open2 = true;
 bool open_console = false;
 bool show_imgui = true;
+bool fullscreen = false;
+
 char message_buffer[600];
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
@@ -76,6 +78,13 @@ void RenderEditor()
 	if (open2)
 	{
 		ImGui::Begin("Logging Example", &open2);
+		
+		if (ImGui::Button("Toggle Fullscreen"))
+		{
+			fullscreen = !fullscreen;
+			render_system->RequestFullscreenChange(fullscreen);
+		}
+
 		ImGui::InputText("Message", message_buffer, 600);
 		if (ImGui::Button("LOG (Message)")) LOG(message_buffer);
 		if (ImGui::Button("LOGW (Warning)")) LOGW(message_buffer);
@@ -167,6 +176,20 @@ void WispEntry()
 	auto mesh_node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
 	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 70.f, (float)window->GetWidth() / (float)window->GetHeight());
 
+	// #### lights
+	auto point_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 0, 0 });
+	point_light_node->SetPosition({ 0, 0, -6 });
+	point_light_node->SetRadius(5.f);
+
+	auto directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 0, 0 });
+	directional_light_node->SetDirection({ 0, 0, 1 });
+
+	auto spot_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::SPOT, DirectX::XMVECTOR{ 1, 1, 0 });
+	spot_light_node->SetPosition({ 0, 1, -6 });
+	spot_light_node->SetRadius(5.f);
+	spot_light_node->SetDirection({ 0, 0, 1 });
+	spot_light_node->SetAngle(40.f);
+
 	// #### background cubes
 	std::vector<std::pair<std::shared_ptr<wr::MeshNode>, int>> bg_nodes(500);
 	float distance = 20;
@@ -198,13 +221,14 @@ void WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	//	frame_graph.AddTask(wr::GetDeferredMainTask());
-	//	frame_graph.AddTask(wr::GetDeferredCompositionTask());
+	frame_graph.AddTask(wr::GetDeferredMainTask());
+	frame_graph.AddTask(wr::GetDeferredCompositionTask());
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
+		render_system->WaitForAllPreviousWork();
 		frame_graph.Resize(*render_system.get(), width, height);
 		render_system->Resize(width, height);
 	});
@@ -214,6 +238,16 @@ void WispEntry()
 	while (window->IsRunning())
 	{
 		mesh_node->SetRotation({ sin(t / 2.f) * 20.f, -t * 10, 0 });
+
+		float perc = sin(time(0)) * 0.5f + 0.5f;
+
+		//If only you could write lerp({ 1, 0, 0 }, { 0, 1, 0 }, perc)
+		DirectX::XMVECTOR color = DirectX::XMVectorAdd(
+			DirectX::XMVectorMultiply({ 1, 0, 0 }, { perc, perc, perc }), 
+			DirectX::XMVectorMultiply({ 0, 1, 0 }, { 1 - perc, 1 - perc, 1 - perc })
+		);
+
+		directional_light_node->SetColor(color);
 
 		for (auto& node : bg_nodes)
 		{
