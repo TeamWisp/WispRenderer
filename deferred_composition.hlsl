@@ -49,26 +49,26 @@ float3 shade_light(float3 vpos, float3 V, float3 albedo, float3 normal, Light li
 {
 	uint tid = light.tid & 3;
 
+	// Light pos and view directon to view.
+	float3 light_vpos = mul(view, float4(light.pos, 1)).xyz;
+	float3 light_vdir = normalize(mul(view, float4(light.dir, 0).xyz));
+
 	//Light direction (constant with directional, position dependent with other)
-	float3 light_dir = lerp(light.pos - vpos, -light.dir, tid == light_type_directional);
-	float light_dist = length(light_dir);
-	light_dir /= light_dist;
+	float3 L = (lerp(light_vpos - vpos, light.dir, tid == light_type_directional));
+	float light_dist = length(L);
+	L /= light_dist;
 
 	//Spot intensity (only used with spot; but always calculated)
 	float min_cos = cos(light.ang);
 	float max_cos = lerp(min_cos, 1, 0.5f);
-	float cos_angle = dot(light.dir, -light_dir);
+	float cos_angle = dot(light.dir, -L);
 	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
 
 	//Attenuation & spot intensity (only used with point or spot)
-	float intensity = spot_intensity * lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
+	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
+	float3 radiance = (light.col * 2) * attenuation;
 
-	//Light calculation
-	float3 L = world_to_view(float4(light_dir, 0), view);
-	float3 light_color = light.col;
-
-	float3 radiance = light_color * 3;
-	float3 lighting = BRDF(L, V, normal, 0.4f, 0.6f, albedo, radiance, light_color) * intensity;
+	float3 lighting = BRDF(L, V, normal, 0.001f, 0.999f, albedo, radiance, light.col);
 
 	return lighting;
 
