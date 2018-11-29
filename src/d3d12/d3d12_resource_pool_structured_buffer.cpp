@@ -8,7 +8,7 @@ namespace wr
 		StructuredBufferPool(size_in_mb),
 		m_render_system(render_system)
 	{
-		m_heap = d3d12::CreateHeap_BSBO(m_render_system.m_device, size_in_mb, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+		m_heap = d3d12::CreateHeap_BSBO(m_render_system.m_device, size_in_mb*1024*1024, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
 		m_buffer_update_queues.resize(d3d12::settings::num_back_buffers);
 	}
