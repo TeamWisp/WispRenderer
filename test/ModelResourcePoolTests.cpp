@@ -1,14 +1,22 @@
-#include "d3d12/d3d12_structs.hpp"
-#include "d3d12/d3d12_functions.hpp"
-#include "renderer.hpp"
-#include "d3d12/d3d12_renderer.hpp"
-#include "d3d12/d3d12_resource_pool_model.hpp"
-#include <gtest\gtest.h>
- /*
+#include "../d3d12/d3d12_structs.hpp"
+#include "../d3d12/d3d12_functions.hpp"
+#include "../renderer.hpp"
+#include "../d3d12/d3d12_renderer.hpp"
+#include "../d3d12/d3d12_resource_pool_model.hpp"
+#include "../window.hpp"
+/*
 TEST(ModelResourcePoolTest, ResourcePoolCreation) 
 {
-	wr::D3D12RenderSystem* render_system = new wr::D3D12RenderSystem();
-	render_system->Init(nullptr);
+	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
+
+	});
+
+	render_system->Init(window.get());
+
 	std::shared_ptr<wr::ModelPool> model_pool = render_system->CreateModelPool(2, 1);
 
 	EXPECT_EQ(static_cast<wr::D3D12ModelPool*>(model_pool.get())->GetVertexStagingBuffer()->m_size, 2 * 1024 * 1024) <<
@@ -22,14 +30,23 @@ TEST(ModelResourcePoolTest, ResourcePoolCreation)
 		" bytes while expected size is 1*1024*1024";
 
 	model_pool.reset();
-	delete render_system;
+	render_system.reset();
+	window.reset();
 }
  */
 /*
 TEST(ModelResourcePoolTest, ResourcePoolAllocDealloc)
 {
-	wr::D3D12RenderSystem* render_system = new wr::D3D12RenderSystem();
-	render_system->Init(nullptr);
+	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	window->SetKeyCallback([](int key, int action, int mods)
+	{
+
+	});
+
+	render_system->Init(window.get());
+
 	std::shared_ptr<wr::ModelPool> model_pool = render_system->CreateModelPool(2, 1);
 
 	wr::MeshData<wr::Vertex, std::uint32_t> data = {};
@@ -123,6 +140,7 @@ TEST(ModelResourcePoolTest, ResourcePoolAllocDealloc)
 		sizeof(wr::Vertex);
 
 	model_pool.reset();
-	delete render_system;
+	render_system.reset();
+	window.reset();
 }
 */

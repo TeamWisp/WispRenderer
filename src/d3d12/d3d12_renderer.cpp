@@ -10,6 +10,7 @@
 #include "d3d12_resource_pool_material.hpp"
 #include "d3d12_resource_pool_model.hpp"
 #include "d3d12_resource_pool_constant_buffer.hpp"
+#include "d3d12_resource_pool_structured_buffer.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"
@@ -17,17 +18,26 @@
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
+#include "../scene_graph/light_node.hpp"
 
 namespace wr
 {
 	LINK_SG_RENDER_MESHES(D3D12RenderSystem, Render_MeshNodes)
 	LINK_SG_INIT_MESHES(D3D12RenderSystem, Init_MeshNodes)
 	LINK_SG_INIT_CAMERAS(D3D12RenderSystem, Init_CameraNodes)
+	LINK_SG_INIT_LIGHTS(D3D12RenderSystem, Init_LightNodes)
 	LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
 	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
+	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
+		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
+		{
+			m_structured_buffer_pools[i].reset();
+		}
+
+		d3d12::Destroy(m_sb_heap);
 		d3d12::Destroy(m_cb_heap);
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
@@ -63,8 +73,8 @@ namespace wr
 		// Create Constant Buffer Heap
 		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
 		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size = 
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */ 
+		constexpr auto sbo_size =
+			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
 			+ cam_cbs_size;
 
 		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
@@ -81,6 +91,15 @@ namespace wr
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 
+		// Create Light Buffer
+
+		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
+		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
+
+		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+
+		m_light_buffer = d3d12::AllocStructuredBuffer(m_sb_heap, light_buffer_size, light_buffer_stride, false);
+
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
@@ -91,14 +110,29 @@ namespace wr
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
-		m_fences[frame_idx]->m_fence_value++;
-		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
 	}
 
 	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
+		if (m_requested_fullscreen_state.has_value())
+		{
+			WaitForAllPreviousWork();
+			m_render_window.value()->m_swap_chain->SetFullscreenState(m_requested_fullscreen_state.value(), nullptr);
+			Resize(m_window.value()->GetWidth(), m_window.value()->GetHeight());
+			m_requested_fullscreen_state = std::nullopt;
+		}
+
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
+
+		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+		for (int i = 0; i < m_structured_buffer_pools.size(); ++i) 
+		{
+			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
+		}
+
+		d3d12::End(m_direct_cmd_list);
 
 		scene_graph->Update();
 
@@ -106,13 +140,15 @@ namespace wr
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<D3D12CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
+
+		n_cmd_lists.push_back(m_direct_cmd_list);
+
 		for (auto& list : cmd_lists)
 		{
 			n_cmd_lists.push_back(list);
 		}
 
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
-		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
 
 		if (m_render_window.has_value())
 		{
@@ -122,11 +158,14 @@ namespace wr
 		return std::unique_ptr<Texture>();
 	}
 
-	void D3D12RenderSystem::Resize(std::int32_t width, std::int32_t height)
+	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
 	{
+
+		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
+		
 		if (m_render_window.has_value())
 		{
-			d3d12::Resize(m_render_window.value(), m_device, width, height);
+			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
 		}
 	}
 
@@ -140,11 +179,24 @@ namespace wr
 		return std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
 	}
 
+	std::shared_ptr<ConstantBufferPool> D3D12RenderSystem::CreateConstantBufferPool(std::size_t size_in_mb)
+	{
+		return std::make_shared<D3D12ConstantBufferPool>(*this, size_in_mb);
+	}
+
+	std::shared_ptr<StructuredBufferPool> D3D12RenderSystem::CreateStructuredBufferPool(std::size_t size_in_mb)
+	{
+		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_mb); 
+		m_structured_buffer_pools.push_back(pool);
+		return pool;
+	}
+
 	void D3D12RenderSystem::WaitForAllPreviousWork()
 	{
 		for (auto& fence : m_fences)
 		{
 			d3d12::WaitFor(fence);
+			Signal(fence, m_direct_queue);
 		}
 	}
 
@@ -166,6 +218,11 @@ namespace wr
 	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
 		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	d3d12::HeapResource* D3D12RenderSystem::GetLightBuffer()
+	{
+		return m_light_buffer;
 	}
 
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
@@ -207,10 +264,17 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height)
+	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height)
 	{
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target);
+		auto n_render_target = static_cast<D3D12RenderTarget*>(*render_target);
 		d3d12::Resize((d3d12::RenderTarget**)&n_render_target, m_device, width, height);
+
+		(*render_target) = n_render_target;
+	}
+
+	void D3D12RenderSystem::RequestFullscreenChange(bool fullscreen_state)
+	{
+		m_requested_fullscreen_state = fullscreen_state;
 	}
 
 	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
@@ -360,8 +424,6 @@ namespace wr
 
 		// Execute
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
-		m_fences[frame_idx]->m_fence_value++;
-		d3d12::Signal(m_fences[frame_idx], m_direct_queue);
 	}
 
 	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
@@ -385,6 +447,11 @@ namespace wr
 			camera_cb->m_native = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::ProjectionView_CBData));
 			node->m_camera_cb = camera_cb;
 		}
+	}
+
+	void D3D12RenderSystem::Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights)
+	{
+		lights.resize(d3d12::settings::num_lights);
 	}
 
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
@@ -414,6 +481,23 @@ namespace wr
 
 			d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
 		}
+	}
+
+	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+
+		uint32_t count = 0, size = (uint32_t) nodes.size(), light_size = (uint32_t) lights.size();
+
+		for (; count < size && count < light_size; ++count)
+		{
+			lights[count] = nodes[count]->m_light;
+		}
+
+		lights[0].tid |= count << 2;
+
+		d3d12::UpdateStructuredBuffer(m_light_buffer, m_render_window.value()->m_frame_idx, lights.data(), m_light_buffer->m_unaligned_size, 0, m_light_buffer->m_stride, n_cmd_list);
+
 	}
 
 	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list)
