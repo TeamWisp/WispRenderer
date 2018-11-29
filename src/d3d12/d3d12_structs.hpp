@@ -23,6 +23,7 @@ namespace wr::d3d12
 			Format m_dsv_format;
 			std::array<Format, 8> m_rtv_formats;
 			unsigned int m_num_rtv_formats;
+			unsigned int m_versioning_count = 1;
 			float m_clear_color[4] = { 0, 0, 0, 1 };
 		};
 
@@ -87,18 +88,21 @@ namespace wr::d3d12
 		ID3D12GraphicsCommandList3* m_native;
 	};
 
+	struct DescriptorHeap;
+
 	struct RenderTarget
 	{
 		desc::RenderTargetDesc m_create_info;
 		unsigned int m_frame_idx;
 		unsigned int m_num_render_targets;
+		unsigned int m_versioning_count;
 
 		std::vector<ID3D12Resource*> m_render_targets;
-		ID3D12DescriptorHeap* m_rtv_descriptor_heap;
+		DescriptorHeap* m_rtv_descriptor_heap;
 		unsigned int m_rtv_descriptor_increment_size;
 
 		ID3D12Resource* m_depth_stencil_buffer;
-		ID3D12DescriptorHeap* m_depth_stencil_resource_heap;
+		DescriptorHeap* m_depth_stencil_resource_heap;
 	};
 
 	struct RenderWindow : public RenderTarget
