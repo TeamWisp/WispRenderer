@@ -105,12 +105,16 @@ namespace wr
 		void Optimize();
 		temp::MeshBatches& GetBatches();
 
+		D3D12ConstantBufferHandle* GetModelData();
+
 	private:
 		RenderSystem* m_render_system;
 		//! The root node of the hiararchical tree.
 		std::shared_ptr<Node> m_root;
 
 		temp::MeshBatches m_batches;
+
+		D3D12ConstantBufferHandle* m_model_data = nullptr;
 
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;

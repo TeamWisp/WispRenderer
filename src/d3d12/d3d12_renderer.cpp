@@ -61,13 +61,16 @@ namespace wr
 
 		// Temporary
 		// Create Constant Buffer Heap
-		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
-		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
+		constexpr auto object_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256);
+		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256);
+		constexpr auto model_cbs_size = SizeAlign(sizeof(CompressedVertex::Details) * d3d12::settings::num_models_per_buffer, 256);
+
 		constexpr auto sbo_size = 
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */ 
+			object_cbs_size /* TODO: Make this more dynamic; right now it only supports 1 mesh */
+			+ model_cbs_size
 			+ cam_cbs_size;
 
-		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size * d3d12::settings::num_back_buffers, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 
 		// Create Constant Buffer
 		d3d12::MapHeap(m_cb_heap);

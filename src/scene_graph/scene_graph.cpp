@@ -69,6 +69,14 @@ namespace wr
 	{
 		m_init_meshes_func_impl(m_render_system, m_mesh_nodes);
 		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
+
+		//TODO: Platform independent (isn't possible with the current pool implementation)
+
+		D3D12RenderSystem* d3d12_render_system = dynamic_cast<D3D12RenderSystem*>(m_render_system);
+		auto mesh_details_size = sizeof(CompressedVertex::Details) * d3d12::settings::num_models_per_buffer;
+
+		m_model_data = new D3D12ConstantBufferHandle();
+		m_model_data->m_native = d3d12::AllocConstantBuffer(d3d12_render_system->m_cb_heap, mesh_details_size);
 	}
 
 	//! Update the scene graph
@@ -104,6 +112,11 @@ namespace wr
 	temp::MeshBatches& SceneGraph::GetBatches() 
 	{ 
 		return m_batches; 
+	}
+
+	D3D12ConstantBufferHandle* SceneGraph::GetModelData()
+	{
+		return m_model_data;
 	}
 
 	void SceneGraph::Optimize() 
@@ -166,6 +179,12 @@ namespace wr
 			temp::MeshBatch& batch = elem.second;
 			d3d12::UpdateConstantBuffer(batch.batchBuffer->m_native, d3d12_render_system->GetFrameIdx(), batch.data.objects.data(), sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
 		}
+
+		//Update model data
+
+		auto mesh_details_size = mesh_details.size() * d3d12::settings::num_models_per_buffer;
+		d3d12::UpdateConstantBuffer(m_model_data->m_native, d3d12_render_system->GetFrameIdx(), mesh_details.data(), mesh_details_size);
+
 	}
 
 } /* wr */
