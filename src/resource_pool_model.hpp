@@ -8,6 +8,7 @@
 #include "util/defines.hpp"
 #include "resource_pool_material.hpp"
 
+
 namespace wr
 {
 	class ModelPool;
