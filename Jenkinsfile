@@ -50,43 +50,45 @@ pipeline {
         }
 		stage('test'){
 			steps{
-				def has_failed = false
-				try{
-					bat'''
-					cd "%WORKSPACE%"
-					cd build_vs2017_win64/bin/debug
-					UnitTest.exe
-					if errorlevel 1 (
+				step {
+					def has_failed = false
+					try{
+						bat'''
+						cd "%WORKSPACE%"
+						cd build_vs2017_win64/bin/debug
+						UnitTest.exe
+						if errorlevel 1 (
+							EXIT 1
+						)
+						'''
+					}
+					catch( exc ){
+						has_failed = true
+						bat'''
+						cd "%WORKSPACE%\\Scripts" 
+							JenkinsWebhook ":x: %JOB_NAME% Build Failed!! Jenskins build nr: %BUILD_NUMBER% - 64bit-debug Tests failed"
+						'''
+					}
+					try{
+						bat'''
+						cd "%WORKSPACE%"
+						cd build_vs2017_win64/bin/release
+						UnitTest.exe
+						if errorlevel 1 (
+							EXIT 1
+						)
+						'''
+					}
+					catch( exc ){
+						has_failed = true
+						bat'''
+						cd "%WORKSPACE%\\Scripts" 
+							JenkinsWebhook ":x: %JOB_NAME% Build Failed!! Jenskins build nr: %BUILD_NUMBER% - 64bit-release Tests failed"
+						'''
+					}
+					if(has_failed){
 						EXIT 1
-					)
-					'''
-				}
-				catch( exc ){
-					has_failed = true
-					bat'''
-					cd "%WORKSPACE%\\Scripts" 
-						JenkinsWebhook ":x: %JOB_NAME% Build Failed!! Jenskins build nr: %BUILD_NUMBER% - 64bit-debug Tests failed"
-					'''
-				}
-				try{
-					bat'''
-					cd "%WORKSPACE%"
-					cd build_vs2017_win64/bin/release
-					UnitTest.exe
-					if errorlevel 1 (
-						EXIT 1
-					)
-					'''
-				}
-				catch( exc ){
-					has_failed = true
-					bat'''
-					cd "%WORKSPACE%\\Scripts" 
-						JenkinsWebhook ":x: %JOB_NAME% Build Failed!! Jenskins build nr: %BUILD_NUMBER% - 64bit-release Tests failed"
-					'''
-				}
-				if(has_failed){
-					EXIT 1
+					}
 				}
 			}
 		}
