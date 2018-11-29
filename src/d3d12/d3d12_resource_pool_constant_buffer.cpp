@@ -5,10 +5,11 @@
 
 namespace wr 
 {
-	D3D12ConstantBufferPool::D3D12ConstantBufferPool(D3D12RenderSystem* render_system, std::size_t size_in_mb) : ConstantBufferPool(size_in_mb)
+	D3D12ConstantBufferPool::D3D12ConstantBufferPool(D3D12RenderSystem& render_system, std::size_t size_in_mb) : 
+	ConstantBufferPool(size_in_mb),
+	m_render_system(render_system)
 	{
 		m_heap = d3d12::CreateHeap_SBO(render_system->m_device, size_in_mb * 1024 * 1024, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
-		m_render_system = render_system;
 		d3d12::MapHeap(m_heap);
 	}
 
