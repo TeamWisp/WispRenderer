@@ -38,6 +38,7 @@ source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
 ## dependencies ##
 add_subdirectory(deps/fmt)
+add_subdirectory(deps/assimp)
 
 ## dependencies options ##
 set(FMT_TEST OFF)
@@ -45,10 +46,39 @@ set(FMT_DOC OFF)
 set(FMT_PEDANTIC OFF)
 set(FMT_WERROR OFF)
 
+set(ASSIMP_BUILD_SHARED_LIBS OFF)
+
 ## dependencies sorting ##
 set_target_properties (fmt PROPERTIES FOLDER ThirdParty)
 if (MSVC)
 	target_compile_options(fmt PRIVATE /W0)
+endif()
+
+set_target_properties(assimp PROPERTIES FOLDER ThirdParty)
+if (MSVC)
+	target_compile_options(assimp PRIVATE /W0)
+endif()
+
+set_target_properties(assimp_cmd PROPERTIES FOLDER ThirdParty)
+if (MSVC)
+	target_compile_options(assimp_cmd PRIVATE /W0)
+endif()
+
+set_target_properties(IrrXML PROPERTIES FOLDER ThirdParty)
+if (MSVC)
+	target_compile_options(IrrXML PRIVATE /W0)
+endif()
+
+set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER ThirdParty)
+
+set_target_properties(zlib PROPERTIES FOLDER ThirdParty)
+if (MSVC)
+	target_compile_options(zlib PRIVATE /W0)
+endif()
+
+set_target_properties(zlibstatic PROPERTIES FOLDER ThirdParty)
+if (MSVC)
+	target_compile_options(zlibstatic PRIVATE /W0)
 endif()
 
 add_library(WispRenderer ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
@@ -62,6 +92,9 @@ endif()
 
 target_include_directories(WispRenderer PUBLIC deps/fmt/include)
 target_link_libraries(WispRenderer fmt)
+
+target_include_directories(WispRenderer PUBLIC deps/assimp/include)
+target_link_libraries(WispRenderer assimp)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")

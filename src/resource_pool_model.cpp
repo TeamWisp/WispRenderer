@@ -18,7 +18,7 @@ namespace wr
 	Model* ModelPool::Load(std::string_view path, ModelType type)
 	{
 		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(path,
+		const aiScene* scene = importer.ReadFile(path.data(),
 			aiProcess_Triangulate |
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices |
@@ -28,7 +28,7 @@ namespace wr
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
 			LOGW(std::string("Loading model ") +
-				path + 
+				path.data() + 
 				std::string(" failed with error ") + 
 				importer.GetErrorString());
 			return nullptr;
