@@ -1,5 +1,10 @@
 #include "resource_pool_model.hpp"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include "util/log.hpp"
+
 namespace wr
 {
 	ModelPool::ModelPool(std::size_t vertex_buffer_pool_size_in_mb,
@@ -12,7 +17,23 @@ namespace wr
 	//! Loads a model without materials
 	Model* ModelPool::Load(std::string_view path, ModelType type)
 	{
-		return new Model();
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(path,
+			aiProcess_Triangulate |
+			aiProcess_CalcTangentSpace |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_OptimizeMeshes |
+			aiProcess_ImproveCacheLocality);
+
+		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+		{
+			LOGW(std::string("Loading model ") +
+				path + 
+				std::string(" failed with error ") + 
+				importer.GetErrorString());
+			return nullptr;
+		}
+
 	}
 
 	//! Loads a model with materials
