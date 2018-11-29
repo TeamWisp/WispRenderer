@@ -73,7 +73,6 @@ namespace wr
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
-		d3d12::HeapResource* GetLightBuffer();
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);
 
@@ -88,7 +87,7 @@ namespace wr
 
 		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
-		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, CommandList* cmd_list);
+		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList* cmd_list);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list);
 
@@ -105,12 +104,10 @@ namespace wr
 
 		// temporary
 		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
-		d3d12::Heap<HeapOptimization::BIG_STATIC_BUFFERS>* m_sb_heap;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
-		d3d12::HeapResource* m_light_buffer;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
     

@@ -36,6 +36,9 @@ namespace wr
 		//Rotation as quaternion
 		DirectX::XMVECTOR m_rotation;
 
+		//Rotation as degrees
+		DirectX::XMVECTOR m_rotation_deg;
+
 		//Scale
 		DirectX::XMVECTOR m_scale;
 
