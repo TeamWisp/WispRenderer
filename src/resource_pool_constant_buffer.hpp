@@ -10,7 +10,10 @@
 namespace wr 
 {
 	
-	struct ConstantBufferHandle {};
+	struct ConstantBufferHandle 
+	{
+		ConstantBufferPool* m_pool;
+	};
 
 	class ConstantBufferPool
 	{
