@@ -36,6 +36,7 @@ namespace wr
 	ConstantBufferHandle* D3D12ConstantBufferPool::AllocateConstantBuffer(std::size_t buffer_size)
 	{
 		D3D12ConstantBufferHandle* handle = new D3D12ConstantBufferHandle();
+		handle->m_pool = this;
 		handle->m_native = d3d12::AllocConstantBuffer(m_heap, buffer_size);
 		if (handle->m_native == nullptr) 
 		{
