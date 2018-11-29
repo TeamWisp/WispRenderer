@@ -49,8 +49,8 @@ pipeline {
             }
         }
 		stage('test'){
-			script{
-
+			steps{	
+				script{
 					def has_failed = false
 					try{
 						bat'''
@@ -89,6 +89,7 @@ pipeline {
 					if(has_failed){
 						EXIT 1
 					}
+				}
 			}
 		}
 		stage('finalize'){
