@@ -1,5 +1,24 @@
 #include "wisp.hpp"
+
 #include <gtest\gtest.h>
+
+TEST( sample_test, int_equ )
+{
+	int i = 4;
+	EXPECT_EQ( i, 4 );
+}
+
+TEST( sample_test, int_neq )
+{
+	int i = 4;
+	EXPECT_NE( i, 5 );
+}
+
+TEST( sample_test, int_ge )
+{
+	int i = 4;
+	EXPECT_GE( i, 5 );
+}
 
 int TestEntry()
 {
@@ -8,9 +27,9 @@ int TestEntry()
 	wchar_t** cl_string_array = CommandLineToArgvW( cl_string, &argn );
 
 	::testing::InitGoogleTest( &argn, cl_string_array );
-	RUN_ALL_TESTS();
+	
 
 
-	return 0;
+	return RUN_ALL_TESTS();
 }
-WISP_ENTRY(TestEntry)
+WISP_ENTRY( TestEntry )
