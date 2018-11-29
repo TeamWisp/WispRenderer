@@ -21,7 +21,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(ranges_basic.size(), ranges_basic.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
 		},
 		{
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
 		}
 	});
 

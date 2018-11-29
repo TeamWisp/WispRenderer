@@ -35,7 +35,7 @@ namespace viknell_scene
 		right_wall->SetRotation({ 0, 90, 0 });
 
 		// Lights
-		auto point_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
+		auto point_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 5, 5, 5 });
 		point_light->SetRadius(5.f);
 		point_light->SetPosition({ 0, 0, 0 });
 

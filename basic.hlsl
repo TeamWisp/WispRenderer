@@ -66,7 +66,9 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
 	
+	//float4 albedo = pow(material_albedo.Sample(s0, input.uv), 1.0f / 2.2f);
 	float4 albedo = material_albedo.Sample(s0, input.uv);
+
 
 	output.albedo = float4(albedo.xyz, 1.0f);
 	output.normal = float4(input.normal, 1);

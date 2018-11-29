@@ -113,6 +113,7 @@ namespace wr
 		texture->m_native = native;
 
 		native->m_CpuDescriptorHandle = m_descriptor_handle;
+		native->m_resource->SetName(wide_string.c_str());
 
 		DXGI_FORMAT format = metadata.format;
 
