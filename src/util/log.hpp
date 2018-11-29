@@ -5,7 +5,6 @@
 #define LOG_CALLBACK
 //#define LOG_PRINT_LOC
 #define LOG_PRINT_COLORS
-#define LOG_TO_OUTPUT
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 #include <Windows.h>
@@ -99,10 +98,6 @@ namespace util::internal
 		auto f_str = fmt::format(str, args...);
 		if (log_callback::impl != nullptr) log_callback::impl(f_str);
 #endif
-
-		#if defined(LOG_TO_OUTPUT) && defined(_WIN32)
-			OutputDebugStringA(str.c_str());
-		#endif
 	}
 
 	template <typename S, typename... Args>

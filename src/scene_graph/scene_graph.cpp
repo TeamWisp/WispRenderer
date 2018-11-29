@@ -124,7 +124,8 @@ namespace wr
 			auto it = m_batches.find(node->m_model);
 
 			//Insert new if doesn't exist
-			if (it == m_batches.end()) {
+			if (it == m_batches.end())
+			{
 
 				auto transform_cb = new D3D12ConstantBufferHandle();
 				transform_cb->m_native = d3d12::AllocConstantBuffer(d3d12_render_system->m_cb_heap, sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
