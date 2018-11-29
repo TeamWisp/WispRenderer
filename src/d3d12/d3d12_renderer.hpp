@@ -21,6 +21,8 @@ namespace wr
 	struct CameraNode;
 	struct D3D12ConstantBufferHandle;
 
+	class D3D12StructuredBufferPool;
+
 	namespace temp
 	{
 		struct ProjectionView_CBData
@@ -57,6 +59,8 @@ namespace wr
 
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb) final;
+		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_mb) final;
+		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_mb) final;
 
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
@@ -107,6 +111,8 @@ namespace wr
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 		d3d12::HeapResource* m_light_buffer;
+
+		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
     
 	private:
 		std::optional<bool> m_requested_fullscreen_state;

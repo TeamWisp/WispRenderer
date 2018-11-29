@@ -6,18 +6,22 @@ namespace wr
 	{
 	}
 
-	ConstantBufferHandle* ConstantBufferPool::Load(std::size_t buffer_size)
+	ConstantBufferHandle* ConstantBufferPool::Create(std::size_t buffer_size)
 	{
 		return AllocateConstantBuffer(buffer_size);
 	}
 
-	void ConstantBufferPool::Write(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t * data)
+	void ConstantBufferPool::Update(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t * data)
 	{
 		WriteConstantBufferData(handle, size, offset, data);
 	}
 
-	void ConstantBufferPool::Discard(ConstantBufferHandle* handle)
+	void ConstantBufferPool::Destroy(ConstantBufferHandle* handle)
 	{
 		DeallocateConstantBuffer(handle);
+	}
+	void ConstantBufferPool::Update(ConstantBufferHandle * handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t * data)
+	{
+		WriteConstantBufferData(handle, size, offset, frame_idx, data);
 	}
 } /* wr */
