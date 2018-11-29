@@ -94,8 +94,7 @@ namespace wr
 			{
 				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
-				const auto camera_node = scene_graph.GetActiveCamera();
-				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera_node->m_camera_cb);
+				const auto camera_cb = scene_graph.GetActiveCamera()->m_camera_cb;
 				const auto frame_idx = n_render_system.GetFrameIdx();
 
 				//Get light buffer
