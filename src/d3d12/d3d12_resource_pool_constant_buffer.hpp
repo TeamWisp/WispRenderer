@@ -24,6 +24,7 @@ namespace wr
 	protected:
 		ConstantBufferHandle* AllocateConstantBuffer(std::size_t buffer_size) final;
 		void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t* data) final;
+		void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t* data) final;
 		void DeallocateConstantBuffer(ConstantBufferHandle* handle) final;
 
 		std::vector<ConstantBufferHandle*> m_constant_buffer_handles;

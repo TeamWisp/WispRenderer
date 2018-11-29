@@ -56,6 +56,13 @@ namespace wr
 		memcpy(cpu_address + offset, data, size);
 	}
 
+	void D3D12ConstantBufferPool::WriteConstantBufferData(ConstantBufferHandle * handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t * data)
+	{
+		auto frame_index = frame_idx;
+		std::uint8_t* cpu_address = static_cast<D3D12ConstantBufferHandle*>(handle)->m_native->m_cpu_addresses->operator[](frame_index);
+		memcpy(cpu_address + offset, data, size);
+	}
+
 	void D3D12ConstantBufferPool::DeallocateConstantBuffer(ConstantBufferHandle* handle)
 	{
 		d3d12::DeallocConstantBuffer(m_heap, static_cast<D3D12ConstantBufferHandle*>(handle)->m_native);
