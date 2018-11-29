@@ -9,7 +9,7 @@ namespace wr
 	ConstantBufferPool(size_in_mb),
 	m_render_system(render_system)
 	{
-		m_heap = d3d12::CreateHeap_SBO(render_system->m_device, size_in_mb * 1024 * 1024, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+		m_heap = d3d12::CreateHeap_SBO(render_system.m_device, size_in_mb * 1024 * 1024, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 		d3d12::MapHeap(m_heap);
 	}
 
@@ -50,7 +50,7 @@ namespace wr
 
 	void D3D12ConstantBufferPool::WriteConstantBufferData(ConstantBufferHandle * handle, size_t size, size_t offset, std::uint8_t * data)
 	{
-		auto frame_index = m_render_system->GetFrameIdx();
+		auto frame_index = m_render_system.GetFrameIdx();
 		std::uint8_t* cpu_address = static_cast<D3D12ConstantBufferHandle*>(handle)->m_native->m_cpu_addresses->operator[](frame_index);
 		memcpy(cpu_address + offset, data, size);
 	}
