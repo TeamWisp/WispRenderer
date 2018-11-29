@@ -75,6 +75,15 @@ namespace wr
 		m_init_meshes_func_impl(m_render_system, m_mesh_nodes);
 		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
 		m_init_lights_func_impl(m_render_system, m_light_nodes, m_lights);
+
+		// Create Light Buffer
+
+		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
+		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
+
+		m_structured_buffers = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
+		m_light_buffer = m_structured_buffers->Create(light_buffer_size, light_buffer_stride, false);
+
 	}
 
 	//! Update the scene graph
@@ -104,7 +113,7 @@ namespace wr
 		if (should_update)
 			Optimize();
 
-		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, cmd_list);
+		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, m_light_buffer, cmd_list);
 		m_render_meshes_func_impl(m_render_system, m_batches, cmd_list);
 	}
 
@@ -113,9 +122,9 @@ namespace wr
 		return m_batches; 
 	}
 
-	std::vector<Light>& SceneGraph::GetLights()
+	StructuredBufferHandle* SceneGraph::GetLightBuffer()
 	{
-		return m_lights;
+		return m_light_buffer;
 	}
 
 	void SceneGraph::Optimize() 

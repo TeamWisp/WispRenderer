@@ -3,6 +3,7 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_resource_pool.hpp"
+#include "../d3d12/d3d12_resource_pool_structured_buffer.hpp"
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -72,7 +73,6 @@ namespace wr
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<D3D12RenderTarget*>(deferred_main_data.m_render_target);
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
-				d3d12::CreateSRVFromStructuredBuffer(n_render_system.GetLightBuffer(), cpu_handle, i);
 
 			}
 
@@ -97,6 +97,10 @@ namespace wr
 				const auto camera_node = scene_graph.GetActiveCamera();
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera_node->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
+
+				//Get light buffer
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, 3);
+				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
