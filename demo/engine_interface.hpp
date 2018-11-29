@@ -86,6 +86,7 @@ namespace engine
 			ImGui::End();
 		}
 
+		wr::imgui::window::LightEditor(sg);
 		wr::imgui::window::ShaderRegistry();
 		wr::imgui::window::PipelineRegistry();
 		wr::imgui::window::RootSignatureRegistry();
