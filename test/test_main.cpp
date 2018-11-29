@@ -14,11 +14,11 @@ TEST( sample_test, int_neq )
 	EXPECT_NE( i, 5 );
 }
 
-TEST( sample_test, int_ge )
-{
-	int i = 4;
-	EXPECT_GE( i, 5 );
-}
+//TEST( sample_test, int_ge )
+//{
+//	int i = 4;
+//	EXPECT_GE( i, 5 );
+//}
 
 int TestEntry()
 {

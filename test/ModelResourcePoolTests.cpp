@@ -1,10 +1,12 @@
-#include "../d3d12/d3d12_structs.hpp"
-#include "../d3d12/d3d12_functions.hpp"
-#include "../renderer.hpp"
-#include "../d3d12/d3d12_renderer.hpp"
-#include "../d3d12/d3d12_resource_pool_model.hpp"
-#include "../window.hpp"
-/*
+#include "d3d12/d3d12_structs.hpp"
+#include "d3d12/d3d12_functions.hpp"
+#include "renderer.hpp"
+#include "d3d12/d3d12_renderer.hpp"
+#include "d3d12/d3d12_resource_pool_model.hpp"
+#include "window.hpp"
+
+#include <gtest\gtest.h>
+
 TEST(ModelResourcePoolTest, ResourcePoolCreation) 
 {
 	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
@@ -33,8 +35,7 @@ TEST(ModelResourcePoolTest, ResourcePoolCreation)
 	render_system.reset();
 	window.reset();
 }
- */
-/*
+
 TEST(ModelResourcePoolTest, ResourcePoolAllocDealloc)
 {
 	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
@@ -143,4 +144,3 @@ TEST(ModelResourcePoolTest, ResourcePoolAllocDealloc)
 	render_system.reset();
 	window.reset();
 }
-*/
