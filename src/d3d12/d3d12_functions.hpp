@@ -22,8 +22,7 @@ namespace wr::d3d12
 	void SetName(CommandList* cmd_list, std::wstring const & name);
 	void Begin(CommandList* cmd_list, unsigned int frame_idx);
 	void End(CommandList* cmd_list);
-	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear = true, bool clear_depth = true);
-	void BindRenderTargetVersioned(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true, bool clear_depth = true);
+	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
@@ -41,8 +40,7 @@ namespace wr::d3d12
 	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count);
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
-	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
-	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, ResourceState from, ResourceState to);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
 
@@ -52,9 +50,9 @@ namespace wr::d3d12
 	void SetName(RenderTarget* render_target, std::string name);
 	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
 	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
-	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle);
-	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
-	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
+	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int frame_idx = 0);
+	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8], unsigned int frame_idx = 0);
+	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format, unsigned int frame_idx = 0);
 	void CreateSRVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id);
 	// void CreateUAVFromTexture(Texture* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	// void CreateSRVFromTexture(Texture* tex, DescHeapCPUHandle& handle);

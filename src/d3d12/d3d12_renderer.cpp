@@ -215,6 +215,7 @@ namespace wr
 			desc.m_num_rtv_formats = properties.m_num_rtv_formats;
 			desc.m_rtv_formats = properties.m_rtv_formats;
 			desc.m_dsv_format = properties.m_dsv_format;
+			desc.m_versioning_count = properties.m_versioning_count;
 
 			if (properties.width.has_value() || properties.height.has_value())
 			{
@@ -262,7 +263,7 @@ namespace wr
 		}
 		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
 		{
-			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_finished.value(), render_target.second.m_state_execute.value());
+			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, render_target.second.m_state_finished.value(), render_target.second.m_state_execute.value());
 		}
 		else
 		{
@@ -271,11 +272,11 @@ namespace wr
 
 		if (render_target.second.m_is_render_window)
 		{
-			d3d12::BindRenderTargetVersioned(n_cmd_list, n_render_target, frame_idx, render_target.second.m_clear, render_target.second.m_clear_depth);
+			d3d12::BindRenderTarget(n_cmd_list, n_render_target, frame_idx, render_target.second.m_clear, render_target.second.m_clear_depth);
 		}
 		else
 		{
-			d3d12::BindRenderTarget(n_cmd_list, n_render_target, render_target.second.m_clear, render_target.second.m_clear_depth);
+			d3d12::BindRenderTarget(n_cmd_list, n_render_target, frame_idx, render_target.second.m_clear, render_target.second.m_clear_depth);
 		}
 	}
 
@@ -291,7 +292,7 @@ namespace wr
 		}
 		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
 		{
-			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.value(), render_target.second.m_state_finished.value());
+			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, render_target.second.m_state_execute.value(), render_target.second.m_state_finished.value());
 		}
 		else
 		{

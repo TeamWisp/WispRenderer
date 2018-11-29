@@ -6,6 +6,15 @@
 
 namespace wr::d3d12
 {
+
+	namespace internal
+	{
+		template<typename T>
+		auto SaveFrameIdx(T frame_idx, RenderTarget* rt)
+		{
+			return frame_idx & rt->m_versioning_count;
+		}
+	}
 	
 	RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor)
 	{
@@ -22,7 +31,7 @@ namespace wr::d3d12
 			CD3DX12_RESOURCE_DESC resource_desc = CD3DX12_RESOURCE_DESC::Tex2D((DXGI_FORMAT)descriptor.m_rtv_formats[i % descriptor.m_num_rtv_formats], width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
 			D3D12_CLEAR_VALUE optimized_clear_value = {
-				(DXGI_FORMAT)descriptor.m_rtv_formats[i],
+				(DXGI_FORMAT)descriptor.m_rtv_formats[i % descriptor.m_num_rtv_formats],
 				descriptor.m_clear_color[0],
 				descriptor.m_clear_color[1],
 				descriptor.m_clear_color[2],
@@ -38,8 +47,8 @@ namespace wr::d3d12
 				&optimized_clear_value, // optimizes draw call
 				IID_PPV_ARGS(&render_target->m_render_targets[i])
 			), "Failed to create render target.");
-
-			NAME_D3D12RESOURCE(render_target->m_render_targets[i], L"Unnamed Render Target (" + std::to_wstring(i).c_str() + L")");
+			HRESULT HR;
+			NAME_D3D12RESOURCE(HR = render_target->m_render_targets[i], L"Unnamed Render Target (" + std::to_wstring(i).c_str() + L")");
 			UINT64 textureUploadBufferSize;
 			n_device->GetCopyableFootprints(&resource_desc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
 		}
@@ -73,7 +82,9 @@ namespace wr::d3d12
 
 		// Create views
 		desc::DescriptorHeapDesc back_buffer_heap_desc;
-		back_buffer_heap_desc.m_num_descriptors = render_target->m_num_render_targets * render_target->m_versioning_count;
+		back_buffer_heap_desc.m_num_descriptors = render_target->m_num_render_targets;
+		back_buffer_heap_desc.m_versions = render_target->m_versioning_count;
+		back_buffer_heap_desc.m_shader_visible = false;
 		back_buffer_heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_RTV;
 		render_target->m_rtv_descriptor_heap = d3d12::CreateDescriptorHeap(device, back_buffer_heap_desc);
 
@@ -82,10 +93,10 @@ namespace wr::d3d12
 		// Create render target view with the handle to the heap descriptor.
 		for (auto v = 0; v < render_target->m_versioning_count; v++)
 		{
-			auto rtv_handle = GetCPUHandle(render_target->m_rtv_descriptor_heap);
+			auto rtv_handle = GetCPUHandle(render_target->m_rtv_descriptor_heap, v);
 			for (auto i = 0; i < render_target->m_num_render_targets; i++)
 			{
-				n_device->CreateRenderTargetView(render_target->m_render_targets[i & render_target->], nullptr, rtv_handle.m_native);
+				n_device->CreateRenderTargetView(render_target->m_render_targets[i + (render_target->m_num_render_targets * v)], nullptr, rtv_handle.m_native);
 
 				d3d12::Offset(rtv_handle, 1, render_target->m_rtv_descriptor_increment_size);
 			}
@@ -101,10 +112,10 @@ namespace wr::d3d12
 		// create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
 		desc::DescriptorHeapDesc dsv_heap_desc;
 		dsv_heap_desc.m_num_descriptors = 1;
+		dsv_heap_desc.m_versions = render_target->m_versioning_count;
+		dsv_heap_desc.m_shader_visible = false;
 		dsv_heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_DSV;
 		render_target->m_depth_stencil_resource_heap = d3d12::CreateDescriptorHeap(device, dsv_heap_desc);
-
-		NAME_D3D12RESOURCE(render_target->m_depth_stencil_resource_heap->m_native)
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
 		depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -116,20 +127,25 @@ namespace wr::d3d12
 		depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 		depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
-		TRY_M(n_device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Tex2D(depth_format, width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
-			D3D12_RESOURCE_STATE_DEPTH_WRITE,
-			&depthOptimizedClearValue,
-			IID_PPV_ARGS(&render_target->m_depth_stencil_buffer)
-		), "Failed to create commited resource.");
-		NAME_D3D12RESOURCE(render_target->m_depth_stencil_buffer)
+		render_target->m_depth_stencil_buffers.resize(render_target->m_versioning_count);
+		for (auto v = 0; v < render_target->m_versioning_count; v++)
+		{
+			TRY_M(n_device->CreateCommittedResource(
+				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+				D3D12_HEAP_FLAG_NONE,
+				&CD3DX12_RESOURCE_DESC::Tex2D(depth_format, width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
+				&depthOptimizedClearValue,
+				IID_PPV_ARGS(&render_target->m_depth_stencil_buffers[v])
+			), "Failed to create commited resource.");
+			NAME_D3D12RESOURCE(render_target->m_depth_stencil_buffers[v])
 
-		n_device->CreateDepthStencilView(render_target->m_depth_stencil_buffer, &depthStencilDesc, d3d12::GetCPUHandle(render_target->m_depth_stencil_resource_heap).m_native);
+			NAME_D3D12RESOURCE(render_target->m_depth_stencil_resource_heap->m_native[v]);
+			n_device->CreateDepthStencilView(render_target->m_depth_stencil_buffers[v], &depthStencilDesc, d3d12::GetCPUHandle(render_target->m_depth_stencil_resource_heap, v).m_native);
+		}
 	}
 
-	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle)
+	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int frame_idx)
 	{
 		decltype(Device::m_native) n_device;
 		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));
@@ -142,11 +158,11 @@ namespace wr::d3d12
 		srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srv_desc.Texture2D.MipLevels = 1;
 
-		n_device->CreateShaderResourceView(render_target->m_depth_stencil_buffer, &srv_desc, handle.m_native);
+		n_device->CreateShaderResourceView(render_target->m_depth_stencil_buffers[internal::SaveFrameIdx(frame_idx, render_target)], &srv_desc, handle.m_native);
 		Offset(handle, 1, increment_size);
 	}
 
-	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8])
+	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8], unsigned int frame_idx)
 	{
 		decltype(Device::m_native) n_device;
 		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));
@@ -161,12 +177,12 @@ namespace wr::d3d12
 			srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 			srv_desc.Texture2D.MipLevels = 1;
 
-			n_device->CreateShaderResourceView(render_target->m_render_targets[i], &srv_desc, handle.m_native);
+			n_device->CreateShaderResourceView(render_target->m_render_targets[i + (render_target->m_num_render_targets * internal::SaveFrameIdx(frame_idx, render_target))], &srv_desc, handle.m_native);
 			Offset(handle, 1, increment_size);
 		}
 	}
 
-	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format)
+	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format, unsigned int frame_idx)
 	{
 		decltype(Device::m_native) n_device;
 		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));
@@ -179,7 +195,7 @@ namespace wr::d3d12
 		srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srv_desc.Texture2D.MipLevels = 1;
 
-		n_device->CreateShaderResourceView(render_target->m_render_targets[id], &srv_desc, handle.m_native);
+		n_device->CreateShaderResourceView(render_target->m_render_targets[id + (render_target->m_num_render_targets * internal::SaveFrameIdx(frame_idx, render_target))], &srv_desc, handle.m_native);
 		Offset(handle, 1, increment_size);
 	}
 
@@ -201,7 +217,10 @@ namespace wr::d3d12
 
 	void DestroyDepthStencilBuffer(RenderTarget* render_target)
 	{
-		SAFE_RELEASE(render_target->m_depth_stencil_buffer);
+		for (auto& r : render_target->m_depth_stencil_buffers)
+		{
+			SAFE_RELEASE(r);
+		}
 		Destroy(render_target->m_depth_stencil_resource_heap);
 	}
 

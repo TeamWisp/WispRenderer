@@ -102,7 +102,7 @@ namespace wr::d3d12
 		DescriptorHeap* m_rtv_descriptor_heap;
 		unsigned int m_rtv_descriptor_increment_size;
 
-		ID3D12Resource* m_depth_stencil_buffer;
+		std::vector<ID3D12Resource*> m_depth_stencil_buffers;
 		DescriptorHeap* m_depth_stencil_resource_heap;
 	};
 

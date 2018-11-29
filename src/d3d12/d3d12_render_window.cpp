@@ -33,7 +33,8 @@ namespace wr::d3d12
 	RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers)
 	{
 		auto render_window = new RenderWindow();
-		render_window->m_num_render_targets = num_back_buffers;
+		render_window->m_num_render_targets = 1;
+		render_window->m_versioning_count = num_back_buffers;
 
 		// Get client area for the swap chain size
 		RECT r;
@@ -110,10 +111,10 @@ namespace wr::d3d12
 		DestroyDepthStencilBuffer(render_window);
 		DestroyRenderTargetViews(render_window);
 
-		render_window->m_swap_chain->ResizeBuffers(render_window->m_num_render_targets, width, height, DXGI_FORMAT_UNKNOWN, 0);
+		render_window->m_swap_chain->ResizeBuffers(render_window->m_versioning_count, width, height, DXGI_FORMAT_UNKNOWN, 0);
 
-		render_window->m_render_targets.resize(render_window->m_num_render_targets);
-		for (auto i = 0; i < render_window->m_num_render_targets; i++)
+		render_window->m_render_targets.resize(render_window->m_versioning_count);
+		for (auto i = 0; i < render_window->m_versioning_count; i++)
 		{
 			TRY_M(render_window->m_swap_chain->GetBuffer(i, IID_PPV_ARGS(&render_window->m_render_targets[i])),
 				"Failed to get swap chain buffer.");
@@ -132,10 +133,12 @@ namespace wr::d3d12
 	void Destroy(RenderWindow* render_window)
 	{
 		DestroyDepthStencilBuffer(render_window);
-		render_window->m_rtv_descriptor_heap->Release();
+		Destroy(render_window->m_rtv_descriptor_heap);
 		render_window->m_frame_idx = 0;
 
 		render_window->m_swap_chain->Release();
+
+		delete render_window;
 	}
 
 } /* wr::d3d12 */

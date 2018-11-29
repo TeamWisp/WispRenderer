@@ -46,8 +46,8 @@ namespace wr
 
 				auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<D3D12RenderTarget*>(deferred_main_data.m_render_target);
-				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
-				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
+				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data(), i);
+				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle, i);
 				d3d12::CreateSRVFromStructuredBuffer(n_render_system.GetLightBuffer(), cpu_handle, i);
 
 			}
@@ -67,7 +67,7 @@ namespace wr
 
 				//Render deferred
 
-				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::PIXEL_SHADER_RESOURCE);
+				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, frame_idx, ResourceState::DEPTH_WRITE, ResourceState::PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindViewport(cmd_list, viewport);
 
@@ -88,7 +88,7 @@ namespace wr
 
 				d3d12::Draw(cmd_list, 4, 1);
 
-				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
+				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, frame_idx, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}
 		}
 

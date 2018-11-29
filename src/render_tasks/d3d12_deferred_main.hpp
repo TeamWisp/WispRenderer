@@ -79,7 +79,8 @@ namespace wr
 				{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },
 				2,
 				true,
-				true
+				true,
+				d3d12::settings::num_back_buffers
 			},
 			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, DeferredMainTaskData & data, bool) { internal::SetupDeferredTask(render_system, task, data); },
 			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, SceneGraph & scene_graph, DeferredMainTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },

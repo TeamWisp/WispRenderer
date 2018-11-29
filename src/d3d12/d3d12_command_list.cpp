@@ -67,18 +67,18 @@ namespace wr::d3d12
 		cmd_list->m_native->Close();
 	}
 
-	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear, bool clear_depth)
+	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear, bool clear_depth)
 	{
 		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> handles;
-		handles.resize(render_target->m_render_targets.size());
+		handles.resize(render_target->m_num_render_targets);
 
 		for (auto i = 0; i < handles.size(); i++)
 		{
-			handles[i] = CD3DX12_CPU_DESCRIPTOR_HANDLE(render_target->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart(), i, render_target->m_rtv_descriptor_increment_size);
+			handles[i] = GetCPUHandle(render_target->m_rtv_descriptor_heap, frame_idx, i).m_native;
 		}
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv_handle;
-		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
+		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = GetCPUHandle(render_target->m_depth_stencil_resource_heap, frame_idx).m_native;
 
 		cmd_list->m_native->OMSetRenderTargets(handles.size(), handles.data(), false, render_target->m_create_info.m_create_dsv_buffer ? &dsv_handle : nullptr);
 		if (clear)
@@ -94,6 +94,7 @@ namespace wr::d3d12
 		}
 	}
 
+	/*
 	void BindRenderTargetVersioned(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear, bool clear_depth)
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_handle(render_target->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart(),
@@ -112,11 +113,12 @@ namespace wr::d3d12
 			cmd_list->m_native->ClearDepthStencilView(dsv_handle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 		}
 	}
+	*/
 
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear)
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv_handle;
-		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
+		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = GetCPUHandle(render_target->m_depth_stencil_resource_heap, frame_idx).m_native;
 
 		cmd_list->m_native->OMSetRenderTargets(0, nullptr, false, render_target->m_create_info.m_create_dsv_buffer ? &dsv_handle : nullptr);
 
@@ -206,25 +208,14 @@ namespace wr::d3d12
 		cmd_list->m_native->DrawIndexedInstanced(idx_count, inst_count, 0, 0, 0);
 	}
 
-	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to)
-	{
-		CD3DX12_RESOURCE_BARRIER end_transition = CD3DX12_RESOURCE_BARRIER::Transition(
-			render_target->m_render_targets[frame_index % render_target->m_render_targets.size()],
-			(D3D12_RESOURCE_STATES)from,
-			(D3D12_RESOURCE_STATES)to
-		);
-
-		cmd_list->m_native->ResourceBarrier(1, &end_transition);
-	}
-
-	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to)
+	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, ResourceState from, ResourceState to)
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
 		barriers.resize(render_target->m_num_render_targets);
 		for (auto i = 0; i < render_target->m_num_render_targets; i++)
 		{
 			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-				render_target->m_render_targets[i],
+				render_target->m_render_targets[i + (render_target->m_num_render_targets * frame_idx)],
 				(D3D12_RESOURCE_STATES)from,
 				(D3D12_RESOURCE_STATES)to
 			);
@@ -234,10 +225,10 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
 	}
 
-	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to)
+	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, ResourceState from, ResourceState to)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			render_target->m_depth_stencil_buffer,
+			render_target->m_depth_stencil_buffers[frame_idx % render_target->m_versioning_count],
 			(D3D12_RESOURCE_STATES)from,
 			(D3D12_RESOURCE_STATES)to
 		);

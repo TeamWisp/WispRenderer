@@ -25,6 +25,8 @@ namespace wr
 
 		bool m_clear;
 		bool m_clear_depth;
+
+		unsigned int m_versioning_count = 1;
 	};
 
 } /* wr */
