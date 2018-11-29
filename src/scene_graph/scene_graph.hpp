@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <bitset>
 #include <functional>
 #include <memory>
 #include <DirectXMath.h>
@@ -8,6 +8,7 @@
 #include "../util/defines.hpp"
 #include "../resource_pool_model.hpp"
 #include "../resource_pool_constant_buffer.hpp"
+#include "../resource_pool_structured_buffer.hpp"
 
 namespace wr
 {
@@ -96,7 +97,7 @@ namespace wr
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&, CommandList*)> m_update_lights_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&, StructuredBufferHandle*, CommandList*)> m_update_lights_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -119,7 +120,8 @@ namespace wr
 
 		void Optimize();
 		temp::MeshBatches& GetBatches();
-		std::vector<Light>& GetLights();
+
+		StructuredBufferHandle* GetLightBuffer();
 
 	private:
 		RenderSystem* m_render_system;
@@ -128,6 +130,9 @@ namespace wr
 
 		temp::MeshBatches m_batches;
 		std::vector<Light> m_lights;
+
+		std::shared_ptr<StructuredBufferPool> m_structured_buffers;
+		StructuredBufferHandle* m_light_buffer;
 
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
