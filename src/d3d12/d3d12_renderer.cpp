@@ -10,6 +10,7 @@
 #include "d3d12_resource_pool_material.hpp"
 #include "d3d12_resource_pool_model.hpp"
 #include "d3d12_resource_pool_constant_buffer.hpp"
+#include "d3d12_resource_pool_structured_buffer.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"
@@ -31,6 +32,11 @@ namespace wr
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
+		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
+		{
+			m_structured_buffer_pools[i].reset();
+		}
+
 		d3d12::Destroy(m_sb_heap);
 		d3d12::Destroy(m_cb_heap);
 		d3d12::Destroy(m_device);
@@ -119,6 +125,14 @@ namespace wr
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
 
+		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+		for (int i = 0; i < m_structured_buffer_pools.size(); ++i) 
+		{
+			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
+		}
+
+		d3d12::End(m_direct_cmd_list);
 
 		scene_graph->Update();
 
@@ -126,6 +140,9 @@ namespace wr
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<D3D12CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
+
+		n_cmd_lists.push_back(m_direct_cmd_list);
+
 		for (auto& list : cmd_lists)
 		{
 			n_cmd_lists.push_back(list);
@@ -160,6 +177,18 @@ namespace wr
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)
 	{
 		return std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
+	}
+
+	std::shared_ptr<ConstantBufferPool> D3D12RenderSystem::CreateConstantBufferPool(std::size_t size_in_mb)
+	{
+		return std::make_shared<D3D12ConstantBufferPool>(*this, size_in_mb);
+	}
+
+	std::shared_ptr<StructuredBufferPool> D3D12RenderSystem::CreateStructuredBufferPool(std::size_t size_in_mb)
+	{
+		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_mb); 
+		m_structured_buffer_pools.push_back(pool);
+		return pool;
 	}
 
 	void D3D12RenderSystem::WaitForAllPreviousWork()
