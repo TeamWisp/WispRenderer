@@ -27,12 +27,15 @@ file(GLOB UTIL_HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/util/
 file(GLOB UTIL_SOURCES CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/util/*.cpp")
 file(GLOB IMGUI_HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/*.hpp")
 file(GLOB IMGUI_SOURCES CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/*.cpp")
+file(GLOB DIRECTXTEX_HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/d3d12/third_party/DirectXTex/*.h")
+file(GLOB DIRECTXTEX_SOURCES CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/d3d12/third_party/DirectXTex/*.cpp")
 
 source_group("High Level API" FILES ${SOURCES} ${HEADERS})
 source_group("Frame Graph" FILES ${FG_SOURCES} ${FG_HEADERS})
 source_group("Scene Graph" FILES ${SG_SOURCES} ${SG_HEADERS})
 source_group("Render Tasks" FILES ${RT_SOURCES} ${RT_HEADERS})
 source_group("D3D12" FILES ${D3D12_SOURCES} ${D3D12_HEADERS})
+source_group("D3D12\\Third Party" FILES ${DIRECTXTEX_SOURCES} ${DIRECTXTEX_HEADERS})
 source_group("Utility" FILES ${UTIL_SOURCES} ${UTIL_HEADERS})
 source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
@@ -51,7 +54,15 @@ if (MSVC)
 	target_compile_options(fmt PRIVATE /W0)
 endif()
 
-add_library(WispRenderer ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
+add_library(WispRenderer ${HEADERS} ${SOURCES} 
+										${IMGUI_HEADERS} ${IMGUI_SOURCES} 
+										${UTIL_HEADERS} ${UTIL_SOURCES} 
+										${RT_HEADERS} ${RT_SOURCES} 
+										${FG_HEADERS} ${FG_SOURCES} 
+										${SG_HEADERS} ${SG_SOURCES} 
+										${D3D12_SOURCES} ${D3D12_HEADERS}
+										${DIRECTXTEX_SOURCES} ${DIRECTXTEX_HEADERS})
+										
 target_link_libraries(WispRenderer dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
 set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 17)
 set_target_properties(WispRenderer PROPERTIES CXX_EXTENSIONS OFF)

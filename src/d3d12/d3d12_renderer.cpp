@@ -18,17 +18,21 @@
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
+#include "../scene_graph/light_node.hpp"
 
 namespace wr
 {
 	LINK_SG_RENDER_MESHES(D3D12RenderSystem, Render_MeshNodes)
 	LINK_SG_INIT_MESHES(D3D12RenderSystem, Init_MeshNodes)
 	LINK_SG_INIT_CAMERAS(D3D12RenderSystem, Init_CameraNodes)
+	LINK_SG_INIT_LIGHTS(D3D12RenderSystem, Init_LightNodes)
 	LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
 	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
+	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
+		d3d12::Destroy(m_sb_heap);
 		d3d12::Destroy(m_cb_heap);
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
@@ -64,8 +68,8 @@ namespace wr
 		// Create Constant Buffer Heap
 		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
 		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size = 
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */ 
+		constexpr auto sbo_size =
+			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
 			+ cam_cbs_size;
 
 		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
@@ -81,6 +85,15 @@ namespace wr
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
+
+		// Create Light Buffer
+
+		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
+		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
+
+		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+
+		m_light_buffer = d3d12::AllocStructuredBuffer(m_sb_heap, light_buffer_size, light_buffer_stride, false);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -183,6 +196,11 @@ namespace wr
 	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
 		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	d3d12::HeapResource* D3D12RenderSystem::GetLightBuffer()
+	{
+		return m_light_buffer;
 	}
 
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
@@ -409,6 +427,11 @@ namespace wr
 		}
 	}
 
+	void D3D12RenderSystem::Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights)
+	{
+		lights.resize(d3d12::settings::num_lights);
+	}
+
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
 		for (auto& node : nodes)
@@ -436,6 +459,23 @@ namespace wr
 
 			d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
 		}
+	}
+
+	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+
+		uint32_t count = 0, size = (uint32_t) nodes.size(), light_size = (uint32_t) lights.size();
+
+		for (; count < size && count < light_size; ++count)
+		{
+			lights[count] = nodes[count]->m_light;
+		}
+
+		lights[0].tid |= count << 2;
+
+		d3d12::UpdateStructuredBuffer(m_light_buffer, m_render_window.value()->m_frame_idx, lights.data(), m_light_buffer->m_unaligned_size, 0, m_light_buffer->m_stride, n_cmd_list);
+
 	}
 
 	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list)

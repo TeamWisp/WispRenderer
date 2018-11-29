@@ -133,7 +133,7 @@ void WispEntry()
 
 	std::string_view path = "MaterialAlbedo.png";
 
-	texture_pool->Load(path, wr::TextureType::PNG, true);
+	texture_pool->Load(path, true);
 
 	// Load custom model
 	auto model_pool = render_system->CreateModelPool(1, 1);
@@ -185,6 +185,20 @@ void WispEntry()
 	auto mesh_node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
 	auto camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 70.f, (float)window->GetWidth() / (float)window->GetHeight());
 
+	// #### lights
+	auto point_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 0, 0 });
+	point_light_node->SetPosition({ 0, 0, -6 });
+	point_light_node->SetRadius(5.f);
+
+	auto directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 0, 0 });
+	directional_light_node->SetDirection({ 0, 0, 1 });
+
+	auto spot_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::SPOT, DirectX::XMVECTOR{ 1, 1, 0 });
+	spot_light_node->SetPosition({ 0, 1, -6 });
+	spot_light_node->SetRadius(5.f);
+	spot_light_node->SetDirection({ 0, 0, 1 });
+	spot_light_node->SetAngle(40.f);
+
 	// #### background cubes
 	std::vector<std::pair<std::shared_ptr<wr::MeshNode>, int>> bg_nodes(500);
 	float distance = 20;
@@ -232,9 +246,21 @@ void WispEntry()
 
 	while (window->IsRunning())
 	{
-		mesh_node->SetRotation({ sin(t / 2.f) * 20.f, -t * 10, 0 });
+		//mesh_node->SetRotation({ sin(t / 2.f) * 20.f, -t * 10, 0 });
 
-		for (auto& node : bg_nodes)
+		float perc = sin(time(0)) * 0.5f + 0.5f;
+
+		//If only you could write lerp({ 1, 0, 0 }, { 0, 1, 0 }, perc)
+		DirectX::XMVECTOR color = DirectX::XMVectorAdd(
+			DirectX::XMVectorMultiply({ 1, 0, 0 }, { perc, perc, perc }), 
+			DirectX::XMVectorMultiply({ 0, 1, 0 }, { 1 - perc, 1 - perc, 1 - perc })
+		);
+
+		color = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+
+		directional_light_node->SetColor(color);
+
+		/*for (auto& node : bg_nodes)
 		{
 			float speed = 16 + node.second;
 			switch (node.second)
@@ -261,7 +287,7 @@ void WispEntry()
 
 				break;
 			}
-		}
+		}*/
 
 		t += 10.f * ImGui::GetIO().DeltaTime;
 

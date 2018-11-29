@@ -22,7 +22,7 @@ namespace wr
 		desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 
 		m_descriptor_heap = d3d12::CreateDescriptorHeap(device, desc);
-		m_descriptor_handle = d3d12::GetCPUHandle(m_descriptor_heap);
+		m_descriptor_handle = d3d12::GetCPUHandle(m_descriptor_heap, 0);
 	}
 
 	D3D12TexturePool::~D3D12TexturePool()
@@ -105,7 +105,7 @@ namespace wr
 
 		auto native = d3d12::CreateTexture(device, &desc, false);
 
-		native->m_need_mips = true;
+		native->m_need_mips = (metadata.mipLevels > 1) ? false : true;
 		native->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
 
 		memcpy(native->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
@@ -126,12 +126,97 @@ namespace wr
 	D3D12TextureHandle* D3D12TexturePool::LoadDDS(std::string_view path, bool srgb)
 	{
 		auto texture = new D3D12TextureHandle();
+		auto device = m_render_system.m_device;
+
+		DirectX::TexMetadata metadata;
+		DirectX::ScratchImage image;
+
+		std::wstring wide_string(path.begin(), path.end());
+
+		HRESULT hr = LoadFromDDSFile(wide_string.c_str(),
+			DirectX::DDS_FLAGS_NONE, &metadata, image);
+
+		if (FAILED(hr))
+		{
+			LOGC("ERROR: Texture not loaded correctly.");
+		}
+
+		d3d12::desc::TextureDesc desc;
+
+		desc.m_width = metadata.width;
+		desc.m_height = metadata.height;
+		desc.m_is_cubemap = metadata.IsCubemap();
+		desc.m_depth = metadata.depth;
+		desc.m_array_size = metadata.arraySize;
+		desc.m_mip_levels = metadata.mipLevels;
+		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
+		desc.m_initial_state = ResourceState::COPY_DEST;
+
+		auto native = d3d12::CreateTexture(device, &desc, false);
+
+		native->m_need_mips = (metadata.mipLevels > 1) ? false : true;
+		native->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+
+		memcpy(native->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+
+		texture->m_native = native;
+
+		native->m_CpuDescriptorHandle = m_descriptor_handle;
+
+		DXGI_FORMAT format = metadata.format;
+
+		d3d12::CreateSRVFromTexture(native, native->m_CpuDescriptorHandle, (Format)format);
+
+		m_textures.push_back(texture);
+
 		return texture;
 	}
 
 	D3D12TextureHandle* D3D12TexturePool::LoadHDR(std::string_view path, bool srgb)
 	{
 		auto texture = new D3D12TextureHandle();
+		auto device = m_render_system.m_device;
+
+		DirectX::TexMetadata metadata;
+		DirectX::ScratchImage image;
+
+		std::wstring wide_string(path.begin(), path.end());
+
+		HRESULT hr = LoadFromHDRFile(wide_string.c_str(), &metadata, image);
+
+		if (FAILED(hr))
+		{
+			LOGC("ERROR: Texture not loaded correctly.");
+		}
+
+		d3d12::desc::TextureDesc desc;
+
+		desc.m_width = metadata.width;
+		desc.m_height = metadata.height;
+		desc.m_is_cubemap = metadata.IsCubemap();
+		desc.m_depth = metadata.depth;
+		desc.m_array_size = metadata.arraySize;
+		desc.m_mip_levels = metadata.mipLevels;
+		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
+		desc.m_initial_state = ResourceState::COPY_DEST;
+
+		auto native = d3d12::CreateTexture(device, &desc, false);
+
+		native->m_need_mips = (metadata.mipLevels > 1) ? false : true;
+		native->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+
+		memcpy(native->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+
+		texture->m_native = native;
+
+		native->m_CpuDescriptorHandle = m_descriptor_handle;
+
+		DXGI_FORMAT format = metadata.format;
+
+		d3d12::CreateSRVFromTexture(native, native->m_CpuDescriptorHandle, (Format)format);
+
+		m_textures.push_back(texture);
+
 		return texture;
 	}
 

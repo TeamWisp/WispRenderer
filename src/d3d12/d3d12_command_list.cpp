@@ -132,14 +132,14 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootSignature(pipeline_state->m_root_signature->m_native);
 	}
 
-	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps)
+	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx)
 	{
 		auto num = heaps.size();
 		std::vector<ID3D12DescriptorHeap*> n_heaps(num);
 
 		for (decltype(num) i = 0; i < num; i++)
 		{
-			n_heaps[i] = heaps[i]->m_native;
+			n_heaps[i] = heaps[i]->m_native[frame_idx % heaps[i]->m_create_info.m_versions];
 		}
 
 		cmd_list->m_native->SetDescriptorHeaps(num, n_heaps.data());

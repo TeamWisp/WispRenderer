@@ -30,7 +30,7 @@ namespace wr
 		TexturePool(TexturePool&&) = delete;
 		TexturePool& operator=(TexturePool&&) = delete;
 
-		[[nodiscard]] TextureHandle* Load(std::string_view path, TextureType type, bool srgb);
+		[[nodiscard]] TextureHandle* Load(std::string_view path, bool srgb);
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;

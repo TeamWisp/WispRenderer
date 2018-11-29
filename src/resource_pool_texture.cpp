@@ -12,7 +12,7 @@ namespace wr
 	}
 
 	//! Loads a texture
-	TextureHandle* TexturePool::Load(std::string_view path, TextureType type, bool srgb)
+	TextureHandle* TexturePool::Load(std::string_view path, bool srgb)
 	{
 		std::size_t length = path.length();
 		std::string_view extension = path.substr(length - 3, 3);

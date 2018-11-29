@@ -61,9 +61,9 @@ namespace wr
 					texture_pool_raw->Stage(cmd_list);
 
 					wr::d3d12::DescriptorHeap* texture_heap = texture_pool_raw->GetHeap();
-					d3d12::BindDescriptorHeaps(cmd_list, { texture_heap });
+					d3d12::BindDescriptorHeaps(cmd_list, { texture_heap }, 0);
 
-					wr::d3d12::DescHeapGPUHandle handle = d3d12::GetGPUHandle(texture_heap);
+					wr::d3d12::DescHeapGPUHandle handle = d3d12::GetGPUHandle(texture_heap, 0);
 					d3d12::BindDescriptorTable(cmd_list, handle, 2);
 				}
 
