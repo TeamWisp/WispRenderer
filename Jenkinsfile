@@ -39,7 +39,7 @@ pipeline {
 
 				bat'''
 				cd "%WORKSPACE%"
-				cmake --build ./build_vs2017_win64 -DCMAKE_BUUILD_TYPE=Release
+				cmake --build ./build_vs2017_win64 -DCMAKE_BUILD_TYPE=Release
 				if errorlevel 1 (
 					cd "%WORKSPACE%\\Scripts" 
 					JenkinsWebhook ":x: Pull Request Build Failed!! Jenskins build nr: %BUILD_NUMBER% - 64bit-release build failed"
