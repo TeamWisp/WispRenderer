@@ -104,11 +104,11 @@ namespace wr
 					// Record all bundles again if required.
 					if (data.out_requires_bundle_recording)
 					{
-						for (auto& bundle : data.out_bundle_cmd_lists)
+						for (auto i = 0; i < data.out_bundle_cmd_lists.size(); i++)
 						{
-							d3d12::Begin(bundle, 0);
-							RecordDrawCommands(n_render_system, bundle, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, frame_idx);
-							d3d12::End(bundle);
+							d3d12::Begin(data.out_bundle_cmd_lists[i], 0);
+							RecordDrawCommands(n_render_system, data.out_bundle_cmd_lists[i], static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, i);
+							d3d12::End(data.out_bundle_cmd_lists[i]);
 						}
 						data.out_requires_bundle_recording = false;
 					}

@@ -82,7 +82,7 @@ namespace wr
 		void InitSceneGraph(SceneGraph& scene_graph);
 
 		void Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
-		void Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes, ConstantBufferPool* cb_pool);
+		void Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 		void Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights);
 
 		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
@@ -105,6 +105,8 @@ namespace wr
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
+
+		std::shared_ptr<ConstantBufferPool> m_camera_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
     
