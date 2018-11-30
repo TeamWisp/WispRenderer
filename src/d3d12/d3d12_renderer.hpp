@@ -22,6 +22,7 @@ namespace wr
 	struct D3D12ConstantBufferHandle;
 
 	class D3D12StructuredBufferPool;
+	class D3D12ModelPool;
 
 	namespace temp
 	{
@@ -109,6 +110,7 @@ namespace wr
 		std::shared_ptr<ConstantBufferPool> m_camera_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
+		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
     
 	private:
 		std::optional<bool> m_requested_fullscreen_state;

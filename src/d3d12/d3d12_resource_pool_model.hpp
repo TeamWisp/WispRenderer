@@ -3,6 +3,8 @@
 #include "../resource_pool_model.hpp"
 #include "d3d12_structs.hpp"
 
+#include <queue>
+
 namespace wr::d3d12
 {
 	struct HeapResource;
@@ -39,7 +41,7 @@ namespace wr
 		void Evict() final;
 		void MakeResident() final;
 
-		void StageMesh(Mesh* mesh, d3d12::CommandList* cmd_list);
+		void StageMeshes(d3d12::CommandList* cmd_list);
 
 		d3d12::StagingBuffer* GetVertexStagingBuffer();
 		d3d12::StagingBuffer* GetIndexStagingBuffer();
@@ -60,6 +62,8 @@ namespace wr
 
 		std::vector<Mesh*> m_mesh_handles;
 
+		std::queue<Mesh*> m_mesh_stage_queue;
+			
 		std::uint64_t m_vertex_buffer_size;
 		std::uint64_t m_index_buffer_size;
 
