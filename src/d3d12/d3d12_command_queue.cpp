@@ -33,7 +33,9 @@ namespace wr::d3d12
 
 		cmd_queue->m_native->ExecuteCommandLists(native_lists.size(), native_lists.data());
 
+		fence->m_fence_value++;
 		Signal(fence, cmd_queue);
+
 	}
 
 	void Destroy(CommandQueue* cmd_queue)

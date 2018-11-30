@@ -52,7 +52,7 @@ namespace wr
 
 				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 0, frame_idx);
-				d3d12::BindConstantBuffer(cmd_list, scene_graph.GetModelData()->m_native, 2, frame_idx);
+				d3d12::BindConstantBuffer(cmd_list, static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetModelData())->m_native, 2, frame_idx);
 
 				scene_graph.Render(cmd_list);
 			}
@@ -82,10 +82,9 @@ namespace wr
 				true,
 				true
 			},
-			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, DeferredMainTaskData & data) { internal::SetupDeferredTask(render_system, task, data); },
+			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, DeferredMainTaskData & data, bool) { internal::SetupDeferredTask(render_system, task, data); },
 			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, SceneGraph & scene_graph, DeferredMainTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
-			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, DeferredMainTaskData & data, std::uint32_t width, std::uint32_t height) {},
-			[](DeferredMainRenderTask_t & task, DeferredMainTaskData & data) { internal::DestroyTestTask(task, data); }
+			[](DeferredMainRenderTask_t & task, DeferredMainTaskData & data, bool) { internal::DestroyTestTask(task, data); }
 		);
 
 		return ptr;

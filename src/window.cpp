@@ -138,6 +138,17 @@ namespace wr
 		return m_handle;
 	}
 
+	bool Window::IsFullscreen() const
+	{
+		RECT a, b;
+		GetWindowRect(m_handle, &a);
+		GetWindowRect(GetDesktopWindow(), &b);
+		return (a.left == b.left  &&
+			a.top == b.top   &&
+			a.right == b.right &&
+			a.bottom == b.bottom);
+	}
+
 	LRESULT CALLBACK Window::WindowProc(HWND handle, UINT msg, WPARAM w_param, LPARAM l_param)
 	{
 		extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

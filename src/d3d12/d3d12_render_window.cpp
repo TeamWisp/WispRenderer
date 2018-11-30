@@ -90,6 +90,8 @@ namespace wr::d3d12
 		render_window->m_swap_chain = static_cast<IDXGISwapChain4*>(temp_swap_chain);
 		render_window->m_frame_idx = (render_window->m_swap_chain)->GetCurrentBackBufferIndex();
 
+		render_window->m_swap_chain->SetMaximumFrameLatency(num_back_buffers);
+
 		render_window->m_render_targets.resize(num_back_buffers);
 		for (decltype(num_back_buffers) i = 0; i < num_back_buffers; i++)
 		{
@@ -103,7 +105,7 @@ namespace wr::d3d12
 		return render_window;
 	}
 
-	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height)
+	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height, bool fullscreen)
 	{
 		DestroyDepthStencilBuffer(render_window);
 		DestroyRenderTargetViews(render_window);

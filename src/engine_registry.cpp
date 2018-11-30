@@ -24,7 +24,7 @@ namespace wr
 
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> ranges
 	{ 
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0); return r; }(),
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); return r; }(),
 	};
 	REGISTER(root_signatures::deferred_composition) = RootSignatureRegistry::Get().Register({
 		{

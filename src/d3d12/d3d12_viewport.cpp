@@ -24,4 +24,15 @@ namespace wr::d3d12
 		return viewport;
 	}
 
+	void ResizeViewport(Viewport& viewport, int width, int height)
+	{
+		// Define viewport.
+		viewport.m_viewport.Width = static_cast<float>(width);
+		viewport.m_viewport.Height = static_cast<float>(height);
+
+		// Define scissor rect
+		viewport.m_scissor_rect.right = width;
+		viewport.m_scissor_rect.bottom = height;
+	}
+
 } /* wr::d3d12 */

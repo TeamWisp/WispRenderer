@@ -64,19 +64,41 @@ namespace wr
 		return nullptr;
 	}
 
+	std::vector<std::shared_ptr<LightNode>>& SceneGraph::GetLightNodes()
+	{
+		return m_light_nodes;
+	}
+
 	//! Initialize the scene graph
 	void SceneGraph::Init()
 	{
 		m_init_meshes_func_impl(m_render_system, m_mesh_nodes);
+		m_init_lights_func_impl(m_render_system, m_light_nodes, m_lights);
+
+		// Create constant buffer pool
+
+		constexpr auto object_size = sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch;
+		constexpr auto model_size = sizeof(CompressedVertex::Details) * d3d12::settings::num_models_per_buffer;
+
+		constexpr auto object_cbs_size = SizeAlign(object_size, 256) * d3d12::settings::num_back_buffers;
+		constexpr auto model_cbs_size = SizeAlign(model_size, 256) * d3d12::settings::num_back_buffers;
+		constexpr auto cbs_size = object_cbs_size + model_cbs_size;
+
+		m_constant_buffer_pool = m_render_system->CreateConstantBufferPool((uint32_t) std::ceil(cbs_size / (1024 * 1024.f)));
+		m_model_data = m_constant_buffer_pool->Create(model_size);
+
+		// Initialize cameras
+
 		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
 
-		//TODO: Platform independent (isn't possible with the current pool implementation)
+		// Create Light Buffer
 
-		D3D12RenderSystem* d3d12_render_system = dynamic_cast<D3D12RenderSystem*>(m_render_system);
-		auto mesh_details_size = sizeof(CompressedVertex::Details) * d3d12::settings::num_models_per_buffer;
+		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
+		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
 
-		m_model_data = new D3D12ConstantBufferHandle();
-		m_model_data->m_native = d3d12::AllocConstantBuffer(d3d12_render_system->m_cb_heap, mesh_details_size);
+		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
+		m_light_buffer = m_structured_buffer->Create(light_buffer_size, light_buffer_stride, false);
+
 	}
 
 	//! Update the scene graph
@@ -106,6 +128,7 @@ namespace wr
 		if (should_update)
 			Optimize();
 
+		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, m_light_buffer, cmd_list);
 		m_render_meshes_func_impl(m_render_system, m_batches, cmd_list);
 	}
 
@@ -114,15 +137,19 @@ namespace wr
 		return m_batches; 
 	}
 
-	D3D12ConstantBufferHandle* SceneGraph::GetModelData()
+	ConstantBufferHandle* SceneGraph::GetModelData()
 	{
 		return m_model_data;
+	}
+	StructuredBufferHandle* SceneGraph::GetLightBuffer()
+	{
+		return m_light_buffer;
 	}
 
 	void SceneGraph::Optimize() 
 	{
-		D3D12RenderSystem* d3d12_render_system = dynamic_cast<D3D12RenderSystem*>(m_render_system);
 		constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
+		constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
 		std::vector<Model*> models;
 		models.reserve(m_mesh_nodes.size());
@@ -136,13 +163,13 @@ namespace wr
 			auto it = m_batches.find(node->m_model);
 
 			//Insert new if doesn't exist
-			if (it == m_batches.end()) {
+			if (it == m_batches.end())
+			{
 
-				auto transform_cb = new D3D12ConstantBufferHandle();
-				transform_cb->m_native = d3d12::AllocConstantBuffer(d3d12_render_system->m_cb_heap, sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
+				ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
 
 				auto& batch = m_batches[node->m_model]; 
-				batch.batchBuffer = transform_cb;
+				batch.batch_buffer = object_buffer;
 				batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
 
 				it = m_batches.find(node->m_model);
@@ -177,13 +204,14 @@ namespace wr
 		for (auto& elem : m_batches)
 		{
 			temp::MeshBatch& batch = elem.second;
-			d3d12::UpdateConstantBuffer(batch.batchBuffer->m_native, d3d12_render_system->GetFrameIdx(), batch.data.objects.data(), sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
+			m_constant_buffer_pool->Update(batch.batch_buffer, model_size, 0, (uint8_t*) batch.data.objects.data());
 		}
 
 		//Update model data
 
 		auto mesh_details_size = mesh_details.size() * d3d12::settings::num_models_per_buffer;
-		d3d12::UpdateConstantBuffer(m_model_data->m_native, d3d12_render_system->GetFrameIdx(), mesh_details.data(), mesh_details_size);
+		m_model_data->m_pool->Update(m_model_data, mesh_details_size, 0, (uint8_t*) mesh_details.data());
+
 
 	}
 
