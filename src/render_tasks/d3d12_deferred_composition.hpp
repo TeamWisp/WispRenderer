@@ -109,7 +109,7 @@ namespace wr
 						for (auto i = 0; i < data.out_bundle_cmd_lists.size(); i++)
 						{
 							d3d12::Begin(data.out_bundle_cmd_lists[i], 0);
-							RecordDrawCommands(n_render_system, data.out_bundle_cmd_lists[i], camera_cb->m_native, data, i);
+							RecordDrawCommands(n_render_system, data.out_bundle_cmd_lists[i], static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, i);
 							d3d12::End(data.out_bundle_cmd_lists[i]);
 						}
 						data.out_requires_bundle_recording = false;

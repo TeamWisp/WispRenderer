@@ -59,9 +59,9 @@ decltype(wr::SceneGraph::m_init_meshes_func_impl) wr::SceneGraph::m_init_meshes_
 	static_cast<renderer_type*>(render_system)->function(nodes); \
 };
 #define LINK_SG_INIT_CAMERAS(renderer_type, function) \
-decltype(wr::SceneGraph::m_init_cameras_func_impl) wr::SceneGraph::m_init_cameras_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::CameraNode>>& nodes, ConstantBufferPool* cb_pool) \
+decltype(wr::SceneGraph::m_init_cameras_func_impl) wr::SceneGraph::m_init_cameras_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::CameraNode>>& nodes) \
 { \
-	static_cast<renderer_type*>(render_system)->function(nodes, cb_pool); \
+	static_cast<renderer_type*>(render_system)->function(nodes); \
 };
 #define LINK_SG_INIT_LIGHTS(renderer_type, function) \
 decltype(wr::SceneGraph::m_init_lights_func_impl) wr::SceneGraph::m_init_lights_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::LightNode>>& nodes, std::vector<Light>& lights) \
