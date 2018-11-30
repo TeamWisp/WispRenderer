@@ -36,6 +36,11 @@ namespace wr
 		{
 			m_structured_buffer_pools[i].reset();
 		}
+		
+		for (int i = 0; i < m_model_pools.size(); ++i)
+		{
+			m_model_pools[i].reset();
+		}
 
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
@@ -135,6 +140,11 @@ namespace wr
 			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
 		}
 
+		for (int i = 0; i < m_model_pools.size(); ++i) 
+		{
+			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
+		}
+
 		d3d12::End(m_direct_cmd_list);
 
 		scene_graph->Update();
@@ -179,7 +189,9 @@ namespace wr
 
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)
 	{
-		return std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
+		std::shared_ptr<D3D12ModelPool> pool = std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
+		m_model_pools.push_back(pool);
+		return pool;
 	}
 
 	std::shared_ptr<ConstantBufferPool> D3D12RenderSystem::CreateConstantBufferPool(std::size_t size_in_mb)
@@ -430,9 +442,6 @@ namespace wr
 		{
 			for (auto& mesh : node->m_model->m_meshes)
 			{
-				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-				
-				static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->StageMesh(n_mesh, m_direct_cmd_list);
 			}
 		}
 	}

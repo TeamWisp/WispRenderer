@@ -22,6 +22,7 @@ namespace wr
 	struct D3D12ConstantBufferHandle;
 
 	class D3D12StructuredBufferPool;
+	class D3D12ModelPool;
 
 	namespace temp
 	{
@@ -116,8 +117,8 @@ namespace wr
 		std::shared_ptr<ConstantBufferPool> m_camera_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
-		d3d12::HeapResource* m_light_buffer;
-
+		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
+    
 	private:
 		int num_draws = 1;
 		int commands_size;
