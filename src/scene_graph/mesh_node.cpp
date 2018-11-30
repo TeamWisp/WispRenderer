@@ -4,7 +4,7 @@ namespace wr
 {
 
 	MeshNode::MeshNode(Model* model)
-		: Node(), m_model(model), m_position{ 0, 0, 0, 1 }, m_scale{ 1, 1, 1, 0 }
+		: Node(), m_model(model), m_position{ 0, 0, 0, 1 }, m_scale{ 1, 1, 1, 0 }, m_rotation_deg({ 0, 0, 0})
 	{
 	}
 
