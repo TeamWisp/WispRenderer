@@ -9,6 +9,7 @@
 
 namespace wr 
 {
+	class ConstantBufferPool;
 	
 	struct ConstantBufferHandle 
 	{
