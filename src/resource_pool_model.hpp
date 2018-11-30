@@ -8,6 +8,9 @@
 #include "util/defines.hpp"
 #include "resource_pool_material.hpp"
 
+struct aiScene;
+struct aiNode;
+
 namespace wr
 {
 	class ModelPool;
@@ -15,6 +18,7 @@ namespace wr
 	struct Mesh
 	{
 		ModelPool* m_model_pool;
+		MaterialHandle* material;
 	};
 
 	template<typename TV, typename TI = std::uint32_t>
@@ -48,7 +52,7 @@ namespace wr
 		ModelPool& operator=(ModelPool&&) = delete;
 
 		[[nodiscard]] Model* Load(std::string_view path, ModelType type);
-		[[nodiscard]] std::pair<Model*, std::vector<MaterialHandle>> LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type);
+		[[nodiscard]] std::pair<Model*, std::vector<MaterialHandle*>> LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type);
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
 
@@ -65,6 +69,9 @@ namespace wr
 
 		virtual void DestroyModel(Model* model) = 0;
 		virtual void DestroyMesh(Mesh* mesh) = 0;
+
+		int LoadNodeMeshes(const aiScene* scene, aiNode* node, Model* model);
+		int LoadNodeMeshesWithMaterials(const aiScene* scene, aiNode* node, Model* model, std::vector<MaterialHandle*> materials);
 
 		std::size_t m_vertex_buffer_pool_size_in_mb;
 		std::size_t m_index_buffer_pool_size_in_mb;
