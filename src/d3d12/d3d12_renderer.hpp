@@ -23,6 +23,13 @@ namespace wr
 
 	namespace temp
 	{
+		struct IndirectCommand
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
+			D3D12_DRAW_INDEXED_ARGUMENTS drawArguments;
+		};
+
 		struct ProjectionView_CBData
 		{
 			DirectX::XMMATRIX m_view;
@@ -86,7 +93,7 @@ namespace wr
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, CommandList* cmd_list);
 
-		void Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list);
+		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -107,6 +114,13 @@ namespace wr
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 		d3d12::HeapResource* m_light_buffer;
+
+		int num_draws = 1;
+		int commands_size;
+		ID3D12Resource* m_cmd_buffer;
+		ID3D12Resource* m_upload_cmd_buffer;
+		d3d12::DescriptorHeap* m_indrect_heap;
+		ID3D12CommandSignature* m_cmd_signature;
     
 	private:
 		std::optional<bool> m_requested_fullscreen_state;

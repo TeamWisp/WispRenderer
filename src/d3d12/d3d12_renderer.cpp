@@ -101,6 +101,43 @@ namespace wr
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
 
+		// Temporary indirect code
+		commands_size = (num_draws * sizeof(temp::IndirectCommand)) * d3d12::settings::num_back_buffers;
+		D3D12_RESOURCE_DESC commandBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(commands_size);
+			
+		TRY(m_device->m_native->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&commandBufferDesc,
+			D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT,
+			nullptr,
+			IID_PPV_ARGS(&m_cmd_buffer)));
+
+		TRY(m_device->m_native->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(commands_size),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&m_upload_cmd_buffer)));
+
+		D3D12_INDIRECT_ARGUMENT_DESC arg_descs[3] = {};
+		arg_descs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
+		arg_descs[0].ConstantBufferView.RootParameterIndex = 0;
+		arg_descs[1].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
+		arg_descs[1].ConstantBufferView.RootParameterIndex = 1;
+		arg_descs[2].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+
+		D3D12_COMMAND_SIGNATURE_DESC cmd_signature_desc = {};
+		cmd_signature_desc.pArgumentDescs = arg_descs;
+		cmd_signature_desc.NumArgumentDescs = _countof(arg_descs);
+		cmd_signature_desc.ByteStride = sizeof(temp::IndirectCommand);
+
+		auto rs = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(root_signatures::basic));
+
+		TRY_M(m_device->m_native->CreateCommandSignature(&cmd_signature_desc, rs->m_native->m_native, IID_PPV_ARGS(&m_cmd_signature))
+			, "Failed to create command signature");
+
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
@@ -471,11 +508,18 @@ namespace wr
 
 	}
 
-	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list)
+	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
 
+		auto d3d12_camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera->m_camera_cb);
+		d3d12::BindConstantBuffer(n_cmd_list, d3d12_camera_cb->m_native, 0, GetFrameIdx());
+
+		auto frame_idx = GetFrameIdx();
+		std::vector<temp::IndirectCommand> commands(1);
+
 		//Render batches
+		int cmd_id = 0;
 		for (auto& elem : batches)
 		{
 
@@ -483,6 +527,7 @@ namespace wr
 			temp::MeshBatch& batch = elem.second;
 
 			//Bind object data
+
 			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batchBuffer);
 			d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
 
@@ -502,7 +547,16 @@ namespace wr
 						static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer(),
 						n_mesh->m_index_staging_buffer_offset,
 						n_mesh->m_index_staging_buffer_size);
-					d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances);
+					/*d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances);*/
+
+					commands[cmd_id].cbv_camera = d3d12_camera_cb->m_native->m_gpu_addresses[frame_idx];
+					commands[cmd_id].cbv_object = d3d12_cb_handle->m_native->m_gpu_addresses[frame_idx];
+					commands[cmd_id].drawArguments.IndexCountPerInstance = n_mesh->m_index_count;
+					commands[cmd_id].drawArguments.InstanceCount = batch.num_instances;
+					commands[cmd_id].drawArguments.StartIndexLocation = 0;
+					commands[cmd_id].drawArguments.StartInstanceLocation = 0;
+					commands[cmd_id].drawArguments.BaseVertexLocation = 0;
+					cmd_id++;
 				}
 				else
 				{
@@ -513,6 +567,28 @@ namespace wr
 			//Reset instances
 			batch.num_instances = 0;
 		}
+
+		// ############# Execute Indirect ###################
+		// Copy data to the intermediate upload heap and then schedule a copy
+		// from the upload heap to the command buffer.
+		D3D12_SUBRESOURCE_DATA commandData = {};
+		commandData.pData = reinterpret_cast<UINT8*>(commands.data());
+		commandData.RowPitch = commands_size;
+		commandData.SlicePitch = commandData.RowPitch;
+
+		n_cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_cmd_buffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT, D3D12_RESOURCE_STATE_COPY_DEST));
+		UpdateSubresources<1>(n_cmd_list->m_native, m_cmd_buffer, m_upload_cmd_buffer, 0, 0, 1, &commandData);
+		n_cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_cmd_buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT));
+
+		// Execute
+		n_cmd_list->m_native->ExecuteIndirect(
+			m_cmd_signature,
+			1,
+			m_cmd_buffer,
+			0,
+			nullptr,
+			0
+		);
 	}
 
 	unsigned int D3D12RenderSystem::GetFrameIdx()

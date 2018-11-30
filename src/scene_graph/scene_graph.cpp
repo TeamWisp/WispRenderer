@@ -88,7 +88,7 @@ namespace wr
 	/*!
 		The user is expected to call `Optimize`. If they don't this function will do it manually.
 	*/
-	void SceneGraph::Render(CommandList* cmd_list)
+	void SceneGraph::Render(CommandList* cmd_list, CameraNode* camera)
 	{
 		bool should_update = m_batches.size() == 0;
 
@@ -105,7 +105,7 @@ namespace wr
 			Optimize();
 
 		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, cmd_list);
-		m_render_meshes_func_impl(m_render_system, m_batches, cmd_list);
+		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
 	}
 
 	temp::MeshBatches& SceneGraph::GetBatches() 
