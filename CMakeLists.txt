@@ -27,20 +27,18 @@ file(GLOB UTIL_HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/util/
 file(GLOB UTIL_SOURCES CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/util/*.cpp")
 file(GLOB IMGUI_HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/*.hpp")
 file(GLOB IMGUI_SOURCES CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/*.cpp")
-file(GLOB DIRECTXTEX_HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/d3d12/third_party/DirectXTex/*.h")
-file(GLOB DIRECTXTEX_SOURCES CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/d3d12/third_party/DirectXTex/*.cpp")
 
 source_group("High Level API" FILES ${SOURCES} ${HEADERS})
 source_group("Frame Graph" FILES ${FG_SOURCES} ${FG_HEADERS})
 source_group("Scene Graph" FILES ${SG_SOURCES} ${SG_HEADERS})
 source_group("Render Tasks" FILES ${RT_SOURCES} ${RT_HEADERS})
 source_group("D3D12" FILES ${D3D12_SOURCES} ${D3D12_HEADERS})
-source_group("D3D12\\Third Party" FILES ${DIRECTXTEX_SOURCES} ${DIRECTXTEX_HEADERS})
 source_group("Utility" FILES ${UTIL_SOURCES} ${UTIL_HEADERS})
 source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
 ## dependencies ##
 add_subdirectory(deps/fmt)
+add_subdirectory(deps/DirectXTex)
 
 ## dependencies options ##
 set(FMT_TEST OFF)
@@ -50,8 +48,11 @@ set(FMT_WERROR OFF)
 
 ## dependencies sorting ##
 set_target_properties (fmt PROPERTIES FOLDER ThirdParty)
+set_target_properties (DirectXTex PROPERTIES FOLDER ThirdParty)
+
 if (MSVC)
 	target_compile_options(fmt PRIVATE /W0)
+	target_compile_options(DirectXTex PRIVATE /W0)
 endif()
 
 add_library(WispRenderer ${HEADERS} ${SOURCES} 
@@ -60,8 +61,7 @@ add_library(WispRenderer ${HEADERS} ${SOURCES}
 										${RT_HEADERS} ${RT_SOURCES} 
 										${FG_HEADERS} ${FG_SOURCES} 
 										${SG_HEADERS} ${SG_SOURCES} 
-										${D3D12_SOURCES} ${D3D12_HEADERS}
-										${DIRECTXTEX_SOURCES} ${DIRECTXTEX_HEADERS})
+										${D3D12_SOURCES} ${D3D12_HEADERS})
 										
 target_link_libraries(WispRenderer dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
 set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 17)
@@ -71,8 +71,8 @@ if (MSVC)
 	target_compile_options(WispRenderer PRIVATE /W4 /permissive- /MP /Gm-)
 endif()
 
-target_include_directories(WispRenderer PUBLIC deps/fmt/include)
-target_link_libraries(WispRenderer fmt)
+target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/DirectXTex/DirectXTex/)
+target_link_libraries(WispRenderer fmt DirectXTex)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
