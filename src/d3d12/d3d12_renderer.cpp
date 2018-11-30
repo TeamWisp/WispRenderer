@@ -224,9 +224,9 @@ namespace wr
 			desc.m_rtv_formats = properties.m_rtv_formats;
 			desc.m_dsv_format = properties.m_dsv_format;
 
-			if (properties.width.has_value() || properties.height.has_value())
+			if (properties.m_width.has_value() || properties.m_height.has_value())
 			{
-				return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.width.value(), properties.height.value(), desc);
+				return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
 			}
 			else if (m_window.has_value())
 			{
@@ -418,11 +418,14 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes, ConstantBufferPool* cb_pool)
+	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
+		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
+		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size / (1024 * 1024.f)));
+
 		for (auto& node : nodes)
 		{
-			node->m_camera_cb = cb_pool->Create(sizeof(temp::ProjectionView_CBData));
+			node->m_camera_cb = m_camera_pool->Create(sizeof(temp::ProjectionView_CBData));
 		}
 	}
 
