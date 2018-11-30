@@ -107,7 +107,7 @@ namespace wr
 	/*!
 		The user is expected to call `Optimize`. If they don't this function will do it manually.
 	*/
-	void SceneGraph::Render(CommandList* cmd_list)
+	void SceneGraph::Render(CommandList* cmd_list, CameraNode* camera)
 	{
 		bool should_update = m_batches.size() == 0;
 
