@@ -2,7 +2,7 @@
 
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
-#include "../d3d12/d3d12_resource_pool.hpp"
+#include "../d3d12/d3d12_resource_pool_constant_buffer.hpp"
 #include "../d3d12/d3d12_resource_pool_structured_buffer.hpp"
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
@@ -84,8 +84,14 @@ namespace wr
 			{
 				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
-				const auto camera_cb = scene_graph.GetActiveCamera()->m_camera_cb;
+				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
+
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
+				d3d12::CreateSRVFromStructuredBuffer(
+					static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, 
+					cpu_handle, 
+					frame_idx);
 
 				if constexpr (d3d12::settings::use_bundles)
 				{

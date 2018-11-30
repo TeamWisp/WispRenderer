@@ -9,6 +9,7 @@ namespace resources
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
+	static wr::Model* test_model;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
