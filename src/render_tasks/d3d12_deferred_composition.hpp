@@ -30,9 +30,6 @@ namespace wr
 
 		inline void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, DeferredCompositionTaskData const & data, unsigned int frame_idx)
 		{
-	    auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
-	    d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
-      
 			d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 			d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
@@ -76,15 +73,6 @@ namespace wr
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
 
-			}
-
-			if constexpr (d3d12::settings::use_bundles)
-			{
-				data.out_requires_bundle_recording = true;
-				for (auto& bundle : data.out_bundle_cmd_lists)
-				{
-					bundle = d3d12::CreateCommandList(n_render_system.m_device, 1, CmdListType::CMD_LIST_BUNDLE);
-				}
 			}
 		}
 
