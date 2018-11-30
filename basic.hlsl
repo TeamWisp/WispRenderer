@@ -1,7 +1,7 @@
 
 //48 KiB; 48 * 1024 / sizeof(ObjectData)
-//48 * 1024 / 80 = 614
-#define MAX_INSTANCES 614
+//48 * 1024 / 144 = 341
+#define MAX_INSTANCES 341
 
 //48 KiB; 48 * 1024 / sizeof(ModelData)
 //48 * 1024 / 48 = 1024
@@ -29,7 +29,9 @@ cbuffer CameraProperties : register(b0)
 
 struct ObjectData
 {
-	float4x4 model;
+	float4x4 mvp;
+
+	float4x4 vm;
 
 	uint3 pad;
 	uint model_id;
@@ -77,14 +79,10 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 
 	float3 pos = decode_pos(input.pos.xyz, mod.pos_start, mod.pos_length);
 	float2 uv = decode_uv(float2(input.pos.w, input.normal.w), mod.uv_start_length);
-
-	//TODO: Use precalculated MVP or at least VP
-	float4x4 vm = mul(view, inst.model);
-	float4x4 mvp = mul(projection, vm);
 	
-	output.pos = mul(mvp, float4(pos, 1.0f));
+	output.pos = mul(inst.mvp, float4(pos, 1.0f));
 	output.uv = uv;
-	output.normal = normalize(mul(vm, input.normal.xyz * 2 - 1)).xyz;
+	output.normal = normalize(mul(inst.vm, input.normal.xyz * 2 - 1)).xyz;
 
 	return output;
 }

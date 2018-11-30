@@ -195,7 +195,14 @@ namespace wr
 
 			}
 
-			batch.data.objects[offset] = { node->m_transform, { 0, 0, 0 }, j };
+			DirectX::XMMATRIX& view = GetActiveCamera()->m_view;
+			DirectX::XMMATRIX& projection = GetActiveCamera()->m_projection;
+
+			DirectX::XMMATRIX& model = node->m_transform;
+			DirectX::XMMATRIX vm = DirectX::XMMatrixMultiply(model, view);
+			DirectX::XMMATRIX mvp = DirectX::XMMatrixMultiply(vm, projection);
+
+			batch.data.objects[offset] = { mvp, vm, { 0, 0, 0 }, j };
 			++offset;
 
 		}

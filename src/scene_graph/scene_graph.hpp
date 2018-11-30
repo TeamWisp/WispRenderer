@@ -61,9 +61,12 @@ namespace wr
 
 	namespace temp {
 
-		struct ObjectData {
+		struct ObjectData 
+		{
 
-			DirectX::XMMATRIX m_model;
+			DirectX::XMMATRIX m_mvp;
+
+			DirectX::XMMATRIX m_vm;
 			
 			uint32_t m_pad[3];
 			uint32_t m_model_id;
