@@ -64,6 +64,11 @@ namespace wr
 		return nullptr;
 	}
 
+	std::vector<std::shared_ptr<LightNode>>& SceneGraph::GetLightNodes()
+	{
+		return m_light_nodes;
+	}
+
 	//! Initialize the scene graph
 	void SceneGraph::Init()
 	{
