@@ -33,9 +33,10 @@ namespace wr
 			d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 			d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
+			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
+
 			d3d12::BindConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
-			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
 			d3d12::BindDescriptorTable(cmd_list, gpu_handle, 1);
 
@@ -122,6 +123,7 @@ namespace wr
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
+					d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
