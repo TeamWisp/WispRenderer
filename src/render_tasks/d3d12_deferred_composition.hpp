@@ -119,10 +119,9 @@ namespace wr
 
 				d3d12::BindViewport(cmd_list, viewport);
 
-				d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
-
 				if constexpr (d3d12::settings::use_bundles)
 				{
+					d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
