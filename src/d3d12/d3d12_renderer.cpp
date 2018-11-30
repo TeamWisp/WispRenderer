@@ -11,6 +11,7 @@
 #include "d3d12_resource_pool_model.hpp"
 #include "d3d12_resource_pool_constant_buffer.hpp"
 #include "d3d12_resource_pool_texture.hpp"
+#include "d3d12_resource_pool_structured_buffer.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"
@@ -32,8 +33,11 @@ namespace wr
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
-		d3d12::Destroy(m_sb_heap);
-		d3d12::Destroy(m_cb_heap);
+		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
+		{
+			m_structured_buffer_pools[i].reset();
+		}
+
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
@@ -72,11 +76,6 @@ namespace wr
 			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
 			+ cam_cbs_size;
 
-		m_cb_heap = d3d12::CreateHeap_SBO(m_device, sbo_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
-
-		// Create Constant Buffer
-		d3d12::MapHeap(m_cb_heap);
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
@@ -85,15 +84,6 @@ namespace wr
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
-
-		// Create Light Buffer
-
-		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
-		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
-
-		m_sb_heap = d3d12::CreateHeap_BSBO(m_device, light_buffer_aligned_size, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
-
-		m_light_buffer = d3d12::AllocStructuredBuffer(m_sb_heap, light_buffer_size, light_buffer_stride, false);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -120,6 +110,14 @@ namespace wr
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
 
+		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+		for (int i = 0; i < m_structured_buffer_pools.size(); ++i) 
+		{
+			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
+		}
+
+		d3d12::End(m_direct_cmd_list);
 
 		scene_graph->Update();
 
@@ -127,6 +125,9 @@ namespace wr
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<D3D12CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
+
+		n_cmd_lists.push_back(m_direct_cmd_list);
+
 		for (auto& list : cmd_lists)
 		{
 			n_cmd_lists.push_back(list);
@@ -169,6 +170,18 @@ namespace wr
 		return std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
 	}
 
+	std::shared_ptr<ConstantBufferPool> D3D12RenderSystem::CreateConstantBufferPool(std::size_t size_in_mb)
+	{
+		return std::make_shared<D3D12ConstantBufferPool>(*this, size_in_mb);
+	}
+
+	std::shared_ptr<StructuredBufferPool> D3D12RenderSystem::CreateStructuredBufferPool(std::size_t size_in_mb)
+	{
+		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_mb); 
+		m_structured_buffer_pools.push_back(pool);
+		return pool;
+	}
+
 	void D3D12RenderSystem::WaitForAllPreviousWork()
 	{
 		for (auto& fence : m_fences)
@@ -196,11 +209,6 @@ namespace wr
 	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
 		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
-	}
-
-	d3d12::HeapResource* D3D12RenderSystem::GetLightBuffer()
-	{
-		return m_light_buffer;
 	}
 
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
@@ -419,11 +427,12 @@ namespace wr
 
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
+		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
+		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size / (1024 * 1024.f)));
+
 		for (auto& node : nodes)
 		{
-			auto camera_cb = new D3D12ConstantBufferHandle();
-			camera_cb->m_native = d3d12::AllocConstantBuffer(m_cb_heap, sizeof(temp::ProjectionView_CBData));
-			node->m_camera_cb = camera_cb;
+			node->m_camera_cb = m_camera_pool->Create(sizeof(temp::ProjectionView_CBData));
 		}
 	}
 
@@ -455,13 +464,11 @@ namespace wr
 			data.m_inverse_projection = node->m_inverse_projection;
 			data.m_view = node->m_view;
 
-			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(node->m_camera_cb);
-
-			d3d12::UpdateConstantBuffer(d3d12_cb_handle->m_native, GetFrameIdx(), &data, sizeof(temp::ProjectionView_CBData));
+			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &data);
 		}
 	}
 
-	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, CommandList* cmd_list)
+	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
 
@@ -474,7 +481,9 @@ namespace wr
 
 		lights[0].tid |= count << 2;
 
-		d3d12::UpdateStructuredBuffer(m_light_buffer, m_render_window.value()->m_frame_idx, lights.data(), m_light_buffer->m_unaligned_size, 0, m_light_buffer->m_stride, n_cmd_list);
+		auto n_structured_buffer = static_cast<D3D12StructuredBufferHandle*>(structured_buffer);
+
+		structured_buffer->m_pool->Update(structured_buffer, lights.data(), n_structured_buffer->m_native->m_unaligned_size, 0);
 
 	}
 
@@ -490,7 +499,7 @@ namespace wr
 			temp::MeshBatch& batch = elem.second;
 
 			//Bind object data
-			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batchBuffer);
+			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batch_buffer);
 			d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
 
 			//Render meshes

@@ -21,6 +21,8 @@ namespace wr
 	class TexturePool;
 	class MaterialPool;
 	class ModelPool;
+	class ConstantBufferPool;
+	class StructuredBufferPool;
 	class FrameGraph;
 
 	class RenderSystem
@@ -37,6 +39,8 @@ namespace wr
 		virtual std::shared_ptr<TexturePool> CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures) = 0;
 		virtual std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) = 0;
 		virtual std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb) = 0;
+		virtual std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_mb) = 0;
+		virtual std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_mb) = 0;
 
 		virtual void PrepareRootSignatureRegistry() = 0;
 		virtual void PrepareShaderRegistry() = 0;
