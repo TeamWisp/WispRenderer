@@ -15,7 +15,7 @@ namespace viknell_scene
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
-		camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 70.f, (float)window->GetWidth() / (float)window->GetHeight());
+		camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition(0, 0, -3);
 		
 		// Geometry
@@ -35,15 +35,9 @@ namespace viknell_scene
 		right_wall->SetRotation({ 0, 90, 0 });
 
 		// Lights
-		auto point_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 5, 5, 5 });
-		point_light->SetRadius(5.f);
-		point_light->SetPosition({ 0, 0, 0 });
-
-		/*auto spot_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::SPOT, DirectX::XMVECTOR{ 1, 1, 1 });
-		spot_light->SetPosition({ 0, 0, -3 });
-		spot_light->SetRadius(5.f);
-		spot_light->SetDirection({ 0, 0, 1 });
-		spot_light->SetAngle(10.f);*/
+		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
+		point_light_0->SetRadius(15.f);
+		point_light_0->SetPosition({ 0, 0, 0 });
 
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 		//dir_light->SetDirection({ 0, 0, 1 });

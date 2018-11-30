@@ -1,3 +1,9 @@
 [submodule "deps/fmt"]
 	path = deps/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "DirectXTex"]
+	path = DirectXTex
+	url = https://github.com/Microsoft/DirectXTex
+[submodule "deps/DirectXTex"]
+	path = deps/DirectXTex
+	url = https://github.com/Microsoft/DirectXTex

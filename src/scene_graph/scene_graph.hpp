@@ -55,7 +55,7 @@ namespace wr
 		float rad = 5.f;								//Radius for point, height for spot
 
 		DirectX::XMFLOAT3 col = { 1, 1, 1 };			//Color (and strength)
-		uint32_t tid = (uint32_t)LightType::POINT;		//Type id; LightType::x
+		uint32_t tid = (uint32_t)LightType::FREE;		//Type id; LightType::x
 
 		DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
 		float ang = 40.f / 180.f * 3.1415926535f;		//Angle for spot; in radians
@@ -109,6 +109,8 @@ namespace wr
 		std::vector<std::shared_ptr<Node>> GetChildren(std::shared_ptr<Node> const & parent = nullptr);
 		void RemoveChildren(std::shared_ptr<Node> const & parent);
 		std::shared_ptr<CameraNode> GetActiveCamera();
+
+		std::vector<std::shared_ptr<LightNode>>& GetLightNodes();
 
 		void Init();
 		void Update();

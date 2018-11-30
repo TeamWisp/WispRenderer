@@ -112,12 +112,12 @@ namespace wr
 
 		texture->m_native = native;
 
-		native->m_CpuDescriptorHandle = m_descriptor_handle;
+		native->m_cpu_descriptor_handle = m_descriptor_handle;
 		native->m_resource->SetName(wide_string.c_str());
 
 		DXGI_FORMAT format = metadata.format;
 
-		d3d12::CreateSRVFromTexture(native, native->m_CpuDescriptorHandle, (Format)format);
+		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, (Format)format);
 
 		m_textures.push_back(texture);
 
@@ -162,11 +162,11 @@ namespace wr
 
 		texture->m_native = native;
 
-		native->m_CpuDescriptorHandle = m_descriptor_handle;
+		native->m_cpu_descriptor_handle = m_descriptor_handle;
 
 		DXGI_FORMAT format = metadata.format;
 
-		d3d12::CreateSRVFromTexture(native, native->m_CpuDescriptorHandle, (Format)format);
+		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, (Format)format);
 
 		m_textures.push_back(texture);
 
@@ -210,11 +210,11 @@ namespace wr
 
 		texture->m_native = native;
 
-		native->m_CpuDescriptorHandle = m_descriptor_handle;
+		native->m_cpu_descriptor_handle = m_descriptor_handle;
 
 		DXGI_FORMAT format = metadata.format;
 
-		d3d12::CreateSRVFromTexture(native, native->m_CpuDescriptorHandle, (Format)format);
+		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, (Format)format);
 
 		m_textures.push_back(texture);
 

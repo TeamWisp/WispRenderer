@@ -241,7 +241,7 @@ namespace wr::d3d12
 
 		for (auto i = 0; i < textures.size(); i++)
 		{
-			if (textures[i]->m_CurrentState != to)
+			if (textures[i]->m_current_state != to)
 			{
 				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 					textures[i]->m_resource,
@@ -249,7 +249,7 @@ namespace wr::d3d12
 					(D3D12_RESOURCE_STATES)to
 				);
 
-				textures[i]->m_CurrentState = to;
+				textures[i]->m_current_state = to;
 
 				barriers.push_back(barrier);
 			}

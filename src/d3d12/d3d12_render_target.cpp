@@ -283,7 +283,7 @@ namespace wr::d3d12
 		texture->m_array_size = description->m_array_size;
 		texture->m_mip_levels = description->m_mip_levels;
 		texture->m_format = description->m_texture_format;
-		texture->m_CurrentState = ResourceState::COPY_DEST;
+		texture->m_current_state = ResourceState::COPY_DEST;
 		texture->m_resource = resource;
 		texture->m_intermediate = intermediate;
 		texture->m_is_cubemap = description->m_is_cubemap;

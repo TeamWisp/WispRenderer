@@ -192,18 +192,18 @@ namespace wr::d3d12
 
 	struct Texture
 	{
-		size_t m_width;
-		size_t m_height;
-		size_t m_depth;
-		size_t m_array_size;
-		size_t m_mip_levels;
+		std::size_t m_width;
+		std::size_t m_height;
+		std::size_t m_depth;
+		std::size_t m_array_size;
+		std::size_t m_mip_levels;
 
 		Format m_format;
 
 		ID3D12Resource* m_resource;
 		ID3D12Resource* m_intermediate;
-		ResourceState m_CurrentState;
-		DescHeapCPUHandle m_CpuDescriptorHandle;
+		ResourceState m_current_state;
+		DescHeapCPUHandle m_cpu_descriptor_handle;
 
 		uint8_t* m_allocated_memory;
 
