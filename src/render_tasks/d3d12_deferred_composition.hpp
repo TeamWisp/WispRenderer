@@ -32,9 +32,10 @@ namespace wr
 			d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 			d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
+			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
+
 			d3d12::BindConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
-			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
 			d3d12::BindDescriptorTable(cmd_list, gpu_handle, 1);
 
@@ -102,11 +103,11 @@ namespace wr
 					// Record all bundles again if required.
 					if (data.out_requires_bundle_recording)
 					{
-						for (auto& bundle : data.out_bundle_cmd_lists)
+						for (auto i = 0; i < data.out_bundle_cmd_lists.size(); i++)
 						{
-							d3d12::Begin(bundle, 0);
-							RecordDrawCommands(n_render_system, bundle, camera_cb->m_native, data, frame_idx);
-							d3d12::End(bundle);
+							d3d12::Begin(data.out_bundle_cmd_lists[i], 0);
+							RecordDrawCommands(n_render_system, data.out_bundle_cmd_lists[i], camera_cb->m_native, data, i);
+							d3d12::End(data.out_bundle_cmd_lists[i]);
 						}
 						data.out_requires_bundle_recording = false;
 					}
