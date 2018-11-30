@@ -9,10 +9,11 @@ namespace resources
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
+	static wr::Model* test_model;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		model_pool = render_system->CreateModelPool(1, 1);
+		model_pool = render_system->CreateModelPool(2, 2);
 
 		// Load Cube.
 		{
@@ -82,6 +83,10 @@ namespace resources
 			wr::CompressedVertex::CompressVertices(vertices, mesh.m_vertices, compression_details);
 
 			plane_model = model_pool->LoadCustom<wr::CompressedVertex>({ mesh }, compression_details);
+		}
+
+		{
+			test_model = model_pool->Load("resources/models/xbot.fbx", wr::ModelType::FBX);
 		}
 	}
 	

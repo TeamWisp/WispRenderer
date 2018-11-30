@@ -7,10 +7,17 @@
 //48 * 1024 / 48 = 1024
 #define MAX_MODELS 1024
 
+//pos.w, normal.w = vuv
+//pos.xyz = vpos
+//normal.xyz = vnormal
+//tangent.xyz = vtangent
+//tangent.w, bitangent.xy = vbitangent
 struct VS_INPUT
 {
 	float4 pos : POSITION;
 	float4 normal : NORMAL;
+	float4 tangent : TANGENT;
+	float2 bitangent : BITANGENT;
 };
 
 struct VS_OUTPUT
@@ -70,6 +77,11 @@ float2 decode_uv(float2 uv, float4 uv_start_length)
 	return uv_start_length.xy + uv * uv_start_length.zw;
 }
 
+float3 decode_direction(float3 dir)
+{
+	return dir * 2 - 1;
+}
+
 VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 {
 	VS_OUTPUT output;
@@ -79,10 +91,13 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 
 	float3 pos = decode_pos(input.pos.xyz, mod.pos_start, mod.pos_length);
 	float2 uv = decode_uv(float2(input.pos.w, input.normal.w), mod.uv_start_length);
+	float3 normal = decode_direction(input.normal.xyz);
+	//float3 tangent = decode_direction(input.tangent.xyz);
+	//float3 bitangent = decode_direction(float3(input.tangent.w, input.bitangent.xy));
 	
 	output.pos = mul(inst.mvp, float4(pos, 1.0f));
 	output.uv = uv;
-	output.normal = normalize(mul(inst.vm, input.normal.xyz * 2 - 1)).xyz;
+	output.normal = normalize(mul(inst.vm, normal)).xyz;
 
 	return output;
 }

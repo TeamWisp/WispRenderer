@@ -9,6 +9,9 @@
 #include "resource_pool_material.hpp"
 #include "vertex.hpp"
 
+struct aiScene;
+struct aiNode;
+
 namespace wr
 {
 	class ModelPool;
@@ -16,6 +19,7 @@ namespace wr
 	struct Mesh
 	{
 		ModelPool* m_model_pool;
+		MaterialHandle* material;
 	};
 
 	template<typename TV, typename TI = std::uint32_t>
@@ -50,7 +54,7 @@ namespace wr
 		ModelPool& operator=(ModelPool&&) = delete;
 
 		[[nodiscard]] Model* Load(std::string_view path, ModelType type);
-		[[nodiscard]] std::pair<Model*, std::vector<MaterialHandle>> LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type);
+		[[nodiscard]] std::pair<Model*, std::vector<MaterialHandle*>> LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type);
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes, CompressedVertex::Details compression_details = {});
 
@@ -67,6 +71,9 @@ namespace wr
 
 		virtual void DestroyModel(Model* model) = 0;
 		virtual void DestroyMesh(Mesh* mesh) = 0;
+
+		bool LoadMeshes(const aiScene* scene, std::vector<aiNode*> node, Model* model, std::vector<MaterialHandle*> materials = {});
+		void FindMeshes(const aiScene* scene, aiNode* node, std::vector<aiNode*>& nodes);
 
 		std::size_t m_vertex_buffer_pool_size_in_mb;
 		std::size_t m_index_buffer_pool_size_in_mb;

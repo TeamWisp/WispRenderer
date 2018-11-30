@@ -33,6 +33,8 @@ namespace wr
 		float m_pos[3];
 		float m_uv[2];
 		float m_normal[3];
+		float m_tangent[3];
+		float m_bitangent[3];
 
 		static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout();
 	};
@@ -46,6 +48,9 @@ namespace wr
 
 		uint16_t m_normal[3];
 		uint16_t m_uv_y;
+
+		uint16_t m_tangent[3];			//m_tangent[4] on GPU is m_bitangent[0]
+		uint16_t m_bitangent[3];		//m_bitangent[1] and m_bitangent[2] is stored as bitangent on GPU
 
 		//Requirement for rendering a compressed vertex (PerMesh data)
 		//m_uv_start + m_uv * m_uv_length
@@ -65,9 +70,19 @@ namespace wr
 		};
 
 		static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout();
-		static void CompressNormal(Vertex& in_vertex, CompressedVertex& out_vertex);
+
+		static void DetectBoundsPosition(float* pos, float* min_pos, float* max_pos);	//float[3]'s
+		static void DetectBoundsUv(float* uv, float* min_uv, float* max_uv);			//float[2]'s
+
+		static void CompressDirection(float* src, uint16_t* dst);						//float[3] and u16[3]
+		static void CompressPosition(float* src, uint16_t* dst, Details& det);			//float[3] and u16[3]
+		static void CompressUv(float* src, uint16_t& x, uint16_t& y, Details& det);		//float[2]
+
+		static void CompressTBN(Vertex& in_vertex, CompressedVertex& out_vertex);
+		static void CompressPositionAndUv(Vertex& in_vertex, CompressedVertex& out_vertex, Details& compression_details);
+
 		static void CompressVertices(std::vector<Vertex>& in_vertices, std::vector<CompressedVertex>& out_vertices, Details& compression_details);
-		static void CompressPositionAndUv(Vertex& in_vertex, CompressedVertex& out_vertex, CompressedVertex::Details& compression_details);
+
 	};
 
 	IS_PROPER_VERTEX_CLASS(Vertex)

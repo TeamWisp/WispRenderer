@@ -35,6 +35,6 @@ namespace wr::d3d12::settings
 	static const constexpr std::uint32_t num_instances_per_batch = 341U;		//48 KiB for ObjectData[]
 	static const constexpr std::uint32_t num_models_per_buffer = 1024U;			//48 KiB for CompressedVertex::Details[]
 	static const constexpr std::uint32_t num_lights = 21'845;					//1 MiB for StructuredBuffer<Light>
-	static const constexpr bool use_bundles = true;
+	static const constexpr bool use_bundles = false;
 
 } /* wr::d3d12::settings */
