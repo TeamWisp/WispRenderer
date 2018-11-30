@@ -129,7 +129,7 @@ namespace wr
 				}
 				else
 				{
-					RecordDrawCommands(n_render_system, cmd_list, camera_cb->m_native, data, frame_idx);
+					RecordDrawCommands(n_render_system, cmd_list, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, frame_idx);
 				}
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
