@@ -437,7 +437,7 @@ namespace wr
 		{
 			if (!node->RequiresUpdate(GetFrameIdx())) return;
 
-			node->UpdateTemp(GetFrameIdx());
+			node->UpdateTransform();
 		}
 	}
 
