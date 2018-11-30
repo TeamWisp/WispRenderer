@@ -15,7 +15,7 @@ namespace wr
 	class D3D12ConstantBufferPool : public ConstantBufferPool 
 	{
 	public:
-		explicit D3D12ConstantBufferPool(D3D12RenderSystem* render_system, std::size_t size_in_mb);
+		explicit D3D12ConstantBufferPool(D3D12RenderSystem& render_system, std::size_t size_in_mb);
 		~D3D12ConstantBufferPool() final;
 
 		void Evict() final;
@@ -24,12 +24,13 @@ namespace wr
 	protected:
 		ConstantBufferHandle* AllocateConstantBuffer(std::size_t buffer_size) final;
 		void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t* data) final;
+		void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t* data) final;
 		void DeallocateConstantBuffer(ConstantBufferHandle* handle) final;
 
 		std::vector<ConstantBufferHandle*> m_constant_buffer_handles;
 
 		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_heap;
-		D3D12RenderSystem* m_render_system;
+		D3D12RenderSystem& m_render_system;
 	};
 
 } /* wr */
