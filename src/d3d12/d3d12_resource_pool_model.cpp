@@ -127,19 +127,23 @@ namespace wr
 		d3d12::MakeResident(m_index_buffer);
 	}
 
-	void D3D12ModelPool::StageMesh(Mesh * mesh, d3d12::CommandList * cmd_list)
+	void D3D12ModelPool::StageMeshes(d3d12::CommandList * cmd_list)
 	{
-		D3D12Mesh* d3d12_mesh = static_cast<D3D12Mesh*>(mesh);
-		d3d12::StageBufferRegion(m_vertex_buffer, 
-			d3d12_mesh->m_vertex_staging_buffer_size, 
-			d3d12_mesh->m_vertex_staging_buffer_offset, 
-			cmd_list);
-		if (d3d12_mesh->m_index_staging_buffer_size != 0) 
+		while (!m_mesh_stage_queue.empty())
 		{
-			d3d12::StageBufferRegion(m_index_buffer,
-				d3d12_mesh->m_index_staging_buffer_size,
-				d3d12_mesh->m_index_staging_buffer_offset,
+			D3D12Mesh* d3d12_mesh = static_cast<D3D12Mesh*>(m_mesh_stage_queue.front());
+			d3d12::StageBufferRegion(m_vertex_buffer,
+				d3d12_mesh->m_vertex_staging_buffer_size,
+				d3d12_mesh->m_vertex_staging_buffer_offset,
 				cmd_list);
+			if (d3d12_mesh->m_index_staging_buffer_size != 0)
+			{
+				d3d12::StageBufferRegion(m_index_buffer,
+					d3d12_mesh->m_index_staging_buffer_size,
+					d3d12_mesh->m_index_staging_buffer_offset,
+					cmd_list);
+			}
+			m_mesh_stage_queue.pop();
 		}
 	}
 
@@ -369,6 +373,8 @@ namespace wr
 		//Store the handle to the mesh
 		m_mesh_handles.push_back(mesh);
 
+		m_mesh_stage_queue.push(mesh);
+
 		return mesh;
 	}
 
@@ -492,6 +498,8 @@ namespace wr
 
 		//Store the mesh handle
 		m_mesh_handles.push_back(mesh);
+
+		m_mesh_stage_queue.push(mesh);
 
 		return mesh;
 	}
