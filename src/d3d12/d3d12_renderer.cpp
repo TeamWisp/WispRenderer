@@ -561,7 +561,7 @@ namespace wr
 					else
 					{
 						d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances);
-					}
+					}l
 				}
 				else
 				{

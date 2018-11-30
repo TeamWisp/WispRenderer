@@ -118,6 +118,13 @@ namespace wr
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
+
+		int num_draws = 1;
+		int commands_size;
+		ID3D12Resource* m_cmd_buffer;
+		ID3D12Resource* m_upload_cmd_buffer;
+		d3d12::DescriptorHeap* m_indrect_heap;
+		ID3D12CommandSignature* m_cmd_signature;
     
 	private:
 		int num_draws = 1;

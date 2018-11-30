@@ -123,7 +123,7 @@ namespace wr
 			Optimize();
 
 		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, m_light_buffer, cmd_list);
-		m_render_meshes_func_impl(m_render_system, m_batches, cmd_list);
+		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
 	}
 
 	temp::MeshBatches& SceneGraph::GetBatches() 
