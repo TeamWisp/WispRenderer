@@ -22,6 +22,7 @@ namespace wr::d3d12
 	void SetName(CommandList* cmd_list, std::wstring const & name);
 	void Begin(CommandList* cmd_list, unsigned int frame_idx);
 	void End(CommandList* cmd_list);
+	void ExecuteBundle(CommandList* cmd_list, CommandList* bundle);
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetVersioned(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);

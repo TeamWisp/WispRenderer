@@ -67,6 +67,11 @@ namespace wr::d3d12
 		cmd_list->m_native->Close();
 	}
 
+	void ExecuteBundle(CommandList* cmd_list, CommandList* bundle)
+	{
+		cmd_list->m_native->ExecuteBundle(bundle->m_native);
+	}
+
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear, bool clear_depth)
 	{
 		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> handles;
