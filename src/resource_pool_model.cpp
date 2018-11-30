@@ -25,7 +25,8 @@ namespace wr
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices |
 			aiProcess_OptimizeMeshes |
-			aiProcess_ImproveCacheLocality);
+			aiProcess_ImproveCacheLocality |
+			aiProcess_MakeLeftHanded);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
@@ -60,7 +61,8 @@ namespace wr
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices |
 			aiProcess_OptimizeMeshes |
-			aiProcess_ImproveCacheLocality);
+			aiProcess_ImproveCacheLocality |
+			aiProcess_MakeLeftHanded);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
@@ -151,7 +153,7 @@ namespace wr
 				// retrieve all indices of the face and store them in the indices vector
 				for (size_t k = 0; k < face->mNumIndices; k++)
 				{
-					indices.push_back(static_cast<unsigned>(face->mIndices[j]));
+					indices.push_back(static_cast<unsigned>(face->mIndices[k]));
 				}
 			}
 
@@ -230,7 +232,7 @@ namespace wr
 				// retrieve all indices of the face and store them in the indices vector
 				for (size_t k = 0; k < face->mNumIndices; k++)
 				{
-					indices.push_back(static_cast<unsigned>(face->mIndices[j]));
+					indices.push_back(static_cast<unsigned>(face->mIndices[k]));
 				}
 			}
 

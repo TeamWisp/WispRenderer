@@ -178,7 +178,7 @@ namespace wr
 
 		//Go through all all pages to find free ones.
 		//Because we're storing the data in a single bit we can compare an entire int64 at once to speed things up
-		for (std::uint64_t i = 0; i <= m_vertex_buffer_bitmap.size(); ++i) 
+		for (std::uint64_t i = 0; i < m_vertex_buffer_bitmap.size(); ++i) 
 		{
 			//Check 64 pages at once
 			if (m_vertex_buffer_bitmap[i] != 0Ui64)
@@ -270,7 +270,7 @@ namespace wr
 		found = false;
 		free_frames = 0;
 
-		for (std::uint64_t i = 0; i <= internal::IndexFromBit(index_frame_count); ++i)
+		for (std::uint64_t i = 0; i < m_index_buffer_bitmap.size(); ++i)
 		{
 			if (m_index_buffer_bitmap[i] != 0Ui64) 
 			{
@@ -392,7 +392,7 @@ namespace wr
 
 		//Go through all all pages to find free ones.
 		//Because we're storing the data in a single bit we can compare an entire int64 at once to speed things up
-		for (std::uint64_t i = 0; i <= m_vertex_buffer_bitmap.size(); ++i)
+		for (std::uint64_t i = 0; i < m_vertex_buffer_bitmap.size(); ++i)
 		{
 			//Check 64 pages at once
 			if (m_vertex_buffer_bitmap[i] != 0Ui64)

@@ -13,7 +13,7 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		model_pool = render_system->CreateModelPool(1, 1);
+		model_pool = render_system->CreateModelPool(2, 2);
 
 		// Load Cube.
 		{
@@ -77,6 +77,10 @@ namespace resources
 			};
 
 			plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+		}
+
+		{
+			test_model = model_pool->Load("resources/models/xbot.fbx", wr::ModelType::FBX);
 		}
 	}
 	
