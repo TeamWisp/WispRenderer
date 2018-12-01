@@ -33,7 +33,7 @@ namespace wr
 	class D3D12ModelPool : public ModelPool
 	{
 	public:
-		explicit D3D12ModelPool(D3D12RenderSystem& render_system, 
+		explicit D3D12ModelPool(D3D12RenderSystem& render_system,
 			std::size_t vertex_buffer_pool_size_in_mb,
 			std::size_t index_buffer_pool_size_in_mb);
 		~D3D12ModelPool() final;
@@ -46,7 +46,7 @@ namespace wr
 		d3d12::StagingBuffer* GetVertexStagingBuffer();
 		d3d12::StagingBuffer* GetIndexStagingBuffer();
 
-	protected:
+	private:
 		Model* LoadFBX(std::string_view path, ModelType type) final;
 		Mesh* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
 		Mesh* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;
@@ -63,7 +63,7 @@ namespace wr
 		std::vector<Mesh*> m_mesh_handles;
 
 		std::queue<Mesh*> m_mesh_stage_queue;
-			
+
 		std::uint64_t m_vertex_buffer_size;
 		std::uint64_t m_index_buffer_size;
 
