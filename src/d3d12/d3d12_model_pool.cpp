@@ -8,6 +8,7 @@
 
 namespace wr
 {
+
 	D3D12ModelPool::D3D12ModelPool(D3D12RenderSystem& render_system,
 		std::size_t vertex_buffer_size_in_mb,
 		std::size_t index_buffer_size_in_mb) :
