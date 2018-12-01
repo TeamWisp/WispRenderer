@@ -17,7 +17,7 @@ namespace wr::d3d12
 			n_device->MakeResident(1, objects.data());
 		};
 
-		static const auto EnqueueMakeResidentSingle = [](auto heap)
+		static const auto EnqueueMakeResidentSingle = [](auto heap, auto fence)
 		{
 			decltype(Device::m_native) n_device;
 			heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
@@ -670,22 +670,22 @@ namespace wr::d3d12
 
 	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap, Fence* fence)
 	{
-		internal::EnqueueMakeResidentSingle(heap);
+		internal::EnqueueMakeResidentSingle(heap, fence);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap, Fence* fence)
 	{
-		internal::EnqueueMakeResidentSingle(heap);
+		internal::EnqueueMakeResidentSingle(heap, fence);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap, Fence* fence)
 	{
-		internal::EnqueueMakeResidentSingle(heap);
+		internal::EnqueueMakeResidentSingle(heap, fence);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, Fence* fence)
 	{
-		internal::EnqueueMakeResidentSingle(heap);
+		internal::EnqueueMakeResidentSingle(heap, fence);
 	}
 
 	void Evict(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
