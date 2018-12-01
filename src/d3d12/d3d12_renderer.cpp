@@ -485,7 +485,7 @@ namespace wr
 
 		auto n_structured_buffer = static_cast<D3D12StructuredBufferHandle*>(structured_buffer);
 
-		structured_buffer->m_pool->Update(structured_buffer, lights.data(), n_structured_buffer->m_native->m_unaligned_size, 0);
+		structured_buffer->m_pool->Update(structured_buffer, lights.data(), sizeof(Light) * count, 0);
 
 	}
 
