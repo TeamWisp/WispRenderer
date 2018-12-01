@@ -513,10 +513,10 @@ namespace wr
 		d3d12::BindConstantBuffer(n_cmd_list, d3d12_camera_cb->m_native, 0, GetFrameIdx());
 
 		auto frame_idx = GetFrameIdx();
-		std::vector<temp::IndirectCommand> commands(m_max_commands);
+		std::vector<temp::IndirectCommand> commands;
+		commands.reserve(m_max_commands);
 
 		//Render batches
-		int cmd_id = 0;
 		for (auto& elem : batches)
 		{
 
@@ -531,29 +531,34 @@ namespace wr
 			for (auto& mesh : model->m_meshes)
 			{
 				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
+				auto vb = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer();
+
 				d3d12::BindVertexBuffer(n_cmd_list, 
-					static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer(),
+					vb,
 					n_mesh->m_vertex_staging_buffer_offset,
 					n_mesh->m_vertex_staging_buffer_size,
 					n_mesh->m_vertex_staging_buffer_stride);
 
 				if (n_mesh->m_index_staging_buffer_size != 0)
 				{
-					d3d12::BindIndexBuffer(n_cmd_list, 
-						static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer(),
+					auto ib = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer();
+
+					d3d12::BindIndexBuffer(n_cmd_list,
+						ib,
 						n_mesh->m_index_staging_buffer_offset,
 						n_mesh->m_index_staging_buffer_size);
 					
 					if constexpr (d3d12::settings::use_exec_indrect)
 					{
-						commands[cmd_id].cbv_camera = d3d12_camera_cb->m_native->m_gpu_addresses[frame_idx];
-						commands[cmd_id].cbv_object = d3d12_cb_handle->m_native->m_gpu_addresses[frame_idx];
-						commands[cmd_id].drawArguments.IndexCountPerInstance = n_mesh->m_index_count;
-						commands[cmd_id].drawArguments.InstanceCount = batch.num_instances;
-						commands[cmd_id].drawArguments.StartIndexLocation = 0;
-						commands[cmd_id].drawArguments.StartInstanceLocation = 0;
-						commands[cmd_id].drawArguments.BaseVertexLocation = 0;
-						cmd_id++;
+						temp::IndirectCommand command;
+						command.cbv_camera = d3d12_camera_cb->m_native->m_gpu_addresses[frame_idx];
+						command.cbv_object = d3d12_cb_handle->m_native->m_gpu_addresses[frame_idx];
+						command.drawArguments.IndexCountPerInstance = n_mesh->m_index_count;
+						command.drawArguments.InstanceCount = batch.num_instances;
+						command.drawArguments.StartIndexLocation = n_mesh->m_index_staging_buffer_offset;
+						command.drawArguments.StartInstanceLocation = 0;
+						command.drawArguments.BaseVertexLocation = 0;
+						commands.push_back(command);
 					}
 					else
 					{
