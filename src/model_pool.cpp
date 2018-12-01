@@ -1,5 +1,5 @@
 #define NOMINMAX 1
-#include "resource_pool_model.hpp"
+#include "model_pool.hpp"
 
  #include <assimp/Importer.hpp>
  #include <assimp/scene.h>

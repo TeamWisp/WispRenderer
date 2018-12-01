@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../resource_pool_structured_buffer.hpp"
+#include "../structured_buffer_pool.hpp"
 #include "d3d12_structs.hpp"
 
 #include <queue>

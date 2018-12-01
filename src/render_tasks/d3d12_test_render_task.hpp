@@ -2,8 +2,7 @@
 
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
-#include "../d3d12/d3d12_resource_pool.hpp"
-#include "../d3d12/d3d12_resource_pool_constant_buffer.hpp"
+#include "../d3d12/d3d12_constant_buffer_pool.hpp"
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"

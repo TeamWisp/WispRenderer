@@ -1,4 +1,4 @@
-#include "resource_pool_structured_buffer.hpp"
+#include "structured_buffer_pool.hpp"
 
 namespace wr
 {
