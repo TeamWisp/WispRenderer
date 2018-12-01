@@ -96,20 +96,10 @@ namespace wr
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
 
-<<<<<<< HEAD
 		// Temporary indirect code		
 		if (d3d12::settings::use_exec_indrect)
 		{
 			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommand));
-=======
-		// Temporary indirect code
-		commands_size = (num_draws * sizeof(temp::IndirectCommand)) * d3d12::settings::num_back_buffers;
-		D3D12_RESOURCE_DESC commandBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(commands_size);
-			
-		if (d3d12::settings::use_exec_indrect)
-		{
-			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, 1, sizeof(temp::IndirectCommand));
->>>>>>> a48f6c6f2874ec95e51d02ca2fafc40473434818
 
 			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs(3);
 			arg_descs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
