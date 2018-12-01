@@ -1,131 +1,13 @@
 #include "d3d12_model_pool.hpp"
 
+#include "../util/bitmap_allocator.hpp"
+
 #include "d3d12_functions.hpp"
 #include "d3d12_defines.hpp"
 #include "d3d12_renderer.hpp"
 
 namespace wr
 {
-	namespace internal
-	{
-		inline std::uint64_t IndexFromBit(std::uint64_t frame)
-		{
-			return frame / (8 * 8);
-		}
-
-		inline std::uint64_t OffsetFromBit(std::uint64_t frame)
-		{
-			return frame % (8 * 8);
-		}
-
-		void SetPage(std::vector<uint64_t> & bitmap, std::uint64_t frame)
-		{
-			const std::uint64_t idx = IndexFromBit(frame);
-			const std::uint64_t off = OffsetFromBit(frame);
-			bitmap[idx] |= (1Ui64 << off);
-		}
-
-		void ClearPage(std::vector<uint64_t> & bitmap, std::uint64_t frame)
-		{
-			const std::uint64_t idx = IndexFromBit(frame);
-			const std::uint64_t off = OffsetFromBit(frame);
-			bitmap[idx] &= ~(1Ui64 << off);
-		}
-
-		bool TestPage(std::vector<uint64_t> const & bitmap, std::uint64_t frame)
-		{
-			const std::uint64_t idx = IndexFromBit(frame);
-			const std::uint64_t off = OffsetFromBit(frame);
-
-			return (bitmap[idx] & (1Ui64 << off));
-		}
-
-		inline std::optional<std::uint64_t> FindFreePage(std::vector<std::uint64_t> const & bitmap, std::size_t const frame_count, std::uint64_t needed_frames)
-		{
-			bool counting = false;
-			bool found = false;
-
-			std::uint64_t start_frame = 0;
-			std::uint64_t free_frames = 0;
-
-			//Go through all all pages to find free ones.
-			//Because we're storing the data in a single bit we can compare an entire int64 at once to speed things up
-			for (std::uint64_t i = 0; i < bitmap.size(); ++i)
-			{
-				//Check 64 pages at once
-				if (bitmap[i] != 0Ui64)
-				{
-					//At least a single page is free, so check all 64 pages
-					for (std::uint64_t j = 0; j < 64; ++j)
-					{
-						//If the current page being checked is larger than the amount of available pages, break
-						if (i * 64 + j >= frame_count)
-						{
-							break;
-						}
-
-						//Set bit corresponding to page being checked in temporary variable
-						std::uint64_t to_test = 1Ui64 << j;
-
-						//Run an 'and' against the temporary variable to see if the page is available
-						if ((bitmap[i] & to_test))
-						{
-							//Is this the first free page found?
-							if (counting)
-							{
-								//Not the first free page, so increment the counter of consecutive free pages
-								free_frames++;
-								//Have we found the nessecary amount of free pages? If so, indicate that and break
-								if (free_frames == needed_frames)
-								{
-									found = true;
-									break;
-								}
-							}
-							else
-							{
-								//This is the first free page
-								if (needed_frames == 1)
-								{
-									//We only need a single page, so store the number of the page and break
-									found = true;
-									start_frame = i * 64 + j;
-									break;
-								}
-								else
-								{
-									//We need multiple pages, so store the number of this page as the start page and continue
-									start_frame = i * 64 + j;
-									counting = true;
-									free_frames = 1;
-								}
-							}
-						}
-						else
-						{
-							//The page wasn't free, so stop counting.
-							counting = 0;
-							free_frames = 0;
-						}
-					}
-				}
-				else
-				{
-					//All 64 pages are occupied, so stop counting
-					counting = false;
-					free_frames = 0;
-				}
-
-				//Have we found enough free pages? If so, break
-				if (found == true)
-				{
-					break;
-				}
-			}
-
-			return start_frame;
-		}
-	}
 
 	D3D12ModelPool::D3D12ModelPool(D3D12RenderSystem& render_system,
 		std::size_t vertex_buffer_size_in_mb,
@@ -264,7 +146,7 @@ namespace wr
 		auto vertex_needed_frames = SizeAlign(num_vertices*vertex_size, 65536) / 65536;
 
 		// Find Free Page
-		auto vertex_start_frame = internal::FindFreePage(m_vertex_buffer_bitmap, vertex_frame_count, vertex_needed_frames);
+		auto vertex_start_frame = util::FindFreePage(m_vertex_buffer_bitmap, vertex_frame_count, vertex_needed_frames);
 
 		// Check if we found a page.
 		if (!vertex_start_frame.has_value())
@@ -280,7 +162,7 @@ namespace wr
 		auto index_frame_count = m_index_buffer_size / 65536;
 		auto index_needed_frames = SizeAlign(num_indices*index_size, 65536) / 65536;
 
-		auto index_start_frame = internal::FindFreePage(m_index_buffer_bitmap, index_frame_count, index_needed_frames);
+		auto index_start_frame = util::FindFreePage(m_index_buffer_bitmap, index_frame_count, index_needed_frames);
 
 		if (!index_start_frame.has_value())
 		{
@@ -293,13 +175,13 @@ namespace wr
 		//Mark all pages occupied by the new vertex buffer
 		for (std::uint64_t i = 0; i < vertex_needed_frames; ++i)
 		{
-			internal::ClearPage(m_vertex_buffer_bitmap, vertex_start_frame.value() + i);
+			util::ClearPage(m_vertex_buffer_bitmap, vertex_start_frame.value() + i);
 		}
 
 		//Mark all pages occupied by the new index buffer
 		for (std::uint64_t i = 0; i < vertex_needed_frames; ++i)
 		{
-			internal::ClearPage(m_index_buffer_bitmap, index_start_frame.value() + i);
+			util::ClearPage(m_index_buffer_bitmap, index_start_frame.value() + i);
 		}
 
 		//Store the offset of the allocated memory from the start of the staging buffer
@@ -345,7 +227,7 @@ namespace wr
 		auto vertex_needed_frames = SizeAlign(num_vertices*vertex_size, 65536) / 65536;
 
 		// Find Free Page
-		auto vertex_start_frame = internal::FindFreePage(m_vertex_buffer_bitmap, vertex_frame_count, vertex_needed_frames);
+		auto vertex_start_frame = util::FindFreePage(m_vertex_buffer_bitmap, vertex_frame_count, vertex_needed_frames);
 
 		//The loop has exited, see if we've found enough free pages
 		if (!vertex_start_frame.has_value())
@@ -358,7 +240,7 @@ namespace wr
 		//Mark the allocated pages as occupied
 		for (std::uint64_t i = 0; i < vertex_needed_frames; ++i)
 		{
-			internal::ClearPage(m_vertex_buffer_bitmap, vertex_start_frame.value() + i);
+			util::ClearPage(m_vertex_buffer_bitmap, vertex_start_frame.value() + i);
 		}
 
 		//Store the offset of the allocated memory from the start of the staging buffer
@@ -414,7 +296,7 @@ namespace wr
 		//Mark all occupied pages as free
 		for (int i = 0; i < frame_count; ++i)
 		{
-			internal::SetPage(m_vertex_buffer_bitmap, frame + i);
+			util::SetPage(m_vertex_buffer_bitmap, frame + i);
 		}
 
 		//Does the mesh also have an index buffer?
@@ -428,7 +310,7 @@ namespace wr
 			//Mark all occupied pages as free
 			for (int i = 0; i < frame_count; ++i)
 			{
-				internal::SetPage(m_index_buffer_bitmap, frame + i);
+				util::SetPage(m_index_buffer_bitmap, frame + i);
 			}
 
 		}
