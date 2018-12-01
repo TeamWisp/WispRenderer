@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../resource_pool_model.hpp"
+#include "../model_pool.hpp"
 #include "d3d12_structs.hpp"
 
 #include <queue>

@@ -1,4 +1,4 @@
-#include "d3d12_resource_pool_model.hpp"
+#include "d3d12_model_pool.hpp"
 
 #include "d3d12_functions.hpp"
 #include "d3d12_defines.hpp"

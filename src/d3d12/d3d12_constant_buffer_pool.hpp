@@ -1,5 +1,5 @@
 #pragma once
-#include "../resource_pool_constant_buffer.hpp"
+#include "../constant_buffer_pool.hpp"
 #include "d3d12_structs.hpp"
 
 namespace wr 
