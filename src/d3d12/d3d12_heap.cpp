@@ -6,6 +6,36 @@
 namespace wr::d3d12
 {
 
+	namespace internal
+	{
+		static const auto MakeResidentSingle = [](auto heap)
+		{
+			decltype(Device::m_native) n_device;
+			heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
+
+			std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
+			n_device->MakeResident(1, objects.data());
+		};
+
+		static const auto EnqueueMakeResidentSingle = [](auto heap)
+		{
+			decltype(Device::m_native) n_device;
+			heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
+
+			std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
+			n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		};
+
+		static const auto EvictSingle = [](auto heap)
+		{
+			decltype(Device::m_native) n_device;
+			heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
+
+			std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
+			n_device->Evict(1, objects.data());
+		};
+	}
+
 	Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
 	{
 		auto heap = new Heap<HeapOptimization::SMALL_BUFFERS>();
@@ -620,110 +650,62 @@ namespace wr::d3d12
 
 	void MakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects { heap->m_native };
-		n_device->MakeResident(1, objects.data());
+		internal::MakeResidentSingle(heap);
 	}
 
 	void MakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->MakeResident(1, objects.data());
+		internal::MakeResidentSingle(heap);
 	}
 
 	void MakeResident(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->MakeResident(1, objects.data());
+		internal::MakeResidentSingle(heap);
 	}
 
 	void MakeResident(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->MakeResident(1, objects.data());
+		internal::MakeResidentSingle(heap);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap, Fence* fence)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		internal::EnqueueMakeResidentSingle(heap);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap, Fence* fence)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		internal::EnqueueMakeResidentSingle(heap);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap, Fence* fence)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		internal::EnqueueMakeResidentSingle(heap);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, Fence* fence)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		internal::EnqueueMakeResidentSingle(heap);
 	}
 
 	void Evict(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->Evict(1, objects.data());
+		internal::EvictSingle(heap);
 	}
 
 	void Evict(Heap<HeapOptimization::BIG_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->Evict(1, objects.data());
+		internal::EvictSingle(heap);
 	}
 
 	void Evict(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->Evict(1, objects.data());
+		internal::EvictSingle(heap);
 	}
 
 	void Evict(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->Evict(1, objects.data());
+		internal::EvictSingle(heap);
 	}
 
 	void Destroy(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
