@@ -170,6 +170,6 @@ namespace wr::d3d12
 		CommandList* cmd_list);
 
 	[[nodiscard]] IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size);
-	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
+	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, UINT8* data, std::size_t num_commands);
 
 } /* wr::d3d12 */

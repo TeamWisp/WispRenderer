@@ -30,6 +30,7 @@ namespace wr
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
 			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
+			D3D12_VERTEX_BUFFER_VIEW vb_view;
 			D3D12_DRAW_INDEXED_ARGUMENTS drawArguments;
 		};
 
@@ -120,6 +121,7 @@ namespace wr
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
 
 		unsigned int m_max_commands = 4;
+		int m_offset = 0;
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
 		d3d12::DescriptorHeap* m_indrect_heap;
 		d3d12::CommandSignature* m_cmd_signature;
