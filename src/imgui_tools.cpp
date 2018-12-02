@@ -97,6 +97,8 @@ namespace wr::imgui::window
 		auto os_info = render_system.m_device->m_sys_info;
 		auto dx_info = render_system.m_device->m_adapter_info;
 
+		ImGui::DragInt("Loc ", &render_system.m_offset);
+
 		if (open_hardware_info)
 		{
 			ImGui::Begin("Hardware Info", &open_hardware_info);

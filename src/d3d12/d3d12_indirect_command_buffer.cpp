@@ -33,10 +33,10 @@ namespace wr::d3d12
 		return buffer;
 	}
 
-	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands)
+	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, UINT8* data, std::size_t num_commands)
 	{
 		D3D12_SUBRESOURCE_DATA cmd_data = {};
-		cmd_data.pData = reinterpret_cast<UINT8*>(data);
+		cmd_data.pData = data;
 		cmd_data.RowPitch = num_commands * buffer->m_command_size;
 		cmd_data.SlicePitch = cmd_data.RowPitch;
 
