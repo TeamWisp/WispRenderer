@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../resource_pool_material.hpp"
+#include "../material_pool.hpp"
 
 namespace wr::d3d12
 {

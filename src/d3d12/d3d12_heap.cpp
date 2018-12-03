@@ -1,41 +1,39 @@
 #include "d3d12_functions.hpp"
 
 #include "d3d12_defines.hpp"
+#include "../util/bitmap_allocator.hpp"
 
 namespace wr::d3d12
 {
-	namespace internal 
+
+	namespace internal
 	{
-		inline std::uint64_t IndexFromBit(std::uint64_t frame) 
+		static const auto MakeResidentSingle = [](auto heap)
 		{
-			return frame / (8 * 8);
-		}
+			decltype(Device::m_native) n_device;
+			heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
 
-		inline std::uint64_t OffsetFromBit(std::uint64_t frame) 
-		{
-			return frame % (8 * 8);
-		}
+			std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
+			n_device->MakeResident(1, objects.data());
+		};
 
-		void SetPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		static const auto EnqueueMakeResidentSingle = [](auto heap, auto fence)
 		{
-			std::uint64_t idx = IndexFromBit(frame);
-			std::uint64_t off = OffsetFromBit(frame);
-			bitmap->operator[](idx) |= (1Ui64 << off);
-		}
+			decltype(Device::m_native) n_device;
+			heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
 
-		void ClearPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
-		{
-			std::uint64_t idx = IndexFromBit(frame);
-			std::uint64_t off = OffsetFromBit(frame);
-			bitmap->operator[](idx) &= ~(1Ui64 << off);
-		}
+			std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
+			n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		};
 
-		bool TestPage(std::vector<uint64_t>* bitmap, std::uint64_t frame) 
+		static const auto EvictSingle = [](auto heap)
 		{
-			std::uint64_t idx = IndexFromBit(frame);
-			std::uint64_t off = OffsetFromBit(frame);
-			return (bitmap->operator[](idx) & (1Ui64 << off));
-		}
+			decltype(Device::m_native) n_device;
+			heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
+
+			std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
+			n_device->Evict(1, objects.data());
+		};
 	}
 
 	Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
@@ -241,67 +239,9 @@ namespace wr::d3d12
 		auto frame_count = heap->m_heap_size / heap->m_alignment;
 		auto needed_frames = aligned_size / heap->m_alignment*heap->m_versioning_count;
 
-		std::uint64_t start_frame = 0;
-		bool counting = false;
-		bool found = false;
-		int free_frames = 0;
+		auto start_frame = util::FindFreePage(heap->m_bitmap, frame_count, needed_frames);
 
-		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i) 
-		{
-			if (heap->m_bitmap[i] != 0Ui64) 
-			{
-				for (std::uint64_t j = 0; j < 64; ++j) 
-				{
-					std::uint64_t to_test = 1Ui64 << j;
-					if (i * 64 + j >= frame_count)
-						break;
-
-					if ((heap->m_bitmap[i] & to_test))
-					{
-						if (counting) 
-						{
-							free_frames++;
-							if (free_frames == needed_frames) 
-							{
-								found = true;
-								break;
-							}
-						}
-						else
-						{
-							if (needed_frames == 1) 
-							{
-								found = true;
-								start_frame = i * 64 + j;
-								break;
-							}
-							else 
-							{
-								start_frame = i * 64 + j;
-								counting = true;
-								free_frames = 1;
-							}
-						}
-					}
-					else 
-					{
-						counting = 0;
-						free_frames = 0;
-					}
-				}
-			}
-			else 
-			{
-				counting = false;
-				free_frames = 0;
-			}
-			if (found == true)
-			{
-				break;
-			}
-		}
-
-		if (found == false)
+		if (!start_frame.has_value())
 		{
 			delete cb;
 			return nullptr;
@@ -309,10 +249,10 @@ namespace wr::d3d12
 
 		for (std::uint64_t i = 0; i < needed_frames; ++i) 
 		{
-			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
+			util::ClearPage(heap->m_bitmap, start_frame.value() + i);
 		}
 
-		heap->m_current_offset = start_frame * heap->m_alignment;
+		heap->m_current_offset = start_frame.value() * heap->m_alignment;
 
 		cb->m_begin_offset = heap->m_current_offset;
 
@@ -354,67 +294,9 @@ namespace wr::d3d12
 		auto frame_count = heap->m_heap_size / heap->m_alignment;
 		auto needed_frames = aligned_size_in_bytes / heap->m_alignment*heap->m_versioning_count;
 
-		std::uint64_t start_frame = 0;
-		bool counting = false;
-		bool found = false;
-		int free_frames = 0;
+		auto start_frame = util::FindFreePage(heap->m_bitmap, frame_count, needed_frames);
 
-		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i)
-		{
-			if (heap->m_bitmap[i] != 0Ui64) 
-			{
-				for (std::uint64_t j = 0; j < 64; ++j) 
-				{
-					std::uint64_t to_test = 1Ui64 << j;
-					if (i * 64 + j >= frame_count)
-						break;
-
-					if ((heap->m_bitmap[i] & to_test)) 
-					{
-						if (counting)
-						{
-							free_frames++;
-							if (free_frames == needed_frames)
-							{
-								found = true;
-								break;
-							}
-						}
-						else 
-						{
-							if (needed_frames == 1)
-							{
-								found = true;
-								start_frame = i * 64 + j;
-								break;
-							}
-							else 
-							{
-								start_frame = i * 64 + j;
-								counting = true;
-								free_frames = 1;
-							}
-						}
-					}
-					else 
-					{
-						counting = 0;
-						free_frames = 0;
-					}
-				}
-			}
-			else
-			{
-				counting = false;
-				free_frames = 0;
-			}
-			if (found == true) 
-			{
-				break;
-			}
-		}
-
-		if (found == false) 
+		if (!start_frame.has_value())
 		{
 			delete cb;
 			return nullptr;
@@ -422,10 +304,10 @@ namespace wr::d3d12
 
 		for (std::uint64_t i = 0; i < needed_frames; ++i) 
 		{
-			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
+			util::ClearPage(heap->m_bitmap, start_frame.value() + i);
 		}
 
-		heap->m_current_offset = start_frame * heap->m_alignment;
+		heap->m_current_offset = start_frame.value() * heap->m_alignment;
 
 		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_NONE);
 		cb->m_gpu_addresses.resize(heap->m_versioning_count);
@@ -480,67 +362,9 @@ namespace wr::d3d12
 		auto frame_count = heap->m_heap_size / heap->m_alignment;
 		auto needed_frames = aligned_size_in_bytes / heap->m_alignment*heap->m_versioning_count;
 
-		std::uint64_t start_frame = 0;
-		bool counting = false;
-		bool found = false;
-		int free_frames = 0;
+		auto start_frame = util::FindFreePage(heap->m_bitmap, frame_count, needed_frames);
 
-		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i) 
-		{
-			if (heap->m_bitmap[i] != 0Ui64)
-			{
-				for (std::uint64_t j = 0; j < 64; ++j) 
-				{
-					std::uint64_t to_test = 1Ui64 << j;
-					if (i * 64 + j >= frame_count)
-						break;
-
-					if ((heap->m_bitmap[i] & to_test)) 
-					{
-						if (counting) 
-						{
-							free_frames++;
-							if (free_frames == needed_frames)
-							{
-								found = true;
-								break;
-							}
-						}
-						else
-						{
-							if (needed_frames == 1)
-							{
-								found = true;
-								start_frame = i * 64 + j;
-								break;
-							}
-							else 
-							{
-								start_frame = i * 64 + j;
-								counting = true;
-								free_frames = 1;
-							}
-						}
-					}
-					else 
-					{
-						counting = 0;
-						free_frames = 0;
-					}
-				}
-			}
-			else 
-			{
-				counting = false;
-				free_frames = 0;
-			}
-			if (found == true) 
-			{
-				break;
-			}
-		}
-
-		if (found == false) 
+		if (!start_frame.has_value())
 		{
 			delete cb;
 			return nullptr;
@@ -548,10 +372,10 @@ namespace wr::d3d12
 
 		for (std::uint64_t i = 0; i < needed_frames; ++i) 
 		{
-			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
+			util::ClearPage(heap->m_bitmap, start_frame.value() + i);
 		}
 
-		heap->m_current_offset = start_frame * heap->m_alignment;
+		heap->m_current_offset = start_frame.value() * heap->m_alignment;
 				
 		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(
 			aligned_size_in_bytes, 
@@ -599,67 +423,9 @@ namespace wr::d3d12
 		auto frame_count = heap->m_heap_size / heap->m_alignment;
 		auto needed_frames = aligned_size_in_bytes / heap->m_alignment*heap->m_versioning_count;
 
-		std::uint64_t start_frame = 0;
-		bool counting = false;
-		bool found = false;
-		int free_frames = 0;
+		auto start_frame = util::FindFreePage(heap->m_bitmap, frame_count, needed_frames);
 
-		for (std::uint64_t i = 0; i <= internal::IndexFromBit(frame_count); ++i)
-		{
-			if (heap->m_bitmap[i] != 0Ui64) 
-			{
-				for (std::uint64_t j = 0; j < 64; ++j) 
-				{
-					std::uint64_t to_test = 1Ui64 << j;
-					if (i * 64 + j >= frame_count)
-						break;
-
-					if ((heap->m_bitmap[i] & to_test)) 
-					{
-						if (counting) 
-						{
-							free_frames++;
-							if (free_frames == needed_frames) 
-							{
-								found = true;
-								break;
-							}
-						}
-						else
-						{
-							if (needed_frames == 1) 
-							{
-								found = true;
-								start_frame = i * 64 + j;
-								break;
-							}
-							else 
-							{
-								start_frame = i * 64 + j;
-								counting = true;
-								free_frames = 1;
-							}
-						}
-					}
-					else 
-					{
-						counting = 0;
-						free_frames = 0;
-					}
-				}
-			}
-			else 
-			{
-				counting = false;
-				free_frames = 0;
-			}
-			if (found == true) 
-			{
-				break;
-			}
-		}
-
-		if (found == false) 
+		if (!start_frame.has_value())
 		{
 			delete cb;
 			return nullptr;
@@ -667,10 +433,10 @@ namespace wr::d3d12
 
 		for (std::uint64_t i = 0; i < needed_frames; ++i) 
 		{
-			internal::ClearPage(&(heap->m_bitmap), start_frame + i);
+			util::ClearPage(heap->m_bitmap, start_frame.value() + i);
 		}
 
-		heap->m_current_offset = start_frame * heap->m_alignment;
+		heap->m_current_offset = start_frame.value() * heap->m_alignment;
 
 		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_NONE);
 		cb->m_gpu_addresses.resize(heap->m_versioning_count);
@@ -727,7 +493,7 @@ namespace wr::d3d12
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
-			internal::SetPage(&(heap->m_bitmap), frame + i);
+			util::SetPage(heap->m_bitmap, frame + i);
 		}
 
 		delete heapResource;
@@ -766,7 +532,7 @@ namespace wr::d3d12
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
-			internal::SetPage(&(heap->m_bitmap), frame + i);
+			util::SetPage(heap->m_bitmap, frame + i);
 		}
 
 		delete heapResource;
@@ -805,7 +571,7 @@ namespace wr::d3d12
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
-			internal::SetPage(&(heap->m_bitmap), frame + i);
+			util::SetPage(heap->m_bitmap, frame + i);
 		}
 
 		delete heapResource;
@@ -884,110 +650,62 @@ namespace wr::d3d12
 
 	void MakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects { heap->m_native };
-		n_device->MakeResident(1, objects.data());
+		internal::MakeResidentSingle(heap);
 	}
 
 	void MakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->MakeResident(1, objects.data());
+		internal::MakeResidentSingle(heap);
 	}
 
 	void MakeResident(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->MakeResident(1, objects.data());
+		internal::MakeResidentSingle(heap);
 	}
 
 	void MakeResident(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->MakeResident(1, objects.data());
+		internal::MakeResidentSingle(heap);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_BUFFERS>* heap, Fence* fence)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		internal::EnqueueMakeResidentSingle(heap, fence);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::BIG_BUFFERS>* heap, Fence* fence)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		internal::EnqueueMakeResidentSingle(heap, fence);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap, Fence* fence)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		internal::EnqueueMakeResidentSingle(heap, fence);
 	}
 
 	void EnqueueMakeResident(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, Fence* fence)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->EnqueueMakeResident(D3D12_RESIDENCY_FLAG_DENY_OVERBUDGET, 1, objects.data(), fence->m_native, fence->m_fence_value);
+		internal::EnqueueMakeResidentSingle(heap, fence);
 	}
 
 	void Evict(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->Evict(1, objects.data());
+		internal::EvictSingle(heap);
 	}
 
 	void Evict(Heap<HeapOptimization::BIG_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->Evict(1, objects.data());
+		internal::EvictSingle(heap);
 	}
 
 	void Evict(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->Evict(1, objects.data());
+		internal::EvictSingle(heap);
 	}
 
 	void Evict(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap)
 	{
-		decltype(Device::m_native) n_device;
-		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
-
-		std::array<ID3D12Pageable*, 1> objects{ heap->m_native };
-		n_device->Evict(1, objects.data());
+		internal::EvictSingle(heap);
 	}
 
 	void Destroy(Heap<HeapOptimization::SMALL_BUFFERS>* heap)
