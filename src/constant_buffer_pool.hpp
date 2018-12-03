@@ -9,10 +9,6 @@
 
 namespace wr 
 {
-<<<<<<< HEAD
-
-=======
->>>>>>> [CHANGE] Finished implementing model loading (materials aren't loaded yet)
 	class ConstantBufferPool;
 	
 	struct ConstantBufferHandle 
