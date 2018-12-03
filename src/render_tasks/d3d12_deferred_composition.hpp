@@ -88,10 +88,7 @@ namespace wr
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
 
-<<<<<<< HEAD
 				//Get light buffer
-=======
->>>>>>> b5050159437b0f5c96ec58bd85d2e923268c4bcf
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 
