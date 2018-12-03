@@ -96,6 +96,28 @@ namespace wr
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
 
+		// Execute Indirect code
+		if (d3d12::settings::use_exec_indirect)
+		{
+			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommand));
+			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommandIndexed));
+
+			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs(4);
+			arg_descs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
+			arg_descs[0].ConstantBufferView.RootParameterIndex = 0;
+			arg_descs[1].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
+			arg_descs[1].ConstantBufferView.RootParameterIndex = 1;
+			arg_descs[2].Type = D3D12_INDIRECT_ARGUMENT_TYPE_VERTEX_BUFFER_VIEW;
+			arg_descs[3].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
+
+			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> indexed_arg_descs = arg_descs;
+			indexed_arg_descs[3].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+
+			auto root_signature = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(root_signatures::basic));
+			m_cmd_signature = d3d12::CreateCommandSignature(m_device, root_signature->m_native, arg_descs, sizeof(temp::IndirectCommand));
+			m_cmd_signature_indexed = d3d12::CreateCommandSignature(m_device, root_signature->m_native, indexed_arg_descs, sizeof(temp::IndirectCommandIndexed));
+		}
+
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
@@ -489,47 +511,141 @@ namespace wr
 
 	}
 
-	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list)
+	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto frame_idx = GetFrameIdx();
+		auto d3d12_camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera->m_camera_cb);
+		std::vector<temp::IndirectCommand> commands;
+		std::vector<temp::IndirectCommandIndexed> indexed_commands;
+
+		if constexpr (!d3d12::settings::use_exec_indirect)
+		{
+			d3d12::BindConstantBuffer(n_cmd_list, d3d12_camera_cb->m_native, 0, GetFrameIdx());
+		}
 
 		//Render batches
 		for (auto& elem : batches)
 		{
-
 			Model* model = elem.first;
 			temp::MeshBatch& batch = elem.second;
-
-			//Bind object data
-			auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batch_buffer);
-			d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
-
-			//Render meshes
-			for (auto& mesh : model->m_meshes)
+			
+			// Execute Indirect Pipeline
+			if constexpr (d3d12::settings::use_exec_indirect)
 			{
-				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-				d3d12::BindVertexBuffer(n_cmd_list, 
-					static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer(),
-					n_mesh->m_vertex_staging_buffer_offset,
-					n_mesh->m_vertex_staging_buffer_size,
-					n_mesh->m_vertex_staging_buffer_stride);
 
-				if (n_mesh->m_index_staging_buffer_size != 0)
+				//Render meshes
+				for (auto& mesh : model->m_meshes)
 				{
-					d3d12::BindIndexBuffer(n_cmd_list, 
-						static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer(),
-						n_mesh->m_index_staging_buffer_offset,
-						n_mesh->m_index_staging_buffer_size);
-					d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances);
+					auto n_mesh = static_cast<D3D12Mesh*>(mesh);
+					auto vb = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer();
+					auto ib = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer();
+					auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batch_buffer);
+
+					d3d12::BindIndexBuffer(n_cmd_list,
+						ib,
+						0,
+						ib->m_size);
+
+					if (n_mesh->m_index_staging_buffer_size != 0)
+					{
+						// temporary
+						D3D12_VERTEX_BUFFER_VIEW view;
+						view.BufferLocation = vb->m_gpu_address + n_mesh->m_vertex_staging_buffer_offset;
+						view.StrideInBytes = n_mesh->m_vertex_staging_buffer_stride;
+						view.SizeInBytes = vb->m_size;
+
+						temp::IndirectCommandIndexed command;
+						command.cbv_camera = d3d12_camera_cb->m_native->m_gpu_addresses[frame_idx];
+						command.cbv_object = d3d12_cb_handle->m_native->m_gpu_addresses[frame_idx];
+						command.vb_view = view;
+						command.draw_arguments.IndexCountPerInstance = n_mesh->m_index_count;
+						command.draw_arguments.InstanceCount = batch.num_instances;
+						command.draw_arguments.StartIndexLocation = n_mesh->m_index_staging_buffer_offset / 4;
+						command.draw_arguments.StartInstanceLocation = 0;
+						command.draw_arguments.BaseVertexLocation = 0; // 1170.sometghing fuck me
+						indexed_commands.push_back(command);
+					}
+					else
+					{
+						// temporary
+						D3D12_VERTEX_BUFFER_VIEW view;
+						view.BufferLocation = vb->m_gpu_address + n_mesh->m_vertex_staging_buffer_offset;
+						view.StrideInBytes = n_mesh->m_vertex_staging_buffer_stride;
+						view.SizeInBytes = vb->m_size;
+
+						temp::IndirectCommand command;
+						command.cbv_camera = d3d12_camera_cb->m_native->m_gpu_addresses[frame_idx];
+						command.cbv_object = d3d12_cb_handle->m_native->m_gpu_addresses[frame_idx];
+						command.vb_view = view;
+						command.draw_arguments.VertexCountPerInstance = n_mesh->m_index_count;
+						command.draw_arguments.InstanceCount = batch.num_instances;
+						command.draw_arguments.StartVertexLocation = n_mesh->m_vertex_staging_buffer_offset / n_mesh->m_vertex_staging_buffer_stride;
+						command.draw_arguments.StartInstanceLocation = 0;
+						commands.push_back(command);
+					}
 				}
-				else
+			}
+			// Draw Command Pipeline
+			else
+			{
+				//Bind object data
+				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batch_buffer);
+				if constexpr (!d3d12::settings::use_exec_indirect)
 				{
-					d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances);
+					d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
+				}
+
+				//Render meshes
+				for (auto& mesh : model->m_meshes)
+				{
+					auto n_mesh = static_cast<D3D12Mesh*>(mesh);
+					auto vb = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer();
+					auto ib = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer();
+
+					d3d12::BindVertexBuffer(n_cmd_list,
+						vb,
+						n_mesh->m_vertex_staging_buffer_offset,
+						n_mesh->m_vertex_staging_buffer_size,
+						n_mesh->m_vertex_staging_buffer_stride);
+
+					if (n_mesh->m_index_staging_buffer_size != 0)
+					{
+						d3d12::BindIndexBuffer(n_cmd_list,
+							ib,
+							n_mesh->m_index_staging_buffer_offset,
+							n_mesh->m_index_staging_buffer_size);
+
+						d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances);
+					}
+					else
+					{
+						d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances);
+					}
 				}
 			}
 
 			//Reset instances
 			batch.num_instances = 0;
+		}
+
+		if (d3d12::settings::use_exec_indirect)
+		{
+			if (std::size_t size = commands.size(); size > 0)
+			{
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
+				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size);
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
+				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer);
+			}
+			if (std::size_t size = indexed_commands.size(); size > 0)
+			{
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
+				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size);
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
+				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed);
+			}
+
 		}
 	}
 

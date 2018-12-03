@@ -88,6 +88,11 @@ namespace wr::d3d12
 		ID3D12GraphicsCommandList3* m_native;
 	};
 
+	struct CommandSignature
+	{
+		ID3D12CommandSignature* m_native;
+	};
+
 	struct RenderTarget
 	{
 		desc::RenderTargetDesc m_create_info;
@@ -240,7 +245,7 @@ namespace wr::d3d12
 
 	struct HeapResource
 	{
-		union 
+		union
 		{
 			Heap<HeapOptimization::SMALL_BUFFERS>* m_heap_sbo;
 			Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* m_heap_ssbo;
@@ -256,6 +261,15 @@ namespace wr::d3d12
 		std::size_t m_stride;
 		bool m_used_as_uav;
 		HeapOptimization m_resource_heap_optimization;
+	};
+
+	struct IndirectCommandBuffer
+	{
+		std::size_t m_num_buffers;
+		std::size_t m_max_num_buffers;
+		std::size_t m_command_size;
+		ID3D12Resource* m_native;
+		ID3D12Resource* m_native_upload;
 	};
 
 } /* wr::d3d12 */

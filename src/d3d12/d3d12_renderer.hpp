@@ -26,6 +26,22 @@ namespace wr
 
 	namespace temp
 	{
+		struct IndirectCommand
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
+			D3D12_VERTEX_BUFFER_VIEW vb_view;
+			D3D12_DRAW_ARGUMENTS draw_arguments;
+		};
+
+		struct IndirectCommandIndexed
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
+			D3D12_VERTEX_BUFFER_VIEW vb_view;
+			D3D12_DRAW_INDEXED_ARGUMENTS draw_arguments;
+		};
+
 		struct ProjectionView_CBData
 		{
 			DirectX::XMMATRIX m_view;
@@ -90,7 +106,7 @@ namespace wr
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList* cmd_list);
 
-		void Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list);
+		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -113,6 +129,12 @@ namespace wr
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
     
 	private:
+		unsigned int m_max_commands = 4;
+		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
+		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
+		d3d12::CommandSignature* m_cmd_signature;
+		d3d12::CommandSignature* m_cmd_signature_indexed;
+
 		std::optional<bool> m_requested_fullscreen_state;
 	};
 
