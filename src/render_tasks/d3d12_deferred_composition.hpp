@@ -46,7 +46,7 @@ namespace wr
 				render_system.m_fullscreen_quad_vb->m_size,
 				render_system.m_fullscreen_quad_vb->m_stride_in_bytes);
 
-			d3d12::Draw(cmd_list, 4, 1);
+			d3d12::Draw(cmd_list, 4, 1, 0);
 		}
 
 		inline void SetupDeferredTask(RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data)

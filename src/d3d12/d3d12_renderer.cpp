@@ -149,6 +149,8 @@ namespace wr
 			d3d12::Present(m_render_window.value(), m_device);
 		}
 
+		m_bound_model_pool = nullptr;
+
 		return std::unique_ptr<Texture>();
 	}
 
@@ -508,23 +510,27 @@ namespace wr
 			for (auto& mesh : model->m_meshes)
 			{
 				auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-				d3d12::BindVertexBuffer(n_cmd_list, 
-					static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer(),
-					n_mesh->m_vertex_staging_buffer_offset,
-					n_mesh->m_vertex_staging_buffer_size,
-					n_mesh->m_vertex_staging_buffer_stride);
+				if (mesh->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) {
+					d3d12::BindVertexBuffer(n_cmd_list,
+						static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer(),
+						0,
+						static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer()->m_size,
+						n_mesh->m_vertex_staging_buffer_stride);
 
-				if (n_mesh->m_index_staging_buffer_size != 0)
-				{
-					d3d12::BindIndexBuffer(n_cmd_list, 
+					d3d12::BindIndexBuffer(n_cmd_list,
 						static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer(),
-						n_mesh->m_index_staging_buffer_offset,
-						n_mesh->m_index_staging_buffer_size);
-					d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances);
+						0,
+						static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer()->m_size);
+					m_bound_model_pool = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool);
+					m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
+				}
+				if (n_mesh->m_index_count != 0)
+				{
+					d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
 				}
 				else
 				{
-					d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances);
+					d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
 				}
 			}
 

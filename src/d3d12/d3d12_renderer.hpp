@@ -111,6 +111,8 @@ namespace wr
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
+		D3D12ModelPool* m_bound_model_pool;
+		std::size_t m_bound_model_pool_stride;
     
 	private:
 		std::optional<bool> m_requested_fullscreen_state;

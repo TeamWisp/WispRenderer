@@ -24,10 +24,12 @@ namespace wr
 		std::size_t m_vertex_staging_buffer_size;
 		std::size_t m_vertex_staging_buffer_stride;
 		std::size_t m_vertex_count;
+		void* m_vertex_memory_block;
 		D3D12_GPU_VIRTUAL_ADDRESS m_index_buffer_base_address;
 		std::size_t m_index_staging_buffer_offset;
 		std::size_t m_index_staging_buffer_size;
 		std::size_t m_index_count;
+		void* m_index_memory_block;
 	};
 
 	class D3D12ModelPool : public ModelPool
@@ -57,8 +59,20 @@ namespace wr
 		d3d12::StagingBuffer* m_vertex_buffer;
 		d3d12::StagingBuffer* m_index_buffer;
 
-		std::vector<std::uint64_t> m_vertex_buffer_bitmap;
-		std::vector<std::uint64_t> m_index_buffer_bitmap;
+		struct MemoryBlock
+		{
+			MemoryBlock* m_prev_block;
+			MemoryBlock* m_next_block;
+			std::size_t m_size;
+			std::size_t m_offset;
+			bool m_free;
+		};
+
+		MemoryBlock* m_vertex_heap_start_block;
+		MemoryBlock* m_index_heap_start_block;
+
+		MemoryBlock* AllocateMemory(MemoryBlock* start_block, std::size_t size, std::size_t alignment);
+		void FreeMemory(MemoryBlock* heap_start_block,  MemoryBlock* block);
 
 		std::vector<Mesh*> m_mesh_handles;
 
