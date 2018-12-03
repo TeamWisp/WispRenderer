@@ -37,25 +37,25 @@ namespace wr
 	});
 
 	REGISTER(shaders::basic_vs) = ShaderRegistry::Get().Register({
-		"basic.hlsl",
+		"resources/shaders/basic.hlsl",
 		"main_vs",
 		ShaderType::VERTEX_SHADER
 	});
 
 	REGISTER(shaders::basic_ps) = ShaderRegistry::Get().Register({
-		"basic.hlsl",
+		"resources/shaders/basic.hlsl",
 		"main_ps",
 		ShaderType::PIXEL_SHADER
 	});
 
 	REGISTER(shaders::fullscreen_quad_vs) = ShaderRegistry::Get().Register({
-		"fullscreen_quad.hlsl",
+		"resources/shaders/fullscreen_quad.hlsl",
 		"main_vs",
 		ShaderType::VERTEX_SHADER
 	});
 
 	REGISTER(shaders::deferred_composition_ps) = ShaderRegistry::Get().Register({
-		"deferred_composition.hlsl",
+		"resources/shaders/deferred_composition.hlsl",
 		"main_ps",
 		ShaderType::PIXEL_SHADER
 	});

@@ -6,7 +6,7 @@
 //#include <d3d12.h>
 
 #include "util/defines.hpp"
-#include "resource_pool_material.hpp"
+#include "material_pool.hpp"
 #include "vertex.hpp"
 
 struct aiScene;

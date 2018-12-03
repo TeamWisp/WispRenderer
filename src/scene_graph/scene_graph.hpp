@@ -6,9 +6,9 @@
 #include <DirectXMath.h>
 
 #include "../util/defines.hpp"
-#include "../resource_pool_model.hpp"
-#include "../resource_pool_constant_buffer.hpp"
-#include "../resource_pool_structured_buffer.hpp"
+#include "../model_pool.hpp"
+#include "../constant_buffer_pool.hpp"
+#include "../structured_buffer_pool.hpp"
 
 namespace wr
 {

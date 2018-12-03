@@ -1,4 +1,4 @@
-#include "d3d12_resource_pool_structured_buffer.hpp"
+#include "d3d12_structured_buffer_pool.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_renderer.hpp"
 
