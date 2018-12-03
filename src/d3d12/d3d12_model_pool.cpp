@@ -133,6 +133,7 @@ namespace wr
 		if (vertex_memory_block == nullptr)
 		{
 			//We haven't found enough pages, so delete the mesh and return a nullptr
+			LOGE("Model pool vertex buffer has run out of memory")
 			delete mesh;
 			return nullptr;
 		}
@@ -144,6 +145,7 @@ namespace wr
 		if (index_memory_block == nullptr)
 		{
 			//We haven't found enough pages, so delete the mesh and return a nullptr
+			LOGE("Model pool index buffer has run out of memory")
 			FreeMemory(m_vertex_heap_start_block, vertex_memory_block);
 			delete mesh;
 			return nullptr;
@@ -194,6 +196,7 @@ namespace wr
 		if (vertex_memory_block == nullptr)
 		{
 			//We haven't found enough pages, so delete the mesh and return a nullptr
+			LOGE("Model pool vertex buffer has run out of memory");
 			delete mesh;
 			return nullptr;
 		}
@@ -233,12 +236,16 @@ namespace wr
 	void D3D12ModelPool::DestroyMesh(Mesh * mesh)
 	{
 		//Check for null pointers
-		if (mesh == nullptr)
+		if (mesh == nullptr) {
+			LOGW("Tried to destroy a mesh that was a nullptr")
 			return;
+		}
 
 		//Check if the mesh was allocated from this pool
-		if (mesh->m_model_pool != this)
+		if (mesh->m_model_pool != this) {
+			LOGW("Tried to destroy a mesh that was created with a different model pool")
 			return;
+		}
 
 		m_mesh_handles.erase(std::remove(m_mesh_handles.begin(), m_mesh_handles.end(), mesh), m_mesh_handles.end());
 
