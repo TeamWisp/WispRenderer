@@ -5,6 +5,7 @@
 #define LOG_CALLBACK
 //#define LOG_PRINT_LOC
 #define LOG_PRINT_COLORS
+//#define LOG_PRINT_TO_OUTPUT
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 #include <Windows.h>
@@ -85,6 +86,10 @@ namespace util::internal
 #endif
 
 		fmt::print(stdout, str, args...);
+
+		#if defined(LOG_PRINT_TO_OUTPUT) && defined(_WIN32)
+			OutputDebugStringA(str.c_str());
+		#endif
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 		if (color != 0)

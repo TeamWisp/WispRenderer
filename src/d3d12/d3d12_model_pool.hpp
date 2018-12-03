@@ -27,6 +27,7 @@ namespace wr
 		void* m_vertex_memory_block;
 		D3D12_GPU_VIRTUAL_ADDRESS m_index_buffer_base_address;
 		std::size_t m_index_staging_buffer_offset;
+		std::size_t m_index_count_offset;
 		std::size_t m_index_staging_buffer_size;
 		std::size_t m_index_count;
 		void* m_index_memory_block;
