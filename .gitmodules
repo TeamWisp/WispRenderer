@@ -5,3 +5,6 @@
 	path = deps/DirectXTex
 	url = https://github.com/TeamWisp/DirectXTex.git
 	branch = master
+[submodule "deps/assimp"]
+	path = deps/assimp
+	url = https://github.com/assimp/assimp

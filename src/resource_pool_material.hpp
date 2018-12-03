@@ -8,6 +8,8 @@
 #include "util/defines.hpp"
 #include "resource_pool_texture.hpp"
 
+struct aiMaterial;
+
 namespace wr
 {
 	struct MaterialHandle {};
@@ -24,6 +26,7 @@ namespace wr
 		MaterialPool& operator=(MaterialPool&&) = delete;
 
 		[[nodiscard]] MaterialHandle* Load(std::string_view path, TextureType type);
+		[[nodiscard]] MaterialHandle* Load(aiMaterial* material);
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;

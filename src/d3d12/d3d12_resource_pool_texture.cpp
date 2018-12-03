@@ -18,7 +18,7 @@ namespace wr
 		auto device = m_render_system.m_device;
 
 		d3d12::desc::DescriptorHeapDesc desc;
-		desc.m_num_descriptors = size_in_mb / num_of_textures;
+		desc.m_num_descriptors = num_of_textures;
 		desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 
 		m_descriptor_heap = d3d12::CreateDescriptorHeap(device, desc);
@@ -105,7 +105,7 @@ namespace wr
 
 		auto native = d3d12::CreateTexture(device, &desc, false);
 
-		native->m_need_mips = (metadata.mipLevels > 1) ? false : true;
+		native->m_need_mips = (metadata.mipLevels > 1);
 		native->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
 
 		memcpy(native->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
@@ -115,9 +115,7 @@ namespace wr
 		native->m_cpu_descriptor_handle = m_descriptor_handle;
 		native->m_resource->SetName(wide_string.c_str());
 
-		DXGI_FORMAT format = metadata.format;
-
-		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, (Format)format);
+		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, desc.m_texture_format);
 
 		m_textures.push_back(texture);
 
@@ -163,10 +161,9 @@ namespace wr
 		texture->m_native = native;
 
 		native->m_cpu_descriptor_handle = m_descriptor_handle;
+		native->m_resource->SetName(wide_string.c_str());
 
-		DXGI_FORMAT format = metadata.format;
-
-		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, (Format)format);
+		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, desc.m_texture_format);
 
 		m_textures.push_back(texture);
 
@@ -211,22 +208,12 @@ namespace wr
 		texture->m_native = native;
 
 		native->m_cpu_descriptor_handle = m_descriptor_handle;
+		native->m_resource->SetName(wide_string.c_str());
 
-		DXGI_FORMAT format = metadata.format;
-
-		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, (Format)format);
+		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, desc.m_texture_format);
 
 		m_textures.push_back(texture);
 
 		return texture;
 	}
-
-	void D3D12TexturePool::LoadTextureResource(CommandList * cmd_list, d3d12::Texture * destination, ID3D12Resource * intermediate)
-	{
-
-
-
-	}
-
-
 }

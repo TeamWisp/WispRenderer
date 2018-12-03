@@ -32,8 +32,6 @@ namespace wr
 		D3D12TextureHandle* LoadDDS(std::string_view path, bool srgb) final;
 		D3D12TextureHandle* LoadHDR(std::string_view path, bool srgb) final;
 
-		void LoadTextureResource(CommandList* cmd_list, d3d12::Texture* destination, ID3D12Resource* intermediate);
-
 		D3D12RenderSystem& m_render_system;
 
 		d3d12::DescriptorHeap* m_descriptor_heap;

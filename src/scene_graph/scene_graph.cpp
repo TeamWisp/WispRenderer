@@ -78,12 +78,9 @@ namespace wr
 		// Create constant buffer pool
 
 		constexpr auto model_size = sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch;
-		constexpr auto cam_size = sizeof(temp::ProjectionView_CBData);
-
 		constexpr auto model_cbs_size = SizeAlign(model_size, 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size = model_cbs_size;
 
-		m_constant_buffer_pool = m_render_system->CreateConstantBufferPool((uint32_t) std::ceil(sbo_size / (1024 * 1024.f)));
+		m_constant_buffer_pool = m_render_system->CreateConstantBufferPool((uint32_t) std::ceil(model_cbs_size / (1024 * 1024.f)));
 
 		// Initialize cameras
 
