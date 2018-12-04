@@ -1,5 +1,5 @@
 #pragma once
-#include "../resource_pool_constant_buffer.hpp"
+#include "../constant_buffer_pool.hpp"
 #include "d3d12_structs.hpp"
 
 namespace wr 
@@ -24,6 +24,7 @@ namespace wr
 	protected:
 		ConstantBufferHandle* AllocateConstantBuffer(std::size_t buffer_size) final;
 		void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, std::uint8_t* data) final;
+		void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t* data) final;
 		void DeallocateConstantBuffer(ConstantBufferHandle* handle) final;
 
 		std::vector<ConstantBufferHandle*> m_constant_buffer_handles;

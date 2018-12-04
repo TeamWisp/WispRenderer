@@ -1,4 +1,4 @@
-#include "d3d12_resource_pool_constant_buffer.hpp"
+#include "d3d12_constant_buffer_pool.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_settings.hpp"
 #include "d3d12_renderer.hpp"
@@ -36,6 +36,7 @@ namespace wr
 	ConstantBufferHandle* D3D12ConstantBufferPool::AllocateConstantBuffer(std::size_t buffer_size)
 	{
 		D3D12ConstantBufferHandle* handle = new D3D12ConstantBufferHandle();
+		handle->m_pool = this;
 		handle->m_native = d3d12::AllocConstantBuffer(m_heap, buffer_size);
 		if (handle->m_native == nullptr) 
 		{
@@ -51,6 +52,13 @@ namespace wr
 	void D3D12ConstantBufferPool::WriteConstantBufferData(ConstantBufferHandle * handle, size_t size, size_t offset, std::uint8_t * data)
 	{
 		auto frame_index = m_render_system.GetFrameIdx();
+		std::uint8_t* cpu_address = static_cast<D3D12ConstantBufferHandle*>(handle)->m_native->m_cpu_addresses->operator[](frame_index);
+		memcpy(cpu_address + offset, data, size);
+	}
+
+	void D3D12ConstantBufferPool::WriteConstantBufferData(ConstantBufferHandle * handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t * data)
+	{
+		auto frame_index = frame_idx;
 		std::uint8_t* cpu_address = static_cast<D3D12ConstantBufferHandle*>(handle)->m_native->m_cpu_addresses->operator[](frame_index);
 		memcpy(cpu_address + offset, data, size);
 	}

@@ -1,4 +1,8 @@
-#include "resource_pool_material.hpp"
+#define NOMINMAX
+
+#include "material_pool.hpp"
+
+#include <assimp/material.h>
 
 namespace wr 
 {
@@ -10,5 +14,10 @@ namespace wr
 	MaterialHandle* MaterialPool::Load(std::string_view path, TextureType type)
 	{
 		return LoadMaterial(path);
+	}
+
+	MaterialHandle * MaterialPool::Load(aiMaterial * material)
+	{
+		return nullptr;
 	}
 } /* wr */

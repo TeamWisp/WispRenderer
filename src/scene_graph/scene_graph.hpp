@@ -1,24 +1,26 @@
 #pragma once
 
-#include <vector>
+#include <bitset>
 #include <functional>
 #include <memory>
 #include <DirectXMath.h>
 
 #include "../util/defines.hpp"
-#include "../resource_pool_model.hpp"
-#include "../resource_pool_constant_buffer.hpp"
+#include "../model_pool.hpp"
+#include "../constant_buffer_pool.hpp"
+#include "../structured_buffer_pool.hpp"
 
 namespace wr
 {
 	class RenderSystem;
 	struct CommandList;
+	struct CameraNode;
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
-		Node() : m_requires_update{ true, true, true }
+		Node()
 		{
-
+			SignalChange();
 		}
 
 		std::shared_ptr<Node> m_parent;
@@ -26,7 +28,7 @@ namespace wr
 
 		void SignalChange()
 		{
-			m_requires_update = { true, true, true };
+			m_requires_update[0] = m_requires_update[1] = m_requires_update[2] = true;
 		}
 
 		bool RequiresUpdate(unsigned int frame_idx)
@@ -34,15 +36,12 @@ namespace wr
 			return m_requires_update[frame_idx];
 		}
 
-		std::vector<bool> m_requires_update;
+		std::bitset<3> m_requires_update;
 	};
 
 	struct CameraNode;
 	struct MeshNode;
 	struct LightNode;
-
-	//TODO: Make platform independent
-	struct D3D12ConstantBufferHandle;
 
 	enum class LightType : uint32_t
 	{
@@ -55,7 +54,7 @@ namespace wr
 		float rad = 5.f;								//Radius for point, height for spot
 
 		DirectX::XMFLOAT3 col = { 1, 1, 1 };			//Color (and strength)
-		uint32_t tid = (uint32_t)LightType::POINT;		//Type id; LightType::x
+		uint32_t tid = (uint32_t)LightType::FREE;		//Type id; LightType::x
 
 		DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
 		float ang = 40.f / 180.f * 3.1415926535f;		//Angle for spot; in radians
@@ -75,7 +74,7 @@ namespace wr
 		struct MeshBatch
 		{
 			unsigned int num_instances = 0;
-			D3D12ConstantBufferHandle* batchBuffer;
+			ConstantBufferHandle* batch_buffer;
 			MeshBatch_CBData data;
 		};
 
@@ -90,13 +89,13 @@ namespace wr
 		~SceneGraph();
 
 		// Impl Functions
-		static std::function<void(RenderSystem*, temp::MeshBatches&, CommandList*)> m_render_meshes_func_impl;
+		static std::function<void(RenderSystem*, temp::MeshBatches&, CameraNode* camera, CommandList*)> m_render_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_init_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_init_cameras_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&, CommandList*)> m_update_lights_func_impl;
+		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&, StructuredBufferHandle*, CommandList*)> m_update_lights_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -110,16 +109,19 @@ namespace wr
 		void RemoveChildren(std::shared_ptr<Node> const & parent);
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
+		std::vector<std::shared_ptr<LightNode>>& GetLightNodes();
+
 		void Init();
 		void Update();
-		void Render(CommandList* cmd_list);
+		void Render(CommandList* cmd_list, CameraNode* camera);
 
 		template<typename T>
 		void DestroyNode(std::shared_ptr<T> node);
 
 		void Optimize();
 		temp::MeshBatches& GetBatches();
-		std::vector<Light>& GetLights();
+
+		StructuredBufferHandle* GetLightBuffer();
 
 	private:
 		RenderSystem* m_render_system;
@@ -128,6 +130,11 @@ namespace wr
 
 		temp::MeshBatches m_batches;
 		std::vector<Light> m_lights;
+
+		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
+		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
+
+		StructuredBufferHandle* m_light_buffer;
 
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;

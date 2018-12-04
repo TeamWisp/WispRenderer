@@ -5,10 +5,13 @@
 #include <sstream>
 #include <optional>
 
+
 #include "shader_registry.hpp"
 #include "pipeline_registry.hpp"
 #include "root_signature_registry.hpp"
 #include "d3d12/d3d12_renderer.hpp"
+#include "scene_graph/scene_graph.hpp"
+#include "scene_graph/light_node.hpp"
 
 namespace wr::imgui::internal
 {
@@ -144,6 +147,76 @@ namespace wr::imgui::window
 			ImGui::Text("Debug Factory: %s", internal::BooltoStr(d3d12::settings::enable_debug_factory).c_str());
 			ImGui::Text("Enable GPU Timeout: %s", internal::BooltoStr(d3d12::settings::enable_gpu_timeout).c_str());
 			ImGui::Text("Num instances per batch: %d", d3d12::settings::num_instances_per_batch);
+			ImGui::End();
+		}
+	}
+
+	void LightEditor(SceneGraph* scene_graph)
+	{
+		if (open_light_editor)
+		{
+			auto& lights = scene_graph->GetLightNodes();
+
+			ImGui::Begin("Light Editor", &open_light_editor);
+
+			if (ImGui::Button("Add Light"))
+			{
+				scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
+			}
+
+			ImGui::Separator();
+
+			for (auto i = 0; i < lights.size(); i++)
+			{
+				std::string tree_name("Light " + std::to_string(i));
+				if (ImGui::TreeNode(tree_name.c_str()))
+				{
+					auto& light = lights[i]->m_light;
+
+					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
+					int type = (int)light.tid & 3;
+					ImGui::Combo("Type", &type, listbox_items, 3);
+					light.tid = type;
+
+					float pos[3] = { light.pos.x, light.pos.y, light.pos.z };
+					ImGui::DragFloat3("Position", pos);
+					light.pos = { pos[0], pos[1], pos[2] };
+
+					float color[3] = { light.col.x, light.col.y, light.col.z };
+					ImGui::DragFloat3("Color", color);
+					light.col = { color[0], color[1], color[2] };
+
+					if (type == 0)
+					{
+						ImGui::DragFloat("Radius", &light.rad);
+					}
+					else if (type == 1)
+					{
+						float dir[3] = { light.dir.x, light.dir.y, light.dir.z };
+						ImGui::DragFloat3("Direction", dir);
+						light.dir = { dir[0], dir[1], dir[2] };
+					}
+					else if (type == 2)
+					{
+						float dir[3] = { light.dir.x, light.dir.y, light.dir.z };
+						ImGui::DragFloat3("Direction", dir);
+						light.dir = { dir[0], dir[1], dir[2] };
+
+						ImGui::DragFloat("Angle", &light.ang);
+						ImGui::DragFloat("Radius", &light.rad);
+					}
+
+					lights[i]->SignalChange();
+
+					if (ImGui::Button("Remove"))
+					{
+						lights.erase(lights.begin() + i);
+					}
+
+					ImGui::TreePop();
+				}
+			}
+
 			ImGui::End();
 		}
 	}

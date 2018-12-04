@@ -14,8 +14,8 @@ namespace wr
 	struct RenderTargetProperties
 	{
 		bool m_is_render_window;
-		std::optional<unsigned int> width;
-		std::optional<unsigned int> height;
+		std::optional<unsigned int> m_width;
+		std::optional<unsigned int> m_height;
 		std::optional<ResourceState> m_state_execute;
 		std::optional<ResourceState> m_state_finished;
 		bool m_create_dsv_buffer;

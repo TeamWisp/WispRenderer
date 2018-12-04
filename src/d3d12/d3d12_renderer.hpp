@@ -22,9 +22,26 @@ namespace wr
 	struct D3D12ConstantBufferHandle;
 
 	class D3D12StructuredBufferPool;
+	class D3D12ModelPool;
 
 	namespace temp
 	{
+		struct IndirectCommand
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
+			D3D12_VERTEX_BUFFER_VIEW vb_view;
+			D3D12_DRAW_ARGUMENTS draw_arguments;
+		};
+
+		struct IndirectCommandIndexed
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
+			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
+			D3D12_VERTEX_BUFFER_VIEW vb_view;
+			D3D12_DRAW_INDEXED_ARGUMENTS draw_arguments;
+		};
+
 		struct ProjectionView_CBData
 		{
 			DirectX::XMMATRIX m_view;
@@ -73,7 +90,6 @@ namespace wr
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
-		d3d12::HeapResource* GetLightBuffer();
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);
 
@@ -88,9 +104,9 @@ namespace wr
 
 		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
-		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, CommandList* cmd_list);
+		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList* cmd_list);
 
-		void Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list);
+		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -103,18 +119,22 @@ namespace wr
 		d3d12::CommandQueue* m_copy_queue;
 		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_fences;
 
-		// temporary
-		d3d12::Heap<HeapOptimization::SMALL_BUFFERS>* m_cb_heap;
-		d3d12::Heap<HeapOptimization::BIG_STATIC_BUFFERS>* m_sb_heap;
-
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
-		d3d12::HeapResource* m_light_buffer;
+
+		std::shared_ptr<ConstantBufferPool> m_camera_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
+		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
     
 	private:
+		unsigned int m_max_commands = 4;
+		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
+		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
+		d3d12::CommandSignature* m_cmd_signature;
+		d3d12::CommandSignature* m_cmd_signature_indexed;
+
 		std::optional<bool> m_requested_fullscreen_state;
 	};
 

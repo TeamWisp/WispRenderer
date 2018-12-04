@@ -12,8 +12,7 @@
 #include "../d3d12/d3d12_defines.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_renderer.hpp"
-#include "../d3d12/d3d12_resource_pool.hpp"
-#include "../d3d12/d3d12_resource_pool_constant_buffer.hpp"
+#include "../d3d12/d3d12_constant_buffer_pool.hpp"
 
 namespace wr
 {
@@ -64,12 +63,36 @@ namespace wr
 		return nullptr;
 	}
 
+	std::vector<std::shared_ptr<LightNode>>& SceneGraph::GetLightNodes()
+	{
+		return m_light_nodes;
+	}
+
 	//! Initialize the scene graph
 	void SceneGraph::Init()
 	{
 		m_init_meshes_func_impl(m_render_system, m_mesh_nodes);
-		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
 		m_init_lights_func_impl(m_render_system, m_light_nodes, m_lights);
+
+		// Create constant buffer pool
+
+		constexpr auto model_size = sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch;
+		constexpr auto model_cbs_size = SizeAlign(model_size, 256) * d3d12::settings::num_back_buffers;
+
+		m_constant_buffer_pool = m_render_system->CreateConstantBufferPool((uint32_t) std::ceil(model_cbs_size / (1024 * 1024.f)));
+
+		// Initialize cameras
+
+		m_init_cameras_func_impl(m_render_system, m_camera_nodes);
+
+		// Create Light Buffer
+
+		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
+		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
+
+		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
+		m_light_buffer = m_structured_buffer->Create(light_buffer_size, light_buffer_stride, false);
+
 	}
 
 	//! Update the scene graph
@@ -83,7 +106,7 @@ namespace wr
 	/*!
 		The user is expected to call `Optimize`. If they don't this function will do it manually.
 	*/
-	void SceneGraph::Render(CommandList* cmd_list)
+	void SceneGraph::Render(CommandList* cmd_list, CameraNode* camera)
 	{
 		bool should_update = m_batches.size() == 0;
 
@@ -99,8 +122,8 @@ namespace wr
 		if (should_update)
 			Optimize();
 
-		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, cmd_list);
-		m_render_meshes_func_impl(m_render_system, m_batches, cmd_list);
+		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, m_light_buffer, cmd_list);
+		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
 	}
 
 	temp::MeshBatches& SceneGraph::GetBatches() 
@@ -108,15 +131,17 @@ namespace wr
 		return m_batches; 
 	}
 
-	std::vector<Light>& SceneGraph::GetLights()
+	StructuredBufferHandle* SceneGraph::GetLightBuffer()
 	{
-		return m_lights;
+		return m_light_buffer;
 	}
+
 
 	void SceneGraph::Optimize() 
 	{
-		D3D12RenderSystem* d3d12_render_system = dynamic_cast<D3D12RenderSystem*>(m_render_system);
 		constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
+
+		constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
 		for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
 
@@ -127,11 +152,10 @@ namespace wr
 			if (it == m_batches.end())
 			{
 
-				auto transform_cb = new D3D12ConstantBufferHandle();
-				transform_cb->m_native = d3d12::AllocConstantBuffer(d3d12_render_system->m_cb_heap, sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
+				ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
 
 				auto& batch = m_batches[node->m_model]; 
-				batch.batchBuffer = transform_cb;
+				batch.batch_buffer = object_buffer;
 				batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
 
 				it = m_batches.find(node->m_model);
@@ -149,7 +173,7 @@ namespace wr
 		for (auto& elem : m_batches)
 		{
 			temp::MeshBatch& batch = elem.second;
-			d3d12::UpdateConstantBuffer(batch.batchBuffer->m_native, d3d12_render_system->GetFrameIdx(), batch.data.objects.data(), sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch);
+			m_constant_buffer_pool->Update(batch.batch_buffer, model_size, 0, (uint8_t*) batch.data.objects.data());
 		}
 	}
 

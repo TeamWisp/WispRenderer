@@ -4,7 +4,6 @@
 #include "entry.hpp"
 #include "window.hpp"
 #include "vertex.hpp"
-#include "resource_pool.hpp"
 #include "renderer.hpp"
 
 // Scene Graph

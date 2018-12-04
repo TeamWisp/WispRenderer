@@ -1,4 +1,4 @@
-#include "d3d12_resource_pool_material.hpp"
+#include "d3d12_material_pool.hpp"
 
 #include "d3d12_functions.hpp"
 #include "d3d12_renderer.hpp"

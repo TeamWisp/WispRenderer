@@ -22,6 +22,8 @@ namespace wr::d3d12
 	void SetName(CommandList* cmd_list, std::wstring const & name);
 	void Begin(CommandList* cmd_list, unsigned int frame_idx);
 	void End(CommandList* cmd_list);
+	void ExecuteBundle(CommandList* cmd_list, CommandList* bundle);
+	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer);
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetVersioned(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);
@@ -42,9 +44,14 @@ namespace wr::d3d12
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
+
+	// Command List Signature
+	CommandSignature* CreateCommandSignature(Device* device, RootSignature* root_signature, std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs, size_t byte_stride);
+	void Destroy(CommandSignature* cmd_signature);
 
 	// RenderTarget
 	[[nodiscard]] RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor);
@@ -161,5 +168,8 @@ namespace wr::d3d12
 		std::uint64_t offset,
 		std::uint64_t stride,
 		CommandList* cmd_list);
+
+	[[nodiscard]] IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size);
+	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
 
 } /* wr::d3d12 */

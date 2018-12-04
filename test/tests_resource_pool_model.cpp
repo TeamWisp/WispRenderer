@@ -1,11 +1,9 @@
-#include "d3d12/d3d12_structs.hpp"
-#include "d3d12/d3d12_functions.hpp"
-#include "renderer.hpp"
-#include "d3d12/d3d12_renderer.hpp"
-#include "d3d12/d3d12_resource_pool_model.hpp"
-#include "window.hpp"
-
-#include <gtest\gtest.h>
+#include "../d3d12/d3d12_structs.hpp"
+#include "../d3d12/d3d12_functions.hpp"
+#include "../renderer.hpp"
+#include "../d3d12/d3d12_renderer.hpp"
+#include "../d3d12/d3d12_resource_pool_model.hpp"
+#include "../window.hpp"
 
 TEST(ModelResourcePoolTest, ResourcePoolCreation) 
 {
