@@ -8,6 +8,15 @@
 #include "util/defines.hpp"
 #include "material_pool.hpp"
 
+#undef min
+#undef max
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+#include "util/log.hpp"
+#include "vertex.hpp"
+
 struct aiScene;
 struct aiNode;
 
@@ -18,7 +27,7 @@ namespace wr
 	struct Mesh
 	{
 		ModelPool* m_model_pool;
-		MaterialHandle* material;
+		MaterialHandle* m_material;
 	};
 
 	template<typename TV, typename TI = std::uint32_t>
@@ -51,7 +60,9 @@ namespace wr
 		ModelPool(ModelPool&&) = delete;
 		ModelPool& operator=(ModelPool&&) = delete;
 
+		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* Load(std::string_view path, ModelType type);
+		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] std::pair<Model*, std::vector<MaterialHandle*>> LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type);
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
@@ -70,7 +81,9 @@ namespace wr
 		virtual void DestroyModel(Model* model) = 0;
 		virtual void DestroyMesh(Mesh* mesh) = 0;
 
+		template<typename TV, typename TI = std::uint32_t>
 		int LoadNodeMeshes(const aiScene* scene, aiNode* node, Model* model);
+		template<typename TV, typename TI = std::uint32_t>
 		int LoadNodeMeshesWithMaterials(const aiScene* scene, aiNode* node, Model* model, std::vector<MaterialHandle*> materials);
 
 		std::size_t m_vertex_buffer_pool_size_in_mb;
@@ -100,4 +113,87 @@ namespace wr
 		return model;
 	}
 
+	//! Loads a model without materials
+	template<typename TV, typename TI>
+	Model* ModelPool::Load(std::string_view path, ModelType type)
+	{
+		IS_PROPER_VERTEX_CLASS(TV)
+
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(path.data(),
+			aiProcess_Triangulate |
+			aiProcess_CalcTangentSpace |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_OptimizeMeshes |
+			aiProcess_ImproveCacheLocality |
+			aiProcess_MakeLeftHanded);
+
+		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+		{
+			LOGW(std::string("Loading model ") +
+				path.data() +
+				std::string(" failed with error ") +
+				importer.GetErrorString());
+			return nullptr;
+		}
+
+		Model* model = new Model;
+
+		int ret = LoadNodeMeshes<TV, TI>(scene, scene->mRootNode, model);
+
+		if (ret == 1)
+		{
+			DestroyModel(model);
+			return nullptr;
+		}
+
+		return model;
+
+		return new Model();
+	}
+
+	//! Loads a model with materials
+	template<typename TV, typename TI>
+	std::pair<Model*, std::vector<MaterialHandle*>> ModelPool::LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type)
+	{
+		IS_PROPER_VERTEX_CLASS(TV)
+
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(path.data(),
+			aiProcess_Triangulate |
+			aiProcess_CalcTangentSpace |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_OptimizeMeshes |
+			aiProcess_ImproveCacheLocality |
+			aiProcess_MakeLeftHanded);
+
+		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+		{
+			LOGW(std::string("Loading model ") +
+				path.data() +
+				std::string(" failed with error ") +
+				importer.GetErrorString());
+			return std::pair<Model*, std::vector<MaterialHandle*>>();
+		}
+
+		Model* model = new Model;
+		std::vector<MaterialHandle*> material_handles;
+
+		for (int i = 0; i < scene->mNumMaterials; ++i)
+		{
+			material_handles.push_back(material_pool->Load(scene->mMaterials[i]));
+		}
+
+		int ret = LoadNodeMeshesWithMaterials<TV, TI>(scene, scene->mRootNode, model, material_handles);
+
+		if (ret == 1)
+		{
+			DestroyModel(model);
+			return std::pair<Model*, std::vector<MaterialHandle*>>(nullptr, {});
+		}
+
+		return std::pair<Model*, std::vector<MaterialHandle*>>();
+	}
+
+	
 } /* wr */
