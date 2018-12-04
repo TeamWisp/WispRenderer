@@ -468,7 +468,7 @@ namespace wr
 	{
 		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) return;
+			if (!node->RequiresUpdate(GetFrameIdx())) continue;
 
 			node->UpdateTransform();
 			node->SignalUpdate(GetFrameIdx());
@@ -479,7 +479,7 @@ namespace wr
 	{
 		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) return;
+			if (!node->RequiresUpdate(GetFrameIdx())) continue;
 
 			node->UpdateTemp(GetFrameIdx());
 
