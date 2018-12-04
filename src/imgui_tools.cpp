@@ -171,7 +171,8 @@ namespace wr::imgui::window
 				std::string tree_name("Light " + std::to_string(i));
 				if (ImGui::TreeNode(tree_name.c_str()))
 				{
-					auto& light = *lights[i]->m_light;
+					auto& light_node = lights[i];
+					auto& light = *light_node->m_light;
 
 					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
 					int type = (int)light.tid & 3;
@@ -181,35 +182,27 @@ namespace wr::imgui::window
 					if (i == 0)
 						light.tid |= (uint32_t) lights.size() << 2;
 
-					float* pos = lights[i]->m_position.m128_f32;
-					ImGui::DragFloat3("Position", pos, 0.25f);
-					lights[i]->m_position = { pos[0], pos[1], pos[2] };
+					ImGui::DragFloat3("Color", &light.col.x, 0.25f);
+					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
 
-					float color[3] = { light.col.x, light.col.y, light.col.z };
-					ImGui::DragFloat3("Color", color, 0.25f);
-					light.col = { color[0], color[1], color[2] };
+					if (type != (uint32_t)LightType::POINT)
+					{
+						ImGui::DragFloat3("Rotation", light_node->m_rotation_deg.m128_f32);
+					}
 
-					if (type == 0)
+					if (type != (uint32_t) LightType::DIRECTIONAL)
 					{
 						ImGui::DragFloat("Radius", &light.rad, 0.25f);
 					}
-					else if (type == 1)
-					{
-						float dir[3] = { light.dir.x, light.dir.y, light.dir.z };
-						ImGui::DragFloat3("Direction", dir, 0.1f, -1.f, 1.f);
-						light.dir = { dir[0], dir[1], dir[2] };
-					}
-					else if (type == 2)
-					{
-						float dir[3] = { light.dir.x, light.dir.y, light.dir.z };
-						ImGui::DragFloat3("Direction", dir);
-						light.dir = { dir[0], dir[1], dir[2] };
 
-						ImGui::DragFloat("Angle", &light.ang, 0.5f);
-						ImGui::DragFloat("Radius", &light.rad, 0.5f);
+					if (type == (uint32_t)LightType::SPOT)
+					{
+						light.ang = light.ang * 180.f / 3.1415926535f;
+						ImGui::DragFloat("Angle", &light.ang);
+						light.ang = light.ang / 180.f * 3.1415926535f;
 					}
 
-					lights[i]->SignalChange();
+					light_node->SignalChange();
 
 					if (ImGui::Button("Remove"))
 					{
