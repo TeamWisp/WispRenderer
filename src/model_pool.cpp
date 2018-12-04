@@ -1,12 +1,14 @@
 #define NOMINMAX 1
 #include "model_pool.hpp"
+#include <utility>
 
 namespace wr
 {
 	ModelPool::ModelPool(std::size_t vertex_buffer_pool_size_in_mb,
 		std::size_t index_buffer_pool_size_in_mb) : 
 		m_vertex_buffer_pool_size_in_mb(vertex_buffer_pool_size_in_mb),
-		m_index_buffer_pool_size_in_mb(index_buffer_pool_size_in_mb)
+		m_index_buffer_pool_size_in_mb(index_buffer_pool_size_in_mb),
+		m_current_id(0)
 	{
 	}
 
@@ -15,7 +17,7 @@ namespace wr
 		DestroyModel(model);
 	}
 
-	void ModelPool::Destroy(Mesh * mesh)
+	void ModelPool::Destroy(internal::MeshInternal * mesh)
 	{
 		DestroyMesh(mesh);
 	}
@@ -76,7 +78,9 @@ namespace wr
 				}
 			}
 
-			Mesh* n_mesh = LoadCustom_VerticesAndIndices(
+			Mesh* mesh_handle = new Mesh();
+
+			internal::MeshInternal* mesh_data = LoadCustom_VerticesAndIndices(
 				vertices.data(),
 				vertices.size(),
 				sizeof(Vertex),
@@ -84,7 +88,17 @@ namespace wr
 				indices.size(),
 				sizeof(std::uint32_t));
 
-			if (n_mesh == nullptr)
+			std::uint64_t id = GetNewID();
+			m_loaded_meshes[id] = mesh_data;
+			mesh_handle->id = id;
+
+			MaterialHandle* material_handle = nullptr;
+
+			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+				mesh_handle,
+				material_handle);
+
+			if (n_mesh.first == nullptr)
 			{
 				return 1;
 			}
@@ -145,7 +159,11 @@ namespace wr
 				}
 			}
 
-			Mesh* n_mesh = LoadCustom_VerticesAndIndices(
+
+
+			Mesh* mesh_handle = new Mesh();
+
+			internal::MeshInternal* mesh_data = LoadCustom_VerticesAndIndices(
 				vertices.data(),
 				vertices.size(),
 				sizeof(VertexNoTangent),
@@ -153,7 +171,15 @@ namespace wr
 				indices.size(),
 				sizeof(std::uint32_t));
 
-			if (n_mesh == nullptr)
+			std::uint64_t id = GetNewID();
+			m_loaded_meshes[id] = mesh_data;
+			mesh_handle->id = id;
+
+			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+				mesh_handle,
+				nullptr);
+
+			if (n_mesh.first == nullptr)
 			{
 				return 1;
 			}
@@ -225,7 +251,11 @@ namespace wr
 				}
 			}
 
-			Mesh* n_mesh = LoadCustom_VerticesAndIndices(
+
+
+			Mesh* mesh_handle = new Mesh();
+
+			internal::MeshInternal* mesh_data = LoadCustom_VerticesAndIndices(
 				vertices.data(),
 				vertices.size(),
 				sizeof(Vertex),
@@ -233,14 +263,22 @@ namespace wr
 				indices.size(),
 				sizeof(std::uint32_t));
 
-			if (n_mesh == nullptr)
+			std::uint64_t id = GetNewID();
+			m_loaded_meshes[id] = mesh_data;
+			mesh_handle->id = id;
+
+			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+				mesh_handle,
+				nullptr);
+
+			if (n_mesh.first == nullptr)
 			{
 				return 1;
 			}
 
 			if (scene->HasMaterials())
 			{
-				n_mesh->m_material = materials[mesh->mMaterialIndex];
+				n_mesh.second = materials[mesh->mMaterialIndex];
 			}
 
 			model->m_meshes.push_back(n_mesh);
@@ -299,7 +337,11 @@ namespace wr
 				}
 			}
 
-			Mesh* n_mesh = LoadCustom_VerticesAndIndices(
+
+
+			Mesh* mesh_handle = new Mesh();
+
+			internal::MeshInternal* mesh_data = LoadCustom_VerticesAndIndices(
 				vertices.data(),
 				vertices.size(),
 				sizeof(VertexNoTangent),
@@ -307,14 +349,24 @@ namespace wr
 				indices.size(),
 				sizeof(std::uint32_t));
 
-			if (n_mesh == nullptr)
+			std::uint64_t id = GetNewID();
+			m_loaded_meshes[id] = mesh_data;
+			mesh_handle->id = id;
+
+			MaterialHandle* material_handle = nullptr;
+
+			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+				mesh_handle,
+				material_handle);
+
+			if (n_mesh.first == nullptr)
 			{
 				return 1;
 			}
 
 			if (scene->HasMaterials())
 			{
-				n_mesh->m_material = materials[mesh->mMaterialIndex];
+				n_mesh.second = materials[mesh->mMaterialIndex];
 			}
 
 			model->m_meshes.push_back(n_mesh);
@@ -326,6 +378,27 @@ namespace wr
 				return 1;
 		}
 		return 0;
+	}
+
+	std::uint64_t ModelPool::GetNewID()
+	{
+		std::uint64_t id;
+		if (m_freed_ids.size() > 0)
+		{
+			id = m_freed_ids.top();
+			m_freed_ids.pop();
+		}
+		else
+		{
+			id = m_current_id;
+			m_current_id++;
+		}
+		return id;
+	}
+
+	void ModelPool::FreeID(std::uint64_t id)
+	{
+		m_freed_ids.push(id);
 	}
 
 } /* wr */

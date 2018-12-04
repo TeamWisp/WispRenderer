@@ -3,6 +3,8 @@
 #include <string_view>
 #include <vector>
 #include <optional>
+#include <map>
+#include <stack>
 //#include <d3d12.h>
 
 #include "util/defines.hpp"
@@ -24,10 +26,17 @@ namespace wr
 {
 	class ModelPool;
 
+	namespace internal 
+	{
+		struct MeshInternal
+		{
+
+		};
+	}
+
 	struct Mesh
 	{
-		ModelPool* m_model_pool;
-		MaterialHandle* m_material;
+		std::uint64_t id;
 	};
 
 	template<typename TV, typename TI = std::uint32_t>
@@ -39,7 +48,9 @@ namespace wr
 
 	struct Model
 	{
-		std::vector<Mesh*> m_meshes;
+		std::vector<std::pair<Mesh*, MaterialHandle*>> m_meshes;
+		ModelPool* m_model_pool;
+		std::string m_model_name;
 	};
 
 	enum class ModelType
@@ -68,18 +79,18 @@ namespace wr
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
 
 		void Destroy(Model* model);
-		void Destroy(Mesh* mesh);
+		void Destroy(internal::MeshInternal* mesh);
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
 
 	protected:
 		virtual Model* LoadFBX(std::string_view path, ModelType type) = 0;
-		virtual Mesh* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
-		virtual Mesh* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) = 0;
+		virtual internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
+		virtual internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) = 0;
 
 		virtual void DestroyModel(Model* model) = 0;
-		virtual void DestroyMesh(Mesh* mesh) = 0;
+		virtual void DestroyMesh(internal::MeshInternal* mesh) = 0;
 
 		template<typename TV, typename TI = std::uint32_t>
 		int LoadNodeMeshes(const aiScene* scene, aiNode* node, Model* model);
@@ -88,6 +99,15 @@ namespace wr
 
 		std::size_t m_vertex_buffer_pool_size_in_mb;
 		std::size_t m_index_buffer_pool_size_in_mb;
+
+		std::map<std::uint64_t, internal::MeshInternal*> m_loaded_meshes;
+		std::stack<std::uint64_t> m_freed_ids;
+
+		std::uint64_t m_current_id;
+
+		std::uint64_t GetNewID();
+		void FreeID(std::uint64_t id);
+
 	};
 
 	template<typename TV, typename TI>
@@ -97,18 +117,39 @@ namespace wr
 
 		auto model = new Model();
 
-		for (auto& data : meshes)
+		for (int i = 0; i < meshes.size(); ++i)
 		{
-			if (data.m_indices.has_value())
+			Mesh* mesh = new Mesh();
+			if (meshes[i].m_indices.has_value())
 			{
-				model->m_meshes.push_back(LoadCustom_VerticesAndIndices(data.m_vertices.data(), data.m_vertices.size(), sizeof(TV), data.m_indices.value().data(), data.m_indices.value().size(), sizeof(TI)));
+				internal::MeshInternal* mesh_data = LoadCustom_VerticesAndIndices(
+					meshes[i].m_vertices.data(),
+					meshes[i].m_vertices.size(),
+					sizeof(TV),
+					meshes[i].m_indices.value().data(),
+					meshes[i].m_indices.value().size(),
+					sizeof(TI));
+
+				std::uint64_t id = GetNewID();
+				m_loaded_meshes[id] = mesh_data;
+				mesh->id = id;
 			}
 			else
 			{
-				void* ptr = data.m_vertices.data();
-				model->m_meshes.push_back(LoadCustom_VerticesOnly(ptr, data.m_vertices.size(), sizeof(TV)));
+				internal::MeshInternal* mesh_data = LoadCustom_VerticesOnly(
+					meshes[i].m_vertices.data(),
+					meshes[i].m_vertices.size(),
+					sizeof(TV));
+
+				std::uint64_t id = GetNewID();
+				m_loaded_meshes[id] = mesh_data;
+				mesh->id = id;
 			}
+			model->m_meshes.push_back(
+				std::make_pair(mesh, nullptr));
 		}
+
+		model->m_model_pool = this;
 
 		return model;
 	}
@@ -146,10 +187,10 @@ namespace wr
 			DestroyModel(model);
 			return nullptr;
 		}
+		model->m_model_name = path.data();
+		model->m_model_pool = this;
 
 		return model;
-
-		return new Model();
 	}
 
 	//! Loads a model with materials
@@ -192,7 +233,10 @@ namespace wr
 			return std::pair<Model*, std::vector<MaterialHandle*>>(nullptr, {});
 		}
 
-		return std::pair<Model*, std::vector<MaterialHandle*>>();
+		model->m_model_name = path.data();
+		model->m_model_pool = this;
+
+		return std::pair<Model*, std::vector<MaterialHandle*>>(model, material_handles);
 	}
 
 	

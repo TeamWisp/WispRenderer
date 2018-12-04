@@ -68,6 +68,11 @@ namespace wr
 		return m_light_nodes;
 	}
 
+	std::vector<std::shared_ptr<MeshNode>>& SceneGraph::GetMeshNodes()
+	{
+		return m_mesh_nodes;
+	}
+
 	//! Initialize the scene graph
 	void SceneGraph::Init()
 	{
@@ -91,6 +96,7 @@ namespace wr
 		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
 
 		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
+		m_model_pool = m_render_system->CreateModelPool(16, 16);
 		m_light_buffer = m_structured_buffer->Create(light_buffer_size, light_buffer_stride, false);
 
 	}
@@ -136,6 +142,10 @@ namespace wr
 		return m_light_buffer;
 	}
 
+	std::shared_ptr<ModelPool> SceneGraph::GetModelPool()
+	{
+		return m_model_pool;
+	}
 
 	void SceneGraph::Optimize() 
 	{

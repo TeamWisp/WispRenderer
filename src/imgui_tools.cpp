@@ -12,6 +12,8 @@
 #include "d3d12/d3d12_renderer.hpp"
 #include "scene_graph/scene_graph.hpp"
 #include "scene_graph/light_node.hpp"
+#include "scene_graph/mesh_node.hpp"
+#include "model_pool.hpp"
 
 namespace wr::imgui::internal
 {
@@ -218,6 +220,120 @@ namespace wr::imgui::window
 			}
 
 			ImGui::End();
+		}
+	}
+
+	void ModelEditor(SceneGraph * scene_graph)
+	{
+		if (open_model_editor)
+		{
+			auto& models = scene_graph->GetMeshNodes();
+
+			ImGui::Begin("Model Editor", &open_model_editor);
+
+			static std::vector<char> text(256);
+			
+
+			ImGui::InputText("Model Path", text.data(), text.size());
+
+			if (ImGui::Button("Add Model"))
+			{
+
+				Model* model = scene_graph->GetModelPool()->Load<Vertex>(text.data(), ModelType::FBX);
+
+				if (model != nullptr) {
+					scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
+				}
+			}
+
+			ImGui::Separator();
+
+			std::vector<std::pair<std::string, int>> model_count;
+
+			for (int i = 0; i < models.size(); ++i)
+			{
+				auto model = models[i];
+
+				bool found = false;
+
+				int j;
+
+				for (j = 0; j < model_count.size(); ++j) 
+				{
+					if (model_count[j].first.compare(model->m_model->m_model_name) == 0) 
+					{
+						found = true;
+						model_count[j].second++;
+						break;
+					}
+				}
+
+				std::string model_name;
+
+				if (!found)
+				{
+					model_count.push_back(std::make_pair(model->m_model->m_model_name, 0));
+					model_name = "Model: " + model->m_model->m_model_name + " " + std::to_string(0);
+				}
+				else
+				{
+					model_count.push_back(std::make_pair(model->m_model->m_model_name, 0));
+					model_name = "Model: " + model->m_model->m_model_name + " " + std::to_string(model_count[j].second);
+				}
+				
+
+				if (ImGui::TreeNode(model_name.c_str()))
+				{
+
+					float pos[3] = { DirectX::XMVectorGetX(model->m_position),
+						DirectX::XMVectorGetY(model->m_position),
+						DirectX::XMVectorGetZ(model->m_position) };
+					ImGui::DragFloat3("Position", pos);
+					model->SetPosition(DirectX::XMVectorSet(pos[0], pos[1], pos[2], 1));
+					
+					float rot[3] = { DirectX::XMVectorGetX(model->m_rotation_deg),
+						DirectX::XMVectorGetY(model->m_rotation_deg),
+						DirectX::XMVectorGetZ(model->m_rotation_deg) };
+					ImGui::DragFloat3("Rotation", rot);
+					model->SetRotation(DirectX::XMVectorSet(rot[0], rot[1], rot[2], 0));
+
+					float scl[3] = { DirectX::XMVectorGetX(model->m_scale),
+						DirectX::XMVectorGetY(model->m_scale),
+						DirectX::XMVectorGetZ(model->m_scale) };
+					ImGui::DragFloat3("Scale", scl);
+					model->SetScale(DirectX::XMVectorSet(scl[0], scl[1], scl[2], 1));
+
+					if (ImGui::Button("Remove"))
+					{
+						int c = 0;
+						for (int j = 0; j < models.size(); ++j) 
+						{
+							if (model->m_model == models[j]->m_model)
+								c++;
+
+						}
+						if (c == 1)
+							model->m_model->m_model_pool->Destroy(model->m_model);
+						scene_graph->DestroyNode(model);
+					}
+
+					ImGui::SameLine();
+
+					if (ImGui::Button("Duplicate"))
+					{
+						auto node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model->m_model);
+						node->SetPosition(model->m_position);
+						node->SetRotation(model->m_rotation_deg);
+						node->SetScale(model->m_scale);
+					}
+
+					ImGui::TreePop();
+				}
+				
+			}
+
+			ImGui::End();
+
 		}
 	}
 

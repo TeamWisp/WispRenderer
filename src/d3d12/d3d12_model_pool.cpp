@@ -65,9 +65,9 @@ namespace wr
 			delete temp;
 		}
 
-		for (auto& handle : m_mesh_handles)
+		for (auto& handle : m_loaded_meshes)
 		{
-			delete handle;
+			delete handle.second;
 		}
 	}
 
@@ -87,7 +87,7 @@ namespace wr
 	{
 		while (!m_mesh_stage_queue.empty())
 		{
-			D3D12Mesh* d3d12_mesh = static_cast<D3D12Mesh*>(m_mesh_stage_queue.front());
+			internal::D3D12MeshInternal* d3d12_mesh = static_cast<internal::D3D12MeshInternal*>(m_mesh_stage_queue.front());
 			d3d12::StageBufferRegion(m_vertex_buffer,
 				d3d12_mesh->m_vertex_staging_buffer_size,
 				d3d12_mesh->m_vertex_staging_buffer_offset * d3d12_mesh->m_vertex_staging_buffer_stride,
@@ -113,16 +113,20 @@ namespace wr
 		return m_index_buffer;
 	}
 
+	internal::D3D12MeshInternal * D3D12ModelPool::GetMeshData(std::uint64_t mesh_handle)
+	{
+		return static_cast<internal::D3D12MeshInternal*>(m_loaded_meshes[mesh_handle]);
+	}
+
 	Model* D3D12ModelPool::LoadFBX(std::string_view path, ModelType type)
 	{
 		return new Model();
 	}
 
-	Mesh* D3D12ModelPool::LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size)
+	internal::MeshInternal* D3D12ModelPool::LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size)
 	{
-		D3D12Mesh* mesh = new D3D12Mesh();
-		memset(mesh, 0, sizeof(D3D12Mesh));
-		mesh->m_model_pool = this;
+		internal::D3D12MeshInternal* mesh = new internal::D3D12MeshInternal();
+		memset(mesh, 0, sizeof(internal::D3D12MeshInternal));
 
 		//Allocate vertex buffer memory
 
@@ -173,20 +177,16 @@ namespace wr
 
 		//Send the index data to the index staging buffer
 		d3d12::UpdateStagingBuffer(m_index_buffer, indices_data, num_indices*index_size, mesh->m_index_staging_buffer_offset * index_size);
-
-		//Store the handle to the mesh
-		m_mesh_handles.push_back(mesh);
-
+		
 		m_mesh_stage_queue.push(mesh);
 
 		return mesh;
 	}
 
-	Mesh* D3D12ModelPool::LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size)
+	internal::MeshInternal* D3D12ModelPool::LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size)
 	{
-		D3D12Mesh* mesh = new D3D12Mesh();
-		memset(mesh, 0, sizeof(D3D12Mesh));
-		mesh->m_model_pool = this;
+		internal::D3D12MeshInternal* mesh = new internal::D3D12MeshInternal();
+		memset(mesh, 0, sizeof(internal::D3D12MeshInternal));
 
 		//Allocate vertex buffer memory
 		
@@ -212,10 +212,7 @@ namespace wr
 
 		//Send the vertex data to the vertex staging buffer
 		d3d12::UpdateStagingBuffer(m_vertex_buffer, vertices_data, num_vertices*vertex_size, mesh->m_vertex_staging_buffer_offset);
-
-		//Store the mesh handle
-		m_mesh_handles.push_back(mesh);
-
+		
 		m_mesh_stage_queue.push(mesh);
 
 		return mesh;
@@ -225,7 +222,8 @@ namespace wr
 	{
 		for (auto& mesh : model->m_meshes)
 		{
-			DestroyMesh(mesh);
+			DestroyMesh(m_loaded_meshes[mesh.first->id]);
+			delete mesh.first;
 		}
 
 		//TODO: Destroy possible materials owned by model. Material might be used by multiple models, use ref counts?
@@ -233,33 +231,40 @@ namespace wr
 		delete model;
 	}
 
-	void D3D12ModelPool::DestroyMesh(Mesh * mesh)
+	void D3D12ModelPool::DestroyMesh(internal::MeshInternal * mesh)
 	{
 		//Check for null pointers
-		if (mesh == nullptr) {
+		if (mesh == nullptr)
+		{
 			LOGW("Tried to destroy a mesh that was a nullptr")
 			return;
 		}
-
-		//Check if the mesh was allocated from this pool
-		if (mesh->m_model_pool != this) {
-			LOGW("Tried to destroy a mesh that was created with a different model pool")
-			return;
-		}
-
-		m_mesh_handles.erase(std::remove(m_mesh_handles.begin(), m_mesh_handles.end(), mesh), m_mesh_handles.end());
-
-		D3D12Mesh* n_mesh = static_cast<D3D12Mesh*>(mesh);
-
-		FreeMemory(m_vertex_heap_start_block, static_cast<MemoryBlock*>(n_mesh->m_vertex_memory_block));
 		
-		if (n_mesh->m_index_memory_block != nullptr) 
+		std::map<std::uint64_t, internal::MeshInternal*>::iterator it;
+		for (it = m_loaded_meshes.begin(); it != m_loaded_meshes.end(); ++it)
 		{
-			FreeMemory(m_index_heap_start_block, static_cast<MemoryBlock*>(n_mesh->m_index_memory_block));
+			if (it->second == mesh)
+				break;
 		}
 
-		//Delete the mesh
-		delete mesh;
+		if (it != m_loaded_meshes.end())
+		{
+			FreeID(it->first);
+
+			m_loaded_meshes.erase(it);
+
+			internal::D3D12MeshInternal* n_mesh = static_cast<internal::D3D12MeshInternal*>(mesh);
+
+			FreeMemory(m_vertex_heap_start_block, static_cast<MemoryBlock*>(n_mesh->m_vertex_memory_block));
+
+			if (n_mesh->m_index_memory_block != nullptr)
+			{
+				FreeMemory(m_index_heap_start_block, static_cast<MemoryBlock*>(n_mesh->m_index_memory_block));
+			}
+
+			//Delete the mesh
+			delete mesh;
+		}
 	}
 
 	D3D12ModelPool::MemoryBlock * D3D12ModelPool::AllocateMemory(MemoryBlock * start_block, std::size_t size, std::size_t alignment)

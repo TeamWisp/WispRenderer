@@ -9,6 +9,7 @@
 #include "../model_pool.hpp"
 #include "../constant_buffer_pool.hpp"
 #include "../structured_buffer_pool.hpp"
+#include "../model_pool.hpp"
 
 namespace wr
 {
@@ -110,6 +111,7 @@ namespace wr
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
 		std::vector<std::shared_ptr<LightNode>>& GetLightNodes();
+		std::vector<std::shared_ptr<MeshNode>>& GetMeshNodes();
 
 		void Init();
 		void Update();
@@ -123,6 +125,8 @@ namespace wr
 
 		StructuredBufferHandle* GetLightBuffer();
 
+		std::shared_ptr<ModelPool> GetModelPool();
+
 	private:
 		RenderSystem* m_render_system;
 		//! The root node of the hiararchical tree.
@@ -133,6 +137,7 @@ namespace wr
 
 		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
+		std::shared_ptr<ModelPool> m_model_pool;
 
 		StructuredBufferHandle* m_light_buffer;
 
