@@ -40,7 +40,6 @@ set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ## dependencies ##
 add_subdirectory(deps/fmt)
-add_subdirectory(deps/googletest)
 
 ## dependencies options ##
 set(FMT_TEST OFF)
@@ -73,7 +72,10 @@ add_subdirectory(demo)
 
 ## Unit Test ##
 if(ENABLE_UNIT_TEST)
-  add_subdirectory(test)
+    set(BUILD_GMOCK 0)
+    set(INSTALL_GTEST 0)
+    add_subdirectory(deps/googletest/googletest)
+    add_subdirectory(test)
 endif(ENABLE_UNIT_TEST)
 
 ## Generate Include Directory
