@@ -6,6 +6,8 @@
 #include <optional>
 #include <array>
 
+#include "../structs.hpp"
+
 #include "d3d12_enums.hpp"
 #include "d3d12_settings.hpp"
 #include "d3dx12.hpp"
@@ -190,7 +192,7 @@ namespace wr::d3d12
 		bool m_is_staged;
 	};
 
-	struct Texture
+	struct TextureResource : Texture
 	{
 		std::size_t m_width;
 		std::size_t m_height;
@@ -207,8 +209,9 @@ namespace wr::d3d12
 
 		uint8_t* m_allocated_memory;
 
-		bool m_need_mips;
-		bool m_is_cubemap;
+		bool m_is_staged = false;
+		bool m_need_mips = false;
+		bool m_is_cubemap = false;
 	};
 
 	struct HeapResource;

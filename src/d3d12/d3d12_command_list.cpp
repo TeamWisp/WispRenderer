@@ -239,10 +239,9 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
 	}
 
-	void Transition(CommandList* cmd_list, std::vector<Texture*> const & textures, ResourceState from, ResourceState to)
+	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const & textures, ResourceState from, ResourceState to)
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
-		//barriers.resize(textures.size());
 
 		for (auto i = 0; i < textures.size(); i++)
 		{

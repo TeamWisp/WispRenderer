@@ -2,16 +2,17 @@
 
 #include <string_view>
 #include <vector>
+#include <unordered_map>
 #include <optional>
 #include <d3d12.h>
 
+#include "structs.hpp"
 #include "util/defines.hpp"
 #include "platform_independend_structs.hpp"
+#include "id_factory.hpp"
 
 namespace wr
 {
-	struct TextureHandle {};
-
 	enum class TextureType
 	{
 		PNG,
@@ -30,25 +31,27 @@ namespace wr
 		TexturePool(TexturePool&&) = delete;
 		TexturePool& operator=(TexturePool&&) = delete;
 
-		[[nodiscard]] TextureHandle* Load(std::string_view path, bool srgb);
+		[[nodiscard]] TextureHandle Load(std::string_view path, bool srgb);
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
 		virtual void Stage(CommandList* cmd_list) = 0;
 		virtual void PostStageClear() = 0;
 
+		virtual Texture* GetTexture(uint64_t texture_id) = 0;
+
 	protected:
 
-		virtual TextureHandle* LoadPNG(std::string_view path, bool srgb) = 0;
-		virtual TextureHandle* LoadDDS(std::string_view path, bool srgb) = 0;
-		virtual TextureHandle* LoadHDR(std::string_view path, bool srgb) = 0;
+		virtual Texture* LoadPNG(std::string_view path, bool srgb) = 0;
+		virtual Texture* LoadDDS(std::string_view path, bool srgb) = 0;
+		virtual Texture* LoadHDR(std::string_view path, bool srgb) = 0;
 
-		std::vector<TextureHandle*> m_textures;
-		size_t m_count;
+		std::unordered_map<uint64_t, Texture*> m_unstaged_textures;
+		std::unordered_map<uint64_t, Texture*> m_staged_textures;
 
 		std::size_t m_size_in_mb;
 
-		bool m_is_staged;
+		IDFactory m_id_factory;
 	};
 
 

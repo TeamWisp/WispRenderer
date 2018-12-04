@@ -7,7 +7,7 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "d3d12_resource_pool_material.hpp"
+#include "../resource_pool_material.hpp"
 #include "d3d12_resource_pool_model.hpp"
 #include "d3d12_resource_pool_constant_buffer.hpp"
 #include "d3d12_resource_pool_texture.hpp"
@@ -162,7 +162,7 @@ namespace wr
 
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
 	{
-		return std::make_shared<D3D12MaterialPool>(size_in_mb);
+		return std::make_shared<MaterialPool>();
 	}
 
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)

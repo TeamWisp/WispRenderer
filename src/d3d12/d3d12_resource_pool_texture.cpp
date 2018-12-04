@@ -39,34 +39,39 @@ namespace wr
 
 	void D3D12TexturePool::Stage(CommandList* cmd_list)
 	{
-		if (!m_is_staged)
+		size_t unstaged_number = m_unstaged_textures.size();
+
+		if (unstaged_number > 0)
 		{
 			D3D12CommandList* cmdlist = static_cast<D3D12CommandList*>(cmd_list);
 
-			std::vector<d3d12::Texture*> textures;
-			textures.resize(m_count);
+			std::vector<d3d12::TextureResource*> unstaged_textures;
 
-			for (uint32_t i = 0; i < m_count; i++)
+			auto itr = m_unstaged_textures.begin();
+
+			for (itr; itr != m_unstaged_textures.end(); ++itr)
 			{
-				d3d12::Texture* native = static_cast<D3D12TextureHandle*>(m_textures[i])->m_native;
+				d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(itr->second);
 
-				textures[i] = native;
+				unstaged_textures.push_back(texture);
 
 				size_t row_pitch, slice_pitch;
 
-				DirectX::ComputePitch(static_cast<DXGI_FORMAT>(native->m_format), native->m_width, native->m_height, row_pitch, slice_pitch);
+				DirectX::ComputePitch(static_cast<DXGI_FORMAT>(texture->m_format), texture->m_width, texture->m_height, row_pitch, slice_pitch);
 
 				D3D12_SUBRESOURCE_DATA subresourceData = {};
-				subresourceData.pData = native->m_allocated_memory;
+				subresourceData.pData = texture->m_allocated_memory;
 				subresourceData.RowPitch = row_pitch;
 				subresourceData.SlicePitch = slice_pitch;
 
-				UpdateSubresources(cmdlist->m_native, native->m_resource, native->m_intermediate, 0, 0, 1, &subresourceData);
+				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, 0, 1, &subresourceData);
+
+				texture->m_is_staged = true;
 			}
 
-			d3d12::Transition(cmdlist, textures, wr::ResourceState::COPY_DEST, wr::ResourceState::PIXEL_SHADER_RESOURCE);
+			d3d12::Transition(cmdlist, unstaged_textures, wr::ResourceState::COPY_DEST, wr::ResourceState::PIXEL_SHADER_RESOURCE);
 
-			m_is_staged = true;
+			MoveStagedTextures();
 		}
 	}
 
@@ -74,9 +79,13 @@ namespace wr
 	{
 	}
 
-	D3D12TextureHandle* D3D12TexturePool::LoadPNG(std::string_view path, bool srgb)
+	d3d12::TextureResource * D3D12TexturePool::GetTexture(uint64_t texture_id)
 	{
-		auto texture = new D3D12TextureHandle();
+		return nullptr;
+	}
+
+	d3d12::TextureResource* D3D12TexturePool::LoadPNG(std::string_view path, bool srgb)
+	{
 		auto device = m_render_system.m_device;
 
 		DirectX::TexMetadata metadata;
@@ -103,28 +112,23 @@ namespace wr
 		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto native = d3d12::CreateTexture(device, &desc, false);
+		auto texture = d3d12::CreateTexture(device, &desc, false);
 
-		native->m_need_mips = (metadata.mipLevels > 1);
-		native->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_need_mips = (metadata.mipLevels > 1);
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
 
-		memcpy(native->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		texture->m_native = native;
+		texture->m_cpu_descriptor_handle = m_descriptor_handle;
+		texture->m_resource->SetName(wide_string.c_str());
 
-		native->m_cpu_descriptor_handle = m_descriptor_handle;
-		native->m_resource->SetName(wide_string.c_str());
-
-		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, desc.m_texture_format);
-
-		m_textures.push_back(texture);
+		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
 
 		return texture;
 	}
 
-	D3D12TextureHandle* D3D12TexturePool::LoadDDS(std::string_view path, bool srgb)
+	d3d12::TextureResource* D3D12TexturePool::LoadDDS(std::string_view path, bool srgb)
 	{
-		auto texture = new D3D12TextureHandle();
 		auto device = m_render_system.m_device;
 
 		DirectX::TexMetadata metadata;
@@ -151,28 +155,23 @@ namespace wr
 		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto native = d3d12::CreateTexture(device, &desc, false);
+		auto texture = d3d12::CreateTexture(device, &desc, false);
 
-		native->m_need_mips = (metadata.mipLevels > 1) ? false : true;
-		native->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_need_mips = (metadata.mipLevels > 1) ? false : true;
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
 
-		memcpy(native->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		texture->m_native = native;
+		texture->m_cpu_descriptor_handle = m_descriptor_handle;
+		texture->m_resource->SetName(wide_string.c_str());
 
-		native->m_cpu_descriptor_handle = m_descriptor_handle;
-		native->m_resource->SetName(wide_string.c_str());
-
-		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, desc.m_texture_format);
-
-		m_textures.push_back(texture);
+		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
 
 		return texture;
 	}
 
-	D3D12TextureHandle* D3D12TexturePool::LoadHDR(std::string_view path, bool srgb)
+	d3d12::TextureResource* D3D12TexturePool::LoadHDR(std::string_view path, bool srgb)
 	{
-		auto texture = new D3D12TextureHandle();
 		auto device = m_render_system.m_device;
 
 		DirectX::TexMetadata metadata;
@@ -198,22 +197,28 @@ namespace wr
 		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto native = d3d12::CreateTexture(device, &desc, false);
+		auto texture = d3d12::CreateTexture(device, &desc, false);
 
-		native->m_need_mips = (metadata.mipLevels > 1) ? false : true;
-		native->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_need_mips = (metadata.mipLevels > 1) ? false : true;
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
 
-		memcpy(native->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		texture->m_native = native;
+		texture->m_cpu_descriptor_handle = m_descriptor_handle;
+		texture->m_resource->SetName(wide_string.c_str());
 
-		native->m_cpu_descriptor_handle = m_descriptor_handle;
-		native->m_resource->SetName(wide_string.c_str());
-
-		d3d12::CreateSRVFromTexture(native, native->m_cpu_descriptor_handle, desc.m_texture_format);
-
-		m_textures.push_back(texture);
+		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
 
 		return texture;
+	}
+
+	void D3D12TexturePool::MoveStagedTextures()
+	{
+		for (auto itr = m_unstaged_textures.begin(); itr != m_unstaged_textures.end(); ++itr)
+		{
+			m_staged_textures.insert(std::make_pair(itr->first, itr->second));
+		}
+
+		m_unstaged_textures.clear();
 	}
 }
