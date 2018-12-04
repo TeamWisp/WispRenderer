@@ -24,9 +24,6 @@ namespace wr
 		//! Set type
 		void SetType(LightType tid);
 
-		//! Sets position
-		void SetPosition(DirectX::XMVECTOR pos);
-
 		//! Sets direction
 		void SetDirection(DirectX::XMVECTOR dir);
 
@@ -41,6 +38,9 @@ namespace wr
 
 		//! Set data for a spot light
 		void SetSpot(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR dir, float ang, DirectX::XMVECTOR col = { 1, 1, 1 });
+
+		//! Update
+		void Update(uint32_t frame_idx);
 
 		//! Helper for getting the LightType (doesn't include light count for the first light)
 		LightType GetType();

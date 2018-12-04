@@ -181,9 +181,9 @@ namespace wr::imgui::window
 					if (i == 0)
 						light.tid |= (uint32_t) lights.size() << 2;
 
-					float pos[3] = { light.pos.x, light.pos.y, light.pos.z };
+					float* pos = lights[i]->m_position.m128_f32;
 					ImGui::DragFloat3("Position", pos, 0.25f);
-					light.pos = { pos[0], pos[1], pos[2] };
+					lights[i]->m_position = { pos[0], pos[1], pos[2] };
 
 					float color[3] = { light.col.x, light.col.y, light.col.z };
 					ImGui::DragFloat3("Color", color, 0.25f);

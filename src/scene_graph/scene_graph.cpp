@@ -18,7 +18,7 @@ namespace wr
 {
 
 	SceneGraph::SceneGraph(RenderSystem* render_system)
-		: m_render_system(render_system), m_root(std::make_shared<Node>())
+		: m_render_system(render_system), m_root(std::make_shared<Node>(true))
 	{
 		m_lights.resize(d3d12::settings::num_lights);
 	}

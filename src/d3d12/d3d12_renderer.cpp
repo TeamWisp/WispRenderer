@@ -471,6 +471,7 @@ namespace wr
 			if (!node->RequiresUpdate(GetFrameIdx())) return;
 
 			node->UpdateTransform();
+			node->SignalUpdate(GetFrameIdx());
 		}
 	}
 
@@ -510,7 +511,7 @@ namespace wr
 				offset_start = i;
 			}
 
-			node->SignalUpdate(GetFrameIdx());
+			node->Update(GetFrameIdx());
 
 			offset_end = i;
 		}

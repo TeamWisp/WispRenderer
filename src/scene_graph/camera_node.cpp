@@ -24,6 +24,7 @@ namespace wr
 	void CameraNode::UpdateTemp(unsigned int frame_idx)
 	{
 		SignalUpdate(frame_idx);
+		UpdateTransform();
 
 		DirectX::XMVECTOR pos{ m_pos[0], m_pos[1], m_pos[2] };
 

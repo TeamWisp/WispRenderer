@@ -57,12 +57,6 @@ namespace wr
 		SignalChange();
 	}
 
-	void LightNode::SetPosition(DirectX::XMVECTOR pos)
-	{
-		memcpy(&m_light->pos, &pos, 12);
-		SignalChange();
-	}
-
 	void LightNode::SetDirection(DirectX::XMVECTOR dir)
 	{
 		dir = DirectX::XMVector3Normalize(dir);
@@ -99,6 +93,16 @@ namespace wr
 		SetDirection(dir);
 		SetAngle(ang);
 		SetColor(col);
+	}
+
+	void LightNode::Update(uint32_t frame_idx)
+	{
+		UpdateTransform();
+
+		DirectX::XMVECTOR position = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };
+		memcpy(&m_light->pos, &position, 12);
+
+		SignalUpdate(frame_idx);
 	}
 
 	LightType LightNode::GetType()
