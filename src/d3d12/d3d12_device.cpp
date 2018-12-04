@@ -172,13 +172,23 @@ namespace wr::d3d12
 
 		if (!device->m_dxr_support)
 		{
-			LOGW("No Native DXR support detected.");
+			LOGW(
+				"No DXR support detected.\n"
+				"Possible Reasons:\n"
+				"\t 1) Wrong SDK version. (Required: `Windows 10 October 2018 Update SDK (17763)`)\n"
+				"\t 2) Wrong OS version. (Required: 1809 (17763.107))\n"
+				"\t 3) DX12 GPU with a incompatible DirectX Raytracing driver. (NVIDIA: driver version 415 or higher, AMD: Consult Vendor for availability)"
+			);
 		}
 		if (!device->m_dxr_fallback_support)
 		{
-			LOGW("No DXR Fallback support detected.");
+			LOGW(
+				"No DXR Fallback support detected.\n"
+				"Possible Reasons:\n"
+				"GPU without feature level 11.1 or Resource Binding Tier 3."
+			);
 		}
-		if (!device->m_dxr_support && device->m_dxr_fallback_support)
+		if ((!device->m_dxr_support && device->m_dxr_fallback_support) || (d3d12::settings::force_dxr_fallback))
 		{
 			LOGW("Enabling DXR Fallback.");
 			internal::EnableDXRFallback();

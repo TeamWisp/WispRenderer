@@ -36,6 +36,6 @@ namespace wr::d3d12::settings
 	static const constexpr std::uint32_t num_lights = 21'845;					//1 MiB for StructuredBuffer<Light>
 	static const constexpr bool use_bundles = false;
 	static const constexpr bool use_exec_indirect = true;
-	static const constexpr bool force_dxr_fallback = false;
+	static const constexpr bool force_dxr_fallback = true;
 
 } /* wr::d3d12::settings */
