@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include <array>
+#include <D3D12RaytracingFallback.h>
 
 #include "d3d12_enums.hpp"
 #include "d3d12_settings.hpp"
@@ -67,7 +68,7 @@ namespace wr::d3d12
 	struct Device
 	{
 		IDXGIAdapter4* m_adapter;
-		ID3D12Device4* m_native;
+		ID3D12Device5* m_native;
 		IDXGIFactory6* m_dxgi_factory;
 		D3D_FEATURE_LEVEL m_feature_level;
 
@@ -75,6 +76,11 @@ namespace wr::d3d12
 		DXGI_ADAPTER_DESC3 m_adapter_info;
 		ID3D12Debug1* m_debug_controller;
 		ID3D12InfoQueue* m_info_queue;
+
+		// Fallback
+		bool m_dxr_fallback_support;
+		bool m_dxr_support;
+		ID3D12RaytracingFallbackDevice* m_fallback_native;
 	};
 
 	struct CommandQueue

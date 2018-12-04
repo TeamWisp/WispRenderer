@@ -121,9 +121,12 @@ namespace wr::imgui::window
 			{
 				std::wstring wdesc(dx_info.Description);
 				std::string desc(wdesc.begin(), wdesc.end());
+				auto device = render_system.m_device;
 
-				ImGui::Text("Feature Level: %s", internal::FeatureLevelToStr(render_system.m_device->m_feature_level).c_str());
 				ImGui::Text("Description: %s", desc.c_str());
+				ImGui::Text("Feature Level: %s", internal::FeatureLevelToStr(device->m_feature_level).c_str());
+				ImGui::Text("DXR Support: %s", internal::BooltoStr(device->m_dxr_support).c_str());
+				ImGui::Text("DXR Fallback Support: %s", internal::BooltoStr(device->m_dxr_fallback_support).c_str());
 				ImGui::Text("Vendor ID: %i", dx_info.VendorId);
 				ImGui::Text("Device ID: %i", dx_info.DeviceId);
 				ImGui::Text("Subsystem ID: %i", dx_info.SubSysId);
