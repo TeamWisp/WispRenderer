@@ -121,6 +121,42 @@ namespace wr::d3d12
 
 			device->m_adapter = (IDXGIAdapter4*)adapter;
 		}
+
+		// Returns bool whether the device supports DirectX Raytracing tier.
+		inline bool IsDXRSupported(IDXGIAdapter1* adapter)
+		{
+			ID3D12Device* test_device;
+			D3D12_FEATURE_DATA_D3D12_OPTIONS5 feature_support_data = {};
+
+			auto retval = SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&test_device)))
+				&& SUCCEEDED(test_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &feature_support_data, sizeof(feature_support_data)))
+				&& feature_support_data.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
+
+			test_device->Release();
+
+			return retval;
+		}
+
+		// Enable experimental features required for compute-based raytracing fallback.
+		// This will set active D3D12 devices to DEVICE_REMOVED state.
+		// Returns bool whether the call succeeded and the device supports the feature.
+		inline bool IsDXRFallbackSupported(IDXGIAdapter1* adapter)
+		{
+			ID3D12Device* test_device;
+			UUID experimentalFeatures[] = { D3D12ExperimentalShaderModels };
+
+			auto retval = SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&test_device)));
+
+			test_device->Release();
+
+			return retval;
+		}
+
+		inline void EnableDXRFallback()
+		{
+			UUID experimental_features[] = { D3D12ExperimentalShaderModels };
+			TRY_M(D3D12EnableExperimentalFeatures(1, experimental_features, nullptr, nullptr), "Failed to enable experimantal dxr fallback features.");
+		}
 	}
 
 	Device* CreateDevice()
@@ -131,8 +167,38 @@ namespace wr::d3d12
 		internal::CreateFactory(device);
 		internal::FindAdapter(device);
 
+		device->m_dxr_support = internal::IsDXRSupported(device->m_adapter);
+		device->m_dxr_fallback_support = internal::IsDXRFallbackSupported(device->m_adapter);
+
+		if (!device->m_dxr_support)
+		{
+			LOGW(
+				"No DXR support detected.\n"
+				"Possible Reasons:\n"
+				"\t 1) Wrong SDK version. (Required: `Windows 10 October 2018 Update SDK (17763)`)\n"
+				"\t 2) Wrong OS version. (Required: 1809 (17763.107))\n"
+				"\t 3) DX12 GPU with a incompatible DirectX Raytracing driver. (NVIDIA: driver version 415 or higher, AMD: Consult Vendor for availability)"
+			);
+		}
+		if (!device->m_dxr_fallback_support)
+		{
+			LOGW(
+				"No DXR Fallback support detected.\n"
+				"Possible Reasons:\n"
+				"GPU without feature level 11.1 or Resource Binding Tier 3."
+			);
+		}
+		if ((!device->m_dxr_support && device->m_dxr_fallback_support) || (d3d12::settings::force_dxr_fallback))
+		{
+			LOGW("Enabling DXR Fallback.");
+			internal::EnableDXRFallback();
+		}
+
 		TRY_M(D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),
 			"Failed to create D3D12Device.");
+		
+		CreateRaytracingFallbackDeviceFlags fallback_device_flags = d3d12::settings::force_dxr_fallback ? CreateRaytracingFallbackDeviceFlags::ForceComputeFallback : CreateRaytracingFallbackDeviceFlags::None;
+		TRY_M(D3D12CreateRaytracingFallbackDevice(device->m_native, fallback_device_flags, 0, IID_PPV_ARGS(&device->m_fallback_native)), "Failed to create fallback layer.");
 
 		internal::EnableGpuErrorBreaking(device);
 		internal::GetSysInfo(device);

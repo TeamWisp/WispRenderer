@@ -7,3 +7,4 @@
 /cmake-build-debug/
 /.idea/
 perf_framerate.txt
+dxrfallbackcompiler.dll

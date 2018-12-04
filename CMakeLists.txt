@@ -13,6 +13,7 @@ option(BUILD_SHARED_LIBS OFF)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxrfallbackcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxrfallbackcompiler.dll COPYONLY)
 
 ##### SOURCES #####
 file(GLOB HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
@@ -94,7 +95,7 @@ if (MSVC)
 	target_compile_options(WispRenderer PRIVATE /W4 /permissive- /MP /Gm-)
 endif()
 
-target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/assimp/include)
+target_include_directories(WispRenderer PUBLIC deps/fallback/Include deps/fmt/include deps/assimp/include)
 target_link_libraries(WispRenderer fmt assimp)
 
 # target_include_directories(WispRenderer PUBLIC deps/assimp/include)
