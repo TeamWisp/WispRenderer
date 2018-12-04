@@ -197,7 +197,7 @@ namespace wr::d3d12
 		TRY_M(D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),
 			"Failed to create D3D12Device.");
 		
-		CreateRaytracingFallbackDeviceFlags fallback_device_flags = d3d12::settings::force_dxr_fallback ? CreateRaytracingFallbackDeviceFlags::ForceComputeFallback : CreateRaytracingFallbackDeviceFlags::None;
+		auto fallback_device_flags = d3d12::settings::force_dxr_fallback ? CreateRaytracingFallbackDeviceFlags::ForceComputeFallback : CreateRaytracingFallbackDeviceFlags::None;
 		TRY_M(D3D12CreateRaytracingFallbackDevice(device->m_native, fallback_device_flags, 0, IID_PPV_ARGS(&device->m_fallback_native)), "Failed to create fallback layer.");
 
 		internal::EnableGpuErrorBreaking(device);
