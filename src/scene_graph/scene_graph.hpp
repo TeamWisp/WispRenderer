@@ -6,14 +6,17 @@
 #include <DirectXMath.h>
 
 #include "../util/defines.hpp"
-#include "../resource_pool_model.hpp"
-#include "../resource_pool_constant_buffer.hpp"
-#include "../resource_pool_structured_buffer.hpp"
+#include "../util/log.hpp"
+#include "../model_pool.hpp"
+#include "../constant_buffer_pool.hpp"
+#include "../structured_buffer_pool.hpp"
+#include "../model_pool.hpp"
 
 namespace wr
 {
 	class RenderSystem;
 	struct CommandList;
+	struct CameraNode;
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
@@ -30,10 +33,17 @@ namespace wr
 			m_requires_update[0] = m_requires_update[1] = m_requires_update[2] = true;
 		}
 
+		void SignalUpdate(unsigned int frame_idx)
+		{
+			m_requires_update[frame_idx] = false;
+		}
+
 		bool RequiresUpdate(unsigned int frame_idx)
 		{
 			return m_requires_update[frame_idx];
 		}
+
+	private:
 
 		std::bitset<3> m_requires_update;
 	};
@@ -88,13 +98,13 @@ namespace wr
 		~SceneGraph();
 
 		// Impl Functions
-		static std::function<void(RenderSystem*, temp::MeshBatches&, CommandList*)> m_render_meshes_func_impl;
+		static std::function<void(RenderSystem*, temp::MeshBatches&, CameraNode* camera, CommandList*)> m_render_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_init_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_init_cameras_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&, StructuredBufferHandle*, CommandList*)> m_update_lights_func_impl;
+		static std::function<void(RenderSystem* render_system, SceneGraph& scene_graph, CommandList*)> m_update_lights_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -109,10 +119,11 @@ namespace wr
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
 		std::vector<std::shared_ptr<LightNode>>& GetLightNodes();
+		std::vector<std::shared_ptr<MeshNode>>& GetMeshNodes();
 
 		void Init();
 		void Update();
-		void Render(CommandList* cmd_list);
+		void Render(CommandList* cmd_list, CameraNode* camera);
 
 		template<typename T>
 		void DestroyNode(std::shared_ptr<T> node);
@@ -121,8 +132,18 @@ namespace wr
 		temp::MeshBatches& GetBatches();
 
 		StructuredBufferHandle* GetLightBuffer();
+		Light* GetLight(uint32_t offset);			//Returns nullptr when out of bounds
+
+		uint32_t GetCurrentLightSize();
+
+		std::shared_ptr<ModelPool> GetModelPool();
+
+	protected:
+
+		void RegisterLight(std::shared_ptr<LightNode>& light_node);
 
 	private:
+
 		RenderSystem* m_render_system;
 		//! The root node of the hiararchical tree.
 		std::shared_ptr<Node> m_root;
@@ -132,12 +153,15 @@ namespace wr
 
 		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
+		std::shared_ptr<ModelPool> m_model_pool;
 
 		StructuredBufferHandle* m_light_buffer;
 
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
 		std::vector<std::shared_ptr<LightNode>> m_light_nodes;
+
+		uint32_t m_next_light_id = 0;
 	};
 
 	//! Creates a child into the scene graph
@@ -163,7 +187,7 @@ namespace wr
 		}
 		else if constexpr (std::is_same<T, LightNode>::value)
 		{
-			m_light_nodes.push_back(new_node);
+			RegisterLight(new_node);
 		}
 
 		return new_node;
@@ -200,6 +224,23 @@ namespace wr
 			{
 				if (m_light_nodes[i] == node)
 				{
+					//Move everything after this light back one light, so the memory is one filled array
+
+					for (size_t k = i + 1; k < j; ++k)
+					{
+						--m_light_nodes[k]->m_light;
+					}
+
+					//Update light count
+
+					if (m_lights.size() != 0)
+					{
+						m_lights[0].tid &= 0x3;											//Keep id
+						m_lights[0].tid |= uint32_t(m_light_nodes.size() - 1) << 2;		//Set lights
+					}
+
+					//Stop tracking the node
+
 					m_light_nodes.erase(m_light_nodes.begin() + i);
 					break;
 				}

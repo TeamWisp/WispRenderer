@@ -13,6 +13,7 @@ option(BUILD_SHARED_LIBS OFF)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxrfallbackcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxrfallbackcompiler.dll COPYONLY)
 
 ##### SOURCES #####
 file(GLOB HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
@@ -41,6 +42,7 @@ source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 ## dependencies ##
 add_subdirectory(deps/fmt)
 add_subdirectory(deps/DirectXTex)
+add_subdirectory(deps/fallback)
 
 set(ASSIMP_BUILD_SHARED_LIBS OFF)
 
@@ -89,7 +91,7 @@ set_target_properties(zlibstatic PROPERTIES FOLDER ThirdParty)
 # endif()
 
 add_library(WispRenderer STATIC ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
-target_link_libraries(WispRenderer dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
+target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
 set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 17)
 set_target_properties(WispRenderer PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(WispRenderer PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -101,6 +103,7 @@ target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/DirectXTex/
 target_link_libraries(WispRenderer fmt DirectXTex)
 
 target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/assimp/include)
+target_include_directories(WispRenderer PUBLIC deps/fallback/Include deps/fmt/include deps/assimp/include)
 target_link_libraries(WispRenderer fmt assimp)
 
 # target_include_directories(WispRenderer PUBLIC deps/assimp/include)

@@ -2,8 +2,8 @@
 
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
-#include "../d3d12/d3d12_resource_pool_constant_buffer.hpp"
-#include "../d3d12/d3d12_resource_pool_structured_buffer.hpp"
+#include "../d3d12/d3d12_constant_buffer_pool.hpp"
+#include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -46,7 +46,7 @@ namespace wr
 				render_system.m_fullscreen_quad_vb->m_size,
 				render_system.m_fullscreen_quad_vb->m_stride_in_bytes);
 
-			d3d12::Draw(cmd_list, 4, 1);
+			d3d12::Draw(cmd_list, 4, 1, 0);
 		}
 
 		inline void SetupDeferredTask(RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data)
@@ -88,6 +88,7 @@ namespace wr
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
 
+				//Get light buffer
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 

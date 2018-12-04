@@ -72,6 +72,11 @@ namespace wr::d3d12
 		cmd_list->m_native->ExecuteBundle(bundle->m_native);
 	}
 
+	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer)
+	{
+		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, buffer->m_num_buffers, buffer->m_native, 0, nullptr, 0);
+	}
+
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear, bool clear_depth)
 	{
 		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> handles;
@@ -201,14 +206,14 @@ namespace wr::d3d12
 		cmd_list->m_native->IASetPrimitiveTopology(topology);
 	}
 
-	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count)
+	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count, unsigned int vertex_start)
 	{
-		cmd_list->m_native->DrawInstanced(vertex_count, inst_count, 0, 0);
+		cmd_list->m_native->DrawInstanced(vertex_count, inst_count, vertex_start, 0);
 	}
 
-	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count)
+	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count, unsigned int idx_start, unsigned int vertex_start)
 	{
-		cmd_list->m_native->DrawIndexedInstanced(idx_count, inst_count, 0, 0, 0);
+		cmd_list->m_native->DrawIndexedInstanced(idx_count, inst_count, idx_start, vertex_start, 0);
 	}
 
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to)
@@ -271,6 +276,16 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
 
+	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to)
+	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			buffer->m_native,
+			(D3D12_RESOURCE_STATES)from,
+			(D3D12_RESOURCE_STATES)to
+		);
+		cmd_list->m_native->ResourceBarrier(1, &barrier);
+	}
+
 	void Destroy(CommandList* cmd_list)
 	{
 		SAFE_RELEASE(cmd_list->m_native);
@@ -279,6 +294,26 @@ namespace wr::d3d12
 			SAFE_RELEASE(allocator);
 		}
 		delete cmd_list;
-	}	
+	}
+
+	CommandSignature* CreateCommandSignature(Device* device, RootSignature* root_signature, std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs, size_t byte_stride)
+	{
+		auto cmd_sig = new CommandSignature();
+
+		D3D12_COMMAND_SIGNATURE_DESC cmd_signature_desc = {};
+		cmd_signature_desc.pArgumentDescs = arg_descs.data();
+		cmd_signature_desc.NumArgumentDescs = arg_descs.size();
+		cmd_signature_desc.ByteStride = byte_stride;
+
+		TRY_M(device->m_native->CreateCommandSignature(&cmd_signature_desc, root_signature->m_native, IID_PPV_ARGS(&cmd_sig->m_native))
+			, "Failed to create command signature");
+
+		return cmd_sig;
+	}
+
+	void Destroy(CommandSignature* cmd_signature)
+	{
+		SAFE_RELEASE(cmd_signature->m_native);
+	}
 
 } /* wr::d3d12 */

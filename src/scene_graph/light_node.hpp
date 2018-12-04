@@ -12,35 +12,44 @@ namespace wr
 		LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR col = { 1, 1, 1 });
 		LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR dir, float ang, DirectX::XMVECTOR col = { 1, 1, 1 });
 
-		//Set angle in degrees
+		LightNode(const LightNode& old);
+		LightNode& operator=(const LightNode& old);
+
+		//! Set angle in degrees
 		void SetAngle(float ang);
 
-		//Set radius
+		//! Set radius
 		void SetRadius(float rad);
 
-		//Set type
+		//! Set type
 		void SetType(LightType tid);
 
-		//Sets position
+		//! Sets position
 		void SetPosition(DirectX::XMVECTOR pos);
 
-		//Sets direction
+		//! Sets direction
 		void SetDirection(DirectX::XMVECTOR dir);
 
-		//Sets color
+		//! Sets color
 		void SetColor(DirectX::XMVECTOR col);
 
-		//Set data for a directional light
+		//! Set data for a directional light
 		void SetDirectional(DirectX::XMVECTOR dir, DirectX::XMVECTOR col = { 1, 1, 1 });
 
-		//Set data for a point light
+		//! Set data for a point light
 		void SetPoint(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR col = { 1, 1, 1 });
 
-		//Set data for a spot light
+		//! Set data for a spot light
 		void SetSpot(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR dir, float ang, DirectX::XMVECTOR col = { 1, 1, 1 });
 
-		//Physical data
-		Light m_light;
+		//! Helper for getting the LightType (doesn't include light count for the first light)
+		LightType GetType();
+
+		//! Allocated data (either temp or array data)
+		Light* m_light;
+
+		//! Physical data
+		Light m_temp;
 
 	};
 

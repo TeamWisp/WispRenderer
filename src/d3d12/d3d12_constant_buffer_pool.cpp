@@ -1,4 +1,4 @@
-#include "d3d12_resource_pool_constant_buffer.hpp"
+#include "d3d12_constant_buffer_pool.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_settings.hpp"
 #include "d3d12_renderer.hpp"

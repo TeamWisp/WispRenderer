@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include <array>
+#include <D3D12RaytracingFallback.h>
 
 #include "../structs.hpp"
 
@@ -83,7 +84,7 @@ namespace wr::d3d12
 	struct Device
 	{
 		IDXGIAdapter4* m_adapter;
-		ID3D12Device4* m_native;
+		ID3D12Device5* m_native;
 		IDXGIFactory6* m_dxgi_factory;
 		D3D_FEATURE_LEVEL m_feature_level;
 
@@ -91,6 +92,11 @@ namespace wr::d3d12
 		DXGI_ADAPTER_DESC3 m_adapter_info;
 		ID3D12Debug1* m_debug_controller;
 		ID3D12InfoQueue* m_info_queue;
+
+		// Fallback
+		bool m_dxr_fallback_support;
+		bool m_dxr_support;
+		ID3D12RaytracingFallbackDevice* m_fallback_native;
 	};
 
 	struct CommandQueue
@@ -102,6 +108,11 @@ namespace wr::d3d12
 	{
 		std::vector<ID3D12CommandAllocator*> m_allocators;
 		ID3D12GraphicsCommandList3* m_native;
+	};
+
+	struct CommandSignature
+	{
+		ID3D12CommandSignature* m_native;
 	};
 
 	struct RenderTarget
@@ -278,7 +289,7 @@ namespace wr::d3d12
 
 	struct HeapResource
 	{
-		union 
+		union
 		{
 			Heap<HeapOptimization::SMALL_BUFFERS>* m_heap_sbo;
 			Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* m_heap_ssbo;
@@ -294,6 +305,15 @@ namespace wr::d3d12
 		std::size_t m_stride;
 		bool m_used_as_uav;
 		HeapOptimization m_resource_heap_optimization;
+	};
+
+	struct IndirectCommandBuffer
+	{
+		std::size_t m_num_buffers;
+		std::size_t m_max_num_buffers;
+		std::size_t m_command_size;
+		ID3D12Resource* m_native;
+		ID3D12Resource* m_native_upload;
 	};
 
 } /* wr::d3d12 */

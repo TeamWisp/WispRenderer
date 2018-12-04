@@ -12,6 +12,8 @@
 #include "d3d12/d3d12_renderer.hpp"
 #include "scene_graph/scene_graph.hpp"
 #include "scene_graph/light_node.hpp"
+#include "scene_graph/mesh_node.hpp"
+#include "model_pool.hpp"
 
 namespace wr::imgui::internal
 {
@@ -121,9 +123,12 @@ namespace wr::imgui::window
 			{
 				std::wstring wdesc(dx_info.Description);
 				std::string desc(wdesc.begin(), wdesc.end());
+				auto device = render_system.m_device;
 
-				ImGui::Text("Feature Level: %s", internal::FeatureLevelToStr(render_system.m_device->m_feature_level).c_str());
 				ImGui::Text("Description: %s", desc.c_str());
+				ImGui::Text("Feature Level: %s", internal::FeatureLevelToStr(device->m_feature_level).c_str());
+				ImGui::Text("DXR Support: %s", internal::BooltoStr(device->m_dxr_support).c_str());
+				ImGui::Text("DXR Fallback Support: %s", internal::BooltoStr(device->m_dxr_fallback_support).c_str());
 				ImGui::Text("Vendor ID: %i", dx_info.VendorId);
 				ImGui::Text("Device ID: %i", dx_info.DeviceId);
 				ImGui::Text("Subsystem ID: %i", dx_info.SubSysId);
@@ -171,29 +176,32 @@ namespace wr::imgui::window
 				std::string tree_name("Light " + std::to_string(i));
 				if (ImGui::TreeNode(tree_name.c_str()))
 				{
-					auto& light = lights[i]->m_light;
+					auto& light = *lights[i]->m_light;
 
 					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
 					int type = (int)light.tid & 3;
 					ImGui::Combo("Type", &type, listbox_items, 3);
 					light.tid = type;
+					
+					if (i == 0)
+						light.tid |= (uint32_t) lights.size() << 2;
 
 					float pos[3] = { light.pos.x, light.pos.y, light.pos.z };
-					ImGui::DragFloat3("Position", pos);
+					ImGui::DragFloat3("Position", pos, 0.25f);
 					light.pos = { pos[0], pos[1], pos[2] };
 
 					float color[3] = { light.col.x, light.col.y, light.col.z };
-					ImGui::DragFloat3("Color", color);
+					ImGui::DragFloat3("Color", color, 0.25f);
 					light.col = { color[0], color[1], color[2] };
 
 					if (type == 0)
 					{
-						ImGui::DragFloat("Radius", &light.rad);
+						ImGui::DragFloat("Radius", &light.rad, 0.25f);
 					}
 					else if (type == 1)
 					{
 						float dir[3] = { light.dir.x, light.dir.y, light.dir.z };
-						ImGui::DragFloat3("Direction", dir);
+						ImGui::DragFloat3("Direction", dir, 0.1f, -1.f, 1.f);
 						light.dir = { dir[0], dir[1], dir[2] };
 					}
 					else if (type == 2)
@@ -202,8 +210,8 @@ namespace wr::imgui::window
 						ImGui::DragFloat3("Direction", dir);
 						light.dir = { dir[0], dir[1], dir[2] };
 
-						ImGui::DragFloat("Angle", &light.ang);
-						ImGui::DragFloat("Radius", &light.rad);
+						ImGui::DragFloat("Angle", &light.ang, 0.5f);
+						ImGui::DragFloat("Radius", &light.rad, 0.5f);
 					}
 
 					lights[i]->SignalChange();
@@ -218,6 +226,120 @@ namespace wr::imgui::window
 			}
 
 			ImGui::End();
+		}
+	}
+
+	void ModelEditor(SceneGraph * scene_graph)
+	{
+		if (open_model_editor)
+		{
+			auto& models = scene_graph->GetMeshNodes();
+
+			ImGui::Begin("Model Editor", &open_model_editor);
+
+			static std::vector<char> text(256);
+			
+
+			ImGui::InputText("Model Path", text.data(), text.size());
+
+			if (ImGui::Button("Add Model"))
+			{
+
+				Model* model = scene_graph->GetModelPool()->Load<Vertex>(text.data(), ModelType::FBX);
+
+				if (model != nullptr) {
+					scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
+				}
+			}
+
+			ImGui::Separator();
+
+			std::vector<std::pair<std::string, int>> model_count;
+
+			for (int i = 0; i < models.size(); ++i)
+			{
+				auto model = models[i];
+
+				bool found = false;
+
+				int j;
+
+				for (j = 0; j < model_count.size(); ++j) 
+				{
+					if (model_count[j].first.compare(model->m_model->m_model_name) == 0) 
+					{
+						found = true;
+						model_count[j].second++;
+						break;
+					}
+				}
+
+				std::string model_name;
+
+				if (!found)
+				{
+					model_count.push_back(std::make_pair(model->m_model->m_model_name, 0));
+					model_name = "Model: " + model->m_model->m_model_name + " " + std::to_string(0);
+				}
+				else
+				{
+					model_count.push_back(std::make_pair(model->m_model->m_model_name, 0));
+					model_name = "Model: " + model->m_model->m_model_name + " " + std::to_string(model_count[j].second);
+				}
+				
+
+				if (ImGui::TreeNode(model_name.c_str()))
+				{
+
+					float pos[3] = { DirectX::XMVectorGetX(model->m_position),
+						DirectX::XMVectorGetY(model->m_position),
+						DirectX::XMVectorGetZ(model->m_position) };
+					ImGui::DragFloat3("Position", pos);
+					model->SetPosition(DirectX::XMVectorSet(pos[0], pos[1], pos[2], 1));
+					
+					float rot[3] = { DirectX::XMVectorGetX(model->m_rotation_deg),
+						DirectX::XMVectorGetY(model->m_rotation_deg),
+						DirectX::XMVectorGetZ(model->m_rotation_deg) };
+					ImGui::DragFloat3("Rotation", rot);
+					model->SetRotation(DirectX::XMVectorSet(rot[0], rot[1], rot[2], 0));
+
+					float scl[3] = { DirectX::XMVectorGetX(model->m_scale),
+						DirectX::XMVectorGetY(model->m_scale),
+						DirectX::XMVectorGetZ(model->m_scale) };
+					ImGui::DragFloat3("Scale", scl);
+					model->SetScale(DirectX::XMVectorSet(scl[0], scl[1], scl[2], 1));
+
+					if (ImGui::Button("Remove"))
+					{
+						int c = 0;
+						for (int j = 0; j < models.size(); ++j) 
+						{
+							if (model->m_model == models[j]->m_model)
+								c++;
+
+						}
+						if (c == 1)
+							model->m_model->m_model_pool->Destroy(model->m_model);
+						scene_graph->DestroyNode(model);
+					}
+
+					ImGui::SameLine();
+
+					if (ImGui::Button("Duplicate"))
+					{
+						auto node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model->m_model);
+						node->SetPosition(model->m_position);
+						node->SetRotation(model->m_rotation_deg);
+						node->SetScale(model->m_scale);
+					}
+
+					ImGui::TreePop();
+				}
+				
+			}
+
+			ImGui::End();
+
 		}
 	}
 

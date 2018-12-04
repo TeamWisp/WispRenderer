@@ -1,7 +1,7 @@
 #define NOMINMAX
 
-#include "resource_pool_material.hpp"
 #include "resource_pool_texture.hpp"
+#include "material_pool.hpp"
 
 #include <assimp/material.h>
 
