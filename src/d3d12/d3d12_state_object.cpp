@@ -21,7 +21,7 @@ namespace wr::d3d12
 		else if(GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			TRY_M(device->m_fallback_native->CreateStateObject(state_obj_desc, IID_PPV_ARGS(&state_object->m_native)),
-				"Couldn't create DirectX Raytracing state object.");
+				"Couldn't create DirectX Fallback Raytracing state object.");
 		}
 
 		return state_object;
