@@ -80,6 +80,7 @@ namespace wr::d3d12
 		// Fallback
 		bool m_dxr_fallback_support;
 		bool m_dxr_support;
+		RaytracingType m_rt_type;
 		ID3D12RaytracingFallbackDevice* m_fallback_native;
 	};
 
@@ -91,7 +92,7 @@ namespace wr::d3d12
 	struct CommandList
 	{
 		std::vector<ID3D12CommandAllocator*> m_allocators;
-		ID3D12GraphicsCommandList3* m_native;
+		ID3D12GraphicsCommandList5* m_native;
 	};
 
 	struct CommandSignature
@@ -276,6 +277,14 @@ namespace wr::d3d12
 		std::size_t m_command_size;
 		ID3D12Resource* m_native;
 		ID3D12Resource* m_native_upload;
+	};
+
+	struct StateObject
+	{
+		ID3D12StateObject* m_native;
+		ID3D12StateObjectProperties* m_properties;
+
+		ID3D12RaytracingFallbackStateObject* m_fallback_native;
 	};
 
 } /* wr::d3d12 */

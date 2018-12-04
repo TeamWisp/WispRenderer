@@ -9,6 +9,7 @@ namespace wr::d3d12
 
 	// Device
 	[[nodiscard]] Device* CreateDevice();
+	RaytracingType GetRaytracingType(Device* device);
 	void Destroy(Device* device);
 
 	// CommandQueue
@@ -169,7 +170,12 @@ namespace wr::d3d12
 		std::uint64_t stride,
 		CommandList* cmd_list);
 
+	// Indirect Command Buffer
 	[[nodiscard]] IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size);
 	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
+
+	// State Object
+	[[nodiscard]] StateObject* CreateStateObject(Device* device, StateObjType type);
+	void Destroy(StateObject* obj);
 
 } /* wr::d3d12 */

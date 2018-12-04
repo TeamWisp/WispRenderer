@@ -25,7 +25,7 @@ namespace wr::d3d12::settings
 	static const constexpr Format back_buffer_format = Format::R8G8B8A8_UNORM;
 	static const constexpr DXGI_SWAP_EFFECT flip_mode = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	static const constexpr DXGI_SWAP_CHAIN_FLAG swapchain_flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	static const constexpr DXGI_SCALING swapchain_scaling = DXGI_SCALING_STRETCH;
+	static const constexpr  DXGI_SCALING swapchain_scaling = DXGI_SCALING_STRETCH;
 	static const constexpr DXGI_ALPHA_MODE swapchain_alpha_mode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	static const constexpr bool enable_gpu_timeout = false;
 	static const constexpr bool enable_debug_factory = true;
@@ -37,5 +37,6 @@ namespace wr::d3d12::settings
 	static const constexpr bool use_bundles = false;
 	static const constexpr bool use_exec_indirect = true;
 	static const constexpr bool force_dxr_fallback = true;
+	static const constexpr bool disable_rtx = false;
 
 } /* wr::d3d12::settings */

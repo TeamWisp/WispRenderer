@@ -132,7 +132,7 @@ namespace wr::d3d12
 				&& SUCCEEDED(test_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &feature_support_data, sizeof(feature_support_data)))
 				&& feature_support_data.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
 
-			test_device->Release();
+			SAFE_RELEASE(test_device);
 
 			return retval;
 		}
@@ -147,7 +147,7 @@ namespace wr::d3d12
 
 			auto retval = SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&test_device)));
 
-			test_device->Release();
+			SAFE_RELEASE(test_device);
 
 			return retval;
 		}
@@ -156,6 +156,27 @@ namespace wr::d3d12
 		{
 			UUID experimental_features[] = { D3D12ExperimentalShaderModels };
 			TRY_M(D3D12EnableExperimentalFeatures(1, experimental_features, nullptr, nullptr), "Failed to enable experimantal dxr fallback features.");
+		}
+
+		inline void SetRaytracingType(Device* device)
+		{
+			if (d3d12::settings::disable_rtx)
+			{
+				device->m_rt_type = RaytracingType::NONE;
+			}
+			else if (d3d12::settings::force_dxr_fallback && device->m_dxr_fallback_support)
+			{
+				device->m_rt_type = RaytracingType::FALLBACK;
+			}
+			else if (device->m_dxr_support)
+			{
+				device->m_rt_type = RaytracingType::NATIVE;
+			}
+			else
+			{
+				device->m_rt_type = RaytracingType::NONE;
+
+			}
 		}
 	}
 
@@ -169,6 +190,7 @@ namespace wr::d3d12
 
 		device->m_dxr_support = internal::IsDXRSupported(device->m_adapter);
 		device->m_dxr_fallback_support = internal::IsDXRFallbackSupported(device->m_adapter);
+		internal::SetRaytracingType(device);
 
 		if (!device->m_dxr_support)
 		{
@@ -188,7 +210,8 @@ namespace wr::d3d12
 				"GPU without feature level 11.1 or Resource Binding Tier 3."
 			);
 		}
-		if ((!device->m_dxr_support && device->m_dxr_fallback_support) || (d3d12::settings::force_dxr_fallback))
+
+		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			LOGW("Enabling DXR Fallback.");
 			internal::EnableDXRFallback();
@@ -197,8 +220,11 @@ namespace wr::d3d12
 		TRY_M(D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),
 			"Failed to create D3D12Device.");
 		
-		auto fallback_device_flags = d3d12::settings::force_dxr_fallback ? CreateRaytracingFallbackDeviceFlags::ForceComputeFallback : CreateRaytracingFallbackDeviceFlags::None;
-		TRY_M(D3D12CreateRaytracingFallbackDevice(device->m_native, fallback_device_flags, 0, IID_PPV_ARGS(&device->m_fallback_native)), "Failed to create fallback layer.");
+		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+		{
+			auto fallback_device_flags = d3d12::settings::force_dxr_fallback ? CreateRaytracingFallbackDeviceFlags::ForceComputeFallback : CreateRaytracingFallbackDeviceFlags::None;
+			TRY_M(D3D12CreateRaytracingFallbackDevice(device->m_native, fallback_device_flags, 0, IID_PPV_ARGS(&device->m_fallback_native)), "Failed to create fallback layer.");
+		}
 
 		internal::EnableGpuErrorBreaking(device);
 		internal::GetSysInfo(device);
@@ -209,6 +235,20 @@ namespace wr::d3d12
 		return device;
 	}
 
+	RaytracingType GetRaytracingType(Device* device)
+	{
+		if (device->m_dxr_fallback_support && d3d12::settings::force_dxr_fallback)
+		{
+			return RaytracingType::FALLBACK;
+		}
+		else if (device->m_dxr_support)
+		{
+			return RaytracingType::NATIVE;
+		}
+
+		return RaytracingType::NONE;
+	}
+
 	void Destroy(Device* device)
 	{
 		SAFE_RELEASE(device->m_adapter);
@@ -216,6 +256,7 @@ namespace wr::d3d12
 		SAFE_RELEASE(device->m_dxgi_factory);
 		SAFE_RELEASE(device->m_debug_controller);
 		SAFE_RELEASE(device->m_info_queue);
+		SAFE_RELEASE(device->m_fallback_native);
 		delete device;
 	}
 
