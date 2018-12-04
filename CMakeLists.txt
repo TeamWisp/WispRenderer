@@ -94,7 +94,6 @@ if (MSVC)
 	target_compile_options(WispRenderer PRIVATE /W4 /permissive- /MP /Gm-)
 endif()
 
-link_directories(deps/fallback/Bin)
 target_include_directories(WispRenderer PUBLIC deps/fallback/Include deps/fmt/include deps/assimp/include)
 target_link_libraries(WispRenderer fmt assimp)
 
