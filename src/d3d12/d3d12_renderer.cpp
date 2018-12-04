@@ -132,7 +132,7 @@ namespace wr
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
-		auto cmd_lists = frame_graph.GetAllCommandLists<D3D12CommandList>();
+		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
 
 		n_cmd_lists.push_back(m_direct_cmd_list);
@@ -196,24 +196,24 @@ namespace wr
 		}
 	}
 
-	CommandList* D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
+	CommandList D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
 	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
-	wr::CommandList * D3D12RenderSystem::GetBundleCommandList(unsigned int num_allocators)
+	CommandList D3D12RenderSystem::GetBundleCommandList(unsigned int num_allocators)
 	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_BUNDLE);
+		return static_cast<CommandList>(d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_BUNDLE));
 	}
 
-	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
+	CommandList D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
 	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
-	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
+	CommandList D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
@@ -268,9 +268,9 @@ namespace wr
 		m_requested_fullscreen_state = fullscreen_state;
 	}
 
-	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	void D3D12RenderSystem::StartRenderTask(CommandList cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 	
@@ -299,9 +299,9 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	void D3D12RenderSystem::StopRenderTask(CommandList cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 
@@ -470,9 +470,9 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList* cmd_list)
+	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList cmd_list)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 
 		uint32_t count = 0, size = (uint32_t) nodes.size(), light_size = (uint32_t) lights.size();
 
@@ -489,9 +489,9 @@ namespace wr
 
 	}
 
-	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list)
+	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CommandList cmd_list)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 
 		//Render batches
 		for (auto& elem : batches)

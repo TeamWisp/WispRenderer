@@ -44,7 +44,7 @@ namespace wr
 	} /* temp */
 
 	//! D3D12 platform independend Command List implementation
-	struct D3D12CommandList : CommandList, d3d12::CommandList {};
+	//struct D3D12CommandList : CommandList, d3d12::CommandList {};
 
 	//! D3D12 platform independend Render Target implementation
 	struct D3D12RenderTarget : RenderTarget, d3d12::RenderTarget {};
@@ -69,16 +69,16 @@ namespace wr
 
 		void WaitForAllPreviousWork() final;
 
-		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
+		wr::CommandList GetDirectCommandList(unsigned int num_allocators) final;
+		wr::CommandList GetBundleCommandList(unsigned int num_allocators) final;
+		wr::CommandList GetComputeCommandList(unsigned int num_allocators) final;
+		wr::CommandList GetCopyCommandList(unsigned int num_allocators) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);
 
-		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StartRenderTask(CommandList cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StopRenderTask(CommandList cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 
@@ -88,9 +88,9 @@ namespace wr
 
 		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
-		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList* cmd_list);
+		void Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList cmd_list);
 
-		void Render_MeshNodes(temp::MeshBatches& batches, CommandList* cmd_list);
+		void Render_MeshNodes(temp::MeshBatches& batches, CommandList cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();

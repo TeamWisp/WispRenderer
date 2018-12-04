@@ -9,7 +9,7 @@ namespace wr::d3d12
 {
 	struct HeapResource;
 	struct StagingBuffer;
-	struct CommandList;
+	//using CommandList = void*;
 }
 
 namespace wr

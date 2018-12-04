@@ -13,7 +13,6 @@ namespace wr
 {
 	class RenderSystem;
 	class SceneGraph;
-	class CommandList;
 	class RenderTarget;
 	class FrameGraph;
 } /* wr */
@@ -44,7 +43,7 @@ namespace wr
 		template<typename T>
 		std::pair<T*, RenderTaskType> GetCommandList(bool wait = false)
 		{
-			static_assert(std::is_base_of<CommandList, T>::value, "Type must be child of wr::CommandList");
+			//static_assert(std::is_base_of<CommandList, T>::value, "Type must be child of wr::CommandList");
 
 			auto n_cmd_list = static_cast<T*>(m_cmd_list);
 
@@ -84,7 +83,7 @@ namespace wr
 		//! The type info of the data type stored by `RenderTask`.
 		const std::type_info& m_data_type_info;
 		//! Handle to a cmd_list obtained from the render system.
-		CommandList* m_cmd_list;
+		CommandList m_cmd_list;
 		//! The Task Render target.
 		RenderTarget* m_render_target;
 		//! The type of render task

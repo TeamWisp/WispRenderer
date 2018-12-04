@@ -30,7 +30,7 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::basic_deferred);
 
-			const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
+			const auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 			auto render_target = task.GetRenderTarget<D3D12RenderTarget>();
 		}
 
@@ -40,7 +40,7 @@ namespace wr
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
+				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 				auto render_target = task.GetRenderTarget<D3D12RenderTarget>();

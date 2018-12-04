@@ -83,7 +83,7 @@ namespace wr
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
+				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
@@ -105,7 +105,7 @@ namespace wr
 						data.out_requires_bundle_recording = false;
 					}
 				}
-
+				
 				//Render deferred
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::PIXEL_SHADER_RESOURCE);
