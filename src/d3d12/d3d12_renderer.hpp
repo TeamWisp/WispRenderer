@@ -15,6 +15,7 @@ namespace wr
 	namespace d3d12
 	{
 		struct CommandList;
+		struct RenderTarget;
 	}
   
 	struct MeshNode;
@@ -43,9 +44,6 @@ namespace wr
 
 	} /* temp */
 
-	//! D3D12 platform independend Render Target implementation
-	struct D3D12RenderTarget : RenderTarget, d3d12::RenderTarget {};
-
 	class D3D12RenderSystem : public RenderSystem
 	{
 	public:
@@ -70,12 +68,12 @@ namespace wr
 		wr::CommandList GetBundleCommandList(unsigned int num_allocators) final;
 		wr::CommandList GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList GetCopyCommandList(unsigned int num_allocators) final;
-		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
-		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
+		RenderTarget GetRenderTarget(RenderTargetProperties properties) final;
+		void ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);
 
-		void StartRenderTask(CommandList cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopRenderTask(CommandList cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StartRenderTask(CommandList cmd_list, std::pair<RenderTarget, RenderTargetProperties> render_target) final;
+		void StopRenderTask(CommandList cmd_list, std::pair<RenderTarget, RenderTargetProperties> render_target) final;
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 

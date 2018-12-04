@@ -9,7 +9,7 @@ namespace wr
 {
 
 	using CommandList = void*;
-	struct RenderTarget {};
+	using RenderTarget = void*;
 
 	struct RenderTargetProperties
 	{

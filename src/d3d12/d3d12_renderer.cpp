@@ -216,7 +216,7 @@ namespace wr
 		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
-	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
+	RenderTarget D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
 	{
 		if (properties.m_is_render_window)
 		{
@@ -225,7 +225,7 @@ namespace wr
 				LOGC("Tried using a render task which depends on the render window.");
 				return nullptr;
 			}
-			return (D3D12RenderTarget*)m_render_window.value();
+			return m_render_window.value();
 		}
 		else
 		{
@@ -238,11 +238,11 @@ namespace wr
 
 			if (properties.m_width.has_value() || properties.m_height.has_value())
 			{
-				return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
+				return d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
 			}
 			else if (m_window.has_value())
 			{
-				auto retval = (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
 					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
 				return retval;
@@ -255,9 +255,9 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height)
+	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height)
 	{
-		auto n_render_target = static_cast<D3D12RenderTarget*>(*render_target);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(*render_target);
 		d3d12::Resize((d3d12::RenderTarget**)&n_render_target, m_device, width, height);
 
 		(*render_target) = n_render_target;
@@ -268,10 +268,10 @@ namespace wr
 		m_requested_fullscreen_state = fullscreen_state;
 	}
 
-	void D3D12RenderSystem::StartRenderTask(CommandList cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	void D3D12RenderSystem::StartRenderTask(CommandList cmd_list, std::pair<RenderTarget, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 	
 		d3d12::Begin(n_cmd_list, frame_idx);
@@ -299,11 +299,11 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::StopRenderTask(CommandList cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	void D3D12RenderSystem::StopRenderTask(CommandList cmd_list, std::pair<RenderTarget, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
-		auto frame_idx = GetFrameIdx();
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
+		unsigned int frame_idx = GetFrameIdx();
 
 		if (render_target.second.m_is_render_window)
 		{

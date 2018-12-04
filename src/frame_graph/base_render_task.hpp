@@ -13,7 +13,6 @@ namespace wr
 {
 	class RenderSystem;
 	class SceneGraph;
-	class RenderTarget;
 	class FrameGraph;
 } /* wr */
 
@@ -59,8 +58,6 @@ namespace wr
 		template<typename T>
 		T* GetRenderTarget()
 		{
-			static_assert(std::is_base_of<RenderTarget, T>::value, "Type must be child of wr::RenderTarget");
-
 			return static_cast<T*>(m_render_target);
 		}
 
@@ -83,7 +80,7 @@ namespace wr
 		//! Handle to a cmd_list obtained from the render system.
 		CommandList m_cmd_list;
 		//! The Task Render target.
-		RenderTarget* m_render_target;
+		RenderTarget m_render_target;
 		//! The type of render task
 		RenderTaskType m_type;
 		//! Render Target Properties
