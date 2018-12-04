@@ -19,7 +19,7 @@ namespace wr
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
-		Node(bool is_root = false);
+		Node();
 		void SignalChange(bool cascade = false);
 		void SignalUpdate(unsigned int frame_idx);
 		bool RequiresUpdate(unsigned int frame_idx);
@@ -38,8 +38,6 @@ namespace wr
 
 		//Update the transform; done automatically when SignalChange is called
 		void UpdateTransform();
-
-		bool IsRoot();
 
 		std::shared_ptr<Node> m_parent;
 		std::vector<std::shared_ptr<Node>> m_children;
@@ -62,8 +60,6 @@ namespace wr
 	private:
 
 		std::bitset<3> m_requires_update;
-
-		bool m_is_root;
 
 	};
 

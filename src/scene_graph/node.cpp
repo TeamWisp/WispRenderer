@@ -2,19 +2,9 @@
 
 namespace wr
 {
-	Node::Node(bool is_root) : m_is_root(is_root)
+	Node::Node()
 	{
 		SignalChange();
-
-		if (is_root)
-		{
-			UpdateTransform();
-		}
-	}
-
-	bool Node::IsRoot()
-	{
-		return m_is_root;
 	}
 
 	void Node::SignalChange(bool cascade)
@@ -76,7 +66,7 @@ namespace wr
 		DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScalingFromVector(m_scale);
 		m_transform = m_local_transform = scale_mat * rotation_mat * translation_mat;
 
-		if (m_parent && !m_parent->IsRoot())
+		if (m_parent)
 			m_transform *= m_parent->m_transform;
 	}
 

@@ -59,7 +59,7 @@ namespace cubes_scene
 		}
 		// ### background cubes
 
-		camera->SetPosition(0, 0, -5);
+		camera->SetPosition({ 0, 0, -5 });
 	}
 
 	void UpdateScene()
