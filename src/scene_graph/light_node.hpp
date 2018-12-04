@@ -12,6 +12,9 @@ namespace wr
 		LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR col = { 1, 1, 1 });
 		LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR dir, float ang, DirectX::XMVECTOR col = { 1, 1, 1 });
 
+		LightNode(const LightNode& old);
+		LightNode& operator=(const LightNode& old);
+
 		//! Set angle in degrees
 		void SetAngle(float ang);
 
@@ -39,8 +42,14 @@ namespace wr
 		//! Set data for a spot light
 		void SetSpot(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR dir, float ang, DirectX::XMVECTOR col = { 1, 1, 1 });
 
+		//! Helper for getting the LightType (doesn't include light count for the first light)
+		LightType GetType();
+
+		//! Allocated data (either temp or array data)
+		Light* m_light;
+
 		//! Physical data
-		Light m_light;
+		Light m_temp;
 
 	};
 

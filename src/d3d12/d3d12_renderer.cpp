@@ -443,12 +443,12 @@ namespace wr
 
 	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		for (auto& node : nodes)
+		/*for (auto& node : nodes)
 		{
 			for (auto& mesh : node->m_model->m_meshes)
 			{
 			}
-		}
+		}*/
 	}
 
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
@@ -464,7 +464,6 @@ namespace wr
 
 	void D3D12RenderSystem::Init_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights)
 	{
-		lights.resize(d3d12::settings::num_lights);
 	}
 
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
@@ -494,22 +493,36 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::Update_LightNodes(std::vector<std::shared_ptr<LightNode>>& nodes, std::vector<Light>& lights, StructuredBufferHandle* structured_buffer, CommandList* cmd_list)
+	void D3D12RenderSystem::Update_LightNodes(SceneGraph& scene_graph, CommandList* cmd_list)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		bool should_update = false;
+		uint32_t offset_start = 0, offset_end = 0;
 
-		uint32_t count = 0, size = (uint32_t) nodes.size(), light_size = (uint32_t) lights.size();
+		std::vector<std::shared_ptr<LightNode>>& light_nodes = scene_graph.GetLightNodes();
 
-		for (; count < size && count < light_size; ++count)
+		for (uint32_t i = 0, j = (uint32_t) light_nodes.size(); i < j; ++i)
 		{
-			lights[count] = nodes[count]->m_light;
+			std::shared_ptr<LightNode>& node = light_nodes[i];
+
+			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+
+			if (!should_update)
+			{
+				should_update = true;
+				offset_start = i;
+			}
+
+			node->SignalUpdate(GetFrameIdx());
+
+			offset_end = i;
 		}
 
-		lights[0].tid |= count << 2;
+		if (!should_update)
+			return;
 
-		auto n_structured_buffer = static_cast<D3D12StructuredBufferHandle*>(structured_buffer);
+		StructuredBufferHandle* structured_buffer = scene_graph.GetLightBuffer();
 
-		structured_buffer->m_pool->Update(structured_buffer, lights.data(), sizeof(Light) * count, 0);
+		structured_buffer->m_pool->Update(structured_buffer, scene_graph.GetLight(offset_start), sizeof(Light) * (offset_end - offset_start + 1), sizeof(Light) * offset_start);
 
 	}
 
