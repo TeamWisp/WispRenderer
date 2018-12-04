@@ -48,7 +48,7 @@ DEFINE_HAS_METHOD(GetInputLayout)
 
 //! Defines to make linking to sg easier.
 #define LINK_SG_RENDER_MESHES(renderer_type, function) \
-decltype(wr::SceneGraph::m_render_meshes_func_impl) wr::SceneGraph::m_render_meshes_func_impl = [](wr::RenderSystem* render_system, wr::temp::MeshBatches& nodes, wr::CommandList* cmd_list) \
+decltype(wr::SceneGraph::m_render_meshes_func_impl) wr::SceneGraph::m_render_meshes_func_impl = [](wr::RenderSystem* render_system, wr::temp::MeshBatches& nodes, wr::CommandList cmd_list) \
 { \
 	static_cast<renderer_type*>(render_system)->function(nodes, cmd_list); \
 };
@@ -80,7 +80,7 @@ decltype(wr::SceneGraph::m_update_cameras_func_impl) wr::SceneGraph::m_update_ca
 	static_cast<renderer_type*>(render_system)->function(nodes); \
 };
 #define LINK_SG_UPDATE_LIGHTS(renderer_type, function) \
-decltype(wr::SceneGraph::m_update_lights_func_impl) wr::SceneGraph::m_update_lights_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::LightNode>>& nodes, std::vector<Light>& lights, wr::StructuredBufferHandle* structured_buffer, wr::CommandList* cmd_list) \
+decltype(wr::SceneGraph::m_update_lights_func_impl) wr::SceneGraph::m_update_lights_func_impl = [](wr::RenderSystem* render_system, std::vector<std::shared_ptr<wr::LightNode>>& nodes, std::vector<Light>& lights, wr::StructuredBufferHandle* structured_buffer, wr::CommandList cmd_list) \
 { \
 	static_cast<renderer_type*>(render_system)->function(nodes, lights, structured_buffer, cmd_list); \
 };
