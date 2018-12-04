@@ -104,8 +104,8 @@ namespace wr
 	//! Update the scene graph
 	void SceneGraph::Update()
 	{
-		m_update_meshes_func_impl(m_render_system, m_mesh_nodes);
 		m_update_cameras_func_impl(m_render_system, m_camera_nodes);
+		m_update_meshes_func_impl(m_render_system, m_mesh_nodes);
 	}
 
 	//! Render the scene graph
