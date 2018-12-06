@@ -2,6 +2,10 @@
 
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
+#include "../d3d12/d3d12_constant_buffer_pool.hpp"
+#include "../d3d12/d3d12_structured_buffer_pool.hpp"
+#include "../d3d12/d3d12_model_pool.hpp"
+#include "../d3d12/d3d12_resource_pool_texture.hpp"
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -49,6 +53,9 @@ namespace wr
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
+				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 0, frame_idx);
 
 				scene_graph.Render(cmd_list, scene_graph.GetActiveCamera().get());
 			}

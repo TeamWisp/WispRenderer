@@ -44,6 +44,7 @@ namespace wr::d3d12
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count, unsigned int idx_start, unsigned int vertex_start);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
@@ -70,6 +71,12 @@ namespace wr::d3d12
 	void DestroyDepthStencilBuffer(RenderTarget* render_target);
 	void DestroyRenderTargetViews(RenderTarget* render_target);
 	void Destroy(RenderTarget* render_target);
+
+	// Texture
+	[[nodiscard]] TextureResource* CreateTexture(Device* device, desc::TextureDesc* description, bool allow_uav);
+	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, Format format);
+	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
+	void Destroy(TextureResource* tex);
 
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
