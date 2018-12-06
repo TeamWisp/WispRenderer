@@ -544,15 +544,10 @@ namespace wr
 		{
 			Model* model = elem.first;
 			temp::MeshBatch& batch = elem.second;
-			
-			// Execute Indirect Pipeline
-			if constexpr (d3d12::settings::use_exec_indirect)
-			{
 
 			// Execute Indirect Pipeline
 			if constexpr (d3d12::settings::use_exec_indirect)
 			{
-
 				//Render meshes
 				for (auto& mesh : model->m_meshes)
 				{
@@ -666,26 +661,8 @@ namespace wr
 
 			}
 		}
-
-		if (d3d12::settings::use_exec_indirect)
-		{
-			if (std::size_t size = commands.size(); size > 0)
-			{
-				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
-				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size);
-				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
-				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer);
-			}
-			if (std::size_t size = indexed_commands.size(); size > 0)
-			{
-				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
-				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size);
-				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
-				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed);
-			}
-
-		}
 	}
+	
 
 	unsigned int D3D12RenderSystem::GetFrameIdx()
 	{
