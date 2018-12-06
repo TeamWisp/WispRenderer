@@ -155,8 +155,7 @@ namespace wr::d3d12
 		inline void EnableDXRFallback()
 		{
 			UUID experimental_features[] = { D3D12ExperimentalShaderModels };
-			HRESULT hr;
-			TRY_M(hr = D3D12EnableExperimentalFeatures(1, experimental_features, nullptr, nullptr), "Failed to enable experimantal dxr fallback features.");
+			TRY_M(D3D12EnableExperimentalFeatures(1, experimental_features, nullptr, nullptr), "Failed to enable experimantal dxr fallback features.");
 		}
 	}
 

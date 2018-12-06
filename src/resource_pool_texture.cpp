@@ -1,5 +1,6 @@
 #include "resource_pool_texture.hpp"
 #include "util/log.hpp"
+#include "util/strings.hpp"
 
 namespace wr
 {
@@ -12,39 +13,44 @@ namespace wr
 	//! Loads a texture
 	TextureHandle TexturePool::Load(std::string_view path, bool srgb)
 	{
-		std::size_t length = path.length();
-		std::string_view extension = path.substr(length - 3, 3);
+		std::optional<std::string_view> extension = util::GetFileExtension(path);
 
-		Texture* texture;
+		if (std::string_view ext_int = extension.value(); extension.has_value())
+		{
+			Texture* texture;
 
-		if (extension == "png")
-		{
-			texture = LoadPNG(path, srgb);
-		}
-		else if (extension == "dds")
-		{
-			texture = LoadDDS(path, srgb);
-		}
-		else if (extension == "hdr")
-		{
-			texture = LoadHDR(path, srgb);
+			if (ext_int.find("png"))
+			{
+				texture = LoadPNG(path, srgb);
+			}
+			else if (ext_int.find("dds"))
+			{
+				texture = LoadDDS(path, srgb);
+			}
+			else if (ext_int.find("hdr"))
+			{
+				texture = LoadHDR(path, srgb);
+			}
+			else
+			{
+				LOGC("Texture {} not loaded. Format not supported.", path);
+			}
+
+			LOG("[TEXTURE LOADED] {}", path);
+
+			uint64_t texture_id = m_id_factory.GetUnusedID();
+
+			TextureHandle texture_handle;
+			texture_handle.m_pool = this;
+			texture_handle.m_id = texture_id;
+
+			m_unstaged_textures.insert(std::make_pair(texture_id, texture));
+
+			return texture_handle;
 		}
 		else
 		{
-			LOGC("Texture {} not loaded. Format not supported.", path);
+			LOGC("Invalid path used as argument. Path: {}", path);
 		}
-
-		LOG("[TEXTURE LOADED] {}", path);
-		
-		uint64_t texture_id = m_id_factory.GetUnusedID();
-
-		TextureHandle texture_handle;
-		texture_handle.m_pool = this;
-		texture_handle.m_id = texture_id;
-
-		m_unstaged_textures.insert(std::make_pair(texture_id, texture));
-
-		return texture_handle;
 	}
-
 }
