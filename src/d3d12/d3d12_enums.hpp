@@ -27,6 +27,7 @@ namespace wr
 		GEOMETRY_SHADER,
 		HULL_SHADER,
 		DIRECT_COMPUTE_SHADER,
+		LIBRARY_SHADER,
 	};
 
 	enum class CmdListType

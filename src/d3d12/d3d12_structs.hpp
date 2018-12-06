@@ -4,6 +4,7 @@
 #include <dxgi1_6.h>
 #include <vector>
 #include <optional>
+#include <dxcapi.h>
 #include <array>
 #include <D3D12RaytracingFallback.h>
 
@@ -134,7 +135,7 @@ namespace wr::d3d12
 
 	struct Shader
 	{
-		ID3DBlob* m_native;
+		IDxcBlob* m_native;
 		std::string m_path;
 		std::string m_entry;
 		ShaderType m_type;

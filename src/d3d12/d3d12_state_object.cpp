@@ -6,21 +6,19 @@
 namespace wr::d3d12
 {
 
-	[[nodiscard]] StateObject* CreateStateObject(Device* device, StateObjType type)
+	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc)
 	{
 		auto state_object = new StateObject();
-
-		CD3DX12_STATE_OBJECT_DESC state_obj_desc = { (D3D12_STATE_OBJECT_TYPE)type };
 
 		// Create the state object.
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
-			TRY_M(device->m_native->CreateStateObject(state_obj_desc, IID_PPV_ARGS(&state_object->m_native)),
+			TRY_M(device->m_native->CreateStateObject(desc, IID_PPV_ARGS(&state_object->m_native)),
 				"Couldn't create DirectX Raytracing state object.");
 		}
 		else if(GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
-			TRY_M(device->m_fallback_native->CreateStateObject(state_obj_desc, IID_PPV_ARGS(&state_object->m_native)),
+			TRY_M(device->m_fallback_native->CreateStateObject(desc, IID_PPV_ARGS(&state_object->m_fallback_native)),
 				"Couldn't create DirectX Fallback Raytracing state object.");
 		}
 

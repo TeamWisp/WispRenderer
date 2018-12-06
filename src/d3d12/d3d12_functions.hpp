@@ -99,6 +99,7 @@ namespace wr::d3d12
 
 	// Shader
 	[[nodiscard]] Shader* LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
+	[[nodiscard]] Shader* LoadDXCShader(ShaderType type, std::string const & path, std::string const & entry = "main");
 	bool ReloadShader(Shader* shader);
 	void Destroy(Shader* shader);
 
@@ -175,7 +176,7 @@ namespace wr::d3d12
 	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
 
 	// State Object
-	[[nodiscard]] StateObject* CreateStateObject(Device* device, StateObjType type);
+	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
 	void Destroy(StateObject* obj);
 
 } /* wr::d3d12 */

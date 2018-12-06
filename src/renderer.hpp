@@ -42,6 +42,7 @@ namespace wr
 		virtual void PrepareRootSignatureRegistry() = 0;
 		virtual void PrepareShaderRegistry() = 0;
 		virtual void PreparePipelineRegistry() = 0;
+		virtual void PrepareRTPipelineRegistry() = 0;
 
 		virtual void WaitForAllPreviousWork() = 0;
 

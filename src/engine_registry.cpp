@@ -5,6 +5,8 @@
 #include "pipeline_registry.hpp"
 #include "root_signature_registry.hpp"
 #include "shader_registry.hpp"
+#include "rt_pipeline_registry.hpp"
+#include "d3d12/d3d12_structs.hpp"
 
 #define REGISTER(type) decltype(type) type
 
@@ -87,6 +89,35 @@ namespace wr
 		false,
 		true,
 		TopologyType::TRIANGLE
+	});
+
+	/* ### Raytracing ### */
+	REGISTER(shaders::rt_lib) = ShaderRegistry::Get().Register({
+		"resources/shaders/raytracing.hlsl",
+		"RaygenEntry",
+		ShaderType::LIBRARY_SHADER
+	});
+
+	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> so_desc = []()
+	{
+		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
+
+		StateObjectDescription::Library lib;
+		lib.shader_handle = shaders::rt_lib;
+		lib.exports.push_back(L"RaygenEntry");
+		lib.exports.push_back(L"ClosestHitEntry");
+		lib.exports.push_back(L"MissEntry");
+
+		return std::make_pair(desc, lib);
+	}();
+	
+	REGISTER(state_objects::state_object) = RTPipelineRegistry::Get().Register(
+	{
+		so_desc.first,
+		so_desc.second,    // librart
+		(sizeof(float)*4), // max payload size
+		(sizeof(float)*2), // max attributes size
+		1,				   // Max recursion depth
 	});
 
 } /* wr */
