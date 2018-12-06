@@ -113,13 +113,13 @@ namespace wr
 	
 	REGISTER(state_objects::state_object) = RTPipelineRegistry::Get().Register(
 	{
-		so_desc.first,
-		so_desc.second,    // librart
-		(sizeof(float)*4), // max payload size
-		(sizeof(float)*2), // max attributes size
+		so_desc.first,     // Description
+		so_desc.second,    // Library
+		(sizeof(float)*4), // Max payload size
+		(sizeof(float)*2), // Max attributes size
 		1,				   // Max recursion depth
-		std::nullopt,
-		std::nullopt,
+		std::nullopt,      // Global root signature
+		std::nullopt,      // Local Root Signatures
 	});
 
 } /* wr */
