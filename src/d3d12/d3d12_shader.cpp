@@ -101,7 +101,11 @@ namespace wr::d3d12
 		TRY_M(library->CreateIncludeHandler(&include_handler), "Failed to create default include handler.");
 
 		IDxcOperationResult* result;
-		LPCWSTR args[] = { L"/Zi" };
+#ifdef _DEBUG
+		LPCWSTR args[] = { L"/Zi /Od" };
+#else
+		LPCWSTR args[] = { L"/O3" };
+#endif
 		HRESULT hr = compiler->Compile(
 			source,          // program text
 			wpath.c_str(),   // file name, mostly for error messages
