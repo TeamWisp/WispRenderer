@@ -1,6 +1,6 @@
 ---
 name: Re-factor request
-about: Suggest a refractor of code for the project
+about: Suggest a re-factor of code for the project
 title: ''
 labels: code change
 assignees: ''

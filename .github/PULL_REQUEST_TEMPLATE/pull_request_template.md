@@ -1,8 +1,8 @@
 **Description**
 Give a clear description of the changes
 
-**issues**
+**Issues**
 reference related issues if any
 
-**possible conflicts**
+**Possible conflicts**
 list any possible conflicts
