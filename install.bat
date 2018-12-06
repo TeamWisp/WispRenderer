@@ -62,7 +62,7 @@ if "%is_remote%" == "1" (
   )
 )
 
-FOR /F "delims=" %%i IN ('dir "C:\Program Files (x86)\Windows Kits\10\Include" /b /ad-h /t:c /o-d') DO (
+FOR /F "delims=" %%i IN ('dir "C:\Program Files (x86)\Windows Kits\10\Include" /b /ad-h /t:c /o-n') DO (
     SET windows_sdk_version=%%i
     GOTO :found
 )
