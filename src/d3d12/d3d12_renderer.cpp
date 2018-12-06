@@ -470,13 +470,11 @@ namespace wr
 	void D3D12RenderSystem::Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node)
 	{
 
-		if (!node->RequiresTransformUpdate(GetFrameIdx()))
-			goto end;
-
-		node->UpdateTransform();
-		node->SignalTransformUpdate(GetFrameIdx());
-
-		end:
+		if (node->RequiresTransformUpdate(GetFrameIdx()))
+		{
+			node->UpdateTransform();
+			node->SignalTransformUpdate(GetFrameIdx());
+		}
 
 		auto& children = node->m_children;
 		auto it = children.begin();
