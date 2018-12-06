@@ -90,8 +90,6 @@ namespace wr
 
 	void LightNode::Update(uint32_t frame_idx)
 	{
-		UpdateTransform();
-
 		DirectX::XMVECTOR position = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };
 		memcpy(&m_light->pos, &position, 12);
 

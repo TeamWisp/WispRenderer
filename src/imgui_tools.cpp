@@ -205,7 +205,8 @@ namespace wr::imgui::window
 						light.ang = light.ang / 180.f * 3.1415926535f;
 					}
 
-					light_node->SignalChange(true);
+					light_node->SignalTransformChange();
+					light_node->SignalChange();
 
 					if (ImGui::Button("Remove"))
 					{

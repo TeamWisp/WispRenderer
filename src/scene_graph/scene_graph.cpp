@@ -21,7 +21,6 @@ namespace wr
 		: m_render_system(render_system), m_root(std::make_shared<Node>())
 	{
 		m_lights.resize(d3d12::settings::num_lights);
-		m_root->UpdateTransform();
 	}
 
 	SceneGraph::~SceneGraph()
@@ -104,8 +103,10 @@ namespace wr
 	//! Update the scene graph
 	void SceneGraph::Update()
 	{
+		m_update_transforms_func_impl(m_render_system, *this, m_root);
 		m_update_cameras_func_impl(m_render_system, m_camera_nodes);
 		m_update_meshes_func_impl(m_render_system, m_mesh_nodes);
+		m_update_lights_func_impl(m_render_system, *this);
 	}
 
 	//! Render the scene graph
@@ -115,7 +116,6 @@ namespace wr
 	void SceneGraph::Render(CommandList* cmd_list, CameraNode* camera)
 	{
 		Optimize();
-		m_update_lights_func_impl(m_render_system, *this, cmd_list);
 		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
 	}
 

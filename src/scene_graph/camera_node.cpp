@@ -11,8 +11,6 @@ namespace wr
 
 	void CameraNode::UpdateTemp(unsigned int frame_idx)
 	{
-		UpdateTransform();
-
 		DirectX::XMVECTOR pos = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };
 
 		DirectX::XMVECTOR up = DirectX::XMVector3Normalize(m_transform.r[1]);

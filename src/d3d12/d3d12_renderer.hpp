@@ -104,7 +104,8 @@ namespace wr
 
 		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
-		void Update_LightNodes(SceneGraph& scene_graph, CommandList* cmd_list);
+		void Update_LightNodes(SceneGraph& scene_graph);
+		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 

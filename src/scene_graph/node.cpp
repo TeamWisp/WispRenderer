@@ -4,20 +4,23 @@ namespace wr
 {
 	Node::Node()
 	{
-		SignalChange();
+		SignalTransformChange();
 	}
 
-	void Node::SignalChange(bool cascade)
+	void Node::SignalChange()
 	{
 		m_requires_update[0] = m_requires_update[1] = m_requires_update[2] = true;
+	}
 
-		if (cascade)
+	void Node::SignalTransformChange()
+	{
+		m_requires_transform_update[0] = m_requires_transform_update[1] = m_requires_transform_update[2] = true;
+
+		for (std::shared_ptr<Node>& child : m_children)
 		{
-			for (std::shared_ptr<Node>& child : m_children)
-			{
-				child->SignalChange(true);
-			}
+			child->SignalTransformChange();
 		}
+
 	}
 
 	void Node::SignalUpdate(unsigned int frame_idx)
@@ -30,22 +33,32 @@ namespace wr
 		return m_requires_update[frame_idx];
 	}
 
+	void Node::SignalTransformUpdate(unsigned int frame_idx)
+	{
+		m_requires_transform_update[frame_idx] = false;
+	}
+
+	bool Node::RequiresTransformUpdate(unsigned int frame_idx)
+	{
+		return m_requires_transform_update[frame_idx];
+	}
+
 	void Node::SetRotation(DirectX::XMVECTOR roll_pitch_yaw_deg)
 	{
 		m_rotation_deg = roll_pitch_yaw_deg;
-		SignalChange(true);
+		SignalTransformChange();
 	}
 
 	void Node::SetPosition(DirectX::XMVECTOR position)
 	{
 		m_position = position;
-		SignalChange(true);
+		SignalTransformChange();
 	}
 
 	void Node::SetScale(DirectX::XMVECTOR scale)
 	{
 		m_scale = scale;
-		SignalChange(true);
+		SignalTransformChange();
 	}
 
 	void Node::SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation_deg, DirectX::XMVECTOR scale)
@@ -68,6 +81,8 @@ namespace wr
 
 		if (m_parent)
 			m_transform *= m_parent->m_transform;
+
+		SignalChange();
 	}
 
 }

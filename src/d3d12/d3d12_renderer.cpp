@@ -29,6 +29,7 @@ namespace wr
 	LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
 	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
 	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
+	LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
@@ -464,15 +465,37 @@ namespace wr
 	{
 	}
 
+	void D3D12RenderSystem::Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node)
+	{
+
+		if (!node->RequiresTransformUpdate(GetFrameIdx()))
+			goto end;
+
+		node->UpdateTransform();
+		node->SignalTransformUpdate(GetFrameIdx());
+
+		end:
+
+		auto& children = node->m_children;
+		auto it = children.begin();
+
+		while (it != children.end())
+		{
+			Update_Transforms(scene_graph, *it);
+			++it;
+		}
+
+	}
+
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		for (auto& node : nodes)
+		/*for (auto& node : nodes)
 		{
 			if (!node->RequiresUpdate(GetFrameIdx())) continue;
 
-			node->UpdateTransform();
+			//Update
 			node->SignalUpdate(GetFrameIdx());
-		}
+		}*/
 	}
 
 	void D3D12RenderSystem::Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
@@ -492,7 +515,7 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::Update_LightNodes(SceneGraph& scene_graph, CommandList* cmd_list)
+	void D3D12RenderSystem::Update_LightNodes(SceneGraph& scene_graph)
 	{
 		bool should_update = false;
 		uint32_t offset_start = 0, offset_end = 0;
