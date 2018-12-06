@@ -15,6 +15,7 @@ namespace wr
 	namespace d3d12
 	{
 		struct CommandList;
+		struct RenderTarget;
 	}
   
 	struct MeshNode;
@@ -59,21 +60,16 @@ namespace wr
 
 	} /* temp */
 
-	//! D3D12 platform independend Command List implementation
-	struct D3D12CommandList : CommandList, d3d12::CommandList {};
-
-	//! D3D12 platform independend Render Target implementation
-	struct D3D12RenderTarget : RenderTarget, d3d12::RenderTarget {};
-
 	class D3D12RenderSystem : public RenderSystem
 	{
 	public:
 		~D3D12RenderSystem() final;
 
 		void Init(std::optional<Window*> window) final;
-		std::unique_ptr<Texture> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
+		std::unique_ptr<TextureHandle> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
 		void Resize(std::uint32_t width, std::uint32_t height) final;
 
+		std::shared_ptr<TexturePool> CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures) final;
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb) final;
 		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_mb) final;
@@ -124,6 +120,9 @@ namespace wr
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 
+		std::shared_ptr<TexturePool> m_texture_pool;
+
+		d3d12::HeapResource* m_light_buffer;
 		std::shared_ptr<ConstantBufferPool> m_camera_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;

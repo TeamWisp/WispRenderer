@@ -7,7 +7,8 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "d3d12_material_pool.hpp"
+#include "../material_pool.hpp"
+#include "d3d12_resource_pool_texture.hpp"
 #include "d3d12_model_pool.hpp"
 #include "d3d12_constant_buffer_pool.hpp"
 #include "d3d12_structured_buffer_pool.hpp"
@@ -124,7 +125,7 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 	}
 
-	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
 		if (m_requested_fullscreen_state.has_value())
 		{
@@ -155,7 +156,7 @@ namespace wr
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
-		auto cmd_lists = frame_graph.GetAllCommandLists<D3D12CommandList>();
+		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
 
 		n_cmd_lists.push_back(m_direct_cmd_list);
@@ -174,7 +175,7 @@ namespace wr
 
 		m_bound_model_pool = nullptr;
 
-		return std::unique_ptr<Texture>();
+		return std::unique_ptr<TextureHandle>();
 	}
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
@@ -188,9 +189,15 @@ namespace wr
 		}
 	}
 
+	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures)
+	{
+		m_texture_pool = std::make_shared<D3D12TexturePool>(*this, size_in_mb, num_of_textures);
+		return m_texture_pool;
+	}
+
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
 	{
-		return std::make_shared<D3D12MaterialPool>(size_in_mb);
+		return std::make_shared<MaterialPool>();
 	}
 
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)
@@ -223,22 +230,22 @@ namespace wr
 
 	CommandList* D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
 	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
-	wr::CommandList * D3D12RenderSystem::GetBundleCommandList(unsigned int num_allocators)
+	CommandList* D3D12RenderSystem::GetBundleCommandList(unsigned int num_allocators)
 	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_BUNDLE);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_BUNDLE);
 	}
 
 	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
 	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
 	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
-		return (D3D12CommandList*)d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
@@ -250,7 +257,7 @@ namespace wr
 				LOGC("Tried using a render task which depends on the render window.");
 				return nullptr;
 			}
-			return (D3D12RenderTarget*)m_render_window.value();
+			return m_render_window.value();
 		}
 		else
 		{
@@ -263,11 +270,11 @@ namespace wr
 
 			if (properties.m_width.has_value() || properties.m_height.has_value())
 			{
-				return (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
+				return d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
 			}
 			else if (m_window.has_value())
 			{
-				auto retval = (D3D12RenderTarget*)d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
 					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
 				return retval;
@@ -282,7 +289,7 @@ namespace wr
 
 	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height)
 	{
-		auto n_render_target = static_cast<D3D12RenderTarget*>(*render_target);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(*render_target);
 		d3d12::Resize((d3d12::RenderTarget**)&n_render_target, m_device, width, height);
 
 		(*render_target) = n_render_target;
@@ -295,8 +302,8 @@ namespace wr
 
 	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 	
 		d3d12::Begin(n_cmd_list, frame_idx);
@@ -326,9 +333,9 @@ namespace wr
 
 	void D3D12RenderSystem::StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
-		auto frame_idx = GetFrameIdx();
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
+		unsigned int frame_idx = GetFrameIdx();
 
 		if (render_target.second.m_is_render_window)
 		{
@@ -550,7 +557,7 @@ namespace wr
 
 	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto frame_idx = GetFrameIdx();
 		auto d3d12_camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera->m_camera_cb);
 		std::vector<temp::IndirectCommand> commands;
@@ -570,7 +577,6 @@ namespace wr
 			// Execute Indirect Pipeline
 			if constexpr (d3d12::settings::use_exec_indirect)
 			{
-
 				//Render meshes
 				for (auto& mesh : model->m_meshes)
 				{
@@ -685,6 +691,7 @@ namespace wr
 			}
 		}
 	}
+	
 
 	unsigned int D3D12RenderSystem::GetFrameIdx()
 	{

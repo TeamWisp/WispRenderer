@@ -41,6 +41,7 @@ source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
 ## dependencies ##
 add_subdirectory(deps/fmt)
+add_subdirectory(deps/DirectXTex)
 add_subdirectory(deps/fallback)
 
 set(ASSIMP_BUILD_SHARED_LIBS OFF)
@@ -55,8 +56,11 @@ set(FMT_WERROR OFF)
 
 ## dependencies sorting ##
 set_target_properties (fmt PROPERTIES FOLDER ThirdParty)
+set_target_properties (DirectXTex PROPERTIES FOLDER ThirdParty)
+
 if (MSVC)
 	target_compile_options(fmt PRIVATE /W0)
+	target_compile_options(DirectXTex PRIVATE /W0)
 endif()
 
 set_target_properties(assimp PROPERTIES FOLDER ThirdParty)
@@ -95,6 +99,10 @@ if (MSVC)
 	target_compile_options(WispRenderer PRIVATE /W4 /permissive- /MP /Gm-)
 endif()
 
+target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/DirectXTex/DirectXTex/)
+target_link_libraries(WispRenderer fmt DirectXTex)
+
+target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/assimp/include)
 target_include_directories(WispRenderer PUBLIC deps/fallback/Include deps/fmt/include deps/assimp/include)
 target_link_libraries(WispRenderer fmt assimp)
 

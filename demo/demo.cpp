@@ -16,6 +16,8 @@
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 
+std::shared_ptr<wr::TexturePool> texture_pool;
+
 void RenderEditor()
 {
 	engine::RenderEngine(render_system.get(), scene_graph.get());

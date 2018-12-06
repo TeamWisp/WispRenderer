@@ -6,6 +6,7 @@ namespace resources
 {
 
 	static std::shared_ptr<wr::ModelPool> model_pool;
+	static std::shared_ptr<wr::TexturePool> texture_pool;
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
@@ -13,6 +14,14 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
+		texture_pool = render_system->CreateTexturePool(1, 1);
+
+		// Load Texture.
+		{
+			texture_pool->Load("MaterialAlbedo.png", false);
+		}
+
+
 		model_pool = render_system->CreateModelPool(2, 2);
 
 		// Load Cube.
