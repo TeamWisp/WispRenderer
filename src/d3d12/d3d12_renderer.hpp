@@ -15,6 +15,7 @@ namespace wr
 	namespace d3d12
 	{
 		struct CommandList;
+		struct RenderTarget;
 	}
   
 	struct MeshNode;
@@ -59,12 +60,6 @@ namespace wr
 
 	} /* temp */
 
-	//! D3D12 platform independend Command List implementation
-	struct D3D12CommandList : CommandList, d3d12::CommandList {};
-
-	//! D3D12 platform independend Render Target implementation
-	struct D3D12RenderTarget : RenderTarget, d3d12::RenderTarget {};
-
 	class D3D12RenderSystem : public RenderSystem
 	{
 	public:
@@ -105,7 +100,7 @@ namespace wr
 
 		void Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes);
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
-		void Update_LightNodes(SceneGraph& scene_graph, CommandList* cmd_list);
+		void Update_LightNodes(SceneGraph& scene_graph);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 

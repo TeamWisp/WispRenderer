@@ -35,8 +35,8 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::basic_deferred);
 
-			const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
-			auto render_target = task.GetRenderTarget<D3D12RenderTarget>();
+			const auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
+			auto render_target = task.GetRenderTarget<d3d12::RenderTarget>();
 		}
 
 		inline void ExecuteDeferredTask(RenderSystem & render_system, DeferredMainRenderTask_t & task, SceneGraph & scene_graph, DeferredMainTaskData & data)
@@ -45,10 +45,10 @@ namespace wr
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
+				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
-				auto render_target = task.GetRenderTarget<D3D12RenderTarget>();
+				auto render_target = task.GetRenderTarget<d3d12::RenderTarget>();
 
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);

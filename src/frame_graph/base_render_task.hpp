@@ -13,8 +13,6 @@ namespace wr
 {
 	class RenderSystem;
 	class SceneGraph;
-	class CommandList;
-	class RenderTarget;
 	class FrameGraph;
 } /* wr */
 
@@ -44,8 +42,6 @@ namespace wr
 		template<typename T>
 		std::pair<T*, RenderTaskType> GetCommandList(bool wait = false)
 		{
-			static_assert(std::is_base_of<CommandList, T>::value, "Type must be child of wr::CommandList");
-
 			auto n_cmd_list = static_cast<T*>(m_cmd_list);
 
 			if constexpr (settings::use_multithreading)
@@ -62,8 +58,6 @@ namespace wr
 		template<typename T>
 		T* GetRenderTarget()
 		{
-			static_assert(std::is_base_of<RenderTarget, T>::value, "Type must be child of wr::RenderTarget");
-
 			return static_cast<T*>(m_render_target);
 		}
 

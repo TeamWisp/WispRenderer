@@ -15,8 +15,8 @@
 namespace wr
 {
 	class RenderSystem;
-	struct CommandList;
 	struct CameraNode;
+	using CommandList = void;
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
@@ -104,7 +104,7 @@ namespace wr
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
-		static std::function<void(RenderSystem* render_system, SceneGraph& scene_graph, CommandList*)> m_update_lights_func_impl;
+		static std::function<void(RenderSystem*, SceneGraph& scene_graph)> m_update_lights_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
