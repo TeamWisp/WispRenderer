@@ -212,7 +212,7 @@ namespace wr::imgui::window
 
 					if (ImGui::Button("Remove"))
 					{
-						lights.erase(lights.begin() + i);
+						scene_graph->DestroyNode<LightNode>(lights[i]);
 					}
 
 					ImGui::TreePop();
