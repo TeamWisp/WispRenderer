@@ -458,6 +458,29 @@ namespace wr
 				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
 			}
 
+			// Global Root Signature
+			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
+			{
+				auto& rs_registry = RootSignatureRegistry::Get();
+				auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
+
+				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
+				global_rs->SetRootSignature(n_rs->m_native->m_native);
+			}
+
+			// Local Root Signatures
+			if (desc.local_root_signatures.has_value())
+			{
+				for (auto& rs_handle : desc.local_root_signatures.value())
+				{
+					auto& rs_registry = RootSignatureRegistry::Get();
+					auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
+
+					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
+					local_rs->SetRootSignature(n_rs->m_native->m_native);
+				}
+			}
+
 			// Pipeline Config
 			{
 				auto pipeline_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();

@@ -28,6 +28,9 @@ namespace wr
 		std::uint64_t max_payload_size;
 		std::uint64_t max_attributes_size;
 		std::uint64_t max_recursion_depth;
+
+		std::optional<RegistryHandle> global_root_signature;
+		std::optional<std::vector<RegistryHandle>> local_root_signatures;
 	};
 
 	class RTPipelineRegistry : public internal::Registry<RTPipelineRegistry, StateObject, StateObjectDescription>

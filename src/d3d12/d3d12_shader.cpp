@@ -116,8 +116,9 @@ namespace wr::d3d12
 			include_handler,          // handler for #include directives
 			&result);
 
+		result->GetStatus(&hr);
 
-		//if (FAILED(hr))
+		if (FAILED(hr))
 		{
 			IDxcBlobEncoding* error;
 			result->GetErrorBuffer(&error);

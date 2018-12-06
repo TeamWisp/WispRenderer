@@ -118,6 +118,8 @@ namespace wr
 		(sizeof(float)*4), // max payload size
 		(sizeof(float)*2), // max attributes size
 		1,				   // Max recursion depth
+		std::nullopt,
+		std::nullopt,
 	});
 
 } /* wr */
