@@ -155,7 +155,8 @@ namespace wr::d3d12
 		inline void EnableDXRFallback()
 		{
 			UUID experimental_features[] = { D3D12ExperimentalShaderModels };
-			TRY_M(D3D12EnableExperimentalFeatures(1, experimental_features, nullptr, nullptr), "Failed to enable experimantal dxr fallback features.");
+			HRESULT hr;
+			TRY_M(hr = D3D12EnableExperimentalFeatures(1, experimental_features, nullptr, nullptr), "Failed to enable experimantal dxr fallback features.");
 		}
 	}
 
@@ -191,7 +192,7 @@ namespace wr::d3d12
 		if ((!device->m_dxr_support && device->m_dxr_fallback_support) || (d3d12::settings::force_dxr_fallback))
 		{
 			LOGW("Enabling DXR Fallback.");
-			internal::EnableDXRFallback();
+			//internal::EnableDXRFallback();
 		}
 
 		TRY_M(D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),

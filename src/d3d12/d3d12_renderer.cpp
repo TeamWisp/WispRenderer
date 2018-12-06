@@ -7,7 +7,8 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "../resource_pool_material.hpp"
+#include "../material_pool.hpp"
+#include "d3d12_resource_pool_texture.hpp"
 #include "d3d12_model_pool.hpp"
 #include "d3d12_constant_buffer_pool.hpp"
 #include "d3d12_structured_buffer_pool.hpp"
@@ -173,7 +174,7 @@ namespace wr
 
 		m_bound_model_pool = nullptr;
 
-		return std::unique_ptr<Texture>();
+		return std::unique_ptr<TextureHandle>();
 	}
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
