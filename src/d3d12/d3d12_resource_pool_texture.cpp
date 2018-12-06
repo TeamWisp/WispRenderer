@@ -7,7 +7,7 @@
 #include "d3d12_renderer.hpp"
 #include "d3d12_structs.hpp"
 
-#include "third_party/DirectXTex/DirectXTex.h"
+#include "DirectXTex.h"
 
 namespace wr
 {
