@@ -218,27 +218,27 @@ namespace wr
 		}
 	}
 
-	CommandList D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
+	CommandList* D3D12RenderSystem::GetDirectCommandList(unsigned int num_allocators)
 	{
 		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
-	CommandList D3D12RenderSystem::GetBundleCommandList(unsigned int num_allocators)
+	CommandList* D3D12RenderSystem::GetBundleCommandList(unsigned int num_allocators)
 	{
-		return static_cast<CommandList>(d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_BUNDLE));
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_BUNDLE);
 	}
 
-	CommandList D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
-	{
-		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
-	}
-
-	CommandList D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
+	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
 	{
 		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
-	RenderTarget D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
+	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
+	{
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
 	{
 		if (properties.m_is_render_window)
 		{
@@ -277,7 +277,7 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height)
+	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height)
 	{
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(*render_target);
 		d3d12::Resize((d3d12::RenderTarget**)&n_render_target, m_device, width, height);
@@ -290,7 +290,7 @@ namespace wr
 		m_requested_fullscreen_state = fullscreen_state;
 	}
 
-	void D3D12RenderSystem::StartRenderTask(CommandList cmd_list, std::pair<RenderTarget, RenderTargetProperties> render_target)
+	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
@@ -321,7 +321,7 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::StopRenderTask(CommandList cmd_list, std::pair<RenderTarget, RenderTargetProperties> render_target)
+	void D3D12RenderSystem::StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
@@ -524,7 +524,7 @@ namespace wr
 
 	}
 
-	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList cmd_list)
+	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto frame_idx = GetFrameIdx();

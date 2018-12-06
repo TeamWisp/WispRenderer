@@ -48,7 +48,7 @@ DEFINE_HAS_METHOD(GetInputLayout)
 
 //! Defines to make linking to sg easier.
 #define LINK_SG_RENDER_MESHES(renderer_type, function) \
-decltype(wr::SceneGraph::m_render_meshes_func_impl) wr::SceneGraph::m_render_meshes_func_impl = [](wr::RenderSystem* render_system, wr::temp::MeshBatches& nodes, wr::CameraNode* camera, wr::CommandList cmd_list) \
+decltype(wr::SceneGraph::m_render_meshes_func_impl) wr::SceneGraph::m_render_meshes_func_impl = [](wr::RenderSystem* render_system, wr::temp::MeshBatches& nodes, wr::CameraNode* camera, wr::CommandList* cmd_list) \
 { \
 	static_cast<renderer_type*>(render_system)->function(nodes, camera, cmd_list); \
 };

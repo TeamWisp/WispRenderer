@@ -22,7 +22,7 @@ namespace wr
 	public:
 		struct Data
 		{
-			RenderTarget m_render_target;
+			RenderTarget* m_render_target;
 			RenderTargetProperties m_rt_properties;
 			T& m_data;
 		};

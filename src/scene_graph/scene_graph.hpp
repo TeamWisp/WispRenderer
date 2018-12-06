@@ -15,7 +15,7 @@ namespace wr
 {
 	class RenderSystem;
 	struct CameraNode;
-	using CommandList = void*;
+	using CommandList = void;
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
@@ -97,7 +97,7 @@ namespace wr
 		~SceneGraph();
 
 		// Impl Functions
-		static std::function<void(RenderSystem*, temp::MeshBatches&, CameraNode* camera, CommandList)> m_render_meshes_func_impl;
+		static std::function<void(RenderSystem*, temp::MeshBatches&, CameraNode* camera, CommandList*)> m_render_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_init_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_init_cameras_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
@@ -121,7 +121,7 @@ namespace wr
 
 		void Init();
 		void Update();
-		void Render(CommandList cmd_list, CameraNode* camera);
+		void Render(CommandList* cmd_list, CameraNode* camera);
 
 		template<typename T>
 		void DestroyNode(std::shared_ptr<T> node);

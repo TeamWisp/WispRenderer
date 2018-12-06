@@ -80,16 +80,16 @@ namespace wr
 
 		void WaitForAllPreviousWork() final;
 
-		wr::CommandList GetDirectCommandList(unsigned int num_allocators) final;
-		wr::CommandList GetBundleCommandList(unsigned int num_allocators) final;
-		wr::CommandList GetComputeCommandList(unsigned int num_allocators) final;
-		wr::CommandList GetCopyCommandList(unsigned int num_allocators) final;
-		RenderTarget GetRenderTarget(RenderTargetProperties properties) final;
-		void ResizeRenderTarget(RenderTarget* render_target, std::uint32_t width, std::uint32_t height) final;
+		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
+		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
+		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
+		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);
 
-		void StartRenderTask(CommandList cmd_list, std::pair<RenderTarget, RenderTargetProperties> render_target) final;
-		void StopRenderTask(CommandList cmd_list, std::pair<RenderTarget, RenderTargetProperties> render_target) final;
+		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 
@@ -101,7 +101,7 @@ namespace wr
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 		void Update_LightNodes(SceneGraph& scene_graph);
 
-		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList cmd_list);
+		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();

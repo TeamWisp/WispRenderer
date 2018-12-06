@@ -78,9 +78,9 @@ namespace wr
 		//! The type info of the data type stored by `RenderTask`.
 		const std::type_info& m_data_type_info;
 		//! Handle to a cmd_list obtained from the render system.
-		CommandList m_cmd_list;
+		CommandList* m_cmd_list;
 		//! The Task Render target.
-		RenderTarget m_render_target;
+		RenderTarget* m_render_target;
 		//! The type of render task
 		RenderTaskType m_type;
 		//! Render Target Properties

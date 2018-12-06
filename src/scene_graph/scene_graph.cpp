@@ -111,7 +111,7 @@ namespace wr
 	/*!
 		The user is expected to call `Optimize`. If they don't this function will do it manually.
 	*/
-	void SceneGraph::Render(CommandList cmd_list, CameraNode* camera)
+	void SceneGraph::Render(CommandList* cmd_list, CameraNode* camera)
 	{
 		Optimize();
 		m_update_lights_func_impl(m_render_system, *this);
