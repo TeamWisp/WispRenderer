@@ -62,7 +62,8 @@ struct PS_OUTPUT
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
-	output.albedo = float4(1, 1, 0, 1);
+	
+	output.albedo = float4(1.0f, 1.0f, 0.0f, 1.0f);
 	output.normal = float4(input.normal, 1);
 	return output;
 }

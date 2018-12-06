@@ -7,7 +7,8 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "d3d12_material_pool.hpp"
+#include "../material_pool.hpp"
+#include "d3d12_resource_pool_texture.hpp"
 #include "d3d12_model_pool.hpp"
 #include "d3d12_constant_buffer_pool.hpp"
 #include "d3d12_structured_buffer_pool.hpp"
@@ -123,7 +124,7 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 	}
 
-	std::unique_ptr<Texture> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
 		if (m_requested_fullscreen_state.has_value())
 		{
@@ -173,7 +174,7 @@ namespace wr
 
 		m_bound_model_pool = nullptr;
 
-		return std::unique_ptr<Texture>();
+		return std::unique_ptr<TextureHandle>();
 	}
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
@@ -187,9 +188,15 @@ namespace wr
 		}
 	}
 
+	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures)
+	{
+		m_texture_pool = std::make_shared<D3D12TexturePool>(*this, size_in_mb, num_of_textures);
+		return m_texture_pool;
+	}
+
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
 	{
-		return std::make_shared<D3D12MaterialPool>(size_in_mb);
+		return std::make_shared<MaterialPool>();
 	}
 
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)
