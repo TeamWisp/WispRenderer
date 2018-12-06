@@ -171,6 +171,8 @@ namespace wr
 			d3d12::Present(m_render_window.value(), m_device);
 		}
 
+		m_bound_model_pool = nullptr;
+
 		return std::unique_ptr<Texture>();
 	}
 
@@ -547,12 +549,16 @@ namespace wr
 			if constexpr (d3d12::settings::use_exec_indirect)
 			{
 
+			// Execute Indirect Pipeline
+			if constexpr (d3d12::settings::use_exec_indirect)
+			{
+
 				//Render meshes
 				for (auto& mesh : model->m_meshes)
 				{
-					auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-					auto vb = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer();
-					auto ib = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer();
+					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
+					auto vb = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer();
+					auto ib = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer();
 					auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batch_buffer);
 
 					d3d12::BindIndexBuffer(n_cmd_list,
@@ -564,7 +570,7 @@ namespace wr
 					{
 						// temporary
 						D3D12_VERTEX_BUFFER_VIEW view;
-						view.BufferLocation = vb->m_gpu_address + n_mesh->m_vertex_staging_buffer_offset;
+						view.BufferLocation = vb->m_gpu_address;
 						view.StrideInBytes = n_mesh->m_vertex_staging_buffer_stride;
 						view.SizeInBytes = vb->m_size;
 
@@ -574,16 +580,16 @@ namespace wr
 						command.vb_view = view;
 						command.draw_arguments.IndexCountPerInstance = n_mesh->m_index_count;
 						command.draw_arguments.InstanceCount = batch.num_instances;
-						command.draw_arguments.StartIndexLocation = n_mesh->m_index_staging_buffer_offset / 4;
+						command.draw_arguments.StartIndexLocation = n_mesh->m_index_staging_buffer_offset;
 						command.draw_arguments.StartInstanceLocation = 0;
-						command.draw_arguments.BaseVertexLocation = 0; // 1170.sometghing fuck me
+						command.draw_arguments.BaseVertexLocation = n_mesh->m_vertex_staging_buffer_offset; // 1170.sometghing fuck me
 						indexed_commands.push_back(command);
 					}
 					else
 					{
 						// temporary
 						D3D12_VERTEX_BUFFER_VIEW view;
-						view.BufferLocation = vb->m_gpu_address + n_mesh->m_vertex_staging_buffer_offset;
+						view.BufferLocation = vb->m_gpu_address;
 						view.StrideInBytes = n_mesh->m_vertex_staging_buffer_stride;
 						view.SizeInBytes = vb->m_size;
 
@@ -591,9 +597,9 @@ namespace wr
 						command.cbv_camera = d3d12_camera_cb->m_native->m_gpu_addresses[frame_idx];
 						command.cbv_object = d3d12_cb_handle->m_native->m_gpu_addresses[frame_idx];
 						command.vb_view = view;
-						command.draw_arguments.VertexCountPerInstance = n_mesh->m_index_count;
+						command.draw_arguments.VertexCountPerInstance = n_mesh->m_vertex_count;
 						command.draw_arguments.InstanceCount = batch.num_instances;
-						command.draw_arguments.StartVertexLocation = n_mesh->m_vertex_staging_buffer_offset / n_mesh->m_vertex_staging_buffer_stride;
+						command.draw_arguments.StartVertexLocation = n_mesh->m_vertex_staging_buffer_offset;
 						command.draw_arguments.StartInstanceLocation = 0;
 						commands.push_back(command);
 					}
@@ -612,34 +618,53 @@ namespace wr
 				//Render meshes
 				for (auto& mesh : model->m_meshes)
 				{
-					auto n_mesh = static_cast<D3D12Mesh*>(mesh);
-					auto vb = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetVertexStagingBuffer();
-					auto ib = static_cast<D3D12ModelPool*>(n_mesh->m_model_pool)->GetIndexStagingBuffer();
+					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
+					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) {
+						d3d12::BindVertexBuffer(n_cmd_list,
+							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
+							0,
+							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer()->m_size,
+							n_mesh->m_vertex_staging_buffer_stride);
 
-					d3d12::BindVertexBuffer(n_cmd_list,
-						vb,
-						n_mesh->m_vertex_staging_buffer_offset,
-						n_mesh->m_vertex_staging_buffer_size,
-						n_mesh->m_vertex_staging_buffer_stride);
-
-					if (n_mesh->m_index_staging_buffer_size != 0)
-					{
 						d3d12::BindIndexBuffer(n_cmd_list,
-							ib,
-							n_mesh->m_index_staging_buffer_offset,
-							n_mesh->m_index_staging_buffer_size);
-
-						d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances);
+							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer(),
+							0,
+							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer()->m_size);
+						m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
+						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
+					}
+					if (n_mesh->m_index_count != 0)
+					{
+						d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
 					}
 					else
 					{
-						d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances);
+						d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
 					}
 				}
+
+				//Reset instances
+				batch.num_instances = 0;
 			}
 
-			//Reset instances
-			batch.num_instances = 0;
+			if (d3d12::settings::use_exec_indirect)
+			{
+				if (std::size_t size = commands.size(); size > 0)
+				{
+					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
+					d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size);
+					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
+					d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer);
+				}
+				if (std::size_t size = indexed_commands.size(); size > 0)
+				{
+					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
+					d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size);
+					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
+					d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed);
+				}
+
+			}
 		}
 
 		if (d3d12::settings::use_exec_indirect)
