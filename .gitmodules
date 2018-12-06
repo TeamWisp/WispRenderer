@@ -4,6 +4,3 @@
 [submodule "deps/assimp"]
 	path = deps/assimp
 	url = https://github.com/assimp/assimp
-[submodule "deps/fallback"]
-	path = deps/fallback
-	url = https://github.com/TeamWisp/DXR-Fallback-Layer.git
