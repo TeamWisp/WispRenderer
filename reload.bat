@@ -25,6 +25,7 @@ call :colorEcho %title_color% "==         Wisp Reloader         =="
 call :colorEcho %title_color% "==================================="
 
 rem ##### install #####
+call :updateSubmodules
 call :reloadVS15Win64 
 call :reloadVS15Win32 
 
@@ -36,6 +37,14 @@ if "%is_remote%" == "1" (
 )
 EXIT
 REM ##### MAIN #####
+
+REM ##### Update Submodules ####
+:updateSubmodules
+call :colorEcho %header_color% "#### Updating Submodules. ####"
+git submodule init
+git submodule update --recursive --remote
+if errorlevel 1 call :colorecho %red% "CMake finished with errors"
+EXIT /B 0
 
 REM ##### GEN PROJECTS #####
 :reloadVS15Win64

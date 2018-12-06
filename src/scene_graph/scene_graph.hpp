@@ -10,6 +10,7 @@
 #include "../model_pool.hpp"
 #include "../constant_buffer_pool.hpp"
 #include "../structured_buffer_pool.hpp"
+#include "../model_pool.hpp"
 
 namespace wr
 {
@@ -141,6 +142,7 @@ namespace wr
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
 		std::vector<std::shared_ptr<LightNode>>& GetLightNodes();
+		std::vector<std::shared_ptr<MeshNode>>& GetMeshNodes();
 
 		void Init();
 		void Update();
@@ -156,6 +158,8 @@ namespace wr
 		Light* GetLight(uint32_t offset);			//Returns nullptr when out of bounds
 
 		uint32_t GetCurrentLightSize();
+
+		std::shared_ptr<ModelPool> GetModelPool();
 
 	protected:
 
@@ -173,6 +177,7 @@ namespace wr
 
 		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
+		std::shared_ptr<ModelPool> m_model_pool;
 
 		StructuredBufferHandle* m_light_buffer;
 

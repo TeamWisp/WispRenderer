@@ -17,7 +17,7 @@ namespace resources
 
 		// Load Cube.
 		{
-			wr::MeshData<wr::Vertex> mesh;
+			wr::MeshData<wr::VertexNoTangent> mesh;
 
 			mesh.m_indices = {
 				2, 1, 0, 3, 2, 0, 6, 5,
@@ -59,11 +59,11 @@ namespace resources
 				{ -1, 1, 1, 0, 0, 0, 1, 0 },
 			};
 
-			cube_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+			cube_model = model_pool->LoadCustom<wr::VertexNoTangent>({ mesh });
 		}
 
 		{
-			wr::MeshData<wr::Vertex> mesh;
+			wr::MeshData<wr::VertexNoTangent> mesh;
 
 			mesh.m_indices = {
 				2, 1, 0, 3, 2, 0
@@ -76,11 +76,11 @@ namespace resources
 				{ -1, 1, 0, 1, 0, 0, 0, -1 },
 			};
 
-			plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+			plane_model = model_pool->LoadCustom<wr::VertexNoTangent>({ mesh });
 		}
 
 		{
-			test_model = model_pool->Load("resources/models/xbot.fbx", wr::ModelType::FBX);
+			test_model = model_pool->Load<wr::VertexNoTangent>("resources/models/xbot.fbx", wr::ModelType::FBX);
 		}
 	}
 	
