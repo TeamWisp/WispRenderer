@@ -73,7 +73,6 @@ namespace wr::d3d12
 
 		return shader;
 	}
-#define DXC_COMPILE_STANDARD_FILE_INCLUDE ((IDxcIncludeHandler*)(UINT_PTR)1)
 
 	Shader* LoadDXCShader(ShaderType type, std::string const & path, std::string const & entry)
 	{
