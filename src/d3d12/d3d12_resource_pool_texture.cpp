@@ -43,7 +43,7 @@ namespace wr
 
 		if (unstaged_number > 0)
 		{
-			D3D12CommandList* cmdlist = static_cast<D3D12CommandList*>(cmd_list);
+			d3d12::CommandList* cmdlist = static_cast<d3d12::CommandList*>(cmd_list);
 
 			std::vector<d3d12::TextureResource*> unstaged_textures;
 
