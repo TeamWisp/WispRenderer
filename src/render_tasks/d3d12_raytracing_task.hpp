@@ -57,7 +57,7 @@ namespace wr
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto device = n_render_system.m_device;
-			auto cmd_list = static_cast<d3d12::CommandList*>(task.GetCommandList<CommandList>().first);
+			auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 
 			if (n_render_system.m_render_window.has_value())
 			{
