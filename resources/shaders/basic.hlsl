@@ -48,7 +48,7 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
 	output.uv = input.uv;
-	output.normal = normalize(mul(vm, input.normal)).xyz;
+	output.normal = normalize(mul(vm, float4(input.normal, 0))).xyz;
 
 	return output;
 }

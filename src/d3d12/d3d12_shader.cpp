@@ -1,9 +1,11 @@
 #include "d3d12_functions.hpp"
 
 #include <D3Dcompiler.h>
+#include <dxcapi.h>
 
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
+#include <sstream>
 
 namespace wr::d3d12
 {
@@ -16,23 +18,25 @@ namespace wr::d3d12
 			switch (type)
 			{
 			case ShaderType::VERTEX_SHADER:
-				return "vs_5_1";
+				return "vs_6_3";
 				break;
 			case ShaderType::PIXEL_SHADER:
-				return "ps_5_1";
+				return "ps_6_3";
 				break;
 			case ShaderType::DOMAIN_SHADER:
-				return "ds_5_1";
+				return "ds_6_3";
 				break;
 			case ShaderType::GEOMETRY_SHADER:
-				return "gs_5_1";
+				return "gs_6_3";
 				break;
 			case ShaderType::HULL_SHADER:
-				return "hs_5_1";
+				return "hs_6_3";
 				break;
 			case ShaderType::DIRECT_COMPUTE_SHADER:
-				return "cs_5_1";
+				return "cs_6_3";
 				break;
+			case ShaderType::LIBRARY_SHADER:
+				return "lib_6_3";
 			}
 
 			return "UNKNOWN";
@@ -44,7 +48,7 @@ namespace wr::d3d12
 	{
 		auto shader = new Shader();
 
-		shader->m_path = path;
+		/*shader->m_path = path;
 		shader->m_type = type;
 		shader->m_entry = entry;
 
@@ -65,14 +69,69 @@ namespace wr::d3d12
 		if (FAILED(hr))
 		{
 			LOGC((char*)error->GetBufferPointer());
+		}*/
+
+		return shader;
+	}
+
+	Shader* LoadDXCShader(ShaderType type, std::string const & path, std::string const & entry)
+	{
+		Shader* shader = new Shader();
+
+		std::wstring wpath(path.begin(), path.end());
+		std::wstring wentry(entry.begin(), entry.end());
+		std::string temp_shader_type(internal::ShaderTypeToString(type));
+		std::wstring wshader_type(temp_shader_type.begin(), temp_shader_type.end());
+
+		static IDxcCompiler* compiler = nullptr;
+		if (!compiler)
+		{
+			DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler), (void **)&compiler);
 		}
+
+		IDxcLibrary* library = nullptr;
+		DxcCreateInstance(CLSID_DxcLibrary, __uuidof(IDxcLibrary), (void **)&library);
+
+		IDxcBlobEncoding* source;
+		std::uint32_t code_page = CP_ACP;
+		library->CreateBlobFromFile(wpath.c_str(), &code_page, &source);
+
+		IDxcIncludeHandler* include_handler;
+		TRY_M(library->CreateIncludeHandler(&include_handler), "Failed to create default include handler.");
+
+		IDxcOperationResult* result;
+#ifdef _DEBUG
+		LPCWSTR args[] = { L"/Zi /Od" };
+#else
+		LPCWSTR args[] = { L"/O3" };
+#endif
+		HRESULT hr = compiler->Compile(
+			source,          // program text
+			wpath.c_str(),   // file name, mostly for error messages
+			wentry.c_str(),         // entry point function
+			wshader_type.c_str(),   // target profile
+			args, _countof(args),   // compilation argument and count
+			nullptr, 0,       // name/value defines and their count
+			include_handler,          // handler for #include directives
+			&result);
+
+		result->GetStatus(&hr);
+
+		if (FAILED(hr))
+		{
+			IDxcBlobEncoding* error;
+			result->GetErrorBuffer(&error);
+			LOG((char*)error->GetBufferPointer());
+		}
+
+		result->GetResult(&shader->m_native);
 
 		return shader;
 	}
 
 	bool ReloadShader(Shader* shader)
 	{
-		ID3DBlob* error;
+		/*ID3DBlob* error;
 		ID3DBlob* temp_shader;
 
 		std::wstring wpath(shader->m_path.begin(), shader->m_path.end());
@@ -98,7 +157,8 @@ namespace wr::d3d12
 			SAFE_RELEASE(shader->m_native);
 			shader->m_native = temp_shader;
 			return true;
-		}
+		}*/
+		return false;
 	}
 
 	void Destroy(Shader* shader)

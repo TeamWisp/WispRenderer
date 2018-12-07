@@ -6,6 +6,7 @@
 #include "render_tasks/d3d12_deferred_main.hpp"
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
+#include "render_tasks/d3d12_raytracing_task.hpp"
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
@@ -62,6 +63,7 @@ void WispEntry()
 	frame_graph.AddTask(wr::GetDeferredMainTask());
 	frame_graph.AddTask(wr::GetDeferredCompositionTask());
 	frame_graph.AddTask(wr::GetDeferredRenderTargetCopyTask());
+	//frame_graph.AddTask(wr::GetRaytracingTask());
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 

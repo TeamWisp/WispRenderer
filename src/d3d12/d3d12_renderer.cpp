@@ -14,6 +14,7 @@
 #include "d3d12_structured_buffer_pool.hpp"
 #include "d3d12_functions.hpp"
 #include "d3d12_pipeline_registry.hpp"
+#include "d3d12_rt_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"
 #include "d3d12_root_signature_registry.hpp"
 
@@ -67,6 +68,7 @@ namespace wr
 		PrepareShaderRegistry();
 		PrepareRootSignatureRegistry();
 		PreparePipelineRegistry();
+		PrepareRTPipelineRegistry();
 
 		// Create fences
 		for (auto i = 0; i < m_fences.size(); i++)
@@ -418,6 +420,8 @@ namespace wr
 			d3d12::desc::RootSignatureDesc n_desc;
 			n_desc.m_parameters = desc.second.m_parameters;
 			n_desc.m_samplers = desc.second.m_samplers;
+			n_desc.m_rtx = desc.second.m_rtx;
+			n_desc.m_rt_local = desc.second.m_rtx_local;
 
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
 			d3d12::FinalizeRootSignature(n_rs, m_device);
@@ -434,7 +438,7 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto n_shader = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
+			auto n_shader = d3d12::LoadDXCShader(desc.second.type, desc.second.path, desc.second.entry);
 			shader->m_native = n_shader;
 
 			registry.m_objects.insert({ desc.first, shader });
@@ -446,7 +450,7 @@ namespace wr
 		auto& registry = PipelineRegistry::Get();
 
 		for (auto desc : registry.m_descriptions)
-		{
+		{		
 			d3d12::desc::PipelineStateDesc n_desc;
 			n_desc.m_counter_clockwise = desc.second.m_counter_clockwise;
 			n_desc.m_cull_mode = desc.second.m_cull_mode;
@@ -486,6 +490,74 @@ namespace wr
 			pipeline->m_native = n_pipeline;
 
 			registry.m_objects.insert({ desc.first, pipeline });
+		}
+	}
+
+	void D3D12RenderSystem::PrepareRTPipelineRegistry()
+	{
+		auto& registry = RTPipelineRegistry::Get();
+
+		for (auto it : registry.m_descriptions)
+		{
+			auto desc = it.second;
+			auto obj = new D3D12StateObject();
+
+			// Shader Library
+			{
+				auto& shader_registry = ShaderRegistry::Get();
+				auto shader_lib = static_cast<D3D12Shader*>(shader_registry.Find(desc.library_desc.shader_handle));
+
+				D3D12_SHADER_BYTECODE bytecode = {};
+				bytecode.BytecodeLength = shader_lib->m_native->m_native->GetBufferSize();
+				bytecode.pShaderBytecode = shader_lib->m_native->m_native->GetBufferPointer();
+				auto lib = desc.desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
+				for (auto exp : desc.library_desc.exports)
+				{
+					lib->DefineExport(exp.c_str());
+				}
+				lib->SetDXILLibrary(&bytecode);
+			}
+
+			// Shader Config
+			{
+				auto shader_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
+				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
+			}
+
+			// Global Root Signature
+			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
+			{
+				auto& rs_registry = RootSignatureRegistry::Get();
+				auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
+
+				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
+				global_rs->SetRootSignature(n_rs->m_native->m_native);
+			}
+
+			// Local Root Signatures
+			if (desc.local_root_signatures.has_value())
+			{
+				for (auto& rs_handle : desc.local_root_signatures.value())
+				{
+					auto& rs_registry = RootSignatureRegistry::Get();
+					auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
+
+					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
+					local_rs->SetRootSignature(n_rs->m_native->m_native);
+				}
+			}
+
+			// Pipeline Config
+			{
+				auto pipeline_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
+				pipeline_config->Config(desc.max_recursion_depth);
+			}
+
+			d3d12::CreateStateObject(m_device, desc.desc);
+
+			desc.desc.DeleteHelpers();
+
+			registry.m_objects.insert({ it.first, obj });
 		}
 	}
 
