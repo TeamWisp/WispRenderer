@@ -6,37 +6,68 @@
 #include <DirectXMath.h>
 
 #include "../util/defines.hpp"
+#include "../util/log.hpp"
 #include "../model_pool.hpp"
 #include "../constant_buffer_pool.hpp"
 #include "../structured_buffer_pool.hpp"
+#include "../model_pool.hpp"
 
 namespace wr
 {
 	class RenderSystem;
-	struct CommandList;
 	struct CameraNode;
+	using CommandList = void;
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
-		Node()
-		{
-			SignalChange();
-		}
+		Node();
+
+		void SignalChange();
+		void SignalUpdate(unsigned int frame_idx);
+		bool RequiresUpdate(unsigned int frame_idx);
+		
+		void SignalTransformChange();
+		void SignalTransformUpdate(unsigned int frame_idx);
+		bool RequiresTransformUpdate(unsigned int frame_idx);
+
+		//Takes roll, pitch and yaw from degrees and converts it to quaternion
+		void SetRotation(DirectX::XMVECTOR roll_pitch_yaw_deg);
+
+		//Sets position
+		void SetPosition(DirectX::XMVECTOR position);
+
+		//Sets scale
+		void SetScale(DirectX::XMVECTOR scale);
+
+		//Position, rotation in degrees (roll, pitch, yaw) and scale
+		void SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation_deg, DirectX::XMVECTOR scale);
+
+		//Update the transform; done automatically when SignalChange is called
+		void UpdateTransform();
 
 		std::shared_ptr<Node> m_parent;
 		std::vector<std::shared_ptr<Node>> m_children;
 
-		void SignalChange()
-		{
-			m_requires_update[0] = m_requires_update[1] = m_requires_update[2] = true;
-		}
+		//Translation of mesh node
+		DirectX::XMVECTOR m_position = { 0, 0, 0, 1 };
 
-		bool RequiresUpdate(unsigned int frame_idx)
-		{
-			return m_requires_update[frame_idx];
-		}
+		//Rotation as quaternion
+		DirectX::XMVECTOR m_rotation;
+
+		//Rotation as degrees
+		DirectX::XMVECTOR m_rotation_deg = { 0, 0, 0 };
+
+		//Scale
+		DirectX::XMVECTOR m_scale = { 1, 1, 1, 0 };
+
+		//Transformation
+		DirectX::XMMATRIX m_local_transform, m_transform;
+
+	private:
 
 		std::bitset<3> m_requires_update;
+		std::bitset<3> m_requires_transform_update;
+
 	};
 
 	struct CameraNode;
@@ -95,7 +126,8 @@ namespace wr
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&, StructuredBufferHandle*, CommandList*)> m_update_lights_func_impl;
+		static std::function<void(RenderSystem* render_system, SceneGraph& scene_graph)> m_update_lights_func_impl;
+		static std::function<void(RenderSystem* render_system, SceneGraph& scene_graph, std::shared_ptr<Node>&)> m_update_transforms_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -110,6 +142,7 @@ namespace wr
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
 		std::vector<std::shared_ptr<LightNode>>& GetLightNodes();
+		std::vector<std::shared_ptr<MeshNode>>& GetMeshNodes();
 
 		void Init();
 		void Update();
@@ -122,8 +155,19 @@ namespace wr
 		temp::MeshBatches& GetBatches();
 
 		StructuredBufferHandle* GetLightBuffer();
+		Light* GetLight(uint32_t offset);			//Returns nullptr when out of bounds
+
+		uint32_t GetCurrentLightSize();
+
+		std::shared_ptr<ModelPool> GetModelPool();
+
+	protected:
+
+		void RegisterLight(std::shared_ptr<LightNode>& light_node);
+		void UpdateTransforms(std::shared_ptr<Node>& node);
 
 	private:
+
 		RenderSystem* m_render_system;
 		//! The root node of the hiararchical tree.
 		std::shared_ptr<Node> m_root;
@@ -133,12 +177,15 @@ namespace wr
 
 		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
+		std::shared_ptr<ModelPool> m_model_pool;
 
 		StructuredBufferHandle* m_light_buffer;
 
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
 		std::vector<std::shared_ptr<LightNode>> m_light_nodes;
+
+		uint32_t m_next_light_id = 0;
 	};
 
 	//! Creates a child into the scene graph
@@ -164,7 +211,7 @@ namespace wr
 		}
 		else if constexpr (std::is_same<T, LightNode>::value)
 		{
-			m_light_nodes.push_back(new_node);
+			RegisterLight(new_node);
 		}
 
 		return new_node;
@@ -201,6 +248,23 @@ namespace wr
 			{
 				if (m_light_nodes[i] == node)
 				{
+					//Move everything after this light back one light, so the memory is one filled array
+
+					for (size_t k = i + 1; k < j; ++k)
+					{
+						--m_light_nodes[k]->m_light;
+					}
+
+					//Update light count
+
+					if (m_lights.size() != 0)
+					{
+						m_lights[0].tid &= 0x3;											//Keep id
+						m_lights[0].tid |= uint32_t(m_light_nodes.size() - 1) << 2;		//Set lights
+					}
+
+					//Stop tracking the node
+
 					m_light_nodes.erase(m_light_nodes.begin() + i);
 					break;
 				}

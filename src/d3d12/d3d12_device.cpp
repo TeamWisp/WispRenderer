@@ -214,7 +214,7 @@ namespace wr::d3d12
 		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			LOGW("Enabling DXR Fallback.");
-			internal::EnableDXRFallback();
+			//internal::EnableDXRFallback();
 		}
 
 		TRY_M(D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),
