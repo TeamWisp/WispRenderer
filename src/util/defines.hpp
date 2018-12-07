@@ -84,3 +84,8 @@ decltype(wr::SceneGraph::m_update_lights_func_impl) wr::SceneGraph::m_update_lig
 { \
 	static_cast<renderer_type*>(render_system)->function(scene_graph); \
 };
+#define LINK_SG_UPDATE_TRANSFORMS(renderer_type, function) \
+decltype(wr::SceneGraph::m_update_transforms_func_impl) wr::SceneGraph::m_update_transforms_func_impl = [](wr::RenderSystem* render_system, wr::SceneGraph& scene_graph, std::shared_ptr<wr::Node>& node) \
+{ \
+	static_cast<renderer_type*>(render_system)->function(scene_graph, node); \
+};

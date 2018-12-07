@@ -20,32 +20,54 @@ namespace wr
 
 	struct Node : std::enable_shared_from_this<Node>
 	{
-		Node()
-		{
-			SignalChange();
-		}
+		Node();
+
+		void SignalChange();
+		void SignalUpdate(unsigned int frame_idx);
+		bool RequiresUpdate(unsigned int frame_idx);
+		
+		void SignalTransformChange();
+		void SignalTransformUpdate(unsigned int frame_idx);
+		bool RequiresTransformUpdate(unsigned int frame_idx);
+
+		//Takes roll, pitch and yaw from degrees and converts it to quaternion
+		void SetRotation(DirectX::XMVECTOR roll_pitch_yaw_deg);
+
+		//Sets position
+		void SetPosition(DirectX::XMVECTOR position);
+
+		//Sets scale
+		void SetScale(DirectX::XMVECTOR scale);
+
+		//Position, rotation in degrees (roll, pitch, yaw) and scale
+		void SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation_deg, DirectX::XMVECTOR scale);
+
+		//Update the transform; done automatically when SignalChange is called
+		void UpdateTransform();
 
 		std::shared_ptr<Node> m_parent;
 		std::vector<std::shared_ptr<Node>> m_children;
 
-		void SignalChange()
-		{
-			m_requires_update[0] = m_requires_update[1] = m_requires_update[2] = true;
-		}
+		//Translation of mesh node
+		DirectX::XMVECTOR m_position = { 0, 0, 0, 1 };
 
-		void SignalUpdate(unsigned int frame_idx)
-		{
-			m_requires_update[frame_idx] = false;
-		}
+		//Rotation as quaternion
+		DirectX::XMVECTOR m_rotation;
 
-		bool RequiresUpdate(unsigned int frame_idx)
-		{
-			return m_requires_update[frame_idx];
-		}
+		//Rotation as degrees
+		DirectX::XMVECTOR m_rotation_deg = { 0, 0, 0 };
+
+		//Scale
+		DirectX::XMVECTOR m_scale = { 1, 1, 1, 0 };
+
+		//Transformation
+		DirectX::XMMATRIX m_local_transform, m_transform;
 
 	private:
 
 		std::bitset<3> m_requires_update;
+		std::bitset<3> m_requires_transform_update;
+
 	};
 
 	struct CameraNode;
@@ -104,7 +126,8 @@ namespace wr
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
 		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
-		static std::function<void(RenderSystem*, SceneGraph& scene_graph)> m_update_lights_func_impl;
+		static std::function<void(RenderSystem* render_system, SceneGraph& scene_graph)> m_update_lights_func_impl;
+		static std::function<void(RenderSystem* render_system, SceneGraph& scene_graph, std::shared_ptr<Node>&)> m_update_transforms_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -141,6 +164,7 @@ namespace wr
 	protected:
 
 		void RegisterLight(std::shared_ptr<LightNode>& light_node);
+		void UpdateTransforms(std::shared_ptr<Node>& node);
 
 	private:
 

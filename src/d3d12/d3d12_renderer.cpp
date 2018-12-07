@@ -30,6 +30,7 @@ namespace wr
 	LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
 	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
 	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
+	LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
@@ -473,21 +474,42 @@ namespace wr
 	{
 	}
 
+	void D3D12RenderSystem::Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node)
+	{
+
+		if (node->RequiresTransformUpdate(GetFrameIdx()))
+		{
+			node->UpdateTransform();
+			node->SignalTransformUpdate(GetFrameIdx());
+		}
+
+		auto& children = node->m_children;
+		auto it = children.begin();
+
+		while (it != children.end())
+		{
+			Update_Transforms(scene_graph, *it);
+			++it;
+		}
+
+	}
+
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		for (auto& node : nodes)
+		/*for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) return;
+			if (!node->RequiresUpdate(GetFrameIdx())) continue;
 
-			node->UpdateTransform();
-		}
+			//Update
+			node->SignalUpdate(GetFrameIdx());
+		}*/
 	}
 
 	void D3D12RenderSystem::Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) return;
+			if (!node->RequiresUpdate(GetFrameIdx())) continue;
 
 			node->UpdateTemp(GetFrameIdx());
 
@@ -519,7 +541,7 @@ namespace wr
 				offset_start = i;
 			}
 
-			node->SignalUpdate(GetFrameIdx());
+			node->Update(GetFrameIdx());
 
 			offset_end = i;
 		}
