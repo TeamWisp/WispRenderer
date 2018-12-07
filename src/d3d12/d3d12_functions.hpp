@@ -9,6 +9,7 @@ namespace wr::d3d12
 
 	// Device
 	[[nodiscard]] Device* CreateDevice();
+	RaytracingType GetRaytracingType(Device* device);
 	void Destroy(Device* device);
 
 	// CommandQueue
@@ -105,6 +106,7 @@ namespace wr::d3d12
 
 	// Shader
 	[[nodiscard]] Shader* LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
+	[[nodiscard]] Shader* LoadDXCShader(ShaderType type, std::string const & path, std::string const & entry = "main");
 	bool ReloadShader(Shader* shader);
 	void Destroy(Shader* shader);
 
@@ -176,7 +178,18 @@ namespace wr::d3d12
 		std::uint64_t stride,
 		CommandList* cmd_list);
 
+	// Indirect Command Buffer
 	[[nodiscard]] IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size);
 	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
+
+	// State Object
+	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	void Destroy(StateObject* obj);
+
+	// Acceelration Structure
+	[[nodiscard]] std::pair<AccelerationStructure, AccelerationStructure> CreateAccelerationStructures(Device* device,
+		CommandList* cmd_list,
+		DescriptorHeap* desc_heap,
+		std::vector<StagingBuffer*> vertex_buffers);
 
 } /* wr::d3d12 */

@@ -4,6 +4,7 @@
 #include <dxgi1_6.h>
 #include <vector>
 #include <optional>
+#include <dxcapi.h>
 #include <array>
 #include <D3D12RaytracingFallback.h>
 
@@ -69,6 +70,8 @@ namespace wr::d3d12
 		{
 			std::vector<CD3DX12_ROOT_PARAMETER> m_parameters;
 			std::vector<desc::SamplerDesc> m_samplers;
+			bool m_rtx = false;
+			bool m_rt_local = false;
 		};
 
 		struct DescriptorHeapDesc
@@ -96,6 +99,7 @@ namespace wr::d3d12
 		// Fallback
 		bool m_dxr_fallback_support;
 		bool m_dxr_support;
+		RaytracingType m_rt_type;
 		ID3D12RaytracingFallbackDevice* m_fallback_native;
 	};
 
@@ -107,7 +111,8 @@ namespace wr::d3d12
 	struct CommandList
 	{
 		std::vector<ID3D12CommandAllocator*> m_allocators;
-		ID3D12GraphicsCommandList3* m_native;
+		ID3D12GraphicsCommandList5* m_native;
+		ID3D12RaytracingFallbackCommandList* m_native_fallback;
 	};
 
 	struct CommandSignature
@@ -149,7 +154,7 @@ namespace wr::d3d12
 
 	struct Shader
 	{
-		ID3DBlob* m_native;
+		IDxcBlob* m_native;
 		std::string m_path;
 		std::string m_entry;
 		ShaderType m_type;
@@ -314,6 +319,22 @@ namespace wr::d3d12
 		std::size_t m_command_size;
 		ID3D12Resource* m_native;
 		ID3D12Resource* m_native_upload;
+	};
+
+	struct StateObject
+	{
+		ID3D12StateObject* m_native;
+		ID3D12StateObjectProperties* m_properties;
+
+		ID3D12RaytracingFallbackStateObject* m_fallback_native;
+	};
+
+	struct AccelerationStructure
+	{
+		ID3D12Resource* m_scratch;       // Scratch memory for AS builder
+		ID3D12Resource* m_native;        // Where the AS is
+		ID3D12Resource* m_instance_desc; // Hold the matrices of the instances
+		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
 	};
 
 } /* wr::d3d12 */

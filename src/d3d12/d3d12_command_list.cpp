@@ -32,6 +32,11 @@ namespace wr::d3d12
 		NAME_D3D12RESOURCE(cmd_list->m_native);
 		cmd_list->m_native->Close(); // TODO: Can be optimized away.
 
+		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+		{
+			device->m_fallback_native->QueryRaytracingCommandList(cmd_list->m_native, IID_PPV_ARGS(&cmd_list->m_native_fallback));
+		}
+
 		return cmd_list;
 	}
 
@@ -289,6 +294,7 @@ namespace wr::d3d12
 	void Destroy(CommandList* cmd_list)
 	{
 		SAFE_RELEASE(cmd_list->m_native);
+		SAFE_RELEASE(cmd_list->m_native_fallback)
 		for (auto& allocator : cmd_list->m_allocators)
 		{
 			SAFE_RELEASE(allocator);
