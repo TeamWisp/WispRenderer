@@ -9,6 +9,8 @@ namespace wr
 	{
 		static RegistryHandle basic;
 		static RegistryHandle deferred_composition;
+		static RegistryHandle rt_test_global;
+		static RegistryHandle rt_test_local;
 	};
 
 	struct shaders

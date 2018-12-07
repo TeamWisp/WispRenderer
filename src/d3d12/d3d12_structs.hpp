@@ -54,6 +54,8 @@ namespace wr::d3d12
 		{
 			std::vector<CD3DX12_ROOT_PARAMETER> m_parameters;
 			std::vector<desc::SamplerDesc> m_samplers;
+			bool m_rtx = false;
+			bool m_rt_local = false;
 		};
 
 		struct DescriptorHeapDesc

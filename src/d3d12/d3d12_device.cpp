@@ -237,16 +237,7 @@ namespace wr::d3d12
 
 	RaytracingType GetRaytracingType(Device* device)
 	{
-		if (device->m_dxr_fallback_support && d3d12::settings::force_dxr_fallback)
-		{
-			return RaytracingType::FALLBACK;
-		}
-		else if (device->m_dxr_support)
-		{
-			return RaytracingType::NATIVE;
-		}
-
-		return RaytracingType::NONE;
+		return device->m_rt_type;
 	}
 
 	void Destroy(Device* device)

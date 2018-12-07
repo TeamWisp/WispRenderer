@@ -98,6 +98,26 @@ namespace wr
 		ShaderType::LIBRARY_SHADER
 	});
 
+	REGISTER(root_signatures::rt_test_global) = RootSignatureRegistry::Get().Register({
+		{
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsUnorderedAccessView(0); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(),
+		},
+		{
+			// No samplers
+		},
+		true // rtx
+	});
+
+	REGISTER(root_signatures::rt_test_local) = RootSignatureRegistry::Get().Register({
+		{
+		},
+		{
+			// No samplers
+		},
+		true, true // rtx and local
+	});
+
 	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> so_desc = []()
 	{
 		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
@@ -118,8 +138,8 @@ namespace wr
 		(sizeof(float)*4), // Max payload size
 		(sizeof(float)*2), // Max attributes size
 		1,				   // Max recursion depth
-		std::nullopt,      // Global root signature
-		std::nullopt,      // Local Root Signatures
+		root_signatures::rt_test_global,      // Global root signature
+		std::vector<RegistryHandle>{ root_signatures::rt_test_local },      // Local Root Signatures
 	});
 
 } /* wr */

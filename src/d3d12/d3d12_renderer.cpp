@@ -356,6 +356,8 @@ namespace wr
 			d3d12::desc::RootSignatureDesc n_desc;
 			n_desc.m_parameters = desc.second.m_parameters;
 			n_desc.m_samplers = desc.second.m_samplers;
+			n_desc.m_rtx = desc.second.m_rtx;
+			n_desc.m_rt_local = desc.second.m_rtx_local;
 
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
 			d3d12::FinalizeRootSignature(n_rs, m_device);
