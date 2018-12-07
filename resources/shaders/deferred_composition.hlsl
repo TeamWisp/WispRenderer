@@ -107,7 +107,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
-	float3 vpos = unpack_position(float2(uv.x, uv.y), depth_f, inv_projection);
+	float3 vpos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection);
 	float3 V = normalize(-vpos);
 
 	//Do shading
