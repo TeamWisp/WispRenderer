@@ -7,6 +7,7 @@ namespace resources
 
 	static std::shared_ptr<wr::ModelPool> model_pool;
 	static std::shared_ptr<wr::TexturePool> texture_pool;
+	static std::shared_ptr<wr::MaterialPool> material_pool;
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
@@ -15,6 +16,7 @@ namespace resources
 	void CreateResources(wr::RenderSystem* render_system)
 	{
 		texture_pool = render_system->CreateTexturePool(1, 1);
+		material_pool = render_system->CreateMaterialPool(1);
 
 		// Load Texture.
 		{
@@ -89,7 +91,7 @@ namespace resources
 		}
 
 		{
-			test_model = model_pool->Load<wr::VertexNoTangent>("resources/models/xbot.fbx", wr::ModelType::FBX);
+			test_model = model_pool->Load<wr::VertexNoTangent>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx", wr::ModelType::FBX);
 		}
 	}
 	

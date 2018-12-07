@@ -160,6 +160,8 @@ namespace wr
 		uint32_t GetCurrentLightSize();
 
 		std::shared_ptr<ModelPool> GetModelPool();
+		std::shared_ptr<TexturePool> GetTexturePool();
+		std::shared_ptr<MaterialPool> GetMaterialPool();
 
 	protected:
 
@@ -178,6 +180,8 @@ namespace wr
 		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
 		std::shared_ptr<ModelPool> m_model_pool;
+		std::shared_ptr<TexturePool> m_texture_pool;
+		std::shared_ptr<MaterialPool> m_material_pool;
 
 		StructuredBufferHandle* m_light_buffer;
 
