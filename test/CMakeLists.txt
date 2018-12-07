@@ -3,7 +3,7 @@ file(GLOB HEADERS CONFIGURE_DEPENDS "*.hpp")
 
 
 set_target_properties (gtest PROPERTIES FOLDER ThirdParty)
-set_target_properties (gtest_main PROPERTIES EXCLUDE_FROM_ALL 1)
+set_target_properties (gtest_main PROPERTIES FOLDER ThirdParty)
 
 if (MSVC)
     target_compile_options(gtest PRIVATE /W0)

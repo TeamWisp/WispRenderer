@@ -125,7 +125,8 @@ set_target_properties(IrrXML PROPERTIES FOLDER ThirdParty)
 set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER ThirdParty)
 set_target_properties(zlib PROPERTIES FOLDER ThirdParty)
 set_target_properties(zlibstatic PROPERTIES FOLDER ThirdParty)
-
+set_target_properties(unit PROPERTIES FOLDER ThirdParty)
+set_target_properties(uninstall PROPERTIES FOLDER ThirdParty)
 
 add_library(WispRenderer STATIC ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
 target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
