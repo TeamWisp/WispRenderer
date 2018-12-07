@@ -18,7 +18,7 @@ namespace wr
 		static RegistryHandle basic_vs;
 		static RegistryHandle basic_ps;
 		static RegistryHandle fullscreen_quad_vs;
-		static RegistryHandle deferred_composition_ps;
+		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 	};
 
