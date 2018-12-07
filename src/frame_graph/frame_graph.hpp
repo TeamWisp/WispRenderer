@@ -30,8 +30,6 @@ namespace wr
 		template<typename T>
 		std::vector<T*> GetAllCommandLists() const
 		{
-			static_assert(std::is_base_of<CommandList, T>::value, "Type must be child of wr::CommandList");
-
 			std::vector<T*> retval;
 			for (auto& task : m_tasks)
 			{

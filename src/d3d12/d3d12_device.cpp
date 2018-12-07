@@ -191,7 +191,7 @@ namespace wr::d3d12
 		if ((!device->m_dxr_support && device->m_dxr_fallback_support) || (d3d12::settings::force_dxr_fallback))
 		{
 			LOGW("Enabling DXR Fallback.");
-			internal::EnableDXRFallback();
+			//internal::EnableDXRFallback();
 		}
 
 		HRESULT hr;

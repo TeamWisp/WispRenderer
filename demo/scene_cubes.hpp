@@ -26,12 +26,10 @@ namespace cubes_scene
 		point_light_node->SetRadius(5.f);
 
 		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 0, 0 });
-		directional_light_node->SetDirection({ 0, 0, 1 });
 
 		auto spot_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::SPOT, DirectX::XMVECTOR{ 1, 1, 0 });
 		spot_light_node->SetPosition({ 0, 1, -6 });
 		spot_light_node->SetRadius(5.f);
-		spot_light_node->SetDirection({ 0, 0, 1 });
 		spot_light_node->SetAngle(40.f);
 
 		// #### background cubes
@@ -59,7 +57,7 @@ namespace cubes_scene
 		}
 		// ### background cubes
 
-		camera->SetPosition(0, 0, -5);
+		camera->SetPosition({ 0, 0, -5 });
 	}
 
 	void UpdateScene()

@@ -70,7 +70,7 @@ namespace wr
 			// Temp rendering
 			if (n_render_system.m_render_window.has_value())
 			{
-				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
+				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 
 				// Prepare imgui
 				ImGui_ImplDX12_NewFrame();
