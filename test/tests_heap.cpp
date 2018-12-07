@@ -1,8 +1,10 @@
-#include "../d3d12/d3d12_structs.hpp"
-#include "../d3d12/d3d12_functions.hpp"
-#include "../renderer.hpp"
-#include "../window.hpp"
-#include "../d3d12/d3d12_renderer.hpp"
+#include "d3d12/d3d12_structs.hpp"
+#include "d3d12/d3d12_functions.hpp"
+#include "renderer.hpp"
+#include "window.hpp"
+#include "d3d12/d3d12_renderer.hpp"
+
+#include <gtest\gtest.h>
 
 TEST(HeapTest, SmallHeapCreation) 
 {
@@ -265,11 +267,11 @@ TEST(HeapTest, SmallHeapAllocDealloc)
 	
 	for (int i = 0; i < 3; ++i) 
 	{
-		EXPECT_EQ(resource->m_cpu_addresses[i], heap->m_cpu_address + i * 256) << 
+		EXPECT_EQ(resource->m_cpu_addresses->at(i), heap->m_cpu_address + i * 256) << 
 			"resource cpu address " << 
 			i << 
 			" is " << 
-			resource->m_cpu_addresses[i] << 
+			resource->m_cpu_addresses->at( i ) <<
 			" instead of " << 
 			heap->m_cpu_address + i * 256;
 	}
@@ -293,11 +295,11 @@ TEST(HeapTest, SmallHeapAllocDealloc)
 
 	for (int i = 0; i < 3; ++i)
 	{
-		EXPECT_EQ(resource_2->m_cpu_addresses[i], heap->m_cpu_address + i * 512) <<
+		EXPECT_EQ(resource_2->m_cpu_addresses->at( i ), heap->m_cpu_address + i * 512) <<
 			"resource cpu address " <<
 			i <<
 			" is " <<
-			resource_2->m_cpu_addresses[i] <<
+			resource_2->m_cpu_addresses->at( i ) <<
 			" instead of " <<
 			heap->m_cpu_address + i * 512;
 	}
@@ -418,7 +420,7 @@ TEST(HeapTest, BigStaticHeapAllocDealloc)
 		EXPECT_EQ(heap->m_bitmap[i], 0xffffffffffffffff) << "Not all memory pages at int " << i << " are free";
 	}
 
-	wr::d3d12::HeapResource* resource = wr::d3d12::AllocStructuredBuffer(heap, 15360, 1);
+	wr::d3d12::HeapResource* resource = wr::d3d12::AllocStructuredBuffer(heap, 15360, 1, false);
 
 	EXPECT_EQ(resource->m_stride, 1) << "Stride is " << resource->m_stride << " instead of 1";
 
@@ -435,7 +437,7 @@ TEST(HeapTest, BigStaticHeapAllocDealloc)
 
 	EXPECT_EQ(heap->m_bitmap[0], 0xFFFFFFFFFFFFFFF8) << "Allocator bit pattern is " << heap->m_bitmap[0] << " instead of 0xFFFFFFFFFFFFFFF8";
 
-	wr::d3d12::HeapResource* resource_2 = wr::d3d12::AllocStructuredBuffer(heap, 131072, 32);
+	wr::d3d12::HeapResource* resource_2 = wr::d3d12::AllocStructuredBuffer(heap, 131072, 32, false);
 
 	EXPECT_EQ(resource_2->m_stride, 32) << "Stride is " << resource_2->m_stride << " instead of 32";
 
@@ -447,7 +449,7 @@ TEST(HeapTest, BigStaticHeapAllocDealloc)
 
 	EXPECT_EQ(heap->m_bitmap[0], 0xFFFFFFFFFFFFFE07) << "Allocator bit pattern is " << heap->m_bitmap[0] << " instead of 0xFFFFFFFFFFFFFE07";
 
-	resource = wr::d3d12::AllocStructuredBuffer(heap, 15360, 1);
+	resource = wr::d3d12::AllocStructuredBuffer(heap, 15360, 1, false);
 
 	EXPECT_EQ(heap->m_bitmap[0], 0xFFFFFFFFFFFFFE00) << "Allocator bit pattern is " << heap->m_bitmap[0] << " instead of 0xFFFFFFFFFFFFFE00";
 
