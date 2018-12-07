@@ -160,7 +160,7 @@ namespace wr::d3d12
 		cmd_list->m_native->SetDescriptorHeaps(num, n_heaps.data());
 	}
 
-	void BindCompute(CommandList* cmd_list, PipelineState * pipeline_state)
+	void BindComputePipeline(CommandList* cmd_list, PipelineState * pipeline_state)
 	{
 		if (pipeline_state->m_type == PipelineType::COMPUTE_PIPELINE) 
 		{
@@ -210,7 +210,7 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer->m_gpu_addresses[frame_idx]);
 	}
 
-	void BindCompute(CommandList * cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx)
+	void BindComputeConstantBuffer(CommandList * cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx)
 	{
 		cmd_list->m_native->SetComputeRootConstantBufferView(root_parameter_idx, 
 			buffer->m_gpu_addresses[frame_idx]);
@@ -221,7 +221,7 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootDescriptorTable(root_param_index, handle.m_native);
 	}
 
-	void BindCompute(CommandList * cmd_list, DescHeapGPUHandle & handle, unsigned int root_param_index)
+	void BindComputeDescriptorTable(CommandList * cmd_list, DescHeapGPUHandle & handle, unsigned int root_param_index)
 	{
 		cmd_list->m_native->SetComputeRootDescriptorTable(root_param_index, handle.m_native);
 	}
