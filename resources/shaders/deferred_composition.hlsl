@@ -18,6 +18,7 @@ StructuredBuffer<Light> lights : register(t3);
 Texture2D gbuffer_albedo : register(t0);
 Texture2D gbuffer_normal : register(t1);
 Texture2D gbuffer_depth : register(t2);
+RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
 cbuffer CameraProperties : register(b0)
@@ -91,19 +92,24 @@ float3 shade_pixel(float3 vpos, float3 V, float3 albedo, float3 normal)
 
 }
 
-float4 main_ps(VS_OUTPUT input) : SV_TARGET
+[numthreads(16, 16, 1)]
+void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
-	const float2 uv = input.uv;
+	float2 screen_size = float2(0.f, 0.f);
+	gbuffer_albedo.GetDimensions(screen_size.x, screen_size.y);
+	float2 uv = float2(dispatch_thread_id.x / screen_size.x, 1.f - (dispatch_thread_id.y / screen_size.y));
+
+	float2 screen_coord = int2(dispatch_thread_id.x, screen_size.y - dispatch_thread_id.y);
 
 	// GBuffer contents
-	const float3 albedo = gbuffer_albedo.Sample(s0, uv).xyz;
-	const float3 normal = gbuffer_normal.Sample(s0, uv).xyz;
-	const float depth_f = gbuffer_depth.Sample(s0, uv).r;
+	const float3 albedo = gbuffer_albedo[screen_coord].xyz;
+	const float3 normal = gbuffer_normal[screen_coord].xyz;
+	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
 	float3 vpos = unpack_position(float2(uv.x, 1.0 - uv.y), depth_f, inv_projection);
 	float3 V = normalize(-vpos);
 
 	//Do shading
-	return float4(shade_pixel(vpos, V, albedo, normal), 1.f);
+	output[int2(dispatch_thread_id.xy)] = float4(shade_pixel(vpos, V, albedo, normal), 1.f);
 }
