@@ -23,13 +23,7 @@ namespace wr
 
 	namespace internal
 	{
-
-		inline void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, DeferredRenderTargetCopyTaskData const & data, unsigned int frame_idx)
-		{
-			
-		}
-
-		inline void SetupDeferredTask(RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData & data)
+		inline void SetupCopyTask(RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto* fg = task.GetFrameGraph();
@@ -37,7 +31,7 @@ namespace wr
 			data.out_deferred_composition_rt = static_cast<d3d12::RenderTarget*>(fg->GetData<DeferredCompositionTaskData>().m_render_target);
 		}
 
-		inline void ExecuteDeferredTask(RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data)
+		inline void ExecuteCopyTask(RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 
@@ -64,13 +58,7 @@ namespace wr
 			}
 		}
 
-
-		inline void ResizeDeferredTask(DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, std::uint32_t width, std::uint32_t height)
-		{
-
-		}
-
-		inline void DestroyTestTask(DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data)
+		inline void DestroyCopyTask(DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data)
 		{
 			
 		}
@@ -95,9 +83,9 @@ namespace wr
 				true,
 				true
 			},
-			[](RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, bool) { internal::SetupDeferredTask(render_system, task, data); },
-			[](RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
-			[](DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, bool) { internal::DestroyTestTask(task, data); }
+			[](RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, bool) { internal::SetupCopyTask(render_system, task, data); },
+			[](RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data) { internal::ExecuteCopyTask(render_system, task, scene_graph, data); },
+			[](DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, bool) { internal::DestroyCopyTask(task, data); }
 		);
 
 		return ptr;
