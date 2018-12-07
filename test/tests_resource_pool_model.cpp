@@ -7,6 +7,8 @@
 
 #include <gtest\gtest.h>
 
+/*
+
 TEST(ModelResourcePoolTest, ResourcePoolCreation) 
 {
 	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
@@ -144,3 +146,5 @@ TEST(ModelResourcePoolTest, ResourcePoolAllocDealloc)
 	render_system.reset();
 	window.reset();
 }
+
+*/
