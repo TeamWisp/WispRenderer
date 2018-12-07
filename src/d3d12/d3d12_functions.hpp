@@ -179,4 +179,10 @@ namespace wr::d3d12
 	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
 	void Destroy(StateObject* obj);
 
+	// Acceelration Structure
+	[[nodiscard]] std::pair<AccelerationStructure, AccelerationStructure> CreateAccelerationStructures(Device* device,
+		CommandList* cmd_list,
+		DescriptorHeap* desc_heap,
+		std::vector<StagingBuffer*> vertex_buffers);
+
 } /* wr::d3d12 */

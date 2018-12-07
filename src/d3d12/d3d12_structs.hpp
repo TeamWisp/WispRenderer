@@ -96,6 +96,7 @@ namespace wr::d3d12
 	{
 		std::vector<ID3D12CommandAllocator*> m_allocators;
 		ID3D12GraphicsCommandList5* m_native;
+		ID3D12RaytracingFallbackCommandList* m_native_fallback;
 	};
 
 	struct CommandSignature
@@ -288,6 +289,14 @@ namespace wr::d3d12
 		ID3D12StateObjectProperties* m_properties;
 
 		ID3D12RaytracingFallbackStateObject* m_fallback_native;
+	};
+
+	struct AccelerationStructure
+	{
+		ID3D12Resource* m_scratch;       // Scratch memory for AS builder
+		ID3D12Resource* m_native;        // Where the AS is
+		ID3D12Resource* m_instance_desc; // Hold the matrices of the instances
+		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
 	};
 
 } /* wr::d3d12 */
