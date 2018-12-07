@@ -30,17 +30,17 @@ namespace wr
 
 		inline void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, DeferredCompositionTaskData const & data, unsigned int frame_idx)
 		{
-			d3d12::BindCompute(cmd_list, data.in_pipeline->m_native);
+			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
 			
 
 			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
 
-			d3d12::BindCompute(cmd_list, camera_cb, 0, frame_idx);
+			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
-			d3d12::BindCompute(cmd_list, gpu_handle, 1);
+			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 1);
 			d3d12::Offset(gpu_handle, 4, data.out_srv_heap->m_increment_size);
-			d3d12::BindCompute(cmd_list, gpu_handle, 2);
+			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 2);
 
 			d3d12::Dispatch(cmd_list, 
 				static_cast<int>(std::ceil( render_system.m_viewport.m_viewport.Width / 16.f)),
