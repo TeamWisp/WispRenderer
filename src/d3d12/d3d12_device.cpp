@@ -194,8 +194,7 @@ namespace wr::d3d12
 			//internal::EnableDXRFallback();
 		}
 
-		HRESULT hr;
-		TRY_M(hr = D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),
+		TRY_M(D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),
 			"Failed to create D3D12Device.");
 		
 		CreateRaytracingFallbackDeviceFlags fallback_device_flags = d3d12::settings::force_dxr_fallback ? CreateRaytracingFallbackDeviceFlags::ForceComputeFallback : CreateRaytracingFallbackDeviceFlags::None;

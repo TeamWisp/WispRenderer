@@ -32,13 +32,13 @@ namespace wr::d3d12
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx);
-	void BindCompute(CommandList* cmd_list, PipelineState* pipeline_state);
+	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
-	void BindCompute(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
+	void BindComputeConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	//void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
-	void BindCompute(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
+	void BindComputeDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	//void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> const & heaps);
 	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size, std::size_t m_stride);
 	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset, unsigned int size);
