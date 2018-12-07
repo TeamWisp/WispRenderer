@@ -13,6 +13,7 @@ option(BUILD_SHARED_LIBS OFF)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxrfallbackcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxrfallbackcompiler.dll COPYONLY)
 
 ##### SOURCES #####
 file(GLOB HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
@@ -42,6 +43,7 @@ set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ## dependencies ##
 add_subdirectory(deps/fmt)
+add_subdirectory(deps/DirectXTex)
 add_subdirectory(deps/fallback)
 
 set(ASSIMP_BUILD_SHARED_LIBS OFF)
@@ -110,8 +112,11 @@ set(FMT_PEDANTIC OFF)
 set(FMT_WERROR OFF)
 ## dependencies sorting ##
 set_target_properties (fmt PROPERTIES FOLDER ThirdParty)
+set_target_properties (DirectXTex PROPERTIES FOLDER ThirdParty)
+
 if (MSVC)
 	target_compile_options(fmt PRIVATE /W0)
+	target_compile_options(DirectXTex PRIVATE /W0)
 endif()
 
 set_target_properties(assimp PROPERTIES FOLDER ThirdParty)
@@ -131,7 +136,11 @@ if (MSVC)
 	target_compile_options(WispRenderer PRIVATE /W4 /permissive- /MP /Gm-)
 endif()
 
+target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/DirectXTex/DirectXTex/)
+target_link_libraries(WispRenderer fmt DirectXTex)
+
 target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/assimp/include)
+target_include_directories(WispRenderer PUBLIC deps/fallback/Include deps/fmt/include deps/assimp/include)
 target_link_libraries(WispRenderer fmt assimp)
 
 # target_include_directories(WispRenderer PUBLIC deps/assimp/include)

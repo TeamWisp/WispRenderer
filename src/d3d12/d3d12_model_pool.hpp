@@ -9,7 +9,6 @@ namespace wr::d3d12
 {
 	struct HeapResource;
 	struct StagingBuffer;
-	struct CommandList;
 }
 
 namespace wr
@@ -17,19 +16,24 @@ namespace wr
 
 	class D3D12RenderSystem;
 
-	struct D3D12Mesh : Mesh
+	namespace internal
 	{
-		D3D12_GPU_VIRTUAL_ADDRESS m_vertex_buffer_base_address;
-		std::size_t m_vertex_staging_buffer_offset;
-		std::size_t m_vertex_staging_buffer_size;
-		std::size_t m_vertex_staging_buffer_stride;
-		std::size_t m_vertex_count;
-		D3D12_GPU_VIRTUAL_ADDRESS m_index_buffer_base_address;
-		std::size_t m_index_staging_buffer_offset;
-		std::size_t m_index_count_offset;
-		std::size_t m_index_staging_buffer_size;
-		std::size_t m_index_count;
-	};
+		struct D3D12MeshInternal : MeshInternal
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS m_vertex_buffer_base_address;
+			std::size_t m_vertex_staging_buffer_offset;
+			std::size_t m_vertex_staging_buffer_size;
+			std::size_t m_vertex_staging_buffer_stride;
+			std::size_t m_vertex_count;
+			void* m_vertex_memory_block;
+			D3D12_GPU_VIRTUAL_ADDRESS m_index_buffer_base_address;
+			std::size_t m_index_staging_buffer_offset;
+			std::size_t m_index_count_offset;
+			std::size_t m_index_staging_buffer_size;
+			std::size_t m_index_count;
+			void* m_index_memory_block;
+		};
+	}
 
 	class D3D12ModelPool : public ModelPool
 	{
@@ -47,23 +51,35 @@ namespace wr
 		d3d12::StagingBuffer* GetVertexStagingBuffer();
 		d3d12::StagingBuffer* GetIndexStagingBuffer();
 
+		internal::D3D12MeshInternal* GetMeshData(std::uint64_t mesh_handle);
+
 	private:
 		Model* LoadFBX(std::string_view path, ModelType type) final;
-		Mesh* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
-		Mesh* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;
+		internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
+		internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;
 
 		void DestroyModel(Model* model) final;
-		void DestroyMesh(Mesh* mesh) final;
+		void DestroyMesh(internal::MeshInternal* mesh) final;
 
 		d3d12::StagingBuffer* m_vertex_buffer;
 		d3d12::StagingBuffer* m_index_buffer;
 
-		std::vector<std::uint64_t> m_vertex_buffer_bitmap;
-		std::vector<std::uint64_t> m_index_buffer_bitmap;
+		struct MemoryBlock
+		{
+			MemoryBlock* m_prev_block;
+			MemoryBlock* m_next_block;
+			std::size_t m_size;
+			std::size_t m_offset;
+			bool m_free;
+		};
 
-		std::vector<Mesh*> m_mesh_handles;
+		MemoryBlock* m_vertex_heap_start_block;
+		MemoryBlock* m_index_heap_start_block;
 
-		std::queue<Mesh*> m_mesh_stage_queue;
+		MemoryBlock* AllocateMemory(MemoryBlock* start_block, std::size_t size, std::size_t alignment);
+		void FreeMemory(MemoryBlock* heap_start_block,  MemoryBlock* block);
+		
+		std::queue<internal::MeshInternal*> m_mesh_stage_queue;
 
 		std::uint64_t m_vertex_buffer_size;
 		std::uint64_t m_index_buffer_size;

@@ -5,6 +5,9 @@
 #include <vector>
 #include <optional>
 #include <array>
+#include <D3D12RaytracingFallback.h>
+
+#include "../structs.hpp"
 
 #include "d3d12_enums.hpp"
 #include "d3d12_settings.hpp"
@@ -24,6 +27,20 @@ namespace wr::d3d12
 			std::array<Format, 8> m_rtv_formats;
 			unsigned int m_num_rtv_formats;
 			float m_clear_color[4] = { 0, 0, 0, 1 };
+		};
+
+		struct TextureDesc
+		{
+			ResourceState m_initial_state = ResourceState::COPY_DEST;
+			Format m_texture_format;
+
+			unsigned int m_width;
+			unsigned int m_height;
+			unsigned int m_depth;
+			unsigned int m_array_size;
+			unsigned int m_mip_levels;
+
+			bool m_is_cubemap;
 		};
 
 		struct PipelineStateDesc
@@ -67,7 +84,7 @@ namespace wr::d3d12
 	struct Device
 	{
 		IDXGIAdapter4* m_adapter;
-		ID3D12Device4* m_native;
+		ID3D12Device5* m_native;
 		IDXGIFactory6* m_dxgi_factory;
 		D3D_FEATURE_LEVEL m_feature_level;
 
@@ -75,6 +92,11 @@ namespace wr::d3d12
 		DXGI_ADAPTER_DESC3 m_adapter_info;
 		ID3D12Debug1* m_debug_controller;
 		ID3D12InfoQueue* m_info_queue;
+
+		// Fallback
+		bool m_dxr_fallback_support;
+		bool m_dxr_support;
+		ID3D12RaytracingFallbackDevice* m_fallback_native;
 	};
 
 	struct CommandQueue
@@ -179,6 +201,28 @@ namespace wr::d3d12
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 		std::uint8_t* m_cpu_address;
 		bool m_is_staged;
+	};
+
+	struct TextureResource : Texture
+	{
+		std::size_t m_width;
+		std::size_t m_height;
+		std::size_t m_depth;
+		std::size_t m_array_size;
+		std::size_t m_mip_levels;
+
+		Format m_format;
+
+		ID3D12Resource* m_resource;
+		ID3D12Resource* m_intermediate;
+		ResourceState m_current_state;
+		DescHeapCPUHandle m_cpu_descriptor_handle;
+
+		uint8_t* m_allocated_memory;
+
+		bool m_is_staged = false;
+		bool m_need_mips = false;
+		bool m_is_cubemap = false;
 	};
 
 	struct HeapResource;

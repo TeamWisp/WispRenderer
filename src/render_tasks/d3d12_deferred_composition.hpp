@@ -46,7 +46,7 @@ namespace wr
 				render_system.m_fullscreen_quad_vb->m_size,
 				render_system.m_fullscreen_quad_vb->m_stride_in_bytes);
 
-			d3d12::Draw(cmd_list, 4, 1);
+			d3d12::Draw(cmd_list, 4, 1, 0);
 		}
 
 		inline void SetupDeferredTask(RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data)
@@ -66,11 +66,10 @@ namespace wr
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
-
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, i);
 
 				auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
-				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<D3D12RenderTarget*>(deferred_main_data.m_render_target);
+				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(deferred_main_data.m_render_target);
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
 
@@ -83,7 +82,7 @@ namespace wr
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
+				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
@@ -106,7 +105,7 @@ namespace wr
 						data.out_requires_bundle_recording = false;
 					}
 				}
-
+				
 				//Render deferred
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::PIXEL_SHADER_RESOURCE);

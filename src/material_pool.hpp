@@ -1,30 +1,24 @@
 #pragma once
 
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 #include <optional>
+#include <stdint.h>
 #include <d3d12.h>
 
+#include "structs.hpp"
 #include "util/defines.hpp"
+#include "id_factory.hpp"
 
 struct aiMaterial;
 
 namespace wr
 {
-	struct TextureHandle {};
-	struct MaterialHandle {};
-	
-	enum class TextureType
-	{
-		PNG,
-		DDS,
-		HDR
-	};
-
 	class MaterialPool
 	{
 	public:
-		explicit MaterialPool(std::size_t size_in_mb);
+		explicit MaterialPool();
 		virtual ~MaterialPool() = default;
 
 		MaterialPool(MaterialPool const &) = delete;
@@ -32,19 +26,28 @@ namespace wr
 		MaterialPool(MaterialPool&&) = delete;
 		MaterialPool& operator=(MaterialPool&&) = delete;
 
-		[[nodiscard]] MaterialHandle* Load(std::string_view path, TextureType type);
+		//Creates an empty material. The user is responsible of filling in the texture handles.
+		//TODO: Give Materials default textures
+		[[nodiscard]] MaterialHandle Create();
+		[[nodiscard]] MaterialHandle Create(TextureHandle& albedo,
+											TextureHandle& normal,
+											TextureHandle& rough_met,
+											TextureHandle& ao, 
+											bool is_alpha_masked = false, 
+											bool is_double_sided = false);
+
 		[[nodiscard]] MaterialHandle* Load(aiMaterial* material);
 
-		virtual void Evict() = 0;
-		virtual void MakeResident() = 0;
+		virtual void Evict() {}
+		virtual void MakeResident() {}
+
+		virtual Material* GetMaterial(uint64_t material_id);
 
 	protected:
-		virtual MaterialHandle* LoadMaterial(std::string_view path) = 0;
-		virtual TextureHandle* LoadPNG(std::string_view path) = 0;
-		virtual TextureHandle* LoadDDS(std::string_view path) = 0;
-		virtual TextureHandle* LoadHDR(std::string_view path) = 0;
 
-		std::size_t m_size_in_mb;
+		std::unordered_map<uint64_t, Material*> m_materials;
+
+		IDFactory m_id_factory;
 	};
 
 } /* wr */

@@ -20,6 +20,7 @@ namespace wr
 	SceneGraph::SceneGraph(RenderSystem* render_system)
 		: m_render_system(render_system), m_root(std::make_shared<Node>())
 	{
+		m_lights.resize(d3d12::settings::num_lights);
 	}
 
 	SceneGraph::~SceneGraph()
@@ -68,11 +69,15 @@ namespace wr
 		return m_light_nodes;
 	}
 
+	std::vector<std::shared_ptr<MeshNode>>& SceneGraph::GetMeshNodes()
+	{
+		return m_mesh_nodes;
+	}
+
 	//! Initialize the scene graph
 	void SceneGraph::Init()
 	{
 		m_init_meshes_func_impl(m_render_system, m_mesh_nodes);
-		m_init_lights_func_impl(m_render_system, m_light_nodes, m_lights);
 
 		// Create constant buffer pool
 
@@ -87,19 +92,27 @@ namespace wr
 
 		// Create Light Buffer
 
-		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * d3d12::settings::num_lights;
+		uint64_t light_count = (uint64_t) m_lights.size();
+		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * light_count;
 		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
 
 		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
+		m_model_pool = m_render_system->CreateModelPool(16, 16);
 		m_light_buffer = m_structured_buffer->Create(light_buffer_size, light_buffer_stride, false);
+
+		//Initialize lights
+
+		m_init_lights_func_impl(m_render_system, m_light_nodes, m_lights);
 
 	}
 
 	//! Update the scene graph
 	void SceneGraph::Update()
 	{
-		m_update_meshes_func_impl(m_render_system, m_mesh_nodes);
+		m_update_transforms_func_impl(m_render_system, *this, m_root);
 		m_update_cameras_func_impl(m_render_system, m_camera_nodes);
+		m_update_meshes_func_impl(m_render_system, m_mesh_nodes);
+		m_update_lights_func_impl(m_render_system, *this);
 	}
 
 	//! Render the scene graph
@@ -108,6 +121,67 @@ namespace wr
 	*/
 	void SceneGraph::Render(CommandList* cmd_list, CameraNode* camera)
 	{
+		Optimize();
+		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
+	}
+
+	temp::MeshBatches& SceneGraph::GetBatches() 
+	{ 
+		return m_batches;
+	}
+
+	StructuredBufferHandle* SceneGraph::GetLightBuffer()
+	{
+		return m_light_buffer;
+	}
+
+	uint32_t SceneGraph::GetCurrentLightSize()
+	{
+		return m_next_light_id;
+	}
+
+	Light* SceneGraph::GetLight(uint32_t offset)
+	{
+		return offset >= m_next_light_id ? nullptr : m_lights.data() + offset;
+	}
+
+	void SceneGraph::RegisterLight(std::shared_ptr<LightNode>& new_node)
+	{
+		//Allocate a light into the array
+
+		if (m_next_light_id == (uint32_t)m_lights.size())
+			LOGE("Couldn't allocate light node; out of memory");
+
+		new_node->m_light = m_lights.data() + m_next_light_id;
+		memcpy(new_node->m_light, &new_node->m_temp, sizeof(new_node->m_temp));
+		++m_next_light_id;
+
+		//Update light count
+
+		if (m_lights.size() != 0)
+		{
+			m_lights[0].tid &= 0x3;											//Keep id
+			m_lights[0].tid |= uint32_t(m_light_nodes.size() + 1) << 2;		//Set lights
+
+			if (m_light_nodes.size() != 0)
+			{
+				m_light_nodes[0]->SignalChange();
+			}
+		}
+
+		//Track the node
+
+		m_light_nodes.push_back(new_node);
+	}
+	std::shared_ptr<ModelPool> SceneGraph::GetModelPool()
+	{
+		return m_model_pool;
+	}
+
+	void SceneGraph::Optimize() 
+	{
+		//Update batches
+
 		bool should_update = m_batches.size() == 0;
 
 		for (auto& elem : m_batches)
@@ -120,61 +194,46 @@ namespace wr
 		}
 
 		if (should_update)
-			Optimize();
+		{
+			constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
 
-		m_update_lights_func_impl(m_render_system, m_light_nodes, m_lights, m_light_buffer, cmd_list);
-		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
-	}
+			constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
-	temp::MeshBatches& SceneGraph::GetBatches() 
-	{ 
-		return m_batches; 
-	}
+			for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
 
-	StructuredBufferHandle* SceneGraph::GetLightBuffer()
-	{
-		return m_light_buffer;
-	}
+				auto node = m_mesh_nodes[i];
+				auto it = m_batches.find(node->m_model);
 
+				//Insert new if doesn't exist
+				if (it == m_batches.end())
+				{
 
-	void SceneGraph::Optimize() 
-	{
-		constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
+					ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
 
-		constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
+					auto& batch = m_batches[node->m_model];
+					batch.batch_buffer = object_buffer;
+					batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
 
-		for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
+					it = m_batches.find(node->m_model);
+				}
 
-			auto node = m_mesh_nodes[i];
-			auto it = m_batches.find(node->m_model);
+				//Replace data in buffer
+				temp::MeshBatch& batch = it->second;
+				unsigned int& offset = batch.num_instances;
+				batch.data.objects[offset] = { node->m_transform };
+				++offset;
 
-			//Insert new if doesn't exist
-			if (it == m_batches.end())
-			{
-
-				ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
-
-				auto& batch = m_batches[node->m_model]; 
-				batch.batch_buffer = object_buffer;
-				batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
-
-				it = m_batches.find(node->m_model);
 			}
 
-			//Replace data in buffer
-			temp::MeshBatch& batch = it->second;
-			unsigned int& offset = batch.num_instances;
-			batch.data.objects[offset] = { node->m_transform };
-			++offset;
+			//Update object data
+			for (auto& elem : m_batches)
+			{
+				temp::MeshBatch& batch = elem.second;
+				m_constant_buffer_pool->Update(batch.batch_buffer, model_size, 0, (uint8_t*)batch.data.objects.data());
+			}
 
 		}
-
-		//Update object data
-		for (auto& elem : m_batches)
-		{
-			temp::MeshBatch& batch = elem.second;
-			m_constant_buffer_pool->Update(batch.batch_buffer, model_size, 0, (uint8_t*) batch.data.objects.data());
-		}
+		
 	}
 
 } /* wr */
