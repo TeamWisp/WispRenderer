@@ -12,14 +12,13 @@
 
 namespace wr
 {
-
 	REGISTER(root_signatures::basic) = RootSignatureRegistry::Get().Register({
 		{
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
 		},
 		{
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
 		}
 	});
 

@@ -8,8 +8,8 @@
 namespace wr
 {
 
-	struct CommandList {};
-	struct RenderTarget {};
+	using CommandList = void;
+	using RenderTarget = void;
 
 	struct RenderTargetProperties
 	{

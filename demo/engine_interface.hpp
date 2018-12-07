@@ -78,15 +78,17 @@ namespace engine
 		{
 			ImGui::Begin("Camera Settings", &open2);
 			
-			ImGui::DragFloat3("Position", sg->GetActiveCamera()->m_pos, 0.5f);
-			ImGui::DragFloat3("Rotation", sg->GetActiveCamera()->m_euler, 0.01f);
+			ImGui::DragFloat3("Position", sg->GetActiveCamera()->m_position.m128_f32, 0.5f);
+			ImGui::DragFloat3("Rotation", sg->GetActiveCamera()->m_rotation_deg.m128_f32, 0.01f);
 
+			sg->GetActiveCamera()->SignalTransformChange();
 			sg->GetActiveCamera()->SignalChange();
 
 			ImGui::End();
 		}
 
 		wr::imgui::window::LightEditor(sg);
+		wr::imgui::window::ModelEditor(sg);
 		wr::imgui::window::ShaderRegistry();
 		wr::imgui::window::PipelineRegistry();
 		wr::imgui::window::RootSignatureRegistry();
