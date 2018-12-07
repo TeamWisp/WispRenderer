@@ -24,6 +24,7 @@ namespace wr
 
 	class D3D12StructuredBufferPool;
 	class D3D12ModelPool;
+	class D3D12TexturePool;
 
 	namespace temp
 	{
@@ -129,6 +130,8 @@ namespace wr
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
+
+		D3D12TexturePool* m_bound_texture_pool;
     
 	private:
 		unsigned int m_max_commands = 4;

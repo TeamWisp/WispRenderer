@@ -174,6 +174,7 @@ namespace wr
 		}
 
 		m_bound_model_pool = nullptr;
+		m_bound_texture_pool = nullptr;
 
 		return std::unique_ptr<TextureHandle>();
 	}
@@ -643,7 +644,8 @@ namespace wr
 				for (auto& mesh : model->m_meshes)
 				{
 					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
-					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) {
+					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) 
+					{
 						d3d12::BindVertexBuffer(n_cmd_list,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
 							0,
@@ -654,9 +656,20 @@ namespace wr
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer(),
 							0,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer()->m_size);
+
 						m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
+
+					//auto material_handle = mesh.second;
+					//auto material = material_handle->m_pool->GetMaterial(material_handle->m_id);
+
+
+
+
+
+
+
 					if (n_mesh->m_index_count != 0)
 					{
 						d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);

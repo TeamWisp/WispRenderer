@@ -2,11 +2,94 @@
 
 #include "resource_pool_texture.hpp"
 #include "material_pool.hpp"
+#include "util/log.hpp"
 
 #include <assimp/material.h>
 
 namespace wr 
 {
+	//////////////////////////////
+	//	  MATERIAL FUNCTIONS	//
+	//////////////////////////////
+
+	Material::Material()
+	{
+		//TODO: Initialize to default textures, something like Unreal's checkerboard pattern
+	}
+
+	Material::Material(TextureHandle albedo,
+					   TextureHandle normal,
+					   TextureHandle rough_met,
+		               TextureHandle ao,
+		               bool alpha_masked,
+					   bool double_sided)
+	{
+		m_texture_pool = albedo.m_pool;
+
+		if (m_texture_pool == normal.m_pool && 
+			m_texture_pool == rough_met.m_pool && 
+			m_texture_pool == ao.m_pool)
+		{
+			m_albedo = albedo;
+			m_normal = normal;
+			m_rough_metallic = rough_met;
+			m_ao = ao;
+			m_alpha_masked = alpha_masked;
+			m_double_sided = double_sided;
+		}
+		else
+		{
+			LOGC("Textures in a material need to belong to the same texture pool");
+		}
+	}
+
+	void Material::SetAlbedo(TextureHandle albedo)
+	{
+		if (albedo.m_pool != m_texture_pool)
+		{
+			LOGC("Textures in a material need to belong to the same texture pool");
+		}
+
+		m_albedo = albedo;
+	}
+
+
+	void Material::SetNormal(TextureHandle normal)
+	{
+		if (normal.m_pool != m_texture_pool)
+		{
+			LOGC("Textures in a material need to belong to the same texture pool");
+		}
+
+		m_normal = normal;
+	}
+
+	void Material::SetRoughMetallic(TextureHandle rough_met)
+	{
+		if (rough_met.m_pool != m_texture_pool)
+		{
+			LOGC("Textures in a material need to belong to the same texture pool");
+		}
+
+		m_rough_metallic = rough_met;
+	}
+
+	void Material::SetAmbientOcclusion(TextureHandle ao)
+	{
+		if (ao.m_pool != m_texture_pool)
+		{
+			LOGC("Textures in a material need to belong to the same texture pool");
+		}
+
+		m_ao = ao;
+	}
+
+
+
+	//////////////////////////////
+	//	MATERIAL POOL FUNCTIONS	//
+	//////////////////////////////
+
 	MaterialPool::MaterialPool()
 	{
 	}
@@ -32,14 +115,7 @@ namespace wr
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material();
-
-		mat->m_albedo = albedo;
-		mat->m_normal = normal;
-		mat->m_rough_metallic = rough_met;
-		mat->m_ao = ao;
-		mat->m_alpha_masked = is_alpha_masked;
-		mat->m_double_sided = is_double_sided;
+		Material* mat = new Material(albedo, normal, rough_met, ao, is_alpha_masked, is_double_sided);
 
 		m_materials.insert(std::make_pair(handle.m_id, mat));
 
