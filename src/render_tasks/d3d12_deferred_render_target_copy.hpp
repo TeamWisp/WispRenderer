@@ -34,7 +34,7 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto* fg = task.GetFrameGraph();
 
-			data.out_deferred_composition_rt = static_cast<D3D12RenderTarget*>(fg->GetData<DeferredCompositionTaskData>().m_render_target);
+			data.out_deferred_composition_rt = static_cast<d3d12::RenderTarget*>(fg->GetData<DeferredCompositionTaskData>().m_render_target);
 		}
 
 		inline void ExecuteDeferredTask(RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data)
@@ -43,12 +43,12 @@ namespace wr
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				const auto cmd_list = task.GetCommandList<D3D12CommandList>().first;
+				const auto cmd_list = static_cast<d3d12::CommandList*>(task.GetCommandList<CommandList>().first);
 				const auto viewport = n_render_system.m_viewport;
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
 
-				D3D12RenderTarget* render_target = task.GetRenderTarget<D3D12RenderTarget>();
+				d3d12::RenderTarget* render_target = static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>());
 
 				D3D12_TEXTURE_COPY_LOCATION dst = {};
 				dst.pResource = render_target->m_render_targets[frame_idx % render_target->m_render_targets.size()];

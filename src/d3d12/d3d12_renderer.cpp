@@ -355,8 +355,8 @@ namespace wr
 
 	void D3D12RenderSystem::StartComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 
 		d3d12::Begin(n_cmd_list, frame_idx);
@@ -364,8 +364,8 @@ namespace wr
 
 	void D3D12RenderSystem::StopComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 
 		d3d12::End(n_cmd_list);
@@ -373,8 +373,8 @@ namespace wr
 
 	void D3D12RenderSystem::StartCopyTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 
 		d3d12::Begin(n_cmd_list, frame_idx);
@@ -391,8 +391,8 @@ namespace wr
 
 	void D3D12RenderSystem::StopCopyTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<D3D12CommandList*>(cmd_list);
-		auto n_render_target = static_cast<D3D12RenderTarget*>(render_target.first);
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 
 		if (render_target.second.m_is_render_window)

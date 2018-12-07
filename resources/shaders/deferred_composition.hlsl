@@ -96,7 +96,7 @@ float3 shade_pixel(float3 vpos, float3 V, float3 albedo, float3 normal)
 void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
-	gbuffer_albedo.GetDimensions(screen_size.x, screen_size.y);
+	output.GetDimensions(screen_size.x, screen_size.y);
 	float2 uv = float2(dispatch_thread_id.x / screen_size.x, 1.f - (dispatch_thread_id.y / screen_size.y));
 
 	float2 screen_coord = int2(dispatch_thread_id.x, screen_size.y - dispatch_thread_id.y);
@@ -107,7 +107,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
-	float3 vpos = unpack_position(float2(uv.x, 1.0 - uv.y), depth_f, inv_projection);
+	float3 vpos = unpack_position(float2(uv.x, uv.y), depth_f, inv_projection);
 	float3 V = normalize(-vpos);
 
 	//Do shading

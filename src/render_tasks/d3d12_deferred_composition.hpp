@@ -97,7 +97,7 @@ namespace wr
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 				std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
-				d3d12::CreateUAVFromRTV(task.GetRenderTarget<D3D12RenderTarget>(), cpu_handle, 1, formats.data());
+				d3d12::CreateUAVFromRTV(static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()), cpu_handle, 1, formats.data());
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
@@ -121,7 +121,7 @@ namespace wr
 				d3d12::BindViewport(cmd_list, viewport);
 
 				d3d12::Transition(cmd_list,
-					task.GetRenderTarget<D3D12RenderTarget>(),
+					static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()),
 					wr::ResourceState::COPY_SOURCE,
 					wr::ResourceState::UNORDERED_ACCESS);
 
@@ -136,7 +136,7 @@ namespace wr
 				}
 
 				d3d12::Transition(cmd_list,
-					task.GetRenderTarget<D3D12RenderTarget>(),
+					static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()),
 					wr::ResourceState::UNORDERED_ACCESS,
 					wr::ResourceState::COPY_SOURCE);
 
