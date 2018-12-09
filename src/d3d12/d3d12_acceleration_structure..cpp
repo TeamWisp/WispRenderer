@@ -105,7 +105,7 @@ namespace wr::d3d12
 		geometry_desc.Triangles.Transform3x4 = 0;
 		geometry_desc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 		geometry_desc.Triangles.VertexCount = 3;
-		geometry_desc.Triangles.VertexBuffer.StartAddress = vertex_buffers[0]->m_buffer->GetGPUVirtualAddress();
+		geometry_desc.Triangles.VertexBuffer.StartAddress = vertex_buffers[0]->m_staging->GetGPUVirtualAddress();
 		geometry_desc.Triangles.VertexBuffer.StrideInBytes = sizeof(vertex_buffers[0]->m_stride_in_bytes);
 
 		// Mark the geometry as opaque. 
@@ -250,7 +250,7 @@ namespace wr::d3d12
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-			d3d12::BindDescriptorHeaps(cmd_list, { desc_heap }, 0);//TODO: note this non frame idx
+			d3d12::BindDescriptorHeaps(cmd_list, { desc_heap }, 0, true);//TODO: note this non frame idx
 			BuildAccelerationStructure(cmd_list->m_native_fallback);
 		}
 
