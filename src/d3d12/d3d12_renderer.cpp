@@ -470,6 +470,14 @@ namespace wr
 				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
 			}
 
+			// Hitgroup
+			{
+				auto hitGroup = desc.desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+				hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
+				hitGroup->SetHitGroupExport(L"MyHitGroup");
+				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+			}
+
 			// Global Root Signature
 			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
 			{
@@ -490,6 +498,12 @@ namespace wr
 
 					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
 					local_rs->SetRootSignature(n_rs->m_native->m_native);
+					// Define explicit shader association for the local root signature. 
+					{
+						//auto rootSignatureAssociation = desc.desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
+						//rootSignatureAssociation->SetSubobjectToAssociate(*local_rs);
+						//rootSignatureAssociation->AddExport(L"MyHitGroup");
+					}
 				}
 			}
 
@@ -499,7 +513,7 @@ namespace wr
 				pipeline_config->Config(desc.max_recursion_depth);
 			}
 
-			d3d12::CreateStateObject(m_device, desc.desc);
+			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
 
 			desc.desc.DeleteHelpers();
 
