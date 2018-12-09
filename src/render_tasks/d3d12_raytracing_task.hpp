@@ -22,9 +22,8 @@ namespace wr
 		d3d12::ShaderTable* out_raygen_shader_table;
 		d3d12::ShaderTable* out_miss_shader_table;
 		d3d12::ShaderTable* out_hitgroup_shader_table;
-
 		d3d12::StateObject* out_state_object;
-		
+
 		bool out_init;
 	};
 	using RaytracingTask = RenderTask<RaytracingData>;
