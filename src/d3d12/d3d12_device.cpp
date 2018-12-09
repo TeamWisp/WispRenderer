@@ -164,18 +164,17 @@ namespace wr::d3d12
 			{
 				device->m_rt_type = RaytracingType::NONE;
 			}
-			else if (d3d12::settings::force_dxr_fallback && device->m_dxr_fallback_support)
-			{
-				device->m_rt_type = RaytracingType::FALLBACK;
-			}
-			else if (device->m_dxr_support)
+			else if (device->m_dxr_support && !d3d12::settings::force_dxr_fallback)
 			{
 				device->m_rt_type = RaytracingType::NATIVE;
+			}
+			else if (device->m_dxr_fallback_support)
+			{
+				device->m_rt_type = RaytracingType::FALLBACK;
 			}
 			else
 			{
 				device->m_rt_type = RaytracingType::NONE;
-
 			}
 		}
 	}
