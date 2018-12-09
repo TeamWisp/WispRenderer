@@ -7,7 +7,7 @@
 #include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
-#include "../d3d12/d3d12_pipeline_registry.hpp"
+#include "../d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
@@ -18,6 +18,11 @@ namespace wr
 	{
 		d3d12::DescriptorHeap* out_rt_heap;
 		d3d12::StagingBuffer* out_vb;
+
+		d3d12::ShaderTable* out_raygen_shader_table;
+		d3d12::ShaderTable* out_miss_shader_table;
+		d3d12::ShaderTable* out_hitgroup_shader_table;
+		
 		bool out_init;
 	};
 	using RaytracingTask = RenderTask<RaytracingData>;
@@ -50,7 +55,55 @@ namespace wr
 			};
 
 			float stride = sizeof(decltype(tri_vertices[0]));
-			data.out_vb = d3d12::CreateStagingBuffer(device, nullptr, stride * tri_vertices.size(), stride, /*ResourceState::VERTEX_AND_CONSTANT_BUFFER*/ ResourceState::NON_PIXEL_SHADER_RESOURCE);
+			data.out_vb = d3d12::CreateStagingBuffer(device, nullptr, stride * tri_vertices.size(), stride, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+		
+			data.out_vb->m_buffer->SetName(L"RT VB Buffer");
+			data.out_vb->m_staging->SetName(L"RT VB Staging Buffer");
+
+			auto rt_registry = RTPipelineRegistry::Get();
+			auto state_obj = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object));
+
+			// Raygen Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, state_obj->m_native);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, state_obj->m_native, "RaygenEntry");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_raygen_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_raygen_shader_table, shader_record);
+			}
+
+			// Miss Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, state_obj->m_native);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, state_obj->m_native, "MissEntry");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_miss_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_miss_shader_table, shader_record);
+			}
+
+			// Hit Group Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, state_obj->m_native);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, state_obj->m_native, "MyHitGroup");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_hitgroup_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table, shader_record);
+			}
 		}
 
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
@@ -70,6 +123,27 @@ namespace wr
 
 					data.out_init = false;
 				}
+
+				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
+
+				// Setup the raytracing task
+				D3D12_DISPATCH_RAYS_DESC desc = {};
+				desc.HitGroupTable.StartAddress = data.out_hitgroup_shader_table->m_resource->GetGPUVirtualAddress();
+				desc.HitGroupTable.SizeInBytes = data.out_hitgroup_shader_table->m_resource->GetDesc().Width;
+				desc.HitGroupTable.StrideInBytes = desc.HitGroupTable.SizeInBytes;
+
+				desc.MissShaderTable.StartAddress = data.out_miss_shader_table->m_resource->GetGPUVirtualAddress();
+				desc.MissShaderTable.SizeInBytes = data.out_miss_shader_table->m_resource->GetDesc().Width;
+				desc.MissShaderTable.StrideInBytes = desc.MissShaderTable.SizeInBytes;
+
+				desc.RayGenerationShaderRecord.StartAddress = data.out_raygen_shader_table->m_resource->GetGPUVirtualAddress();
+				desc.RayGenerationShaderRecord.SizeInBytes = data.out_hitgroup_shader_table->m_resource->GetDesc().Width;
+				// Dimensions of the image to render, identical to a window dimensions
+				desc.Width = 1280;
+				desc.Height = 720;
+
+
+				cmd_list->m_native->DispatchRays(&desc);
 			}
 		}
 
