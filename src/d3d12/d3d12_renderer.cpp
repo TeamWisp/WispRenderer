@@ -103,8 +103,8 @@ namespace wr
 		// Execute Indirect code
 		if (d3d12::settings::use_exec_indirect)
 		{
-			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommand));
-			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommandIndexed));
+			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_draw_commands, sizeof(temp::IndirectCommand));
+			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_index_commands, sizeof(temp::IndirectCommandIndexed));
 
 			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs(4);
 			arg_descs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
