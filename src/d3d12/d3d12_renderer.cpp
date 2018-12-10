@@ -96,7 +96,6 @@ namespace wr
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
-		NAME_D3D12RESOURCE(m_direct_cmd_list->m_native, "Direct Command List")
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
