@@ -1,61 +1,62 @@
+RWTexture2D<float4> gOutput : register(u0);
+RaytracingAccelerationStructure Scene : register(t0, space0);
+
+typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct HitInfo
 {
-	float4 colorAndDistance;
+	float4 color;
 };
-
-// Attributes output by the raytracing when hitting a surface,
-// here the barycentric coordinates
-struct Attributes
-{
-	float2 bary;
-};
-
-RWTexture2D<float4> gOutput : register(u0);
-
-RaytracingAccelerationStructure SceneBVH : register(t0, space0);
 
 [shader("raygeneration")]
 void RaygenEntry()
 {
+    float2 lerpValues = (float2)DispatchRaysIndex() / (float2)DispatchRaysDimensions();
+
   // Initialize the ray payload
   HitInfo payload;
-  payload.colorAndDistance = float4(0, 0, 0, 0);
+  payload.color = float4(0, 0, 0, 0);
 
-  // Get the location within the dispatched 2D grid of work items
-  // (often maps to pixels, so this could represent a pixel coordinate).
-  uint2 launchIndex = DispatchRaysIndex().xy;
-  float2 dims = float2(DispatchRaysDimensions().xy);
-  float2 d = (((launchIndex.xy + 0.5f) / dims.xy) * 2.f - 1.f);
+	float v_left = -1;
+	float v_right = 1;
+	float v_up = -1;
+	float v_down = 1;
+
+  float3 origin = float3(
+	lerp(v_left, v_right, lerpValues.x),
+	lerp(v_up, v_down, lerpValues.y),
+	0.0f);
 
   // Define a ray, consisting of origin, direction, and the min-max distance values
   RayDesc ray;
-  ray.Origin = float3(d.x, -d.y, 1);
-  ray.Direction = float3(0, 0, -1);
-  ray.TMin = 0;
-  ray.TMax = 100000;
+  ray.Origin = origin;
+  ray.Direction = float3(0, 0, 1);
+  ray.TMin = 0.001;
+  ray.TMax = 10000.0;
 
   // Trace the ray
   TraceRay(
-	  SceneBVH,
+	  Scene,
 	  RAY_FLAG_NONE,
-	  0xFF, // InstanceInclusionMask
+	  ~0, // InstanceInclusionMask
 	  0, // RayContributionToHitGroupIndex
-	  0, // MultiplierForGeometryContributionToHitGroupIndex
+	  1, // MultiplierForGeometryContributionToHitGroupIndex
 	  0, // miss shader index
 	  ray,
 	  payload);
 
-  gOutput[launchIndex] = float4(payload.colorAndDistance.rgb, 1.f);
+  gOutput[DispatchRaysIndex().xy] = payload.color;
+  //gOutput[DispatchRaysIndex().xy] = float4(lerpValues, 0, 1);
 }
 
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	payload.colorAndDistance = float4(0.0f, 1.0f, 0.0f, -1.f);
+	payload.color = float4(0.0f, 1.0f, 0.0f, 1.f);
 }
 
 [shader("closesthit")]
-void ClosestHitEntry(inout HitInfo payload, in BuiltInTriangleIntersectionAttributes attr)
+void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
-	payload.colorAndDistance = float4(1, 0, 0, RayTCurrent());
+    float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
+    payload.color = float4(barycentrics, 1);
 }

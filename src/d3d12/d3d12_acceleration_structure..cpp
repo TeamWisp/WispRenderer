@@ -89,6 +89,9 @@ namespace wr::d3d12
 
 	} /* internal */
 
+
+#include <DirectXMath.h>
+
 	[[nodiscard]] std::pair<AccelerationStructure, AccelerationStructure> CreateAccelerationStructures(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
@@ -106,7 +109,7 @@ namespace wr::d3d12
 		geometry_desc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 		geometry_desc.Triangles.VertexCount = 3;
 		geometry_desc.Triangles.VertexBuffer.StartAddress = vertex_buffers[0]->m_staging->GetGPUVirtualAddress();
-		geometry_desc.Triangles.VertexBuffer.StrideInBytes = sizeof(vertex_buffers[0]->m_stride_in_bytes);
+		geometry_desc.Triangles.VertexBuffer.StrideInBytes = sizeof(DirectX::XMVECTOR);
 
 		// Mark the geometry as opaque. 
 		// PERFORMANCE TIP: mark geometry as opaque whenever applicable as it can enable important ray processing optimizations.
@@ -115,42 +118,38 @@ namespace wr::d3d12
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
-		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
-		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& top_level_prebuild_info_desc = top_level_build_desc.Inputs;
-		top_level_prebuild_info_desc.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-		top_level_prebuild_info_desc.Flags = build_flags;
-		top_level_prebuild_info_desc.NumDescs = 1;
-		top_level_prebuild_info_desc.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
-		top_level_prebuild_info_desc.pGeometryDescs = nullptr;
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
+		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+		top_level_inputs.Flags = build_flags;
+		top_level_inputs.NumDescs = 1;
+		top_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 
 		// Get prebuild info top level
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO top_level_prebuild_info = {};
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
-			device->m_native->GetRaytracingAccelerationStructurePrebuildInfo(&top_level_prebuild_info_desc, &top_level_prebuild_info);
+			device->m_native->GetRaytracingAccelerationStructurePrebuildInfo(&top_level_inputs, &top_level_prebuild_info);
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
-			device->m_fallback_native->GetRaytracingAccelerationStructurePrebuildInfo(&top_level_prebuild_info_desc, &top_level_prebuild_info);
+			device->m_fallback_native->GetRaytracingAccelerationStructurePrebuildInfo(&top_level_inputs, &top_level_prebuild_info);
 		}
+		if (!(top_level_prebuild_info.ResultDataMaxSizeInBytes > 0)) LOGW("Result data max size in bytes is more than zero. accel structure");
 
 		// Get prebuild info bottom level
-		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC bottom_level_build_desc = {};
-		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& bottom_level_prebuild_info_desc = bottom_level_build_desc.Inputs;
-		bottom_level_prebuild_info_desc.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-		bottom_level_prebuild_info_desc.Flags = build_flags;
-		bottom_level_prebuild_info_desc.NumDescs = 1;
-		bottom_level_prebuild_info_desc.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-		bottom_level_prebuild_info_desc.pGeometryDescs = &geometry_desc;
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO bottom_level_prebuild_info = {};
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS bottom_level_inputs = top_level_inputs;
+		bottom_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+		bottom_level_inputs.pGeometryDescs = &geometry_desc;
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
-			device->m_native->GetRaytracingAccelerationStructurePrebuildInfo(&bottom_level_prebuild_info_desc, &bottom_level_prebuild_info);
+			device->m_native->GetRaytracingAccelerationStructurePrebuildInfo(&bottom_level_inputs, &bottom_level_prebuild_info);
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
-			device->m_fallback_native->GetRaytracingAccelerationStructurePrebuildInfo(&bottom_level_prebuild_info_desc, &bottom_level_prebuild_info);
+			device->m_fallback_native->GetRaytracingAccelerationStructurePrebuildInfo(&bottom_level_inputs, &bottom_level_prebuild_info);
 		}
+		if (!(bottom_level_prebuild_info.ResultDataMaxSizeInBytes > 0)) LOGW("Result data max size in bytes is more than zero. accel structure");
 
 		// Allocate scratch resource
 		internal::AllocateUAVBuffer(device,
@@ -223,16 +222,27 @@ namespace wr::d3d12
 		}
 
 		// Bottom Level Acceleration Structure desc
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC bottom_level_build_desc = {};
 		{
-			bottom_level_build_desc .ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
+			//bottom_level_build_desc .ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
+			//bottom_level_build_desc.DestAccelerationStructureData = blas.m_native->GetGPUVirtualAddress();
+
+			bottom_level_build_desc.Inputs = bottom_level_inputs;
+			bottom_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
 			bottom_level_build_desc.DestAccelerationStructureData = blas.m_native->GetGPUVirtualAddress();
 		}
 
 		// Top Level Acceleration Structure desc
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
 		{
-			top_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
+			//top_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
+			//top_level_build_desc.DestAccelerationStructureData = tlas.m_native->GetGPUVirtualAddress();
+			//top_level_build_desc.Inputs.InstanceDescs = tlas.m_instance_desc->GetGPUVirtualAddress();
+
+			top_level_inputs.InstanceDescs = tlas.m_instance_desc->GetGPUVirtualAddress();
+			top_level_build_desc.Inputs = top_level_inputs;
 			top_level_build_desc.DestAccelerationStructureData = tlas.m_native->GetGPUVirtualAddress();
-			top_level_build_desc.Inputs.InstanceDescs = tlas.m_instance_desc->GetGPUVirtualAddress();
+			top_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
 		}
 
 		auto BuildAccelerationStructure = [&](auto* raytracingCommandList)

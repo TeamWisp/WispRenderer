@@ -56,16 +56,21 @@ namespace wr
 			d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
 			// Create vertex buffer
-			float aspect_ratio = 1280.f / 720.f;
-			std::vector<DirectX::XMFLOAT3> tri_vertices =
+			float aspect_ratio = 1;
+			float offset = 0.7f;
+			float depth = 1.f;
+			std::vector<DirectX::XMVECTOR> tri_vertices =
 			{
-				{ 0.0f, 0.25f * aspect_ratio, 0.f },
-				{ 0.25f, -0.25f * aspect_ratio, 0.f },
-				{ -0.25f, -0.25f * aspect_ratio, 0.f },
+				// The sample raytraces in screen space coordinates.
+				// Since DirectX screen space coordinates are right handed (i.e. Y axis points down).
+				// Define the vertices in counter clockwise order ~ clockwise in left handed.
+				{ 0, -offset, depth },
+				{ -offset, offset, depth },
+				{ offset, offset, depth }
 			};
 
 			float stride = sizeof(decltype(tri_vertices[0]));
-			data.out_vb = d3d12::CreateStagingBuffer(device, nullptr, stride * tri_vertices.size(), stride, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+			data.out_vb = d3d12::CreateStagingBuffer(device, tri_vertices.data(), stride * tri_vertices.size(), stride, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 		
 			data.out_vb->m_buffer->SetName(L"RT VB Buffer");
 			data.out_vb->m_staging->SetName(L"RT VB Staging Buffer");
@@ -121,7 +126,7 @@ namespace wr
 			}
 		}
 
-		d3d12::AccelerationStructure tlas;
+		d3d12::AccelerationStructure tlas, blas;
 
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
@@ -136,12 +141,14 @@ namespace wr
 				if (data.out_init)
 				{
 					d3d12::StageBuffer(data.out_vb, cmd_list);
-
-					auto accel_structures = d3d12::CreateAccelerationStructures(device, cmd_list, data.out_rt_heap, std::vector<d3d12::StagingBuffer*>{ data.out_vb });
-					tlas = accel_structures.first;
-
-					data.out_init = false;
+					data.out_init = true;
 				}
+
+				auto accel_structures = d3d12::CreateAccelerationStructures(device, cmd_list, data.out_rt_heap, std::vector<d3d12::StagingBuffer*>{ data.out_vb });
+				blas = accel_structures.first;
+				tlas = accel_structures.second;
+				blas.m_native->SetName(L"Bottomlevelaccel");
+				tlas.m_native->SetName(L"Highlevelaccel");
 
 				// Setup the raytracing task
 				D3D12_DISPATCH_RAYS_DESC desc = {};
@@ -162,12 +169,13 @@ namespace wr
 
 				
 				cmd_list->m_native->SetComputeRootSignature(data.out_root_signature->m_native);
-
 				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
-
-				cmd_list->m_native->SetPipelineState1(data.out_state_object->m_native);
 				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
+
+
 				cmd_list->m_native->SetComputeRootShaderResourceView(1, tlas.m_native->GetGPUVirtualAddress());
+				cmd_list->m_native->SetPipelineState1(data.out_state_object->m_native);
+
 				cmd_list->m_native->DispatchRays(&desc);
 			}
 		}
