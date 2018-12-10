@@ -160,6 +160,14 @@ namespace wr::d3d12
 		cmd_list->m_native->SetDescriptorHeaps(num, n_heaps.data());
 	}
 
+	void BindComputePipeline(CommandList* cmd_list, PipelineState * pipeline_state)
+	{
+		if (pipeline_state->m_type != PipelineType::COMPUTE_PIPELINE)
+			LOGW("Tried to bind a graphics pipeline as a compute pipeline");
+		cmd_list->m_native->SetPipelineState(pipeline_state->m_native);
+		cmd_list->m_native->SetComputeRootSignature(pipeline_state->m_root_signature->m_native);
+	}
+
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport)
 	{
 		cmd_list->m_native->RSSetViewports(1, &viewport.m_viewport);
@@ -201,9 +209,20 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer->m_gpu_addresses[frame_idx]);
 	}
 
+	void BindComputeConstantBuffer(CommandList * cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx)
+	{
+		cmd_list->m_native->SetComputeRootConstantBufferView(root_parameter_idx, 
+			buffer->m_gpu_addresses[frame_idx]);
+	}
+
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index)
 	{
 		cmd_list->m_native->SetGraphicsRootDescriptorTable(root_param_index, handle.m_native);
+	}
+
+	void BindComputeDescriptorTable(CommandList * cmd_list, DescHeapGPUHandle & handle, unsigned int root_param_index)
+	{
+		cmd_list->m_native->SetComputeRootDescriptorTable(root_param_index, handle.m_native);
 	}
 
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology)
@@ -219,6 +238,11 @@ namespace wr::d3d12
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count, unsigned int idx_start, unsigned int vertex_start)
 	{
 		cmd_list->m_native->DrawIndexedInstanced(idx_count, inst_count, idx_start, vertex_start, 0);
+	}
+
+	void Dispatch(CommandList * cmd_list, unsigned int thread_group_count_x, unsigned int thread_group_count_y, unsigned int thread_group_count_z)
+	{
+		cmd_list->m_native->Dispatch(thread_group_count_x, thread_group_count_y, thread_group_count_z);
 	}
 
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to)

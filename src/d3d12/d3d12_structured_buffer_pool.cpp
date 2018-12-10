@@ -28,14 +28,39 @@ namespace wr
 		while (!m_buffer_update_queues[frame_idx].empty()) 
 		{
 			BufferUpdateInfo info = m_buffer_update_queues[frame_idx].front();
-			d3d12::UpdateStructuredBuffer(info.m_buffer_handle->m_native,
-				frame_idx,
-				info.m_data.data(),
-				info.m_size,
-				info.m_offset,
-				info.m_buffer_handle->m_native->m_stride,
-				cmd_list);
+
+			if (info.m_data.size() > 0)
+			{
+				d3d12::UpdateStructuredBuffer(info.m_buffer_handle->m_native,
+					frame_idx,
+					info.m_data.data(),
+					info.m_size,
+					info.m_offset,
+					info.m_buffer_handle->m_native->m_stride,
+					cmd_list);
+			}
+			else
+			{
+				ID3D12Resource * resource = info.m_buffer_handle->m_native->m_heap_bsbo->m_resources[info.m_buffer_handle->m_native->m_heap_vector_location].second[frame_idx];
+				cmd_list->m_native->ResourceBarrier(1,
+					&CD3DX12_RESOURCE_BARRIER::Transition(
+						resource,
+						static_cast<D3D12_RESOURCE_STATES>(info.m_buffer_handle->m_native->m_states[frame_idx]),
+						static_cast<D3D12_RESOURCE_STATES>(info.m_new_state)));
+				info.m_buffer_handle->m_native->m_states[frame_idx] = info.m_new_state;
+			}
 			m_buffer_update_queues[frame_idx].pop();
+		}
+	}
+
+	void D3D12StructuredBufferPool::SetBufferState(StructuredBufferHandle * handle, ResourceState state)
+	{
+		BufferUpdateInfo info = {};
+		info.m_buffer_handle = static_cast<D3D12StructuredBufferHandle*>(handle);
+		info.m_new_state = state;
+
+		for (int i = 0; i < m_buffer_update_queues.size(); ++i) {
+			m_buffer_update_queues[i].push(info);
 		}
 	}
 

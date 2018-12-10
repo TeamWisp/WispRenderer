@@ -24,7 +24,7 @@ namespace viknell_scene
 		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		auto test_model = scene_graph->CreateChild<wr::MeshNode>(camera, resources::test_model);
+		auto test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		floor->SetPosition({ 0, 1, 0 });
 		floor->SetRotation({ -90, 0, 0 });
 		roof->SetPosition({ 0, -1, 0 });
@@ -39,7 +39,7 @@ namespace viknell_scene
 		test_model->SetScale({ 0.01f,0.01f,0.01f });
 
 		// Lights
-		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(camera, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
+		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
 		point_light_0->SetRadius(1.5f);
 		point_light_0->SetPosition({ 0, 0, 0 });
 
