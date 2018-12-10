@@ -8,6 +8,7 @@
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
+#include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
@@ -23,6 +24,7 @@ namespace wr
 		d3d12::ShaderTable* out_miss_shader_table;
 		d3d12::ShaderTable* out_hitgroup_shader_table;
 		d3d12::StateObject* out_state_object;
+		d3d12::RootSignature* out_root_signature;
 
 		bool out_init;
 	};
@@ -35,6 +37,9 @@ namespace wr
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto& device = n_render_system.m_device;
+			auto n_render_target = static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>());
+
+			n_render_target->m_render_targets[0]->SetName(L"Raytracing Target");
 
 			data.out_init = true;
 
@@ -46,9 +51,13 @@ namespace wr
 			heap_desc.m_versions = 1;
 			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
 
+			auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+			d3d12::Offset(cpu_handle, 0, data.out_rt_heap->m_increment_size);
+			d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
+
 			// Create vertex buffer
 			float aspect_ratio = 1280.f / 720.f;
-			std::vector<DirectX::XMVECTOR> tri_vertices =
+			std::vector<DirectX::XMFLOAT3> tri_vertices =
 			{
 				{ 0.0f, 0.25f * aspect_ratio, 0.f },
 				{ 0.25f, -0.25f * aspect_ratio, 0.f },
@@ -61,8 +70,13 @@ namespace wr
 			data.out_vb->m_buffer->SetName(L"RT VB Buffer");
 			data.out_vb->m_staging->SetName(L"RT VB Staging Buffer");
 
+			// Pipeline State Object
 			auto rt_registry = RTPipelineRegistry::Get();
 			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
+
+			// Root Signature
+			auto rs_registry = RootSignatureRegistry::Get();
+			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
 
 			// Raygen Shader Table
 			{
@@ -107,11 +121,14 @@ namespace wr
 			}
 		}
 
+		d3d12::AccelerationStructure tlas;
+
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto device = n_render_system.m_device;
 			auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
+
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -120,12 +137,11 @@ namespace wr
 				{
 					d3d12::StageBuffer(data.out_vb, cmd_list);
 
-					d3d12::CreateAccelerationStructures(device, cmd_list, data.out_rt_heap, std::vector<d3d12::StagingBuffer*>{ data.out_vb });
+					auto accel_structures = d3d12::CreateAccelerationStructures(device, cmd_list, data.out_rt_heap, std::vector<d3d12::StagingBuffer*>{ data.out_vb });
+					tlas = accel_structures.first;
 
 					data.out_init = false;
 				}
-
-				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
 
 				// Setup the raytracing task
 				D3D12_DISPATCH_RAYS_DESC desc = {};
@@ -142,8 +158,16 @@ namespace wr
 				// Dimensions of the image to render, identical to a window dimensions
 				desc.Width = 1280;
 				desc.Height = 720;
+				desc.Depth = 1;
+
+				
+				cmd_list->m_native->SetComputeRootSignature(data.out_root_signature->m_native);
+
+				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
 
 				cmd_list->m_native->SetPipelineState1(data.out_state_object->m_native);
+				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
+				cmd_list->m_native->SetComputeRootShaderResourceView(1, tlas.m_native->GetGPUVirtualAddress());
 				cmd_list->m_native->DispatchRays(&desc);
 			}
 		}
@@ -158,13 +182,13 @@ namespace wr
 	//! Used to create a new defferred task.
 	[[nodiscard]] inline std::unique_ptr<RaytracingTask> GetRaytracingTask()
 	{
-		auto ptr = std::make_unique<RaytracingTask>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT, true,
+		auto ptr = std::make_unique<RaytracingTask>(nullptr, "Deferred Render Task", RenderTaskType::COMPUTE, true,
 			RenderTargetProperties{
-				true,
+				false,
 				std::nullopt,
 				std::nullopt,
-				std::nullopt,
-				std::nullopt,
+				ResourceState::UNORDERED_ACCESS,
+				ResourceState::COPY_SOURCE,
 				false,
 				Format::UNKNOWN,
 				{ Format::R8G8B8A8_UNORM },

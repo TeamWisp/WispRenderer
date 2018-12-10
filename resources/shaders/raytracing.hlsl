@@ -51,11 +51,11 @@ void RaygenEntry()
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	payload.colorAndDistance = float4(0.2f, 0.2f, 0.8f, -1.f);
+	payload.colorAndDistance = float4(0.0f, 1.0f, 0.0f, -1.f);
 }
 
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-	payload.colorAndDistance = float4(1, 1, 0, RayTCurrent());
+	payload.colorAndDistance = float4(1, 0, 0, RayTCurrent());
 }

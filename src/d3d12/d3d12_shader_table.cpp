@@ -12,7 +12,7 @@ namespace wr::d3d12
 		ShaderRecord record;
 
 		record.m_shader_identifier = { identifier, identifier_size };
-		record.m_shader_identifier = { local_root_args, local_root_args_size };
+		record.m_local_root_args = { local_root_args, local_root_args_size };
 
 		return record;
 	}
