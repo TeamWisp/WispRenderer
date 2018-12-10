@@ -33,6 +33,12 @@ namespace wr::d3d12
 		return buffer;
 	}
 
+	void SetName(IndirectCommandBuffer * buffer, std::wstring name)
+	{
+		buffer->m_native->SetName(name.c_str());
+		buffer->m_native_upload->SetName((name + L" Upload Buffer").c_str());
+	}
+
 	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands)
 	{
 		D3D12_SUBRESOURCE_DATA cmd_data = {};

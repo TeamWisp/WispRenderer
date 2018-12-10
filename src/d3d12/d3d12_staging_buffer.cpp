@@ -46,6 +46,12 @@ namespace wr::d3d12
 		return buffer;
 	}
 
+	void SetName(StagingBuffer * buffer, std::wstring name)
+	{
+		buffer->m_buffer->SetName((name + L" Destination buffer").c_str());
+		buffer->m_staging->SetName((name + L" Intermediate buffer").c_str());
+	}
+
 	void UpdateStagingBuffer(StagingBuffer* buffer, void * data, std::uint64_t size, std::uint64_t offset)
 	{
 		memcpy(static_cast<std::uint8_t*>(buffer->m_data) + offset, data, size);

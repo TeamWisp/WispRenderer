@@ -14,6 +14,11 @@ namespace wr::d3d12
 		return root_signature;
 	}
 
+	void SetName(RootSignature * root_signature, std::wstring name)
+	{
+		root_signature->m_native->SetName(name.c_str());
+	}
+
 	void FinalizeRootSignature(RootSignature* root_signature, Device* device)
 	{
 		auto n_device = device->m_native;
