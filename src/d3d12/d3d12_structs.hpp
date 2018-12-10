@@ -4,6 +4,7 @@
 #include <dxgi1_6.h>
 #include <vector>
 #include <optional>
+#include <utility>
 #include <dxcapi.h>
 #include <array>
 #include <D3D12RaytracingFallback.h>
@@ -336,6 +337,20 @@ namespace wr::d3d12
 		ID3D12Resource* m_native;        // Where the AS is
 		ID3D12Resource* m_instance_desc; // Hold the matrices of the instances
 		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
+	};
+
+	struct ShaderRecord
+	{
+		std::pair<void*, std::uint64_t> m_shader_identifier;
+		std::pair<void*, std::uint64_t> m_local_root_args;
+	};
+
+	struct ShaderTable
+	{
+		std::uint8_t* m_mapped_shader_records;
+		std::uint64_t m_shader_record_size;
+		std::vector<ShaderRecord> m_shader_records;
+		ID3D12Resource* m_resource;
 	};
 
 } /* wr::d3d12 */

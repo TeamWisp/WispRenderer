@@ -32,8 +32,8 @@ namespace wr::d3d12
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
-	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx);
 	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
+	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback = false);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	void BindComputeConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
@@ -51,6 +51,7 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void DispatchRays(CommandList* cmd_list);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
 
@@ -188,6 +189,8 @@ namespace wr::d3d12
 
 	// State Object
 	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj);
+	[[nodiscard]] void* GetShaderIdentifier(Device* device, StateObject* obj, std::string const & name);
 	void Destroy(StateObject* obj);
 
 	// Acceelration Structure
@@ -195,5 +198,15 @@ namespace wr::d3d12
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
 		std::vector<StagingBuffer*> vertex_buffers);
+
+	// Shader Record
+	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);
+	void CopyShaderRecord(ShaderRecord src, void* dest);
+
+	// Shader Table
+	[[nodiscard]] ShaderTable* CreateShaderTable(Device* device,
+			std::uint64_t num_shader_records,
+			std::uint64_t shader_record_size);
+	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
 
 } /* wr::d3d12 */

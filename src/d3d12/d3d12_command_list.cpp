@@ -147,7 +147,7 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootSignature(pipeline_state->m_root_signature->m_native);
 	}
 
-	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx)
+	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback)
 	{
 		auto num = heaps.size();
 		std::vector<ID3D12DescriptorHeap*> n_heaps(num);
@@ -157,7 +157,14 @@ namespace wr::d3d12
 			n_heaps[i] = heaps[i]->m_native[frame_idx % heaps[i]->m_create_info.m_versions];
 		}
 
-		cmd_list->m_native->SetDescriptorHeaps(num, n_heaps.data());
+		if (fallback)
+		{
+			cmd_list->m_native_fallback->SetDescriptorHeaps(num, n_heaps.data());
+		}
+		else
+		{
+			cmd_list->m_native->SetDescriptorHeaps(num, n_heaps.data());
+		}
 	}
 
 	void BindComputePipeline(CommandList* cmd_list, PipelineState * pipeline_state)
@@ -339,6 +346,11 @@ namespace wr::d3d12
 			, "Failed to create command signature");
 
 		return cmd_sig;
+	}
+
+	void DispatchRays(CommandList* cmd_list)
+	{
+		//cmd_list->
 	}
 
 	void Destroy(CommandSignature* cmd_signature)
