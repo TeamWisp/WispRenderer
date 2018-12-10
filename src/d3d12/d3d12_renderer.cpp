@@ -96,6 +96,7 @@ namespace wr
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
+		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -124,6 +125,8 @@ namespace wr
 			auto root_signature = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(root_signatures::basic));
 			m_cmd_signature = d3d12::CreateCommandSignature(m_device, root_signature->m_native, arg_descs, sizeof(temp::IndirectCommand));
 			m_cmd_signature_indexed = d3d12::CreateCommandSignature(m_device, root_signature->m_native, indexed_arg_descs, sizeof(temp::IndirectCommandIndexed));
+			SetName(m_cmd_signature, L"Defauld DX12 Command Signature");
+			SetName(m_cmd_signature_indexed, L"Defauld DX12 Command Signature Indexed");
 		}
 
 		// Execute
@@ -276,7 +279,10 @@ namespace wr
 
 			if (properties.m_width.has_value() || properties.m_height.has_value())
 			{
-				return d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
+				for (auto i = 0; i < retval->m_render_targets.size(); i++)
+					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
+				return retval;
 			}
 			else if (m_window.has_value())
 			{
