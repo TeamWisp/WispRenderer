@@ -463,6 +463,27 @@ namespace wr::d3d12
 		return cb;
 	}
 
+	void SetName(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::wstring name)
+	{
+		heap->m_native->SetName(name.c_str());
+	}
+
+	void SetName(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::wstring name)
+	{
+		heap->m_native->SetName(name.c_str());
+	}
+
+	void SetName(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap, std::wstring name)
+	{
+		heap->m_native->SetName(name.c_str());
+	}
+
+	void SetName(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::wstring name)
+	{
+		heap->m_native->SetName(name.c_str());
+	}
+
+
 	void DeallocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, HeapResource * heapResource)
 	{
 		

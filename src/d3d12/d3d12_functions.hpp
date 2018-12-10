@@ -113,7 +113,6 @@ namespace wr::d3d12
 	// Shader
 	[[nodiscard]] Shader* LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
 	[[nodiscard]] Shader* LoadDXCShader(ShaderType type, std::string const & path, std::string const & entry = "main");
-	void SetName(Shader* shader, std::wstring name);
 	bool ReloadShader(Shader* shader);
 	void Destroy(Shader* shader);
 
@@ -154,6 +153,10 @@ namespace wr::d3d12
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	[[nodiscard]] HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride, bool used_as_uav);
 	[[nodiscard]] HeapResource* AllocGenericBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	void SetName(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::wstring name);
+	void SetName(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::wstring name);
+	void SetName(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap, std::wstring name);
+	void SetName(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::wstring name);
 	void DeallocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, HeapResource* heapResource);
 	void DeallocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, HeapResource* heapResource);
 	void DeallocBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, HeapResource* heapResource);
@@ -195,6 +198,7 @@ namespace wr::d3d12
 
 	// State Object
 	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	void SetName(StateObject* obj, std::wstring name);
 	void Destroy(StateObject* obj);
 
 	// Acceelration Structure
@@ -202,5 +206,6 @@ namespace wr::d3d12
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
 		std::vector<StagingBuffer*> vertex_buffers);
+	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name);
 
 } /* wr::d3d12 */
