@@ -42,6 +42,11 @@ namespace wr::d3d12
 	{
 		SAFE_RELEASE(cmd_queue->m_native);
 		delete cmd_queue;
-	}	
+	}
+	void NameCommandQueue(CommandQueue * cmd_queue, std::wstring name)
+	{
+		cmd_queue->m_native->SetName(name.c_str());
+	}
+
 
 } /* wr::d3d12 */

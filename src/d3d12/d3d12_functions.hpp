@@ -11,11 +11,13 @@ namespace wr::d3d12
 	[[nodiscard]] Device* CreateDevice();
 	RaytracingType GetRaytracingType(Device* device);
 	void Destroy(Device* device);
+	void NameDevice(Device* device, std::wstring name);
 
 	// CommandQueue
 	[[nodiscard]] CommandQueue* CreateCommandQueue(Device* device, CmdListType type);
 	void Execute(CommandQueue* cmd_queue, std::vector<CommandList*> const & cmd_lists, Fence* fence);
 	void Destroy(CommandQueue* cmd_queue);
+	void NameCommandQueue(CommandQueue* cmd_queue, std::wstring name);
 
 	// CommandList
 	[[nodiscard]] CommandList* CreateCommandList(Device* device, unsigned int num_allocators, CmdListType type);

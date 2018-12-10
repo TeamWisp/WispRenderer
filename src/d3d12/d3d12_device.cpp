@@ -251,4 +251,9 @@ namespace wr::d3d12
 		delete device;
 	}
 
+	void NameDevice(Device * device, std::wstring name)
+	{
+		device->m_native->SetName(name.c_str());
+	}
+
 } /* wr::d3d12 */

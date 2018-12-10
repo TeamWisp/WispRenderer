@@ -56,9 +56,13 @@ namespace wr
 	{
 		m_window = window;
 		m_device = d3d12::CreateDevice();
+		NameDevice(m_device, L"Default D3D12 Device");
 		m_direct_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
 		m_compute_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_COMPUTE);
 		m_copy_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_COPY);
+		NameCommandQueue(m_direct_queue, L"Default D3D12 Direct Command Queue");
+		NameCommandQueue(m_compute_queue, L"Default D3D12 Compute Command Queue");
+		NameCommandQueue(m_copy_queue, L"Default D3D12 Copy Command Queue");
 
 		if (window.has_value())
 		{
