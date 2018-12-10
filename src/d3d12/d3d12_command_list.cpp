@@ -79,7 +79,7 @@ namespace wr::d3d12
 
 	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer)
 	{
-		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, buffer->m_num_buffers, buffer->m_native, 0, nullptr, 0);
+		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, buffer->m_num_commands, buffer->m_native, 0, nullptr, 0);
 	}
 
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear, bool clear_depth)

@@ -6,18 +6,18 @@
 namespace wr::d3d12
 {
 
-	IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size)
+	IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_commands, std::size_t command_size)
 	{
 		auto buffer = new IndirectCommandBuffer();
 
-		buffer->m_max_num_buffers = max_num_buffers;
-		buffer->m_num_buffers = 0;
+		buffer->m_num_max_commands = max_commands;
+		buffer->m_num_commands = 0;
 		buffer->m_command_size = command_size;
 
 		TRY(device->m_native->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(max_num_buffers* command_size),
+			&CD3DX12_RESOURCE_DESC::Buffer(max_commands * command_size),
 			D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT,
 			nullptr,
 			IID_PPV_ARGS(&buffer->m_native)));
@@ -25,7 +25,7 @@ namespace wr::d3d12
 		TRY(device->m_native->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(max_num_buffers* command_size),
+			&CD3DX12_RESOURCE_DESC::Buffer(max_commands * command_size),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&buffer->m_native_upload)));
@@ -40,7 +40,7 @@ namespace wr::d3d12
 		cmd_data.RowPitch = num_commands * buffer->m_command_size;
 		cmd_data.SlicePitch = cmd_data.RowPitch;
 
-		buffer->m_num_buffers = num_commands;
+		buffer->m_num_commands = num_commands;
 
 		UpdateSubresources<1>(cmd_list->m_native, buffer->m_native, buffer->m_native_upload, 0, 0, 1, &cmd_data);
 	}
