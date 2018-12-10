@@ -103,11 +103,11 @@ echo current path: "%cd%"
 mkdir build_vs2017_win64
 cd build_vs2017_win64
 if "%ENABLE_UNIT_TEST%" == "1" (
-  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
+  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017 Win64" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017 Win64" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
 ) else (
-  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
+  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017 Win64" ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017 Win64" ..
 )
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..

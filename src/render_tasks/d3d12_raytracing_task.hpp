@@ -22,6 +22,8 @@ namespace wr
 		d3d12::ShaderTable* out_raygen_shader_table;
 		d3d12::ShaderTable* out_miss_shader_table;
 		d3d12::ShaderTable* out_hitgroup_shader_table;
+
+		d3d12::StateObject* out_state_object;
 		
 		bool out_init;
 	};
@@ -61,14 +63,14 @@ namespace wr
 			data.out_vb->m_staging->SetName(L"RT VB Staging Buffer");
 
 			auto rt_registry = RTPipelineRegistry::Get();
-			auto state_obj = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object));
+			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
 
 			// Raygen Shader Table
 			{
 				// Create Record(s)
 				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, state_obj->m_native);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, state_obj->m_native, "RaygenEntry");
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
 
@@ -81,8 +83,8 @@ namespace wr
 			{
 				// Create Record(s)
 				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, state_obj->m_native);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, state_obj->m_native, "MissEntry");
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
 
@@ -95,8 +97,8 @@ namespace wr
 			{
 				// Create Record(s)
 				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, state_obj->m_native);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, state_obj->m_native, "MyHitGroup");
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
 
@@ -142,7 +144,7 @@ namespace wr
 				desc.Width = 1280;
 				desc.Height = 720;
 
-
+				cmd_list->m_native->SetPipelineState1(data.out_state_object->m_native);
 				cmd_list->m_native->DispatchRays(&desc);
 			}
 		}

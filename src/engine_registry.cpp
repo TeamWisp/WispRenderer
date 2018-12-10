@@ -97,10 +97,14 @@ namespace wr
 		ShaderType::LIBRARY_SHADER
 	});
 
+	D3D12_DESCRIPTOR_RANGE r[2] = {
+		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, 0 },
+		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, 0 }
+	};
+
 	REGISTER(root_signatures::rt_test_global) = RootSignatureRegistry::Get().Register({
 		{
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsUnorderedAccessView(0); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(),
+			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(2, r); return d; }(),
 		},
 		{
 			// No samplers
