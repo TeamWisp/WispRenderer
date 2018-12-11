@@ -56,7 +56,7 @@ pipeline {
 						bat'''
 						cd "%WORKSPACE%"
 						cd build_vs2017_win64/bin/debug
-						UnitTest.exe
+						WispTest.exe
 						if errorlevel 1 (
 							EXIT 1
 						)
@@ -73,7 +73,7 @@ pipeline {
 						bat'''
 						cd "%WORKSPACE%"
 						cd build_vs2017_win64/bin/release
-						UnitTest.exe
+						WispTest.exe
 						if errorlevel 1 (
 							EXIT 1
 						)
