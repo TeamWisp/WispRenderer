@@ -192,7 +192,13 @@ namespace wr::imgui::window
 
 					if (type != (uint32_t)LightType::POINT)
 					{
-						ImGui::DragFloat3("Rotation", light_node->m_rotation_deg.m128_f32);
+						float rad_to_deg = 180.f / 3.1415926535f;
+						float rot[3] = { DirectX::XMVectorGetX(light_node->m_rotation_radians) * rad_to_deg,
+							DirectX::XMVectorGetY(light_node->m_rotation_radians) * rad_to_deg,
+							DirectX::XMVectorGetZ(light_node->m_rotation_radians) * rad_to_deg };
+						float deg_to_rad = 3.1415926535f / 180.f;
+						ImGui::DragFloat3("Rotation", rot);
+						light_node->SetRotation(DirectX::XMVectorSet(rot[0] * deg_to_rad, rot[1] * deg_to_rad, rot[2] * deg_to_rad, 0));
 					}
 
 					if (type != (uint32_t) LightType::DIRECTIONAL)
@@ -291,11 +297,13 @@ namespace wr::imgui::window
 					ImGui::DragFloat3("Position", pos);
 					model->SetPosition(DirectX::XMVectorSet(pos[0], pos[1], pos[2], 1));
 					
-					float rot[3] = { DirectX::XMVectorGetX(model->m_rotation_deg),
-						DirectX::XMVectorGetY(model->m_rotation_deg),
-						DirectX::XMVectorGetZ(model->m_rotation_deg) };
+					float rad_to_deg = 180.f / 3.1415926535f;
+					float rot[3] = { DirectX::XMVectorGetX(model->m_rotation_radians) * rad_to_deg,
+						DirectX::XMVectorGetY(model->m_rotation_radians) * rad_to_deg,
+						DirectX::XMVectorGetZ(model->m_rotation_radians) * rad_to_deg };
+					float deg_to_rad = 3.1415926535f / 180.f;
 					ImGui::DragFloat3("Rotation", rot);
-					model->SetRotation(DirectX::XMVectorSet(rot[0], rot[1], rot[2], 0));
+					model->SetRotation(DirectX::XMVectorSet(rot[0] * deg_to_rad, rot[1] * deg_to_rad, rot[2] * deg_to_rad, 0));
 
 					float scl[3] = { DirectX::XMVectorGetX(model->m_scale),
 						DirectX::XMVectorGetY(model->m_scale),
@@ -323,7 +331,7 @@ namespace wr::imgui::window
 					{
 						auto node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model->m_model);
 						node->SetPosition(model->m_position);
-						node->SetRotation(model->m_rotation_deg);
+						node->SetRotation(model->m_rotation_radians);
 						node->SetScale(model->m_scale);
 					}
 

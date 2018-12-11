@@ -41,7 +41,7 @@ namespace wr
 
 	void LightNode::SetAngle(float ang)
 	{
-		m_light->ang = ang / 180.f * 3.1415926535f;
+		m_light->ang = ang;
 		SignalChange();
 	}
 
@@ -63,10 +63,10 @@ namespace wr
 		SignalChange();
 	}
 
-	void LightNode::SetDirectional(DirectX::XMVECTOR rot_deg, DirectX::XMVECTOR col) 
+	void LightNode::SetDirectional(DirectX::XMVECTOR rot, DirectX::XMVECTOR col) 
 	{
 		SetType(LightType::DIRECTIONAL);
-		SetRotation(rot_deg);
+		SetRotation(rot);
 		SetColor(col);
 	}
 
@@ -78,12 +78,12 @@ namespace wr
 		SetColor(col);
 	}
 
-	void LightNode::SetSpot(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR rot_deg, float ang, DirectX::XMVECTOR col)
+	void LightNode::SetSpot(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR rot, float ang, DirectX::XMVECTOR col)
 	{
 		SetType(LightType::POINT);
 		SetPosition(pos);
 		SetRadius(rad);
-		SetRotation(rot_deg);
+		SetRotation(rot);
 		SetAngle(ang);
 		SetColor(col);
 	}
