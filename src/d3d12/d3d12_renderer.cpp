@@ -438,9 +438,9 @@ namespace wr
 			n_desc.m_rt_local = desc.second.m_rtx_local;
 
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
-			SetName(n_rs, (L"Root Signature " + desc.second.name));
 			d3d12::FinalizeRootSignature(n_rs, m_device);
 			rs->m_native = n_rs;
+			SetName(n_rs, (L"Root Signature " + desc.second.name));
 
 			registry.m_objects.insert({ desc.first, rs });
 		}
@@ -478,7 +478,6 @@ namespace wr
 			n_desc.m_type = desc.second.m_type;
 
 			auto n_pipeline = d3d12::CreatePipelineState();
-			SetName(n_pipeline, L"Default pipeline state");
 
 			if (desc.second.m_vertex_shader_handle.has_value())
 			{
@@ -504,6 +503,7 @@ namespace wr
 
 			D3D12Pipeline* pipeline = new D3D12Pipeline();
 			pipeline->m_native = n_pipeline;
+			SetName(n_pipeline, L"Default pipeline state");
 
 			registry.m_objects.insert({ desc.first, pipeline });
 		}
