@@ -792,13 +792,13 @@ namespace wr
 						d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
 					}
 				}
-
-				//Reset instances
-				batch.num_instances = 0;
 			}
+
+			//Reset instances
+			batch.num_instances = 0;
 		}
 
-		if (d3d12::settings::use_exec_indirect)
+		if constexpr (d3d12::settings::use_exec_indirect)
 		{
 			if (std::size_t size = commands.size(); size > 0)
 			{
