@@ -44,9 +44,9 @@ source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ## dependencies ##
-add_subdirectory(deps/fmt)
-add_subdirectory(deps/DirectXTex)
-add_subdirectory(deps/fallback)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fmt)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/DirectXTex)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fallback)
 
 set(ASSIMP_BUILD_SHARED_LIBS OFF)
 
@@ -105,7 +105,7 @@ set( ASSIMP_BUILD_MMD_IMPORTER      OFF )
 
 #set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT CACHE INTERNAL FALSE)
 #set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
-add_subdirectory(deps/assimp)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/assimp)
 
 ## dependencies options ##
 set(FMT_TEST OFF)
@@ -158,7 +158,7 @@ add_subdirectory(demo)
 if(ENABLE_UNIT_TEST)
     set(BUILD_GMOCK 0)
     set(INSTALL_GTEST 0)
-    add_subdirectory(deps/googletest/googletest)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/deps/googletest/googletest)
     add_subdirectory(test)
 endif(ENABLE_UNIT_TEST)
 
