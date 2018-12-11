@@ -38,7 +38,7 @@ namespace wr::d3d12::settings
 	static const constexpr uint32_t num_indirect_index_commands = 32;		//Allow 32 different meshes indexed
 	static const constexpr bool use_bundles = false;
 	static const constexpr bool use_exec_indirect = false;
-	static const constexpr bool force_dxr_fallback = false;
+	static const constexpr bool force_dxr_fallback = true;
 	static const constexpr bool disable_rtx = false;
 
 } /* wr::d3d12::settings */

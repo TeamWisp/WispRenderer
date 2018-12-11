@@ -77,7 +77,7 @@ namespace wr
 				std::nullopt,
 				std::nullopt,
 				ResourceState::RENDER_TARGET,
-				ResourceState::PIXEL_SHADER_RESOURCE,
+				ResourceState::NON_PIXEL_SHADER_RESOURCE,
 				true,
 				Format::D32_FLOAT,
 				{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },

@@ -310,6 +310,7 @@ namespace wr::d3d12
 		std::size_t m_stride;
 		bool m_used_as_uav;
 		HeapOptimization m_resource_heap_optimization;
+		std::vector<ResourceState> m_states;
 	};
 
 	struct IndirectCommandBuffer
