@@ -110,7 +110,7 @@ namespace wr
 			}
 		}
 
-		d3d12::AccelerationStructure tlas;
+		d3d12::AccelerationStructure tlas, blas;
 
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
@@ -134,7 +134,7 @@ namespace wr
 					}
 
 					// Create Geometry from scene graph
-					std::vector<d3d12::AccelerationStructure> blas_list;
+					std::vector<d3d12::desc::GeometryDesc> geometry;
 					{
 						auto batches = scene_graph.GetBatches();
 
@@ -147,7 +147,6 @@ namespace wr
 
 							for (auto& mesh : model->m_meshes)
 							{
-								std::vector<d3d12::desc::GeometryDesc> geometry;
 								auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
 
 								d3d12::desc::GeometryDesc obj;
@@ -161,22 +160,21 @@ namespace wr
 								obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
 								
 								geometry.push_back(obj);
-
-								auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, geometry);
-								blas.m_native->SetName(L"Bottomlevelaccel");
-								cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
-								blas_list.push_back(blas);
 							}
 						}
 					}
-					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, { blas_list[0] });
 
+					blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, geometry);
+					cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
+
+					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, { blas });
+					blas.m_native->SetName(L"Bottomlevelaccel");
 					tlas.m_native->SetName(L"Highlevelaccel");
 
 					data.out_init = false;
 				}
 
-				/*// Update camera cb
+				// Update camera cb
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RayTracingCamera_CBData cam_data;
 				cam_data.m_camera_position = camera->m_position;
@@ -210,7 +208,7 @@ namespace wr
 				cmd_list->m_native->SetComputeRootShaderResourceView(1, tlas.m_native->GetGPUVirtualAddress());
 				cmd_list->m_native->SetPipelineState1(data.out_state_object->m_native);
 
-				cmd_list->m_native->DispatchRays(&desc);*/
+				cmd_list->m_native->DispatchRays(&desc);
 			}
 		}
 

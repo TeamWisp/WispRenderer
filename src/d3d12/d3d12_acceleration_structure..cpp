@@ -134,10 +134,10 @@ namespace wr::d3d12
 		// Get prebuild info bottom level
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS bottom_level_inputs;
 		bottom_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-		bottom_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-		bottom_level_inputs.Flags = build_flags;
 		bottom_level_inputs.NumDescs = geometry.size();
 		bottom_level_inputs.pGeometryDescs = geometry_descs.data();
+		bottom_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+		bottom_level_inputs.Flags = build_flags;
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
 			device->m_native->GetRaytracingAccelerationStructurePrebuildInfo(&bottom_level_inputs, &blas.m_prebuild_info);
@@ -173,9 +173,6 @@ namespace wr::d3d12
 		// Bottom Level Acceleration Structure desc
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC bottom_level_build_desc = {};
 		{
-			//bottom_level_build_desc .ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
-			//bottom_level_build_desc.DestAccelerationStructureData = blas.m_native->GetGPUVirtualAddress();
-
 			bottom_level_build_desc.Inputs = bottom_level_inputs;
 			bottom_level_build_desc.ScratchAccelerationStructureData = blas.m_scratch->GetGPUVirtualAddress();
 			bottom_level_build_desc.DestAccelerationStructureData = blas.m_native->GetGPUVirtualAddress();
@@ -213,7 +210,7 @@ namespace wr::d3d12
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		top_level_inputs.Flags = build_flags;
-		top_level_inputs.NumDescs = blas_list.size();
+		top_level_inputs.NumDescs = 1;
 		top_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 
 		// Get prebuild info top level
@@ -229,7 +226,7 @@ namespace wr::d3d12
 
 		// Allocate scratch resource
 		internal::AllocateUAVBuffer(device,
-			max(blas_list[0].m_prebuild_info.ScratchDataSizeInBytes, tlas.m_prebuild_info.ScratchDataSizeInBytes),
+			tlas.m_prebuild_info.ScratchDataSizeInBytes,
 			&tlas.m_scratch,
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 			L"Acceleration Structure Scratch Resource");
@@ -254,7 +251,7 @@ namespace wr::d3d12
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
 			std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instance_descs;
-			for (auto& blas : blas_list)
+			for (auto blas : blas_list)
 			{
 				D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
 				instance_desc.Transform[0][0] = instance_desc.Transform[1][1] = instance_desc.Transform[2][2] = 1;
@@ -263,17 +260,23 @@ namespace wr::d3d12
 				instance_descs.push_back(instance_desc);
 			}
 
-			internal::AllocateUploadBuffer(device, &instance_descs, sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * instance_descs.size(), &tlas.m_instance_desc, L"InstanceDescs");
+			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * blas_list.size(), &tlas.m_instance_desc, L"InstanceDescs");
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
-			D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
-			instance_desc.Transform[0][0] = instance_desc.Transform[1][1] = instance_desc.Transform[2][2] = 1;
-			instance_desc.InstanceMask = 1;
-			UINT num_buffer_elements = static_cast<UINT>(blas_list[0].m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-			instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, 0, blas_list[0].m_native, num_buffer_elements);
+			std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
+			for (auto blas : blas_list)
+			{
+				D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
+				instance_desc.Transform[0][0] = instance_desc.Transform[1][1] = instance_desc.Transform[2][2] = 1;
+				instance_desc.InstanceMask = 1;
+				UINT num_buffer_elements = static_cast<UINT>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
+				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, 0, blas.m_native, num_buffer_elements);
 
-			internal::AllocateUploadBuffer(device, &instance_desc, sizeof(instance_desc), &tlas.m_instance_desc, L"InstanceDescs");
+				instance_descs.push_back(instance_desc);
+			}
+
+			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * instance_descs.size(), &tlas.m_instance_desc, L"InstanceDescs");
 		}
 
 		// TODO WHY HERE AND NOT EARLIER?
