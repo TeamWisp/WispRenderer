@@ -13,7 +13,7 @@ namespace wr::d3d12
 	{
 		void EnableDebugLayer(Device* device)
 		{
-			if (!(settings::enable_debug_layer != settings::DebugLayer::DISABLE)) // If the debug layer isn't disabled
+			if (settings::enable_debug_layer != settings::DebugLayer::DISABLE) // If the debug layer isn't disabled
 			{
 				// Setup debug layers
 				ID3D12Debug* temp_debug_controller;
