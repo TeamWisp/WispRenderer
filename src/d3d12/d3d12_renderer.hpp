@@ -50,6 +50,13 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 		};
 
+		struct RayTracingCamera_CBData
+		{
+			DirectX::XMMATRIX m_inverse_view_projection;
+			DirectX::XMVECTOR m_camera_position;
+		};
+
+
 		static const constexpr float size = 1.0f;
 		static const constexpr Vertex2D quad_vertices[] = {
 			{ -size, -size },
@@ -128,7 +135,9 @@ namespace wr
 		std::shared_ptr<TexturePool> m_texture_pool;
 
 		d3d12::HeapResource* m_light_buffer;
-		std::shared_ptr<ConstantBufferPool> m_camera_pool;
+		std::shared_ptr<ConstantBufferPool> m_camera_pool; // TODO: Should be part of the scene graph
+
+		std::shared_ptr<ConstantBufferPool> m_raytracing_cb_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;

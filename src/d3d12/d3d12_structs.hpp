@@ -18,6 +18,9 @@
 namespace wr::d3d12
 {
 
+	// Forward declare
+	struct StagingBuffer;
+
 	namespace desc
 	{
 
@@ -81,6 +84,19 @@ namespace wr::d3d12
 			DescriptorHeapType m_type;
 			bool m_shader_visible = true;
 			uint32_t m_versions = 1;
+		};
+
+		struct GeometryDesc
+		{
+			StagingBuffer* vertex_buffer;
+			std::optional<StagingBuffer*> index_buffer;
+
+			std::uint64_t m_num_vertices;
+			std::uint64_t m_num_indices;
+			std::uint64_t m_vertices_offset;
+			std::uint64_t m_indices_offset;
+
+			std::uint64_t m_vertex_stride;
 		};
 
 	} /* desc */
@@ -337,6 +353,7 @@ namespace wr::d3d12
 		ID3D12Resource* m_native;        // Where the AS is
 		ID3D12Resource* m_instance_desc; // Hold the matrices of the instances
 		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO m_prebuild_info;
 	};
 
 	struct ShaderRecord

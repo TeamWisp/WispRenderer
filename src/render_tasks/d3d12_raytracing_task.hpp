@@ -13,18 +13,19 @@
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 
+
 namespace wr
 {
 	struct RaytracingData
 	{
 		d3d12::DescriptorHeap* out_rt_heap;
-		d3d12::StagingBuffer* out_vb;
 
 		d3d12::ShaderTable* out_raygen_shader_table;
 		d3d12::ShaderTable* out_miss_shader_table;
 		d3d12::ShaderTable* out_hitgroup_shader_table;
 		d3d12::StateObject* out_state_object;
 		d3d12::RootSignature* out_root_signature;
+		D3D12ConstantBufferHandle* out_cb_camera_handle;
 
 		bool out_init;
 	};
@@ -55,25 +56,8 @@ namespace wr
 			d3d12::Offset(cpu_handle, 0, data.out_rt_heap->m_increment_size);
 			d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
-			// Create vertex buffer
-			float aspect_ratio = 1;
-			float offset = 0.7f;
-			float depth = 1.f;
-			std::vector<DirectX::XMVECTOR> tri_vertices =
-			{
-				// The sample raytraces in screen space coordinates.
-				// Since DirectX screen space coordinates are right handed (i.e. Y axis points down).
-				// Define the vertices in counter clockwise order ~ clockwise in left handed.
-				{ 0, -offset, depth },
-				{ -offset, offset, depth },
-				{ offset, offset, depth }
-			};
-
-			float stride = sizeof(decltype(tri_vertices[0]));
-			data.out_vb = d3d12::CreateStagingBuffer(device, tri_vertices.data(), stride * tri_vertices.size(), stride, ResourceState::NON_PIXEL_SHADER_RESOURCE);
-		
-			data.out_vb->m_buffer->SetName(L"RT VB Buffer");
-			data.out_vb->m_staging->SetName(L"RT VB Staging Buffer");
+			// Camera constant buffer
+			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::ProjectionView_CBData)));
 
 			// Pipeline State Object
 			auto rt_registry = RTPipelineRegistry::Get();
@@ -126,7 +110,7 @@ namespace wr
 			}
 		}
 
-		d3d12::AccelerationStructure tlas, blas;
+		d3d12::AccelerationStructure tlas;
 
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
@@ -134,21 +118,70 @@ namespace wr
 			auto device = n_render_system.m_device;
 			auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 
+			auto frame_idx = n_render_system.GetFrameIdx();
 
 			if (n_render_system.m_render_window.has_value())
 			{
 				// Initialize requirements
 				if (data.out_init)
 				{
-					d3d12::StageBuffer(data.out_vb, cmd_list);
-					data.out_init = true;
+					auto model_pools = n_render_system.m_model_pools;
+					// Transition all model pools for accel structure creation
+					for (auto& pool : model_pools)
+					{
+						d3d12::Transition(cmd_list, pool->GetVertexStagingBuffer(), ResourceState::VERTEX_AND_CONSTANT_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					}
+
+					// Create Geometry from scene graph
+					std::vector<d3d12::AccelerationStructure> blas_list;
+					{
+						auto batches = scene_graph.GetBatches();
+
+						for (auto& batch : batches)
+						{
+							auto n_model_pool = static_cast<D3D12ModelPool*>(batch.first->m_model_pool);
+							auto vb = n_model_pool->GetVertexStagingBuffer();
+							auto ib = n_model_pool->GetIndexStagingBuffer();
+							auto model = batch.first;
+
+							for (auto& mesh : model->m_meshes)
+							{
+								std::vector<d3d12::desc::GeometryDesc> geometry;
+								auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
+
+								d3d12::desc::GeometryDesc obj;
+								obj.index_buffer = ib;
+								obj.vertex_buffer = vb;
+
+								obj.m_indices_offset = n_mesh->m_index_staging_buffer_offset;
+								obj.m_num_indices = n_mesh->m_index_count;
+								obj.m_vertices_offset = n_mesh->m_vertex_staging_buffer_offset;
+								obj.m_num_vertices = n_mesh->m_vertex_count;
+								obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
+								
+								geometry.push_back(obj);
+
+								auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, geometry);
+								blas.m_native->SetName(L"Bottomlevelaccel");
+								cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
+								blas_list.push_back(blas);
+							}
+						}
+					}
+					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, { blas_list[0] });
+
+					tlas.m_native->SetName(L"Highlevelaccel");
+
+					data.out_init = false;
 				}
 
-				auto accel_structures = d3d12::CreateAccelerationStructures(device, cmd_list, data.out_rt_heap, std::vector<d3d12::StagingBuffer*>{ data.out_vb });
-				blas = accel_structures.first;
-				tlas = accel_structures.second;
-				blas.m_native->SetName(L"Bottomlevelaccel");
-				tlas.m_native->SetName(L"Highlevelaccel");
+				/*// Update camera cb
+				auto camera = scene_graph.GetActiveCamera();
+				temp::RayTracingCamera_CBData cam_data;
+				cam_data.m_camera_position = camera->m_position;
+				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
+				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data);
 
 				// Setup the raytracing task
 				D3D12_DISPATCH_RAYS_DESC desc = {};
@@ -172,11 +205,12 @@ namespace wr
 				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
 				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
 
+				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
 
 				cmd_list->m_native->SetComputeRootShaderResourceView(1, tlas.m_native->GetGPUVirtualAddress());
 				cmd_list->m_native->SetPipelineState1(data.out_state_object->m_native);
 
-				cmd_list->m_native->DispatchRays(&desc);
+				cmd_list->m_native->DispatchRays(&desc);*/
 			}
 		}
 

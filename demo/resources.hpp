@@ -24,6 +24,11 @@ namespace resources
 
 		model_pool = render_system->CreateModelPool(2, 2);
 
+		// Load dude
+		{
+			test_model = model_pool->Load<wr::VertexNoTangent>("resources/models/xbot.fbx", wr::ModelType::FBX);
+		}
+
 		// Load Cube.
 		{
 			wr::MeshData<wr::VertexNoTangent> mesh;
@@ -86,10 +91,6 @@ namespace resources
 			};
 
 			plane_model = model_pool->LoadCustom<wr::VertexNoTangent>({ mesh });
-		}
-
-		{
-			test_model = model_pool->Load<wr::VertexNoTangent>("resources/models/xbot.fbx", wr::ModelType::FBX);
 		}
 	}
 	

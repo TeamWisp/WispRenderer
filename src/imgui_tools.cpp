@@ -225,7 +225,7 @@ namespace wr::imgui::window
 
 	void ModelEditor(SceneGraph * scene_graph)
 	{
-		if (open_model_editor)
+		/*if (open_model_editor)
 		{
 			auto& models = scene_graph->GetMeshNodes();
 
@@ -334,7 +334,7 @@ namespace wr::imgui::window
 
 			ImGui::End();
 
-		}
+		}*/
 	}
 
 	void ShaderRegistry()

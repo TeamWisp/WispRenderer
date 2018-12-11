@@ -322,6 +322,16 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
 
+	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to)
+	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			buffer->m_buffer,
+			(D3D12_RESOURCE_STATES)from,
+			(D3D12_RESOURCE_STATES)to
+		);
+		cmd_list->m_native->ResourceBarrier(1, &barrier);
+	}
+
 	void Destroy(CommandList* cmd_list)
 	{
 		SAFE_RELEASE(cmd_list->m_native);

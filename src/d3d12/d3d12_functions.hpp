@@ -50,6 +50,7 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void DispatchRays(CommandList* cmd_list);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
@@ -194,10 +195,15 @@ namespace wr::d3d12
 	void Destroy(StateObject* obj);
 
 	// Acceelration Structure
-	[[nodiscard]] std::pair<AccelerationStructure, AccelerationStructure> CreateAccelerationStructures(Device* device,
+	[[nodiscard]] AccelerationStructure CreateBottomLevelAccelerationStructures(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<StagingBuffer*> vertex_buffers);
+		std::vector<desc::GeometryDesc> geometry);
+
+	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
+		CommandList* cmd_list,
+		DescriptorHeap* desc_heap,
+		std::vector<AccelerationStructure> blas_list);
 
 	// Shader Record
 	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);

@@ -7,45 +7,66 @@ struct HitInfo
 	float4 color;
 };
 
+cbuffer CameraProperties : register(b0)
+{
+	float4x4 inv_projection_view;
+	float3 camera_position;
+};
+
+struct Ray
+{
+	float3 origin;
+	float3 direction;
+};
+
+inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld)
+{
+    float2 xy = index + 0.5f; // center in the middle of the pixel.
+    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+
+    // Invert Y for DirectX-style coordinates.
+    screenPos.y = -screenPos.y;
+
+    // Unproject the pixel coordinate into a world positon.
+    float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
+    world.xyz /= world.w;
+
+    Ray ray;
+    ray.origin = cameraPosition;
+    ray.direction = normalize(world.xyz - ray.origin);
+
+    return ray;
+}
+
 [shader("raygeneration")]
 void RaygenEntry()
 {
-    float2 lerpValues = (float2)DispatchRaysIndex() / (float2)DispatchRaysDimensions();
+	// Initialize the ray payload
+	HitInfo payload;
+	payload.color = float4(1, 1, 1, 1);
 
-  // Initialize the ray payload
-  HitInfo payload;
-  payload.color = float4(0, 0, 0, 0);
+	Ray temp_ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view);
 
-	float v_left = -1;
-	float v_right = 1;
-	float v_up = -1;
-	float v_down = 1;
+	// Define a ray, consisting of origin, direction, and the min-max distance values
+	RayDesc ray;
+	ray.Origin = temp_ray.origin;
+	ray.Direction = temp_ray.direction;
+	ray.TMin = 0;
+	ray.TMax = 10000.0;
 
-  float3 origin = float3(
-	lerp(v_left, v_right, lerpValues.x),
-	lerp(v_up, v_down, lerpValues.y),
-	0.0f);
+	// Trace the ray
+	TraceRay(
+		Scene,
+		RAY_FLAG_NONE,
+		~0, // InstanceInclusionMask
+		0, // RayContributionToHitGroupIndex
+		1, // MultiplierForGeometryContributionToHitGroupIndex
+		0, // miss shader index
+		ray,
+		payload);
 
-  // Define a ray, consisting of origin, direction, and the min-max distance values
-  RayDesc ray;
-  ray.Origin = origin;
-  ray.Direction = float3(0, 0, 1);
-  ray.TMin = 0.001;
-  ray.TMax = 10000.0;
-
-  // Trace the ray
-  TraceRay(
-	  Scene,
-	  RAY_FLAG_NONE,
-	  ~0, // InstanceInclusionMask
-	  0, // RayContributionToHitGroupIndex
-	  1, // MultiplierForGeometryContributionToHitGroupIndex
-	  0, // miss shader index
-	  ray,
-	  payload);
-
-  gOutput[DispatchRaysIndex().xy] = payload.color;
-  //gOutput[DispatchRaysIndex().xy] = float4(lerpValues, 0, 1);
+	gOutput[DispatchRaysIndex().xy] = payload.color;
+	//gOutput[DispatchRaysIndex().xy] = float4(lerpValues, 0, 1);
 }
 
 [shader("miss")]

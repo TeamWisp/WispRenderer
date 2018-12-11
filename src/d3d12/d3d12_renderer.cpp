@@ -93,6 +93,10 @@ namespace wr
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 
+		// Raytracing cb pool
+		size_t rt_cam_align_size = SizeAlign(sizeof(temp::RayTracingCamera_CBData), 256) * d3d12::settings::num_back_buffers;
+		m_raytracing_cb_pool = CreateConstantBufferPool((size_t)std::ceil(rt_cam_align_size / (1024 * 1024.f)));
+
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);

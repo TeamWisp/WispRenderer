@@ -112,6 +112,7 @@ namespace wr
 		{
 			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(1, r); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(),
 		},
 		{
 			// No samplers
