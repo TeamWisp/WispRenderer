@@ -18,7 +18,7 @@ namespace wr::d3d12
 
 		for (auto i = 0; i < descriptor.m_num_rtv_formats; i++)
 		{
-			CD3DX12_RESOURCE_DESC resource_desc = CD3DX12_RESOURCE_DESC::Tex2D((DXGI_FORMAT)descriptor.m_rtv_formats[i], width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+			CD3DX12_RESOURCE_DESC resource_desc = CD3DX12_RESOURCE_DESC::Tex2D((DXGI_FORMAT)descriptor.m_rtv_formats[i], width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
 			D3D12_CLEAR_VALUE optimized_clear_value = {
 				(DXGI_FORMAT)descriptor.m_rtv_formats[i],
@@ -162,6 +162,25 @@ namespace wr::d3d12
 			srv_desc.Texture2D.MipLevels = 1;
 
 			n_device->CreateShaderResourceView(render_target->m_render_targets[i], &srv_desc, handle.m_native);
+			Offset(handle, 1, increment_size);
+		}
+	}
+
+	void CreateUAVFromRTV(RenderTarget * render_target, DescHeapCPUHandle & handle, unsigned int num, Format formats[8])
+	{
+		decltype(Device::m_native) n_device;
+		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));
+
+		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		for (unsigned int i = 0; i < num; i++)
+		{
+			D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
+			uav_desc.Format = (DXGI_FORMAT)formats[i];
+			uav_desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+			uav_desc.Texture2D.MipSlice = 0;
+
+			n_device->CreateUnorderedAccessView(render_target->m_render_targets[i], nullptr, &uav_desc, handle.m_native);
 			Offset(handle, 1, increment_size);
 		}
 	}
