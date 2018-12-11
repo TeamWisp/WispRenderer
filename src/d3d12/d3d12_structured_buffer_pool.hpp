@@ -19,6 +19,7 @@ namespace wr
 		std::vector<std::uint8_t> m_data;
 		std::size_t m_offset;
 		std::size_t m_size;
+		ResourceState m_new_state;
 	};
 
 	class D3D12RenderSystem;
@@ -32,6 +33,8 @@ namespace wr
 		~D3D12StructuredBufferPool() final;
 
 		void UpdateBuffers(d3d12::CommandList* cmd_list, std::size_t frame_idx);
+
+		void SetBufferState(StructuredBufferHandle* handle, ResourceState state);
 
 		void Evict() final;
 		void MakeResident() final;

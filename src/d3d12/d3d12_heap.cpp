@@ -401,7 +401,9 @@ namespace wr::d3d12
 			heap->m_current_offset += aligned_size_in_bytes;
 
 			cb->m_gpu_addresses[i] = temp_resources[i]->GetGPUVirtualAddress();
+			cb->m_states.push_back(used_as_uav ? ResourceState::UNORDERED_ACCESS : ResourceState::PIXEL_SHADER_RESOURCE);
 		}
+		
 
 		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
 
@@ -799,7 +801,7 @@ namespace wr::d3d12
 			
 			cmd_list->m_native->ResourceBarrier(1,
 				&CD3DX12_RESOURCE_BARRIER::Transition(resource,
-					buffer->m_used_as_uav ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+					static_cast<D3D12_RESOURCE_STATES>(buffer->m_states[frame_idx]),
 					D3D12_RESOURCE_STATE_COPY_DEST));
 			
 			cmd_list->m_native->CopyBufferRegion(resource, 
@@ -812,7 +814,7 @@ namespace wr::d3d12
 			cmd_list->m_native->ResourceBarrier(1,
 				&CD3DX12_RESOURCE_BARRIER::Transition(resource,
 					D3D12_RESOURCE_STATE_COPY_DEST,
-					buffer->m_used_as_uav ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+					static_cast<D3D12_RESOURCE_STATES>(buffer->m_states[frame_idx])));
 		}
 	}
 

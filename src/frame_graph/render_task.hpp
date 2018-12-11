@@ -91,11 +91,30 @@ namespace wr
 		*/
 		void Execute(wr::RenderSystem& render_system, SceneGraph& scene_graph) final
 		{
-			render_system.StartRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
+			if (m_type == RenderTaskType::DIRECT)
+			{
+				render_system.StartRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
 
-			m_execute(render_system, *this, scene_graph, m_data);
+				m_execute(render_system, *this, scene_graph, m_data);
 
-			render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
+				render_system.StopRenderTask(m_cmd_list, { m_render_target, m_rt_properties });
+			}
+			else if (m_type == RenderTaskType::COMPUTE)
+			{
+				render_system.StartComputeTask(m_cmd_list, { m_render_target, m_rt_properties });
+
+				m_execute(render_system, *this, scene_graph, m_data);
+
+				render_system.StopComputeTask(m_cmd_list, { m_render_target, m_rt_properties });
+			}
+			else if (m_type == RenderTaskType::COPY)
+			{
+				render_system.StartCopyTask(m_cmd_list, { m_render_target,m_rt_properties });
+
+				m_execute(render_system, *this, scene_graph, m_data);
+
+				render_system.StopCopyTask(m_cmd_list, { m_render_target, m_rt_properties });
+			}
 		}
 
 		void Resize(RenderSystem& render_system, std::uint32_t width, std::uint32_t height) final
