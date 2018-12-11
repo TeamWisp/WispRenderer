@@ -85,6 +85,11 @@ namespace wr::d3d12
 		return new PipelineState();
 	}
 
+	void SetName(PipelineState * pipeline_state, std::wstring name)
+	{
+		pipeline_state->m_native->SetName(name.c_str());
+	}
+
 	void SetVertexShader(PipelineState* pipeline_state, Shader* shader)
 	{
 		pipeline_state->m_vertex_shader = shader;

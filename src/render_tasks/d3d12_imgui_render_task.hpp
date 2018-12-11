@@ -44,6 +44,7 @@ namespace wr
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			data.out_descriptor_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
+			SetName(data.out_descriptor_heap, L"ImGui Descriptor Heap");
 
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();

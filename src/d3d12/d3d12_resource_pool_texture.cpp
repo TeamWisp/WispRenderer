@@ -22,6 +22,7 @@ namespace wr
 		desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 
 		m_descriptor_heap = d3d12::CreateDescriptorHeap(device, desc);
+		SetName(m_descriptor_heap, L"Texture Pool Descriptor Heap");
 		m_descriptor_handle = d3d12::GetCPUHandle(m_descriptor_heap, 0);
 	}
 

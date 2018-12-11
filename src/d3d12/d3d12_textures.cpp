@@ -72,6 +72,11 @@ namespace wr::d3d12
 		return texture;
 	}
 
+	void SetName(TextureResource * tex, std::wstring name)
+	{
+		tex->m_resource->SetName(name.c_str());
+	}
+
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, Format format)
 	{
 		decltype(Device::m_native) n_device;
