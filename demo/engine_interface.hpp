@@ -79,7 +79,14 @@ namespace engine
 			ImGui::Begin("Camera Settings", &open2);
 			
 			ImGui::DragFloat3("Position", sg->GetActiveCamera()->m_position.m128_f32, 0.5f);
-			ImGui::DragFloat3("Rotation", sg->GetActiveCamera()->m_rotation_deg.m128_f32, 0.01f);
+			float rad_to_deg = 180.f / 3.1415926535f;
+			float rot[3] = { DirectX::XMVectorGetX(sg->GetActiveCamera()->m_rotation_radians) * rad_to_deg,
+				DirectX::XMVectorGetY(sg->GetActiveCamera()->m_rotation_radians) * rad_to_deg,
+				DirectX::XMVectorGetZ(sg->GetActiveCamera()->m_rotation_radians) * rad_to_deg };
+			float deg_to_rad = 3.1415926535f / 180.f;
+			ImGui::DragFloat3("Rotation", rot, 0.01f);
+			sg->GetActiveCamera()->SetRotation(DirectX::XMVectorSet(rot[0] * deg_to_rad, rot[1] * deg_to_rad, rot[2] * deg_to_rad, 0));
+
 
 			sg->GetActiveCamera()->SignalTransformChange();
 			sg->GetActiveCamera()->SignalChange();

@@ -5,6 +5,7 @@
 #include <memory>
 #include <DirectXMath.h>
 
+#include "../util/user_literals.hpp"
 #include "../util/defines.hpp"
 #include "../util/log.hpp"
 #include "../model_pool.hpp"
@@ -30,8 +31,8 @@ namespace wr
 		void SignalTransformUpdate(unsigned int frame_idx);
 		bool RequiresTransformUpdate(unsigned int frame_idx);
 
-		//Takes roll, pitch and yaw from degrees and converts it to quaternion
-		void SetRotation(DirectX::XMVECTOR roll_pitch_yaw_deg);
+		//Takes roll, pitch and yaw
+		void SetRotation(DirectX::XMVECTOR roll_pitch_yaw);
 
 		//Sets position
 		void SetPosition(DirectX::XMVECTOR position);
@@ -39,8 +40,8 @@ namespace wr
 		//Sets scale
 		void SetScale(DirectX::XMVECTOR scale);
 
-		//Position, rotation in degrees (roll, pitch, yaw) and scale
-		void SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation_deg, DirectX::XMVECTOR scale);
+		//Position, rotation (roll, pitch, yaw) and scale
+		void SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation, DirectX::XMVECTOR scale);
 
 		//Update the transform; done automatically when SignalChange is called
 		void UpdateTransform();
@@ -51,11 +52,10 @@ namespace wr
 		//Translation of mesh node
 		DirectX::XMVECTOR m_position = { 0, 0, 0, 1 };
 
-		//Rotation as quaternion
 		DirectX::XMVECTOR m_rotation;
 
-		//Rotation as degrees
-		DirectX::XMVECTOR m_rotation_deg = { 0, 0, 0 };
+		//Rotation as quaternion
+		DirectX::XMVECTOR m_rotation_radians = { 0,0,0 };
 
 		//Scale
 		DirectX::XMVECTOR m_scale = { 1, 1, 1, 0 };
@@ -88,7 +88,7 @@ namespace wr
 		uint32_t tid = (uint32_t)LightType::FREE;		//Type id; LightType::x
 
 		DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
-		float ang = 40.f / 180.f * 3.1415926535f;		//Angle for spot; in radians
+		float ang = 40._deg;		//Angle for spot; in radians
 	};
 
 	namespace temp {
