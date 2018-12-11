@@ -62,6 +62,7 @@ namespace wr
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_versions = d3d12::settings::num_back_buffers;
 			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
+			SetName(data.out_srv_heap, L"Deferred Render Task SRV");
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{

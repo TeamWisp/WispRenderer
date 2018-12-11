@@ -39,6 +39,7 @@ namespace wr
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_versions = 1;
 			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
+			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
 
 			// Create vertex buffer
 			float aspect_ratio = 1280.f / 720.f;
@@ -51,6 +52,7 @@ namespace wr
 
 			float stride = sizeof(decltype(tri_vertices[0]));
 			data.out_vb = d3d12::CreateStagingBuffer(device, nullptr, stride * tri_vertices.size(), stride, /*ResourceState::VERTEX_AND_CONSTANT_BUFFER*/ ResourceState::NON_PIXEL_SHADER_RESOURCE);
+			SetName(data.out_vb, L"Raytracing output vertex buffer");
 		}
 
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)

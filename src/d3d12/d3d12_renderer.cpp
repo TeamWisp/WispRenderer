@@ -78,6 +78,7 @@ namespace wr
 		for (auto i = 0; i < m_fences.size(); i++)
 		{
 			m_fences[i] = d3d12::CreateFence(m_device);
+			SetName(m_fences[i], (L"Fence " + std::to_wstring(i)));
 		}
 
 		// Temporary
@@ -93,6 +94,7 @@ namespace wr
 
 		// Create screen quad
 		m_fullscreen_quad_vb = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex2D), sizeof(Vertex2D), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		SetName(m_fullscreen_quad_vb, L"Fullscreen quad vertex buffer");
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
@@ -109,7 +111,9 @@ namespace wr
 		if (d3d12::settings::use_exec_indirect)
 		{
 			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommand));
+			SetName(m_indirect_cmd_buffer, L"Default indirect command buffer");
 			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommandIndexed));
+			SetName(m_indirect_cmd_buffer_indexed, L"Default indirect command buffer indexed");
 
 			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs(4);
 			arg_descs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
@@ -434,6 +438,7 @@ namespace wr
 			n_desc.m_rt_local = desc.second.m_rtx_local;
 
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
+			SetName(n_rs, (L"Root Signature " + desc.second.name));
 			d3d12::FinalizeRootSignature(n_rs, m_device);
 			rs->m_native = n_rs;
 
@@ -473,6 +478,7 @@ namespace wr
 			n_desc.m_type = desc.second.m_type;
 
 			auto n_pipeline = d3d12::CreatePipelineState();
+			SetName(n_pipeline, L"Default pipeline state");
 
 			if (desc.second.m_vertex_shader_handle.has_value())
 			{

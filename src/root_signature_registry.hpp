@@ -21,6 +21,7 @@ namespace wr
 		std::vector<d3d12::desc::SamplerDesc> m_samplers; // TODO: Move to platform independed location
 		bool m_rtx = false;
 		bool m_rtx_local = false;
+		std::wstring name = L"";
 	};
 
 	class RootSignatureRegistry : public internal::Registry<RootSignatureRegistry, RootSignature, RootSignatureDescription>
