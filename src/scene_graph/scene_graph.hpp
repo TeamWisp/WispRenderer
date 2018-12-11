@@ -31,7 +31,7 @@ namespace wr
 		void SignalTransformUpdate(unsigned int frame_idx);
 		bool RequiresTransformUpdate(unsigned int frame_idx);
 
-		//Takes roll, pitch and yaw
+		//Takes roll, pitch and yaw and converts it to quaternion
 		void SetRotation(DirectX::XMVECTOR roll_pitch_yaw);
 
 		//Sets position
@@ -51,10 +51,11 @@ namespace wr
 
 		//Translation of mesh node
 		DirectX::XMVECTOR m_position = { 0, 0, 0, 1 };
-
+		
+		//Rotation as quaternion
 		DirectX::XMVECTOR m_rotation;
 
-		//Rotation as quaternion
+		//Rotation in radians
 		DirectX::XMVECTOR m_rotation_radians = { 0,0,0 };
 
 		//Scale
