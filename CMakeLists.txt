@@ -14,6 +14,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxrfallbackcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxrfallbackcompiler.dll COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxil.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxil.dll COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxcompiler.dll COPYONLY)
 
 ##### SOURCES #####
 file(GLOB HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
@@ -39,6 +41,8 @@ source_group("D3D12" FILES ${D3D12_SOURCES} ${D3D12_HEADERS})
 source_group("Utility" FILES ${UTIL_SOURCES} ${UTIL_HEADERS})
 source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
+set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ## dependencies ##
 add_subdirectory(deps/fmt)
 add_subdirectory(deps/DirectXTex)
@@ -46,6 +50,61 @@ add_subdirectory(deps/fallback)
 
 set(ASSIMP_BUILD_SHARED_LIBS OFF)
 
+set(ASSIMP_NO_EXPORT ON)
+set(ASSIMP_BUILD_TESTS OFF)
+
+#IMPORTERS
+set( ASSIMP_BUILD_AMF_IMPORTER      OFF )
+set( ASSIMP_BUILD_3DS_IMPORTER      OFF )
+set( ASSIMP_BUILD_AC_IMPORTER       OFF )
+set( ASSIMP_BUILD_ASE_IMPORTER      OFF )
+set( ASSIMP_BUILD_ASSBIN_IMPORTER   OFF )
+set( ASSIMP_BUILD_ASSXML_IMPORTER   OFF )
+set( ASSIMP_BUILD_B3D_IMPORTER      OFF )
+set( ASSIMP_BUILD_BVH_IMPORTER      OFF )
+set( ASSIMP_BUILD_COLLADA_IMPORTER  OFF )
+set( ASSIMP_BUILD_DXF_IMPORTER      OFF )
+set( ASSIMP_BUILD_CSM_IMPORTER      OFF )
+set( ASSIMP_BUILD_HMP_IMPORTER      OFF )
+set( ASSIMP_BUILD_IRRMESH_IMPORTER  OFF )
+set( ASSIMP_BUILD_IRR_IMPORTER      OFF )
+set( ASSIMP_BUILD_LWO_IMPORTER      OFF )
+set( ASSIMP_BUILD_LWS_IMPORTER      OFF )
+set( ASSIMP_BUILD_MD2_IMPORTER      OFF )
+set( ASSIMP_BUILD_MD3_IMPORTER      OFF )
+set( ASSIMP_BUILD_MD5_IMPORTER      OFF )
+set( ASSIMP_BUILD_MDC_IMPORTER      OFF )
+set( ASSIMP_BUILD_MDL_IMPORTER      OFF )
+set( ASSIMP_BUILD_NFF_IMPORTER      OFF )
+set( ASSIMP_BUILD_NDO_IMPORTER      OFF )
+set( ASSIMP_BUILD_OFF_IMPORTER      OFF )
+set( ASSIMMP_BUILD_OBJ_IMPORTER     ON  ) #ON
+set( ASSIMP_BUILD_OGRE_IMPORTER     OFF )
+set( ASSIMP_BUILD_OPENGEX_IMPORTER  OFF )
+set( ASSIMP_BUILD_PLY_IMPORTER      OFF )
+set( ASSIMP_BUILD_MS3D_IMPORTER     OFF )
+set( ASSIMP_BUILD_COB_IMPORTER      OFF )
+set( ASSIMP_BUILD_BLEND_IMPORTER    OFF )
+set( ASSIMP_BUILD_IFC_IMPORTER      OFF )
+set( ASSIMP_BUILD_XGL_IMPORTER      OFF )
+set( ASSIMMP_BUILD_FBX_IMPORTER     ON  ) #ON
+set( ASSIMP_BUILD_Q3D_IMPORTER      OFF )
+set( ASSIMP_BUILD_Q3BSP_IMPORTER    OFF )
+set( ASSIMP_BUILD_RAW_IMPORTER      ON  ) #ON
+set( ASSIMP_BUILD_SIB_IMPORTER      ON  ) #ON
+set( ASSIMP_BUILD_SMD_IMPORTER      ON  ) #ON
+set( ASSIMP_BUILD_STL_IMPORTER      OFF )
+set( ASSIMP_BUILD_TERRAGEN_IMPORTER OFF )
+set( ASSIMP_BUILD_3D_IMPORTER       OFF )
+set( ASSIMP_BUILD_X_IMPORTER        OFF )
+set( ASSIMP_BUILD_X3D_IMPORTER      OFF )
+set( ASSIMP_BUILD_GLTF_IMPORTER     ON  ) #ON
+set( ASSIMP_BUILD_3MF_IMPORTER      OFF )
+set( ASSIMP_BUILD_MMD_IMPORTER      OFF )
+# END IMPORTERS
+
+#set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT CACHE INTERNAL FALSE)
+#set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
 add_subdirectory(deps/assimp)
 
 ## dependencies options ##
@@ -53,7 +112,6 @@ set(FMT_TEST OFF)
 set(FMT_DOC OFF)
 set(FMT_PEDANTIC OFF)
 set(FMT_WERROR OFF)
-
 ## dependencies sorting ##
 set_target_properties (fmt PROPERTIES FOLDER ThirdParty)
 set_target_properties (DirectXTex PROPERTIES FOLDER ThirdParty)
@@ -64,34 +122,16 @@ if (MSVC)
 endif()
 
 set_target_properties(assimp PROPERTIES FOLDER ThirdParty)
-# if (MSVC)
-#	target_compile_options(assimp PRIVATE /W0)
-# endif()
-
 set_target_properties(assimp_cmd PROPERTIES FOLDER ThirdParty)
-# if (MSVC)
-#	target_compile_options(assimp_cmd PRIVATE /W0)
-# endif()
-
 set_target_properties(IrrXML PROPERTIES FOLDER ThirdParty)
-# if (MSVC)
-#	target_compile_options(IrrXML PRIVATE /W0)
-# endif()
-
 set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER ThirdParty)
-
 set_target_properties(zlib PROPERTIES FOLDER ThirdParty)
-# if (MSVC)
-#	target_compile_options(zlib PRIVATE /W0)
-# endif()
-
 set_target_properties(zlibstatic PROPERTIES FOLDER ThirdParty)
-# if (MSVC)
-#	target_compile_options(zlibstatic PRIVATE /W0)
-# endif()
+set_target_properties(unit PROPERTIES FOLDER ThirdParty)
+set_target_properties(uninstall PROPERTIES FOLDER ThirdParty)
 
 add_library(WispRenderer STATIC ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
-target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
+target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler)
 set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 17)
 set_target_properties(WispRenderer PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(WispRenderer PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -116,32 +156,10 @@ add_subdirectory(demo)
 
 ## Unit Test ##
 if(ENABLE_UNIT_TEST)
-  ## add_executable(UnitTest WIN32 EXCLUDE_FROM_ALL ${HEADERS} 
-  ## ${SOURCES} 
-  ## ${IMGUI_HEADERS} 
-  ## ${IMGUI_SOURCES} 
-  ## ${UTIL_HEADERS} 
-  ## ${UTIL_SOURCES} 
-  ## ${RT_HEADERS} 
-  ## ${RT_SOURCES} 
-  ## ${FG_HEADERS} 
-  ## ${FG_SOURCES} 
-  ## ${SG_HEADERS} 
-  ## ${SG_SOURCES} 
-  ## ${D3D12_SOURCES} 
-  ## ${D3D12_HEADERS} )
-
-  ## target_link_libraries(UnitTest dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib)
-  ## set_target_properties(UnitTest PROPERTIES CXX_STANDARD 17)
-  ## set_target_properties(UnitTest PROPERTIES CXX_EXTENSIONS OFF)
-  ## set_target_properties(UnitTest PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)
-  ## if (MSVC)
-  ## target_compile_options(UnitTest PRIVATE /W4 /permissive- /MP /Gm-)
-  ## endif()
-
-  ## target_include_directories(UnitTest PUBLIC deps/fmt/include)
-  ## target_link_libraries(UnitTest fmt)
-  ## set_target_properties(UnitTest PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
+    set(BUILD_GMOCK 0)
+    set(INSTALL_GTEST 0)
+    add_subdirectory(deps/googletest/googletest)
+    add_subdirectory(test)
 endif(ENABLE_UNIT_TEST)
 
 ## Generate Include Directory

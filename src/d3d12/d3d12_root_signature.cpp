@@ -17,6 +17,8 @@ namespace wr::d3d12
 	void FinalizeRootSignature(RootSignature* root_signature, Device* device)
 	{
 		auto n_device = device->m_native;
+		auto n_fb_device = device->m_fallback_native;
+		auto create_info = root_signature->m_create_info;
 
 		// Check capabilities TODO: Actually use capabilities.
 		D3D12_FEATURE_DATA_ROOT_SIGNATURE feature_data = {};
@@ -26,11 +28,11 @@ namespace wr::d3d12
 			feature_data.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		}
 
-		auto num_samplers = root_signature->m_create_info.m_samplers.size();
+		auto num_samplers = create_info.m_samplers.size();
 		std::vector<D3D12_STATIC_SAMPLER_DESC> samplers(num_samplers);
 		for (auto i = 0; i < num_samplers; i++)
 		{
-			auto sampler_info = root_signature->m_create_info.m_samplers[i];
+			auto sampler_info = create_info.m_samplers[i];
 
 			samplers[0].Filter = (D3D12_FILTER)sampler_info.m_filter;
 			samplers[0].AddressU = (D3D12_TEXTURE_ADDRESS_MODE)sampler_info.m_address_mode;
@@ -47,24 +49,46 @@ namespace wr::d3d12
 			samplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: very inneficient. plz fix
 		}
 
-		CD3DX12_ROOT_SIGNATURE_DESC root_signature_desc;
-		root_signature_desc.Init(root_signature->m_create_info.m_parameters.size(),
-			root_signature->m_create_info.m_parameters.data(),
-			num_samplers,
-			samplers.data(),
-			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-		ID3DBlob* signature;
-		ID3DBlob* error = nullptr;
-		HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error); //TODO: FIX error parameter
-		if (FAILED(hr))
+		D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+		if (create_info.m_rt_local)
 		{
-			LOGC("Failed to serialize root signature. Error: \n {}", (char*)error->GetBufferPointer());
-			throw "Failed to create a serialized root signature";
+			flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
 		}
 
-		TRY_M(n_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature->m_native)),
-			"Failed to create root signature");
+		CD3DX12_ROOT_SIGNATURE_DESC root_signature_desc;
+		root_signature_desc.Init(create_info.m_parameters.size(),
+			create_info.m_parameters.data(),
+			num_samplers,
+			samplers.data(),
+			flags);
+
+		if (create_info.m_rtx && GetRaytracingType(device) == RaytracingType::FALLBACK)
+		{
+			// Fallback
+			ID3DBlob* signature;
+			ID3DBlob* error = nullptr;
+			HRESULT hr = n_fb_device->D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error); //TODO: FIX error parameter
+			if (FAILED(hr))
+			{
+				LOGC("Failed to serialize root signature. Error: \n {}", (char*)error->GetBufferPointer());
+			}
+
+			TRY_M(n_fb_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature->m_native)),
+				"Failed to create root signature");
+		}
+		else
+		{
+			ID3DBlob* signature;
+			ID3DBlob* error = nullptr;
+			HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error); //TODO: FIX error parameter
+			if (FAILED(hr))
+			{
+				LOGC("Failed to serialize root signature. Error: \n {}", (char*)error->GetBufferPointer());
+			}
+
+			TRY_M(n_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature->m_native)),
+				"Failed to create root signature");
+		}
 		NAME_D3D12RESOURCE(root_signature->m_native);
 	}
 

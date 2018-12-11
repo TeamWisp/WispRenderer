@@ -2,7 +2,6 @@
 
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
-#include "d3dx12.hpp"
 
 namespace wr::d3d12
 {

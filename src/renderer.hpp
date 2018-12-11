@@ -45,6 +45,7 @@ namespace wr
 		virtual void PrepareRootSignatureRegistry() = 0;
 		virtual void PrepareShaderRegistry() = 0;
 		virtual void PreparePipelineRegistry() = 0;
+		virtual void PrepareRTPipelineRegistry() = 0;
 
 		virtual void WaitForAllPreviousWork() = 0;
 
@@ -57,6 +58,10 @@ namespace wr
 
 		virtual void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 		virtual void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
+		virtual void StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
+		virtual void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
+		virtual void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
+		virtual void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 
 		virtual void Init(std::optional<Window*> window) = 0;
 		virtual std::unique_ptr<TextureHandle> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;

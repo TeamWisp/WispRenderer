@@ -5,6 +5,8 @@
 #include "render_tasks/d3d12_imgui_render_task.hpp"
 #include "render_tasks/d3d12_deferred_main.hpp"
 #include "render_tasks/d3d12_deferred_composition.hpp"
+#include "render_tasks/d3d12_deferred_render_target_copy.hpp"
+#include "render_tasks/d3d12_raytracing_task.hpp"
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
@@ -23,7 +25,7 @@ void RenderEditor()
 	engine::RenderEngine(render_system.get(), scene_graph.get());
 }
 
-void WispEntry()
+int WispEntry()
 {
 	// ImGui Logging
 	util::log_callback::impl = [&](std::string const & str)
@@ -60,6 +62,8 @@ void WispEntry()
 	wr::FrameGraph frame_graph;
 	frame_graph.AddTask(wr::GetDeferredMainTask());
 	frame_graph.AddTask(wr::GetDeferredCompositionTask());
+	frame_graph.AddTask(wr::GetDeferredRenderTargetCopyTask());
+	//frame_graph.AddTask(wr::GetRaytracingTask());
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 
@@ -82,6 +86,7 @@ void WispEntry()
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 	frame_graph.Destroy();
 	render_system.reset();
+	return 0;
 }
 
 WISP_ENTRY(WispEntry)

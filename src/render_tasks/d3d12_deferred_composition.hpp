@@ -30,23 +30,22 @@ namespace wr
 
 		inline void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, DeferredCompositionTaskData const & data, unsigned int frame_idx)
 		{
-			d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
-			d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
+			
 
 			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
 
-			d3d12::BindConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
+			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
-			d3d12::BindDescriptorTable(cmd_list, gpu_handle, 1);
+			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 1);
+			d3d12::Offset(gpu_handle, 4, data.out_srv_heap->m_increment_size);
+			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 2);
 
-			d3d12::BindVertexBuffer(cmd_list,
-				render_system.m_fullscreen_quad_vb,
-				0,
-				render_system.m_fullscreen_quad_vb->m_size,
-				render_system.m_fullscreen_quad_vb->m_stride_in_bytes);
-
-			d3d12::Draw(cmd_list, 4, 1, 0);
+			d3d12::Dispatch(cmd_list, 
+				static_cast<int>(std::ceil( render_system.m_viewport.m_viewport.Width / 16.f)),
+				static_cast<int>(std::ceil(render_system.m_viewport.m_viewport.Height / 16.f)),
+				1);
 		}
 
 		inline void SetupDeferredTask(RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data)
@@ -59,7 +58,7 @@ namespace wr
 
 			d3d12::desc::DescriptorHeapDesc heap_desc;
 			heap_desc.m_shader_visible = true;
-			heap_desc.m_num_descriptors = 4;
+			heap_desc.m_num_descriptors = 5;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_versions = d3d12::settings::num_back_buffers;
 			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
@@ -87,9 +86,18 @@ namespace wr
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
 
+				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE) 
+				{
+					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					return;
+				}
+
+
 				//Get light buffer
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
+				std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
+				d3d12::CreateUAVFromRTV(static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()), cpu_handle, 1, formats.data());
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
@@ -108,9 +116,14 @@ namespace wr
 				
 				//Render deferred
 
-				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::PIXEL_SHADER_RESOURCE);
+				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindViewport(cmd_list, viewport);
+
+				d3d12::Transition(cmd_list,
+					static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()),
+					wr::ResourceState::COPY_SOURCE,
+					wr::ResourceState::UNORDERED_ACCESS);
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
@@ -118,11 +131,16 @@ namespace wr
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
-				{
-					RecordDrawCommands(n_render_system, cmd_list, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, frame_idx);
+				{						
+					RecordDrawCommands(n_render_system, cmd_list, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, frame_idx);	
 				}
 
-				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
+				d3d12::Transition(cmd_list,
+					static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()),
+					wr::ResourceState::UNORDERED_ACCESS,
+					wr::ResourceState::COPY_SOURCE);
+
+				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}
 		}
 
@@ -143,13 +161,13 @@ namespace wr
 	//! Used to create a new defferred task.
 	[[nodiscard]] inline std::unique_ptr<DeferredCompositionRenderTask_t> GetDeferredCompositionTask()
 	{
-		auto ptr = std::make_unique<DeferredCompositionRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT, true,
+		auto ptr = std::make_unique<DeferredCompositionRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::COMPUTE, true,
 			RenderTargetProperties{
-				true,
+				false,
 				std::nullopt,
 				std::nullopt,
-				std::nullopt,
-				std::nullopt,
+				ResourceState::UNORDERED_ACCESS,
+				ResourceState::COPY_SOURCE,
 				false,
 				Format::UNKNOWN,
 				{ Format::R8G8B8A8_UNORM },

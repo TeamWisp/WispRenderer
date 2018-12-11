@@ -2730,6 +2730,10 @@ public:
     {
         Init(D3D12_STATE_OBJECT_TYPE_COLLECTION);
     }
+	~CD3DX12_STATE_OBJECT_DESC()
+	{
+		volatile int x = 0;
+	}
     CD3DX12_STATE_OBJECT_DESC(D3D12_STATE_OBJECT_TYPE Type)
     {
         Init(Type);
@@ -2888,17 +2892,27 @@ private:
     };
 
 #if(__cplusplus >= 201103L)
+	// FIXME: This would break with the current impl
     std::list<std::unique_ptr<const SUBOBJECT_HELPER_BASE>> m_OwnedSubobjectHelpers;
 #else
     class OWNED_HELPER
     {
     public:
         OWNED_HELPER(const SUBOBJECT_HELPER_BASE* pHelper) { m_pHelper = pHelper; }
-        ~OWNED_HELPER() { delete m_pHelper; }
+        ~OWNED_HELPER() { /*delete m_pHelper;*/ }
         const SUBOBJECT_HELPER_BASE* m_pHelper;
     };
 
     std::list<OWNED_HELPER> m_OwnedSubobjectHelpers;
+	public:
+	void DeleteHelpers()
+	{
+		for (auto& it : m_OwnedSubobjectHelpers)
+		{
+			delete it.m_pHelper;
+		}
+	}
+	private:
 #endif
 
     friend class CD3DX12_DXIL_LIBRARY_SUBOBJECT;

@@ -4,11 +4,14 @@
 
 #include "d3d12_structs.hpp"
 
+#include "d3d12_constant_buffer_pool.hpp"
+
 namespace wr::d3d12
 {
 
 	// Device
 	[[nodiscard]] Device* CreateDevice();
+	RaytracingType GetRaytracingType(Device* device);
 	void Destroy(Device* device);
 
 	// CommandQueue
@@ -30,18 +33,19 @@ namespace wr::d3d12
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx);
-	//void BindCompute(CommandList& cmd_list, PipelineState* pipeline_state);
+	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
-	// void BindCompute(CommandList* cmd_list, ConstantBuffer* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
-	// void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
+	void BindComputeConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
+	//void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
-	//void BindCompute(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
-	void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> const & heaps);
+	void BindComputeDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
+	//void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> const & heaps);
 	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size, std::size_t m_stride);
 	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset, unsigned int size);
 	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count, unsigned int vertex_start);
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count, unsigned int idx_start, unsigned int vertex_start);
+	void Dispatch(CommandList* cmd_list, unsigned int thread_group_count_x, unsigned int thread_group_count_y, unsigned int thread_group_count_z);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
@@ -62,6 +66,7 @@ namespace wr::d3d12
 	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
 	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle);
 	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
+	void CreateUAVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
 	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	void CreateSRVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id);
 	// void CreateUAVFromTexture(Texture* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
@@ -105,6 +110,7 @@ namespace wr::d3d12
 
 	// Shader
 	[[nodiscard]] Shader* LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
+	[[nodiscard]] Shader* LoadDXCShader(ShaderType type, std::string const & path, std::string const & entry = "main");
 	bool ReloadShader(Shader* shader);
 	void Destroy(Shader* shader);
 
@@ -176,7 +182,18 @@ namespace wr::d3d12
 		std::uint64_t stride,
 		CommandList* cmd_list);
 
+	// Indirect Command Buffer
 	[[nodiscard]] IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size);
 	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
+
+	// State Object
+	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	void Destroy(StateObject* obj);
+
+	// Acceelration Structure
+	[[nodiscard]] std::pair<AccelerationStructure, AccelerationStructure> CreateAccelerationStructures(Device* device,
+		CommandList* cmd_list,
+		DescriptorHeap* desc_heap,
+		std::vector<StagingBuffer*> vertex_buffers);
 
 } /* wr::d3d12 */
