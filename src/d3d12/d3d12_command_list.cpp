@@ -77,9 +77,9 @@ namespace wr::d3d12
 		cmd_list->m_native->ExecuteBundle(bundle->m_native);
 	}
 
-	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer)
+	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer, uint32_t frame_idx)
 	{
-		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, buffer->m_num_commands, buffer->m_native, 0, nullptr, 0);
+		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, buffer->m_num_commands, buffer->m_native[frame_idx], 0, nullptr, 0);
 	}
 
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear, bool clear_depth)
@@ -305,10 +305,10 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
 
-	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to)
+	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			buffer->m_native,
+			buffer->m_native[frame_idx],
 			(D3D12_RESOURCE_STATES)from,
 			(D3D12_RESOURCE_STATES)to
 		);

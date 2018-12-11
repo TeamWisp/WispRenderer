@@ -103,8 +103,8 @@ namespace wr
 		// Execute Indirect code
 		if (d3d12::settings::use_exec_indirect)
 		{
-			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_draw_commands, sizeof(temp::IndirectCommand));
-			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_index_commands, sizeof(temp::IndirectCommandIndexed));
+			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_draw_commands, sizeof(temp::IndirectCommand), d3d12::settings::num_back_buffers);
+			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_index_commands, sizeof(temp::IndirectCommandIndexed), d3d12::settings::num_back_buffers);
 
 			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs(4);
 			arg_descs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
@@ -796,26 +796,27 @@ namespace wr
 				//Reset instances
 				batch.num_instances = 0;
 			}
-
-			if (d3d12::settings::use_exec_indirect)
-			{
-				if (std::size_t size = commands.size(); size > 0)
-				{
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
-					d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size);
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
-					d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer);
-				}
-				if (std::size_t size = indexed_commands.size(); size > 0)
-				{
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
-					d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size);
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
-					d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed);
-				}
-
-			}
 		}
+
+		if (d3d12::settings::use_exec_indirect)
+		{
+			if (std::size_t size = commands.size(); size > 0)
+			{
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST, frame_idx);
+				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size, frame_idx);
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT, frame_idx);
+				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer, frame_idx);
+			}
+			if (std::size_t size = indexed_commands.size(); size > 0)
+			{
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST, frame_idx);
+				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size, frame_idx);
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT, frame_idx);
+				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed, frame_idx);
+			}
+
+		}
+
 	}
 	
 
