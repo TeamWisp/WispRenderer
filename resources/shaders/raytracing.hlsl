@@ -24,6 +24,7 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
     float2 xy = index + 0.5f; // center in the middle of the pixel.
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
+	screenPos.y *= -1;
     // Invert Y for DirectX-style coordinates.
     screenPos.y = -screenPos.y;
 
@@ -66,13 +67,12 @@ void RaygenEntry()
 		payload);
 
 	gOutput[DispatchRaysIndex().xy] = payload.color;
-	//gOutput[DispatchRaysIndex().xy] = float4(lerpValues, 0, 1);
 }
 
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	payload.color = float4(0.0f, 1.0f, 0.0f, 1.f);
+	payload.color = float4(170.0f / 255.f, 203.0f / 255.f, 1.0f, 1.f);
 }
 
 [shader("closesthit")]

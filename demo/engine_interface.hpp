@@ -78,8 +78,8 @@ namespace engine
 		{
 			ImGui::Begin("Camera Settings", &open2);
 			
-			ImGui::DragFloat3("Position", sg->GetActiveCamera()->m_position.m128_f32, 0.5f);
-			ImGui::DragFloat3("Rotation", sg->GetActiveCamera()->m_rotation_deg.m128_f32, 0.01f);
+			ImGui::DragFloat3("Position", sg->GetActiveCamera()->m_position.m128_f32, 0.1f);
+			ImGui::DragFloat3("Rotation", sg->GetActiveCamera()->m_rotation_deg.m128_f32, 0.02f);
 
 			sg->GetActiveCamera()->SignalTransformChange();
 			sg->GetActiveCamera()->SignalChange();
