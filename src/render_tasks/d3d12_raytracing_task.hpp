@@ -110,7 +110,8 @@ namespace wr
 			}
 		}
 
-		d3d12::AccelerationStructure tlas, blas;
+		d3d12::AccelerationStructure tlas;
+		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list;
 
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
@@ -134,8 +135,8 @@ namespace wr
 					}
 
 					// Create Geometry from scene graph
-					std::vector<d3d12::desc::GeometryDesc> geometry;
 					{
+						scene_graph.Optimize();
 						auto batches = scene_graph.GetBatches();
 
 						for (auto& batch : batches)
@@ -158,17 +159,22 @@ namespace wr
 								obj.m_vertices_offset = n_mesh->m_vertex_staging_buffer_offset;
 								obj.m_num_vertices = n_mesh->m_vertex_count;
 								obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
-								
-								geometry.push_back(obj);
+
+								auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, { obj });
+								cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
+								blas.m_native->SetName(L"Bottomlevelaccel");
+
+								for (auto i = 0; i < batch.second.num_instances; i++)
+								{
+									auto transform = batch.second.data.objects[i].m_model;
+									blas_list.push_back({ blas, transform });
+								}
 							}
 						}
 					}
 
-					blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, geometry);
-					cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
 
-					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, { blas });
-					blas.m_native->SetName(L"Bottomlevelaccel");
+					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, blas_list);
 					tlas.m_native->SetName(L"Highlevelaccel");
 
 					data.out_init = false;

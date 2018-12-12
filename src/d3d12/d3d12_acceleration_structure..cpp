@@ -201,7 +201,7 @@ namespace wr::d3d12
 	AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<AccelerationStructure> blas_list)
+		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list)
 	{
 		AccelerationStructure tlas;
 
@@ -210,7 +210,7 @@ namespace wr::d3d12
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		top_level_inputs.Flags = build_flags;
-		top_level_inputs.NumDescs = 1;
+		top_level_inputs.NumDescs = blas_list.size();
 		top_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 
 		// Get prebuild info top level
@@ -251,10 +251,18 @@ namespace wr::d3d12
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
 			std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instance_descs;
-			for (auto blas : blas_list)
+			for (auto it : blas_list)
 			{
+				auto blas = it.first;
+				auto transform = it.second;
+
 				D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
-				instance_desc.Transform[0][0] = instance_desc.Transform[1][1] = instance_desc.Transform[2][2] = 1;
+
+				//memcpy(instance_desc.Transform, &transform, sizeof(instance_desc.Transform));
+
+				using namespace DirectX;
+				XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instance_desc.Transform), transform);
+
 				instance_desc.InstanceMask = 1;
 				instance_desc.AccelerationStructure = blas.m_native->GetGPUVirtualAddress();
 				instance_descs.push_back(instance_desc);
@@ -265,8 +273,11 @@ namespace wr::d3d12
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
-			for (auto blas : blas_list)
+			for (auto it : blas_list)
 			{
+				auto blas = it.first;
+				auto transform = it.second;
+
 				D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
 				instance_desc.Transform[0][0] = instance_desc.Transform[1][1] = instance_desc.Transform[2][2] = 1;
 				instance_desc.InstanceMask = 1;

@@ -6,6 +6,8 @@
 
 #include "d3d12_constant_buffer_pool.hpp"
 
+#include <DirectXMath.h>
+
 namespace wr::d3d12
 {
 
@@ -203,7 +205,7 @@ namespace wr::d3d12
 	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<AccelerationStructure> blas_list);
+		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list);
 
 	// Shader Record
 	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);

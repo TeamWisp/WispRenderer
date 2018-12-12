@@ -78,8 +78,6 @@ int WispEntry()
 
 		SCENE::UpdateScene();
 
-		scene_graph->Optimize();
-
 		auto texture = render_system->Render(scene_graph, frame_graph);
 	}
 
