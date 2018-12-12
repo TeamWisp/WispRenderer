@@ -258,10 +258,7 @@ namespace wr::d3d12
 
 				D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
 
-				//memcpy(instance_desc.Transform, &transform, sizeof(instance_desc.Transform));
-
-				using namespace DirectX;
-				XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instance_desc.Transform), transform);
+				XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(instance_desc.Transform), transform);
 
 				instance_desc.InstanceMask = 1;
 				instance_desc.AccelerationStructure = blas.m_native->GetGPUVirtualAddress();
