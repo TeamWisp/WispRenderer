@@ -15,11 +15,13 @@ namespace wr::d3d12
 	[[nodiscard]] Device* CreateDevice();
 	RaytracingType GetRaytracingType(Device* device);
 	void Destroy(Device* device);
+	void SetName(Device* device, std::wstring name);
 
 	// CommandQueue
 	[[nodiscard]] CommandQueue* CreateCommandQueue(Device* device, CmdListType type);
 	void Execute(CommandQueue* cmd_queue, std::vector<CommandList*> const & cmd_lists, Fence* fence);
 	void Destroy(CommandQueue* cmd_queue);
+	void SetName(CommandQueue* cmd_queue, std::wstring name);
 
 	// CommandList
 	[[nodiscard]] CommandList* CreateCommandList(Device* device, unsigned int num_allocators, CmdListType type);
@@ -52,6 +54,7 @@ namespace wr::d3d12
 	void Dispatch(CommandList* cmd_list, unsigned int thread_group_count_x, unsigned int thread_group_count_y, unsigned int thread_group_count_z);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
@@ -62,6 +65,7 @@ namespace wr::d3d12
 
 	// Command List Signature
 	CommandSignature* CreateCommandSignature(Device* device, RootSignature* root_signature, std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs, size_t byte_stride);
+	void SetName(CommandSignature* cmd_signature, std::wstring name);
 	void Destroy(CommandSignature* cmd_signature);
 
 	// RenderTarget
@@ -85,6 +89,7 @@ namespace wr::d3d12
 
 	// Texture
 	[[nodiscard]] TextureResource* CreateTexture(Device* device, desc::TextureDesc* description, bool allow_uav);
+	void SetName(TextureResource* tex, std::wstring name);
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, Format format);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void Destroy(TextureResource* tex);
@@ -100,12 +105,14 @@ namespace wr::d3d12
 	[[nodiscard]] DescriptorHeap* CreateDescriptorHeap(Device* device, desc::DescriptorHeapDesc const & descriptor);
 	[[nodiscard]] DescHeapGPUHandle GetGPUHandle(DescriptorHeap* desc_heap, unsigned int frame_idx, unsigned int index = 0);
 	[[nodiscard]] DescHeapCPUHandle GetCPUHandle(DescriptorHeap* desc_heap, unsigned int frame_idx, unsigned int index = 0);
+	void SetName(DescriptorHeap* desc_heap, std::wstring name);
 	void Offset(DescHeapGPUHandle& handle, unsigned int index, unsigned int increment_size);
 	void Offset(DescHeapCPUHandle& handle, unsigned int index, unsigned int increment_size);
 	void Destroy(DescriptorHeap* desc_heap);
 
 	// Fence
 	[[nodiscard]] Fence* CreateFence(Device* device);
+	void SetName(Fence* fence, std::wstring name);
 	void Signal(Fence* fence, CommandQueue* cmd_queue);
 	void WaitFor(Fence* fence);
 	void Destroy(Fence* fence);
@@ -122,11 +129,13 @@ namespace wr::d3d12
 
 	// Root Signature
 	[[nodiscard]] RootSignature* CreateRootSignature(desc::RootSignatureDesc create_info);
+	void SetName(RootSignature* root_signature, std::wstring name);
 	void FinalizeRootSignature(RootSignature* root_signature, Device* device);
 	void Destroy(RootSignature* root_signature);
 
 	// Pipeline State
 	[[nodiscard]] PipelineState* CreatePipelineState(); // TODO: Creation of root signature and pipeline are not the same related to the descriptor.
+	void SetName(PipelineState* pipeline_state, std::wstring name);
 	void SetVertexShader(PipelineState* pipeline_state, Shader* shader);
 	void SetFragmentShader(PipelineState* pipeline_state, Shader* shader);
 	void SetComputeShader(PipelineState* pipeline_state, Shader* shader);
@@ -137,6 +146,7 @@ namespace wr::d3d12
 
 	// Staging Buffer
 	[[nodiscard]] StagingBuffer* CreateStagingBuffer(Device* device, void* data, std::uint64_t size, std::uint64_t m_stride, ResourceState resource_state);
+	void SetName(StagingBuffer* buffer, std::wstring name);
 	void UpdateStagingBuffer(StagingBuffer* buffer, void* data, std::uint64_t size, std::uint64_t offset);
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list);
 	void StageBufferRegion(StagingBuffer* buffer, std::uint64_t size, std::uint64_t offset, CommandList* cmd_list);
@@ -154,6 +164,10 @@ namespace wr::d3d12
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	[[nodiscard]] HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride, bool used_as_uav);
 	[[nodiscard]] HeapResource* AllocGenericBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	void SetName(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::wstring name);
+	void SetName(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::wstring name);
+	void SetName(Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* heap, std::wstring name);
+	void SetName(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::wstring name);
 	void DeallocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, HeapResource* heapResource);
 	void DeallocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, HeapResource* heapResource);
 	void DeallocBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, HeapResource* heapResource);
@@ -190,6 +204,7 @@ namespace wr::d3d12
 
 	// Indirect Command Buffer
 	[[nodiscard]] IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size);
+	void SetName(IndirectCommandBuffer* buffer, std::wstring name);
 	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
 
 	// State Object
@@ -197,6 +212,7 @@ namespace wr::d3d12
 	void SetGlobalRootSignature(StateObject* state_object, RootSignature* global_root_signature);
 	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj);
 	[[nodiscard]] void* GetShaderIdentifier(Device* device, StateObject* obj, std::string const & name);
+	void SetName(StateObject* obj, std::wstring name);
 	void Destroy(StateObject* obj);
 
 	// Acceelration Structure
@@ -219,5 +235,6 @@ namespace wr::d3d12
 			std::uint64_t num_shader_records,
 			std::uint64_t shader_record_size);
 	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
+	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name);
 
 } /* wr::d3d12 */

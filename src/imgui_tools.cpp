@@ -191,8 +191,13 @@ namespace wr::imgui::window
 					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
 
 					if (type != (uint32_t)LightType::POINT)
-					{
-						ImGui::DragFloat3("Rotation", light_node->m_rotation_deg.m128_f32);
+					{		
+						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
+						ImGui::DragFloat3("Rotation", rot, 0.01f);
+						light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
 					}
 
 					if (type != (uint32_t) LightType::DIRECTIONAL)
@@ -239,11 +244,14 @@ namespace wr::imgui::window
 			if (ImGui::Button("Add Model"))
 			{
 
-				Model* model = scene_graph->GetModelPool()->Load<Vertex>(text.data(), ModelType::FBX);
+				//Model* model = scene_graph->GetModelPool()->Load<Vertex>(
+				//	scene_graph->GetMaterialPool().get(),
+				//	scene_graph->GetTexturePool().get(),
+				//	text.data(), ModelType::FBX);
 
-				if (model != nullptr) {
-					scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-				}
+				//if (model != nullptr) {
+				//	scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
+				//}
 			}
 
 			ImGui::Separator();
@@ -291,11 +299,11 @@ namespace wr::imgui::window
 					ImGui::DragFloat3("Position", pos);
 					model->SetPosition(DirectX::XMVectorSet(pos[0], pos[1], pos[2], 1));
 					
-					float rot[3] = { DirectX::XMVectorGetX(model->m_rotation_deg),
-						DirectX::XMVectorGetY(model->m_rotation_deg),
-						DirectX::XMVectorGetZ(model->m_rotation_deg) };
-					ImGui::DragFloat3("Rotation", rot);
-					model->SetRotation(DirectX::XMVectorSet(rot[0], rot[1], rot[2], 0));
+					float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(model->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(model->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(model->m_rotation_radians)) };
+					ImGui::DragFloat3("Rotation", rot, 0.01f);
+					model->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
 
 					float scl[3] = { DirectX::XMVectorGetX(model->m_scale),
 						DirectX::XMVectorGetY(model->m_scale),
@@ -323,7 +331,7 @@ namespace wr::imgui::window
 					{
 						auto node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model->m_model);
 						node->SetPosition(model->m_position);
-						node->SetRotation(model->m_rotation_deg);
+						node->SetRotation(model->m_rotation_radians);
 						node->SetScale(model->m_scale);
 					}
 

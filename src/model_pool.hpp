@@ -9,6 +9,7 @@
 
 #include "util/defines.hpp"
 #include "material_pool.hpp"
+#include "resource_pool_texture.hpp"
 
 #undef min
 #undef max
@@ -72,9 +73,9 @@ namespace wr
 		ModelPool& operator=(ModelPool&&) = delete;
 
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* Load(std::string_view path, ModelType type);
+		[[nodiscard]] Model* Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, ModelType type);
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] std::pair<Model*, std::vector<MaterialHandle*>> LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type);
+		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, ModelType type);
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
 
@@ -93,7 +94,7 @@ namespace wr
 		virtual void DestroyMesh(internal::MeshInternal* mesh) = 0;
 
 		template<typename TV, typename TI = std::uint32_t>
-		int LoadNodeMeshes(const aiScene* scene, aiNode* node, Model* model);
+		int LoadNodeMeshes(const aiScene* scene, aiNode* node, Model* model, MaterialHandle* default_material);
 		template<typename TV, typename TI = std::uint32_t>
 		int LoadNodeMeshesWithMaterials(const aiScene* scene, aiNode* node, Model* model, std::vector<MaterialHandle*> materials);
 
@@ -156,7 +157,7 @@ namespace wr
 
 	//! Loads a model without materials
 	template<typename TV, typename TI>
-	Model* ModelPool::Load(std::string_view path, ModelType type)
+	Model* ModelPool::Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, ModelType type)
 	{
 		IS_PROPER_VERTEX_CLASS(TV)
 
@@ -180,7 +181,11 @@ namespace wr
 
 		Model* model = new Model;
 
-		int ret = LoadNodeMeshes<TV, TI>(scene, scene->mRootNode, model);
+		MaterialHandle* default_material = nullptr;
+
+		// TODO: Create default material
+
+		int ret = LoadNodeMeshes<TV, TI>(scene, scene->mRootNode, model, default_material);
 
 		if (ret == 1)
 		{
@@ -195,7 +200,7 @@ namespace wr
 
 	//! Loads a model with materials
 	template<typename TV, typename TI>
-	std::pair<Model*, std::vector<MaterialHandle*>> ModelPool::LoadWithMaterials(MaterialPool* material_pool, std::string_view path, ModelType type)
+	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, ModelType type)
 	{
 		IS_PROPER_VERTEX_CLASS(TV)
 
@@ -214,7 +219,7 @@ namespace wr
 				path.data() +
 				std::string(" failed with error ") +
 				importer.GetErrorString());
-			return std::pair<Model*, std::vector<MaterialHandle*>>();
+			return nullptr;
 		}
 
 		Model* model = new Model;
@@ -222,7 +227,120 @@ namespace wr
 
 		for (int i = 0; i < scene->mNumMaterials; ++i)
 		{
-			material_handles.push_back(material_pool->Load(scene->mMaterials[i]));
+
+			TextureHandle albedo, normals, metallic, roughness, ambient_occlusion;
+
+			aiMaterial* material = scene->mMaterials[i];
+
+			if (material->GetTextureCount(aiTextureType::aiTextureType_DIFFUSE) > 0)
+			{
+				aiString path;
+				material->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &path);
+				if (path.data[0] == '*')
+				{
+					uint32_t index = atoi(path.C_Str() + 1);
+					aiTexture* texture = scene->mTextures[index];
+
+					// TODO: Actually load embeded texture
+				}
+				else
+				{
+					albedo = texture_pool->Load(std::string(path.C_Str()));
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
+			if (material->GetTextureCount(aiTextureType::aiTextureType_NORMALS) > 0)
+			{
+				aiString path;
+				material->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &path);
+				if (path.data[0] == '*')
+				{
+					uint32_t index = atoi(path.C_Str() + 1);
+					aiTexture* texture = scene->mTextures[index];
+
+					// TODO: Actually load embeded texture
+				}
+				else
+				{
+					normals = texture_pool->Load(std::string(path.C_Str()));
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
+			if (material->GetTextureCount(aiTextureType::aiTextureType_SPECULAR) > 0)
+			{
+				aiString path;
+				material->GetTexture(aiTextureType::aiTextureType_SPECULAR, 0, &path);
+				if (path.data[0] == '*')
+				{
+					uint32_t index = atoi(path.C_Str() + 1);
+					aiTexture* texture = scene->mTextures[index];
+
+					// TODO: Actually load embeded texture
+				}
+				else
+				{
+					metallic = texture_pool->Load(std::string(path.C_Str()));
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
+			if (material->GetTextureCount(aiTextureType::aiTextureType_SHININESS) > 0)
+			{
+				aiString path;
+				material->GetTexture(aiTextureType::aiTextureType_SHININESS, 0, &path);
+				if (path.data[0] == '*')
+				{
+					uint32_t index = atoi(path.C_Str() + 1);
+					aiTexture* texture = scene->mTextures[index];
+
+					// TODO: Actually load embeded texture
+				}
+				else
+				{
+					roughness = texture_pool->Load(std::string(path.C_Str()));
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
+			if (material->GetTextureCount(aiTextureType::aiTextureType_AMBIENT) > 0)
+			{
+				aiString path;
+				material->GetTexture(aiTextureType::aiTextureType_AMBIENT, 0, &path);
+				if (path.data[0] == '*')
+				{
+					uint32_t index = atoi(path.C_Str() + 1);
+					aiTexture* texture = scene->mTextures[index];
+
+					// TODO: Actually load embeded texture
+				}
+				else
+				{
+					ambient_occlusion = texture_pool->Load(std::string(path.C_Str()));
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
+
+			int two_sided;
+			material->Get(AI_MATKEY_TWOSIDED, &two_sided);
+
+			float has_alpha;
+			material->Get(AI_MATKEY_OPACITY, &has_alpha);
+
+			material_pool->Create(albedo, normals, metallic, ambient_occlusion, has_alpha < 1, two_sided > 0);
+			material_handles.push_back();
 		}
 
 		int ret = LoadNodeMeshesWithMaterials<TV, TI>(scene, scene->mRootNode, model, material_handles);
@@ -230,13 +348,13 @@ namespace wr
 		if (ret == 1)
 		{
 			DestroyModel(model);
-			return std::pair<Model*, std::vector<MaterialHandle*>>(nullptr, {});
+			return nullptr;
 		}
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
 
-		return std::pair<Model*, std::vector<MaterialHandle*>>(model, material_handles);
+		return model;
 	}
 
 	

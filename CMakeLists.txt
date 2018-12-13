@@ -13,9 +13,9 @@ option(BUILD_SHARED_LIBS OFF)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxrfallbackcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxrfallbackcompiler.dll COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxil.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxil.dll COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/bin/dxcompiler.dll COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxrfallbackcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxil.dll ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
 
 ##### SOURCES #####
 file(GLOB HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
@@ -44,9 +44,9 @@ source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ## dependencies ##
-add_subdirectory(deps/fmt)
-add_subdirectory(deps/DirectXTex)
-add_subdirectory(deps/fallback)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fmt ${CMAKE_BINARY_DIR}/fmt)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/DirectXTex ${CMAKE_BINARY_DIR}/DirectXTex)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fallback ${CMAKE_BINARY_DIR}/fallback)
 
 set(ASSIMP_BUILD_SHARED_LIBS OFF)
 
@@ -105,7 +105,7 @@ set( ASSIMP_BUILD_MMD_IMPORTER      OFF )
 
 #set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT CACHE INTERNAL FALSE)
 #set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
-add_subdirectory(deps/assimp)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/assimp ${CMAKE_BINARY_DIR}/assimp)
 
 ## dependencies options ##
 set(FMT_TEST OFF)
@@ -131,35 +131,31 @@ set_target_properties(unit PROPERTIES FOLDER ThirdParty)
 set_target_properties(uninstall PROPERTIES FOLDER ThirdParty)
 
 add_library(WispRenderer STATIC ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
-target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler)
 set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 17)
 set_target_properties(WispRenderer PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(WispRenderer PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)
 if (MSVC)
-	target_compile_options(WispRenderer PRIVATE /W4 /permissive- /MP /Gm-)
+target_compile_options(WispRenderer PRIVATE /W4 /permissive- /MP /Gm-)
 endif()
 
-target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/DirectXTex/DirectXTex/)
-target_link_libraries(WispRenderer fmt DirectXTex)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/DirectXTex/DirectXTex/)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fmt/include)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/assimp/include)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fallback/Include)
 
-target_include_directories(WispRenderer PUBLIC deps/fmt/include deps/assimp/include)
-target_include_directories(WispRenderer PUBLIC deps/fallback/Include deps/fmt/include deps/assimp/include)
-target_link_libraries(WispRenderer fmt assimp)
-
-# target_include_directories(WispRenderer PUBLIC deps/assimp/include)
-# target_link_libraries(WispRenderer assimp)
+target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 
-add_subdirectory(demo)
+add_subdirectory(demo ${CMAKE_BINARY_DIR}/WispDemo)
 
 ## Unit Test ##
 if(ENABLE_UNIT_TEST)
     set(BUILD_GMOCK 0)
     set(INSTALL_GTEST 0)
-    add_subdirectory(deps/googletest/googletest)
-    add_subdirectory(test)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/deps/googletest/googletest ${CMAKE_BINARY_DIR}/googletest)
+    add_subdirectory(test ${CMAKE_BINARY_DIR}/Wisptest)
 endif(ENABLE_UNIT_TEST)
 
 ## Generate Include Directory

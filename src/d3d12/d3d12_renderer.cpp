@@ -17,6 +17,7 @@
 #include "d3d12_rt_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"
 #include "d3d12_root_signature_registry.hpp"
+#include "d3d12_resource_pool_texture.hpp"
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -56,9 +57,13 @@ namespace wr
 	{
 		m_window = window;
 		m_device = d3d12::CreateDevice();
+		SetName(m_device, L"Default D3D12 Device");
 		m_direct_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
 		m_compute_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_COMPUTE);
 		m_copy_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_COPY);
+		SetName(m_direct_queue, L"Default D3D12 Direct Command Queue");
+		SetName(m_compute_queue, L"Default D3D12 Compute Command Queue");
+		SetName(m_copy_queue, L"Default D3D12 Copy Command Queue");
 
 		if (window.has_value())
 		{
@@ -74,6 +79,7 @@ namespace wr
 		for (auto i = 0; i < m_fences.size(); i++)
 		{
 			m_fences[i] = d3d12::CreateFence(m_device);
+			SetName(m_fences[i], (L"Fence " + std::to_wstring(i)));
 		}
 
 		// Temporary
@@ -89,9 +95,20 @@ namespace wr
 
 		// Create screen quad
 		m_fullscreen_quad_vb = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex2D), sizeof(Vertex2D), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		SetName(m_fullscreen_quad_vb, L"Fullscreen quad vertex buffer");
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
+		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
+
+		//TEMP
+		//Create Rendering Descriptor Heap
+		d3d12::desc::DescriptorHeapDesc heap_desc;
+		heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
+		heap_desc.m_versions = d3d12::settings::num_back_buffers;
+		heap_desc.m_num_descriptors = 256;
+
+		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
 
 		// Raytracing cb pool
 		size_t rt_cam_align_size = SizeAlign(sizeof(temp::RayTracingCamera_CBData), 256) * d3d12::settings::num_back_buffers;
@@ -108,7 +125,9 @@ namespace wr
 		if (d3d12::settings::use_exec_indirect)
 		{
 			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommand));
+			SetName(m_indirect_cmd_buffer, L"Default indirect command buffer");
 			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommandIndexed));
+			SetName(m_indirect_cmd_buffer_indexed, L"Default indirect command buffer indexed");
 
 			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs(4);
 			arg_descs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
@@ -124,6 +143,8 @@ namespace wr
 			auto root_signature = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(root_signatures::basic));
 			m_cmd_signature = d3d12::CreateCommandSignature(m_device, root_signature->m_native, arg_descs, sizeof(temp::IndirectCommand));
 			m_cmd_signature_indexed = d3d12::CreateCommandSignature(m_device, root_signature->m_native, indexed_arg_descs, sizeof(temp::IndirectCommandIndexed));
+			SetName(m_cmd_signature, L"Defauld DX12 Command Signature");
+			SetName(m_cmd_signature_indexed, L"Defauld DX12 Command Signature Indexed");
 		}
 
 		// Execute
@@ -156,7 +177,14 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
+		m_texture_pool->Stage(m_direct_cmd_list);
+
 		d3d12::End(m_direct_cmd_list);
+
+		//Reset cpu and gpu handles to the start of the rendering heap. 
+		//Heap will be filled in the node rendering function.
+		m_rendering_heap_gpu = d3d12::GetGPUHandle(m_rendering_heap, frame_idx);
+		m_rendering_heap_cpu = d3d12::GetCPUHandle(m_rendering_heap, frame_idx);
 
 		scene_graph->Update();
 
@@ -276,7 +304,10 @@ namespace wr
 
 			if (properties.m_width.has_value() || properties.m_height.has_value())
 			{
-				return d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
+				for (auto i = 0; i < retval->m_render_targets.size(); i++)
+					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
+				return retval;
 			}
 			else if (m_window.has_value())
 			{
@@ -430,6 +461,7 @@ namespace wr
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
 			d3d12::FinalizeRootSignature(n_rs, m_device);
 			rs->m_native = n_rs;
+			SetName(n_rs, (L"Root Signature " + desc.second.name));
 
 			registry.m_objects.insert({ desc.first, rs });
 		}
@@ -492,6 +524,7 @@ namespace wr
 
 			D3D12Pipeline* pipeline = new D3D12Pipeline();
 			pipeline->m_native = n_pipeline;
+			SetName(n_pipeline, L"Default pipeline state");
 
 			registry.m_objects.insert({ desc.first, pipeline });
 		}
@@ -545,6 +578,7 @@ namespace wr
 				global_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle))->m_native;
 
 				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
+				global_rs->SetRootSignature(global_root_signature->m_native);
 			}
 
 			// Local Root Signatures
@@ -789,7 +823,8 @@ namespace wr
 				for (auto& mesh : model->m_meshes)
 				{
 					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
-					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) {
+					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) 
+					{
 						d3d12::BindVertexBuffer(n_cmd_list,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
 							0,
@@ -800,9 +835,22 @@ namespace wr
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer(),
 							0,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer()->m_size);
+
 						m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
+					
+					d3d12::BindDescriptorHeaps(n_cmd_list, { m_rendering_heap }, frame_idx);
+
+					auto material_handle = mesh.second;
+					
+					if (material_handle != m_last_material)
+					{
+						m_last_material = material_handle;
+
+						BindMaterial(material_handle, cmd_list);
+					}
+
 					if (n_mesh->m_index_count != 0)
 					{
 						d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
@@ -836,6 +884,43 @@ namespace wr
 
 			}
 		}
+	}
+
+	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+
+		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+
+		auto& albedo_handle = material_internal->Albedo();
+		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+
+		auto& normal_handle = material_internal->Normal();
+		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+
+		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
+		{
+			m_rendering_heap_cpu.m_native
+		};
+		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
+		{
+			src_cpu_handle_albedo.m_native,
+			src_cpu_handle_normal.m_native
+		};
+
+		UINT sizes[] = { 2 };
+
+		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
+			2, pSrcDescriptorRangeStarts,
+			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
+
+		d3d12::Offset(m_rendering_heap_cpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
+		d3d12::Offset(m_rendering_heap_gpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
 	}
 	
 

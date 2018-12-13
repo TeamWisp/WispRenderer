@@ -51,6 +51,7 @@ namespace wr
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_versions = 1;
 			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
+			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
 
 			auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
 			d3d12::Offset(cpu_handle, 0, data.out_rt_heap->m_increment_size);

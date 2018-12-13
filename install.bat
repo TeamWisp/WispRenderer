@@ -100,6 +100,9 @@ REM ##### GEN PROJECTS #####
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
 cd "%workspace_path%"
 echo current path: "%cd%"
+if exist "./build_vs2017_win64/" (
+  del ".\build_vs2017_win64\CMakeCache.txt"
+)
 mkdir build_vs2017_win64
 cd build_vs2017_win64
 if "%ENABLE_UNIT_TEST%" == "1" (
@@ -117,6 +120,9 @@ EXIT /B 0
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
 cd "%workspace_path%"
 echo current path: "%cd%" 
+if exist "./build_vs2017_win32/" (
+  del ".\build_vs2017_win32\CMakeCache.txt"
+)
 mkdir build_vs2017_win32
 cd build_vs2017_win32
 if "%ENABLE_UNIT_TEST%" == "1" (

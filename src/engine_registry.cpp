@@ -12,10 +12,15 @@
 
 namespace wr
 {
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> ranges_basic
+	{
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0); return r; }(),
+	};
 	REGISTER(root_signatures::basic) = RootSignatureRegistry::Get().Register({
 		{
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(ranges_basic.size(), ranges_basic.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
 		},
 		{
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }

@@ -26,21 +26,21 @@ namespace viknell_scene
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		floor->SetPosition({ 0, 1, 0 });
-		floor->SetRotation({ -90, 0, 0 });
+		floor->SetRotation({ -90_deg, 0, 0 });
 		roof->SetPosition({ 0, -1, 0 });
-		roof->SetRotation({ 90, 0, 0 });
+		roof->SetRotation({ 90_deg, 0, 0 });
 		back_wall->SetPosition({ 0, 0, 1 });
 		left_wall->SetPosition({ -1, 0, 0 });
-		left_wall->SetRotation({ 0, -90, 0 });
+		left_wall->SetRotation({ 0, -90_deg, 0 });
 		right_wall->SetPosition({ 1, 0, 0 });
-		right_wall->SetRotation({ 0, 90, 0 });
+		right_wall->SetRotation({ 0, 90_deg, 0 });
 		test_model->SetPosition({ 0,1,0.75 });
-		test_model->SetRotation({ 0,0,180 });
+		test_model->SetRotation({ 0,0,180_deg });
 		test_model->SetScale({ 0.01f,0.01f,0.01f });
 
 		// Lights
-		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
-		point_light_0->SetRadius(1.5f);
+		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 10, 10, 10 });
+		point_light_0->SetRadius(1.8f);
 		point_light_0->SetPosition({ 0, 0, 0 });
 
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });

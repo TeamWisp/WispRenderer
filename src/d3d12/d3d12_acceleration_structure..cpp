@@ -324,4 +324,10 @@ namespace wr::d3d12
 		return tlas;
 	}
 
+	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name)
+	{
+		acceleration_structure.first.m_native->SetName((name + L" - Bottom Level Acceleration Structure").c_str());
+		acceleration_structure.second.m_native->SetName((name + L" - Top Level Acceleration Structure").c_str());
+	}
+
 } /* wr::d3d12 */

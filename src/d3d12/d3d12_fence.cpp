@@ -26,6 +26,11 @@ namespace wr::d3d12
 		return fence;
 	}
 
+	void SetName(Fence * fence, std::wstring name)
+	{
+		fence->m_native->SetName(name.c_str());
+	}
+
 	void Signal(Fence* fence, CommandQueue* cmd_queue)
 	{
 		TRY_M(cmd_queue->m_native->Signal(fence->m_native, fence->m_fence_value),

@@ -7,7 +7,7 @@
 namespace wr::d3d12::settings
 {
 
-	enum DebugLayer
+	enum class DebugLayer
 	{
 		ENABLE,
 		DISABLE,

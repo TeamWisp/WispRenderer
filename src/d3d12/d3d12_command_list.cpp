@@ -291,6 +291,20 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
 	}
 
+	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to)
+	{		
+		if (texture->m_current_state != to)
+		{
+			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(texture->m_resource,
+																				   (D3D12_RESOURCE_STATES)from,
+																				   (D3D12_RESOURCE_STATES)to);
+
+			texture->m_current_state = to;
+		
+			cmd_list->m_native->ResourceBarrier(1, &barrier);
+		}
+	}
+
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const & textures, ResourceState from, ResourceState to)
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
@@ -388,6 +402,11 @@ namespace wr::d3d12
 		desc.Depth = depth;
 
 		cmd_list->m_native->DispatchRays(&desc);
+	}
+
+	void SetName(CommandSignature * cmd_signature, std::wstring name)
+	{
+		cmd_signature->m_native->SetName(name.c_str());
 	}
 
 	void Destroy(CommandSignature* cmd_signature)

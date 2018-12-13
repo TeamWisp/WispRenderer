@@ -24,6 +24,7 @@ namespace wr
 
 	class D3D12StructuredBufferPool;
 	class D3D12ModelPool;
+	class D3D12TexturePool;
 
 	namespace temp
 	{
@@ -116,6 +117,7 @@ namespace wr
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
+		void BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -152,6 +154,12 @@ namespace wr
 		d3d12::CommandSignature* m_cmd_signature_indexed;
 
 		std::optional<bool> m_requested_fullscreen_state;
+
+		d3d12::DescriptorHeap* m_rendering_heap;
+		d3d12::DescHeapGPUHandle m_rendering_heap_gpu;
+		d3d12::DescHeapCPUHandle m_rendering_heap_cpu;
+
+		MaterialHandle* m_last_material = nullptr;
 	};
 
 } /* wr */

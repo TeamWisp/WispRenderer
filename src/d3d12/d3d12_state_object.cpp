@@ -84,6 +84,11 @@ namespace wr::d3d12
 		return nullptr;
 	}
 
+	void SetName(StateObject * obj, std::wstring name)
+	{
+		obj->m_native->SetName(name.c_str());
+	}
+
 	void Destroy(StateObject* obj)
 	{
 		SAFE_RELEASE(obj->m_native);
