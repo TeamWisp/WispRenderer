@@ -110,6 +110,7 @@ namespace wr
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
+		void BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();

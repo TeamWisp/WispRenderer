@@ -818,15 +818,6 @@ namespace wr
 						m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
-
-
-					enum MaterialPBR: unsigned int
-					{
-						PBR_Albedo = 0,
-						PBR_Normal,
-
-						PBR_Count
-					};
 					
 					d3d12::BindDescriptorHeaps(n_cmd_list, { m_rendering_heap }, frame_idx);
 
@@ -836,38 +827,7 @@ namespace wr
 					{
 						m_last_material = material_handle;
 
-						auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
-
-						auto& albedo_handle = material_internal->Albedo();
-						auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
-
-						auto& normal_handle = material_internal->Normal();
-						auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
-
-						wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
-						wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
-
-						D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
-						{
-							m_rendering_heap_cpu.m_native
-						};
-						D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
-						{
-							src_cpu_handle_albedo.m_native,
-							src_cpu_handle_normal.m_native
-						};
-
-						UINT sizes[] = { 2 };
-
-						m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-							2, pSrcDescriptorRangeStarts,
-							nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-						d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
-
-						d3d12::Offset(m_rendering_heap_cpu, MaterialPBR::PBR_Count, m_rendering_heap->m_increment_size);
-						d3d12::Offset(m_rendering_heap_gpu, MaterialPBR::PBR_Count, m_rendering_heap->m_increment_size);
-					
+						BindMaterial(material_handle, cmd_list);
 					}
 
 					if (n_mesh->m_index_count != 0)
@@ -903,6 +863,43 @@ namespace wr
 
 			}
 		}
+	}
+
+	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+
+		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+
+		auto& albedo_handle = material_internal->Albedo();
+		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+
+		auto& normal_handle = material_internal->Normal();
+		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+
+		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
+		{
+			m_rendering_heap_cpu.m_native
+		};
+		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
+		{
+			src_cpu_handle_albedo.m_native,
+			src_cpu_handle_normal.m_native
+		};
+
+		UINT sizes[] = { 2 };
+
+		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
+			2, pSrcDescriptorRangeStarts,
+			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
+
+		d3d12::Offset(m_rendering_heap_cpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
+		d3d12::Offset(m_rendering_heap_gpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
 	}
 	
 
