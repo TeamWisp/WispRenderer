@@ -177,6 +177,8 @@ namespace wr
 
 		d3d12::End(m_direct_cmd_list);
 
+		//Reset cpu and gpu handles to the start of the rendering heap. 
+		//Heap will be filled in the node rendering function.
 		m_rendering_heap_gpu = d3d12::GetGPUHandle(m_rendering_heap, frame_idx);
 		m_rendering_heap_cpu = d3d12::GetCPUHandle(m_rendering_heap, frame_idx);
 
@@ -825,45 +827,48 @@ namespace wr
 
 						PBR_Count
 					};
-
-					auto material_handle = mesh.second;
-					auto material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
-
-					auto& albedo_handle = material_internal->Albedo();
-					auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
-
-					auto& normal_handle = material_internal->Normal();
-					auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
-
-					//Get GPU Handle for rendering heap
-					//wr::d3d12::DescHeapGPUHandle dst_gpu_handle = d3d12::GetGPUHandle(m_rendering_heap, frame_idx, albedo_internal->m_offset_in_heap);
-					//wr::d3d12::DescHeapCPUHandle dst_cpu_handle = d3d12::GetCPUHandle(m_rendering_heap, frame_idx, albedo_internal->m_offset_in_heap);
-
-					wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
-					wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
-
-					D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
-					{
-						m_rendering_heap_cpu.m_native
-					};
-					D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
-					{
-						src_cpu_handle_albedo.m_native,
-						src_cpu_handle_normal.m_native
-					};
-
-					UINT sizes[] = { 2 };
-
-					m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-														2, pSrcDescriptorRangeStarts,
-														nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
+					
 					d3d12::BindDescriptorHeaps(n_cmd_list, { m_rendering_heap }, frame_idx);
 
-					d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
+					auto material_handle = mesh.second;
+					
+					if (material_handle != m_last_material)
+					{
+						m_last_material = material_handle;
 
-					d3d12::Offset(m_rendering_heap_cpu, MaterialPBR::PBR_Count, m_rendering_heap->m_increment_size);
-					d3d12::Offset(m_rendering_heap_gpu, MaterialPBR::PBR_Count, m_rendering_heap->m_increment_size);
+						auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+
+						auto& albedo_handle = material_internal->Albedo();
+						auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+
+						auto& normal_handle = material_internal->Normal();
+						auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+
+						wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
+						wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+
+						D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
+						{
+							m_rendering_heap_cpu.m_native
+						};
+						D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
+						{
+							src_cpu_handle_albedo.m_native,
+							src_cpu_handle_normal.m_native
+						};
+
+						UINT sizes[] = { 2 };
+
+						m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
+							2, pSrcDescriptorRangeStarts,
+							nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+						d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
+
+						d3d12::Offset(m_rendering_heap_cpu, MaterialPBR::PBR_Count, m_rendering_heap->m_increment_size);
+						d3d12::Offset(m_rendering_heap_gpu, MaterialPBR::PBR_Count, m_rendering_heap->m_increment_size);
+					
+					}
 
 					if (n_mesh->m_index_count != 0)
 					{

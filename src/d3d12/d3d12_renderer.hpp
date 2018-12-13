@@ -145,13 +145,11 @@ namespace wr
 
 		std::optional<bool> m_requested_fullscreen_state;
 
-
-		//Temp
 		d3d12::DescriptorHeap* m_rendering_heap;
 		d3d12::DescHeapGPUHandle m_rendering_heap_gpu;
 		d3d12::DescHeapCPUHandle m_rendering_heap_cpu;
 
-		Material* m_last_material = nullptr;
+		MaterialHandle* m_last_material = nullptr;
 	};
 
 } /* wr */

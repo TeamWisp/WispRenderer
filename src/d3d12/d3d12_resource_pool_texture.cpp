@@ -174,7 +174,9 @@ namespace wr
 
 		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
 
-		d3d12::Offset(m_descriptor_handle, m_loaded_textures, m_descriptor_heap->m_increment_size);
+		d3d12::Offset(m_descriptor_handle, 1, m_descriptor_heap->m_increment_size);
+
+		m_loaded_textures++;
 
 		return texture;
 	}
@@ -218,7 +220,9 @@ namespace wr
 
 		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
 
-		d3d12::Offset(m_descriptor_handle, m_loaded_textures, m_descriptor_heap->m_increment_size);
+		d3d12::Offset(m_descriptor_handle, 1, m_descriptor_heap->m_increment_size);
+
+		m_loaded_textures++;
 
 		return texture;
 	}
