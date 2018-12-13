@@ -70,9 +70,9 @@ int WispEntry()
 	{
 		frame_graph.AddTask(wr::GetRaytracingTask());
 		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
-		frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
-		frame_graph.Setup(*render_system);
 	}
+	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
+	frame_graph.Setup(*render_system);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
