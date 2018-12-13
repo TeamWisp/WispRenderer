@@ -191,14 +191,13 @@ namespace wr::imgui::window
 					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
 
 					if (type != (uint32_t)LightType::POINT)
-					{
-						float rad_to_deg = 180.f / 3.1415926535f;
-						float rot[3] = { DirectX::XMVectorGetX(light_node->m_rotation_radians) * rad_to_deg,
-							DirectX::XMVectorGetY(light_node->m_rotation_radians) * rad_to_deg,
-							DirectX::XMVectorGetZ(light_node->m_rotation_radians) * rad_to_deg };
-						float deg_to_rad = 3.1415926535f / 180.f;
-						ImGui::DragFloat3("Rotation", rot);
-						light_node->SetRotation(DirectX::XMVectorSet(rot[0] * deg_to_rad, rot[1] * deg_to_rad, rot[2] * deg_to_rad, 0));
+					{		
+						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
+						ImGui::DragFloat3("Rotation", rot, 0.01f);
+						light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
 					}
 
 					if (type != (uint32_t) LightType::DIRECTIONAL)
@@ -297,13 +296,11 @@ namespace wr::imgui::window
 					ImGui::DragFloat3("Position", pos);
 					model->SetPosition(DirectX::XMVectorSet(pos[0], pos[1], pos[2], 1));
 					
-					float rad_to_deg = 180.f / 3.1415926535f;
-					float rot[3] = { DirectX::XMVectorGetX(model->m_rotation_radians) * rad_to_deg,
-						DirectX::XMVectorGetY(model->m_rotation_radians) * rad_to_deg,
-						DirectX::XMVectorGetZ(model->m_rotation_radians) * rad_to_deg };
-					float deg_to_rad = 3.1415926535f / 180.f;
-					ImGui::DragFloat3("Rotation", rot);
-					model->SetRotation(DirectX::XMVectorSet(rot[0] * deg_to_rad, rot[1] * deg_to_rad, rot[2] * deg_to_rad, 0));
+					float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(model->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(model->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(model->m_rotation_radians)) };
+					ImGui::DragFloat3("Rotation", rot, 0.01f);
+					model->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
 
 					float scl[3] = { DirectX::XMVectorGetX(model->m_scale),
 						DirectX::XMVectorGetY(model->m_scale),
