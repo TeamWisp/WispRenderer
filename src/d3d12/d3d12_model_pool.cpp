@@ -117,12 +117,7 @@ namespace wr
 	{
 		return static_cast<internal::D3D12MeshInternal*>(m_loaded_meshes[mesh_handle]);
 	}
-
-	Model* D3D12ModelPool::LoadFBX(std::string_view path, ModelType type)
-	{
-		return new Model();
-	}
-
+	
 	internal::MeshInternal* D3D12ModelPool::LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size)
 	{
 		internal::D3D12MeshInternal* mesh = new internal::D3D12MeshInternal();

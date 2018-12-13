@@ -242,7 +242,7 @@ namespace wr::imgui::window
 				Model* model = scene_graph->GetModelPool()->Load<Vertex>(
 					scene_graph->GetMaterialPool().get(),
 					scene_graph->GetTexturePool().get(),
-					text.data(), ModelType::FBX);
+					text.data());
 
 				if (model != nullptr) {
 					scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
