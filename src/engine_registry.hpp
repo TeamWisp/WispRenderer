@@ -11,6 +11,8 @@ namespace wr
 		static RegistryHandle deferred_composition;
 		static RegistryHandle rt_test_global;
 		static RegistryHandle rt_test_local;
+		static RegistryHandle rt_shadow_global;
+		static RegistryHandle rt_shadow_local;
 	};
 
 	struct shaders
@@ -20,6 +22,7 @@ namespace wr
 		static RegistryHandle fullscreen_quad_vs;
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
+		static RegistryHandle rt_shadow_lib;
 	};
 
 	struct pipelines
@@ -31,6 +34,7 @@ namespace wr
 	struct state_objects
 	{
 		static RegistryHandle state_object;
+		static RegistryHandle rt_shadow_state_object;
 	};
 
 } /* wr */

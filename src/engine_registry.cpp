@@ -158,4 +158,62 @@ namespace wr
 		std::vector<RegistryHandle>{ root_signatures::rt_test_local },      // Local Root Signatures
 	});
 
+
+	/* ### Shadow Raytracing ### */
+	REGISTER(shaders::rt_shadow_lib) = ShaderRegistry::Get().Register({
+		"resources/shaders/raytracing.hlsl",
+		"RaygenEntry",
+		ShaderType::LIBRARY_SHADER
+		});
+
+	D3D12_DESCRIPTOR_RANGE r_shadows[1] = {
+		//{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, 0 },
+		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, 0 }
+	};
+
+	REGISTER(root_signatures::rt_shadow_global) = RootSignatureRegistry::Get().Register({
+		{
+			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(1, r_shadows); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(),
+		},
+		{
+			// No samplers
+		},
+		true // rtx
+		});
+
+	REGISTER(root_signatures::rt_shadow_local) = RootSignatureRegistry::Get().Register({
+		{
+		},
+		{
+			// No samplers
+		},
+		true, true // rtx and local
+		});
+
+	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> rt_shadow_so_desc = []()
+	{
+		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
+
+		StateObjectDescription::Library lib;
+		lib.shader_handle = shaders::rt_shadow_lib;
+		lib.exports.push_back(L"RaygenEntry");
+		lib.exports.push_back(L"ClosestHitEntry");
+		lib.exports.push_back(L"MissEntry");
+
+		return std::make_pair(desc, lib);
+	}();
+
+	REGISTER(state_objects::rt_shadow_state_object) = RTPipelineRegistry::Get().Register(
+		{
+			rt_shadow_so_desc.first,     // Description
+			rt_shadow_so_desc.second,    // Library
+			(sizeof(float) * 4), // Max payload size
+			(sizeof(float) * 2), // Max attributes size
+			1,				   // Max recursion depth
+			root_signatures::rt_shadow_global,      // Global root signature
+			std::vector<RegistryHandle>{ root_signatures::rt_shadow_local },      // Local Root Signatures
+		});
+
 } /* wr */

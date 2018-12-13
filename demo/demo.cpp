@@ -6,7 +6,7 @@
 #include "render_tasks/d3d12_deferred_main.hpp"
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
-#include "render_tasks/d3d12_raytracing_task.hpp"
+#include "render_tasks/d3d12_rt_shadow_task.hpp"
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
@@ -60,7 +60,7 @@ int WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	if (true)
+	if (false)
 	{
 		frame_graph.AddTask(wr::GetDeferredMainTask());
 		frame_graph.AddTask(wr::GetDeferredCompositionTask());
@@ -68,8 +68,8 @@ int WispEntry()
 	}
 	else
 	{
-		frame_graph.AddTask(wr::GetRaytracingTask());
-		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
+		frame_graph.AddTask(wr::GetRTShadowTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RTShadowData>());
 	}
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
