@@ -175,6 +175,12 @@ namespace wr::d3d12
 		cmd_list->m_native->SetComputeRootSignature(pipeline_state->m_root_signature->m_native);
 	}
 
+	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object)
+	{
+		cmd_list->m_native->SetComputeRootSignature(state_object->m_global_root_signature->m_native);
+		cmd_list->m_native->SetPipelineState1(state_object->m_native);
+	}
+
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport)
 	{
 		cmd_list->m_native->RSSetViewports(1, &viewport.m_viewport);
@@ -220,6 +226,11 @@ namespace wr::d3d12
 	{
 		cmd_list->m_native->SetComputeRootConstantBufferView(root_parameter_idx, 
 			buffer->m_gpu_addresses[frame_idx]);
+	}
+
+	void BindComputeShaderResourceView(CommandList * cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx)
+	{
+		cmd_list->m_native->SetComputeRootShaderResourceView(root_parameter_idx, resource->GetGPUVirtualAddress());
 	}
 
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index)
@@ -358,9 +369,25 @@ namespace wr::d3d12
 		return cmd_sig;
 	}
 
-	void DispatchRays(CommandList* cmd_list)
+	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth)
 	{
-		//cmd_list->
+		D3D12_DISPATCH_RAYS_DESC desc = {};
+		desc.HitGroupTable.StartAddress = hitgroup_table->m_resource->GetGPUVirtualAddress();
+		desc.HitGroupTable.SizeInBytes = hitgroup_table->m_resource->GetDesc().Width;
+		desc.HitGroupTable.StrideInBytes = desc.HitGroupTable.SizeInBytes;
+
+		desc.MissShaderTable.StartAddress = miss_table->m_resource->GetGPUVirtualAddress();
+		desc.MissShaderTable.SizeInBytes = miss_table->m_resource->GetDesc().Width;
+		desc.MissShaderTable.StrideInBytes = desc.MissShaderTable.SizeInBytes;
+
+		desc.RayGenerationShaderRecord.StartAddress = raygen_table->m_resource->GetGPUVirtualAddress();
+		desc.RayGenerationShaderRecord.SizeInBytes = raygen_table->m_resource->GetDesc().Width;
+		// Dimensions of the image to render, identical to a window dimensions
+		desc.Width = width;
+		desc.Height = height;
+		desc.Depth = depth;
+
+		cmd_list->m_native->DispatchRays(&desc);
 	}
 
 	void Destroy(CommandSignature* cmd_signature)

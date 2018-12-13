@@ -35,10 +35,12 @@ namespace wr::d3d12
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
+	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object);
 	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback = false);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	void BindComputeConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
+	void BindComputeShaderResourceView(CommandList* cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx);
 	//void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	void BindComputeDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
@@ -54,7 +56,7 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
-	void DispatchRays(CommandList* cmd_list);
+	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
 
@@ -192,6 +194,7 @@ namespace wr::d3d12
 
 	// State Object
 	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	void SetGlobalRootSignature(StateObject* state_object, RootSignature* global_root_signature);
 	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj);
 	[[nodiscard]] void* GetShaderIdentifier(Device* device, StateObject* obj, std::string const & name);
 	void Destroy(StateObject* obj);

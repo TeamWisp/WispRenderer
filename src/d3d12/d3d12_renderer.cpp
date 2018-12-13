@@ -506,6 +506,8 @@ namespace wr
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
 
+			d3d12::RootSignature* global_root_signature = nullptr;
+
 			// Shader Library
 			{
 				auto& shader_registry = ShaderRegistry::Get();
@@ -540,10 +542,9 @@ namespace wr
 			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
 			{
 				auto& rs_registry = RootSignatureRegistry::Get();
-				auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
+				global_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle))->m_native;
 
 				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-				global_rs->SetRootSignature(n_rs->m_native->m_native);
 			}
 
 			// Local Root Signatures
@@ -556,7 +557,7 @@ namespace wr
 
 					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
 					local_rs->SetRootSignature(n_rs->m_native->m_native);
-					// Define explicit shader association for the local root signature. 
+					// Define explicit shader association for the local root signature.
 					{
 						//auto rootSignatureAssociation = desc.desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
 						//rootSignatureAssociation->SetSubobjectToAssociate(*local_rs);
@@ -572,6 +573,7 @@ namespace wr
 			}
 
 			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
+			d3d12::SetGlobalRootSignature(obj->m_native, global_root_signature);
 
 			desc.desc.DeleteHelpers();
 

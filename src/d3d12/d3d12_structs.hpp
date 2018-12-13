@@ -342,6 +342,7 @@ namespace wr::d3d12
 	struct StateObject
 	{
 		ID3D12StateObject* m_native;
+		RootSignature* m_global_root_signature;
 		ID3D12StateObjectProperties* m_properties;
 
 		ID3D12RaytracingFallbackStateObject* m_fallback_native;

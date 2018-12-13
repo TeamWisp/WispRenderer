@@ -53,6 +53,11 @@ namespace wr::d3d12
 		return retval;
 	}
 
+	void SetGlobalRootSignature(StateObject* state_object, RootSignature* global_root_signature)
+	{
+		state_object->m_global_root_signature = global_root_signature;
+	}
+
 	[[nodiscard]] void* GetShaderIdentifier(Device* device, StateObject* obj, std::string const & name)
 	{	
 		std::wstring wname(name.begin(), name.end());

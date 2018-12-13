@@ -173,7 +173,6 @@ namespace wr
 						}
 					}
 
-
 					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, blas_list);
 					tlas.m_native->SetName(L"Highlevelaccel");
 
@@ -187,34 +186,14 @@ namespace wr
 				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data);
 
-				// Setup the raytracing task
-				D3D12_DISPATCH_RAYS_DESC desc = {};
-				desc.HitGroupTable.StartAddress = data.out_hitgroup_shader_table->m_resource->GetGPUVirtualAddress();
-				desc.HitGroupTable.SizeInBytes = data.out_hitgroup_shader_table->m_resource->GetDesc().Width;
-				desc.HitGroupTable.StrideInBytes = desc.HitGroupTable.SizeInBytes;
+				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object);
 
-				desc.MissShaderTable.StartAddress = data.out_miss_shader_table->m_resource->GetGPUVirtualAddress();
-				desc.MissShaderTable.SizeInBytes = data.out_miss_shader_table->m_resource->GetDesc().Width;
-				desc.MissShaderTable.StrideInBytes = desc.MissShaderTable.SizeInBytes;
-
-				desc.RayGenerationShaderRecord.StartAddress = data.out_raygen_shader_table->m_resource->GetGPUVirtualAddress();
-				desc.RayGenerationShaderRecord.SizeInBytes = data.out_hitgroup_shader_table->m_resource->GetDesc().Width;
-				// Dimensions of the image to render, identical to a window dimensions
-				desc.Width = 1280;
-				desc.Height = 720;
-				desc.Depth = 1;
-
-				
-				cmd_list->m_native->SetComputeRootSignature(data.out_root_signature->m_native);
 				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
 				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
-
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
+				d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
 
-				cmd_list->m_native->SetComputeRootShaderResourceView(1, tlas.m_native->GetGPUVirtualAddress());
-				cmd_list->m_native->SetPipelineState1(data.out_state_object->m_native);
-
-				cmd_list->m_native->DispatchRays(&desc);
+				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table, data.out_miss_shader_table, data.out_raygen_shader_table, 1280, 720, 1);
 			}
 		}
 
