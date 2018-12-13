@@ -19,9 +19,7 @@ namespace wr
 
 		m_view = DirectX::XMMatrixLookAtRH(pos, DirectX::XMVectorAdd(forward, pos), up);
 		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, 1, 125);
-		//m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
-
-		m_inverse_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, m_view * m_projection));
+		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 
 		SignalUpdate(frame_idx);
 	}

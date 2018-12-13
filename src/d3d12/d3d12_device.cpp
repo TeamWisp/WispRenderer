@@ -35,8 +35,8 @@ namespace wr::d3d12
 			// Set error behaviour
 			if (SUCCEEDED(device->m_native->QueryInterface(IID_PPV_ARGS(&device->m_info_queue))))
 			{
-				device->m_info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-				device->m_info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+				device->m_info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, !device->m_dxr_support);
+				device->m_info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, !device->m_dxr_support);
 			}
 #endif
 		}
