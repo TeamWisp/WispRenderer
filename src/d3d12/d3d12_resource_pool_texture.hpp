@@ -32,6 +32,8 @@ namespace wr
 
 		D3D12RenderSystem& m_render_system;
 
+		//CPU only visible heap used for staging of descriptors.
+		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
 		d3d12::DescriptorHeap* m_descriptor_heap;
 		d3d12::DescHeapCPUHandle m_descriptor_handle;
 	};
