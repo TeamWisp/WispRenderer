@@ -14,6 +14,3 @@
 [submodule "deps/fallback"]
 	path = deps/fallback
 	url = https://github.com/TeamWisp/DXR-Fallback-Layer.git
-[submodule "resources"]
-	path = resources
-	url = https://github.com/TeamWisp/Wisp-LFS.git

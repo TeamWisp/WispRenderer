@@ -85,7 +85,6 @@ namespace engine
 			ImGui::DragFloat3("Rotation", rot, 0.01f);
 			sg->GetActiveCamera()->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
 
-
 			sg->GetActiveCamera()->SignalTransformChange();
 			sg->GetActiveCamera()->SignalChange();
 

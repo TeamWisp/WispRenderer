@@ -16,7 +16,7 @@ namespace viknell_scene
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
 		camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
-		camera->SetPosition({ 0, 0, -3 });
+		camera->SetPosition({ 0, 0, -1 });
 		
 		// Geometry
 		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
