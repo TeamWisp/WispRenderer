@@ -45,7 +45,8 @@ namespace wr
 
 	void Material::SetAlbedo(TextureHandle albedo)
 	{
-		if (albedo.m_pool != m_texture_pool)
+		if (albedo.m_pool != m_texture_pool
+			&& m_texture_pool)
 		{
 			LOGC("Textures in a material need to belong to the same texture pool");
 		}
@@ -56,7 +57,8 @@ namespace wr
 
 	void Material::SetNormal(TextureHandle normal)
 	{
-		if (normal.m_pool != m_texture_pool)
+		if (normal.m_pool != m_texture_pool
+			&& m_texture_pool)
 		{
 			LOGC("Textures in a material need to belong to the same texture pool");
 		}
@@ -66,7 +68,8 @@ namespace wr
 
 	void Material::SetRoughMetallic(TextureHandle rough_met)
 	{
-		if (rough_met.m_pool != m_texture_pool)
+		if (rough_met.m_pool != m_texture_pool
+			&& m_texture_pool)
 		{
 			LOGC("Textures in a material need to belong to the same texture pool");
 		}
@@ -76,7 +79,8 @@ namespace wr
 
 	void Material::SetAmbientOcclusion(TextureHandle ao)
 	{
-		if (ao.m_pool != m_texture_pool)
+		if (ao.m_pool != m_texture_pool
+			&& m_texture_pool)
 		{
 			LOGC("Textures in a material need to belong to the same texture pool");
 		}

@@ -135,8 +135,6 @@ namespace wr
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
-
-		D3D12TexturePool* m_bound_texture_pool;
     
 	private:
 		unsigned int m_max_commands = 4;
@@ -146,6 +144,14 @@ namespace wr
 		d3d12::CommandSignature* m_cmd_signature_indexed;
 
 		std::optional<bool> m_requested_fullscreen_state;
+
+
+		//Temp
+		d3d12::DescriptorHeap* m_rendering_heap;
+		d3d12::DescHeapGPUHandle m_rendering_heap_gpu;
+		d3d12::DescHeapCPUHandle m_rendering_heap_cpu;
+
+		Material* m_last_material = nullptr;
 	};
 
 } /* wr */

@@ -98,8 +98,6 @@ namespace wr
 
 		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
 		m_model_pool = m_render_system->CreateModelPool(16, 16);
-		m_texture_pool = m_render_system->CreateTexturePool(256, 64);
-		m_material_pool = m_render_system->CreateMaterialPool(1);
 		m_light_buffer = m_structured_buffer->Create(light_buffer_size, light_buffer_stride, false);
 
 		//Initialize lights
@@ -178,16 +176,6 @@ namespace wr
 	std::shared_ptr<ModelPool> SceneGraph::GetModelPool()
 	{
 		return m_model_pool;
-	}
-
-	std::shared_ptr<TexturePool> SceneGraph::GetTexturePool()
-	{
-		return m_texture_pool;
-	}
-
-	std::shared_ptr<MaterialPool> SceneGraph::GetMaterialPool()
-	{
-		return m_material_pool;
 	}
 
 	void SceneGraph::Optimize() 

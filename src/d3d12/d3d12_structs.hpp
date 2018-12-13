@@ -222,6 +222,7 @@ namespace wr::d3d12
 		ID3D12Resource* m_intermediate;
 		ResourceState m_current_state;
 		DescHeapCPUHandle m_cpu_descriptor_handle;
+		size_t m_offset_in_heap;
 
 		uint8_t* m_allocated_memory;
 

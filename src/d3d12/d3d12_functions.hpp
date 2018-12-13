@@ -48,6 +48,7 @@ namespace wr::d3d12
 	void Dispatch(CommandList* cmd_list, unsigned int thread_group_count_x, unsigned int thread_group_count_y, unsigned int thread_group_count_z);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);

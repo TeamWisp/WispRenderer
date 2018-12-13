@@ -8,6 +8,8 @@ struct VS_INPUT
 	float3 pos : POSITION;
 	float2 uv : TEXCOORD;
 	float3 normal : NORMAL;
+	float3 tangent : TANGENT;
+	float3 bitangent : BITANGENT;
 };
 
 struct VS_OUTPUT
@@ -15,6 +17,7 @@ struct VS_OUTPUT
 	float4 pos : SV_POSITION;
 	float2 uv : TEXCOORD;
 	float3 normal : NORMAL;
+	float3x3 tbn : TBNMATRIX;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -50,6 +53,11 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	output.uv = input.uv;
 	output.normal = normalize(mul(vm, float4(input.normal, 0))).xyz;
 
+	float3 tangent = normalize(mul(vm, float4(input.tangent, 0))).xyz;
+	float3 bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
+
+	output.tbn = float3x3(tangent, bitangent, output.normal);
+
 	return output;
 }
 
@@ -59,11 +67,17 @@ struct PS_OUTPUT
 	float4 normal : SV_TARGET1;
 };
 
+Texture2D material_albedo : register(t0);
+Texture2D material_normal : register(t1);
+SamplerState s0 : register(s0);
+
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
 	
-	output.albedo = float4(1.0f, 1.0f, 0.0f, 1.0f);
+	float4 albedo = material_albedo.Sample(s0, input.uv);
+
+	output.albedo = float4(albedo.xyz, 1.0f);
 	output.normal = float4(input.normal, 1);
 	return output;
 }

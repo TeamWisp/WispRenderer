@@ -239,14 +239,14 @@ namespace wr::imgui::window
 			if (ImGui::Button("Add Model"))
 			{
 
-				Model* model = scene_graph->GetModelPool()->Load<Vertex>(
-					scene_graph->GetMaterialPool().get(),
-					scene_graph->GetTexturePool().get(),
-					text.data(), ModelType::FBX);
+				//Model* model = scene_graph->GetModelPool()->Load<Vertex>(
+				//	scene_graph->GetMaterialPool().get(),
+				//	scene_graph->GetTexturePool().get(),
+				//	text.data(), ModelType::FBX);
 
-				if (model != nullptr) {
-					scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-				}
+				//if (model != nullptr) {
+				//	scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
+				//}
 			}
 
 			ImGui::Separator();
