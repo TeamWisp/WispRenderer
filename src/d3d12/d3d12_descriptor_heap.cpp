@@ -58,6 +58,14 @@ namespace wr::d3d12
 		return retval;
 	}
 
+	void SetName(DescriptorHeap * desc_heap, std::wstring name)
+	{
+		for (int i = 0; i < desc_heap->m_native.size(); i++)
+		{
+			desc_heap->m_native[i]->SetName((name + L" Descriptor Version " + std::to_wstring(i)).c_str());
+		}
+	}
+
 	void Offset(DescHeapGPUHandle& handle, unsigned int index, unsigned int increment_size)
 	{
 		handle.m_native.ptr += index * increment_size;

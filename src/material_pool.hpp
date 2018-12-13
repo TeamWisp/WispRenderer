@@ -15,6 +15,14 @@ struct aiMaterial;
 
 namespace wr
 {
+	enum class MaterialPBR : unsigned int
+	{
+		ALBEDO = 0,
+		NORMAL,
+
+		COUNT
+	};
+
 	class Material
 	{
 	public:
@@ -43,11 +51,11 @@ namespace wr
 		TextureHandle& AmbientOcclusion() { return m_rough_metallic; }
 		void SetAmbientOcclusion(TextureHandle ao);
 
-		bool IsAlphaMasked() { return m_alpha_masked; }
-		void SetAlphaMasked(bool alpha_masked) { m_alpha_masked = alpha_masked; }
+		//bool IsAlphaMasked() { return m_alpha_masked; }
+		//void SetAlphaMasked(bool alpha_masked) { m_alpha_masked = alpha_masked; }
 
-		bool IsDoubleSided() { return m_double_sided; }
-		void SetDoubleSided(bool double_sided) { m_double_sided = double_sided; }
+		//bool IsDoubleSided() { return m_double_sided; }
+		//void SetDoubleSided(bool double_sided) { m_double_sided = double_sided; }
 
 		TexturePool* const GetTexturePool() { return m_texture_pool; }
 

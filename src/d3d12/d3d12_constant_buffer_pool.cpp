@@ -10,6 +10,7 @@ namespace wr
 	m_render_system(render_system)
 	{
 		m_heap = d3d12::CreateHeap_SBO(render_system.m_device, size_in_mb * 1024 * 1024, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+		SetName(m_heap, L"Default SBO Heap");
 		d3d12::MapHeap(m_heap);
 	}
 
