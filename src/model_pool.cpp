@@ -22,6 +22,22 @@ namespace wr
 		DestroyMesh(mesh);
 	}
 
+	void Model::CalculateAABB(float(&pos)[3])
+	{
+		m_aabb[0] = {
+			std::min(pos[0], *m_aabb[0].m128_f32),
+			std::min(pos[1], m_aabb[0].m128_f32[1]),
+			std::min(pos[2], m_aabb[0].m128_f32[2])
+		};
+
+		m_aabb[1] = {
+			std::max(pos[0], *m_aabb[1].m128_f32),
+			std::max(pos[1], m_aabb[1].m128_f32[1]),
+			std::max(pos[2], m_aabb[1].m128_f32[2])
+		};
+	}
+
+
 	template<>
 	int ModelPool::LoadNodeMeshes<Vertex, std::uint32_t>(const aiScene * scene, aiNode * node, Model* model)
 	{
@@ -39,6 +55,8 @@ namespace wr
 				vertex.m_pos[0] = mesh->mVertices[j].x;
 				vertex.m_pos[1] = mesh->mVertices[j].y;
 				vertex.m_pos[2] = mesh->mVertices[j].z;
+
+				model->CalculateAABB(vertex.m_pos);
 
 				if (mesh->mNormals)
 				{
@@ -132,6 +150,8 @@ namespace wr
 				vertex.m_pos[1] = mesh->mVertices[j].y;
 				vertex.m_pos[2] = mesh->mVertices[j].z;
 
+				model->CalculateAABB(vertex.m_pos);
+
 				if (mesh->mNormals)
 				{
 					vertex.m_normal[0] = mesh->mNormals[j].x;
@@ -212,6 +232,8 @@ namespace wr
 				vertex.m_pos[0] = mesh->mVertices[j].x;
 				vertex.m_pos[1] = mesh->mVertices[j].y;
 				vertex.m_pos[2] = mesh->mVertices[j].z;
+
+				model->CalculateAABB(vertex.m_pos);
 
 				if (mesh->mNormals)
 				{
@@ -309,6 +331,8 @@ namespace wr
 				vertex.m_pos[0] = mesh->mVertices[j].x;
 				vertex.m_pos[1] = mesh->mVertices[j].y;
 				vertex.m_pos[2] = mesh->mVertices[j].z;
+
+				model->CalculateAABB(vertex.m_pos);
 
 				if (mesh->mNormals)
 				{

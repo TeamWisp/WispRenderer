@@ -204,6 +204,9 @@ namespace wr
 				auto node = m_mesh_nodes[i];
 				auto it = m_batches.find(node->m_model);
 
+				if (node->m_model == nullptr || !GetActiveCamera()->InView(node))
+					continue;
+
 				//Insert new if doesn't exist
 				if (it == m_batches.end())
 				{

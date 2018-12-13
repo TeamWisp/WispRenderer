@@ -5,6 +5,8 @@
 namespace wr
 {
 
+	struct MeshNode;
+
 	struct CameraNode : Node
 	{
 		CameraNode(float fov_deg, float aspect_ratio)
@@ -21,6 +23,10 @@ namespace wr
 
 		void UpdateTemp(unsigned int frame_idx);
 
+		bool InView(std::shared_ptr<MeshNode>& node);
+
+		void CalculatePlanes();
+
 		bool m_active;
 
 		float m_frustum_near;
@@ -30,7 +36,10 @@ namespace wr
 
 		DirectX::XMMATRIX m_view;
 		DirectX::XMMATRIX m_projection;
+		DirectX::XMMATRIX m_view_projection;
 		DirectX::XMMATRIX m_inverse_projection;
+
+		DirectX::XMVECTOR m_planes[6];
 
 		ConstantBufferHandle* m_camera_cb;
 	};

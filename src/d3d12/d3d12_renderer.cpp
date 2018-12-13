@@ -593,12 +593,6 @@ namespace wr
 
 	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		/*for (auto& node : nodes)
-		{
-			for (auto& mesh : node->m_model->m_meshes)
-			{
-			}
-		}*/
 	}
 
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
@@ -638,13 +632,13 @@ namespace wr
 
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		/*for (auto& node : nodes)
+		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+				continue;
 
-			//Update
-			node->SignalUpdate(GetFrameIdx());
-		}*/
+			node->Update(GetFrameIdx());
+		}
 	}
 
 	void D3D12RenderSystem::Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
