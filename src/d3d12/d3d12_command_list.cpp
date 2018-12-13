@@ -355,6 +355,11 @@ namespace wr::d3d12
 		return cmd_sig;
 	}
 
+	void SetName(CommandSignature * cmd_signature, std::wstring name)
+	{
+		cmd_signature->m_native->SetName(name.c_str());
+	}
+
 	void Destroy(CommandSignature* cmd_signature)
 	{
 		SAFE_RELEASE(cmd_signature->m_native);

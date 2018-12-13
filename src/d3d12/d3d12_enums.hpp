@@ -6,7 +6,7 @@
 namespace wr
 {
 
-	enum RaytracingType
+	enum class RaytracingType
 	{
 		FALLBACK,
 		NATIVE,

@@ -13,13 +13,13 @@ namespace wr::d3d12
 	{
 		void EnableDebugLayer(Device* device)
 		{
-			if (!(settings::enable_debug_layer & settings::DebugLayer::DISABLE)) // If the debug layer isn't disabled
+			if (settings::enable_debug_layer != settings::DebugLayer::DISABLE) // If the debug layer isn't disabled
 			{
 				// Setup debug layers
 				ID3D12Debug* temp_debug_controller;
 				if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&temp_debug_controller))) && SUCCEEDED(temp_debug_controller->QueryInterface(IID_PPV_ARGS(&device->m_debug_controller))))
 				{
-					if (settings::enable_debug_layer & settings::DebugLayer::ENABLE_WITH_GPU_VALIDATION) // If GPU validation is requested.
+					if (settings::enable_debug_layer == settings::DebugLayer::ENABLE_WITH_GPU_VALIDATION) // If GPU validation is requested.
 					{
 						device->m_debug_controller->SetEnableSynchronizedCommandQueueValidation(true);
 						device->m_debug_controller->SetEnableGPUBasedValidation(true);
@@ -249,6 +249,11 @@ namespace wr::d3d12
 		SAFE_RELEASE(device->m_info_queue);
 		SAFE_RELEASE(device->m_fallback_native);
 		delete device;
+	}
+
+	void SetName(Device * device, std::wstring name)
+	{
+		device->m_native->SetName(name.c_str());
 	}
 
 } /* wr::d3d12 */

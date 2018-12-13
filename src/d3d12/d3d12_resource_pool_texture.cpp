@@ -23,6 +23,7 @@ namespace wr
 		desc.m_shader_visible = false;
 
 		m_descriptor_heap = d3d12::CreateDescriptorHeap(device, desc);
+		SetName(m_descriptor_heap, L"Texture Pool Descriptor Heap");
 		m_descriptor_handle = d3d12::GetCPUHandle(m_descriptor_heap, 0);
 	}
 
