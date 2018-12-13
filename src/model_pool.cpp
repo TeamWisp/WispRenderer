@@ -27,13 +27,15 @@ namespace wr
 		m_aabb[0] = {
 			std::min(pos[0], *m_aabb[0].m128_f32),
 			std::min(pos[1], m_aabb[0].m128_f32[1]),
-			std::min(pos[2], m_aabb[0].m128_f32[2])
+			std::min(pos[2], m_aabb[0].m128_f32[2]),
+			1
 		};
 
 		m_aabb[1] = {
 			std::max(pos[0], *m_aabb[1].m128_f32),
 			std::max(pos[1], m_aabb[1].m128_f32[1]),
-			std::max(pos[2], m_aabb[1].m128_f32[2])
+			std::max(pos[2], m_aabb[1].m128_f32[2]),
+			1
 		};
 	}
 
