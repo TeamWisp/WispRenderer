@@ -49,7 +49,7 @@ int WispEntry()
 		}
 	});
 
-	render_system->Init(window.get());	
+	render_system->Init(window.get());
 
 	resources::CreateResources(render_system.get());
 
@@ -60,13 +60,19 @@ int WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	frame_graph.AddTask(wr::GetDeferredMainTask());
-	frame_graph.AddTask(wr::GetDeferredCompositionTask());
-	frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
-	//frame_graph.AddTask(wr::GetRaytracingTask());
-	//frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
-	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
-	frame_graph.Setup(*render_system);
+	if (true)
+	{
+		frame_graph.AddTask(wr::GetDeferredMainTask());
+		frame_graph.AddTask(wr::GetDeferredCompositionTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
+	}
+	else
+	{
+		frame_graph.AddTask(wr::GetRaytracingTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
+		frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
+		frame_graph.Setup(*render_system);
+	}
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
