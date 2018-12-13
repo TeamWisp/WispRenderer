@@ -1,5 +1,6 @@
 RWTexture2D<float4> gOutput : register(u0);
 RaytracingAccelerationStructure Scene : register(t0, space0);
+ByteAddressBuffer g_indices : register(t1);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct HitInfo
@@ -18,6 +19,20 @@ struct Ray
 	float3 origin;
 	float3 direction;
 };
+
+uint3 Load3x32BitIndices(uint offsetBytes)
+{
+    uint3 retval;
+ 
+	int index_size = 4; /* (32 bit) */
+
+	// Load first 2 indices
+ 	retval.xy = g_indices.Load2(offsetBytes);
+	// Offset the address by 2 indices than load z and [unknown]
+ 	retval.z = g_indices.Load2(offsetBytes + (4*2)).x;
+ 
+    return retval;
+}
 
 inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld)
 {
@@ -78,6 +93,14 @@ void MissEntry(inout HitInfo payload)
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
+    uint index_size = 2;
+    uint indices_per_triangle = 3;
+    uint triangle_idx_stride = indices_per_triangle * index_size;
+    uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+
+	const uint3 indices = Load3x32BitIndices(base_idx);
+
     float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    payload.color = float4(barycentrics, 1);
+	float3 indices_c = float3((float)indices.x / 255.f, (float)indices.y / 255.f, (float)indices.z) / 255.f;
+    payload.color = float4(indices_c, 1);
 }

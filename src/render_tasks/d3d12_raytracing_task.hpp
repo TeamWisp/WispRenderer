@@ -114,6 +114,8 @@ namespace wr
 		d3d12::AccelerationStructure tlas;
 		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list;
 
+		std::vector<std::shared_ptr<D3D12ModelPool>> model_pools;
+
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
@@ -127,7 +129,7 @@ namespace wr
 				// Initialize requirements
 				if (data.out_init)
 				{
-					auto model_pools = n_render_system.m_model_pools;
+					model_pools = n_render_system.m_model_pools;
 					// Transition all model pools for accel structure creation
 					for (auto& pool : model_pools)
 					{
@@ -146,6 +148,11 @@ namespace wr
 							auto vb = n_model_pool->GetVertexStagingBuffer();
 							auto ib = n_model_pool->GetIndexStagingBuffer();
 							auto model = batch.first;
+
+							// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
+							auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+							d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size);
+							d3d12::CreateRawSRVFromStagingBuffer(vb, cpu_handle, 1, ib->m_size / ib->m_stride_in_bytes);
 
 							for (auto& mesh : model->m_meshes)
 							{
@@ -177,6 +184,13 @@ namespace wr
 					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, blas_list);
 					tlas.m_native->SetName(L"Highlevelaccel");
 
+					// Transition all model pools back to whatever they were.
+					for (auto& pool : model_pools)
+					{
+						d3d12::Transition(cmd_list, pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
+					}
+
 					data.out_init = false;
 				}
 
@@ -190,9 +204,10 @@ namespace wr
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object);
 
 				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
+
 				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
-				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
 				d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
+				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
 
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table, data.out_miss_shader_table, data.out_raygen_shader_table, 1280, 720, 1);
 			}

@@ -119,6 +119,24 @@ namespace wr::d3d12
 		n_device->MakeResident(objects.size(), objects.data());
 	}
 
+	void CreateRawSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int id, unsigned int count, Format format)
+	{
+		decltype(Device::m_native) n_device;
+		buffer->m_buffer->GetDevice(IID_PPV_ARGS(&n_device));
+
+		auto increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+		srv_desc.Format = (DXGI_FORMAT)Format::R32_TYPELESS;
+		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srv_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		srv_desc.Buffer.NumElements = count;
+		srv_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+
+		n_device->CreateShaderResourceView(buffer->m_buffer, &srv_desc, handle.m_native);
+		Offset(handle, 1, increment_size);
+	}
+
 	void Destroy(StagingBuffer* buffer)
 	{
 		SAFE_RELEASE(buffer->m_staging);
