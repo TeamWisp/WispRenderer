@@ -126,8 +126,7 @@ namespace resources
 		
 			for (auto& m : test_model->m_meshes)
 			{
-				//m.second = &rusty_metal_material;
-				m.second = &rock_material;
+				m.second = &rusty_metal_material;
 			}
 		}
 	}
