@@ -43,9 +43,9 @@ namespace wr
 		return m_requires_transform_update[frame_idx];
 	}
 
-	void Node::SetRotation(DirectX::XMVECTOR roll_pitch_yaw_deg)
+	void Node::SetRotation(DirectX::XMVECTOR roll_pitch_yaw)
 	{
-		m_rotation_deg = roll_pitch_yaw_deg;
+		m_rotation_radians = roll_pitch_yaw;
 		SignalTransformChange();
 	}
 
@@ -61,19 +61,16 @@ namespace wr
 		SignalTransformChange();
 	}
 
-	void Node::SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation_deg, DirectX::XMVECTOR scale)
+	void Node::SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation, DirectX::XMVECTOR scale)
 	{
 		SetPosition(position);
-		SetRotation(rotation_deg);
+		SetRotation(rotation);
 		SetScale(scale);
 	}
 
 	void Node::UpdateTransform()
 	{
-		float to_deg = 3.1415926435f / 180.f;
-		DirectX::XMVECTOR rotation = DirectX::XMVectorMultiply(m_rotation_deg, { to_deg, to_deg, to_deg });
-		m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(rotation);
-
+		m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
 		DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslationFromVector(m_position);
 		DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationQuaternion(m_rotation);
 		DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScalingFromVector(m_scale);

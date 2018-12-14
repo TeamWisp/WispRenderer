@@ -20,6 +20,7 @@ namespace wr
 		d3d12::desc::DescriptorHeapDesc desc;
 		desc.m_num_descriptors = num_of_textures;
 		desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
+		desc.m_shader_visible = false;
 
 		m_descriptor_heap = d3d12::CreateDescriptorHeap(device, desc);
 		SetName(m_descriptor_heap, L"Texture Pool Descriptor Heap");
@@ -80,9 +81,9 @@ namespace wr
 	{
 	}
 
-	d3d12::TextureResource * D3D12TexturePool::GetTexture(uint64_t texture_id)
+	d3d12::TextureResource* D3D12TexturePool::GetTexture(uint64_t texture_id)
 	{
-		return nullptr;
+		return static_cast<d3d12::TextureResource*>(m_staged_textures[texture_id]);
 	}
 
 	d3d12::TextureResource* D3D12TexturePool::LoadPNG(std::string_view path, bool srgb)
@@ -121,9 +122,14 @@ namespace wr
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
 		texture->m_cpu_descriptor_handle = m_descriptor_handle;
+		texture->m_offset_in_heap = m_loaded_textures;
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
+
+		d3d12::Offset(m_descriptor_handle, 1, m_descriptor_heap->m_increment_size);
+
+		m_loaded_textures++;
 
 		return texture;
 	}
@@ -168,6 +174,10 @@ namespace wr
 
 		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
 
+		d3d12::Offset(m_descriptor_handle, 1, m_descriptor_heap->m_increment_size);
+
+		m_loaded_textures++;
+
 		return texture;
 	}
 
@@ -209,6 +219,10 @@ namespace wr
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
+
+		d3d12::Offset(m_descriptor_handle, 1, m_descriptor_heap->m_increment_size);
+
+		m_loaded_textures++;
 
 		return texture;
 	}

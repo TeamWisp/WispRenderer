@@ -41,7 +41,7 @@ namespace wr
 
 
 	template<>
-	int ModelPool::LoadNodeMeshes<Vertex, std::uint32_t>(const aiScene * scene, aiNode * node, Model* model)
+	int ModelPool::LoadNodeMeshes<Vertex, std::uint32_t>(const aiScene * scene, aiNode * node, Model* model, MaterialHandle* default_material)
 	{
 		for (unsigned int i = 0; i < node->mNumMeshes; ++i)
 		{
@@ -112,7 +112,7 @@ namespace wr
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
 
-			MaterialHandle* material_handle = nullptr;
+			MaterialHandle* material_handle = default_material;
 
 			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
 				mesh_handle,
@@ -127,7 +127,7 @@ namespace wr
 		}
 		for (unsigned int i = 0; i < node->mNumChildren; ++i)
 		{
-			int ret = LoadNodeMeshes<Vertex, std::uint32_t>(scene, node->mChildren[i], model);
+			int ret = LoadNodeMeshes<Vertex, std::uint32_t>(scene, node->mChildren[i], model, default_material);
 			if (ret == 1)
 				return 1;
 		}
@@ -135,7 +135,7 @@ namespace wr
 	}
 
 	template<>
-	int ModelPool::LoadNodeMeshes<VertexNoTangent, std::uint32_t>(const aiScene * scene, aiNode * node, Model* model)
+	int ModelPool::LoadNodeMeshes<VertexNoTangent, std::uint32_t>(const aiScene * scene, aiNode * node, Model* model, MaterialHandle* default_material)
 	{
 		for (unsigned int i = 0; i < node->mNumMeshes; ++i)
 		{
@@ -199,7 +199,7 @@ namespace wr
 
 			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
 				mesh_handle,
-				nullptr);
+				default_material);
 
 			if (n_mesh.first == nullptr)
 			{
@@ -210,7 +210,7 @@ namespace wr
 		}
 		for (unsigned int i = 0; i < node->mNumChildren; ++i)
 		{
-			int ret = LoadNodeMeshes<VertexNoTangent, std::uint32_t>(scene, node->mChildren[i], model);
+			int ret = LoadNodeMeshes<VertexNoTangent, std::uint32_t>(scene, node->mChildren[i], model, default_material);
 			if (ret == 1)
 				return 1;
 		}
