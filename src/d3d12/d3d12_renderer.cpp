@@ -110,6 +110,10 @@ namespace wr
 
 		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
 
+		// Raytracing cb pool
+		size_t rt_cam_align_size = SizeAlign(sizeof(temp::RayTracingCamera_CBData), 256) * d3d12::settings::num_back_buffers;
+		m_raytracing_cb_pool = CreateConstantBufferPool((size_t)std::ceil(rt_cam_align_size / (1024 * 1024.f)));
+
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
@@ -535,6 +539,8 @@ namespace wr
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
 
+			d3d12::RootSignature* global_root_signature = nullptr;
+
 			// Shader Library
 			{
 				auto& shader_registry = ShaderRegistry::Get();
@@ -557,14 +563,22 @@ namespace wr
 				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
 			}
 
+			// Hitgroup
+			{
+				auto hitGroup = desc.desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+				hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
+				hitGroup->SetHitGroupExport(L"MyHitGroup");
+				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+			}
+
 			// Global Root Signature
 			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
 			{
 				auto& rs_registry = RootSignatureRegistry::Get();
-				auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
+				global_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle))->m_native;
 
 				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-				global_rs->SetRootSignature(n_rs->m_native->m_native);
+				global_rs->SetRootSignature(global_root_signature->m_native);
 			}
 
 			// Local Root Signatures
@@ -577,6 +591,12 @@ namespace wr
 
 					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
 					local_rs->SetRootSignature(n_rs->m_native->m_native);
+					// Define explicit shader association for the local root signature.
+					{
+						//auto rootSignatureAssociation = desc.desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
+						//rootSignatureAssociation->SetSubobjectToAssociate(*local_rs);
+						//rootSignatureAssociation->AddExport(L"MyHitGroup");
+					}
 				}
 			}
 
@@ -586,7 +606,8 @@ namespace wr
 				pipeline_config->Config(desc.max_recursion_depth);
 			}
 
-			d3d12::CreateStateObject(m_device, desc.desc);
+			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
+			d3d12::SetGlobalRootSignature(obj->m_native, global_root_signature);
 
 			desc.desc.DeleteHelpers();
 

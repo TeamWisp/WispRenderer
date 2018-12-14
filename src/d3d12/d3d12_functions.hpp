@@ -6,6 +6,8 @@
 
 #include "d3d12_constant_buffer_pool.hpp"
 
+#include <DirectXMath.h>
+
 namespace wr::d3d12
 {
 
@@ -34,11 +36,13 @@ namespace wr::d3d12
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
-	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx);
 	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
+	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object);
+	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback = false);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	void BindComputeConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
+	void BindComputeShaderResourceView(CommandList* cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx);
 	//void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	void BindComputeDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
@@ -53,7 +57,9 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
 
@@ -203,14 +209,32 @@ namespace wr::d3d12
 
 	// State Object
 	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	void SetGlobalRootSignature(StateObject* state_object, RootSignature* global_root_signature);
+	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj);
+	[[nodiscard]] void* GetShaderIdentifier(Device* device, StateObject* obj, std::string const & name);
 	void SetName(StateObject* obj, std::wstring name);
 	void Destroy(StateObject* obj);
 
 	// Acceelration Structure
-	[[nodiscard]] std::pair<AccelerationStructure, AccelerationStructure> CreateAccelerationStructures(Device* device,
+	[[nodiscard]] AccelerationStructure CreateBottomLevelAccelerationStructures(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<StagingBuffer*> vertex_buffers);
+		std::vector<desc::GeometryDesc> geometry);
+
+	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
+		CommandList* cmd_list,
+		DescriptorHeap* desc_heap,
+		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list);
+
+	// Shader Record
+	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);
+	void CopyShaderRecord(ShaderRecord src, void* dest);
+
+	// Shader Table
+	[[nodiscard]] ShaderTable* CreateShaderTable(Device* device,
+			std::uint64_t num_shader_records,
+			std::uint64_t shader_record_size);
+	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
 	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name);
 
 } /* wr::d3d12 */

@@ -160,8 +160,6 @@ namespace wr
 
 		uint32_t GetCurrentLightSize();
 
-		std::shared_ptr<ModelPool> GetModelPool();
-
 	protected:
 
 		void RegisterLight(std::shared_ptr<LightNode>& light_node);
@@ -178,7 +176,6 @@ namespace wr
 
 		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
-		std::shared_ptr<ModelPool> m_model_pool;
 
 		StructuredBufferHandle* m_light_buffer;
 
