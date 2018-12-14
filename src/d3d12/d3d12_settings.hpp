@@ -38,5 +38,6 @@ namespace wr::d3d12::settings
 	static const constexpr bool use_exec_indirect = false;
 	static const constexpr bool force_dxr_fallback = false;
 	static const constexpr bool disable_rtx = false;
+	static const constexpr unsigned int num_max_rt_materials = 10;
 
 } /* wr::d3d12::settings */

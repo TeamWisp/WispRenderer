@@ -1,6 +1,25 @@
+#include "pbr_util.hlsl"
+
+struct Vertex
+{
+	float3 pos;
+	float2 uv;
+	float3 normal;
+	float3 tangent;
+	float3 bitangent;
+};
+
+struct Material
+{
+	float idx_offset;
+	float vertex_offset;
+};
+
 RWTexture2D<float4> gOutput : register(u0);
 RaytracingAccelerationStructure Scene : register(t0, space0);
 ByteAddressBuffer g_indices : register(t1);
+StructuredBuffer<Vertex> g_vertices : register(t2);
+StructuredBuffer<Material> g_materials : register(t3);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct HitInfo
@@ -10,6 +29,7 @@ struct HitInfo
 
 cbuffer CameraProperties : register(b0)
 {
+	float4x4 view;
 	float4x4 inv_projection_view;
 	float3 camera_position;
 };
@@ -22,16 +42,8 @@ struct Ray
 
 uint3 Load3x32BitIndices(uint offsetBytes)
 {
-    uint3 retval;
- 
-	int index_size = 4; /* (32 bit) */
-
 	// Load first 2 indices
- 	retval.xy = g_indices.Load2(offsetBytes);
-	// Offset the address by 2 indices than load z and [unknown]
- 	retval.z = g_indices.Load2(offsetBytes + (4*2)).x;
- 
-    return retval;
+ 	return g_indices.Load3(offsetBytes);
 }
 
 inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld)
@@ -52,6 +64,12 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
     ray.direction = normalize(world.xyz - ray.origin);
 
     return ray;
+}
+
+// Retrieve hit world position.
+float3 HitWorldPosition()
+{
+    return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
 [shader("raygeneration")]
@@ -90,17 +108,45 @@ void MissEntry(inout HitInfo payload)
 	payload.color = float4(170.0f / 255.f, 203.0f / 255.f, 1.0f, 1.f);
 }
 
+float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
+{
+	float3 vertexAttribute[3];
+	vertexAttribute[0] = a;
+	vertexAttribute[1] = b;
+	vertexAttribute[2] = c;
+
+    return vertexAttribute[0] +
+        attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
+        attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
+}
+
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
-    uint index_size = 2;
-    uint indices_per_triangle = 3;
-    uint triangle_idx_stride = indices_per_triangle * index_size;
+	const float3 hit_pos = HitWorldPosition();
+	const float index_offset = g_materials[InstanceID()].idx_offset;
+	const float vertex_offset = g_materials[InstanceID()].vertex_offset;
+	
+	const uint index_size = 4;
+    const uint indices_per_triangle = 3;
+    const uint triangle_idx_stride = indices_per_triangle * index_size;
+
     uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+	base_idx += index_offset * 4;
 
-	const uint3 indices = Load3x32BitIndices(base_idx);
+	uint3 indices = Load3x32BitIndices(base_idx);
+	indices += float3(vertex_offset, vertex_offset, vertex_offset);
 
-    float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-	float3 indices_c = float3((float)indices.x / 255.f, (float)indices.y / 255.f, (float)indices.z) / 255.f;
-    payload.color = float4(indices_c, 1);
+	const Vertex v0 = g_vertices[indices.x];
+	const Vertex v1 = g_vertices[indices.y];
+	const Vertex v2 = g_vertices[indices.z];
+
+	float3 normal = HitAttribute(v0.normal, v1.normal, v2.normal, attr);
+	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
+
+    float3 pixelToLight = normalize(float3(0, 0, 0) - hit_pos);
+    float NdotL = max(0.0f, dot(pixelToLight, normal));
+    float3 lighting = NdotL * float3(1, 1, 1);
+	
+	payload.color = float4(hit_pos, 1);
 }

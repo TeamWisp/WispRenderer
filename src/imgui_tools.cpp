@@ -101,6 +101,8 @@ namespace wr::imgui::window
 
 		if (open_hardware_info)
 		{
+			ImGui::DragInt("IDX", &render_system.hellowrold);
+
 			ImGui::Begin("Hardware Info", &open_hardware_info);
 			if (ImGui::CollapsingHeader("System Information", ImGuiTreeNodeFlags_DefaultOpen))
 			{

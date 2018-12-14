@@ -108,16 +108,19 @@ namespace wr
 		ShaderType::LIBRARY_SHADER
 	});
 
-	D3D12_DESCRIPTOR_RANGE r[2] = {
-		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, 0 }, // Output texture
-		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0, 0 }, // Indices
+	std::vector<CD3DX12_DESCRIPTOR_RANGE> r = {
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1); return r; }(), // indices
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3); return r; }(), // Materials
 	};
 
 	REGISTER(root_signatures::rt_test_global) = RootSignatureRegistry::Get().Register({
 		{
-			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(2, r); return d; }(),
+			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(r.size(), r.data()); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
+			//[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(), // Indices
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(2); return d; }(), // Vertices
 		},
 		{
 			// No samplers

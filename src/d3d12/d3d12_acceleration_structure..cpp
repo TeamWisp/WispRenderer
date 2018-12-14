@@ -201,7 +201,7 @@ namespace wr::d3d12
 	AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list)
+		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list)
 	{
 		AccelerationStructure tlas;
 
@@ -253,7 +253,8 @@ namespace wr::d3d12
 			std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instance_descs;
 			for (auto it : blas_list)
 			{
-				auto blas = it.first;
+				auto blas = it.first.first;
+				auto material = it.first.second;
 				auto transform = it.second;
 
 				D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
@@ -261,6 +262,7 @@ namespace wr::d3d12
 				XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(instance_desc.Transform), transform);
 
 				instance_desc.InstanceMask = 1;
+				instance_desc.InstanceID = material;
 				instance_desc.AccelerationStructure = blas.m_native->GetGPUVirtualAddress();
 				instance_descs.push_back(instance_desc);
 			}
@@ -272,12 +274,14 @@ namespace wr::d3d12
 			std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
 			for (auto it : blas_list)
 			{
-				auto blas = it.first;
+				auto blas = it.first.first;
+				auto material = it.first.second;
 				auto transform = it.second;
 
 				D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
 				instance_desc.Transform[0][0] = instance_desc.Transform[1][1] = instance_desc.Transform[2][2] = 1;
 				instance_desc.InstanceMask = 1;
+				instance_desc.InstanceID = material;
 				UINT num_buffer_elements = static_cast<UINT>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
 				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, 0, blas.m_native, num_buffer_elements);
 

@@ -53,10 +53,16 @@ namespace wr
 
 		struct RayTracingCamera_CBData
 		{
+			DirectX::XMMATRIX m_view;
 			DirectX::XMMATRIX m_inverse_view_projection;
 			DirectX::XMVECTOR m_camera_position;
 		};
 
+		struct RayTracingMaterial_CBData
+		{
+			float idx_offset;
+			float vertex_offset;
+		};
 
 		static const constexpr float size = 1.0f;
 		static const constexpr Vertex2D quad_vertices[] = {
@@ -140,12 +146,14 @@ namespace wr
 		std::shared_ptr<ConstantBufferPool> m_camera_pool; // TODO: Should be part of the scene graph
 
 		std::shared_ptr<ConstantBufferPool> m_raytracing_cb_pool;
+		std::shared_ptr<StructuredBufferPool> m_raytracing_material_sb_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
     
+		int hellowrold = 0;
 	private:
 		unsigned int m_max_commands = 4;
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
@@ -158,6 +166,7 @@ namespace wr
 		d3d12::DescriptorHeap* m_rendering_heap;
 		d3d12::DescHeapGPUHandle m_rendering_heap_gpu;
 		d3d12::DescHeapCPUHandle m_rendering_heap_cpu;
+
 
 		MaterialHandle* m_last_material = nullptr;
 	};

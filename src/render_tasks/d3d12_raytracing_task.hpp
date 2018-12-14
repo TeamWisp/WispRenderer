@@ -12,6 +12,7 @@
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../imgui_tools.hpp"
 
 
 namespace wr
@@ -26,6 +27,7 @@ namespace wr
 		d3d12::StateObject* out_state_object;
 		d3d12::RootSignature* out_root_signature;
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
+		D3D12StructuredBufferHandle* out_sb_material_handle;
 
 		bool out_init;
 	};
@@ -58,7 +60,10 @@ namespace wr
 			d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
 			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::ProjectionView_CBData)));
+			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
+			
+			// Material Structured Buffer
+			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 
 			// Pipeline State Object
 			auto rt_registry = RTPipelineRegistry::Get();
@@ -112,9 +117,14 @@ namespace wr
 		}
 
 		d3d12::AccelerationStructure tlas;
-		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list;
+		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list;
 
 		std::vector<std::shared_ptr<D3D12ModelPool>> model_pools;
+
+		d3d12::StagingBuffer* temp_ib;
+		d3d12::StagingBuffer* temp_vb;
+
+		std::vector<temp::RayTracingMaterial_CBData> materials(d3d12::settings::num_max_rt_materials);
 
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
@@ -137,6 +147,8 @@ namespace wr
 						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 					}
 
+					unsigned int material_id = 0;
+
 					// Create Geometry from scene graph
 					{
 						scene_graph.Optimize();
@@ -149,10 +161,8 @@ namespace wr
 							auto ib = n_model_pool->GetIndexStagingBuffer();
 							auto model = batch.first;
 
-							// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
-							auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-							d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size);
-							d3d12::CreateRawSRVFromStagingBuffer(vb, cpu_handle, 1, ib->m_size / ib->m_stride_in_bytes);
+							temp_ib = ib;
+							temp_vb = vb;
 
 							for (auto& mesh : model->m_meshes)
 							{
@@ -172,11 +182,18 @@ namespace wr
 								cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
 								blas.m_native->SetName(L"Bottomlevelaccel");
 
+								materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
+								materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
+
+								LOG("Material: {} Stride: {}", material_id, n_mesh->m_vertex_staging_buffer_offset);
+
 								for (auto i = 0; i < batch.second.num_instances; i++)
 								{
 									auto transform = batch.second.data.objects[i].m_model;
-									blas_list.push_back({ blas, transform });
+									blas_list.push_back({ std::make_pair(blas, material_id), transform });
 								}
+
+								material_id++;
 							}
 						}
 					}
@@ -191,15 +208,32 @@ namespace wr
 						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
 					}
 
+					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
+					auto& cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size);
+					d3d12::CreateRawSRVFromStagingBuffer(temp_ib, cpu_handle, 0, temp_ib->m_size / temp_ib->m_stride_in_bytes);
+
+					// Create material structured buffer view
+					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
+
 					data.out_init = false;
 				}
+
+				for (auto& m : materials)
+				{
+					//m.idx_offset = n_render_system.hellowrold;
+				}
+
+				// Update material data
+				n_render_system.m_raytracing_material_sb_pool->Update(data.out_sb_material_handle, materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
 
 				// Update camera cb
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RayTracingCamera_CBData cam_data;
+				cam_data.m_view = camera->m_view;
 				cam_data.m_camera_position = camera->m_position;
 				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
-				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data);
+				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object);
 
@@ -208,6 +242,9 @@ namespace wr
 				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
 				d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
+
+				//d3d12::BindComputeShaderResourceView(cmd_list, temp_ib->m_buffer, 3);
+				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);
 
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table, data.out_miss_shader_table, data.out_raygen_shader_table, 1280, 720, 1);
 			}
