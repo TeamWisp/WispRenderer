@@ -43,6 +43,8 @@ namespace wr
 
 	D3D12TexturePool::~D3D12TexturePool()
 	{
+		d3d12::Destroy(m_mipmapping_heap);
+		d3d12::Destroy(m_descriptor_heap);
 	}
 
 	void D3D12TexturePool::Evict()
@@ -87,6 +89,8 @@ namespace wr
 
 			d3d12::Transition(cmdlist, unstaged_textures, wr::ResourceState::COPY_DEST, wr::ResourceState::PIXEL_SHADER_RESOURCE);
 
+			GenerateMips(unstaged_textures, cmd_list);
+
 			MoveStagedTextures();
 		}
 	}
@@ -100,7 +104,7 @@ namespace wr
 		return static_cast<d3d12::TextureResource*>(m_staged_textures[texture_id]);
 	}
 
-	d3d12::TextureResource* D3D12TexturePool::LoadPNG(std::string_view path, bool srgb)
+	d3d12::TextureResource* D3D12TexturePool::LoadPNG(std::string_view path, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -117,6 +121,17 @@ namespace wr
 			LOGC("ERROR: Texture not loaded correctly.");
 		}
 
+		uint32_t mip_lvls;
+
+		if (generate_mips)
+		{
+			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
+		}
+		else
+		{
+			mip_lvls = metadata.mipLevels;
+		}
+
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = metadata.width;
@@ -124,17 +139,17 @@ namespace wr
 		desc.m_is_cubemap = metadata.IsCubemap();
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
-		desc.m_mip_levels = metadata.mipLevels;
+		desc.m_mip_levels = mip_lvls;
 		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto texture = d3d12::CreateTexture(device, &desc, false);
+		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_need_mips = (metadata.mipLevels > 1);
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
+		texture->m_need_mips = generate_mips;
 		texture->m_cpu_descriptor_handle = m_descriptor_handle;
 		texture->m_offset_in_heap = m_loaded_textures;
 		texture->m_resource->SetName(wide_string.c_str());
@@ -148,7 +163,7 @@ namespace wr
 		return texture;
 	}
 
-	d3d12::TextureResource* D3D12TexturePool::LoadDDS(std::string_view path, bool srgb)
+	d3d12::TextureResource* D3D12TexturePool::LoadDDS(std::string_view path, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -165,6 +180,17 @@ namespace wr
 			LOGC("ERROR: Texture not loaded correctly.");
 		}
 
+		uint32_t mip_lvls;
+
+		if (generate_mips)
+		{
+			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
+		}
+		else
+		{
+			mip_lvls = metadata.mipLevels;
+		}
+
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = metadata.width;
@@ -172,18 +198,19 @@ namespace wr
 		desc.m_is_cubemap = metadata.IsCubemap();
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
-		desc.m_mip_levels = metadata.mipLevels;
+		desc.m_mip_levels = mip_lvls;
 		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto texture = d3d12::CreateTexture(device, &desc, false);
+		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_need_mips = (metadata.mipLevels > 1) ? false : true;
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
+		texture->m_need_mips = generate_mips;
 		texture->m_cpu_descriptor_handle = m_descriptor_handle;
+		texture->m_offset_in_heap = m_loaded_textures;
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
@@ -195,7 +222,7 @@ namespace wr
 		return texture;
 	}
 
-	d3d12::TextureResource* D3D12TexturePool::LoadHDR(std::string_view path, bool srgb)
+	d3d12::TextureResource* D3D12TexturePool::LoadHDR(std::string_view path, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -211,6 +238,17 @@ namespace wr
 			LOGC("ERROR: Texture not loaded correctly.");
 		}
 
+		uint32_t mip_lvls;
+
+		if (generate_mips)
+		{
+			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
+		}
+		else
+		{
+			mip_lvls = metadata.mipLevels;
+		}
+
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = metadata.width;
@@ -218,18 +256,19 @@ namespace wr
 		desc.m_is_cubemap = metadata.IsCubemap();
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
-		desc.m_mip_levels = metadata.mipLevels;
+		desc.m_mip_levels = mip_lvls;
 		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto texture = d3d12::CreateTexture(device, &desc, false);
+		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_need_mips = (metadata.mipLevels > 1) ? false : true;
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
+		texture->m_need_mips = generate_mips;
 		texture->m_cpu_descriptor_handle = m_descriptor_handle;
+		texture->m_offset_in_heap = m_loaded_textures;
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
@@ -280,57 +319,79 @@ namespace wr
 		{
 			d3d12::TextureResource* texture = textures[i];
 
-			for (uint32_t TopMip = 0; TopMip < texture->m_mip_levels - 1; TopMip++)
+			if (texture->m_need_mips)
 			{
-				uint32_t srcWidth = texture->m_width >> TopMip;
-				uint32_t srcHeight = texture->m_height >> TopMip;
-				uint32_t dstWidth = srcWidth >> 1;
-				uint32_t dstHeight = srcHeight >> 1;
+				DXGI_FORMAT texture_format = static_cast<DXGI_FORMAT>(texture->m_format);
 
-				//Create shader resource view for the source texture in the descriptor heap
-				srcTextureSRVDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-				srcTextureSRVDesc.Texture2D.MipLevels = 1;
-				srcTextureSRVDesc.Texture2D.MostDetailedMip = TopMip;
-				device->m_native->CreateShaderResourceView(texture->m_resource, &srcTextureSRVDesc, m_mipmapping_cpu_handle.m_native);
-				
-				d3d12::Offset(m_mipmapping_cpu_handle, 1, m_mipmapping_heap->m_increment_size);
-
-				//Create unordered access view for the destination texture in the descriptor heap
-				destTextureUAVDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-				destTextureUAVDesc.Texture2D.MipSlice = TopMip + 1;
-				device->m_native->CreateUnorderedAccessView(texture->m_resource, nullptr, &destTextureUAVDesc, m_mipmapping_cpu_handle.m_native);
-
-				d3d12::Offset(m_mipmapping_cpu_handle, 1, m_mipmapping_heap->m_increment_size);
-
-				auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-
-				struct DWParam
+				for (uint32_t TopMip = 0; TopMip < texture->m_mip_levels - 1; TopMip++)
 				{
-					DWParam(FLOAT f) : Float(f) {}
-					DWParam(UINT u) : Uint(u) {}
+					uint32_t srcWidth = texture->m_width >> TopMip;
+					uint32_t srcHeight = texture->m_height >> TopMip;
+					uint32_t dstWidth = srcWidth >> 1;
+					uint32_t dstHeight = srcHeight >> 1;
 
-					void operator= (FLOAT f) { Float = f; }
-					void operator= (UINT u) { Uint = u; }
+					//Create shader resource view for the source texture in the descriptor heap
+					srcTextureSRVDesc.Format = texture_format;
+					srcTextureSRVDesc.Texture2D.MipLevels = 1;
+					srcTextureSRVDesc.Texture2D.MostDetailedMip = TopMip;
+					device->m_native->CreateShaderResourceView(texture->m_resource, &srcTextureSRVDesc, m_mipmapping_cpu_handle.m_native);
+					
+					d3d12::Offset(m_mipmapping_cpu_handle, 1, m_mipmapping_heap->m_increment_size);
 
-					union
+					//Create unordered access view for the destination texture in the descriptor heap
+					destTextureUAVDesc.Format = texture_format;
+					destTextureUAVDesc.Texture2D.MipSlice = TopMip + 1;
+					device->m_native->CreateUnorderedAccessView(texture->m_resource, nullptr, &destTextureUAVDesc, m_mipmapping_cpu_handle.m_native);
+
+					d3d12::Offset(m_mipmapping_cpu_handle, 1, m_mipmapping_heap->m_increment_size);
+
+					auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+
+					struct DWParam
 					{
-						FLOAT Float;
-						UINT Uint;
+						DWParam(FLOAT f) : Float(f) {}
+						DWParam(UINT u) : Uint(u) {}
+
+						void operator= (FLOAT f) { Float = f; }
+						void operator= (UINT u) { Uint = u; }
+
+						union
+						{
+							FLOAT Float;
+							UINT Uint;
+						};
 					};
-				};
 
-				UINT srcData[] =
-				{
-					DWParam(1.0f / dstWidth).Uint,
-					DWParam(1.0f / dstHeight).Uint
-				};
+					UINT srcData[] =
+					{
+						DWParam(1.0f / dstWidth).Uint,
+						DWParam(1.0f / dstHeight).Uint
+					};
 
-				n_cmd_list->m_native->SetComputeRoot32BitConstants(0, _countof(srcData), srcData, 0);
+					d3d12::BindCompute32BitConstants(n_cmd_list, srcData, _countof(srcData), 0, 0);
 
+					//Pass the source and destination texture views to the shader via descriptor tables
+					d3d12::BindComputeDescriptorTable(n_cmd_list, m_mipmapping_gpu_handle, 1);
 
+					d3d12::Offset(m_mipmapping_gpu_handle, 1, m_mipmapping_heap->m_increment_size);
+
+					d3d12::BindComputeDescriptorTable(n_cmd_list, m_mipmapping_gpu_handle, 2);
+
+					d3d12::Offset(m_mipmapping_gpu_handle, 1, m_mipmapping_heap->m_increment_size);
+					
+					//Dispatch the compute shader with one thread per 8x8 pixels
+					d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
+
+					//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
+					d3d12::UAVBarrier(n_cmd_list, texture, 1);
+				}
+
+				texture->m_need_mips = false;
 			}
-
 		}
+
+		d3d12::Transition(d3d12_cmd_list, textures, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
+
 		//if (texture->m_need_mips)
 		//{
 		//	if (texture->m_depth > 1)

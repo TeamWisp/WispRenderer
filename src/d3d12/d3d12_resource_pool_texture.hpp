@@ -30,9 +30,9 @@ namespace wr
 
 	protected:
 
-		d3d12::TextureResource* LoadPNG(std::string_view path, bool srgb) final;
-		d3d12::TextureResource* LoadDDS(std::string_view path, bool srgb) final;
-		d3d12::TextureResource* LoadHDR(std::string_view path, bool srgb) final;
+		d3d12::TextureResource* LoadPNG(std::string_view path, bool srgb, bool generate_mips) final;
+		d3d12::TextureResource* LoadDDS(std::string_view path, bool srgb, bool generate_mips) final;
+		d3d12::TextureResource* LoadHDR(std::string_view path, bool srgb, bool generate_mips) final;
 
 		void MoveStagedTextures();
 		void GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
