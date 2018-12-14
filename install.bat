@@ -74,6 +74,7 @@ echo Windows SDK required: 10.0.17763.0 or newer
 
 rem ##### install #####
 call :downloadDeps
+call :lfsCopy
 call :genVS15Win64 
 call :genVS15Win32 
 
@@ -94,6 +95,30 @@ git submodule init
 git submodule update --recursive --remote
 EXIT /B 0
 REM ##### DOWNLOAD DEPS #####
+
+REM ##### COPY LARGE FILE #####
+:lfsCopy
+robocopy "%cd%\deps\Wisp-LFS" "%cd%/resources" /s /v /xf .git
+
+:: for each folder in \deps\wisp-lfs
+FOR /D "delims=*" %%idir IN ('dir "%cd%\deps\Wisp-LFS" /b /ad-h /on') DO ( 
+  pause
+  set path_in_ignore=0
+  FOR "delims=" %%s IN ('findstr /i "/resources/%%idir" ".gitignore"') DO (
+     set path_in_ignore=1
+     echo finding string
+     pause
+  )
+  echo in for loop
+  if "%path_in_ignore%" == "0" (
+    echo adding string
+    pause
+    echo /resources/%%idir >> ".gitignore"
+  )
+)
+pause
+EXIT /B 0
+REM ##### COPY LARGE FILE #####
 
 REM ##### GEN PROJECTS #####
 :genVS15Win64
