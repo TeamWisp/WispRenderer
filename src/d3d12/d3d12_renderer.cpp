@@ -17,6 +17,7 @@
 #include "d3d12_rt_pipeline_registry.hpp"
 #include "d3d12_shader_registry.hpp"
 #include "d3d12_root_signature_registry.hpp"
+#include "d3d12_resource_pool_texture.hpp"
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -100,6 +101,19 @@ namespace wr
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
+		//TEMP
+		//Create Rendering Descriptor Heap
+		d3d12::desc::DescriptorHeapDesc heap_desc;
+		heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
+		heap_desc.m_versions = d3d12::settings::num_back_buffers;
+		heap_desc.m_num_descriptors = 256;
+
+		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
+
+		// Raytracing cb pool
+		size_t rt_cam_align_size = SizeAlign(sizeof(temp::RayTracingCamera_CBData), 256) * d3d12::settings::num_back_buffers;
+		m_raytracing_cb_pool = CreateConstantBufferPool((size_t)std::ceil(rt_cam_align_size / (1024 * 1024.f)));
+
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
@@ -163,7 +177,14 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
+		m_texture_pool->Stage(m_direct_cmd_list);
+
 		d3d12::End(m_direct_cmd_list);
+
+		//Reset cpu and gpu handles to the start of the rendering heap. 
+		//Heap will be filled in the node rendering function.
+		m_rendering_heap_gpu = d3d12::GetGPUHandle(m_rendering_heap, frame_idx);
+		m_rendering_heap_cpu = d3d12::GetCPUHandle(m_rendering_heap, frame_idx);
 
 		scene_graph->Update();
 
@@ -518,6 +539,8 @@ namespace wr
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
 
+			d3d12::RootSignature* global_root_signature = nullptr;
+
 			// Shader Library
 			{
 				auto& shader_registry = ShaderRegistry::Get();
@@ -540,14 +563,22 @@ namespace wr
 				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
 			}
 
+			// Hitgroup
+			{
+				auto hitGroup = desc.desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+				hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
+				hitGroup->SetHitGroupExport(L"MyHitGroup");
+				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+			}
+
 			// Global Root Signature
 			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
 			{
 				auto& rs_registry = RootSignatureRegistry::Get();
-				auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
+				global_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle))->m_native;
 
 				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-				global_rs->SetRootSignature(n_rs->m_native->m_native);
+				global_rs->SetRootSignature(global_root_signature->m_native);
 			}
 
 			// Local Root Signatures
@@ -560,6 +591,12 @@ namespace wr
 
 					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
 					local_rs->SetRootSignature(n_rs->m_native->m_native);
+					// Define explicit shader association for the local root signature.
+					{
+						//auto rootSignatureAssociation = desc.desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
+						//rootSignatureAssociation->SetSubobjectToAssociate(*local_rs);
+						//rootSignatureAssociation->AddExport(L"MyHitGroup");
+					}
 				}
 			}
 
@@ -569,7 +606,8 @@ namespace wr
 				pipeline_config->Config(desc.max_recursion_depth);
 			}
 
-			d3d12::CreateStateObject(m_device, desc.desc);
+			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
+			d3d12::SetGlobalRootSignature(obj->m_native, global_root_signature);
 
 			desc.desc.DeleteHelpers();
 
@@ -785,7 +823,8 @@ namespace wr
 				for (auto& mesh : model->m_meshes)
 				{
 					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
-					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) {
+					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) 
+					{
 						d3d12::BindVertexBuffer(n_cmd_list,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
 							0,
@@ -796,9 +835,22 @@ namespace wr
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer(),
 							0,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer()->m_size);
+
 						m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
+					
+					d3d12::BindDescriptorHeaps(n_cmd_list, { m_rendering_heap }, frame_idx);
+
+					auto material_handle = mesh.second;
+					
+					if (material_handle != m_last_material)
+					{
+						m_last_material = material_handle;
+
+						BindMaterial(material_handle, cmd_list);
+					}
+
 					if (n_mesh->m_index_count != 0)
 					{
 						d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
@@ -833,6 +885,43 @@ namespace wr
 
 		}
 
+	}
+
+	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+
+		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+
+		auto& albedo_handle = material_internal->Albedo();
+		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+
+		auto& normal_handle = material_internal->Normal();
+		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+
+		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
+		{
+			m_rendering_heap_cpu.m_native
+		};
+		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
+		{
+			src_cpu_handle_albedo.m_native,
+			src_cpu_handle_normal.m_native
+		};
+
+		UINT sizes[] = { 2 };
+
+		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
+			2, pSrcDescriptorRangeStarts,
+			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
+
+		d3d12::Offset(m_rendering_heap_cpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
+		d3d12::Offset(m_rendering_heap_gpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
 	}
 	
 

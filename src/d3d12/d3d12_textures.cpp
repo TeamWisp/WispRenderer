@@ -136,7 +136,7 @@ namespace wr::d3d12
 		srv_desc.ViewDimension = dimension;
 
 		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
-		Offset(handle, 1, increment_size);
+		//Offset(handle, 1, increment_size);
 	}
 
 	void Destroy(TextureResource* tex)

@@ -50,6 +50,7 @@ namespace wr
 		std::unordered_map<uint64_t, Texture*> m_staged_textures;
 
 		std::size_t m_size_in_mb;
+		std::size_t m_loaded_textures = 0;
 
 		IDFactory m_id_factory;
 	};
