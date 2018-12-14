@@ -151,13 +151,11 @@ namespace wr
 	{
 		IS_PROPER_VERTEX_CLASS(TV);
 
-		AssimpModelLoader assimp_loader = AssimpModelLoader();
-		ModelLoader* loader;
+		ModelLoader* loader = ModelLoader::FindFittingModelLoader(
+			path.substr(path.find_last_of(".") + 1).data());
 
-		if (assimp_loader.SupportsModelFormat(path.substr(path.find_last_of(".") + 1).data()))
-		{
-			loader = new AssimpModelLoader();
-		}
+		if (loader == nullptr)
+			return nullptr;
 
 		ModelData* data = loader->Load(path);
 
@@ -173,13 +171,12 @@ namespace wr
 		{
 			DestroyModel(model);
 
-			delete loader;
+			loader->DeleteModel(data);
+
 			return nullptr;
 		}
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
-
-		delete loader;
 
 		return model;
 	}
@@ -190,13 +187,11 @@ namespace wr
 	{
 		IS_PROPER_VERTEX_CLASS(TV);
 
-		AssimpModelLoader assimp_loader();
-		ModelLoader* loader;
+		ModelLoader* loader = ModelLoader::FindFittingModelLoader(
+			path.substr(path.find_last_of(".") + 1).data());
 
-		if (assimp_loader.SupportsModelFormat(path.substr(path.find_last_of(".") + 1)))
-		{
-			loader = new AssimpModelLoader();
-		}
+		if (loader == nullptr)
+			return nullptr;
 
 		ModelData* data = loader->Load(path);
 
@@ -312,14 +307,14 @@ namespace wr
 		if (ret == 1)
 		{
 			DestroyModel(model);
-			delete loader;
+			loader->DeleteModel(data);
 			return nullptr;
 		}
 
+		loader->DeleteModel(data);
+
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
-
-		delete loader;
 
 		return model;
 	}

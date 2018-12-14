@@ -163,6 +163,7 @@ namespace wr
 	class ModelLoader
 	{
 	public:
+		ModelLoader();
 		virtual ~ModelLoader();
 
 		[[nodiscard]] ModelData* Load(std::string_view model_path);
@@ -175,7 +176,11 @@ namespace wr
 
 		std::vector<std::string> SupportedModelFormats();
 
-		bool SupportsModelFormat(std::string model_format);
+		bool SupportsModelFormat(const std::string_view& model_format);
+
+		static ModelLoader* FindFittingModelLoader(const std::string_view& model_format);
+
+		static std::vector<ModelLoader*> m_registered_model_loaders;
 
 	protected:
 		virtual ModelData* LoadModel(std::string_view model_path) = 0;
