@@ -134,6 +134,8 @@ namespace wr
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 
+		std::vector<std::uint64_t> m_buffer_frame_graph_uids;
+
 		std::shared_ptr<TexturePool> m_texture_pool;
 
 		d3d12::HeapResource* m_light_buffer;

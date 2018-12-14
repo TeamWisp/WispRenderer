@@ -4,6 +4,9 @@
 
 namespace wr
 {
+	std::uint64_t FrameGraph::m_frame_graph_largest_uid = 0;
+	std::stack<std::uint64_t> FrameGraph::m_frame_graph_free_uids = std::stack<std::uint64_t>();
+
 	FrameGraph::~FrameGraph()
 	{
 		Destroy();
@@ -149,11 +152,36 @@ namespace wr
 
 	void FrameGraph::Destroy()
 	{
+		ReleaseUID(m_frame_graph_uid);
+
 		for (auto& task : m_tasks)
 		{
 			task.reset();
 		}
 		m_tasks.clear();
+	}
+
+	std::uint64_t FrameGraph::GetUID()
+	{
+		return m_frame_graph_uid;
+	}
+
+	std::uint64_t FrameGraph::GetFreeUID()
+	{
+		if (m_frame_graph_free_uids.size() > 0)
+		{
+			std::uint64_t uid = m_frame_graph_free_uids.top();
+			m_frame_graph_free_uids.pop();
+			return uid;
+		}
+		std::uint64_t uid = m_frame_graph_largest_uid;
+		m_frame_graph_largest_uid++;
+		return uid;
+	}
+
+	void FrameGraph::ReleaseUID(std::uint64_t uid)
+	{
+		m_frame_graph_free_uids.push(uid);
 	}
 
 } /* wr */

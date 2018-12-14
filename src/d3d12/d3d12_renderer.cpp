@@ -150,6 +150,8 @@ namespace wr
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
+
+		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 	}
 
 	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
@@ -166,6 +168,37 @@ namespace wr
 		d3d12::WaitFor(m_fences[frame_idx]);
 
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+		if (frame_graph.GetUID() != m_buffer_frame_graph_uids[frame_idx])
+		{
+			m_buffer_frame_graph_uids[frame_idx] = frame_graph.GetUID();
+
+			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_descriptor(m_render_window.value()->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart());
+			
+			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
+
+			float clear_color[] = { 0.f,0.f,0.f,0.f };
+
+			m_direct_cmd_list->m_native->ResourceBarrier(1, 
+				&CD3DX12_RESOURCE_BARRIER::Transition(
+					m_render_window.value()->m_render_targets[frame_idx], 
+					D3D12_RESOURCE_STATE_PRESENT, 
+					D3D12_RESOURCE_STATE_RENDER_TARGET));
+			
+			m_direct_cmd_list->m_native->ClearRenderTargetView(
+				rtv_descriptor,
+				clear_color,
+				0,
+				nullptr
+			);
+
+
+			m_direct_cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(
+					m_render_window.value()->m_render_targets[frame_idx],
+					D3D12_RESOURCE_STATE_RENDER_TARGET,
+					D3D12_RESOURCE_STATE_PRESENT));
+		}
 
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i) 
 		{

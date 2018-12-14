@@ -11,7 +11,7 @@ namespace wr
 	class FrameGraph
 	{
 	public:
-		FrameGraph() : m_thread_pool(settings::num_frame_graph_threads) {}
+		FrameGraph() : m_thread_pool(settings::num_frame_graph_threads), m_frame_graph_uid(GetFreeUID()) {}
 		virtual ~FrameGraph();
 
 		FrameGraph(const FrameGraph&) = delete;
@@ -26,6 +26,8 @@ namespace wr
 		void Execute(RenderSystem & render_system, SceneGraph & scene_graph);
 		void Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height);
 		void Destroy();
+
+		std::uint64_t GetUID();
 
 		template<typename T>
 		std::vector<T*> GetAllCommandLists() const
@@ -50,6 +52,14 @@ namespace wr
 		std::vector<BaseRenderTask*> m_single_threaded_tasks;
 
 		util::ThreadPool m_thread_pool;
+
+		std::uint64_t m_frame_graph_uid;
+
+		static std::uint64_t m_frame_graph_largest_uid;
+		static std::stack<std::uint64_t> m_frame_graph_free_uids;
+
+		static std::uint64_t GetFreeUID();
+		static void ReleaseUID(std::uint64_t uid);
 	};
 
 	//! Used to add a task by creating a new one.
