@@ -53,7 +53,28 @@ namespace wr
 		ModelPool* m_model_pool;
 		std::string m_model_name;
 
-		DirectX::XMVECTOR m_aabb[2] = {
+		//AABB data; -X, X, -Y, Y, -Z, Z
+		DirectX::XMVECTOR m_box[6] = {
+			{
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max()
+			},
+			{
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max()
+			},
+			{
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max()
+			},
+			{
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max()
+			},
 			{
 				std::numeric_limits<float>::max(),
 				std::numeric_limits<float>::max(),

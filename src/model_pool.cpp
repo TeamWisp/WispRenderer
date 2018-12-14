@@ -24,19 +24,23 @@ namespace wr
 
 	void Model::CalculateAABB(float(&pos)[3])
 	{
-		m_aabb[0] = {
-			std::min(pos[0], *m_aabb[0].m128_f32),
-			std::min(pos[1], m_aabb[0].m128_f32[1]),
-			std::min(pos[2], m_aabb[0].m128_f32[2]),
-			1
-		};
+		if (pos[0] < m_box[0].m128_f32[0])
+			m_box[0] = { pos[0], pos[1], pos[2], 1 };
 
-		m_aabb[1] = {
-			std::max(pos[0], *m_aabb[1].m128_f32),
-			std::max(pos[1], m_aabb[1].m128_f32[1]),
-			std::max(pos[2], m_aabb[1].m128_f32[2]),
-			1
-		};
+		if (pos[0] > m_box[1].m128_f32[0])
+			m_box[1] = { pos[0], pos[1], pos[2], 1 };
+
+		if (pos[1] < m_box[2].m128_f32[1])
+			m_box[2] = { pos[0], pos[1], pos[2], 1 };
+
+		if (pos[1] > m_box[3].m128_f32[1])
+			m_box[3] = { pos[0], pos[1], pos[2], 1 };
+
+		if (pos[2] < m_box[4].m128_f32[2])
+			m_box[4] = { pos[0], pos[1], pos[2], 1 };
+
+		if (pos[2] > m_box[5].m128_f32[2])
+			m_box[5] = { pos[0], pos[1], pos[2], 1 };
 	}
 
 

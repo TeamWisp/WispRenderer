@@ -15,8 +15,43 @@ namespace wr
 
 		void Update(uint32_t frame_idx)
 		{
-			m_aabb[0] = DirectX::XMVector4Transform(m_model->m_aabb[0], m_transform);
-			m_aabb[1] = DirectX::XMVector4Transform(m_model->m_aabb[1], m_transform);
+			//Reset AABB
+
+			m_aabb[0] = {
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max()
+			};
+
+			m_aabb[1] = {
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max()
+			};
+
+			//Transform all coords from model to world space
+			//Pick the min/max bounds
+
+			for (DirectX::XMVECTOR& vec : m_model->m_box)
+			{
+				DirectX::XMVECTOR tvec = DirectX::XMVector4Transform(vec, m_transform);
+
+				m_aabb[0] = {
+					std::min(tvec.m128_f32[0], *m_aabb[0].m128_f32),
+					std::min(tvec.m128_f32[1], m_aabb[0].m128_f32[1]),
+					std::min(tvec.m128_f32[2], m_aabb[0].m128_f32[2]),
+					1
+				};
+
+				m_aabb[1] = {
+					std::max(tvec.m128_f32[0], *m_aabb[1].m128_f32),
+					std::max(tvec.m128_f32[1], m_aabb[1].m128_f32[1]),
+					std::max(tvec.m128_f32[2], m_aabb[1].m128_f32[2]),
+					1
+				};
+
+			}
+
 			SignalUpdate(frame_idx);
 		}
 	};
