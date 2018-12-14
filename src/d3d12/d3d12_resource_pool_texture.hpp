@@ -2,9 +2,15 @@
 
 #include "../resource_pool_texture.hpp"
 #include "d3d12_structs.hpp"
+#include <DirectXMath.h>
 
 namespace wr
 {
+	struct MipMapping_CB
+	{
+		DirectX::XMFLOAT2 TexelSize;	// 1.0 / OutMip1.Dimensions
+	};
+
 	class D3D12RenderSystem;
 
 	class D3D12TexturePool : public TexturePool
@@ -29,6 +35,14 @@ namespace wr
 		d3d12::TextureResource* LoadHDR(std::string_view path, bool srgb) final;
 
 		void MoveStagedTextures();
+		void GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
+		void GenerateMips_UAV(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
+		void GenerateMips_BGR(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
+		void GenerateMips_SRGB(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
+
+		bool CheckUAVCompatibility(Format format);
+		bool CheckBGRFormat(Format format);
+		bool CheckSRGBFormat(Format format);
 
 		D3D12RenderSystem& m_render_system;
 
@@ -36,6 +50,11 @@ namespace wr
 		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
 		d3d12::DescriptorHeap* m_descriptor_heap;
 		d3d12::DescHeapCPUHandle m_descriptor_handle;
+
+		//Descriptor heap used for compute pipeline when doing mipmapping
+		d3d12::DescriptorHeap* m_mipmapping_heap;
+		d3d12::DescHeapCPUHandle m_mipmapping_cpu_handle;
+		d3d12::DescHeapGPUHandle m_mipmapping_gpu_handle;
 	};
 
 
