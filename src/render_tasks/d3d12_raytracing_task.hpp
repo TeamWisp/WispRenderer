@@ -48,7 +48,7 @@ namespace wr
 
 			// top level, bottom level and output buffer. (even though I don't use bottom level.)
 			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_num_descriptors = 3;
+			heap_desc.m_num_descriptors = 23;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_versions = 1;
@@ -149,6 +149,9 @@ namespace wr
 
 					unsigned int material_id = 0;
 
+					// List all materials used by meshes
+					std::vector<MaterialHandle*> material_handles;
+
 					// Create Geometry from scene graph
 					{
 						scene_graph.Optimize();
@@ -178,22 +181,43 @@ namespace wr
 								obj.m_num_vertices = n_mesh->m_vertex_count;
 								obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
 
+								// Build Bottom level BVH
 								auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, { obj });
 								cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
 								blas.m_native->SetName(L"Bottomlevelaccel");
 
-								materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
-								materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
+								material_handles.push_back(mesh.second); // Used to steal the textures from the texture pool.
 
-								LOG("Material: {} Stride: {}", material_id, n_mesh->m_vertex_staging_buffer_offset);
-
+								// Push instances into a array for later use.
 								for (auto i = 0; i < batch.second.num_instances; i++)
 								{
 									auto transform = batch.second.data.objects[i].m_model;
+
+									// Build material
+									auto* material_internal = mesh.second->m_pool->GetMaterial(mesh.second->m_id);
+									materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
+									materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
+									materials[material_id].albedo_id = material_internal->Albedo().m_id;
+									materials[material_id].normal_id = material_internal->Normal().m_id;
+
+
+									// Remove the translation and lower vector of the matrix
+									DirectX::XMMATRIX upper3x3 = transform;
+									upper3x3.r[0].m128_f32[3] = 0.f;
+									upper3x3.r[1].m128_f32[3] = 0.f;
+									upper3x3.r[2].m128_f32[3] = 0.f;
+									upper3x3.r[3].m128_f32[0] = 0.f;
+									upper3x3.r[3].m128_f32[1] = 0.f;
+									upper3x3.r[3].m128_f32[2] = 0.f;
+									upper3x3.r[3].m128_f32[3] = 1.f;
+
+									materials[material_id].m_model = XMMatrixTranspose(XMMatrixInverse(nullptr, upper3x3));;
+
 									blas_list.push_back({ std::make_pair(blas, material_id), transform });
+
+									material_id++;
 								}
 
-								material_id++;
 							}
 						}
 					}
@@ -216,6 +240,27 @@ namespace wr
 					// Create material structured buffer view
 					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
 
+					// Fill descriptor heap with textures used by the scene
+					for (auto handle : material_handles)
+					{
+						auto albedo_cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+						auto normal_cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+
+						auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+
+						auto& albedo_handle = material_internal->Albedo();
+						auto& normal_handle = material_internal->Normal();
+
+						auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+						auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+
+						d3d12::Offset(albedo_cpu_handle, 3 + material_internal->Albedo().m_id, data.out_rt_heap->m_increment_size);
+						d3d12::Offset(normal_cpu_handle, 3 + material_internal->Normal().m_id, data.out_rt_heap->m_increment_size);
+
+						d3d12::CreateSRVFromTexture(albedo_internal, albedo_cpu_handle, albedo_internal->m_format);
+						d3d12::CreateSRVFromTexture(normal_internal, normal_cpu_handle, normal_internal->m_format);
+					}
+
 					data.out_init = false;
 				}
 
@@ -233,6 +278,10 @@ namespace wr
 				cam_data.m_view = camera->m_view;
 				cam_data.m_camera_position = camera->m_position;
 				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
+				cam_data.roughness = n_render_system.temp_rough;
+				cam_data.metal = n_render_system.temp_metal;
+				cam_data.light_radius = n_render_system.light_radius;
+				cam_data.intensity = n_render_system.temp_intensity;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object);

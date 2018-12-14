@@ -111,7 +111,7 @@ namespace wr
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> r = {
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1); return r; }(), // indices
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3); return r; }(), // Materials
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1+20, 3); return r; }(), // Materials (1) Textures (+20) 
 	};
 
 	REGISTER(root_signatures::rt_test_global) = RootSignatureRegistry::Get().Register({
@@ -123,7 +123,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(2); return d; }(), // Vertices
 		},
 		{
-			// No samplers
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
 		},
 		true // rtx
 	});

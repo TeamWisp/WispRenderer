@@ -56,12 +56,20 @@ namespace wr
 			DirectX::XMMATRIX m_view;
 			DirectX::XMMATRIX m_inverse_view_projection;
 			DirectX::XMVECTOR m_camera_position;
+
+			float light_radius;
+			float metal;
+			float roughness;
+			float intensity;
 		};
 
 		struct RayTracingMaterial_CBData
 		{
+			DirectX::XMMATRIX m_model;
 			float idx_offset;
 			float vertex_offset;
+			float albedo_id;
+			float normal_id;
 		};
 
 		static const constexpr float size = 1.0f;
@@ -153,7 +161,10 @@ namespace wr
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
     
-		int hellowrold = 0;
+		float temp_metal = 0.2f;
+		float temp_rough = 0.8f;
+		float light_radius = 50;
+		float temp_intensity = 2;
 	private:
 		unsigned int m_max_commands = 4;
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
@@ -163,6 +174,7 @@ namespace wr
 
 		std::optional<bool> m_requested_fullscreen_state;
 
+	public:
 		d3d12::DescriptorHeap* m_rendering_heap;
 		d3d12::DescHeapGPUHandle m_rendering_heap_gpu;
 		d3d12::DescHeapCPUHandle m_rendering_heap_cpu;
