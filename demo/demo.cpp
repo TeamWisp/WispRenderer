@@ -68,6 +68,7 @@ int WispEntry()
 	}
 	else
 	{
+		frame_graph.AddTask(wr::GetDeferredMainTask());
 		frame_graph.AddTask(wr::GetRTShadowTask());
 		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RTShadowData>());
 	}
