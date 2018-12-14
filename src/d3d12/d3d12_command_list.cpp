@@ -222,6 +222,11 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer->m_gpu_addresses[frame_idx]);
 	}
 
+	void BindCompute32BitConstants(CommandList* cmd_list, const void* data_to_set, unsigned int num_of_values_to_set, unsigned int dest_offset_in_32bit_values, unsigned int root_parameter_idx)
+	{
+		cmd_list->m_native->SetComputeRoot32BitConstants(root_parameter_idx, num_of_values_to_set, data_to_set, dest_offset_in_32bit_values);
+	}
+
 	void BindComputeConstantBuffer(CommandList * cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx)
 	{
 		cmd_list->m_native->SetComputeRootConstantBufferView(root_parameter_idx, 
@@ -309,7 +314,7 @@ namespace wr::d3d12
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
 
-		for (auto i = 0; i < textures.size(); i++)
+		for (auto i = 0; i < textures.size(); ++i)
 		{
 			if (textures[i]->m_current_state != to)
 			{
@@ -335,6 +340,11 @@ namespace wr::d3d12
 			(D3D12_RESOURCE_STATES)to
 		);
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
+	}
+
+	void UAVBarrier(CommandList* cmd_list, TextureResource* resource, unsigned int number_of_barriers)
+	{
+		cmd_list->m_native->ResourceBarrier(number_of_barriers, &CD3DX12_RESOURCE_BARRIER::UAV(resource->m_resource));
 	}
 
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to)
