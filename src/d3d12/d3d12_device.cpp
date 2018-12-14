@@ -35,8 +35,8 @@ namespace wr::d3d12
 			// Set error behaviour
 			if (SUCCEEDED(device->m_native->QueryInterface(IID_PPV_ARGS(&device->m_info_queue))))
 			{
-				device->m_info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-				device->m_info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+				device->m_info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, !device->m_dxr_support);
+				device->m_info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, !device->m_dxr_support);
 			}
 #endif
 		}
@@ -164,18 +164,17 @@ namespace wr::d3d12
 			{
 				device->m_rt_type = RaytracingType::NONE;
 			}
-			else if (d3d12::settings::force_dxr_fallback && device->m_dxr_fallback_support)
-			{
-				device->m_rt_type = RaytracingType::FALLBACK;
-			}
-			else if (device->m_dxr_support)
+			else if (device->m_dxr_support && !d3d12::settings::force_dxr_fallback)
 			{
 				device->m_rt_type = RaytracingType::NATIVE;
+			}
+			else if (device->m_dxr_fallback_support)
+			{
+				device->m_rt_type = RaytracingType::FALLBACK;
 			}
 			else
 			{
 				device->m_rt_type = RaytracingType::NONE;
-
 			}
 		}
 	}

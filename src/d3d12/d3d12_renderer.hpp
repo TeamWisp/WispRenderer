@@ -24,6 +24,7 @@ namespace wr
 
 	class D3D12StructuredBufferPool;
 	class D3D12ModelPool;
+	class D3D12TexturePool;
 
 	namespace temp
 	{
@@ -49,6 +50,13 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
 		};
+
+		struct RayTracingCamera_CBData
+		{
+			DirectX::XMMATRIX m_inverse_view_projection;
+			DirectX::XMVECTOR m_camera_position;
+		};
+
 
 		static const constexpr float size = 1.0f;
 		static const constexpr Vertex2D quad_vertices[] = {
@@ -109,6 +117,7 @@ namespace wr
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
+		void BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -128,7 +137,9 @@ namespace wr
 		std::shared_ptr<TexturePool> m_texture_pool;
 
 		d3d12::HeapResource* m_light_buffer;
-		std::shared_ptr<ConstantBufferPool> m_camera_pool;
+		std::shared_ptr<ConstantBufferPool> m_camera_pool; // TODO: Should be part of the scene graph
+
+		std::shared_ptr<ConstantBufferPool> m_raytracing_cb_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
@@ -143,6 +154,12 @@ namespace wr
 		d3d12::CommandSignature* m_cmd_signature_indexed;
 
 		std::optional<bool> m_requested_fullscreen_state;
+
+		d3d12::DescriptorHeap* m_rendering_heap;
+		d3d12::DescHeapGPUHandle m_rendering_heap_gpu;
+		d3d12::DescHeapCPUHandle m_rendering_heap_cpu;
+
+		MaterialHandle* m_last_material = nullptr;
 	};
 
 } /* wr */
