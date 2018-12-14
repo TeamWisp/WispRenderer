@@ -85,7 +85,7 @@ int WispEntry()
 		frame_graph_1.AddTask(wr::GetRaytracingTask());
 		frame_graph_1.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
 	}
-	//frame_graph_1.AddTask(wr::GetImGuiTask(&RenderEditor));
+	frame_graph_1.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph_1.Setup(*render_system);
 
 	wr::FrameGraph frame_graph_2;
@@ -127,7 +127,6 @@ int WispEntry()
 				frame_graph_3.AddTask(wr::GetDeferredMainTask());
 				frame_graph_3.AddTask(wr::GetDeferredCompositionTask());
 				frame_graph_3.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
-				frame_graph_3.AddTask(wr::GetImGuiTask(&RenderEditor));
 				frame_graph_3.Setup(*render_system);
 			}
 			texture = render_system->Render(scene_graph, frame_graph_3);
