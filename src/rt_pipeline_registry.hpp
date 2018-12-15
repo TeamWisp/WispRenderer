@@ -23,13 +23,13 @@ namespace wr
 			std::vector<std::wstring> exports;
 		};
 
-		using StateObjectDesc = fluent::NamedType<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription>;
-		using LibraryDesc = fluent::NamedType<Library, StateObjectDescription>;
-		using MaxPayloadSize = fluent::NamedType<std::uint64_t, StateObjectDescription>;
-		using MaxAttributeSize = fluent::NamedType<std::uint64_t, StateObjectDescription>;
-		using MaxRecursionDepth = fluent::NamedType<std::uint64_t, StateObjectDescription>;
-		using GlobalRootSignature = fluent::NamedType<std::optional<RegistryHandle>, StateObjectDescription>;
-		using LocalRootSignatures = fluent::NamedType<std::optional<std::vector<RegistryHandle>>, StateObjectDescription>;
+		using StateObjectDesc     = util::NamedType<CD3DX12_STATE_OBJECT_DESC>;
+		using LibraryDesc         = util::NamedType<Library>;
+		using MaxPayloadSize      = util::NamedType<std::uint64_t>;
+		using MaxAttributeSize    = util::NamedType<std::uint64_t>;
+		using MaxRecursionDepth   = util::NamedType<std::uint64_t>;
+		using GlobalRootSignature = util::NamedType<std::optional<RegistryHandle>>;
+		using LocalRootSignatures = util::NamedType<std::optional<std::vector<RegistryHandle>>>;
 
 		StateObjectDesc desc;
 		LibraryDesc library_desc;

@@ -18,11 +18,11 @@ namespace wr
 
 	struct RootSignatureDescription
 	{
-		using Parameters = fluent::NamedType<std::vector<CD3DX12_ROOT_PARAMETER>, struct RootSignatureDescription>;
-		using Samplers = fluent::NamedType<std::vector<d3d12::desc::SamplerDesc>, struct RootSignatureDescription>;
-		using DXR = fluent::NamedType<bool, struct RootSignatureDescription>;
-		using DXRLocal = fluent::NamedType<bool, struct RootSignatureDescription>;
-		using Name = fluent::NamedType<std::wstring, struct RootSignatureDescription>;
+		using Parameters = util::NamedType<std::vector<CD3DX12_ROOT_PARAMETER>>;
+		using Samplers   = util::NamedType<std::vector<d3d12::desc::SamplerDesc>>;
+		using DXR        = util::NamedType<bool>;
+		using DXRLocal   = util::NamedType<bool>;
+		using Name       = util::NamedType<std::wstring>;
 
 		Parameters m_parameters; // TODO: Write platform independend version.
 		Samplers m_samplers; // TODO: Move to platform independed location

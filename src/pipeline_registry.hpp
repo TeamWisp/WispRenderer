@@ -16,19 +16,19 @@ namespace wr
 
 	struct PipelineDescription
 	{
-		using VertexShader = fluent::NamedType<std::optional<RegistryHandle>, PipelineDescription>;
-		using PixelShader = fluent::NamedType<std::optional<RegistryHandle>, PipelineDescription>;
-		using ComputeShader = fluent::NamedType<std::optional<RegistryHandle>, PipelineDescription>;
-		using RootSignature = fluent::NamedType<RegistryHandle, PipelineDescription>;
-		using DSVFormat = fluent::NamedType<Format, PipelineDescription>;
-		using RTVFormats= fluent::NamedType<std::array<Format, 8>, PipelineDescription>;
-		using NumRTVFormats = fluent::NamedType<unsigned int, PipelineDescription>;
-		using Type = fluent::NamedType<PipelineType, PipelineDescription>;
-		using CullMode = fluent::NamedType<CullMode, PipelineDescription>;
-		using Depth = fluent::NamedType<bool, PipelineDescription>;
-		using CounterClockwise = fluent::NamedType<bool, PipelineDescription>;
-		using TopologyType = fluent::NamedType<TopologyType, PipelineDescription>;
-		using InputLayout = fluent::NamedType<std::vector<D3D12_INPUT_ELEMENT_DESC>, PipelineDescription>;
+		using VertexShader     = util::NamedType<std::optional<RegistryHandle>>;
+		using PixelShader      = util::NamedType<std::optional<RegistryHandle>>;
+		using ComputeShader    = util::NamedType<std::optional<RegistryHandle>>;
+		using RootSignature    = util::NamedType<RegistryHandle>;
+		using DSVFormat        = util::NamedType<Format>;
+		using RTVFormats       = util::NamedType<std::array<Format, 8>>;
+		using NumRTVFormats    = util::NamedType<unsigned int>;
+		using Type             = util::NamedType<PipelineType>;
+		using CullMode         = util::NamedType<CullMode>;
+		using Depth            = util::NamedType<bool>;
+		using CounterClockwise = util::NamedType<bool>;
+		using TopologyType     = util::NamedType<TopologyType>;
+		using InputLayout      = util::NamedType<std::vector<D3D12_INPUT_ELEMENT_DESC>>;
 
 		VertexShader m_vertex_shader_handle;
 		PixelShader m_pixel_shader_handle;

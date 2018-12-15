@@ -14,9 +14,9 @@ namespace wr
 
 	struct ShaderDescription
 	{
-		using Path = fluent::NamedType<std::string, ShaderDescription>;
-		using Entry = fluent::NamedType<std::string, ShaderDescription>;
-		using Type = fluent::NamedType<ShaderType, ShaderDescription>;
+		using Path  = util::NamedType<std::string>;
+		using Entry = util::NamedType<std::string>;
+		using Type  = util::NamedType<ShaderType>;
 
 		Path path;
 		Entry entry;
