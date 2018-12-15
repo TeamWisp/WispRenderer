@@ -70,7 +70,7 @@ namespace wr
 
 				auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(deferred_main_data.m_render_target);
-				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
+				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.Get().data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
 
 			}
@@ -164,17 +164,16 @@ namespace wr
 	{
 		auto ptr = std::make_unique<DeferredCompositionRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::COMPUTE, true,
 			RenderTargetProperties{
-				false,
-				std::nullopt,
-				std::nullopt,
-				ResourceState::UNORDERED_ACCESS,
-				ResourceState::COPY_SOURCE,
-				false,
-				Format::UNKNOWN,
-				{ Format::R8G8B8A8_UNORM },
-				1,
-				true,
-				true
+				RenderTargetProperties::IsRenderWindow(false),
+				RenderTargetProperties::Width(std::nullopt),
+				RenderTargetProperties::Height(std::nullopt),
+				RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
+				RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
+				RenderTargetProperties::CreateDSVBuffer(false),
+				RenderTargetProperties::DSVFormat(Format::UNKNOWN),
+				RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
+				RenderTargetProperties::NumRTVFormats(1),
+				RenderTargetProperties::Clear(true),
 			},
 			[](RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data, bool) { internal::SetupDeferredTask(render_system, task, data); },
 			[](RenderSystem & render_system, DeferredCompositionRenderTask_t & task, SceneGraph & scene_graph, DeferredCompositionTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
