@@ -16,6 +16,8 @@
 #define ROOT_PARAM(func) [] { CD3DX12_ROOT_PARAMETER d; d.func; return d; }()
 #define SAMPLER(...) { __VA_ARGS__ }
 
+#define 
+
 namespace wr
 {
 	DESC_RANGE_ARRAY(ranges_basic,
@@ -97,7 +99,7 @@ namespace wr
 		PipelineDescription::ComputeShader(shaders::deferred_composition_cs),
 		PipelineDescription::RootSignature(root_signatures::deferred_composition),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats(std::array<Format, 8>{
+		PipelineDescription::RTVFormats(std::array<Format, 8> {
 			Format::R8G8B8A8_UNORM
 		}),
 		PipelineDescription::NumRTVFormats(1),
@@ -122,9 +124,9 @@ namespace wr
 
 	REGISTER(root_signatures::rt_test_global, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(1, r); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(),
+			ROOT_PARAM(InitAsDescriptorTable(1, r)),
+			ROOT_PARAM(InitAsShaderResourceView(0)),
+			ROOT_PARAM(InitAsConstantBufferView(0)),
 		}),
 		RootSignatureDescription::Samplers({
 			// No Samplers
@@ -143,23 +145,20 @@ namespace wr
 		RootSignatureDescription::DXRLocal(true)
 	});
 
-	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> so_desc = []()
+	StateObjectDescription::Library library_desc = []()
 	{
-		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
-
 		StateObjectDescription::Library lib;
 		lib.shader_handle = shaders::rt_lib;
 		lib.exports.push_back(L"RaygenEntry");
 		lib.exports.push_back(L"ClosestHitEntry");
 		lib.exports.push_back(L"MissEntry");
-
-		return std::make_pair(desc, lib);
+		return lib;
 	}();
 	
 	REGISTER(state_objects::state_object, RTPipelineRegistry)(
 	{
-		StateObjectDescription::StateObjectDesc(so_desc.first),
-		StateObjectDescription::LibraryDesc(so_desc.second),
+		StateObjectDescription::StateObjectDesc(CD3DX12_STATE_OBJECT_DESC{ D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE }),
+		StateObjectDescription::LibraryDesc(library_desc),
 		StateObjectDescription::MaxPayloadSize(sizeof(float) * 4),
 		StateObjectDescription::MaxAttributeSize(sizeof(float) * 2),
 		StateObjectDescription::MaxRecursionDepth(1),
