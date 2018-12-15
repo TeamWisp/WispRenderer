@@ -9,14 +9,9 @@
 #include "d3d12/d3d12_structs.hpp"
 
 #define REGISTER(type, registry) decltype(type) type = registry::Get().Register
-
 #define DESC_RANGE_ARRAY(name, ...) std::vector<CD3DX12_DESCRIPTOR_RANGE> name { __VA_ARGS__ };
 #define DESC_RANGE(...) [] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(__VA_ARGS__); return r; }()
-
 #define ROOT_PARAM(func) [] { CD3DX12_ROOT_PARAMETER d; d.func; return d; }()
-#define SAMPLER(...) { __VA_ARGS__ }
-
-#define 
 
 namespace wr
 {
