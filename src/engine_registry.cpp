@@ -79,7 +79,10 @@ namespace wr
 		PipelineDescription::ComputeShader(std::nullopt),
 		PipelineDescription::RootSignature(root_signatures::basic),
 		PipelineDescription::DSVFormat(Format::D32_FLOAT),
-		PipelineDescription::RTVFormats(std::array<Format, 8>{Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT}),
+		PipelineDescription::RTVFormats(std::array<Format, 8>{
+			Format::R32G32B32A32_FLOAT,
+			Format::R32G32B32A32_FLOAT
+		}),
 		PipelineDescription::NumRTVFormats(3),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),
@@ -94,7 +97,9 @@ namespace wr
 		PipelineDescription::ComputeShader(shaders::deferred_composition_cs),
 		PipelineDescription::RootSignature(root_signatures::deferred_composition),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats(std::array<Format, 8>{ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::RTVFormats(std::array<Format, 8>{
+			Format::R8G8B8A8_UNORM
+		}),
 		PipelineDescription::NumRTVFormats(1),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),
