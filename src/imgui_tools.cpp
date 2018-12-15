@@ -366,15 +366,15 @@ namespace wr::imgui::window
 					obj = obj_it->second;
 				}
 
-				std::string tree_name = internal::ShaderTypeToStr(desc.second.type) + "[" + std::to_string(desc.first) + "]: " + desc.second.path;
+				std::string tree_name = internal::ShaderTypeToStr(desc.second.type.get()) + "[" + std::to_string(desc.first) + "]: " + desc.second.path.get();
 				if (ImGui::TreeNode(tree_name.c_str()))
 				{
 					if (ImGui::TreeNode("Description"))
 					{
 						ImGui::Text("ID: %d", desc.first);
-						ImGui::Text("Path: %s", desc.second.path.c_str());
-						ImGui::Text("Entry: %s", desc.second.entry.c_str());
-						ImGui::Text("Type: %s", internal::ShaderTypeToStr(desc.second.type).c_str());
+						ImGui::Text("Path: %s", desc.second.path.get().c_str());
+						ImGui::Text("Entry: %s", desc.second.entry.get().c_str());
+						ImGui::Text("Type: %s", internal::ShaderTypeToStr(desc.second.type.get()).c_str());
 
 						ImGui::TreePop();
 					}
@@ -431,18 +431,18 @@ namespace wr::imgui::window
 							}
 						};
 
-						text_handle("Vertex Shader", desc.second.m_vertex_shader_handle);
-						text_handle("Pixel Shader", desc.second.m_pixel_shader_handle);
-						text_handle("Compute Shader", desc.second.m_compute_shader_handle);
-						text_handle("RootSignature", desc.second.m_root_signature_handle);
+						text_handle("Vertex Shader", desc.second.m_vertex_shader_handle.get());
+						text_handle("Pixel Shader", desc.second.m_pixel_shader_handle.get());
+						text_handle("Compute Shader", desc.second.m_compute_shader_handle.get());
+						text_handle("RootSignature", desc.second.m_root_signature_handle.get());
 						
-						ImGui::Text("Depth Enabled: %s", internal::BooltoStr(desc.second.m_depth_enabled).c_str());
-						ImGui::Text("Counter Clockwise Winding Order: %s", internal::BooltoStr(desc.second.m_counter_clockwise).c_str());
-						ImGui::Text("Num RTV Formats: %d", desc.second.m_num_rtv_formats);
-						for (auto i = 0; i < desc.second.m_num_rtv_formats; i++)
+						ImGui::Text("Depth Enabled: %s", internal::BooltoStr(desc.second.m_depth_enabled.get()).c_str());
+						ImGui::Text("Counter Clockwise Winding Order: %s", internal::BooltoStr(desc.second.m_counter_clockwise.get()).c_str());
+						ImGui::Text("Num RTV Formats: %d", desc.second.m_num_rtv_formats.get());
+						for (auto i = 0; i < desc.second.m_num_rtv_formats.get(); i++)
 						{
 							std::string text = "Format[" + std::to_string(i) + "]: %s";
-							ImGui::Text(text.c_str(), FormatToStr(desc.second.m_rtv_formats[i]).c_str());
+							ImGui::Text(text.c_str(), FormatToStr(desc.second.m_rtv_formats.get()[i]).c_str());
 						}
 
 						ImGui::TreePop();
@@ -495,8 +495,8 @@ namespace wr::imgui::window
 							}
 						};
 
-						ImGui::Text("Num samplers: %d", desc.second.m_samplers.size());
-						ImGui::Text("Num parameters: %d", desc.second.m_parameters.size());
+						ImGui::Text("Num samplers: %d", desc.second.m_samplers.get().size());
+						ImGui::Text("Num parameters: %d", desc.second.m_parameters.get().size());
 
 						ImGui::TreePop();
 					}

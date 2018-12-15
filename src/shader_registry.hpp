@@ -2,6 +2,7 @@
 
 #include "registry.hpp"
 #include "d3d12/d3d12_enums.hpp"
+#include "util/named_type.hpp"
 
 namespace wr
 {
@@ -10,11 +11,16 @@ namespace wr
 
 	};
 
+
 	struct ShaderDescription
 	{
-		std::string path;
-		std::string entry;
-		ShaderType type;
+		using Path = fluent::NamedType<std::string, ShaderDescription>;
+		using Entry = fluent::NamedType<std::string, ShaderDescription>;
+		using Type = fluent::NamedType<ShaderType, ShaderDescription>;
+
+		Path path;
+		Entry entry;
+		Type type;
 	};
 
 	class ShaderRegistry : public internal::Registry<ShaderRegistry, Shader, ShaderDescription>
