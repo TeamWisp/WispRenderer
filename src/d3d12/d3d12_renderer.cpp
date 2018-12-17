@@ -673,7 +673,9 @@ namespace wr
 		for (auto& node : nodes)
 		{
 			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
 				continue;
+			}
 
 			node->Update(GetFrameIdx());
 		}
@@ -683,7 +685,10 @@ namespace wr
 	{
 		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
+				continue;
+			}
 
 			node->UpdateTemp(GetFrameIdx());
 
@@ -707,7 +712,10 @@ namespace wr
 		{
 			std::shared_ptr<LightNode>& node = light_nodes[i];
 
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
+				continue;
+			}
 
 			if (!should_update)
 			{

@@ -199,8 +199,10 @@ namespace wr
 				auto node = m_mesh_nodes[i];
 				auto it = m_batches.find(node->m_model);
 
-				if (node->m_model == nullptr || !GetActiveCamera()->InView(node))
+				if (node->m_model == nullptr || (!GetActiveCamera()->InView(node) && d3d12::settings::enable_object_culling))
+				{
 					continue;
+				}
 
 				//Insert new if doesn't exist
 				if (it == m_batches.end())

@@ -25,22 +25,34 @@ namespace wr
 	void Model::CalculateAABB(float(&pos)[3])
 	{
 		if (pos[0] < m_box[0].m128_f32[0])
+		{
 			m_box[0] = { pos[0], pos[1], pos[2], 1 };
+		}
 
 		if (pos[0] > m_box[1].m128_f32[0])
+		{
 			m_box[1] = { pos[0], pos[1], pos[2], 1 };
+		}
 
 		if (pos[1] < m_box[2].m128_f32[1])
+		{
 			m_box[2] = { pos[0], pos[1], pos[2], 1 };
+		}
 
 		if (pos[1] > m_box[3].m128_f32[1])
+		{
 			m_box[3] = { pos[0], pos[1], pos[2], 1 };
+		}
 
 		if (pos[2] < m_box[4].m128_f32[2])
+		{
 			m_box[4] = { pos[0], pos[1], pos[2], 1 };
+		}
 
 		if (pos[2] > m_box[5].m128_f32[2])
+		{
 			m_box[5] = { pos[0], pos[1], pos[2], 1 };
+		}
 	}
 
 
