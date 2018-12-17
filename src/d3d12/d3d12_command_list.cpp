@@ -314,7 +314,7 @@ namespace wr::d3d12
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
 
-		for (auto* texture : textures)
+		for (auto& texture : textures)
 		{
 			if (texture->m_current_state != to)
 			{
