@@ -49,20 +49,35 @@ namespace wr
 		}
 		});
 
-	//MipMapping Root Signature
-	std::array< CD3DX12_DESCRIPTOR_RANGE, 1> mip_in_srv_ranges
+	////MipMapping Root Signature
+	//std::array< CD3DX12_DESCRIPTOR_RANGE, 1> mip_in_srv_ranges
+	//{
+	//	[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } ()
+	//};
+	//std::array< CD3DX12_DESCRIPTOR_RANGE, 1> mip_out_uav_ranges
+	//{
+	//	[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 4, 0, 0); return r; } ()
+	//};
+	//REGISTER(root_signatures::mip_mapping) = RootSignatureRegistry::Get().Register({
+	//	{
+	//		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(2, 0); return d; }(),
+	//		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(mip_in_srv_ranges.size(), mip_in_srv_ranges.data()); return d; }(),
+	//		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(mip_out_uav_ranges.size(), mip_out_uav_ranges.data()); return d; }()
+	//	},
+	//	{
+	//		{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
+	//	}
+	//	});
+		//MipMapping Root Signature
+	std::array< CD3DX12_DESCRIPTOR_RANGE, 2> mip_in_out_ranges
 	{
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } ()
-	};
-	std::array< CD3DX12_DESCRIPTOR_RANGE, 1> mip_out_uav_ranges
-	{
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 4, 0, 0); return r; } ()
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } (),
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0); return r; } ()
 	};
 	REGISTER(root_signatures::mip_mapping) = RootSignatureRegistry::Get().Register({
 		{
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(2, 0); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(mip_in_srv_ranges.size(), mip_in_srv_ranges.data()); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(mip_out_uav_ranges.size(), mip_out_uav_ranges.data()); return d; }()
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(mip_in_out_ranges.size(), mip_in_out_ranges.data()); return d; }()
 		},
 		{
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }

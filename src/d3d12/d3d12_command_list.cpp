@@ -314,21 +314,22 @@ namespace wr::d3d12
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
 
-		for (auto i = 0; i < textures.size(); ++i)
+		for (auto* texture : textures)
 		{
-			if (textures[i]->m_current_state != to)
+			if (texture->m_current_state != to)
 			{
 				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-					textures[i]->m_resource,
+					texture->m_resource,
 					(D3D12_RESOURCE_STATES)from,
 					(D3D12_RESOURCE_STATES)to
 				);
 
-				textures[i]->m_current_state = to;
+				texture->m_current_state = to;
 
 				barriers.push_back(barrier);
 			}
 		}
+
 		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
 	}
 
