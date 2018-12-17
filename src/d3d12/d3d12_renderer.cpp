@@ -893,8 +893,16 @@ namespace wr
 		auto normal_handle = material_internal->GetNormal();
 		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
 
+		auto roughness_handle = material_internal->GetRoughness();
+		auto* roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTexture(roughness_handle.m_id));
+
+		auto metallic_handle = material_internal->GetMetallic();
+		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
+
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_roughness = roughness_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_metallic = metallic_internal->m_cpu_descriptor_handle;
 
 		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
 		{
@@ -903,13 +911,15 @@ namespace wr
 		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
 		{
 			src_cpu_handle_albedo.m_native,
-			src_cpu_handle_normal.m_native
+			src_cpu_handle_normal.m_native,
+			src_cpu_handle_roughness.m_native,
+			src_cpu_handle_metallic.m_native
 		};
 
-		UINT sizes[] = { 2 };
+		UINT sizes[] = { 4 };
 
 		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-			2, pSrcDescriptorRangeStarts,
+			4, pSrcDescriptorRangeStarts,
 			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);

@@ -23,6 +23,8 @@ namespace resources
 		// Load Texture.
 		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);
 		wr::TextureHandle rusty_metal_normal = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_normal.png", false, true);
+		wr::TextureHandle rusty_metal_roughness = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_roughness.png", false, true);
+		wr::TextureHandle rusty_metal_metallic = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_metallic.png", false, true);
 
 		// Create Material
 		rusty_metal_material = material_pool->Create();
@@ -31,10 +33,14 @@ namespace resources
 
 		rusty_metal_internal->SetAlbedo(rusty_metal_albedo);
 		rusty_metal_internal->SetNormal(rusty_metal_normal);
+		rusty_metal_internal->SetRoughness(rusty_metal_roughness);
+		rusty_metal_internal->SetMetallic(rusty_metal_metallic);
 
 		// Load Texture.
 		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
 		wr::TextureHandle rock_normal = texture_pool->Load("resources/materials/rock/rock_normal.png", false, true);
+		wr::TextureHandle rock_roughness = texture_pool->Load("resources/materials/rock/rock_roughness.png", false, true);
+		wr::TextureHandle rock_metallic = texture_pool->Load("resources/materials/rock/rock_metallic.png", false, true);
 
 		// Create Material
 		rock_material = material_pool->Create();
@@ -43,6 +49,8 @@ namespace resources
 
 		rock_material_internal->SetAlbedo(rock_albedo);
 		rock_material_internal->SetNormal(rock_normal);
+		rock_material_internal->SetRoughness(rock_roughness);
+		rock_material_internal->SetMetallic(rock_metallic);
 
 		model_pool = render_system->CreateModelPool(2, 2);
 

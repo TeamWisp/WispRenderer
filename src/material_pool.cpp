@@ -19,7 +19,8 @@ namespace wr
 
 	Material::Material(TextureHandle albedo,
 					   TextureHandle normal,
-					   TextureHandle rough_met,
+					   TextureHandle roughness,
+					   TextureHandle metallic,
 		               TextureHandle ao,
 		               bool alpha_masked,
 					   bool double_sided)
@@ -27,12 +28,14 @@ namespace wr
 		m_texture_pool = albedo.m_pool;
 
 		if (m_texture_pool == normal.m_pool && 
-			m_texture_pool == rough_met.m_pool && 
+			m_texture_pool == roughness.m_pool &&
+			m_texture_pool == metallic.m_pool &&
 			m_texture_pool == ao.m_pool)
 		{
 			m_albedo = albedo;
 			m_normal = normal;
-			m_rough_metallic = rough_met;
+			m_rougness = roughness;
+			m_metallic = metallic;
 			m_ao = ao;
 			m_alpha_masked = alpha_masked;
 			m_double_sided = double_sided;
@@ -66,15 +69,26 @@ namespace wr
 		m_normal = normal;
 	}
 
-	void Material::SetRoughMetallic(TextureHandle rough_met)
+	void Material::SetRoughness(TextureHandle roughness)
 	{
-		if (rough_met.m_pool != m_texture_pool
+		if (roughness.m_pool != m_texture_pool
 			&& m_texture_pool)
 		{
 			LOGC("Textures in a material need to belong to the same texture pool");
 		}
 
-		m_rough_metallic = rough_met;
+		m_rougness = roughness;
+	}
+
+	void Material::SetMetallic(TextureHandle metallic)
+	{
+		if (metallic.m_pool != m_texture_pool
+			&& m_texture_pool)
+		{
+			LOGC("Textures in a material need to belong to the same texture pool");
+		}
+
+		m_metallic = metallic;
 	}
 
 	void Material::SetAmbientOcclusion(TextureHandle ao)
@@ -111,15 +125,15 @@ namespace wr
 		return handle;
 	}
 
-	MaterialHandle MaterialPool::Create(TextureHandle& albedo, TextureHandle& normal, 
-										TextureHandle& rough_met, TextureHandle& ao, 
-										bool is_alpha_masked, bool is_double_sided)
+	MaterialHandle MaterialPool::Create(TextureHandle& albedo, TextureHandle& normal,
+										TextureHandle& roughness, TextureHandle& metallic,
+										TextureHandle& ao, bool is_alpha_masked, bool is_double_sided)
 	{
 		MaterialHandle handle;
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material(albedo, normal, rough_met, ao, is_alpha_masked, is_double_sided);
+		Material* mat = new Material(albedo, normal, roughness, metallic, ao, is_alpha_masked, is_double_sided);
 
 		m_materials.insert(std::make_pair(handle.m_id, mat));
 
