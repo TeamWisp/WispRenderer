@@ -77,7 +77,7 @@ namespace wr::d3d12
 		tex->m_resource->SetName(name.c_str());
 	}
 
-	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, Format format)
+	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle)
 	{
 		decltype(Device::m_native) n_device;
 
@@ -87,7 +87,7 @@ namespace wr::d3d12
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
 		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srv_desc.Format = (DXGI_FORMAT)format;
+		srv_desc.Format = (DXGI_FORMAT)tex->m_format;
 		srv_desc.Texture2D.MipLevels = tex->m_mip_levels;
 
 		//Calculate dimension

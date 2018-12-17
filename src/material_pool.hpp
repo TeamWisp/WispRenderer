@@ -39,16 +39,16 @@ namespace wr
 
 		~Material();
 
-		TextureHandle& Albedo() { return m_albedo; }
+		TextureHandle GetAlbedo() { return m_albedo; }
 		void SetAlbedo(TextureHandle albedo);
 
-		TextureHandle& Normal() { return m_normal; }
+		TextureHandle GetNormal() { return m_normal; }
 		void SetNormal(TextureHandle normal);
 
-		TextureHandle& RoughnessMetallic() { return m_rough_metallic; }
+		TextureHandle GetRoughMetallic() { return m_rough_metallic; }
 		void SetRoughMetallic(TextureHandle rough_met);
 
-		TextureHandle& AmbientOcclusion() { return m_rough_metallic; }
+		TextureHandle GetAmbientOcclusion() { return m_rough_metallic; }
 		void SetAmbientOcclusion(TextureHandle ao);
 
 		//bool IsAlphaMasked() { return m_alpha_masked; }

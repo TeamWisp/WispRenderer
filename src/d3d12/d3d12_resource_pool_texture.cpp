@@ -155,7 +155,7 @@ namespace wr
 		texture->m_offset_in_heap = m_loaded_textures;
 		texture->m_resource->SetName(wide_string.c_str());
 
-		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
+		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle);
 
 		d3d12::Offset(m_descriptor_handle, 1, m_descriptor_heap->m_increment_size);
 
@@ -214,7 +214,7 @@ namespace wr
 		texture->m_offset_in_heap = m_loaded_textures;
 		texture->m_resource->SetName(wide_string.c_str());
 
-		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
+		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle);
 
 		d3d12::Offset(m_descriptor_handle, 1, m_descriptor_heap->m_increment_size);
 
@@ -272,7 +272,7 @@ namespace wr
 		texture->m_offset_in_heap = m_loaded_textures;
 		texture->m_resource->SetName(wide_string.c_str());
 
-		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle, desc.m_texture_format);
+		d3d12::CreateSRVFromTexture(texture, texture->m_cpu_descriptor_handle);
 
 		d3d12::Offset(m_descriptor_handle, 1, m_descriptor_heap->m_increment_size);
 
