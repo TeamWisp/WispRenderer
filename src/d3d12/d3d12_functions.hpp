@@ -92,7 +92,7 @@ namespace wr::d3d12
 	// Texture
 	[[nodiscard]] TextureResource* CreateTexture(Device* device, desc::TextureDesc* description, bool allow_uav);
 	void SetName(TextureResource* tex, std::wstring name);
-	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, Format format);
+	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void Destroy(TextureResource* tex);
 
