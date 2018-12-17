@@ -37,7 +37,7 @@ namespace wr::d3d12
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
-	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object);
+	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object, bool fallback = false);
 	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback = false);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);

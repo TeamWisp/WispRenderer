@@ -48,7 +48,7 @@ namespace wr
 
 			// top level, bottom level and output buffer. (even though I don't use bottom level.)
 			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_num_descriptors = 23;
+			heap_desc.m_num_descriptors = 100; // FIXME: size
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_versions = 1;
@@ -225,6 +225,14 @@ namespace wr
 					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, blas_list);
 					tlas.m_native->SetName(L"Highlevelaccel");
 
+					//tlas.m_native->
+					CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+						tlas.m_native,
+						D3D12_RESOURCE_STATE_GENERIC_READ,
+						D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+					);
+					cmd_list->m_native->ResourceBarrier(1, &barrier);
+
 					// Transition all model pools back to whatever they were.
 					for (auto& pool : model_pools)
 					{
@@ -284,13 +292,21 @@ namespace wr
 				cam_data.intensity = n_render_system.temp_intensity;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
-				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object);
+				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
+				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
-				d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
+
+				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
+				{
+					d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
+				}
+				else if(d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+				{
+					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, tlas.m_fallback_tlas_ptr);
+				}
 
 				//d3d12::BindComputeShaderResourceView(cmd_list, temp_ib->m_buffer, 3);
 				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);

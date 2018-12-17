@@ -175,10 +175,17 @@ namespace wr::d3d12
 		cmd_list->m_native->SetComputeRootSignature(pipeline_state->m_root_signature->m_native);
 	}
 
-	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object)
+	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object, bool fallback)
 	{
 		cmd_list->m_native->SetComputeRootSignature(state_object->m_global_root_signature->m_native);
-		cmd_list->m_native->SetPipelineState1(state_object->m_native);
+		if (fallback)
+		{
+			cmd_list->m_native_fallback->SetPipelineState1(state_object->m_fallback_native);
+		}
+		else
+		{
+			cmd_list->m_native->SetPipelineState1(state_object->m_native);
+		}
 	}
 
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport)
@@ -401,7 +408,14 @@ namespace wr::d3d12
 		desc.Height = height;
 		desc.Depth = depth;
 
-		cmd_list->m_native->DispatchRays(&desc);
+		if (cmd_list->m_native_fallback)
+		{
+			cmd_list->m_native_fallback->DispatchRays(&desc);
+		}
+		else
+		{
+			cmd_list->m_native->DispatchRays(&desc);
+		}
 	}
 
 	void SetName(CommandSignature * cmd_signature, std::wstring name)
