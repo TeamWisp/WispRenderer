@@ -18,7 +18,7 @@ namespace wr
 		DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
 		m_view = DirectX::XMMatrixLookAtRH(pos, DirectX::XMVectorAdd(forward, pos), up);
-		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, 1, 125);
+		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, 0.6, m_frustum_far);
 		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 
 		SignalUpdate(frame_idx);
