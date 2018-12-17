@@ -74,7 +74,7 @@ echo Windows SDK required: 10.0.17763.0 or newer
 
 rem ##### install #####
 call :downloadDeps
-::call :lfsCopy
+call :lfsCopy
 call :genVS15Win64 
 call :genVS15Win32 
 
@@ -96,19 +96,19 @@ git submodule update --recursive --remote
 EXIT /B 0
 REM ##### DOWNLOAD DEPS #####
 
-::REM ##### COPY LARGE FILE #####
-:::lfsCopy
-::robocopy "%cd%\deps\Wisp-LFS" "%cd%/resources" /s /v /xf .git
-:::: for each folder in \deps\wisp-lfs
-::FOR /F "delims=" %%G IN ('dir "D:\Git\Procedural-Ray-Tracing\deps\Wisp-LFS" /b /ad-h /t:c /o-n') DO ( 
-::  set path_to_ignore=/resources/%%G
-::  findstr /i /C:"!path_to_ignore!" .gitignore
-::  if !ERRORLEVEL! EQU 1 (
-::    echo /resources/%%G >> ".gitignore"
-::  )
-::)
-::EXIT /B 0
-::REM ##### COPY LARGE FILE #####
+REM ##### COPY LARGE FILE #####
+:lfsCopy
+robocopy "%cd%\deps\Wisp-LFS" "%cd%/resources" /s /v /xf .git
+:: for each folder in \deps\wisp-lfs
+FOR /F "delims=" %%G IN ('dir "D:\Git\Procedural-Ray-Tracing\deps\Wisp-LFS" /b /ad-h /t:c /o-n') DO ( 
+  set path_to_ignore=/resources/%%G
+  findstr /i /C:"!path_to_ignore!" .gitignore
+  if !ERRORLEVEL! EQU 1 (
+    echo /resources/%%G >> ".gitignore"
+  )
+)
+EXIT /B 0
+REM ##### COPY LARGE FILE #####
 
 REM ##### GEN PROJECTS #####
 :genVS15Win64
