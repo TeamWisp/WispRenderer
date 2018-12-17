@@ -21,6 +21,7 @@ namespace wr
 		//Staging heap creation
 		d3d12::desc::DescriptorHeapDesc desc;
 		desc.m_num_descriptors = num_of_textures;
+		desc.m_versions = 1;
 		desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 		desc.m_shader_visible = false;
 
@@ -373,11 +374,7 @@ namespace wr
 					//Pass the source and destination texture views to the shader via descriptor tables
 					d3d12::BindComputeDescriptorTable(n_cmd_list, m_mipmapping_gpu_handle, 1);
 
-					d3d12::Offset(m_mipmapping_gpu_handle, 1, m_mipmapping_heap->m_increment_size);
-
-					d3d12::BindComputeDescriptorTable(n_cmd_list, m_mipmapping_gpu_handle, 2);
-
-					d3d12::Offset(m_mipmapping_gpu_handle, 1, m_mipmapping_heap->m_increment_size);
+					d3d12::Offset(m_mipmapping_gpu_handle, 2, m_mipmapping_heap->m_increment_size);
 					
 					//Dispatch the compute shader with one thread per 8x8 pixels
 					d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
