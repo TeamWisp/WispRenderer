@@ -893,10 +893,10 @@ namespace wr
 
 		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
 
-		auto& albedo_handle = material_internal->Albedo();
+		auto albedo_handle = material_internal->GetAlbedo();
 		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
 
-		auto& normal_handle = material_internal->Normal();
+		auto normal_handle = material_internal->GetNormal();
 		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
 
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;

@@ -222,6 +222,11 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer->m_gpu_addresses[frame_idx]);
 	}
 
+	void BindCompute32BitConstants(CommandList* cmd_list, const void* data_to_set, unsigned int num_of_values_to_set, unsigned int dest_offset_in_32bit_values, unsigned int root_parameter_idx)
+	{
+		cmd_list->m_native->SetComputeRoot32BitConstants(root_parameter_idx, num_of_values_to_set, data_to_set, dest_offset_in_32bit_values);
+	}
+
 	void BindComputeConstantBuffer(CommandList * cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx)
 	{
 		cmd_list->m_native->SetComputeRootConstantBufferView(root_parameter_idx, 
@@ -309,21 +314,22 @@ namespace wr::d3d12
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
 
-		for (auto i = 0; i < textures.size(); i++)
+		for (auto& texture : textures)
 		{
-			if (textures[i]->m_current_state != to)
+			if (texture->m_current_state != to)
 			{
 				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-					textures[i]->m_resource,
+					texture->m_resource,
 					(D3D12_RESOURCE_STATES)from,
 					(D3D12_RESOURCE_STATES)to
 				);
 
-				textures[i]->m_current_state = to;
+				texture->m_current_state = to;
 
 				barriers.push_back(barrier);
 			}
 		}
+
 		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
 	}
 
@@ -337,6 +343,11 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
 
+	void UAVBarrier(CommandList* cmd_list, TextureResource* resource, unsigned int number_of_barriers)
+	{
+		cmd_list->m_native->ResourceBarrier(number_of_barriers, &CD3DX12_RESOURCE_BARRIER::UAV(resource->m_resource));
+	}
+
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -346,7 +357,7 @@ namespace wr::d3d12
 		);
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
-
+	
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(

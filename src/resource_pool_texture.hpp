@@ -31,7 +31,7 @@ namespace wr
 		TexturePool(TexturePool&&) = delete;
 		TexturePool& operator=(TexturePool&&) = delete;
 
-		[[nodiscard]] TextureHandle Load(std::string_view path, bool srgb);
+		[[nodiscard]] TextureHandle Load(std::string_view path, bool srgb, bool generate_mips);
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
@@ -42,9 +42,9 @@ namespace wr
 
 	protected:
 
-		virtual Texture* LoadPNG(std::string_view path, bool srgb) = 0;
-		virtual Texture* LoadDDS(std::string_view path, bool srgb) = 0;
-		virtual Texture* LoadHDR(std::string_view path, bool srgb) = 0;
+		virtual Texture* LoadPNG(std::string_view path, bool srgb, bool generate_mips) = 0;
+		virtual Texture* LoadDDS(std::string_view path, bool srgb, bool generate_mips) = 0;
+		virtual Texture* LoadHDR(std::string_view path, bool srgb, bool generate_mips) = 0;
 
 		std::unordered_map<uint64_t, Texture*> m_unstaged_textures;
 		std::unordered_map<uint64_t, Texture*> m_staged_textures;
