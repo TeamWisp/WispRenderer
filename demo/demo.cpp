@@ -60,7 +60,7 @@ int WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	if (true)
+	if (false)
 	{
 		frame_graph.AddTask(wr::GetDeferredMainTask());
 		frame_graph.AddTask(wr::GetDeferredCompositionTask());
