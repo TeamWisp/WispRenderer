@@ -101,7 +101,7 @@ REM ##### COPY LARGE FILE #####
 robocopy "%cd%\deps\Wisp-LFS" "%cd%/resources" /s /v /xf .git
 
 :: for each folder in \deps\wisp-lfs
-FOR /D "delims=*" %%idir IN ('dir "%cd%\deps\Wisp-LFS" /b /ad-h /on') DO ( 
+FOR /D "delims=*" %%idir IN ('dir "%cd%\deps\Wisp-LFS" /b /ad-h /t:c /on') DO ( 
   pause
   set path_in_ignore=0
   FOR "delims=" %%s IN ('findstr /i "/resources/%%idir" ".gitignore"') DO (
