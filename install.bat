@@ -83,6 +83,7 @@ call :genVS15Win64
 call :genVS15Win32 
 
 call :colorEcho %light_green% "Installation Finished!"
+del X
 if "%is_remote%" == "1" ( 
   goto :eof
 ) else (
