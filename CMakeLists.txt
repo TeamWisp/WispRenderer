@@ -13,9 +13,9 @@ option(BUILD_SHARED_LIBS OFF)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxrfallbackcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxil.dll ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/deps/fallback/Bin/dxcompiler.dll ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/deps/fallback/Bin/dxrfallbackcompiler.dll ${CMAKE_SOURCE_DIR} COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/deps/fallback/Bin/dxil.dll ${CMAKE_SOURCE_DIR} COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/deps/fallback/Bin/dxcompiler.dll ${CMAKE_SOURCE_DIR} COPYONLY)
 
 ##### SOURCES #####
 file(GLOB HEADERS CONFIGURE_DEPENDS] "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")

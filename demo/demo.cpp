@@ -17,6 +17,8 @@
 
 #define SCENE viknell_scene
 
+constexpr bool do_raytracing = true;
+
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 
@@ -64,10 +66,17 @@ int WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	frame_graph.AddTask(wr::GetDeferredMainTask());
-	frame_graph.AddTask(wr::GetDeferredCompositionTask());
-	frame_graph.AddTask(wr::GetDeferredRenderTargetCopyTask());
-	//frame_graph.AddTask(wr::GetRaytracingTask());
+	if (do_raytracing)
+	{
+		frame_graph.AddTask(wr::GetDeferredMainTask());
+		frame_graph.AddTask(wr::GetDeferredCompositionTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
+	}
+	else
+	{
+		frame_graph.AddTask(wr::GetRaytracingTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
+	}
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 

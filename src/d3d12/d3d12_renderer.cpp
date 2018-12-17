@@ -82,14 +82,6 @@ namespace wr
 			SetName(m_fences[i], (L"Fence " + std::to_wstring(i)));
 		}
 
-		// Temporary
-		// Create Constant Buffer Heap
-		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
-		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size =
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
-			+ cam_cbs_size;
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
@@ -109,6 +101,13 @@ namespace wr
 		heap_desc.m_num_descriptors = 256;
 
 		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
+
+		// Raytracing cb pool
+		m_raytracing_cb_pool = CreateConstantBufferPool(1);
+
+		// Material raytracing sb pool
+		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -535,6 +534,8 @@ namespace wr
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
 
+			d3d12::RootSignature* global_root_signature = nullptr;
+
 			// Shader Library
 			{
 				auto& shader_registry = ShaderRegistry::Get();
@@ -557,14 +558,22 @@ namespace wr
 				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
 			}
 
+			// Hitgroup
+			{
+				auto hitGroup = desc.desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+				hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
+				hitGroup->SetHitGroupExport(L"MyHitGroup");
+				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+			}
+
 			// Global Root Signature
 			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
 			{
 				auto& rs_registry = RootSignatureRegistry::Get();
-				auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
+				global_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle))->m_native;
 
 				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-				global_rs->SetRootSignature(n_rs->m_native->m_native);
+				global_rs->SetRootSignature(global_root_signature->m_native);
 			}
 
 			// Local Root Signatures
@@ -577,6 +586,12 @@ namespace wr
 
 					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
 					local_rs->SetRootSignature(n_rs->m_native->m_native);
+					// Define explicit shader association for the local root signature.
+					{
+						//auto rootSignatureAssociation = desc.desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
+						//rootSignatureAssociation->SetSubobjectToAssociate(*local_rs);
+						//rootSignatureAssociation->AddExport(L"MyHitGroup");
+					}
 				}
 			}
 
@@ -586,7 +601,8 @@ namespace wr
 				pipeline_config->Config(desc.max_recursion_depth);
 			}
 
-			d3d12::CreateStateObject(m_device, desc.desc);
+			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
+			d3d12::SetGlobalRootSignature(obj->m_native, global_root_signature);
 
 			desc.desc.DeleteHelpers();
 
@@ -621,7 +637,7 @@ namespace wr
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size / (1024 * 1024.f)));
+		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
 
 		for (auto& node : nodes)
 		{
@@ -871,14 +887,22 @@ namespace wr
 
 		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
 
-		auto& albedo_handle = material_internal->Albedo();
+		auto albedo_handle = material_internal->GetAlbedo();
 		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
 
-		auto& normal_handle = material_internal->Normal();
+		auto normal_handle = material_internal->GetNormal();
 		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+
+		auto roughness_handle = material_internal->GetRoughness();
+		auto* roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTexture(roughness_handle.m_id));
+
+		auto metallic_handle = material_internal->GetMetallic();
+		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_roughness = roughness_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_metallic = metallic_internal->m_cpu_descriptor_handle;
 
 		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
 		{
@@ -887,13 +911,15 @@ namespace wr
 		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
 		{
 			src_cpu_handle_albedo.m_native,
-			src_cpu_handle_normal.m_native
+			src_cpu_handle_normal.m_native,
+			src_cpu_handle_roughness.m_native,
+			src_cpu_handle_metallic.m_native
 		};
 
-		UINT sizes[] = { 2 };
+		UINT sizes[] = { 4 };
 
 		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-			2, pSrcDescriptorRangeStarts,
+			4, pSrcDescriptorRangeStarts,
 			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
