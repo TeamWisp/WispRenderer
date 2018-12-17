@@ -2,9 +2,13 @@
 
 REM ##### COLOR SUPPORT #####
 SETLOCAL ENABLEDELAYEDEXPANSION
-for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do     rem"') do (
+for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (
   set "DEL=%%a"
 )
+
+rem Prepare a file "X" with only one dot
+<nul > X set /p ".=."
+
 SET aqua=03
 SET light_green=0a
 SET red=04
@@ -153,9 +157,10 @@ REM ##### GEN CMAKE PROJECTS #####
 
 REM ##### COLOR SUPPORT #####
 :colorEcho
-<nul set /p ".=%DEL%" > "%~2"
-findstr /v /a:%1 /R "^$" "%~2" nul
-del "%~2" > nul 2>&1i
-echo.
-EXIT /B 0
+set "param=^%~2" !
+set "param=!param:"=\"!"
+findstr /p /A:%1 "." "!param!\..\X" nul
+<nul set /p ".=%DEL%%DEL%%DEL%%DEL%%DEL%%DEL%%DEL%"
+echo:
+exit /b
 REM ##### COLOR SUPPORT #####
