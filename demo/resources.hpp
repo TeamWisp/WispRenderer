@@ -12,6 +12,7 @@ namespace resources
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
 	static wr::Model* test_model;
+	static wr::Model* ball_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
 
@@ -23,6 +24,8 @@ namespace resources
 		// Load Texture.
 		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);
 		wr::TextureHandle rusty_metal_normal = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_normal.png", false, true);
+		wr::TextureHandle rusty_metal_metallic = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_metallic.png", false, true);
+		wr::TextureHandle rusty_metal_roughness = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_roughness.png", false, true);
 
 		// Create Material
 		rusty_metal_material = material_pool->Create();
@@ -31,6 +34,8 @@ namespace resources
 
 		rusty_metal_internal->SetAlbedo(rusty_metal_albedo);
 		rusty_metal_internal->SetNormal(rusty_metal_normal);
+		rusty_metal_internal->SetMetallic(rusty_metal_metallic);
+		rusty_metal_internal->SetRoughness(rusty_metal_roughness);
 
 		// Load Texture.
 		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
@@ -44,7 +49,7 @@ namespace resources
 		rock_material_internal->SetAlbedo(rock_albedo);
 		rock_material_internal->SetNormal(rock_normal);
 
-		model_pool = render_system->CreateModelPool(2, 2);
+		model_pool = render_system->CreateModelPool(5, 5);
 
 		// Load Cube.
 		{
@@ -125,6 +130,14 @@ namespace resources
 			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 		
 			for (auto& m : test_model->m_meshes)
+			{
+				m.second = &rusty_metal_material;
+			}
+		}
+		{
+			ball_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/matterialBall.fbx");
+
+			for (auto& m : ball_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
 			}
