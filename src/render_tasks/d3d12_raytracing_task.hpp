@@ -197,8 +197,8 @@ namespace wr
 									auto* material_internal = mesh.second->m_pool->GetMaterial(mesh.second->m_id);
 									materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
 									materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
-									materials[material_id].albedo_id = material_internal->Albedo().m_id;
-									materials[material_id].normal_id = material_internal->Normal().m_id;
+									materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
+									materials[material_id].normal_id = material_internal->GetNormal().m_id;
 
 
 									// Remove the translation and lower vector of the matrix
@@ -256,17 +256,17 @@ namespace wr
 
 						auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
 
-						auto& albedo_handle = material_internal->Albedo();
-						auto& normal_handle = material_internal->Normal();
+						auto& albedo_handle = material_internal->GetAlbedo();
+						auto& normal_handle = material_internal->GetNormal();
 
 						auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
 						auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
 
-						d3d12::Offset(albedo_cpu_handle, 3 + material_internal->Albedo().m_id, data.out_rt_heap->m_increment_size);
-						d3d12::Offset(normal_cpu_handle, 3 + material_internal->Normal().m_id, data.out_rt_heap->m_increment_size);
+						d3d12::Offset(albedo_cpu_handle, 3 + material_internal->GetAlbedo().m_id, data.out_rt_heap->m_increment_size);
+						d3d12::Offset(normal_cpu_handle, 3 + material_internal->GetNormal().m_id, data.out_rt_heap->m_increment_size);
 
-						d3d12::CreateSRVFromTexture(albedo_internal, albedo_cpu_handle, albedo_internal->m_format);
-						d3d12::CreateSRVFromTexture(normal_internal, normal_cpu_handle, normal_internal->m_format);
+						d3d12::CreateSRVFromTexture(albedo_internal, albedo_cpu_handle);
+						d3d12::CreateSRVFromTexture(normal_internal, normal_cpu_handle);
 					}
 
 					data.out_init = false;
