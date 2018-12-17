@@ -44,7 +44,7 @@ namespace resources
 		rock_material_internal->SetAlbedo(rock_albedo);
 		rock_material_internal->SetNormal(rock_normal);
 
-		model_pool = render_system->CreateModelPool(2, 2);
+		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
 		{
