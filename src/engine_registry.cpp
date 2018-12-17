@@ -166,16 +166,25 @@ namespace wr
 		ShaderType::LIBRARY_SHADER
 		});
 
-	D3D12_DESCRIPTOR_RANGE r_shadows[1] = {
-		//{ CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(),
-		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, 0 }
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> rt_shadow_srv_ranges
+	{
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); return r; }(),
+	};
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> rt_shadow_uav_ranges
+	{
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(),
 	};
 
 	REGISTER(root_signatures::rt_shadow_global) = RootSignatureRegistry::Get().Register({
 		{
-			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(1, r_shadows); return d; }(),
+			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(uav_ranges.size(), uav_ranges.data(), D3D12_SHADER_VISIBILITY_ALL); return d; }(),
+			// TODO: Replace Shader Resource Views to SRV Descriptor Table
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(2); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(),
+			
 		},
 		{
 			// No samplers
