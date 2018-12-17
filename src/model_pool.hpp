@@ -155,7 +155,9 @@ namespace wr
 			path.substr(path.find_last_of(".") + 1).data());
 
 		if (loader == nullptr)
+		{
 			return nullptr;
+		}
 
 		ModelData* data = loader->Load(path);
 
@@ -191,7 +193,9 @@ namespace wr
 			path.substr(path.find_last_of(".") + 1).data());
 
 		if (loader == nullptr)
+		{
 			return nullptr;
+		}
 
 		ModelData* data = loader->Load(path);
 
