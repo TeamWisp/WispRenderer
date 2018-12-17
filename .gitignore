@@ -8,6 +8,5 @@
 /.idea/
 perf_framerate.txt
 *.dll
-X
 /resources/models 
 /resources/materials 
