@@ -31,11 +31,11 @@ namespace wr::d3d12::settings
 	static const constexpr bool enable_debug_factory = true;
 	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;
 	static const constexpr char* default_shader_model = "6.3";
-	static const constexpr uint8_t num_back_buffers = 3;
-	static const constexpr uint32_t num_instances_per_batch = 768U;			//48 KiB for ObjectData[]
-	static const constexpr uint32_t num_lights = 21'845;					//1 MiB for StructuredBuffer<Light>
-	static const constexpr uint32_t num_indirect_draw_commands = 8;			//Allow 8 different meshes non-indexed
-	static const constexpr uint32_t num_indirect_index_commands = 32;		//Allow 32 different meshes indexed
+	static const constexpr std::uint8_t num_back_buffers = 3;
+	static const constexpr std::uint32_t num_instances_per_batch = 768U;		//48 KiB for ObjectData[]
+	static const constexpr std::uint32_t num_lights = 21'845;					//1 MiB for StructuredBuffer<Light>
+	static const constexpr std::uint32_t num_indirect_draw_commands = 8;		//Allow 8 different meshes non-indexed
+	static const constexpr std::uint32_t num_indirect_index_commands = 32;		//Allow 32 different meshes indexed
 	static const constexpr bool use_bundles = false;
 	static const constexpr bool use_exec_indirect = true;
 	static const constexpr bool force_dxr_fallback = true;
