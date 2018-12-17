@@ -82,14 +82,6 @@ namespace wr
 			SetName(m_fences[i], (L"Fence " + std::to_wstring(i)));
 		}
 
-		// Temporary
-		// Create Constant Buffer Heap
-		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
-		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size =
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
-			+ cam_cbs_size;
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
@@ -111,8 +103,11 @@ namespace wr
 		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
 
 		// Raytracing cb pool
-		size_t rt_cam_align_size = SizeAlign(sizeof(temp::RayTracingCamera_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_raytracing_cb_pool = CreateConstantBufferPool((size_t)std::ceil(rt_cam_align_size / (1024 * 1024.f)));
+		m_raytracing_cb_pool = CreateConstantBufferPool(1);
+
+		// Material raytracing sb pool
+		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -642,7 +637,7 @@ namespace wr
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size / (1024 * 1024.f)));
+		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
 
 		for (auto& node : nodes)
 		{
@@ -898,8 +893,16 @@ namespace wr
 		auto normal_handle = material_internal->GetNormal();
 		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
 
+		auto roughness_handle = material_internal->GetRoughness();
+		auto* roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTexture(roughness_handle.m_id));
+
+		auto metallic_handle = material_internal->GetMetallic();
+		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
+
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_roughness = roughness_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_metallic = metallic_internal->m_cpu_descriptor_handle;
 
 		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
 		{
@@ -908,13 +911,15 @@ namespace wr
 		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
 		{
 			src_cpu_handle_albedo.m_native,
-			src_cpu_handle_normal.m_native
+			src_cpu_handle_normal.m_native,
+			src_cpu_handle_roughness.m_native,
+			src_cpu_handle_metallic.m_native
 		};
 
-		UINT sizes[] = { 2 };
+		UINT sizes[] = { 4 };
 
 		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-			2, pSrcDescriptorRangeStarts,
+			4, pSrcDescriptorRangeStarts,
 			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
