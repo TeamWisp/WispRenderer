@@ -48,7 +48,7 @@ if "%1" == "-help" (
 )
 
 rem ##### pre install settings #####
-if "%is_remote%" == "1" ( 
+if "!is_remote!" == "1" ( 
   set workspace_path="%~df2"  
   set enable_unit_test=1
 ) else (
