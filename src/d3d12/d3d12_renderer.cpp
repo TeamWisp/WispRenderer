@@ -82,14 +82,6 @@ namespace wr
 			SetName(m_fences[i], (L"Fence " + std::to_wstring(i)));
 		}
 
-		// Temporary
-		// Create Constant Buffer Heap
-		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
-		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size =
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
-			+ cam_cbs_size;
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
@@ -111,8 +103,11 @@ namespace wr
 		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
 
 		// Raytracing cb pool
-		size_t rt_cam_align_size = SizeAlign(sizeof(temp::RayTracingCamera_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_raytracing_cb_pool = CreateConstantBufferPool((size_t)std::ceil(rt_cam_align_size / (1024 * 1024.f)));
+		m_raytracing_cb_pool = CreateConstantBufferPool(1);
+
+		// Material raytracing sb pool
+		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -642,7 +637,7 @@ namespace wr
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size / (1024 * 1024.f)));
+		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
 
 		for (auto& node : nodes)
 		{
