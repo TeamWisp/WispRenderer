@@ -20,6 +20,8 @@ namespace wr::d3d12
 
 	// Forward declare
 	struct StagingBuffer;
+	struct Shader;
+	struct RootSignature;
 
 	namespace desc
 	{
@@ -97,6 +99,19 @@ namespace wr::d3d12
 			std::uint64_t m_indices_offset;
 
 			std::uint64_t m_vertex_stride;
+		};
+
+		struct StateObjectDesc
+		{
+			Shader* m_library;
+			std::vector<std::wstring> m_library_exports;
+
+			std::uint64_t max_payload_size;
+			std::uint64_t max_attributes_size;
+			std::uint64_t max_recursion_depth;
+
+			std::optional<RootSignature*> global_root_signature;
+			std::optional<std::vector<RootSignature*>> local_root_signatures;
 		};
 
 	} /* desc */
@@ -179,9 +194,6 @@ namespace wr::d3d12
 		std::string m_path;
 		std::string m_entry;
 		ShaderType m_type;
-
-		std::vector<PipelineState*> m_refs; // All pipelines that reference this shader.
-		std::vector<StateObject*> m_rt_refs; // All rt pipelines that reference this shader
 	};
 
 	struct PipelineState
@@ -354,7 +366,7 @@ namespace wr::d3d12
 
 		ID3D12RaytracingFallbackStateObject* m_fallback_native;
 
-		CD3DX12_STATE_OBJECT_DESC m_desc;
+		desc::StateObjectDesc m_desc;
 		Device* m_device; // Only for refinalization.
 	};
 

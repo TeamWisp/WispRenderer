@@ -507,21 +507,18 @@ namespace wr
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
-				shader->m_refs.push_back(n_pipeline);
 				d3d12::SetVertexShader(n_pipeline, shader);
 			}
 			if (desc.second.m_pixel_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
-				shader->m_refs.push_back(n_pipeline);
 				d3d12::SetFragmentShader(n_pipeline, shader);
 			}
 			if (desc.second.m_compute_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
-				shader->m_refs.push_back(n_pipeline);
 				d3d12::SetComputeShader(n_pipeline, shader);
 			}
 			{
@@ -547,80 +544,33 @@ namespace wr
 		{
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
-			D3D12Shader* shader_lib = nullptr;
 
-			d3d12::RootSignature* global_root_signature = nullptr;
+			auto library = static_cast<D3D12Shader*>(ShaderRegistry::Get().Find(desc.library_desc.shader_handle));
 
-			// Shader Library
+			d3d12::desc::StateObjectDesc n_desc;
+			n_desc.m_library = library->m_native;
+			n_desc.m_library_exports = desc.library_desc.exports;
+			n_desc.max_attributes_size = desc.max_attributes_size;
+			n_desc.max_payload_size = desc.max_payload_size;
+			n_desc.max_recursion_depth = desc.max_recursion_depth;
+
+			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
 			{
-				auto& shader_registry = ShaderRegistry::Get();
-				shader_lib = static_cast<D3D12Shader*>(shader_registry.Find(desc.library_desc.shader_handle));
-
-				D3D12_SHADER_BYTECODE bytecode = {};
-				bytecode.BytecodeLength = shader_lib->m_native->m_native->GetBufferSize();
-				bytecode.pShaderBytecode = shader_lib->m_native->m_native->GetBufferPointer();
-				auto lib = desc.desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-				for (auto exp : desc.library_desc.exports)
-				{
-					lib->DefineExport(exp.c_str());
-				}
-				lib->SetDXILLibrary(&bytecode);
+				auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+				n_desc.global_root_signature = library->m_native;
 			}
 
-			// Shader Config
-			{
-				auto shader_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
-				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
-			}
-
-			// Hitgroup
-			{
-				auto hitGroup = desc.desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-				hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
-				hitGroup->SetHitGroupExport(L"MyHitGroup");
-				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
-			}
-
-			// Global Root Signature
-			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
-			{
-				auto& rs_registry = RootSignatureRegistry::Get();
-				global_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle))->m_native;
-
-				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-				global_rs->SetRootSignature(global_root_signature->m_native);
-			}
-
-			// Local Root Signatures
 			if (desc.local_root_signatures.has_value())
 			{
-				for (auto& rs_handle : desc.local_root_signatures.value())
+				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
+				for (auto rt_handle : desc.local_root_signatures.value())
 				{
-					auto& rs_registry = RootSignatureRegistry::Get();
-					auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
-
-					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
-					local_rs->SetRootSignature(n_rs->m_native->m_native);
-					// Define explicit shader association for the local root signature.
-					{
-						//auto rootSignatureAssociation = desc.desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
-						//rootSignatureAssociation->SetSubobjectToAssociate(*local_rs);
-						//rootSignatureAssociation->AddExport(L"MyHitGroup");
-					}
+					auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+					n_desc.local_root_signatures.value().push_back(library->m_native);
 				}
 			}
 
-			// Pipeline Config
-			{
-				auto pipeline_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
-				pipeline_config->Config(desc.max_recursion_depth);
-			}
-
-			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
-			d3d12::SetGlobalRootSignature(obj->m_native, global_root_signature);
-			shader_lib->m_native->m_rt_refs.push_back(obj->m_native);
-
-			//desc.desc.DeleteHelpers();
+			obj->m_native = d3d12::CreateStateObject(m_device, n_desc);
 
 			registry.m_objects.insert({ it.first, obj });
 		}

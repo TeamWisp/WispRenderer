@@ -212,7 +212,7 @@ namespace wr::d3d12
 	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
 
 	// State Object
-	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	[[nodiscard]] StateObject* CreateStateObject(Device* device, desc::StateObjectDesc desc);
 	void RecreateStateObject(StateObject* state_object);
 	void SetGlobalRootSignature(StateObject* state_object, RootSignature* global_root_signature);
 	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj);
