@@ -169,7 +169,7 @@ namespace wr::d3d12
 
 	void BindComputePipeline(CommandList* cmd_list, PipelineState * pipeline_state)
 	{
-		if (pipeline_state->m_type != PipelineType::COMPUTE_PIPELINE)
+		if (pipeline_state->m_desc.m_type != PipelineType::COMPUTE_PIPELINE)
 			LOGW("Tried to bind a graphics pipeline as a compute pipeline");
 		cmd_list->m_native->SetPipelineState(pipeline_state->m_native);
 		cmd_list->m_native->SetComputeRootSignature(pipeline_state->m_root_signature->m_native);

@@ -112,6 +112,8 @@ namespace wr::d3d12
 		DXGI_ADAPTER_DESC3 m_adapter_info;
 		ID3D12Debug1* m_debug_controller;
 		ID3D12InfoQueue* m_info_queue;
+		
+		static IDxcCompiler2* m_compiler;
 
 		// Fallback
 		bool m_dxr_fallback_support;
@@ -169,24 +171,28 @@ namespace wr::d3d12
 		ID3D12RootSignature* m_native;
 	};
 
+	struct PipelineState;
+	struct StateObject;
 	struct Shader
 	{
 		IDxcBlob* m_native;
 		std::string m_path;
 		std::string m_entry;
 		ShaderType m_type;
+
+		std::vector<PipelineState*> m_refs; // All pipelines that reference this shader.
+		std::vector<StateObject*> m_rt_refs; // All rt pipelines that reference this shader
 	};
 
 	struct PipelineState
 	{
-		PipelineType m_type;
 		ID3D12PipelineState* m_native;
 		RootSignature* m_root_signature;
 		Shader* m_vertex_shader;
 		Shader* m_pixel_shader;
 		Shader* m_compute_shader;
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE m_topology_type;
-		std::vector<D3D12_INPUT_ELEMENT_DESC> m_input_layout; // TODO: This should be defaulted.
+		Device* m_device; // only used for refinalization.
+		desc::PipelineStateDesc m_desc;
 	};
 
 	struct Viewport
@@ -347,6 +353,9 @@ namespace wr::d3d12
 		ID3D12StateObjectProperties* m_properties;
 
 		ID3D12RaytracingFallbackStateObject* m_fallback_native;
+
+		CD3DX12_STATE_OBJECT_DESC m_desc;
+		Device* m_device; // Only for refinalization.
 	};
 
 	struct AccelerationStructure

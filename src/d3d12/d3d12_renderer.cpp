@@ -469,10 +469,18 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto n_shader = d3d12::LoadDXCShader(desc.second.type, desc.second.path, desc.second.entry);
-			shader->m_native = n_shader;
+			auto shader_error = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
 
-			registry.m_objects.insert({ desc.first, shader });
+			if (std::holds_alternative<d3d12::Shader*>(shader_error))
+			{
+				auto n_shader = std::get<d3d12::Shader*>(shader_error);
+				shader->m_native = n_shader;
+				registry.m_objects.insert({ desc.first, shader });
+			}
+			else
+			{
+				LOGC("Failed to load shader. compiler error: {}", std::get<std::string>(shader_error));
+			}
 		}
 	}
 
@@ -498,17 +506,23 @@ namespace wr
 			if (desc.second.m_vertex_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
-				d3d12::SetVertexShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				shader->m_refs.push_back(n_pipeline);
+				d3d12::SetVertexShader(n_pipeline, shader);
 			}
 			if (desc.second.m_pixel_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
-				d3d12::SetFragmentShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				shader->m_refs.push_back(n_pipeline);
+				d3d12::SetFragmentShader(n_pipeline, shader);
 			}
 			if (desc.second.m_compute_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
-				d3d12::SetComputeShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				shader->m_refs.push_back(n_pipeline);
+				d3d12::SetComputeShader(n_pipeline, shader);
 			}
 			{
 				auto obj = RootSignatureRegistry::Get().Find(desc.second.m_root_signature_handle);
@@ -533,13 +547,14 @@ namespace wr
 		{
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
+			D3D12Shader* shader_lib = nullptr;
 
 			d3d12::RootSignature* global_root_signature = nullptr;
 
 			// Shader Library
 			{
 				auto& shader_registry = ShaderRegistry::Get();
-				auto shader_lib = static_cast<D3D12Shader*>(shader_registry.Find(desc.library_desc.shader_handle));
+				shader_lib = static_cast<D3D12Shader*>(shader_registry.Find(desc.library_desc.shader_handle));
 
 				D3D12_SHADER_BYTECODE bytecode = {};
 				bytecode.BytecodeLength = shader_lib->m_native->m_native->GetBufferSize();
@@ -603,8 +618,9 @@ namespace wr
 
 			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
 			d3d12::SetGlobalRootSignature(obj->m_native, global_root_signature);
+			shader_lib->m_native->m_rt_refs.push_back(obj->m_native);
 
-			desc.desc.DeleteHelpers();
+			//desc.desc.DeleteHelpers();
 
 			registry.m_objects.insert({ it.first, obj });
 		}

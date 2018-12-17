@@ -12,10 +12,14 @@ namespace wr::d3d12
 	{
 		auto state_object = new StateObject();
 
+		state_object->m_desc = desc;
+		state_object->m_device = device;
+
 		// Create the state object.
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
-			TRY_M(device->m_native->CreateStateObject(desc, IID_PPV_ARGS(&state_object->m_native)),
+			HRESULT hr;
+			TRY_M(hr = device->m_native->CreateStateObject(desc, IID_PPV_ARGS(&state_object->m_native)),
 				"Couldn't create DirectX Raytracing state object.");
 
 			// Shitty code because I don't know what As does.
@@ -35,6 +39,11 @@ namespace wr::d3d12
 		}
 
 		return state_object;
+	}
+
+	void RecreateStateObject(StateObject* state_object)
+	{
+		*state_object = *CreateStateObject(state_object->m_device, state_object->m_desc);
 	}
 
 	std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj)

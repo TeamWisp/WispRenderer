@@ -14,6 +14,8 @@
 #include "scene_graph/light_node.hpp"
 #include "scene_graph/mesh_node.hpp"
 #include "model_pool.hpp"
+#include "d3d12/d3d12_shader_registry.hpp"
+#include "d3d12/d3d12_pipeline_registry.hpp"
 
 namespace wr::imgui::internal
 {
@@ -386,17 +388,13 @@ namespace wr::imgui::window
 
 					internal::AddressText(obj);
 
-					if (ImGui::Button("Reload"))
-					{
-						// ..
-					}
-
 					ImGui::TreePop();
 				}
 			}
 
 			ImGui::End();
 		}
+
 	}
 
 	void PipelineRegistry()
@@ -455,8 +453,72 @@ namespace wr::imgui::window
 
 					internal::AddressText(obj);
 
+					if (ImGui::Button("Reload"))
+					{
+						std::optional<std::string> error_msg = std::nullopt;
+						auto n_pipeline = static_cast<D3D12Pipeline*>(obj)->m_native;
+
+						auto recompile_shader = [&error_msg](auto& pipeline_shader)
+						{
+							auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+								pipeline_shader->m_path,
+								pipeline_shader->m_entry);
+
+							if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+							{
+								pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+							}
+							else
+							{
+								error_msg = std::get<std::string>(new_shader_variant);
+							}
+						};
+
+						// Vertex Shader
+						{
+							recompile_shader(n_pipeline->m_vertex_shader);
+						}
+						// Pixel Shader
+						if (!error_msg.has_value()) {
+							recompile_shader(n_pipeline->m_pixel_shader);
+						}
+
+						if (error_msg.has_value())
+						{
+							open_shader_compiler_popup = true;
+							shader_compiler_error = error_msg.value();
+						}
+						else
+						{
+							d3d12::RefinalizePipeline(n_pipeline);
+						}
+					}
+
 					ImGui::TreePop();
 				}
+			}
+
+			if (open_shader_compiler_popup)
+			{
+				ImGui::OpenPopup("DirectXCompiler Output");
+				open_shader_compiler_popup = false;
+			}
+
+			auto viewport_size = ImGui::GetMainViewport()->Size;
+
+			ImGui::SetNextWindowSize(viewport_size);
+			if (ImGui::BeginPopupModal("DirectXCompiler Output", nullptr, ImGuiWindowFlags_AlwaysAutoResize |
+				ImGuiWindowFlags_NoSavedSettings |
+				ImGuiWindowFlags_NoCollapse |
+				ImGuiWindowFlags_NoMove |
+				ImGuiWindowFlags_NoDocking))
+			{
+				ImGui::Text("%s", shader_compiler_error.c_str());
+
+				ImGui::Separator();
+
+				if (ImGui::IsKeyReleased(ImGuiKey_Enter) || ImGui::Button("OK")) { ImGui::CloseCurrentPopup(); }
+				ImGui::EndPopup();
 			}
 
 			ImGui::End();
