@@ -13,6 +13,8 @@
 #include "resources.hpp"
 #include "scene_cubes.hpp"
 
+#include "model_loader_assimp.hpp"
+
 #define SCENE viknell_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
@@ -49,7 +51,9 @@ int WispEntry()
 		}
 	});
 
-	render_system->Init(window.get());
+	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
+
+	render_system->Init(window.get());	
 
 	resources::CreateResources(render_system.get());
 
@@ -89,6 +93,8 @@ int WispEntry()
 
 		auto texture = render_system->Render(scene_graph, frame_graph);
 	}
+
+	delete assimp_model_loader;
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 	frame_graph.Destroy();

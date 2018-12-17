@@ -122,7 +122,7 @@ namespace resources
 		}
 
 		{
-			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx", wr::ModelType::FBX);
+			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 		
 			for (auto& m : test_model->m_meshes)
 			{
