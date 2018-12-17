@@ -28,9 +28,9 @@ set workspace_path=""
 
 REM ##### MAIN #####
 
-call :colorEcho %title_color% "==================================="
-call :colorEcho %title_color% "==         Wisp Installer        =="
-call :colorEcho %title_color% "==================================="
+echo "==================================="
+echo "==         Wisp Installer        =="
+echo "==================================="
 
 rem ##### argument handeling ######
 if "%1" == "-remote" ( 
