@@ -28,9 +28,9 @@ set workspace_path=""
 
 REM ##### MAIN #####
 
-call :colorEcho !title_color! "==================================="
-call :colorEcho !title_color! "==         Wisp Installer        =="
-call :colorEcho !title_color! "==================================="
+call :colorEcho %title_color% "==================================="
+call :colorEcho %title_color% "==         Wisp Installer        =="
+call :colorEcho %title_color% "==================================="
 
 rem ##### argument handeling ######
 if "%1" == "-remote" ( 
@@ -66,7 +66,7 @@ FOR /F "delims=" %%i IN ('dir "C:\Program Files (x86)\Windows Kits\10\Include" /
     SET windows_sdk_version=%%i
     GOTO :found
 )
-call :colorEcho !red! No Windows SDK found in location: C:\Program Files (x86)\Windows Kits\10\Include
+call :colorEcho %red% No Windows SDK found in location: C:\Program Files (x86)\Windows Kits\10\Include
 EXIT 1
 :found
 echo Latest installed Windows SDK: %windows_sdk_version%
@@ -78,7 +78,7 @@ call :lfsCopy
 call :genVS15Win64 
 call :genVS15Win32 
 
-call :colorEcho !light_green! "Installation Finished!"
+call :colorEcho %light_green% "Installation Finished!"
 if "%is_remote%" == "1" ( 
   goto :eof
 ) else (
@@ -89,7 +89,7 @@ REM ##### MAIN #####
 
 REM ##### DOWNLOAD DEPS #####
 :downloadDeps
-call :colorEcho !header_color! "#### Downloading Dependencies ####"
+call :colorEcho %header_color% "#### Downloading Dependencies ####"
 cd "%workspace_path%"
 git submodule init
 git submodule update --recursive --remote
@@ -113,7 +113,7 @@ REM ##### COPY LARGE FILE #####
 
 REM ##### GEN PROJECTS #####
 :genVS15Win64
-call :colorEcho !header_color! "#### Generating Visual Studio 15 2017 Win64 Project. ####"
+call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
 cd "%workspace_path%"
 echo current path: "%cd%"
 if exist "./build_vs2017_win64/" (
@@ -128,12 +128,12 @@ if "%ENABLE_UNIT_TEST%" == "1" (
   echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
   cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
 )
-if errorlevel 1 call :colorecho !red! "CMake finished with errors"
+if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0
 
 :genVS15Win32
-call :colorEcho !header_color! "#### Generating Visual Studio 15 2017 Win32 Project. ####"
+call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
 cd "%workspace_path%"
 echo current path: "%cd%" 
 if exist "./build_vs2017_win32/" (
@@ -146,7 +146,7 @@ if "%ENABLE_UNIT_TEST%" == "1" (
 ) else (
   cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A Win32 ..
 )
-if errorlevel 1 call :colorecho !red! "CMake finished with errors"
+if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0
 REM ##### GEN CMAKE PROJECTS #####
