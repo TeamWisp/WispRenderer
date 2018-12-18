@@ -69,6 +69,9 @@ struct PS_OUTPUT
 
 Texture2D material_albedo : register(t0);
 Texture2D material_normal : register(t1);
+Texture2D material_roughness : register(t2);
+Texture2D material_metallic : register(t3);
+
 SamplerState s0 : register(s0);
 
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET

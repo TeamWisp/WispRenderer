@@ -19,15 +19,15 @@ namespace wr
 		{
 			Texture* texture;
 
-			if (ext_int.find("png"))
+			if (ext_int.find("png") != std::string_view::npos)
 			{
 				texture = LoadPNG(path, srgb, generate_mips);
 			}
-			else if (ext_int.find("dds"))
+			else if (ext_int.find("dds") != std::string_view::npos)
 			{
 				texture = LoadDDS(path, srgb, generate_mips);
 			}
-			else if (ext_int.find("hdr"))
+			else if (ext_int.find("hdr") != std::string_view::npos)
 			{
 				texture = LoadHDR(path, srgb, generate_mips);
 			}

@@ -244,7 +244,7 @@ namespace wr
 						D3D12_RESOURCE_STATE_GENERIC_READ,
 						D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
 					);
-					cmd_list->m_native->ResourceBarrier(1, &barrier);
+					//cmd_list->m_native->ResourceBarrier(1, &barrier);
 
 					// Transition all model pools back to whatever they were.
 					for (auto& pool : model_pools)

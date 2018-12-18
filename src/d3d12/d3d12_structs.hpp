@@ -351,11 +351,11 @@ namespace wr::d3d12
 
 	struct IndirectCommandBuffer
 	{
-		std::size_t m_num_buffers;
-		std::size_t m_max_num_buffers;
+		std::size_t m_num_commands;
+		std::size_t m_num_max_commands;
 		std::size_t m_command_size;
-		ID3D12Resource* m_native;
-		ID3D12Resource* m_native_upload;
+		std::vector<ID3D12Resource*> m_native;
+		std::vector<ID3D12Resource*> m_native_upload;
 	};
 
 	struct StateObject
