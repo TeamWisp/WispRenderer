@@ -177,6 +177,9 @@ namespace wr
 
 			return nullptr;
 		}
+
+		loader->DeleteModel(data);
+
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
 
