@@ -12,11 +12,8 @@
 #include "material_pool.hpp"
 #include "resource_pool_texture.hpp"
 
-#undef min
-#undef max
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "model_loader.hpp" 
+#include "model_loader_assimp.hpp"
 
 #include "util/log.hpp"
 #include "vertex.hpp"
@@ -92,12 +89,6 @@ namespace wr
 
 	};
 
-	enum class ModelType
-	{
-		FBX,
-		CUSTOM
-	};
-
 	class ModelPool
 	{
 	public:
@@ -111,9 +102,9 @@ namespace wr
 		ModelPool& operator=(ModelPool&&) = delete;
 
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, ModelType type);
+		[[nodiscard]] Model* Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path);
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, ModelType type);
+		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path);
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
 
@@ -124,7 +115,6 @@ namespace wr
 		virtual void MakeResident() = 0;
 
 	protected:
-		virtual Model* LoadFBX(std::string_view path, ModelType type) = 0;
 		virtual internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
 		virtual internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) = 0;
 
@@ -132,9 +122,9 @@ namespace wr
 		virtual void DestroyMesh(internal::MeshInternal* mesh) = 0;
 
 		template<typename TV, typename TI = std::uint32_t>
-		int LoadNodeMeshes(const aiScene* scene, aiNode* node, Model* model, MaterialHandle* default_material);
+		int LoadNodeMeshes(ModelData* data, Model* model, MaterialHandle* default_material);
 		template<typename TV, typename TI = std::uint32_t>
-		int LoadNodeMeshesWithMaterials(const aiScene* scene, aiNode* node, Model* model, std::vector<MaterialHandle*> materials);
+		int LoadNodeMeshesWithMaterials(ModelData* data, Model* model, std::vector<MaterialHandle*> materials);
 
 		std::size_t m_vertex_buffer_pool_size_in_mb;
 		std::size_t m_index_buffer_pool_size_in_mb;
@@ -204,27 +194,19 @@ namespace wr
 
 	//! Loads a model without materials
 	template<typename TV, typename TI>
-	Model* ModelPool::Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, ModelType type)
+	Model* ModelPool::Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path)
 	{
-		IS_PROPER_VERTEX_CLASS(TV)
+		IS_PROPER_VERTEX_CLASS(TV);
 
-		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(path.data(),
-			aiProcess_Triangulate |
-			aiProcess_CalcTangentSpace |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_OptimizeMeshes |
-			aiProcess_ImproveCacheLocality |
-			aiProcess_MakeLeftHanded);
+		ModelLoader* loader = ModelLoader::FindFittingModelLoader(
+			path.substr(path.find_last_of(".") + 1).data());
 
-		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+		if (loader == nullptr)
 		{
-			LOGW(std::string("Loading model ") +
-				path.data() +
-				std::string(" failed with error ") +
-				importer.GetErrorString());
 			return nullptr;
 		}
+
+		ModelData* data = loader->Load(path);
 
 		Model* model = new Model;
 
@@ -232,13 +214,19 @@ namespace wr
 
 		// TODO: Create default material
 
-		int ret = LoadNodeMeshes<TV, TI>(scene, scene->mRootNode, model, default_material);
+		int ret = LoadNodeMeshes<TV, TI>(data, model, default_material);
 
 		if (ret == 1)
 		{
 			DestroyModel(model);
+
+			loader->DeleteModel(data);
+
 			return nullptr;
 		}
+
+		loader->DeleteModel(data);
+
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
 
@@ -247,132 +235,40 @@ namespace wr
 
 	//! Loads a model with materials
 	template<typename TV, typename TI>
-	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, ModelType type)
+	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path)
 	{
-		IS_PROPER_VERTEX_CLASS(TV)
+		IS_PROPER_VERTEX_CLASS(TV);
 
-		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(path.data(),
-			aiProcess_Triangulate |
-			aiProcess_CalcTangentSpace |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_OptimizeMeshes |
-			aiProcess_ImproveCacheLocality |
-			aiProcess_MakeLeftHanded);
+		ModelLoader* loader = ModelLoader::FindFittingModelLoader(
+			path.substr(path.find_last_of(".") + 1).data());
 
-		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+		if (loader == nullptr)
 		{
-			LOGW(std::string("Loading model ") +
-				path.data() +
-				std::string(" failed with error ") +
-				importer.GetErrorString());
 			return nullptr;
 		}
+
+		ModelData* data = loader->Load(path);
 
 		Model* model = new Model;
 		std::vector<MaterialHandle*> material_handles;
 
-		for (int i = 0; i < scene->mNumMaterials; ++i)
+		for (int i = 0; i < data->m_materials.size(); ++i)
 		{
-
 			TextureHandle albedo, normals, metallic, roughness, ambient_occlusion;
 
-			aiMaterial* material = scene->mMaterials[i];
+			ModelMaterialData* material = data->m_materials[i];
 
-			if (material->GetTextureCount(aiTextureType::aiTextureType_DIFFUSE) > 0)
+			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
 			{
-				aiString path;
-				material->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &path);
-				if (path.data[0] == '*')
+				if (material->m_albedo_texture_location==TextureLocation::EMBEDDED)
 				{
-					uint32_t index = atoi(path.C_Str() + 1);
-					aiTexture* texture = scene->mTextures[index];
+					EmbeddedTexture* texture = data->m_embedded_textures[material->m_albedo_embedded_texture];
 
 					// TODO: Actually load embeded texture
 				}
-				else
+				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
 				{
-					albedo = texture_pool->Load(std::string(path.C_Str()));
-				}
-			}
-			else
-			{
-				// TODO: Set texture to default texture
-			}
-			if (material->GetTextureCount(aiTextureType::aiTextureType_NORMALS) > 0)
-			{
-				aiString path;
-				material->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &path);
-				if (path.data[0] == '*')
-				{
-					uint32_t index = atoi(path.C_Str() + 1);
-					aiTexture* texture = scene->mTextures[index];
-
-					// TODO: Actually load embeded texture
-				}
-				else
-				{
-					normals = texture_pool->Load(std::string(path.C_Str()));
-				}
-			}
-			else
-			{
-				// TODO: Set texture to default texture
-			}
-			if (material->GetTextureCount(aiTextureType::aiTextureType_SPECULAR) > 0)
-			{
-				aiString path;
-				material->GetTexture(aiTextureType::aiTextureType_SPECULAR, 0, &path);
-				if (path.data[0] == '*')
-				{
-					uint32_t index = atoi(path.C_Str() + 1);
-					aiTexture* texture = scene->mTextures[index];
-
-					// TODO: Actually load embeded texture
-				}
-				else
-				{
-					metallic = texture_pool->Load(std::string(path.C_Str()));
-				}
-			}
-			else
-			{
-				// TODO: Set texture to default texture
-			}
-			if (material->GetTextureCount(aiTextureType::aiTextureType_SHININESS) > 0)
-			{
-				aiString path;
-				material->GetTexture(aiTextureType::aiTextureType_SHININESS, 0, &path);
-				if (path.data[0] == '*')
-				{
-					uint32_t index = atoi(path.C_Str() + 1);
-					aiTexture* texture = scene->mTextures[index];
-
-					// TODO: Actually load embeded texture
-				}
-				else
-				{
-					roughness = texture_pool->Load(std::string(path.C_Str()));
-				}
-			}
-			else
-			{
-				// TODO: Set texture to default texture
-			}
-			if (material->GetTextureCount(aiTextureType::aiTextureType_AMBIENT) > 0)
-			{
-				aiString path;
-				material->GetTexture(aiTextureType::aiTextureType_AMBIENT, 0, &path);
-				if (path.data[0] == '*')
-				{
-					uint32_t index = atoi(path.C_Str() + 1);
-					aiTexture* texture = scene->mTextures[index];
-
-					// TODO: Actually load embeded texture
-				}
-				else
-				{
-					ambient_occlusion = texture_pool->Load(std::string(path.C_Str()));
+					albedo = texture_pool->Load(material->m_albedo_texture);
 				}
 			}
 			else
@@ -380,23 +276,96 @@ namespace wr
 				// TODO: Set texture to default texture
 			}
 
-			int two_sided;
-			material->Get(AI_MATKEY_TWOSIDED, &two_sided);
+			if (material->m_normal_map_texture_location != TextureLocation::NON_EXISTENT)
+			{
+				if (material->m_normal_map_texture_location == TextureLocation::EMBEDDED)
+				{
+					EmbeddedTexture* texture = data->m_embedded_textures[material->m_normal_map_embedded_texture];
 
-			float has_alpha;
-			material->Get(AI_MATKEY_OPACITY, &has_alpha);
+					// TODO: Actually load embeded texture
+				}
+				else if (material->m_normal_map_texture_location == TextureLocation::EXTERNAL)
+				{
+					normals = texture_pool->Load(material->m_normal_map_texture);
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
 
-			material_pool->Create(albedo, normals, metallic, ambient_occlusion, has_alpha < 1, two_sided > 0);
+			if (material->m_metallic_texture_location != TextureLocation::NON_EXISTENT)
+			{
+				if (material->m_metallic_texture_location == TextureLocation::EMBEDDED)
+				{
+					EmbeddedTexture* texture = data->m_embedded_textures[material->m_metallic_embedded_texture];
+
+					// TODO: Actually load embeded texture
+				}
+				else if (material->m_metallic_texture_location == TextureLocation::EXTERNAL)
+				{
+					metallic = texture_pool->Load(material->m_metallic_texture);
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
+
+			if (material->m_roughness_texture_location != TextureLocation::NON_EXISTENT)
+			{
+				if (material->m_roughness_texture_location == TextureLocation::EMBEDDED)
+				{
+					EmbeddedTexture* texture = data->m_embedded_textures[material->m_roughness_embedded_texture];
+
+					// TODO: Actually load embeded texture
+				}
+				else if (material->m_roughness_texture_location == TextureLocation::EXTERNAL)
+				{
+					roughness = texture_pool->Load(material->m_roughness_texture);
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
+
+			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
+			{
+				if (material->m_ambient_occlusion_texture_location == TextureLocation::EMBEDDED)
+				{
+					EmbeddedTexture* texture = data->m_embedded_textures[material->m_ambient_occlusion_embedded_texture];
+
+					// TODO: Actually load embeded texture
+				}
+				else if (material->m_ambient_occlusion_texture_location == TextureLocation::EXTERNAL)
+				{
+					ambient_occlusion = texture_pool->Load(material->m_ambient_occlusion_texture);
+				}
+			}
+			else
+			{
+				// TODO: Set texture to default texture
+			}
+
+			bool two_sided = material->m_two_sided;
+
+			float opacity = material->m_base_transparency;
+
+			material_pool->Create(albedo, normals, metallic, ambient_occlusion, opacity < 1.f, two_sided);
 			material_handles.push_back();
 		}
 
-		int ret = LoadNodeMeshesWithMaterials<TV, TI>(scene, scene->mRootNode, model, material_handles);
+		int ret = LoadNodeMeshesWithMaterials<TV, TI>(data, model, material_handles);
 
 		if (ret == 1)
 		{
 			DestroyModel(model);
+			loader->DeleteModel(data);
 			return nullptr;
 		}
+
+		loader->DeleteModel(data);
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;

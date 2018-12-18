@@ -12,17 +12,22 @@ namespace resources
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
 	static wr::Model* test_model;
+	static wr::Model* ball_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
+	static wr::MaterialHandle harsh_brick_material;
+	static wr::MaterialHandle ball_material;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(1, 10);
-		material_pool = render_system->CreateMaterialPool(1);
+		texture_pool = render_system->CreateTexturePool(8, 20);
+		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
-		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false);
-		wr::TextureHandle rusty_metal_normal = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_normal.png", false);
+		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);
+		wr::TextureHandle rusty_metal_normal = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_normal.png", false, true);
+		wr::TextureHandle rusty_metal_roughness = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_roughness.png", false, true);
+		wr::TextureHandle rusty_metal_metallic = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_metallic.png", false, true);
 
 		// Create Material
 		rusty_metal_material = material_pool->Create();
@@ -31,10 +36,14 @@ namespace resources
 
 		rusty_metal_internal->SetAlbedo(rusty_metal_albedo);
 		rusty_metal_internal->SetNormal(rusty_metal_normal);
+		rusty_metal_internal->SetRoughness(rusty_metal_roughness);
+		rusty_metal_internal->SetMetallic(rusty_metal_metallic);
 
 		// Load Texture.
-		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false);
-		wr::TextureHandle rock_normal = texture_pool->Load("resources/materials/rock/rock_normal.png", false);
+		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
+		wr::TextureHandle rock_normal = texture_pool->Load("resources/materials/rock/rock_normal.png", false, true);
+		wr::TextureHandle rock_roughness = texture_pool->Load("resources/materials/rock/rock_roughness.png", false, true);
+		wr::TextureHandle rock_metallic = texture_pool->Load("resources/materials/rock/rock_metallic.png", false, true);
 
 		// Create Material
 		rock_material = material_pool->Create();
@@ -43,8 +52,42 @@ namespace resources
 
 		rock_material_internal->SetAlbedo(rock_albedo);
 		rock_material_internal->SetNormal(rock_normal);
+		rock_material_internal->SetRoughness(rock_roughness);
+		rock_material_internal->SetMetallic(rock_metallic);
 
-		model_pool = render_system->CreateModelPool(2, 2);
+		//Load harsh rock texture
+		wr::TextureHandle harsh_brick_albedo =		texture_pool->Load("resources/materials/harsh_bricks/harshbricks-albedo.png", false, true);
+		wr::TextureHandle harsh_brick_normal =		texture_pool->Load("resources/materials/harsh_bricks/harshbricks-normal.png", false, true);
+		wr::TextureHandle harsh_brick_roughness =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-roughness.png", false, true);
+		wr::TextureHandle harsh_brick_metallic =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-metalness.png", false, true);
+	
+		//Create Material
+		harsh_brick_material = material_pool->Create();
+
+		wr::Material* harsh_brick_material_internal = material_pool->GetMaterial(harsh_brick_material.m_id);
+
+		harsh_brick_material_internal->SetAlbedo(harsh_brick_albedo);
+		harsh_brick_material_internal->SetNormal(harsh_brick_normal);
+		harsh_brick_material_internal->SetRoughness(harsh_brick_roughness);
+		harsh_brick_material_internal->SetMetallic(harsh_brick_metallic);
+
+		//Load harsh rock texture
+		wr::TextureHandle ball_material_albedo =	texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Base_Color.png", false, true);
+		wr::TextureHandle ball_material_normal =	texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Normal_DirectX.png", false, true);
+		wr::TextureHandle ball_material_roughness = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Roughness.png", false, true);
+		wr::TextureHandle ball_material_metallic =	texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Metallic.png", false, true);
+
+		//Create Material
+		ball_material = material_pool->Create();
+
+		wr::Material* ball_material_internal = material_pool->GetMaterial(ball_material.m_id);
+
+		ball_material_internal->SetAlbedo(ball_material_albedo);
+		ball_material_internal->SetNormal(ball_material_normal);
+		ball_material_internal->SetRoughness(ball_material_roughness);
+		ball_material_internal->SetMetallic(ball_material_metallic);
+		
+		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
 		{
@@ -121,12 +164,21 @@ namespace resources
 			}
 		}
 
+
 		{
-			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx", wr::ModelType::FBX);
+			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 		
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
+			}
+		}
+		{
+			ball_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/matterialBall.fbx");
+
+			for (auto& m : ball_model->m_meshes)
+			{
+				m.second = &ball_material;
 			}
 		}
 	}

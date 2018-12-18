@@ -348,6 +348,72 @@ namespace wr::d3d12
 		return cb;
 	}
 
+	HeapResource* AllocByteAddressBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes)
+	{
+		auto cb = new HeapResource();
+		decltype(Device::m_native) n_device;
+		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
+		cb->m_unaligned_size = size_in_bytes;
+
+		auto aligned_size_in_bytes = SizeAlign(size_in_bytes, 65536);
+
+		auto frame_count = heap->m_heap_size / heap->m_alignment;
+		auto needed_frames = aligned_size_in_bytes / heap->m_alignment*heap->m_versioning_count;
+
+		auto start_frame = util::FindFreePage(heap->m_bitmap, frame_count, needed_frames);
+
+		if (!start_frame.has_value())
+		{
+			delete cb;
+			return nullptr;
+		}
+
+		for (std::uint64_t i = 0; i < needed_frames; ++i)
+		{
+			util::ClearPage(heap->m_bitmap, start_frame.value() + i);
+		}
+
+		heap->m_current_offset = start_frame.value() * heap->m_alignment;
+
+		CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_size_in_bytes, D3D12_RESOURCE_FLAG_NONE);
+		cb->m_gpu_addresses.resize(heap->m_versioning_count);
+		cb->m_heap_vector_location = heap->m_resources.size();
+
+		cb->m_begin_offset = heap->m_current_offset;
+
+		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
+		for (auto i = 0; i < heap->m_versioning_count; i++)
+		{
+			TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&temp_resources[i])),
+				"Failed to create constant buffer placed resource.");
+
+			heap->m_current_offset += aligned_size_in_bytes;
+
+			cb->m_gpu_addresses[i] = temp_resources[i]->GetGPUVirtualAddress();
+		}
+
+		// If the heap is supposed to be mapped immediatly map the new resource.
+		if (heap->m_mapped)
+		{
+			cb->m_cpu_addresses = std::vector<std::uint8_t*>(heap->m_versioning_count);
+			auto&& addresses = cb->m_cpu_addresses.value();
+
+			CD3DX12_RANGE read_range(0, 0);
+			for (auto i = 0; i < heap->m_versioning_count; i++)
+			{
+				TRY_M(temp_resources[i]->Map(0, &read_range, reinterpret_cast<void**>(&addresses[i])),
+					"Failed to map resource.");
+			}
+		}
+
+		heap->m_resources.push_back(std::make_pair(cb, temp_resources));
+
+		cb->m_heap_bbo = heap;
+		cb->m_resource_heap_optimization = HeapOptimization::BIG_BUFFERS;
+
+		return cb;
+	}
+
 	HeapResource * AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride, bool used_as_uav)
 	{
 		auto cb = new HeapResource();
@@ -816,10 +882,8 @@ namespace wr::d3d12
 		buffer->m_stride = stride;
 
 		if (size_in_bytes != 0) {
-
 			ID3D12Resource* resource = buffer->m_heap_bsbo->m_resources[buffer->m_heap_vector_location].second[frame_idx];
 
-			
 			cmd_list->m_native->ResourceBarrier(1,
 				&CD3DX12_RESOURCE_BARRIER::Transition(resource,
 					static_cast<D3D12_RESOURCE_STATES>(buffer->m_states[frame_idx]),
@@ -837,6 +901,32 @@ namespace wr::d3d12
 					D3D12_RESOURCE_STATE_COPY_DEST,
 					static_cast<D3D12_RESOURCE_STATES>(buffer->m_states[frame_idx])));
 		}
+	}
+
+	void UpdateByteAddressBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes)
+	{
+		UpdateConstantBuffer(buffer, frame_idx, data, size_in_bytes);
+	}
+
+	void CreateSRVFromByteAddressBuffer(HeapResource* resource, DescHeapCPUHandle& handle, unsigned int id, unsigned int count)
+	{
+		auto& n_resources = resource->m_heap_bbo->m_resources[resource->m_heap_vector_location];
+		auto& n_resource = n_resources.second[id];
+
+		decltype(Device::m_native) n_device;
+		n_resource->GetDevice(IID_PPV_ARGS(&n_device));
+
+		auto increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+		srv_desc.Format = DXGI_FORMAT_R32_TYPELESS;
+		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srv_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		srv_desc.Buffer.NumElements = count;
+		srv_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+
+		n_device->CreateShaderResourceView(n_resource, &srv_desc, handle.m_native);
+		Offset(handle, 1, increment_size);
 	}
 
 } /* wr::d3d12 */

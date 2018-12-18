@@ -54,7 +54,6 @@ namespace wr
 		internal::D3D12MeshInternal* GetMeshData(std::uint64_t mesh_handle);
 
 	private:
-		Model* LoadFBX(std::string_view path, ModelType type) final;
 		internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
 		internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;
 

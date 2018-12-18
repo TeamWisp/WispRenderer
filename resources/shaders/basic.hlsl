@@ -18,6 +18,7 @@ struct VS_OUTPUT
 	float2 uv : TEXCOORD;
 	float3 normal : NORMAL;
 	float3x3 tbn : TBNMATRIX;
+	float4x4 mv : MODELVIEW;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -56,19 +57,23 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float3 tangent = normalize(mul(vm, float4(input.tangent, 0))).xyz;
 	float3 bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
 
-	output.tbn = float3x3(tangent, bitangent, output.normal);
+	output.tbn = transpose(float3x3(tangent, bitangent, output.normal));
+	output.mv = vm;
 
 	return output;
 }
 
 struct PS_OUTPUT
 {
-	float4 albedo : SV_TARGET0;
-	float4 normal : SV_TARGET1;
+	float4 albedo_roughness : SV_TARGET0;
+	float4 normal_metallic : SV_TARGET1;
 };
 
 Texture2D material_albedo : register(t0);
 Texture2D material_normal : register(t1);
+Texture2D material_roughness : register(t2);
+Texture2D material_metallic : register(t3);
+
 SamplerState s0 : register(s0);
 
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
@@ -76,8 +81,13 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	PS_OUTPUT output;
 	
 	float4 albedo = material_albedo.Sample(s0, input.uv);
+	float4 roughness = material_roughness.Sample(s0, input.uv);
+	float4 metallic = material_metallic.Sample(s0, input.uv);
+	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
+	
+	float3 normal = normalize(mul(input.tbn, tex_normal));
 
-	output.albedo = float4(albedo.xyz, 1.0f);
-	output.normal = float4(input.normal, 1);
+	output.albedo_roughness = float4(albedo.xyz, roughness.r);
+	output.normal_metallic = float4(input.normal, metallic.r);
 	return output;
 }

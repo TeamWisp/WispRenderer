@@ -2,12 +2,15 @@
 
 #include <DXGIDebug.h>
 #include <functional>
+#include <dxcapi.h>
 
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
 
 namespace wr::d3d12
 {
+
+	IDxcCompiler2* Device::m_compiler = nullptr;
 
 	namespace internal
 	{
@@ -225,6 +228,12 @@ namespace wr::d3d12
 			TRY_M(D3D12CreateRaytracingFallbackDevice(device->m_native, fallback_device_flags, 0, IID_PPV_ARGS(&device->m_fallback_native)), "Failed to create fallback layer.");
 		}
 
+		// Create shader compiler
+		if (!Device::m_compiler)
+		{
+			DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&Device::m_compiler));
+		}
+
 		internal::EnableGpuErrorBreaking(device);
 		internal::GetSysInfo(device);
 
@@ -247,6 +256,7 @@ namespace wr::d3d12
 		SAFE_RELEASE(device->m_debug_controller);
 		SAFE_RELEASE(device->m_info_queue);
 		SAFE_RELEASE(device->m_fallback_native);
+		SAFE_RELEASE(device->m_compiler);
 		delete device;
 	}
 

@@ -39,6 +39,12 @@ namespace wr
 				return;
 			}
 
+			if (ImGui_ImplDX12_IsInitialized())
+			{
+				data.out_descriptor_heap = ImGui_ImplDX12_GetDescriptorHeap();
+				return;
+			}
+
 			d3d12::desc::DescriptorHeapDesc heap_desc;
 			heap_desc.m_num_descriptors = 1;
 			heap_desc.m_shader_visible = true;
@@ -59,7 +65,8 @@ namespace wr
 				d3d12::settings::num_back_buffers,
 				(DXGI_FORMAT)d3d12::settings::back_buffer_format,
 				d3d12::GetCPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native,
-				d3d12::GetGPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native);
+				d3d12::GetGPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native,
+				data.out_descriptor_heap);
 
 			ImGui::StyleColorsCherry();
 		}
@@ -100,12 +107,12 @@ namespace wr
 			{
 				ImGui_ImplDX12_InvalidateDeviceObjects();
 			}
-			else
+			else if (ImGui_ImplDX12_IsInitialized())
 			{
 				ImGui_ImplDX12_Shutdown();
 				ImGui_ImplWin32_Shutdown();
 				ImGui::DestroyContext();
-			}
+			}			
 		}
 
 	} /* internal */

@@ -1,12 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <variant>
+#include <DirectXMath.h>
 
 #include "d3d12_structs.hpp"
-
 #include "d3d12_constant_buffer_pool.hpp"
-
-#include <DirectXMath.h>
 
 namespace wr::d3d12
 {
@@ -30,17 +29,18 @@ namespace wr::d3d12
 	void Begin(CommandList* cmd_list, unsigned int frame_idx);
 	void End(CommandList* cmd_list);
 	void ExecuteBundle(CommandList* cmd_list, CommandList* bundle);
-	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer);
+	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer, uint32_t frame_idx);
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetVersioned(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
-	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object);
+	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object, bool fallback = false);
 	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback = false);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
+	void BindCompute32BitConstants(CommandList* cmd_list, const void* data_to_set, unsigned int num_of_values_to_set, unsigned int dest_offset_in_32bit_values, unsigned int root_parameter_idx);
 	void BindComputeConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	void BindComputeShaderResourceView(CommandList* cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx);
 	//void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
@@ -56,9 +56,10 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
-	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx);
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void UAVBarrier(CommandList* cmd_list, TextureResource* resource, unsigned int number_of_barriers);
 	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
@@ -78,7 +79,7 @@ namespace wr::d3d12
 	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
 	void CreateUAVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
 	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
-	void CreateSRVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id);
+	void CreateSRVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id); // FIXME: Wrong location
 	// void CreateUAVFromTexture(Texture* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	// void CreateSRVFromTexture(Texture* tex, DescHeapCPUHandle& handle);
 	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height);
@@ -90,7 +91,7 @@ namespace wr::d3d12
 	// Texture
 	[[nodiscard]] TextureResource* CreateTexture(Device* device, desc::TextureDesc* description, bool allow_uav);
 	void SetName(TextureResource* tex, std::wstring name);
-	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, Format format);
+	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void Destroy(TextureResource* tex);
 
@@ -122,9 +123,7 @@ namespace wr::d3d12
 	void ResizeViewport(Viewport& viewport, int width, int height);
 
 	// Shader
-	[[nodiscard]] Shader* LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
-	[[nodiscard]] Shader* LoadDXCShader(ShaderType type, std::string const & path, std::string const & entry = "main");
-	bool ReloadShader(Shader* shader);
+	[[nodiscard]] std::variant<Shader*, std::string> LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
 	void Destroy(Shader* shader);
 
 	// Root Signature
@@ -141,7 +140,7 @@ namespace wr::d3d12
 	void SetComputeShader(PipelineState* pipeline_state, Shader* shader);
 	void SetRootSignature(PipelineState* pipeline_state, RootSignature* root_signature);
 	void FinalizePipeline(PipelineState* pipeline_state, Device* device, desc::PipelineStateDesc desc);
-	void RefinalizePipeline(PipelineState* pipeline_state, Device* device, desc::PipelineStateDesc desc);
+	void RefinalizePipeline(PipelineState* pipeline_state); // TODO: Deprecate this. This should be part of create so it
 	void Destroy(PipelineState* pipeline_state);
 
 	// Staging Buffer
@@ -152,6 +151,8 @@ namespace wr::d3d12
 	void StageBufferRegion(StagingBuffer* buffer, std::uint64_t size, std::uint64_t offset, CommandList* cmd_list);
 	void FreeStagingBuffer(StagingBuffer* buffer);
 	void Evict(StagingBuffer* buffer);
+	void CreateRawSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int id, unsigned int count, Format format = Format::R32_TYPELESS);
+	void CreateStructuredBufferSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int id, unsigned int count, Format format = Format::R32_TYPELESS);
 	void MakeResident(StagingBuffer* buffer);
 	void Destroy(StagingBuffer* buffer);
 
@@ -162,6 +163,7 @@ namespace wr::d3d12
 	[[nodiscard]] Heap<HeapOptimization::BIG_STATIC_BUFFERS>* CreateHeap_BSBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count);
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	[[nodiscard]] HeapResource* AllocConstantBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes);
+	[[nodiscard]] HeapResource* AllocByteAddressBuffer(Heap<HeapOptimization::BIG_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	[[nodiscard]] HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride, bool used_as_uav);
 	[[nodiscard]] HeapResource* AllocGenericBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes);
 	void SetName(Heap<HeapOptimization::SMALL_BUFFERS>* heap, std::wstring name);
@@ -201,14 +203,17 @@ namespace wr::d3d12
 		std::uint64_t offset,
 		std::uint64_t stride,
 		CommandList* cmd_list);
+	void UpdateByteAddressBuffer(HeapResource* buffer, unsigned int frame_idx, void* data, std::uint64_t size_in_bytes);
+	void CreateSRVFromByteAddressBuffer(HeapResource* resource, DescHeapCPUHandle& handle, unsigned int id, unsigned int count);
 
 	// Indirect Command Buffer
-	[[nodiscard]] IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size);
+	[[nodiscard]] IndirectCommandBuffer* CreateIndirectCommandBuffer(Device* device, std::size_t max_num_buffers, std::size_t command_size, uint32_t versions);
 	void SetName(IndirectCommandBuffer* buffer, std::wstring name);
-	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands);
+	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands, uint32_t frame_idx);
 
 	// State Object
-	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	[[nodiscard]] StateObject* CreateStateObject(Device* device, desc::StateObjectDesc desc);
+	void RecreateStateObject(StateObject* state_object);
 	void SetGlobalRootSignature(StateObject* state_object, RootSignature* global_root_signature);
 	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj);
 	[[nodiscard]] void* GetShaderIdentifier(Device* device, StateObject* obj, std::string const & name);
@@ -224,7 +229,7 @@ namespace wr::d3d12
 	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list);
+		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list);
 
 	// Shader Record
 	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);
@@ -236,5 +241,6 @@ namespace wr::d3d12
 			std::uint64_t shader_record_size);
 	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
 	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name);
+	void Destroy(ShaderTable* table);
 
 } /* wr::d3d12 */

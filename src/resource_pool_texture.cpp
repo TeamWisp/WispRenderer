@@ -11,7 +11,7 @@ namespace wr
 	}
 
 	//! Loads a texture
-	TextureHandle TexturePool::Load(std::string_view path, bool srgb)
+	TextureHandle TexturePool::Load(std::string_view path, bool srgb, bool generate_mips)
 	{
 		std::optional<std::string_view> extension = util::GetFileExtension(path);
 
@@ -19,17 +19,17 @@ namespace wr
 		{
 			Texture* texture;
 
-			if (ext_int.find("png"))
+			if (ext_int.find("png") != std::string_view::npos)
 			{
-				texture = LoadPNG(path, srgb);
+				texture = LoadPNG(path, srgb, generate_mips);
 			}
-			else if (ext_int.find("dds"))
+			else if (ext_int.find("dds") != std::string_view::npos)
 			{
-				texture = LoadDDS(path, srgb);
+				texture = LoadDDS(path, srgb, generate_mips);
 			}
-			else if (ext_int.find("hdr"))
+			else if (ext_int.find("hdr") != std::string_view::npos)
 			{
-				texture = LoadHDR(path, srgb);
+				texture = LoadHDR(path, srgb, generate_mips);
 			}
 			else
 			{

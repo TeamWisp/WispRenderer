@@ -19,6 +19,8 @@ namespace wr
 	{
 		ALBEDO = 0,
 		NORMAL,
+		ROUGHNESS,
+		METALLIC,
 
 		COUNT
 	};
@@ -30,7 +32,8 @@ namespace wr
 		Material();
 		Material(TextureHandle albedo, 
 				 TextureHandle normal, 
-				 TextureHandle rough_met, 
+				 TextureHandle roughness,
+				 TextureHandle metallic,
 				 TextureHandle ao, 
 				 bool alpha_masked = false, 
 				 bool double_sided = false);
@@ -39,16 +42,19 @@ namespace wr
 
 		~Material();
 
-		TextureHandle& Albedo() { return m_albedo; }
+		TextureHandle GetAlbedo() { return m_albedo; }
 		void SetAlbedo(TextureHandle albedo);
 
-		TextureHandle& Normal() { return m_normal; }
+		TextureHandle GetNormal() { return m_normal; }
 		void SetNormal(TextureHandle normal);
 
-		TextureHandle& RoughnessMetallic() { return m_rough_metallic; }
-		void SetRoughMetallic(TextureHandle rough_met);
+		TextureHandle GetRoughness() { return m_rougness; }
+		void SetRoughness(TextureHandle roughness);
 
-		TextureHandle& AmbientOcclusion() { return m_rough_metallic; }
+		TextureHandle GetMetallic() { return m_metallic; }
+		void SetMetallic(TextureHandle metallic);
+
+		TextureHandle GetAmbientOcclusion() { return m_ao; }
 		void SetAmbientOcclusion(TextureHandle ao);
 
 		//bool IsAlphaMasked() { return m_alpha_masked; }
@@ -62,7 +68,8 @@ namespace wr
 	protected:
 		TextureHandle m_albedo;
 		TextureHandle m_normal;
-		TextureHandle m_rough_metallic;
+		TextureHandle m_rougness;
+		TextureHandle m_metallic;
 		TextureHandle m_ao;
 
 		bool m_alpha_masked = false;
@@ -87,7 +94,8 @@ namespace wr
 		[[nodiscard]] MaterialHandle Create();
 		[[nodiscard]] MaterialHandle Create(TextureHandle& albedo,
 											TextureHandle& normal,
-											TextureHandle& rough_met,
+											TextureHandle& roughness,
+											TextureHandle& metallic,
 											TextureHandle& ao, 
 											bool is_alpha_masked = false, 
 											bool is_double_sided = false);
