@@ -20,8 +20,8 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(64, 20);
-		material_pool = render_system->CreateMaterialPool(64);
+		texture_pool = render_system->CreateTexturePool(128, 20);
+		material_pool = render_system->CreateMaterialPool(128);
 
 		// Load Texture.
 		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);
@@ -62,7 +62,7 @@ namespace resources
 		wr::TextureHandle harsh_brick_metallic =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-metalness.png", false, true);
 
 		//Create Material
-		ball_material = material_pool->Create();
+		harsh_brick_material = material_pool->Create();
 
 		wr::Material* harsh_brick_material_internal = material_pool->GetMaterial(harsh_brick_material.m_id);
 

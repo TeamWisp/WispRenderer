@@ -18,6 +18,7 @@ struct VS_OUTPUT
 	float2 uv : TEXCOORD;
 	float3 normal : NORMAL;
 	float3x3 tbn : TBNMATRIX;
+	float4x4 mv : MODELVIEW;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -57,7 +58,7 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float3 bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
 
 	output.tbn = transpose(float3x3(tangent, bitangent, output.normal));
-	//output.viewmodel = vm;
+	output.mv = vm;
 
 	return output;
 }
@@ -85,10 +86,9 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
 	
 	float3 normal = normalize(mul(input.tbn, tex_normal));
-	//normal = normalize(mul(input.viewmodel, float4(normal, 0.0f)));
+	//normal = normalize(mul(input.mv, normal )).xyz;
 
 	output.albedo_roughness = float4(albedo.xyz, roughness.r);
-	output.normal_metallic = float4(normal, metallic.r);
-
+	output.normal_metallic = float4(input.normal, metallic.r);
 	return output;
 }
