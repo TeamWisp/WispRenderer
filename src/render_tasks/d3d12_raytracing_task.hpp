@@ -10,6 +10,7 @@
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
+#include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../imgui_tools.hpp"
@@ -132,6 +133,8 @@ namespace wr
 			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
 
 			CreateShaderTables(device, data, 0);
+			CreateShaderTables(device, data, 1);
+			CreateShaderTables(device, data, 2);
 		}
 
 		d3d12::AccelerationStructure tlas;
@@ -147,6 +150,7 @@ namespace wr
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
 			auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 
@@ -218,16 +222,7 @@ namespace wr
 									materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
 									materials[material_id].normal_id = material_internal->GetNormal().m_id;
 
-
-									// Remove the translation and lower vector of the matrix
-									DirectX::XMMATRIX upper3x3 = transform;
-									upper3x3.r[0].m128_f32[3] = 0.f;
-									upper3x3.r[1].m128_f32[3] = 0.f;
-									upper3x3.r[2].m128_f32[3] = 0.f;
-									upper3x3.r[3].m128_f32[0] = 0.f;
-									upper3x3.r[3].m128_f32[1] = 0.f;
-									upper3x3.r[3].m128_f32[2] = 0.f;
-									upper3x3.r[3].m128_f32[3] = 1.f;
+									auto upper3x3 = util::StripTranslationAndLowerVector(transform);
 
 									materials[material_id].m_model = XMMatrixTranspose(XMMatrixInverse(nullptr, upper3x3));;
 
@@ -260,8 +255,10 @@ namespace wr
 
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
 					auto& cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size);
+					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip UAV at positon 0
 					d3d12::CreateRawSRVFromStagingBuffer(temp_ib, cpu_handle, 0, temp_ib->m_size / temp_ib->m_stride_in_bytes);
+
+					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip position 2 since that is for the light buffer.
 
 					// Create material structured buffer view
 					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
@@ -280,8 +277,8 @@ namespace wr
 						auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
 						auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
 
-						d3d12::Offset(albedo_cpu_handle, 3 + material_internal->GetAlbedo().m_id, data.out_rt_heap->m_increment_size);
-						d3d12::Offset(normal_cpu_handle, 3 + material_internal->GetNormal().m_id, data.out_rt_heap->m_increment_size);
+						d3d12::Offset(albedo_cpu_handle, 4 + material_internal->GetAlbedo().m_id, data.out_rt_heap->m_increment_size);
+						d3d12::Offset(normal_cpu_handle, 4 + material_internal->GetNormal().m_id, data.out_rt_heap->m_increment_size);
 
 						d3d12::CreateSRVFromTexture(albedo_internal, albedo_cpu_handle);
 						d3d12::CreateSRVFromTexture(normal_internal, normal_cpu_handle);
@@ -290,10 +287,13 @@ namespace wr
 					data.out_init = false;
 				}
 
-				for (auto& m : materials)
+				// Get light buffer
+				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
 				{
-					//m.idx_offset = n_render_system.hellowrold;
+					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 				}
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, 2);
+				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 
 				// Update material data
 				n_render_system.m_raytracing_material_sb_pool->Update(data.out_sb_material_handle, materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
@@ -326,12 +326,13 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, tlas.m_fallback_tlas_ptr);
 				}
 
-				//d3d12::BindComputeShaderResourceView(cmd_list, temp_ib->m_buffer, 3);
 				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);
 
+#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
+#endif
 
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], 1280, 720, 1);
+				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1);
 			}
 		}
 
