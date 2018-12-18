@@ -232,19 +232,27 @@ namespace wr
 		ShaderType::LIBRARY_SHADER
 		});
 
-	D3D12_DESCRIPTOR_RANGE rt_shadow_ranges[2] = {
-		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, 0 },
-		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1, 0, 0 }
+	D3D12_DESCRIPTOR_RANGE rt_shadow_ranges[5] = {
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 1); return r; }(), // indices, light
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 4); return r; }(), // indices, light
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1 + 20, 6); return r; }(), // Materials (1) Textures (+20) 
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset); return r; }(), // Materials (1) Textures (+20) 
+		
+		//{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, 0 },
+		//{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1, 0, 0 }
 	};
 
 	REGISTER(root_signatures::rt_shadow_global) = RootSignatureRegistry::Get().Register({
 		{
 			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(2, rt_shadow_ranges); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
+			//[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(), // Indices
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(6); return d; }(), // Vertices
 		},
 		{
-			// No samplers
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
 		},
 		true // rtx
 		});
@@ -275,7 +283,7 @@ namespace wr
 		{
 			rt_shadow_so_desc.first,     // Description
 			rt_shadow_so_desc.second,    // Library
-			(sizeof(float) * 4), // Max payload size
+			(sizeof(float)*7 + sizeof(unsigned int)), // Max payload size
 			(sizeof(float) * 2), // Max attributes size
 			1,				   // Max recursion depth
 			root_signatures::rt_shadow_global,      // Global root signature

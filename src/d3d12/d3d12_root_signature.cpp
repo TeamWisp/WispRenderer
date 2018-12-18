@@ -88,7 +88,8 @@ namespace wr::d3d12
 			HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error); //TODO: FIX error parameter
 			if (FAILED(hr))
 			{
-				LOGC("Failed to serialize root signature. Error: \n {}", (char*)error->GetBufferPointer());
+				char * err = (char*)error->GetBufferPointer();
+				LOGC("Failed to serialize root signature. Error: \n {}", err);
 			}
 
 			TRY_M(n_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature->m_native)),

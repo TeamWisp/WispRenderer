@@ -10,9 +10,10 @@
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
+#include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
-
+#include "../imgui_tools.hpp"
 
 namespace wr
 {
@@ -20,14 +21,16 @@ namespace wr
 	{
 		d3d12::DescriptorHeap* out_rt_heap;
 
-		d3d12::ShaderTable* out_raygen_shader_table;
-		d3d12::ShaderTable* out_miss_shader_table;
-		d3d12::ShaderTable* out_hitgroup_shader_table;
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
+
 		d3d12::StateObject* out_state_object;
 		d3d12::RootSignature* out_root_signature;
 		d3d12::RenderTarget* out_deferred_main_rt;
 
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
+		D3D12StructuredBufferHandle* out_sb_material_handle;
 
 		bool out_init;
 	};
@@ -35,6 +38,64 @@ namespace wr
 
 	namespace internal
 	{
+
+		inline void CreateShaderTables(d3d12::Device* device, RTShadowData& data, int frame_idx)
+		{
+			if (data.out_miss_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_miss_shader_table[frame_idx]);
+			}
+			if (data.out_hitgroup_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_hitgroup_shader_table[frame_idx]);
+			}
+			if (data.out_raygen_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_raygen_shader_table[frame_idx]);
+			}
+
+			// Raygen Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_raygen_shader_table[frame_idx], shader_record);
+			}
+
+			// Miss Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shader_record);
+			}
+
+			// Hit Group Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shader_record);
+			}
+		}
 
 		inline void SetupRTShadowTask(RenderSystem & render_system, RaytracingTask & task, RTShadowData & data)
 		{
@@ -49,29 +110,29 @@ namespace wr
 
 			// top level, bottom level and output buffer. (even though I don't use bottom level.)
 			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_shader_visible = true;
-			heap_desc.m_num_descriptors = 4;
+			heap_desc.m_num_descriptors = 100;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-			heap_desc.m_versions = d3d12::settings::num_back_buffers;
+			heap_desc.m_shader_visible = true;
+			heap_desc.m_versions = 1;
 			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
 			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
 			
 			// Set g-buffers
-			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
-			{
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
+			auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+			d3d12::Offset(cpu_handle, 0, data.out_rt_heap->m_increment_size);
 				
-				d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
+			d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
-				auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
-				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(deferred_main_data.m_render_target);
-				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
-				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
-
-			}
+			auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
+			auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(deferred_main_data.m_render_target);
+			d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
+			d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
 
 			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::ProjectionView_CBData)));
+			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
+
+			// Material Structured Buffer
+			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 
 			// Pipeline State Object
 			auto rt_registry = RTPipelineRegistry::Get();
@@ -81,55 +142,25 @@ namespace wr
 			auto rs_registry = RootSignatureRegistry::Get();
 			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_shadow_global))->m_native;
 
-			// Raygen Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
-
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
-
-				// Create Table
-				data.out_raygen_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_raygen_shader_table, shader_record);
-			}
-
-			// Miss Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
-
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
-
-				// Create Table
-				data.out_miss_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_miss_shader_table, shader_record);
-			}
-
-			// Hit Group Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
-
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
-
-				// Create Table
-				data.out_hitgroup_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_hitgroup_shader_table, shader_record);
-			}
+			CreateShaderTables(device, data, 0);
+			CreateShaderTables(device, data, 1);
+			CreateShaderTables(device, data, 2);
 		}
 
 		d3d12::AccelerationStructure tlas;
-		std::vector<std::pair<d3d12::AccelerationStructure, DirectX::XMMATRIX>> blas_list;
+		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list;
+
+		std::vector<std::shared_ptr<D3D12ModelPool>> model_pools;
+
+		d3d12::StagingBuffer* temp_ib;
+		d3d12::StagingBuffer* temp_vb;
+
+		std::vector<temp::RayTracingMaterial_CBData> materials(d3d12::settings::num_max_rt_materials);
 
 		inline void ExecuteRTShadowTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RTShadowData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
 			auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 
@@ -140,13 +171,18 @@ namespace wr
 				// Initialize requirements
 				if (data.out_init)
 				{
-					auto model_pools = n_render_system.m_model_pools;
+					model_pools = n_render_system.m_model_pools;
 					// Transition all model pools for accel structure creation
 					for (auto& pool : model_pools)
 					{
 						d3d12::Transition(cmd_list, pool->GetVertexStagingBuffer(), ResourceState::VERTEX_AND_CONSTANT_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 					}
+
+					unsigned int material_id = 0;
+
+					// List all materials used by meshes
+					std::vector<MaterialHandle*> material_handles;
 
 					// Create Geometry from scene graph
 					{
@@ -159,6 +195,9 @@ namespace wr
 							auto vb = n_model_pool->GetVertexStagingBuffer();
 							auto ib = n_model_pool->GetIndexStagingBuffer();
 							auto model = batch.first;
+
+							temp_ib = ib;
+							temp_vb = vb;
 
 							for (auto& mesh : model->m_meshes)
 							{
@@ -174,15 +213,34 @@ namespace wr
 								obj.m_num_vertices = n_mesh->m_vertex_count;
 								obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
 
+								// Build Bottom level BVH
 								auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, { obj });
 								cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
 								blas.m_native->SetName(L"Bottomlevelaccel");
 
+								material_handles.push_back(mesh.second); // Used to steal the textures from the texture pool.
+
+								// Push instances into a array for later use.
 								for (auto i = 0; i < batch.second.num_instances; i++)
 								{
 									auto transform = batch.second.data.objects[i].m_model;
-									blas_list.push_back({ blas, transform });
+
+									// Build material
+									auto* material_internal = mesh.second->m_pool->GetMaterial(mesh.second->m_id);
+									materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
+									materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
+									materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
+									materials[material_id].normal_id = material_internal->GetNormal().m_id;
+
+									auto upper3x3 = util::StripTranslationAndLowerVector(transform);
+
+									materials[material_id].m_model = XMMatrixTranspose(XMMatrixInverse(nullptr, upper3x3));;
+
+									blas_list.push_back({ std::make_pair(blas, material_id), transform });
+
+									material_id++;
 								}
+
 							}
 						}
 					}
@@ -190,26 +248,103 @@ namespace wr
 					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, blas_list);
 					tlas.m_native->SetName(L"Highlevelaccel");
 
+					//tlas.m_native->
+					CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+						tlas.m_native,
+						D3D12_RESOURCE_STATE_GENERIC_READ,
+						D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+					);
+					cmd_list->m_native->ResourceBarrier(1, &barrier);
+
+					// Transition all model pools back to whatever they were.
+					for (auto& pool : model_pools)
+					{
+						d3d12::Transition(cmd_list, pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
+					}
+
+					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
+					auto& cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip UAV at positon 0
+					d3d12::CreateRawSRVFromStagingBuffer(temp_ib, cpu_handle, 0, temp_ib->m_size / temp_ib->m_stride_in_bytes);
+
+					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip position 2 since that is for the light buffer.
+
+					// Create material structured buffer view
+					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
+
+					// Fill descriptor heap with textures used by the scene
+					for (auto handle : material_handles)
+					{
+						auto albedo_cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+						auto normal_cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+
+						auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+
+						auto& albedo_handle = material_internal->GetAlbedo();
+						auto& normal_handle = material_internal->GetNormal();
+
+						auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+						auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+
+						d3d12::Offset(albedo_cpu_handle, 4 + material_internal->GetAlbedo().m_id, data.out_rt_heap->m_increment_size);
+						d3d12::Offset(normal_cpu_handle, 4 + material_internal->GetNormal().m_id, data.out_rt_heap->m_increment_size);
+
+						d3d12::CreateSRVFromTexture(albedo_internal, albedo_cpu_handle);
+						d3d12::CreateSRVFromTexture(normal_internal, normal_cpu_handle);
+					}
+
 					data.out_init = false;
 				}
+
+				// Get light buffer
+				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
+				{
+					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
+				}
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, 2);
+				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
+
+				// Update material data
+				n_render_system.m_raytracing_material_sb_pool->Update(data.out_sb_material_handle, materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
 
 				// Update camera cb
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RayTracingCamera_CBData cam_data;
+				cam_data.m_view = camera->m_view;
 				cam_data.m_camera_position = camera->m_position;
-				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
 				cam_data.m_inverse_view = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view));
 				cam_data.m_inverse_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_projection));
-				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data);
+				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
+				cam_data.roughness = n_render_system.temp_rough;
+				cam_data.metal = n_render_system.temp_metal;
+				cam_data.light_radius = n_render_system.light_radius;
+				cam_data.intensity = n_render_system.temp_intensity;
+				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
-				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object);
+				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
+				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+
 				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
-				d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
 
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table, data.out_miss_shader_table, data.out_raygen_shader_table, 1280, 720, 1);
+				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
+				{
+					d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
+				}
+				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+				{
+					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, tlas.m_fallback_tlas_ptr);
+				}
+
+				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);
+
+#ifdef _DEBUG
+				CreateShaderTables(device, data, frame_idx);
+#endif
+
+				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1);
 			}
 		}
 
