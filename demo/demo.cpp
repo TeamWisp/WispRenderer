@@ -2,7 +2,6 @@
 #include <algorithm>
 #include "wisp.hpp"
 #include "render_tasks/d3d12_test_render_task.hpp"
-#include "render_tasks/d3d12_imgui_render_task.hpp"
 #include "render_tasks/d3d12_deferred_main.hpp"
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
@@ -27,11 +26,6 @@ std::shared_ptr<wr::TexturePool> texture_pool;
 
 constexpr unsigned int RENDER_TARGET_WIDTH = 1280;
 constexpr unsigned int RENDER_TARGET_HEIGHT = 720;
-
-void RenderEditor()
-{
-	engine::RenderEngine(render_system.get(), scene_graph.get());
-}
 
 int WispEntry()
 {
@@ -67,7 +61,6 @@ int WispEntry()
 		frame_graph.AddTask(wr::GetRaytracingTask(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
 		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
 	}
-	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor, RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
 	frame_graph.Setup(*render_system);
 
 	while (true)

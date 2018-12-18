@@ -67,17 +67,15 @@ namespace wr
 	} /* internal */
 
 
-	//! Used to create a new deferred task.
+	//! Used to create a new deferred task that depends on the window being available
 	template<typename T>
-	[[nodiscard]] inline std::unique_ptr<DeferredRenderTargetCopyRenderTask_t> GetRenderTargetCopyTask(
-		std::optional<unsigned int> render_target_width,
-		std::optional<unsigned int> render_target_height)
+	[[nodiscard]] inline std::unique_ptr<DeferredRenderTargetCopyRenderTask_t> GetRenderTargetCopyTask()
 	{
 		auto ptr = std::make_unique<DeferredRenderTargetCopyRenderTask_t>(nullptr, "Copy RT Render Task", RenderTaskType::COPY, true,
 			RenderTargetProperties{
 				true,
-				render_target_width,
-				render_target_height,
+				std::nullopt,
+				std::nullopt,
 				ResourceState::COPY_DEST,
 				ResourceState::PRESENT,
 				false,
@@ -87,9 +85,37 @@ namespace wr
 				true,
 				true
 			},
-			[](RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, bool) { internal::SetupCopyTask<T>(render_system, task, data); },
-			[](RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data) { internal::ExecuteCopyTask(render_system, task, scene_graph, data); },
-			[](DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, bool) { internal::DestroyCopyTask(task, data); }
+			[](RenderSystem& render_system, DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data, bool) { internal::SetupCopyTask<T>(render_system, task, data); },
+			[](RenderSystem& render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph& scene_graph, DeferredRenderTargetCopyTaskData& data) { internal::ExecuteCopyTask(render_system, task, scene_graph, data); },
+			[](DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data, bool) { internal::DestroyCopyTask(task, data); }
+		);
+
+		return ptr;
+	}
+
+	//! Used to create a new deferred task that does not depend the window being available
+	template<typename T>
+	[[nodiscard]] inline std::unique_ptr<DeferredRenderTargetCopyRenderTask_t> GetRenderTargetCopyTask(
+		unsigned int render_target_width,
+		unsigned int render_target_height)
+	{
+		auto ptr = std::make_unique<DeferredRenderTargetCopyRenderTask_t>(nullptr, "Copy RT Render Task", RenderTaskType::COPY, true,
+			RenderTargetProperties{
+				false,
+				render_target_width,
+				render_target_height,
+				ResourceState::COPY_DEST,
+				ResourceState::COPY_SOURCE,
+				false,
+				Format::UNKNOWN,
+				{ Format::R8G8B8A8_UNORM },
+				1,
+				true,
+				true
+			},
+			[](RenderSystem& render_system, DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data, bool) { internal::SetupCopyTask<T>(render_system, task, data); },
+			[](RenderSystem& render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph& scene_graph, DeferredRenderTargetCopyTaskData& data) { internal::ExecuteCopyTask(render_system, task, scene_graph, data); },
+			[](DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data, bool) { internal::DestroyCopyTask(task, data); }
 		);
 
 		return ptr;
