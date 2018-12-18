@@ -130,6 +130,8 @@ namespace wr
 		void Update_LightNodes(SceneGraph& scene_graph);
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
 
+		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
+
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 		void BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list);
 
@@ -147,6 +149,8 @@ namespace wr
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
+
+		std::vector<std::uint64_t> m_buffer_frame_graph_uids;
 
 		std::shared_ptr<TexturePool> m_texture_pool;
 
