@@ -116,9 +116,9 @@ namespace wr
 
 				if (mesh->mTextureCoords[0] > 0)
 				{
-					mesh_data->m_uvw[j][0] = mesh->mTextureCoords[0][j].x;
-					mesh_data->m_uvw[j][1] = 1.f - mesh->mTextureCoords[0][j].y;
-					mesh_data->m_uvw[j][2] = mesh->mTextureCoords[0][j].z;
+					mesh_data->m_uvw[j].x = mesh->mTextureCoords[0][j].x;
+					mesh_data->m_uvw[j].y = 1.f - mesh->mTextureCoords[0][j].y;
+					mesh_data->m_uvw[j].z = mesh->mTextureCoords[0][j].z;
 				}
 
 				if (mesh->HasVertexColors(0))

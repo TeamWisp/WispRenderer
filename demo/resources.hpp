@@ -169,10 +169,6 @@ namespace resources
 		{
 			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 		
-=========
-			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx", wr::ModelType::FBX);
-
->>>>>>>>> Temporary merge branch 2
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
