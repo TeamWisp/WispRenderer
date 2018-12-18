@@ -599,7 +599,7 @@ namespace wr
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
+		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(std::ceil(cam_align_size) / (1024.f*1024.f)));
 
 		for (auto& node : nodes)
 		{
