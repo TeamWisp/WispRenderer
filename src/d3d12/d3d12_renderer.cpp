@@ -36,14 +36,14 @@ namespace wr
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
-		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
+		for (auto& structured_buffer_pool : m_structured_buffer_pools)
 		{
-			m_structured_buffer_pools[i].reset();
+			structured_buffer_pool.reset();
 		}
 		
-		for (int i = 0; i < m_model_pools.size(); ++i)
+		for (auto& model_pool : m_model_pools)
 		{
-			m_model_pools[i].reset();
+			model_pool.reset();
 		}
 
 		d3d12::Destroy(m_device);
@@ -77,7 +77,7 @@ namespace wr
 		else
 		{
 			// Window-less rendering mode
-			CoInitializeEx(NULL, COINIT_MULTITHREADED); // WIC requires the COM library to be initialized
+			CoInitializeEx(nullptr, COINIT_MULTITHREADED); // WIC requires the COM library to be initialized
 		}
 
 		PrepareShaderRegistry();
@@ -97,11 +97,11 @@ namespace wr
 
 		// Create screen quad
 		m_fullscreen_quad_vb = d3d12::CreateStagingBuffer(m_device, (void*)temp::quad_vertices, 4 * sizeof(Vertex2D), sizeof(Vertex2D), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
-		SetName(m_fullscreen_quad_vb, L"Fullscreen quad vertex buffer");
+		SetName(m_fullscreen_quad_vb, L"Full screen quad vertex buffer");
 
 		// Create Command List
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
-		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
+		SetName(m_direct_cmd_list, L"Default DX12 Command List");
 
 		//TEMP
 		//Create Rendering Descriptor Heap
@@ -112,10 +112,10 @@ namespace wr
 
 		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
 
-		// Raytracing cb pool
+		// Ray tracing cb pool
 		m_raytracing_cb_pool = CreateConstantBufferPool(1);
 
-		// Material raytracing sb pool
+		// Material ray tracing sb pool
 		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
 		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
 
@@ -148,8 +148,8 @@ namespace wr
 			auto root_signature = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(root_signatures::basic));
 			m_cmd_signature = d3d12::CreateCommandSignature(m_device, root_signature->m_native, arg_descs, sizeof(temp::IndirectCommand));
 			m_cmd_signature_indexed = d3d12::CreateCommandSignature(m_device, root_signature->m_native, indexed_arg_descs, sizeof(temp::IndirectCommandIndexed));
-			SetName(m_cmd_signature, L"Defauld DX12 Command Signature");
-			SetName(m_cmd_signature_indexed, L"Defauld DX12 Command Signature Indexed");
+			SetName(m_cmd_signature, L"Default DX12 Command Signature");
+			SetName(m_cmd_signature_indexed, L"Default DX12 Command Signature Indexed");
 		}
 
 		// Execute
@@ -306,15 +306,15 @@ namespace wr
 			if (properties.m_width.has_value() || properties.m_height.has_value())
 			{
 				auto retval = d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
-				for (auto i = 0; i < retval->m_render_targets.size(); i++)
-					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
+				for (auto& render_target : retval->m_render_targets)
+					render_target->SetName(L"Main Deferred RT");
 				return retval;
 			}
 			else if (m_window.has_value())
 			{
 				auto retval = d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
-				for (auto i = 0; i < retval->m_render_targets.size(); i++)
-					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
+				for (auto& render_target : retval->m_render_targets)
+					render_target->SetName(L"Main Deferred RT");
 				return retval;
 			}
 			else
@@ -803,7 +803,7 @@ namespace wr
 						command.draw_arguments.InstanceCount = batch.num_instances;
 						command.draw_arguments.StartIndexLocation = n_mesh->m_index_staging_buffer_offset;
 						command.draw_arguments.StartInstanceLocation = 0;
-						command.draw_arguments.BaseVertexLocation = n_mesh->m_vertex_staging_buffer_offset; // 1170.sometghing fuck me
+						command.draw_arguments.BaseVertexLocation = n_mesh->m_vertex_staging_buffer_offset; // 1170
 						indexed_commands.push_back(command);
 					}
 					else
