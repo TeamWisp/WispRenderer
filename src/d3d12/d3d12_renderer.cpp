@@ -67,7 +67,13 @@ namespace wr
 
 		if (window.has_value())
 		{
+			// Windowed rendering mode
 			m_render_window = d3d12::CreateRenderWindow(m_device, window.value()->GetWindowHandle(), m_direct_queue, d3d12::settings::num_back_buffers);
+		}
+		else
+		{
+			// Window-less rendering mode
+			CoInitializeEx(NULL, COINIT_MULTITHREADED); // WIC requires the COM library to be initialized
 		}
 
 		PrepareShaderRegistry();
