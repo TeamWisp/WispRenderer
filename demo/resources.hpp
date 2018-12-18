@@ -20,8 +20,8 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(128, 20);
-		material_pool = render_system->CreateMaterialPool(128);
+		texture_pool = render_system->CreateTexturePool(8, 20);
+		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
 		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);

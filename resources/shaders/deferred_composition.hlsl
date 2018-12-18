@@ -53,7 +53,6 @@ float3 shade_light(float3 vpos, float3 V, float3 albedo, float3 normal, float me
 	// Light pos and view directon to view.
 	float3 light_vpos = mul(view, float4(light.pos, 1)).xyz;
 	float3 light_vdir = normalize(mul(view, float4(light.dir, 0))).xyz;
-	float3 light_vhalf = normalize(V + light_vdir);
 
 	//Light direction (constant with directional, position dependent with other)
 	float3 L = (lerp(light_vpos - vpos, light.dir, tid == light_type_directional));
