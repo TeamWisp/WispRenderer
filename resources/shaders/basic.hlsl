@@ -51,12 +51,13 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
 	output.uv = input.uv;
-	output.normal = normalize(input.normal);
+	output.normal = normalize(mul(vm, float4(input.normal, 0))).xyz;
 
 	float3 tangent = normalize(mul(vm, float4(input.tangent, 0))).xyz;
 	float3 bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
 
-	output.tbn = mul(float3x3(tangent, bitangent, output.normal), vm);
+	output.tbn = transpose(float3x3(tangent, bitangent, output.normal));
+	//output.viewmodel = vm;
 
 	return output;
 }
@@ -82,9 +83,12 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float4 roughness = material_roughness.Sample(s0, input.uv);
 	float4 metallic = material_metallic.Sample(s0, input.uv);
 	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
+	
 	float3 normal = normalize(mul(input.tbn, tex_normal));
+	//normal = normalize(mul(input.viewmodel, float4(normal, 0.0f)));
 
 	output.albedo_roughness = float4(albedo.xyz, roughness.r);
 	output.normal_metallic = float4(normal, metallic.r);
+
 	return output;
 }

@@ -12,10 +12,11 @@
 #include "scene_viknell.hpp"
 #include "resources.hpp"
 #include "scene_cubes.hpp"
+#include "scene_pbr.hpp"
 
 #include "model_loader_assimp.hpp"
 
-#define SCENE viknell_scene
+#define SCENE pbr_scene
 
 constexpr bool do_raytracing = true;
 

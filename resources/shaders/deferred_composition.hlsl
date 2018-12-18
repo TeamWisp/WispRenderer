@@ -70,7 +70,7 @@ float3 shade_light(float3 vpos, float3 V, float3 albedo, float3 normal, float me
 	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
 	float3 radiance = (light.col * spot_intensity) * attenuation;
 
-	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance, light.col);
+	float3 lighting = BRDF(L, V, normal, 0.001f, 0.999f, albedo, radiance, light.col);
 
 	return lighting;
 
