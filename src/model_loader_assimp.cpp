@@ -37,7 +37,9 @@ namespace wr
 		ModelData* model = new ModelData;
 
 		if (scene->HasTextures())
+		{
 			LoadEmbeddedTextures(model, scene);
+		}
 
 		LoadMaterials(model, scene);
 		LoadMeshes(model, scene, scene->mRootNode);
@@ -71,7 +73,9 @@ namespace wr
 		ModelData* model = new ModelData;
 
 		if (scene->HasTextures())
+		{
 			LoadEmbeddedTextures(model, scene);
+		}
 
 		LoadMaterials(model, scene);
 		LoadMeshes(model, scene, scene->mRootNode);
@@ -99,15 +103,15 @@ namespace wr
 
 			for (int j = 0; j < mesh->mNumVertices; ++j)
 			{
-				mesh_data->m_positions[j][0] = mesh->mVertices[j].x;
-				mesh_data->m_positions[j][1] = mesh->mVertices[j].y;
-				mesh_data->m_positions[j][2] = mesh->mVertices[j].z;
+				mesh_data->m_positions[j].x = mesh->mVertices[j].x;
+				mesh_data->m_positions[j].y = mesh->mVertices[j].y;
+				mesh_data->m_positions[j].z = mesh->mVertices[j].z;
 
 				if (mesh->HasNormals())
 				{
-					mesh_data->m_normals[j][0] = mesh->mNormals[j].x;
-					mesh_data->m_normals[j][1] = mesh->mNormals[j].y;
-					mesh_data->m_normals[j][2] = mesh->mNormals[j].z;
+					mesh_data->m_normals[j].x = mesh->mNormals[j].x;
+					mesh_data->m_normals[j].y = mesh->mNormals[j].y;
+					mesh_data->m_normals[j].z = mesh->mNormals[j].z;
 				}
 
 				if (mesh->mTextureCoords[0] > 0)
@@ -119,20 +123,20 @@ namespace wr
 
 				if (mesh->HasVertexColors(0))
 				{
-					mesh_data->m_colors[j][0] = mesh->mColors[0][j].r;
-					mesh_data->m_colors[j][1] = mesh->mColors[0][j].g;
-					mesh_data->m_colors[j][2] = mesh->mColors[0][j].b;
+					mesh_data->m_colors[j].x = mesh->mColors[0][j].r;
+					mesh_data->m_colors[j].y = mesh->mColors[0][j].g;
+					mesh_data->m_colors[j].z = mesh->mColors[0][j].b;
 				}
 
 				if (mesh->HasTangentsAndBitangents())
 				{
-					mesh_data->m_tangents[j][0] = mesh->mTangents[j].x;
-					mesh_data->m_tangents[j][1] = mesh->mTangents[j].y;
-					mesh_data->m_tangents[j][2] = mesh->mTangents[j].z;
+					mesh_data->m_tangents[j].x = mesh->mTangents[j].x;
+					mesh_data->m_tangents[j].y = mesh->mTangents[j].y;
+					mesh_data->m_tangents[j].z = mesh->mTangents[j].z;
 
-					mesh_data->m_bitangents[j][0] = mesh->mBitangents[j].x;
-					mesh_data->m_bitangents[j][1] = mesh->mBitangents[j].y;
-					mesh_data->m_bitangents[j][2] = mesh->mBitangents[j].z;
+					mesh_data->m_bitangents[j].x = mesh->mBitangents[j].x;
+					mesh_data->m_bitangents[j].y = mesh->mBitangents[j].y;
+					mesh_data->m_bitangents[j].z = mesh->mBitangents[j].z;
 				}
 			}
 

@@ -75,6 +75,11 @@ namespace wr
 				indices.size(),
 				sizeof(std::uint32_t));
 
+			if (mesh_data == nullptr)
+			{
+				return 1;
+			}
+
 			std::uint64_t id = GetNewID();
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
@@ -85,10 +90,6 @@ namespace wr
 				mesh_handle,
 				material_handle);
 
-			if (n_mesh.first == nullptr)
-			{
-				return 1;
-			}
 
 			model->m_meshes.push_back(n_mesh);
 		}
@@ -140,6 +141,11 @@ namespace wr
 				indices.size(),
 				sizeof(std::uint32_t));
 
+			if (mesh_data == nullptr)
+			{
+				return 1;
+			}
+
 			std::uint64_t id = GetNewID();
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
@@ -149,11 +155,6 @@ namespace wr
 			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
-
-			if (n_mesh.first == nullptr)
-			{
-				return 1;
-			}
 
 			model->m_meshes.push_back(n_mesh);
 		}
@@ -213,6 +214,11 @@ namespace wr
 				indices.size(),
 				sizeof(std::uint32_t));
 
+			if (mesh_data == nullptr)
+			{
+				return 1;
+			}
+
 			std::uint64_t id = GetNewID();
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
@@ -222,12 +228,7 @@ namespace wr
 			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
-
-			if (n_mesh.first == nullptr)
-			{
-				return 1;
-			}
-
+			
 			model->m_meshes.push_back(n_mesh);
 		}
 		return 0;
@@ -277,6 +278,11 @@ namespace wr
 				indices.data(),
 				indices.size(),
 				sizeof(std::uint32_t));
+			
+			if (mesh_data == nullptr)
+			{
+				return 1;
+			}
 
 			std::uint64_t id = GetNewID();
 			m_loaded_meshes[id] = mesh_data;
@@ -287,11 +293,6 @@ namespace wr
 			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
-
-			if (n_mesh.first == nullptr)
-			{
-				return 1;
-			}
 
 			model->m_meshes.push_back(n_mesh);
 		}

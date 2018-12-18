@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <DirectXMath.h>
 
 namespace wr
 {
@@ -19,63 +20,6 @@ namespace wr
 		NON_EXISTENT
 	};
 
-	struct Vector3
-	{
-		float x;
-		float y;
-		float z;
-
-		float& operator[](int x)
-		{
-			if (x == 0)
-				return this->x;
-			if (x == 1)
-				return this->y;
-			if (x == 2)
-				return this->z;
-		};
-	};
-
-	struct Vector4
-	{
-		float x;
-		float y;
-		float z;
-		float w;
-
-		float& operator[](int x)
-		{
-			if (x == 0)
-				return this->x;
-			if (x == 1)
-				return this->y;
-			if (x == 2)
-				return this->z;
-			if (x == 3)
-				return this->w;
-		};
-	};
-
-	struct Matrix4x4
-	{
-		Vector4 x;
-		Vector4 y;
-		Vector4 z;
-		Vector4 w;
-
-		Vector4& operator[](int x)
-		{
-			if (x == 0)
-				return this->x;
-			if (x == 1)
-				return this->y;
-			if (x == 2)
-				return this->z;
-			if (x == 3)
-				return this->w;
-		};
-	};
-
 	struct ModelData
 	{
 		std::vector<ModelMeshData*> m_meshes;
@@ -86,16 +30,16 @@ namespace wr
 
 	struct ModelMeshData
 	{
-		std::vector<Vector3> m_positions;
-		std::vector<Vector3> m_colors;
-		std::vector<Vector3> m_normals;
-		std::vector<Vector3> m_uvw;
-		std::vector<Vector3> m_tangents;
-		std::vector<Vector3> m_bitangents;
+		std::vector<DirectX::XMFLOAT3> m_positions;
+		std::vector<DirectX::XMFLOAT3> m_colors;
+		std::vector<DirectX::XMFLOAT3> m_normals;
+		std::vector<DirectX::XMFLOAT3> m_uvw;
+		std::vector<DirectX::XMFLOAT3> m_tangents;
+		std::vector<DirectX::XMFLOAT3> m_bitangents;
 
-		std::vector<Vector4> m_bone_weights;
+		std::vector<DirectX::XMFLOAT4> m_bone_weights;
 
-		std::vector<Vector4> m_bone_ids;
+		std::vector<DirectX::XMFLOAT4> m_bone_ids;
 
 		std::vector<std::uint32_t> m_indices;
 
@@ -124,8 +68,8 @@ namespace wr
 		std::size_t m_normal_map_embedded_texture;
 		TextureLocation m_normal_map_texture_location;
 
-		Vector3 m_base_color;
-		Vector3 m_base_metallic;
+		DirectX::XMFLOAT3 m_base_color;
+		DirectX::XMFLOAT3 m_base_metallic;
 		float m_base_roughness;
 		float m_base_transparency;
 		

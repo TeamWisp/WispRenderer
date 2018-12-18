@@ -155,7 +155,9 @@ namespace wr
 			path.substr(path.find_last_of(".") + 1).data());
 
 		if (loader == nullptr)
+		{
 			return nullptr;
+		}
 
 		ModelData* data = loader->Load(path);
 
@@ -175,6 +177,9 @@ namespace wr
 
 			return nullptr;
 		}
+
+		loader->DeleteModel(data);
+
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
 
@@ -191,7 +196,9 @@ namespace wr
 			path.substr(path.find_last_of(".") + 1).data());
 
 		if (loader == nullptr)
+		{
 			return nullptr;
+		}
 
 		ModelData* data = loader->Load(path);
 

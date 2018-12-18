@@ -44,15 +44,12 @@ namespace wr
 
 	void ModelLoader::DeleteModel(ModelData * model)
 	{
-		std::vector<ModelData*>::iterator it;
-		for (it = m_loaded_models.begin(); it != m_loaded_models.end(); ++it)
-		{
-			if ((*it) == model)
-				break;
-		}
+		std::vector<ModelData*>::iterator it = std::find(m_loaded_models.begin(), m_loaded_models.end(), model);
 
 		if (it == m_loaded_models.end())
+		{
 			return;
+		}
 
 		m_loaded_models.erase(it);
 
@@ -95,7 +92,9 @@ namespace wr
 		for (int i = 0; i < m_supported_model_formats.size(); ++i)
 		{
 			if (m_supported_model_formats[i].compare(model_format) == 0)
+			{
 				return true;
+			}
 		}
 		return false;
 	}
@@ -105,7 +104,9 @@ namespace wr
 		for (int i = 0; i < m_registered_model_loaders.size(); ++i)
 		{
 			if (m_registered_model_loaders[i]->SupportsModelFormat(model_format))
+			{
 				return m_registered_model_loaders[i];
+			}
 		}
 		return nullptr;
 	}

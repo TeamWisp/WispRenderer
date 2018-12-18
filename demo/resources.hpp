@@ -60,6 +60,7 @@ namespace resources
 		wr::TextureHandle harsh_brick_normal =		texture_pool->Load("resources/materials/harsh_bricks/harshbricks-normal.png", false, true);
 		wr::TextureHandle harsh_brick_roughness =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-roughness.png", false, true);
 		wr::TextureHandle harsh_brick_metallic =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-metalness.png", false, true);
+		model_pool = render_system->CreateModelPool(16, 16);
 
 		//Create Material
 		harsh_brick_material = material_pool->Create();
@@ -167,7 +168,11 @@ namespace resources
 
 		{
 			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+		
+=========
+			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx", wr::ModelType::FBX);
 
+>>>>>>>>> Temporary merge branch 2
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
