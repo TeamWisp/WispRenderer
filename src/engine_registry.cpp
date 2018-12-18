@@ -219,7 +219,7 @@ namespace wr
 		so_desc.second,    // Library
 		(sizeof(float)*7 + sizeof(unsigned int)), // Max payload size
 		(sizeof(float)*2), // Max attributes size
-		2,				   // Max recursion depth
+		4,				   // Max recursion depth
 		root_signatures::rt_test_global,      // Global root signature
 		std::vector<RegistryHandle>{ root_signatures::rt_test_local },      // Local Root Signatures
 	});

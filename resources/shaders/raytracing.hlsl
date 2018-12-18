@@ -1,6 +1,6 @@
 #include "pbr_util.hlsl"
 
-#define MAX_RECURSION 2
+#define MAX_RECURSION 4
 
 struct Light 
 {
