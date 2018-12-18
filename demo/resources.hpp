@@ -60,8 +60,7 @@ namespace resources
 		wr::TextureHandle harsh_brick_normal =		texture_pool->Load("resources/materials/harsh_bricks/harshbricks-normal.png", false, true);
 		wr::TextureHandle harsh_brick_roughness =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-roughness.png", false, true);
 		wr::TextureHandle harsh_brick_metallic =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-metalness.png", false, true);
-		model_pool = render_system->CreateModelPool(16, 16);
-
+	
 		//Create Material
 		harsh_brick_material = material_pool->Create();
 
@@ -88,7 +87,7 @@ namespace resources
 		ball_material_internal->SetRoughness(ball_material_roughness);
 		ball_material_internal->SetMetallic(ball_material_metallic);
 		
-		model_pool = render_system->CreateModelPool(5, 5);
+		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
 		{
