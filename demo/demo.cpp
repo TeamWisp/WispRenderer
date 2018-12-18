@@ -25,6 +25,9 @@ std::shared_ptr<wr::SceneGraph> scene_graph;
 
 std::shared_ptr<wr::TexturePool> texture_pool;
 
+constexpr unsigned int RENDER_TARGET_WIDTH = 1280;
+constexpr unsigned int RENDER_TARGET_HEIGHT = 720;
+
 void RenderEditor()
 {
 	engine::RenderEngine(render_system.get(), scene_graph.get());
@@ -55,16 +58,16 @@ int WispEntry()
 	wr::FrameGraph frame_graph;
 	if (do_raytracing)
 	{
-		frame_graph.AddTask(wr::GetDeferredMainTask());
-		frame_graph.AddTask(wr::GetDeferredCompositionTask());
-		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
+		frame_graph.AddTask(wr::GetDeferredMainTask(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
+		frame_graph.AddTask(wr::GetDeferredCompositionTask(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
 	}
 	else
 	{
-		frame_graph.AddTask(wr::GetRaytracingTask());
-		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
+		frame_graph.AddTask(wr::GetRaytracingTask(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
 	}
-	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
+	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor, RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
 	frame_graph.Setup(*render_system);
 
 	while (true)

@@ -69,13 +69,15 @@ namespace wr
 
 	//! Used to create a new deferred task.
 	template<typename T>
-	[[nodiscard]] inline std::unique_ptr<DeferredRenderTargetCopyRenderTask_t> GetRenderTargetCopyTask()
+	[[nodiscard]] inline std::unique_ptr<DeferredRenderTargetCopyRenderTask_t> GetRenderTargetCopyTask(
+		std::optional<unsigned int> render_target_width,
+		std::optional<unsigned int> render_target_height)
 	{
 		auto ptr = std::make_unique<DeferredRenderTargetCopyRenderTask_t>(nullptr, "Copy RT Render Task", RenderTaskType::COPY, true,
 			RenderTargetProperties{
 				true,
-				std::nullopt,
-				std::nullopt,
+				render_target_width,
+				render_target_height,
 				ResourceState::COPY_DEST,
 				ResourceState::PRESENT,
 				false,

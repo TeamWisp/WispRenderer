@@ -40,14 +40,16 @@ namespace wr
 	} /* internal */
 	
 
-	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<TestRenderTask_t> GetTestTask()
+	//! Used to create a new deferred task.
+	[[nodiscard]] inline std::unique_ptr<TestRenderTask_t> GetTestTask(
+		std::optional<unsigned int> render_target_width,
+		std::optional<unsigned int> render_target_height)
 	{
 		auto ptr = std::make_unique<TestRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT, true,
 			RenderTargetProperties{
 				true,
-				std::nullopt,
-				std::nullopt,
+				render_target_width,
+				render_target_height,
 				std::nullopt,
 				std::nullopt,
 				true,

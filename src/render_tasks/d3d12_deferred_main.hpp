@@ -68,14 +68,16 @@ namespace wr
 	} /* internal */
 	
 
-	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<DeferredMainRenderTask_t> GetDeferredMainTask()
+	//! Used to create a new deferred task.
+	[[nodiscard]] inline std::unique_ptr<DeferredMainRenderTask_t> GetDeferredMainTask(
+		std::optional<unsigned int> render_target_width,
+		std::optional<unsigned int> render_target_height)
 	{
 		auto ptr = std::make_unique<DeferredMainRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT, true,
 			RenderTargetProperties{
 				false,
-				std::nullopt,
-				std::nullopt,
+				render_target_width,
+				render_target_height,
 				ResourceState::RENDER_TARGET,
 				ResourceState::NON_PIXEL_SHADER_RESOURCE,
 				true,

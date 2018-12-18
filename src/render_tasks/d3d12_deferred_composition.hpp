@@ -159,14 +159,16 @@ namespace wr
 	} /* internal */
 
 
-	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<DeferredCompositionRenderTask_t> GetDeferredCompositionTask()
+	//! Used to create a new deferred task.
+	[[nodiscard]] inline std::unique_ptr<DeferredCompositionRenderTask_t> GetDeferredCompositionTask(
+		std::optional<unsigned int> render_target_width,
+		std::optional<unsigned int> render_target_height)
 	{
 		auto ptr = std::make_unique<DeferredCompositionRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::COMPUTE, true,
 			RenderTargetProperties{
 				false,
-				std::nullopt,
-				std::nullopt,
+				render_target_width,
+				render_target_height,
 				ResourceState::UNORDERED_ACCESS,
 				ResourceState::COPY_SOURCE,
 				false,
