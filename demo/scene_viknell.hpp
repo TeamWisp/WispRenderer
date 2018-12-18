@@ -14,9 +14,9 @@ namespace viknell_scene
 	static std::shared_ptr<wr::LightNode> directional_light_node;
 	static float t = 0;
 
-	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
+	void CreateScene(wr::SceneGraph* scene_graph, float aspect_ratio = 16.0f / 9.0f)
 	{
-		camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
+		camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 90.f, aspect_ratio);
 		camera->SetPosition({ 0, 0, -1 });
 		
 		// Geometry

@@ -39,20 +39,6 @@ int WispEntry()
 	};
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
-	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
-
-	window->SetKeyCallback([](int key, int action, int mods)
-	{
-		if (action == WM_KEYUP && key == 0xC0)
-		{
-			engine::open_console = !engine::open_console;
-			engine::debug_console.EmptyInput();
-		}
-		if (action == WM_KEYUP && key == VK_F1)
-		{
-			engine::show_imgui = !engine::show_imgui;
-		}
-	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
 
@@ -62,7 +48,7 @@ int WispEntry()
 
 	scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
-	SCENE::CreateScene(scene_graph.get(), window.get());
+	SCENE::CreateScene(scene_graph.get());
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
@@ -81,17 +67,8 @@ int WispEntry()
 	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 
-	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
+	while (true)
 	{
-		render_system->WaitForAllPreviousWork();
-		frame_graph.Resize(*render_system.get(), width, height);
-		render_system->Resize(width, height);
-	});
-
-	while (window->IsRunning())
-	{
-		window->PollEvents();
-
 		SCENE::UpdateScene();
 
 		auto texture = render_system->Render(scene_graph, frame_graph);
