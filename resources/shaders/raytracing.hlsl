@@ -1,5 +1,7 @@
 #include "pbr_util.hlsl"
 
+#define MAX_RECURSION 2
+
 struct Vertex
 {
 	float3 pos;
@@ -31,6 +33,8 @@ typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct HitInfo
 {
 	float4 color;
+	float3 origin;
+	unsigned int depth;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -62,9 +66,9 @@ uint3 Load3x32BitIndices(uint offsetBytes)
  	return g_indices.Load3(offsetBytes);
 }
 
-inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld)
+inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset)
 {
-    float2 xy = index + 0.5f; // center in the middle of the pixel.
+    float2 xy = (index + offset) + 0.5f; // center in the middle of the pixel.
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
     // Unproject the pixel coordinate into a world positon.
@@ -84,21 +88,21 @@ float3 HitWorldPosition()
     return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-[shader("raygeneration")]
-void RaygenEntry()
+float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth)
 {
-	// Initialize the ray payload
-	HitInfo payload;
-	payload.color = float4(1, 1, 1, 1);
-
-	Ray temp_ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view);
+	if (depth >= MAX_RECURSION)
+	{
+		return float4(0, 0, 0, 0);
+	}
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
-	ray.Origin = temp_ray.origin;
-	ray.Direction = temp_ray.direction;
-	ray.TMin = 0;
+	ray.Origin = origin;
+	ray.Direction = direction;
+	ray.TMin = 0.001;
 	ray.TMax = 10000.0;
+
+	HitInfo payload = { float4(0, 0, 0, 0), origin, depth };
 
 	// Trace the ray
 	TraceRay(
@@ -111,7 +115,30 @@ void RaygenEntry()
 		ray,
 		payload);
 
-	gOutput[DispatchRaysIndex().xy] = payload.color;
+	return payload.color;
+}
+
+[shader("raygeneration")]
+void RaygenEntry()
+{
+#define FOUR_X_AA
+#ifdef FOUR_X_AA
+	Ray a = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.5, 0));
+	Ray b = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(-0.5, 0));
+	Ray c = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, 0.5));
+	Ray d = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, -0.5));
+
+	float4 result_a = TraceColorRay(a.origin, a.direction, 0);
+	float4 result_b = TraceColorRay(b.origin, b.direction, 0);
+	float4 result_c = TraceColorRay(c.origin, c.direction, 0);
+	float4 result_d = TraceColorRay(d.origin, d.direction, 0);
+
+	float4 result = (result_a + result_b + result_c + result_d) / 4;
+#else
+	Ray ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0, 0));
+	float4 result = TraceColorRay(ray.origin, ray.direction, 0);
+#endif
+	gOutput[DispatchRaysIndex().xy] = result;
 }
 
 [shader("miss")]
@@ -142,7 +169,7 @@ float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal)
 
 	float3 light_pos = float3(0, 0, 0);
 	float3 light_dir = float3(0, 0, 1);
-	float3 light_rad = light_radius;
+	float light_rad = light_radius;
 	float3 light_col = float3(1, 1, 1);
 
 	//Light direction (constant with directional, position dependent with other)
@@ -165,6 +192,11 @@ float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal)
 	float3 lighting = BRDF(dir, V, normal, metal, roughness, albedo, radiance, light_col);
 
 	return lighting;
+}
+
+float3 ReflectRay(float3 v1, float3 v2)
+{
+	return (v2 * ((2.f * dot(v1, v2))) - v1);
 }
 
 [shader("closesthit")]
@@ -205,11 +237,24 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	// Variables
 	//float4x4 vm = mul(view, float4(hit_pos, 1));
-	float3 V = normalize(camera_position - hit_pos);
+	float3 V = normalize(payload.origin - hit_pos);
 
 	// Diffuse
     float3 lighting = ShadeLight(hit_pos, V, albedo, world_normal);
 
+	float4 reflection = TraceColorRay(hit_pos, ReflectRay(V, normalize(world_normal)), payload.depth + 1);
+
+	float metal = 0.5f;
+	float3 result;
+	if (payload.depth == MAX_RECURSION - 1)
+	{
+		result = lighting;
+	}
+	else
+	{
+		result = (reflection.xyz * (1.f - metal)) + (lighting * metal);
+	}
+
 	// Output
-	payload.color = float4(lighting, 1);
+	payload.color = float4(result.xyz, 1);
 }

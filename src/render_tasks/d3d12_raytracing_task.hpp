@@ -21,9 +21,9 @@ namespace wr
 	{
 		d3d12::DescriptorHeap* out_rt_heap;
 
-		d3d12::ShaderTable* out_raygen_shader_table;
-		d3d12::ShaderTable* out_miss_shader_table;
-		d3d12::ShaderTable* out_hitgroup_shader_table;
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
 		d3d12::StateObject* out_state_object;
 		d3d12::RootSignature* out_root_signature;
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
@@ -35,6 +35,64 @@ namespace wr
 
 	namespace internal
 	{
+
+		inline void CreateShaderTables(d3d12::Device* device, RaytracingData& data, int frame_idx)
+		{
+			if (data.out_miss_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_miss_shader_table[frame_idx]);
+			}
+			if (data.out_hitgroup_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_hitgroup_shader_table[frame_idx]);
+			}
+			if (data.out_raygen_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_raygen_shader_table[frame_idx]);
+			}
+
+			// Raygen Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_raygen_shader_table[frame_idx], shader_record);
+			}
+
+			// Miss Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shader_record);
+			}
+
+			// Hit Group Shader Table
+			{
+				// Create Record(s)
+				UINT shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shader_record);
+			}
+		}
 
 		inline void SetupRaytracingTask(RenderSystem & render_system, RaytracingTask & task, RaytracingData & data)
 		{
@@ -73,47 +131,7 @@ namespace wr
 			auto rs_registry = RootSignatureRegistry::Get();
 			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
 
-			// Raygen Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
-
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
-
-				// Create Table
-				data.out_raygen_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_raygen_shader_table, shader_record);
-			}
-
-			// Miss Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
-
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
-
-				// Create Table
-				data.out_miss_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_miss_shader_table, shader_record);
-			}
-
-			// Hit Group Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
-
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
-
-				// Create Table
-				data.out_hitgroup_shader_table = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_hitgroup_shader_table, shader_record);
-			}
+			CreateShaderTables(device, data, 0);
 		}
 
 		d3d12::AccelerationStructure tlas;
@@ -311,7 +329,9 @@ namespace wr
 				//d3d12::BindComputeShaderResourceView(cmd_list, temp_ib->m_buffer, 3);
 				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);
 
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table, data.out_miss_shader_table, data.out_raygen_shader_table, 1280, 720, 1);
+				CreateShaderTables(device, data, frame_idx);
+
+				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], 1280, 720, 1);
 			}
 		}
 
