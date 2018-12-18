@@ -1,6 +1,6 @@
 #include "pbr_util.hlsl"
 
-#define MAX_RECURSION 4
+#define MAX_RECURSION 2
 
 struct Light 
 {
@@ -118,7 +118,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth)
 	ray.TMin = 0.00001;
 	ray.TMax = 10000.0;
 
-	HitInfo payload = { float4(0, 0, 0, 0), origin, depth };
+	HitInfo payload = { float4(1, 1, 1, 1), origin, depth };
 
 	// Trace the ray
 	TraceRay(
@@ -160,7 +160,9 @@ void RaygenEntry()
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	payload.color = float4(170.0f / 255.f, 203.0f / 255.f, 1.0f, 1.f);
+	float3 dir = normalize(WorldRayDirection());
+	float t = 0.5*dir.y + 0.5f;
+	payload.color = lerp(float4(1.0, 1.0, 1.0, 1), float4(0.5, 0.7, 1.0, 1), t);
 }
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
@@ -254,24 +256,21 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	// Calculate actual "fragment" attributes.
 	float3 frag_pos = HitAttribute(v0.pos, v1.pos, v2.pos, attr);
 	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
-	float3 tangent = normalize(HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr));
-	float3 bitangent = normalize(HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr));
+	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
+	float3 bitangent = cross(normal, tangent);
 	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
-
-	float3 world_normal = normalize(mul(model_matrix, float4(normal, 1))).xyz;
 
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
 	const float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).xyz;
 	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
-	float3 normal_t = g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz * 2.0 - float3(1.0, 1.0, 1.0);
+	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
-	float3 N = mul(model_matrix, normal);
-	float3 T = mul(model_matrix, tangent);
-	float3 B = mul(model_matrix, bitangent);
-	float3x3 TBN = float3x3(tangent, bitangent, normal);
+	float3 N = mul(model_matrix, float4(normal, 1));
+	float3 T = mul(model_matrix, float4(tangent, 1));
+	float3 B = mul(model_matrix, float4(bitangent, 1));
+	float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
-	fN = world_normal;
 
 	// Variables
 	float3 V = normalize(payload.origin - hit_pos);
