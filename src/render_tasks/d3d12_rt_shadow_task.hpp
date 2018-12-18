@@ -55,11 +55,7 @@ namespace wr
 			heap_desc.m_versions = d3d12::settings::num_back_buffers;
 			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
 			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
-
-			auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-			d3d12::Offset(cpu_handle, 0, data.out_rt_heap->m_increment_size);
 			
-
 			// Set g-buffers
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
@@ -202,13 +198,15 @@ namespace wr
 				temp::RayTracingCamera_CBData cam_data;
 				cam_data.m_camera_position = camera->m_position;
 				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
+				cam_data.m_inverse_view = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view));
+				cam_data.m_inverse_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_projection));
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data);
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object);
 
 				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0);
 				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
-				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 5, 0);
+				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
 				d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
 
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table, data.out_miss_shader_table, data.out_raygen_shader_table, 1280, 720, 1);

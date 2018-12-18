@@ -161,30 +161,21 @@ namespace wr
 
 	/* ### Shadow Raytracing ### */
 	REGISTER(shaders::rt_shadow_lib) = ShaderRegistry::Get().Register({
-		"resources/shaders/raytracing.hlsl",
+		"resources/shaders/rt_shadow.hlsl",
 		"RaygenEntry",
 		ShaderType::LIBRARY_SHADER
 		});
 
-	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> rt_shadow_srv_ranges
-	{
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); return r; }(),
-	};
-	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> rt_shadow_uav_ranges
-	{
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(),
+	D3D12_DESCRIPTOR_RANGE rt_shadow_ranges[2] = {
+		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, 0 },
+		{ D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 1, 0, 0 }
 	};
 
 	REGISTER(root_signatures::rt_shadow_global) = RootSignatureRegistry::Get().Register({
 		{
-			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(uav_ranges.size(), uav_ranges.data(), D3D12_SHADER_VISIBILITY_ALL); return d; }(),
-			// TODO: Replace Shader Resource Views to SRV Descriptor Table
+			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(2, rt_shadow_ranges); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(2); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(),
-			
 		},
 		{
 			// No samplers
