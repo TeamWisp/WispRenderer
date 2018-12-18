@@ -161,10 +161,10 @@ namespace wr
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
     
-		float temp_metal = 0.2f;
-		float temp_rough = 0.8f;
+		float temp_metal = 0.5f;
+		float temp_rough = 0.45f;
 		float light_radius = 50;
-		float temp_intensity = 2;
+		float temp_intensity = 1;
 	private:
 
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;

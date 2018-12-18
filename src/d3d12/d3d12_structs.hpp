@@ -20,6 +20,8 @@ namespace wr::d3d12
 
 	// Forward declare
 	struct StagingBuffer;
+	struct Shader;
+	struct RootSignature;
 
 	namespace desc
 	{
@@ -99,6 +101,19 @@ namespace wr::d3d12
 			std::uint64_t m_vertex_stride;
 		};
 
+		struct StateObjectDesc
+		{
+			Shader* m_library;
+			std::vector<std::wstring> m_library_exports;
+
+			std::uint64_t max_payload_size;
+			std::uint64_t max_attributes_size;
+			std::uint64_t max_recursion_depth;
+
+			std::optional<RootSignature*> global_root_signature;
+			std::optional<std::vector<RootSignature*>> local_root_signatures;
+		};
+
 	} /* desc */
 
 	struct Device
@@ -112,6 +127,8 @@ namespace wr::d3d12
 		DXGI_ADAPTER_DESC3 m_adapter_info;
 		ID3D12Debug1* m_debug_controller;
 		ID3D12InfoQueue* m_info_queue;
+		
+		static IDxcCompiler2* m_compiler;
 
 		// Fallback
 		bool m_dxr_fallback_support;
@@ -169,6 +186,8 @@ namespace wr::d3d12
 		ID3D12RootSignature* m_native;
 	};
 
+	struct PipelineState;
+	struct StateObject;
 	struct Shader
 	{
 		IDxcBlob* m_native;
@@ -179,14 +198,13 @@ namespace wr::d3d12
 
 	struct PipelineState
 	{
-		PipelineType m_type;
 		ID3D12PipelineState* m_native;
 		RootSignature* m_root_signature;
 		Shader* m_vertex_shader;
 		Shader* m_pixel_shader;
 		Shader* m_compute_shader;
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE m_topology_type;
-		std::vector<D3D12_INPUT_ELEMENT_DESC> m_input_layout; // TODO: This should be defaulted.
+		Device* m_device; // only used for refinalization.
+		desc::PipelineStateDesc m_desc;
 	};
 
 	struct Viewport
@@ -347,6 +365,9 @@ namespace wr::d3d12
 		ID3D12StateObjectProperties* m_properties;
 
 		ID3D12RaytracingFallbackStateObject* m_fallback_native;
+
+		desc::StateObjectDesc m_desc;
+		Device* m_device; // Only for refinalization.
 	};
 
 	struct AccelerationStructure
