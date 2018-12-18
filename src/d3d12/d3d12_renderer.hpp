@@ -166,7 +166,7 @@ namespace wr
 		float light_radius = 50;
 		float temp_intensity = 1;
 	private:
-		unsigned int m_max_commands = 4;
+
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
 		d3d12::CommandSignature* m_cmd_signature;
