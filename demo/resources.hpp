@@ -52,7 +52,7 @@ namespace resources
 		rock_material_internal->SetRoughness(rock_roughness);
 		rock_material_internal->SetMetallic(rock_metallic);
 
-		model_pool = render_system->CreateModelPool(2, 2);
+		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
 		{
@@ -131,8 +131,8 @@ namespace resources
 
 
 		{
-			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx", wr::ModelType::FBX);
-
+			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+		
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
