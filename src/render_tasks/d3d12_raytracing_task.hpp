@@ -221,6 +221,8 @@ namespace wr
 									materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
 									materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
 									materials[material_id].normal_id = material_internal->GetNormal().m_id;
+									materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
+									materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
 
 									auto upper3x3 = util::StripTranslationAndLowerVector(transform);
 
@@ -266,22 +268,21 @@ namespace wr
 					// Fill descriptor heap with textures used by the scene
 					for (auto handle : material_handles)
 					{
-						auto albedo_cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-						auto normal_cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-
 						auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
 
-						auto& albedo_handle = material_internal->GetAlbedo();
-						auto& normal_handle = material_internal->GetNormal();
+						auto create_srv = [data, material_internal](auto texture_handle)
+						{
+							auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+							auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
-						auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
-						auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+							d3d12::Offset(cpu_handle, 4 + texture_handle.m_id, data.out_rt_heap->m_increment_size);
+							d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
+						};
 
-						d3d12::Offset(albedo_cpu_handle, 4 + material_internal->GetAlbedo().m_id, data.out_rt_heap->m_increment_size);
-						d3d12::Offset(normal_cpu_handle, 4 + material_internal->GetNormal().m_id, data.out_rt_heap->m_increment_size);
-
-						d3d12::CreateSRVFromTexture(albedo_internal, albedo_cpu_handle);
-						d3d12::CreateSRVFromTexture(normal_internal, normal_cpu_handle);
+						create_srv(material_internal->GetAlbedo());
+						create_srv(material_internal->GetMetallic());
+						create_srv(material_internal->GetNormal());
+						create_srv(material_internal->GetRoughness());
 					}
 
 					data.out_init = false;

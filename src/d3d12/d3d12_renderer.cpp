@@ -887,9 +887,7 @@ namespace wr
 				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT, frame_idx);
 				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed, frame_idx);
 			}
-
 		}
-
 	}
 
 	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
@@ -898,22 +896,15 @@ namespace wr
 
 		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
 
-		auto albedo_handle = material_internal->GetAlbedo();
-		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+		auto get_cpu_desc_handle = [material_internal](auto handle)
+		{
+			return static_cast<wr::d3d12::TextureResource*>(handle.m_pool->GetTexture(handle.m_id))->m_cpu_descriptor_handle;
+		};
 
-		auto normal_handle = material_internal->GetNormal();
-		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
-
-		auto roughness_handle = material_internal->GetRoughness();
-		auto* roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTexture(roughness_handle.m_id));
-
-		auto metallic_handle = material_internal->GetMetallic();
-		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
-
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_roughness = roughness_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_metallic = metallic_internal->m_cpu_descriptor_handle;
+		auto src_cpu_handle_albedo = get_cpu_desc_handle(material_internal->GetAlbedo());
+		auto src_cpu_handle_normal = get_cpu_desc_handle(material_internal->GetNormal());
+		auto src_cpu_handle_roughness = get_cpu_desc_handle(material_internal->GetRoughness());
+		auto src_cpu_handle_metalicness = get_cpu_desc_handle(material_internal->GetMetallic());
 
 		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
 		{
@@ -924,7 +915,7 @@ namespace wr
 			src_cpu_handle_albedo.m_native,
 			src_cpu_handle_normal.m_native,
 			src_cpu_handle_roughness.m_native,
-			src_cpu_handle_metallic.m_native
+			src_cpu_handle_metalicness.m_native
 		};
 
 		UINT sizes[] = { 4 };

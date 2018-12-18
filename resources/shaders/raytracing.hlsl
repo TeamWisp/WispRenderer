@@ -30,6 +30,9 @@ struct Material
 	float vertex_offset;
 	float albedo_id;
 	float normal_id;
+	float roughness_id;
+	float metalicness_id;
+	float2 padding;
 };
 
 RWTexture2D<float4> gOutput : register(u0);
@@ -58,8 +61,8 @@ cbuffer CameraProperties : register(b0)
 	float padding;
 
 	float dep_light_radius;
-	float metal;
-	float roughness;
+	float dep_metal;
+	float dep_roughness;
 	float intensity;
 };
 
@@ -176,7 +179,7 @@ float calc_attenuation(float r, float d) {
 	return 1.0f - smoothstep(r * 0, r, d);
 }
 
-float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, Light light)
+float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light)
 {
 	uint tid = /*light.tid & 3*/ 0;
 
@@ -202,7 +205,7 @@ float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, Light lig
 	return lighting;
 }
 
-float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal)
+float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
@@ -211,7 +214,7 @@ float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal)
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += ShadeLight(vpos, V, albedo, normal, lights[i]);
+		res += ShadeLight(vpos, V, albedo, normal, roughness, metal, lights[i]);
 	}
 
 	return res * albedo;
@@ -251,21 +254,32 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	// Calculate actual "fragment" attributes.
 	float3 frag_pos = HitAttribute(v0.pos, v1.pos, v2.pos, attr);
 	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
+	float3 tangent = normalize(HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr));
+	float3 bitangent = normalize(HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr));
 	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
 	float3 world_normal = normalize(mul(model_matrix, float4(normal, 1))).xyz;
 
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	const float3 normal_t = g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz;
+	const float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).xyz;
+	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
+	float3 normal_t = g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz * 2.0 - float3(1.0, 1.0, 1.0);
+
+	float3 N = mul(model_matrix, normal);
+	float3 T = mul(model_matrix, tangent);
+	float3 B = mul(model_matrix, bitangent);
+	float3x3 TBN = float3x3(tangent, bitangent, normal);
+
+	float3 fN = normalize(mul(normal_t, TBN));
+	fN = world_normal;
 
 	// Variables
-	//float4x4 vm = mul(view, float4(hit_pos, 1));
 	float3 V = normalize(payload.origin - hit_pos);
 
 	// Diffuse
-    float3 lighting = ShadePixel(hit_pos, V, albedo, world_normal);
+    float3 lighting = ShadePixel(hit_pos, V, albedo, fN, roughness, metal);
 
-	float4 reflection = TraceColorRay(hit_pos, ReflectRay(V, normalize(world_normal)), payload.depth + 1);
+	float4 reflection = TraceColorRay(hit_pos, ReflectRay(V, fN), payload.depth + 1);
 
 	float3 result;
 	if (payload.depth == MAX_RECURSION - 1)
@@ -279,5 +293,5 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	}
 
 	// Output
-	payload.color = float4(result.xyz, 1);
+	payload.color = float4(result, 1);
 }
