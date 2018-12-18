@@ -13,33 +13,36 @@ namespace wr::d3d12
 	namespace internal
 	{
 
-		const char* ShaderTypeToString(ShaderType type)
+		std::string ShaderTypeToString(ShaderType type)
 		{
+			std::string prefix = "unknown";
+
 			switch (type)
 			{
 			case ShaderType::VERTEX_SHADER:
-				return "vs_6_3";
+				prefix = "vs_";
 				break;
 			case ShaderType::PIXEL_SHADER:
-				return "ps_6_3";
+				prefix = "ps_";
 				break;
 			case ShaderType::DOMAIN_SHADER:
-				return "ds_6_3";
+				prefix = "ds_";
 				break;
 			case ShaderType::GEOMETRY_SHADER:
-				return "gs_6_3";
+				prefix = "gs_";
 				break;
 			case ShaderType::HULL_SHADER:
-				return "hs_6_3";
+				prefix = "hs_";
 				break;
 			case ShaderType::DIRECT_COMPUTE_SHADER:
-				return "cs_6_3";
+				prefix = "cs_";
 				break;
 			case ShaderType::LIBRARY_SHADER:
-				return "lib_6_3";
+				prefix = "lib_";
+				break;
 			}
 
-			return "UNKNOWN";
+			return prefix + std::string(d3d12::settings::default_shader_model);
 		}
 
 	} /* internal */
