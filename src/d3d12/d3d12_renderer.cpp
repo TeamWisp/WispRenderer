@@ -82,14 +82,6 @@ namespace wr
 			SetName(m_fences[i], (L"Fence " + std::to_wstring(i)));
 		}
 
-		// Temporary
-		// Create Constant Buffer Heap
-		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
-		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size =
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
-			+ cam_cbs_size;
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
@@ -111,8 +103,11 @@ namespace wr
 		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
 
 		// Raytracing cb pool
-		size_t rt_cam_align_size = SizeAlign(sizeof(temp::RayTracingCamera_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_raytracing_cb_pool = CreateConstantBufferPool((size_t)std::ceil(rt_cam_align_size / (1024 * 1024.f)));
+		m_raytracing_cb_pool = CreateConstantBufferPool(1);
+
+		// Material raytracing sb pool
+		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -124,9 +119,9 @@ namespace wr
 		// Execute Indirect code
 		if (d3d12::settings::use_exec_indirect)
 		{
-			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommand));
+			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_draw_commands, sizeof(temp::IndirectCommand), d3d12::settings::num_back_buffers);
 			SetName(m_indirect_cmd_buffer, L"Default indirect command buffer");
-			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommandIndexed));
+			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_index_commands, sizeof(temp::IndirectCommandIndexed), d3d12::settings::num_back_buffers);
 			SetName(m_indirect_cmd_buffer_indexed, L"Default indirect command buffer indexed");
 
 			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs(4);
@@ -166,53 +161,16 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-
-		d3d12::Begin(m_direct_cmd_list, frame_idx);
+		
+		bool clear_frame_buffer = false;
 
 		if (frame_graph.GetUID() != m_buffer_frame_graph_uids[frame_idx])
 		{
 			m_buffer_frame_graph_uids[frame_idx] = frame_graph.GetUID();
-
-			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_descriptor(m_render_window.value()->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart());
-			
-			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
-
-			float clear_color[] = { 0.f,0.f,0.f,0.f };
-
-			m_direct_cmd_list->m_native->ResourceBarrier(1, 
-				&CD3DX12_RESOURCE_BARRIER::Transition(
-					m_render_window.value()->m_render_targets[frame_idx], 
-					D3D12_RESOURCE_STATE_PRESENT, 
-					D3D12_RESOURCE_STATE_RENDER_TARGET));
-			
-			m_direct_cmd_list->m_native->ClearRenderTargetView(
-				rtv_descriptor,
-				clear_color,
-				0,
-				nullptr
-			);
-
-
-			m_direct_cmd_list->m_native->ResourceBarrier(1,
-				&CD3DX12_RESOURCE_BARRIER::Transition(
-					m_render_window.value()->m_render_targets[frame_idx],
-					D3D12_RESOURCE_STATE_RENDER_TARGET,
-					D3D12_RESOURCE_STATE_PRESENT));
+			clear_frame_buffer = true;
 		}
 
-		for (int i = 0; i < m_structured_buffer_pools.size(); ++i) 
-		{
-			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
-		}
-
-		for (int i = 0; i < m_model_pools.size(); ++i) 
-		{
-			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
-		}
-
-		m_texture_pool->Stage(m_direct_cmd_list);
-
-		d3d12::End(m_direct_cmd_list);
+		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
 		//Reset cpu and gpu handles to the start of the rendering heap. 
 		//Heap will be filled in the node rendering function.
@@ -675,7 +633,7 @@ namespace wr
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size / (1024 * 1024.f)));
+		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
 
 		for (auto& node : nodes)
 		{
@@ -705,6 +663,54 @@ namespace wr
 			++it;
 		}
 
+	}
+
+	void D3D12RenderSystem::PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx)
+	{
+		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+		if (clear_frame_buffer)
+		{
+			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_descriptor(m_render_window.value()->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart());
+
+			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
+
+			float clear_color[] = { 0.f,0.f,0.f,0.f };
+
+			m_direct_cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(
+					m_render_window.value()->m_render_targets[frame_idx],
+					D3D12_RESOURCE_STATE_PRESENT,
+					D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+			m_direct_cmd_list->m_native->ClearRenderTargetView(
+				rtv_descriptor,
+				clear_color,
+				0,
+				nullptr
+			);
+
+
+			m_direct_cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(
+					m_render_window.value()->m_render_targets[frame_idx],
+					D3D12_RESOURCE_STATE_RENDER_TARGET,
+					D3D12_RESOURCE_STATE_PRESENT));
+		}
+
+		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
+		{
+			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
+		}
+
+		for (int i = 0; i < m_model_pools.size(); ++i)
+		{
+			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
+		}
+
+		m_texture_pool->Stage(m_direct_cmd_list);
+
+		d3d12::End(m_direct_cmd_list);
 	}
 
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
@@ -893,30 +899,31 @@ namespace wr
 						d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
 					}
 				}
-
-				//Reset instances
-				batch.num_instances = 0;
 			}
 
-			if (d3d12::settings::use_exec_indirect)
-			{
-				if (std::size_t size = commands.size(); size > 0)
-				{
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
-					d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size);
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
-					d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer);
-				}
-				if (std::size_t size = indexed_commands.size(); size > 0)
-				{
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
-					d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size);
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
-					d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed);
-				}
-
-			}
+			//Reset instances
+			batch.num_instances = 0;
 		}
+
+		if constexpr (d3d12::settings::use_exec_indirect)
+		{
+			if (std::size_t size = commands.size(); size > 0)
+			{
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST, frame_idx);
+				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size, frame_idx);
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT, frame_idx);
+				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer, frame_idx);
+			}
+			if (std::size_t size = indexed_commands.size(); size > 0)
+			{
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST, frame_idx);
+				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size, frame_idx);
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT, frame_idx);
+				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed, frame_idx);
+			}
+
+		}
+
 	}
 
 	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
@@ -925,14 +932,22 @@ namespace wr
 
 		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
 
-		auto& albedo_handle = material_internal->Albedo();
+		auto albedo_handle = material_internal->GetAlbedo();
 		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
 
-		auto& normal_handle = material_internal->Normal();
+		auto normal_handle = material_internal->GetNormal();
 		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+
+		auto roughness_handle = material_internal->GetRoughness();
+		auto* roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTexture(roughness_handle.m_id));
+
+		auto metallic_handle = material_internal->GetMetallic();
+		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_roughness = roughness_internal->m_cpu_descriptor_handle;
+		wr::d3d12::DescHeapCPUHandle src_cpu_handle_metallic = metallic_internal->m_cpu_descriptor_handle;
 
 		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
 		{
@@ -941,13 +956,15 @@ namespace wr
 		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
 		{
 			src_cpu_handle_albedo.m_native,
-			src_cpu_handle_normal.m_native
+			src_cpu_handle_normal.m_native,
+			src_cpu_handle_roughness.m_native,
+			src_cpu_handle_metallic.m_native
 		};
 
-		UINT sizes[] = { 2 };
+		UINT sizes[] = { 4 };
 
 		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-			2, pSrcDescriptorRangeStarts,
+			4, pSrcDescriptorRangeStarts,
 			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);

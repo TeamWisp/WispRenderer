@@ -1,7 +1,7 @@
 @Echo off
 
 REM ##### COLOR SUPPORT #####
-SETLOCAL EnableDelayedExpansion
+SETLOCAL ENABLEDELAYEDEXPANSION
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do     rem"') do (
   set "DEL=%%a"
 )
@@ -28,9 +28,9 @@ set workspace_path=""
 
 REM ##### MAIN #####
 
-call :colorEcho %title_color% "==================================="
-call :colorEcho %title_color% "==         Wisp Installer        =="
-call :colorEcho %title_color% "==================================="
+call :colorEcho 03 "==================================="
+call :colorEcho 03 "==         Wisp Installer        =="
+call :colorEcho 03 "==================================="
 
 rem ##### argument handeling ######
 if "%1" == "-remote" ( 
@@ -48,7 +48,7 @@ if "%1" == "-help" (
 )
 
 rem ##### pre install settings #####
-if "%is_remote%" == "1" ( 
+if "!is_remote!" == "1" ( 
   set workspace_path="%~df2"  
   set enable_unit_test=1
 ) else (
@@ -74,6 +74,7 @@ echo Windows SDK required: 10.0.17763.0 or newer
 
 rem ##### install #####
 call :downloadDeps
+call :lfsCopy
 call :genVS15Win64 
 call :genVS15Win32 
 
@@ -95,6 +96,21 @@ git submodule update --recursive --remote
 EXIT /B 0
 REM ##### DOWNLOAD DEPS #####
 
+REM ##### COPY LARGE FILE #####
+:lfsCopy
+robocopy "%cd%\deps\Wisp-LFS" "%cd%/resources" /s /v /xf .git
+:: for each folder in \deps\wisp-lfs
+set lfspath="%cd%\deps\Wisp-LFS"
+FOR /F "delims=" %%G IN ('dir !lfspath! /b /ad-h /t:c /o-n') DO ( 
+  set path_to_ignore=/resources/%%G
+  findstr /i /C:"!path_to_ignore!" .gitignore >nul
+  if !ERRORLEVEL! EQU 1 (
+    echo /resources/%%G >> ".gitignore"
+  )
+)
+EXIT /B 0
+REM ##### COPY LARGE FILE #####
+
 REM ##### GEN PROJECTS #####
 :genVS15Win64
 call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
@@ -106,11 +122,11 @@ if exist "./build_vs2017_win64/" (
 mkdir build_vs2017_win64
 cd build_vs2017_win64
 if "%ENABLE_UNIT_TEST%" == "1" (
-  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017 Win64" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017 Win64" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
+  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
 ) else (
-  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017 Win64" ..
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017 Win64" ..
+  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
 )
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..

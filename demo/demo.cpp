@@ -13,14 +13,16 @@
 #include "resources.hpp"
 #include "scene_cubes.hpp"
 
+#include "model_loader_assimp.hpp"
+
 #define SCENE viknell_scene
+
+constexpr bool do_raytracing = true;
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 
 std::shared_ptr<wr::TexturePool> texture_pool;
-
-int frame_graph = 1;
 
 void RenderEditor()
 {
@@ -49,21 +51,11 @@ int WispEntry()
 		{
 			engine::show_imgui = !engine::show_imgui;
 		}
-		if (action == WM_KEYUP && key == VK_F2)
-		{
-			if (frame_graph == 1)
-				frame_graph = 2;
-			else
-				frame_graph = 1;
-		}
-		if (action == WM_KEYUP && key == VK_F3)
-		{
-			frame_graph = 3;
-		}
-
 	});
 
-	render_system->Init(window.get());
+	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
+
+	render_system->Init(window.get());	
 
 	resources::CreateResources(render_system.get());
 
@@ -73,37 +65,27 @@ int WispEntry()
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
-	wr::FrameGraph frame_graph_1;
-	if (true)
+	wr::FrameGraph frame_graph;
+	if (do_raytracing)
 	{
-		frame_graph_1.AddTask(wr::GetDeferredMainTask());
-		frame_graph_1.AddTask(wr::GetDeferredCompositionTask());
-		frame_graph_1.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
+		frame_graph.AddTask(wr::GetDeferredMainTask());
+		frame_graph.AddTask(wr::GetDeferredCompositionTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
 	}
 	else
 	{
-		frame_graph_1.AddTask(wr::GetRaytracingTask());
-		frame_graph_1.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
+		frame_graph.AddTask(wr::GetRaytracingTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
 	}
-	frame_graph_1.AddTask(wr::GetImGuiTask(&RenderEditor));
-	frame_graph_1.Setup(*render_system);
-
-	wr::FrameGraph frame_graph_2;
-	frame_graph_2.AddTask(wr::GetImGuiTask(&RenderEditor));
-	frame_graph_2.Setup(*render_system);
-
-	wr::FrameGraph frame_graph_3;
+	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
+	frame_graph.Setup(*render_system);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
 		render_system->WaitForAllPreviousWork();
-		frame_graph_1.Resize(*render_system.get(), width, height);
-		frame_graph_2.Resize(*render_system.get(), width, height);
-		frame_graph_3.Resize(*render_system.get(), width, height);
+		frame_graph.Resize(*render_system.get(), width, height);
 		render_system->Resize(width, height);
 	});
-
-	bool frame_graph_3_created = false;
 
 	while (window->IsRunning())
 	{
@@ -111,31 +93,13 @@ int WispEntry()
 
 		SCENE::UpdateScene();
 
-		std::unique_ptr<wr::TextureHandle> texture;
-
-		switch (frame_graph) {
-		case 1:
-			texture = render_system->Render(scene_graph, frame_graph_1);
-			break;
-		case 2:
-			texture = render_system->Render(scene_graph, frame_graph_2);
-			break;
-		case 3:
-			if (!frame_graph_3_created)
-			{
-				frame_graph_3_created = true;
-				frame_graph_3.AddTask(wr::GetDeferredMainTask());
-				frame_graph_3.AddTask(wr::GetDeferredCompositionTask());
-				frame_graph_3.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
-				frame_graph_3.Setup(*render_system);
-			}
-			texture = render_system->Render(scene_graph, frame_graph_3);
-			break;
-		}
+		auto texture = render_system->Render(scene_graph, frame_graph);
 	}
 
+	delete assimp_model_loader;
+
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
-	frame_graph_1.Destroy();
+	frame_graph.Destroy();
 	render_system.reset();
 	return 0;
 }

@@ -107,15 +107,12 @@ namespace wr
 			{
 				ImGui_ImplDX12_InvalidateDeviceObjects();
 			}
-			else
+			else if (ImGui_ImplDX12_IsInitialized())
 			{
-				if (ImGui_ImplDX12_IsInitialized())
-				{
-					ImGui_ImplDX12_Shutdown();
-					ImGui_ImplWin32_Shutdown();
-					ImGui::DestroyContext();
-				}
-			}
+				ImGui_ImplDX12_Shutdown();
+				ImGui_ImplWin32_Shutdown();
+				ImGui::DestroyContext();
+			}			
 		}
 
 	} /* internal */
