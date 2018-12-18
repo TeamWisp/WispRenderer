@@ -85,6 +85,8 @@ namespace wr
 
 				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, 0, 1, &subresourceData);
 
+				free(texture->m_allocated_memory);
+
 				texture->m_is_staged = true;
 			}
 
