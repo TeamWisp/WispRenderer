@@ -12,6 +12,7 @@
 #include "scene_viknell.hpp"
 #include "resources.hpp"
 #include "scene_cubes.hpp"
+#include "scene_pbr.hpp"
 
 #include "model_loader_assimp.hpp"
 
