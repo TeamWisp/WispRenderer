@@ -32,6 +32,8 @@ namespace wr::imgui
 		static bool open_hardware_info = true;
 		static bool open_d3d12_settings = true;
 		static bool open_shader_registry = true;
+		static bool open_shader_compiler_popup = false;
+		static std::string shader_compiler_error = "No shader error";
 		static bool open_pipeline_registry = true;
 		static bool open_root_signature_registry = true;
 		static bool open_light_editor = true;

@@ -11,6 +11,7 @@ namespace wr
 		static RegistryHandle deferred_composition;
 		static RegistryHandle rt_test_global;
 		static RegistryHandle rt_test_local;
+		static RegistryHandle mip_mapping;
 		static RegistryHandle rt_shadow_global;
 		static RegistryHandle rt_shadow_local;
 	};
@@ -23,12 +24,14 @@ namespace wr
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_shadow_lib;
+		static RegistryHandle mip_mapping_cs;
 	};
 
 	struct pipelines
 	{
 		static RegistryHandle basic_deferred;
 		static RegistryHandle deferred_composition;
+		static RegistryHandle mip_mapping;
 	};
 
 	struct state_objects

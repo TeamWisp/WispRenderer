@@ -21,8 +21,8 @@ namespace resources
 		material_pool = render_system->CreateMaterialPool(1);
 
 		// Load Texture.
-		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false);
-		wr::TextureHandle rusty_metal_normal = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_normal.png", false);
+		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);
+		wr::TextureHandle rusty_metal_normal = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_normal.png", false, true);
 
 		// Create Material
 		rusty_metal_material = material_pool->Create();
@@ -33,8 +33,8 @@ namespace resources
 		rusty_metal_internal->SetNormal(rusty_metal_normal);
 
 		// Load Texture.
-		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false);
-		wr::TextureHandle rock_normal = texture_pool->Load("resources/materials/rock/rock_normal.png", false);
+		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
+		wr::TextureHandle rock_normal = texture_pool->Load("resources/materials/rock/rock_normal.png", false, true);
 
 		// Create Material
 		rock_material = material_pool->Create();
@@ -121,14 +121,16 @@ namespace resources
 			}
 		}
 
+
 		{
 			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx", wr::ModelType::FBX);
-		
+
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
 			}
 		}
+
 	}
 
 }

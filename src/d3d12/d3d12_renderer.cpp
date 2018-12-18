@@ -82,14 +82,6 @@ namespace wr
 			SetName(m_fences[i], (L"Fence " + std::to_wstring(i)));
 		}
 
-		// Temporary
-		// Create Constant Buffer Heap
-		constexpr auto model_cbs_size = SizeAlign(sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch, 256) * d3d12::settings::num_back_buffers;
-		constexpr auto cam_cbs_size = SizeAlign(sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		constexpr auto sbo_size =
-			(model_cbs_size * 2) /* TODO: Make this more dynamic; right now it only supports 2 mesh nodes */
-			+ cam_cbs_size;
-
 		// Create viewport
 		m_viewport = d3d12::CreateViewport(window.has_value() ? window.value()->GetWidth() : 400, window.has_value() ? window.value()->GetHeight() : 400);
 
@@ -111,8 +103,11 @@ namespace wr
 		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
 
 		// Raytracing cb pool
-		size_t rt_cam_align_size = SizeAlign(sizeof(temp::RayTracingCamera_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_raytracing_cb_pool = CreateConstantBufferPool((size_t)std::ceil(rt_cam_align_size / (1024 * 1024.f)));
+		m_raytracing_cb_pool = CreateConstantBufferPool(1);
+
+		// Material raytracing sb pool
+		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -474,10 +469,18 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto n_shader = d3d12::LoadDXCShader(desc.second.type, desc.second.path, desc.second.entry);
-			shader->m_native = n_shader;
+			auto shader_error = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
 
-			registry.m_objects.insert({ desc.first, shader });
+			if (std::holds_alternative<d3d12::Shader*>(shader_error))
+			{
+				auto n_shader = std::get<d3d12::Shader*>(shader_error);
+				shader->m_native = n_shader;
+				registry.m_objects.insert({ desc.first, shader });
+			}
+			else
+			{
+				LOGC("Failed to load shader. compiler error: {}", std::get<std::string>(shader_error));
+			}
 		}
 	}
 
@@ -503,17 +506,20 @@ namespace wr
 			if (desc.second.m_vertex_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
-				d3d12::SetVertexShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				d3d12::SetVertexShader(n_pipeline, shader);
 			}
 			if (desc.second.m_pixel_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
-				d3d12::SetFragmentShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				d3d12::SetFragmentShader(n_pipeline, shader);
 			}
 			if (desc.second.m_compute_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
-				d3d12::SetComputeShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				d3d12::SetComputeShader(n_pipeline, shader);
 			}
 			{
 				auto obj = RootSignatureRegistry::Get().Find(desc.second.m_root_signature_handle);
@@ -539,77 +545,32 @@ namespace wr
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
 
-			d3d12::RootSignature* global_root_signature = nullptr;
+			auto library = static_cast<D3D12Shader*>(ShaderRegistry::Get().Find(desc.library_desc.shader_handle));
 
-			// Shader Library
+			d3d12::desc::StateObjectDesc n_desc;
+			n_desc.m_library = library->m_native;
+			n_desc.m_library_exports = desc.library_desc.exports;
+			n_desc.max_attributes_size = desc.max_attributes_size;
+			n_desc.max_payload_size = desc.max_payload_size;
+			n_desc.max_recursion_depth = desc.max_recursion_depth;
+
+			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
 			{
-				auto& shader_registry = ShaderRegistry::Get();
-				auto shader_lib = static_cast<D3D12Shader*>(shader_registry.Find(desc.library_desc.shader_handle));
-
-				D3D12_SHADER_BYTECODE bytecode = {};
-				bytecode.BytecodeLength = shader_lib->m_native->m_native->GetBufferSize();
-				bytecode.pShaderBytecode = shader_lib->m_native->m_native->GetBufferPointer();
-				auto lib = desc.desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-				for (auto exp : desc.library_desc.exports)
-				{
-					lib->DefineExport(exp.c_str());
-				}
-				lib->SetDXILLibrary(&bytecode);
+				auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+				n_desc.global_root_signature = library->m_native;
 			}
 
-			// Shader Config
-			{
-				auto shader_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
-				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
-			}
-
-			// Hitgroup
-			{
-				auto hitGroup = desc.desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-				hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
-				hitGroup->SetHitGroupExport(L"MyHitGroup");
-				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
-			}
-
-			// Global Root Signature
-			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
-			{
-				auto& rs_registry = RootSignatureRegistry::Get();
-				global_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle))->m_native;
-
-				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-				global_rs->SetRootSignature(global_root_signature->m_native);
-			}
-
-			// Local Root Signatures
 			if (desc.local_root_signatures.has_value())
 			{
-				for (auto& rs_handle : desc.local_root_signatures.value())
+				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
+				for (auto rt_handle : desc.local_root_signatures.value())
 				{
-					auto& rs_registry = RootSignatureRegistry::Get();
-					auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
-
-					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
-					local_rs->SetRootSignature(n_rs->m_native->m_native);
-					// Define explicit shader association for the local root signature.
-					{
-						//auto rootSignatureAssociation = desc.desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
-						//rootSignatureAssociation->SetSubobjectToAssociate(*local_rs);
-						//rootSignatureAssociation->AddExport(L"MyHitGroup");
-					}
+					auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+					n_desc.local_root_signatures.value().push_back(library->m_native);
 				}
 			}
 
-			// Pipeline Config
-			{
-				auto pipeline_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
-				pipeline_config->Config(desc.max_recursion_depth);
-			}
-
-			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
-			d3d12::SetGlobalRootSignature(obj->m_native, global_root_signature);
-
-			desc.desc.DeleteHelpers();
+			obj->m_native = d3d12::CreateStateObject(m_device, n_desc);
 
 			registry.m_objects.insert({ it.first, obj });
 		}
@@ -642,7 +603,7 @@ namespace wr
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size / (1024 * 1024.f)));
+		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
 
 		for (auto& node : nodes)
 		{
@@ -892,10 +853,10 @@ namespace wr
 
 		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
 
-		auto& albedo_handle = material_internal->Albedo();
+		auto albedo_handle = material_internal->GetAlbedo();
 		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
 
-		auto& normal_handle = material_internal->Normal();
+		auto normal_handle = material_internal->GetNormal();
 		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
 
 		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
