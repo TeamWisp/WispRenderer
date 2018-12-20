@@ -19,10 +19,11 @@ namespace pbr_scene
 		camera->SetPosition({ 0, 0, -1 });
 
 		// Geometry
-		auto test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::ball_model);
+		auto test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		test_model->SetPosition({ 0,1,0.75 });
 		test_model->SetRotation({ 0,0,180_deg });
-		test_model->SetScale({ 0.01f,0.01f,0.01f });
+		//test_model->SetScale({ 1.f,1.f, 1.f });
+		test_model->SetScale({ 0.01f,0.01f,0.01f});
 
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 10, 10, 10 });

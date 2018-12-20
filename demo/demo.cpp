@@ -16,7 +16,7 @@
 
 #include "model_loader_assimp.hpp"
 
-#define SCENE viknell_scene
+#define SCENE pbr_scene
 
 constexpr bool do_raytracing = true;
 
