@@ -57,5 +57,6 @@ namespace viknell_scene
 
 	void UpdateScene()
 	{
+		t += 10.f * ImGui::GetIO().DeltaTime;
 	}
 } /* cube_scene */

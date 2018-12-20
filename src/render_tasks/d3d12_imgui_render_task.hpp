@@ -119,16 +119,13 @@ namespace wr
 	
 
 	//! Used to create a new deferred task.
-	[[nodiscard]] inline std::unique_ptr<ImGuiRenderTask_t> GetImGuiTask(
-		std::function<void()> imgui_func,
-		std::optional<unsigned int> render_target_width,
-		std::optional<unsigned int> render_target_height)
+	[[nodiscard]] inline std::unique_ptr<ImGuiRenderTask_t> GetImGuiTask(std::function<void()> imgui_func)
 	{
 		auto ptr = std::make_unique<ImGuiRenderTask_t>(nullptr, "ImGui Render Task", RenderTaskType::DIRECT, false,
 			RenderTargetProperties {
 				true,
-				render_target_width,
-				render_target_height,
+				std::nullopt,
+				std::nullopt,
 				std::nullopt,
 				std::nullopt,
 				false,

@@ -3,6 +3,7 @@
 #include "wisp.hpp"
 #include "render_tasks/d3d12_test_render_task.hpp"
 #include "render_tasks/d3d12_deferred_main.hpp"
+#include "render_tasks/d3d12_imgui_render_task.hpp"
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
@@ -27,6 +28,11 @@ std::shared_ptr<wr::TexturePool> texture_pool;
 constexpr unsigned int RENDER_TARGET_WIDTH = 1280;
 constexpr unsigned int RENDER_TARGET_HEIGHT = 720;
 
+void RenderEditor()
+{
+	engine::RenderEngine(render_system.get(), scene_graph.get());
+}
+
 int WispEntry()
 {
 	// ImGui Logging
@@ -36,6 +42,7 @@ int WispEntry()
 	};
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
+	auto window = std::make_unique<wr::Window>(GetModuleHandle(nullptr), "D3D12 Test App", 1280, 720);
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
 
@@ -52,19 +59,29 @@ int WispEntry()
 	wr::FrameGraph frame_graph;
 	if (do_raytracing)
 	{
-		frame_graph.AddTask(wr::GetDeferredMainTask(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
-		frame_graph.AddTask(wr::GetDeferredCompositionTask(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
-		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
+		frame_graph.AddTask(wr::GetDeferredMainTask(std::nullopt, std::nullopt));
+		frame_graph.AddTask(wr::GetDeferredCompositionTask(std::nullopt, std::nullopt));
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
 	}
 	else
 	{
-		frame_graph.AddTask(wr::GetRaytracingTask(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
-		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>(RENDER_TARGET_WIDTH, RENDER_TARGET_HEIGHT));
+		frame_graph.AddTask(wr::GetRaytracingTask(std::nullopt, std::nullopt));
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
 	}
+	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 
-	while (true)
+	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
+		render_system->WaitForAllPreviousWork();
+		frame_graph.Resize(*render_system.get(), width, height);
+		render_system->Resize(width, height);
+	});
+
+	while (window->IsRunning())
+	{
+		window->PollEvents();
+
 		SCENE::UpdateScene();
 
 		auto texture = render_system->Render(scene_graph, frame_graph);
