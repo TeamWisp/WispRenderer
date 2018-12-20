@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
