@@ -331,12 +331,12 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
 	float3 N = mul(model_matrix, float4(normal, 1));
-	//float3 T = mul(model_matrix, float4(tangent, 1));
-	//float3 B = mul(model_matrix, float4(bitangent, 1));
-	//float3x3 TBN = float3x3(T, B, N);
+	float3 T = mul(model_matrix, float4(tangent, 1));
+	float3 B = mul(model_matrix, float4(bitangent, 1));
+	float3x3 TBN = float3x3(T, B, N);
 
-	//float3 fN = normalize(mul(normal_t, TBN));
-	float3 fN = N;
+	float3 fN = normalize(mul(normal_t, TBN));
+	//float3 fN = N;
 
 	// Variables
 	float3 V = normalize(payload.origin - hit_pos);
