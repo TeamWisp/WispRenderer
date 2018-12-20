@@ -151,7 +151,7 @@ void RaygenEntry()
 	Ray ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0, 0));
 	float4 result = TraceColorRay(ray.origin, ray.direction, 0);
 #endif
-	gOutput[DispatchRaysIndex().xy] = result;
+	gOutput[DispatchRaysIndex().xy] = result * float4(1.0, 0.0, 0.0, 1.0);
 }
 
 [shader("miss")]

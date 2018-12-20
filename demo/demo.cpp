@@ -66,7 +66,7 @@ int WispEntry()
 	render_system->InitSceneGraph(*scene_graph.get());
 
 	wr::FrameGraph frame_graph;
-	if (do_raytracing)
+	if (!do_raytracing)
 	{
 		frame_graph.AddTask(wr::GetDeferredMainTask());
 		frame_graph.AddTask(wr::GetDeferredCompositionTask());
