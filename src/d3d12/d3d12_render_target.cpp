@@ -202,7 +202,7 @@ namespace wr::d3d12
 		Offset(handle, 1, increment_size);
 	}
 
-	void CreateSRVFromSpecificUAV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format)
+	void CreateUAVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format)
 	{
 		decltype(Device::m_native) n_device;
 		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));

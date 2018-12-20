@@ -132,7 +132,7 @@ namespace wr
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
 			{
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx);
-				d3d12::CreateSRVFromSpecificUAV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 
 			}
 			
@@ -295,10 +295,6 @@ namespace wr
 
 				auto frame_idx = n_render_system.GetFrameIdx();
 
-				auto n_render_target = static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>());
-				auto cpu_handle2 = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-				d3d12::CreateSRVFromSpecificUAV(n_render_target, cpu_handle2, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-
 				// Get light buffer
 				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
 				{
@@ -352,7 +348,7 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);
 
 #ifdef _DEBUG
-				//CreateShaderTables(device, data, frame_idx);
+				CreateShaderTables(device, data, frame_idx);
 #endif
 
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1);
