@@ -68,8 +68,6 @@ namespace wr
 			d3d12::BindPipeline(cmd_list, data.out_pipeline);
 
 			d3d12::BindViewport(cmd_list, viewport);
-			//d3d12::BindComputeShaderResourceView(cmd_list, data.out_source_rt->m_render_targets[0], 0);
-			//d3d12::BindComputeUnorederedAccessView(cmd_list,n_render_target->m_render_targets[0], 1);
 
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx % versions);
 			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx % versions);
@@ -88,11 +86,6 @@ namespace wr
 			cmd_list->m_native->CopyResource(n_render_target->m_render_targets[1], data.out_source_rt->m_render_targets[frame_idx % versions]);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[1], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	//		d3d12::Dispatch(cmd_list,
-		//		static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
-			//	static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Height / 16.f)),
-				//1);
 		}
 
 
