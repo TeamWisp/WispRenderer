@@ -113,18 +113,22 @@ namespace wr
 			heap_desc.m_num_descriptors = 100; // FIXME: size
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_shader_visible = true;
-			heap_desc.m_versions = 1;
+			heap_desc.m_versions = d3d12::settings::num_back_buffers;
 			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
 			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
 
-			auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-			d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
+			for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
+			{
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
+				d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
-
-			d3d12::Offset(cpu_handle, 30, data.out_rt_heap->m_increment_size);
-			auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
-			auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(deferred_main_data.m_render_target);
-			d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
+				cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
+				d3d12::Offset(cpu_handle, 30, data.out_rt_heap->m_increment_size);
+				auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
+				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(deferred_main_data.m_render_target);
+				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
+				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
+			}
 
 
 			// Camera constant buffer
@@ -313,6 +317,10 @@ namespace wr
 				cam_data.m_view = camera->m_view;
 				cam_data.m_camera_position = camera->m_position;
 				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
+
+				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view );
+				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
+
 				cam_data.roughness = n_render_system.temp_rough;
 				cam_data.metal = n_render_system.temp_metal;
 				cam_data.light_radius = n_render_system.light_radius;

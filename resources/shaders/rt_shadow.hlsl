@@ -40,7 +40,9 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 
 Texture2D g_textures[20] : register(t5);
-Texture2D gbuffer_depth : register(t31);
+Texture2D gbuffer_albedo : register(t31);
+Texture2D gbuffer_normal : register(t32);
+Texture2D gbuffer_depth : register(t33);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -54,6 +56,8 @@ struct HitInfo
 cbuffer CameraProperties : register(b0)
 {
 	float4x4 view;
+	float4x4 inv_view;
+	float4x4 inv_projection;
 	float4x4 inv_projection_view;
 	float3 camera_position;
 	float padding;
@@ -132,18 +136,33 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth)
 	return payload.color;
 }
 
+float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv, float4x4 view_proj_inv)
+{
+	const float4 ndc = float4(uv * 2.0 -1.0, depth, 1.0);
+	float4 vpos = mul(proj_inv, ndc);
+	vpos /= vpos.w;
+	float4 wpos = mul(view_inv, float4(vpos.xyz, 1.0));
+	return wpos.xyz;
+	//return (vpos / vpos.w).xyz;
+}
+
 [shader("raygeneration")]
 void RaygenEntry()
 {
+	float2 screenCo = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy); // uv [0, 1]
+	//screenCo.y = 1.0 - screenCo.y;
 
-	Ray ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0, 0));
-	float4 result = TraceColorRay(ray.origin, ray.direction, 0);
+	int2 uv = DispatchRaysIndex().xy;
+	uv.y = DispatchRaysDimensions().y - uv.y;
 
-	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy);
-	float3 depth = gbuffer_depth[DispatchRaysIndex().xy].xyz;
+	float3 abledo = gbuffer_albedo[DispatchRaysIndex().xy].xyz;
+	float3 norm = gbuffer_normal[DispatchRaysIndex().xy].xyz;
+	float depth = gbuffer_depth[uv.xy].x;
+
+	float3 wpos = unpack_position(screenCo, depth, inv_projection, inv_view, inv_projection_view);// *float3(depth, depth, depth);
 
 	//gOutput[DispatchRaysIndex().xy] = float4(result.xy, depth.x, 1.0);
-	gOutput[DispatchRaysIndex().xy] = float4(depth, 1.0);
+	gOutput[DispatchRaysIndex().xy] = float4(wpos.xyz, 1.0);
 }
 
 [shader("miss")]
