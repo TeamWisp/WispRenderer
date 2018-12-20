@@ -22,6 +22,40 @@ namespace wr
 		DestroyMesh(mesh);
 	}
 
+	void Model::CalculateAABB(float(&pos)[3])
+	{
+		if (pos[0] < m_box[0].m128_f32[0])
+		{
+			m_box[0] = { pos[0], pos[1], pos[2], 1 };
+		}
+
+		if (pos[0] > m_box[1].m128_f32[0])
+		{
+			m_box[1] = { pos[0], pos[1], pos[2], 1 };
+		}
+
+		if (pos[1] < m_box[2].m128_f32[1])
+		{
+			m_box[2] = { pos[0], pos[1], pos[2], 1 };
+		}
+
+		if (pos[1] > m_box[3].m128_f32[1])
+		{
+			m_box[3] = { pos[0], pos[1], pos[2], 1 };
+		}
+
+		if (pos[2] < m_box[4].m128_f32[2])
+		{
+			m_box[4] = { pos[0], pos[1], pos[2], 1 };
+		}
+
+		if (pos[2] > m_box[5].m128_f32[2])
+		{
+			m_box[5] = { pos[0], pos[1], pos[2], 1 };
+		}
+	}
+
+
 	template<>
 	int ModelPool::LoadNodeMeshes<Vertex, std::uint32_t>(ModelData* data, Model* model, MaterialHandle* default_material)
 	{
@@ -44,6 +78,8 @@ namespace wr
 				vertex.m_pos[0] = mesh->m_positions[j].x;
 				vertex.m_pos[1] = mesh->m_positions[j].y;
 				vertex.m_pos[2] = mesh->m_positions[j].z;
+
+				model->CalculateAABB(vertex.m_pos);
 
 				vertex.m_normal[0] = mesh->m_normals[j].x;
 				vertex.m_normal[1] = mesh->m_normals[j].y;
@@ -119,6 +155,8 @@ namespace wr
 				vertex.m_pos[1] = mesh->m_positions[j].y;
 				vertex.m_pos[2] = mesh->m_positions[j].z;
 
+				model->CalculateAABB(vertex.m_pos);
+
 				vertex.m_normal[0] = mesh->m_normals[j].x;
 				vertex.m_normal[1] = mesh->m_normals[j].y;
 				vertex.m_normal[2] = mesh->m_normals[j].z;
@@ -183,6 +221,8 @@ namespace wr
 				vertex.m_pos[0] = mesh->m_positions[j].x;
 				vertex.m_pos[1] = mesh->m_positions[j].y;
 				vertex.m_pos[2] = mesh->m_positions[j].z;
+
+				model->CalculateAABB(vertex.m_pos);
 
 				vertex.m_normal[0] = mesh->m_normals[j].x;
 				vertex.m_normal[1] = mesh->m_normals[j].y;
@@ -256,6 +296,8 @@ namespace wr
 				vertex.m_pos[0] = mesh->m_positions[j].x;
 				vertex.m_pos[1] = mesh->m_positions[j].y;
 				vertex.m_pos[2] = mesh->m_positions[j].z;
+
+				model->CalculateAABB(vertex.m_pos);
 
 				vertex.m_normal[0] = mesh->m_normals[j].x;
 				vertex.m_normal[1] = mesh->m_normals[j].y;
