@@ -130,9 +130,8 @@ namespace wr
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
 			}
 
-
 			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
+			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTShadowCamera_CBData)));
 
 			// Material Structured Buffer
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
@@ -313,19 +312,10 @@ namespace wr
 
 				// Update camera cb
 				auto camera = scene_graph.GetActiveCamera();
-				temp::RayTracingCamera_CBData cam_data;
-				cam_data.m_view = camera->m_view;
-				cam_data.m_camera_position = camera->m_position;
-				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
-
+				temp::RTShadowCamera_CBData cam_data;
 				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view );
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
-
-				cam_data.roughness = n_render_system.temp_rough;
-				cam_data.metal = n_render_system.temp_metal;
-				cam_data.light_radius = n_render_system.light_radius;
-				cam_data.intensity = n_render_system.temp_intensity;
-				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
+				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTShadowCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 

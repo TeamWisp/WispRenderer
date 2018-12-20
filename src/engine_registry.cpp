@@ -262,7 +262,7 @@ namespace wr
 		{
 			rt_shadow_so_desc.first,     // Description
 			rt_shadow_so_desc.second,    // Library
-			(sizeof(float) * 7 + sizeof(unsigned int)), // Max payload size
+			(sizeof(float) * 1 + sizeof(unsigned int)), // Max payload size
 			(sizeof(float) * 2), // Max attributes size
 			4,				   // Max recursion depth
 			root_signatures::rt_shadow_global,      // Global root signature
