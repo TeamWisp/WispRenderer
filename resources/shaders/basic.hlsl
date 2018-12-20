@@ -57,7 +57,7 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float3 tangent = normalize(mul(vm, float4(input.tangent, 0))).xyz;
 	float3 bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
 
-	output.tbn = float3x3(tangent, bitangent, output.normal);
+	output.tbn = transpose(float3x3(tangent, bitangent, output.normal));
 	output.mv = vm;
 
 	return output;

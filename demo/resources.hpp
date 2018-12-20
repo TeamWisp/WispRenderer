@@ -17,6 +17,7 @@ namespace resources
 	static wr::MaterialHandle rock_material;
 	static wr::MaterialHandle harsh_brick_material;
 	static wr::MaterialHandle ball_material;
+	static wr::MaterialHandle brick_material;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
@@ -86,6 +87,22 @@ namespace resources
 		ball_material_internal->SetNormal(ball_material_normal);
 		ball_material_internal->SetRoughness(ball_material_roughness);
 		ball_material_internal->SetMetallic(ball_material_metallic);
+
+		//Load brick texture
+		wr::TextureHandle brick_material_albedo =		texture_pool->Load("resources/materials/brick/redbricks2b-albedo.png", false, true);
+		wr::TextureHandle brick_material_normal =		texture_pool->Load("resources/materials/brick/redbricks2b-normal.png", false, true);
+		wr::TextureHandle brick_material_roughness =	texture_pool->Load("resources/materials/brick/redbricks2b-rough.png", false, true);
+		wr::TextureHandle brick_material_metallic =		texture_pool->Load("resources/materials/brick/redbricks2b-metalness.png", false, true);
+
+		//Create Material
+		brick_material = material_pool->Create();
+
+		wr::Material* brick_material_internal = material_pool->GetMaterial(brick_material.m_id);
+
+		brick_material_internal->SetAlbedo(brick_material_albedo);
+		brick_material_internal->SetNormal(brick_material_normal);
+		brick_material_internal->SetRoughness(brick_material_roughness);
+		brick_material_internal->SetMetallic(brick_material_metallic);
 		
 		model_pool = render_system->CreateModelPool(16, 16);
 
@@ -170,7 +187,7 @@ namespace resources
 		
 			for (auto& m : test_model->m_meshes)
 			{
-				m.second = &rusty_metal_material;
+				m.second = &brick_material;
 			}
 		}
 		{
