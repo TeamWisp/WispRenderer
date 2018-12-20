@@ -31,7 +31,7 @@ namespace wr::d3d12::settings
 	static const constexpr bool enable_debug_factory = true;
 	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;
 	static const constexpr char* default_shader_model = "6_3";
-	static std::array<LPCWSTR, 2> debug_shader_args = { L"/Zi", L"/Od" };
+	static std::array<LPCWSTR, 2> debug_shader_args = { L"/Zi", L"/O3" };
 	static std::array<LPCWSTR, 1> release_shader_args = { L"/O3" };
 	static const constexpr std::uint8_t num_back_buffers = 3;
 	static const constexpr std::uint32_t num_instances_per_batch = 768U;		//48 KiB for ObjectData[]

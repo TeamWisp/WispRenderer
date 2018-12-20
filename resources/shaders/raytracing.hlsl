@@ -1,6 +1,6 @@
 #include "pbr_util.hlsl"
 
-#define MAX_RECURSION 2
+#define MAX_RECURSION 3
 
 struct Light 
 {
@@ -48,7 +48,8 @@ SamplerState s0 : register(s0);
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct HitInfo
 {
-	float4 color;
+	float3 color;
+	unsigned int seed;
 	float3 origin;
 	unsigned int depth;
 };
@@ -62,7 +63,7 @@ cbuffer CameraProperties : register(b0)
 
 	float dep_light_radius;
 	float dep_metal;
-	float dep_roughness;
+	float frame_idx;
 	float intensity;
 };
 
@@ -75,6 +76,51 @@ struct Ray
 static const uint light_type_point = 0;
 static const uint light_type_directional = 1;
 static const uint light_type_spot = 2;
+
+uint initRand(uint val0, uint val1, uint backoff = 16)
+{
+	uint v0 = val0, v1 = val1, s0 = 0;
+
+	[unroll]
+	for (uint n = 0; n < backoff; n++)
+	{
+		s0 += 0x9e3779b9;
+		v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
+		v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
+	}
+	return v0;
+}
+
+float nextRand(inout uint s)
+{
+	s = (1664525u * s + 1013904223u);
+	return float(s & 0x00FFFFFF) / float(0x01000000);
+}
+
+float3 getPerpendicularVector(float3 u)
+{
+	float3 a = abs(u);
+	uint xm = ((a.x - a.y)<0 && (a.x - a.z)<0) ? 1 : 0;
+	uint ym = (a.y - a.z)<0 ? (1 ^ xm) : 0;
+	uint zm = 1 ^ (xm | ym);
+	return cross(u, float3(xm, ym, zm));
+}
+
+// Get a cosine-weighted random vector centered around a specified normal direction.
+float3 getCosHemisphereSample(inout uint randSeed, float3 hitNorm)
+{
+	// Get 2 random numbers to select our sample with
+	float2 randVal = float2(nextRand(randSeed), nextRand(randSeed));
+
+	// Cosine weighted hemisphere sample from RNG
+	float3 bitangent = getPerpendicularVector(hitNorm);
+	float3 tangent = cross(bitangent, hitNorm);
+	float r = sqrt(randVal.x);
+	float phi = 2.0f * 3.14159265f * randVal.y;
+
+	// Get our cosine-weighted hemisphere lobe sample direction
+	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(max(0.0, 1.0f - randVal.x));
+}
 
 uint3 Load3x32BitIndices(uint offsetBytes)
 {
@@ -104,7 +150,7 @@ float3 HitWorldPosition()
     return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth)
+float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
 {
 	if (depth >= MAX_RECURSION)
 	{
@@ -118,7 +164,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth)
 	ray.TMin = 0.00001;
 	ray.TMax = 10000.0;
 
-	HitInfo payload = { float4(1, 1, 1, 1), origin, depth };
+	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
 
 	// Trace the ray
 	TraceRay(
@@ -131,12 +177,14 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth)
 		ray,
 		payload);
 
-	return payload.color;
+	return float4(payload.color, 1);
 }
 
 [shader("raygeneration")]
 void RaygenEntry()
 {
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
 #define FOUR_X_AA
 #ifdef FOUR_X_AA
 	Ray a = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.5, 0));
@@ -144,17 +192,26 @@ void RaygenEntry()
 	Ray c = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, 0.5));
 	Ray d = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, -0.5));
 
-	float4 result_a = TraceColorRay(a.origin, a.direction, 0);
-	float4 result_b = TraceColorRay(b.origin, b.direction, 0);
-	float4 result_c = TraceColorRay(c.origin, c.direction, 0);
-	float4 result_d = TraceColorRay(d.origin, d.direction, 0);
+	float3 result_a = TraceColorRay(a.origin, a.direction, 0, rand_seed);
+	float3 result_b = TraceColorRay(b.origin, b.direction, 0, rand_seed);
+	float3 result_c = TraceColorRay(c.origin, c.direction, 0, rand_seed);
+	float3 result_d = TraceColorRay(d.origin, d.direction, 0, rand_seed);
 
-	float4 result = (result_a + result_b + result_c + result_d) / 4;
+	float3 result = (result_a + result_b + result_c + result_d) / 4;
 #else
 	Ray ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0, 0));
-	float4 result = TraceColorRay(ray.origin, ray.direction, 0);
+	float3 result = TraceColorRay(ray.origin, ray.direction, 0, rand_seed);
 #endif
-	gOutput[DispatchRaysIndex().xy] = result;
+	const float3 albedo = g_textures[12][DispatchRaysIndex().xy].xyz;
+
+	if (frame_idx > 0)
+	{
+		gOutput[DispatchRaysIndex().xy] += float4(result, 1);
+	}
+	else
+	{
+		gOutput[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+	}
 }
 
 [shader("miss")]
@@ -162,7 +219,7 @@ void MissEntry(inout HitInfo payload)
 {
 	float3 dir = normalize(WorldRayDirection());
 	float t = 0.5*dir.y + 0.5f;
-	payload.color = lerp(float4(1.0, 1.0, 1.0, 1), float4(0.5, 0.7, 1.0, 1), t);
+	payload.color = lerp(float3(1.0, 1.0, 1.0), float3(0.5, 0.7, 1.0), t);
 }
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
@@ -260,26 +317,53 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 bitangent = cross(normal, tangent);
 	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
-	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	const float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).xyz;
-	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
+	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
+	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).xyz;
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
+
+	if (roughness == 0 && metal == 0 && albedo.x == 0 && albedo.y == 0 && albedo.z == 0)
+	{
+		albedo = float3(2, 2, 2);
+		payload.color = albedo;
+		return;
+	}
+
 	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
 	float3 N = mul(model_matrix, float4(normal, 1));
-	float3 T = mul(model_matrix, float4(tangent, 1));
-	float3 B = mul(model_matrix, float4(bitangent, 1));
-	float3x3 TBN = float3x3(T, B, N);
+	//float3 T = mul(model_matrix, float4(tangent, 1));
+	//float3 B = mul(model_matrix, float4(bitangent, 1));
+	//float3x3 TBN = float3x3(T, B, N);
 
-	float3 fN = normalize(mul(normal_t, TBN));
+	//float3 fN = normalize(mul(normal_t, TBN));
+	float3 fN = N;
 
 	// Variables
 	float3 V = normalize(payload.origin - hit_pos);
 
+	// Indirect lighting
+	float3 irradiance = float3(0, 0, 0);
+
+	int num_rays = 1;
+	for (int i = 0; i < num_rays; i++)
+	{
+		float3 rand_dir   = getCosHemisphereSample(payload.seed, fN);
+		//uint rand_seed = initRand(DispatchRaysIndex().x + i + DispatchRaysIndex().y * DispatchRaysDimensions().x, i);
+		irradiance += TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed);
+
+		//float3 rhd = rand_dir.xyz;
+		//float cos_theta = (dot(rhd, Fn));
+		//irradiance += cos_theta * (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, rand_seed) * (albedo / PI)) / pdf;
+	}
+
+	irradiance /= num_rays;
+
+
 	// Diffuse
-    float3 lighting = ShadePixel(hit_pos, V, albedo, fN, roughness, metal);
+	float3 lighting = albedo * irradiance;
 
-	float4 reflection = TraceColorRay(hit_pos, ReflectRay(V, fN), payload.depth + 1);
-
+	float4 reflection = TraceColorRay(hit_pos, ReflectRay(V, fN), payload.depth + 1, payload.seed);
+	
 	float3 result;
 	if (payload.depth == MAX_RECURSION - 1)
 	{
@@ -292,5 +376,5 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	}
 
 	// Output
-	payload.color = float4(result, 1);
+	payload.color = result;
 }

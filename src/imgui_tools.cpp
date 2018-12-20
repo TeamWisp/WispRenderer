@@ -104,6 +104,7 @@ namespace wr::imgui::window
 
 		if (open_hardware_info)
 		{
+			if (ImGui::Button("Clear")) render_system.clear_path = true;
 			ImGui::DragFloat("Metal", &render_system.temp_metal);
 			ImGui::DragFloat("Rough", &render_system.temp_rough);
 			ImGui::DragFloat("Radius", &render_system.light_radius);

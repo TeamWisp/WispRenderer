@@ -171,6 +171,7 @@ namespace wr
     
 		float temp_metal = 0.5f;
 		float temp_rough = 0.45f;
+		bool clear_path = false;
 		float light_radius = 50;
 		float temp_intensity = 1;
 	private:

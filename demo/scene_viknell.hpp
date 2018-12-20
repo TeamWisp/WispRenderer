@@ -22,6 +22,7 @@ namespace viknell_scene
 		// Geometry
 		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto roof_light = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::light_model);
 		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
@@ -30,12 +31,15 @@ namespace viknell_scene
 		floor->SetRotation({ -90_deg, 0, 0 });
 		roof->SetPosition({ 0, -1, 0 });
 		roof->SetRotation({ 90_deg, 0, 0 });
+		roof_light->SetPosition({ 0, -0.999, 0 });
+		roof_light->SetRotation({ 90_deg, 0, 0 });
+		roof_light->SetScale({ 0.7, 0.7, 0.7 });
 		back_wall->SetPosition({ 0, 0, 1 });
 		left_wall->SetPosition({ -1, 0, 0 });
 		left_wall->SetRotation({ 0, -90_deg, 0 });
 		right_wall->SetPosition({ 1, 0, 0 });
 		right_wall->SetRotation({ 0, 90_deg, 0 });
-		test_model->SetPosition({ 0,1,0.75 });
+		test_model->SetPosition({ 0, 1, 0.8 });
 		test_model->SetRotation({ 0,0,180_deg });
 		test_model->SetScale({ 0.01f,0.01f,0.01f });
 

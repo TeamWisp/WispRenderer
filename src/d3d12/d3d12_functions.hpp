@@ -43,6 +43,7 @@ namespace wr::d3d12
 	void BindCompute32BitConstants(CommandList* cmd_list, const void* data_to_set, unsigned int num_of_values_to_set, unsigned int dest_offset_in_32bit_values, unsigned int root_parameter_idx);
 	void BindComputeConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	void BindComputeShaderResourceView(CommandList* cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx);
+	void BindComputeUnorederedAccessView(CommandList* cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx);
 	//void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	void BindComputeDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
@@ -78,6 +79,7 @@ namespace wr::d3d12
 	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle);
 	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
 	void CreateUAVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
+	void CreateSRVFromSpecificUAV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	void CreateSRVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id); // FIXME: Wrong location
 	// void CreateUAVFromTexture(Texture* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);

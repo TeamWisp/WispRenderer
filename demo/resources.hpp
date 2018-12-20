@@ -11,12 +11,14 @@ namespace resources
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
+	static wr::Model* light_model;
 	static wr::Model* test_model;
 	static wr::Model* ball_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
 	static wr::MaterialHandle harsh_brick_material;
 	static wr::MaterialHandle ball_material;
+	static wr::MaterialHandle light_material;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
@@ -39,20 +41,32 @@ namespace resources
 		wr::TextureHandle metal_grid_roughness = texture_pool->Load("resources/materials/metalgrid2_roughness.png", false, true);
 		wr::TextureHandle metal_grid_metallic = texture_pool->Load("resources/materials/metalgrid2_metallic.png", false, true);
 
+		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
+
 		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", false, true);
 		wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
 		// Create Material
+		light_material = material_pool->Create();
+
+		wr::Material* light_internal = material_pool->GetMaterial(light_material.m_id);
+
+		light_internal->SetAlbedo(black);
+		light_internal->SetNormal(rusty_metal_normal);
+		light_internal->SetRoughness(black);
+		light_internal->SetMetallic(black);
+
+		// Create Material
 		rusty_metal_material = material_pool->Create();
 
 		wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material.m_id);
 
-		rusty_metal_internal->SetAlbedo(metal_grid_albedo);
-		rusty_metal_internal->SetNormal(metal_grid_normal);
-		rusty_metal_internal->SetRoughness(metal_grid_roughness);
-		rusty_metal_internal->SetMetallic(metal_grid_metallic);
+		rusty_metal_internal->SetAlbedo(metal_splotchy_albedo);
+		rusty_metal_internal->SetNormal(metal_splotchy_normal);
+		rusty_metal_internal->SetRoughness(metal_splotchy_roughness);
+		rusty_metal_internal->SetMetallic(metal_splotchy_metallic);
 
 		// Load Texture.
 		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
@@ -171,11 +185,17 @@ namespace resources
 				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
 			};
 
+			light_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
 			plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
 
 			for (auto& m : plane_model->m_meshes)
 			{
 				m.second = &rock_material;
+			}
+
+			for (auto& m : light_model->m_meshes)
+			{
+				m.second = &light_material;
 			}
 		}
 

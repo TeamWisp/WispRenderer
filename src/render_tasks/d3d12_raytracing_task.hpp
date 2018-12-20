@@ -110,20 +110,13 @@ namespace wr
 			heap_desc.m_num_descriptors = 100; // FIXME: size
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_shader_visible = true;
-			heap_desc.m_versions = 1;
+			heap_desc.m_versions = d3d12::settings::num_back_buffers;
 			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
 			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
 
-			auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-			d3d12::Offset(cpu_handle, 0, data.out_rt_heap->m_increment_size);
-			d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
+			// materials are not versioned atm
 
-			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
-			
-			// Material Structured Buffer
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
-
 			// Pipeline State Object
 			auto rt_registry = RTPipelineRegistry::Get();
 			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
@@ -132,6 +125,17 @@ namespace wr
 			auto rs_registry = RootSignatureRegistry::Get();
 			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
 
+			// Camera constant buffer
+			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
+
+
+			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
+			{
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx);
+				d3d12::CreateSRVFromSpecificUAV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+
+			}
+			
 			CreateShaderTables(device, data, 0);
 			CreateShaderTables(device, data, 1);
 			CreateShaderTables(device, data, 2);
@@ -146,15 +150,13 @@ namespace wr
 		d3d12::StagingBuffer* temp_vb;
 
 		std::vector<temp::RayTracingMaterial_CBData> materials(d3d12::settings::num_max_rt_materials);
-
+		int fc = -10;
 		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
 			auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
-
-			auto frame_idx = n_render_system.GetFrameIdx();
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -255,57 +257,76 @@ namespace wr
 						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
 					}
 
-					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
-					auto& cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip UAV at positon 0
-					d3d12::CreateRawSRVFromStagingBuffer(temp_ib, cpu_handle, 0, temp_ib->m_size / temp_ib->m_stride_in_bytes);
-
-					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip position 2 since that is for the light buffer.
-
-					// Create material structured buffer view
-					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
-
-					// Fill descriptor heap with textures used by the scene
-					for (auto handle : material_handles)
+					for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
 					{
-						auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+						// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
+						auto& cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
+						d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip UAV at positon 0
+						d3d12::CreateRawSRVFromStagingBuffer(temp_ib, cpu_handle, 0, temp_ib->m_size / temp_ib->m_stride_in_bytes);
 
-						auto create_srv = [data, material_internal](auto texture_handle)
+						d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip position 2 since that is for the light buffer.
+
+						// Create material structured buffer view
+						d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
+
+						// Fill descriptor heap with textures used by the scene
+						for (auto handle : material_handles)
 						{
-							auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0);
-							auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
+							auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
 
-							d3d12::Offset(cpu_handle, 4 + texture_handle.m_id, data.out_rt_heap->m_increment_size);
-							d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
-						};
+							auto create_srv = [data, material_internal, i](auto texture_handle)
+							{
+								auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
+								auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
-						create_srv(material_internal->GetAlbedo());
-						create_srv(material_internal->GetMetallic());
-						create_srv(material_internal->GetNormal());
-						create_srv(material_internal->GetRoughness());
+								d3d12::Offset(cpu_handle, 4 + texture_handle.m_id, data.out_rt_heap->m_increment_size);
+								d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
+							};
+
+							create_srv(material_internal->GetAlbedo());
+							create_srv(material_internal->GetMetallic());
+							create_srv(material_internal->GetNormal());
+							create_srv(material_internal->GetRoughness());
+						}
 					}
 
 					data.out_init = false;
 				}
+
+				auto frame_idx = n_render_system.GetFrameIdx();
+
+				auto n_render_target = static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>());
+				auto cpu_handle2 = d3d12::GetCPUHandle(data.out_rt_heap, 0);
+				d3d12::CreateSRVFromSpecificUAV(n_render_target, cpu_handle2, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
 				// Get light buffer
 				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
 				{
 					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 				}
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, 2);
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, 0, 2); // here
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 
 				// Update material data
 				n_render_system.m_raytracing_material_sb_pool->Update(data.out_sb_material_handle, materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
 
 				// Update camera cb
+				if (n_render_system.clear_path)
+				{
+					fc = -1;
+					n_render_system.clear_path = false;
+				}
+
+
+				n_render_system.temp_rough = fc;
+				fc++;
+
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RayTracingCamera_CBData cam_data;
 				cam_data.m_view = camera->m_view;
 				cam_data.m_camera_position = camera->m_position;
 				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
-				cam_data.roughness = n_render_system.temp_rough;
+				cam_data.roughness = fc;
 				cam_data.metal = n_render_system.temp_metal;
 				cam_data.light_radius = n_render_system.light_radius;
 				cam_data.intensity = n_render_system.temp_intensity;
@@ -313,10 +334,11 @@ namespace wr
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK); // here
 
-				d3d12::BindComputeDescriptorTable(cmd_list, d3d12::GetGPUHandle(data.out_rt_heap, 0), 0);
-				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, 0);
+				auto gpu_handle = d3d12::GetGPUHandle(data.out_rt_heap, 0); // here
+				d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 0);
+				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
 				{
@@ -330,7 +352,7 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);
 
 #ifdef _DEBUG
-				CreateShaderTables(device, data, frame_idx);
+				//CreateShaderTables(device, data, frame_idx);
 #endif
 
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1);
@@ -356,7 +378,7 @@ namespace wr
 				ResourceState::COPY_SOURCE,
 				false,
 				Format::UNKNOWN,
-				{ Format::R8G8B8A8_UNORM },
+				{ Format::R32G32B32A32_FLOAT },
 				1,
 				true,
 				true
