@@ -23,7 +23,7 @@ namespace wr
 	namespace internal
 	{
 		template<typename T>
-		inline void SetupCopyTask(RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData & data)
+		inline void SetupCopyTask(RenderSystem& render_system, DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto* fg = task.GetFrameGraph();
@@ -31,7 +31,7 @@ namespace wr
 			data.out_rt = static_cast<d3d12::RenderTarget*>(fg->GetData<T>().m_render_target);
 		}
 
-		inline void ExecuteCopyTask(RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data)
+		inline void ExecuteCopyTask(RenderSystem& render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph& scene_graph, DeferredRenderTargetCopyTaskData& data)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 
@@ -84,9 +84,9 @@ namespace wr
 				true,
 				true
 			},
-			[](RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, bool) { internal::SetupCopyTask<T>(render_system, task, data); },
-			[](RenderSystem & render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data) { internal::ExecuteCopyTask(render_system, task, scene_graph, data); },
-			[](DeferredRenderTargetCopyRenderTask_t & task, DeferredRenderTargetCopyTaskData& data, bool) { internal::DestroyCopyTask(task, data); }
+			[](RenderSystem& render_system, DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data, bool) { internal::SetupCopyTask<T>(render_system, task, data); },
+			[](RenderSystem& render_system, DeferredRenderTargetCopyRenderTask_t& task, SceneGraph & scene_graph, DeferredRenderTargetCopyTaskData& data) { internal::ExecuteCopyTask(render_system, task, scene_graph, data); },
+			[](DeferredRenderTargetCopyRenderTask_t& task, DeferredRenderTargetCopyTaskData& data, bool) { internal::DestroyCopyTask(task, data); }
 		);
 
 		return ptr;
