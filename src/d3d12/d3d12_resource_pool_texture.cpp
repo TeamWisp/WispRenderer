@@ -113,7 +113,7 @@ namespace wr
 		DirectX::ScratchImage image;
 
 		std::wstring wide_string(path.begin(), path.end());
-
+		
 		HRESULT hr = LoadFromWICFile(wide_string.c_str(),
 			DirectX::WIC_FLAGS_NONE, &metadata, image);
 
