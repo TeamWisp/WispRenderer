@@ -88,7 +88,17 @@ namespace wr
 				data.in_imgui_func();
 
 				// Render imgui
-				d3d12::BindDescriptorHeaps(cmd_list, { data.out_descriptor_heap }, n_render_system.GetFrameIdx());
+				
+				//EXCEPTION CODE START
+				d3d12::SetDescriptorHeap(cmd_list, data.out_descriptor_heap, data.out_descriptor_heap->m_create_info.m_type, n_render_system.GetFrameIdx());
+				d3d12::BindDescriptorHeaps(cmd_list, n_render_system.GetFrameIdx());
+
+				for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+				{
+					cmd_list->m_dynamic_descriptor_heaps[i]->CommitStagedDescriptorsForDraw(*cmd_list);
+				}
+				//EXCEPTION CODE END. Don't copy this outside of imgui render task. Since imgui doesn't use our Draw functions, this is needed to make it work with the dynamic descriptor heaps.
+				
 				ImGui::Render();
 				ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmd_list->m_native);
 

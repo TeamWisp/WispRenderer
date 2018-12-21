@@ -15,6 +15,11 @@
 #include "d3d12_settings.hpp"
 #include "d3dx12.hpp"
 
+namespace wr
+{
+	class DynamicDescriptorHeap;
+}
+
 namespace wr::d3d12
 {
 
@@ -147,6 +152,12 @@ namespace wr::d3d12
 		std::vector<ID3D12CommandAllocator*> m_allocators;
 		ID3D12GraphicsCommandList5* m_native;
 		ID3D12RaytracingFallbackCommandList* m_native_fallback;
+
+		// Dynamic descriptor heap where staging happens
+		std::unique_ptr<DynamicDescriptorHeap> m_dynamic_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
+		
+		// Keep track of currently bound heaps, so that we can avoid changing when not needed
+		ID3D12DescriptorHeap* m_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 	};
 
 	struct CommandSignature
@@ -184,6 +195,10 @@ namespace wr::d3d12
 	{
 		desc::RootSignatureDesc m_create_info;
 		ID3D12RootSignature* m_native;
+
+		uint32_t m_num_descriptors_per_table[32];
+		uint32_t m_sampler_table_bit_mask;
+		uint32_t m_descriptor_table_bit_mask;
 	};
 
 	struct PipelineState;

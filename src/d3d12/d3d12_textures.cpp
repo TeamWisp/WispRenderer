@@ -138,6 +138,11 @@ namespace wr::d3d12
 		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
 	}
 
+	void SetShaderResourceView(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	{
+		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, tex->m_cpu_descriptor_handle);
+	}
+
 	void Destroy(TextureResource* tex)
 	{
 		SAFE_RELEASE(tex->m_resource);

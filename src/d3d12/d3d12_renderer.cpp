@@ -18,6 +18,7 @@
 #include "d3d12_shader_registry.hpp"
 #include "d3d12_root_signature_registry.hpp"
 #include "d3d12_resource_pool_texture.hpp"
+#include "d3d12_dynamic_descriptor_heap.hpp"
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -93,15 +94,6 @@ namespace wr
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
-		//TEMP
-		//Create Rendering Descriptor Heap
-		d3d12::desc::DescriptorHeapDesc heap_desc;
-		heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-		heap_desc.m_versions = d3d12::settings::num_back_buffers;
-		heap_desc.m_num_descriptors = 256;
-
-		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
-
 		// Raytracing cb pool
 		m_raytracing_cb_pool = CreateConstantBufferPool(1);
 
@@ -171,11 +163,6 @@ namespace wr
 		}
 
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
-
-		//Reset cpu and gpu handles to the start of the rendering heap. 
-		//Heap will be filled in the node rendering function.
-		m_rendering_heap_gpu = d3d12::GetGPUHandle(m_rendering_heap, frame_idx);
-		m_rendering_heap_cpu = d3d12::GetCPUHandle(m_rendering_heap, frame_idx);
 
 		scene_graph->Update();
 
@@ -847,7 +834,7 @@ namespace wr
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
 					
-					d3d12::BindDescriptorHeaps(n_cmd_list, { m_rendering_heap }, frame_idx);
+					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
 					auto material_handle = mesh.second;
 					
@@ -912,33 +899,10 @@ namespace wr
 		auto metallic_handle = material_internal->GetMetallic();
 		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_roughness = roughness_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_metallic = metallic_internal->m_cpu_descriptor_handle;
-
-		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
-		{
-			m_rendering_heap_cpu.m_native
-		};
-		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
-		{
-			src_cpu_handle_albedo.m_native,
-			src_cpu_handle_normal.m_native,
-			src_cpu_handle_roughness.m_native,
-			src_cpu_handle_metallic.m_native
-		};
-
-		UINT sizes[] = { 4 };
-
-		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-			4, pSrcDescriptorRangeStarts,
-			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
-
-		d3d12::Offset(m_rendering_heap_cpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
-		d3d12::Offset(m_rendering_heap_gpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
+		d3d12::SetShaderResourceView(n_cmd_list, 2, 0, albedo_internal);
+		d3d12::SetShaderResourceView(n_cmd_list, 2, 1, normal_internal);
+		d3d12::SetShaderResourceView(n_cmd_list, 2, 2, roughness_internal);
+		d3d12::SetShaderResourceView(n_cmd_list, 2, 3, metallic_internal);
 	}
 	
 

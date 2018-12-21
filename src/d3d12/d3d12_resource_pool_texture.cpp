@@ -308,8 +308,8 @@ namespace wr
 		D3D12_UNORDERED_ACCESS_VIEW_DESC destTextureUAVDesc = {};
 		destTextureUAVDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 
+		d3d12::SetDescriptorHeap(d3d12_cmd_list, m_mipmapping_heap, m_mipmapping_heap->m_create_info.m_type, 0);
 		d3d12::BindComputePipeline(d3d12_cmd_list, pipeline->m_native);
-		d3d12::BindDescriptorHeaps(d3d12_cmd_list, { m_mipmapping_heap }, 0);
 
 		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
 		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);

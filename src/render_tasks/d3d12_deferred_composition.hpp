@@ -33,7 +33,7 @@ namespace wr
 			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
 			
 
-			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
+			d3d12::SetDescriptorHeap(cmd_list, data.out_srv_heap, data.out_srv_heap->m_create_info.m_type, frame_idx);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
@@ -128,7 +128,7 @@ namespace wr
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
-					d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
+					d3d12::SetDescriptorHeap(cmd_list, data.out_srv_heap, data.out_srv_heap->m_create_info.m_type, frame_idx);
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
