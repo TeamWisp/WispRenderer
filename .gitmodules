@@ -17,3 +17,6 @@
 [submodule "deps/Wisp-LFS"]
 	path = deps/Wisp-LFS
 	url = https://github.com/TeamWisp/Wisp-LFS.git
+[submodule "deps/benchmark"]
+	path = deps/benchmark
+	url = https://github.com/google/benchmark.git

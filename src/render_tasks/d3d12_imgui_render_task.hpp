@@ -3,7 +3,6 @@
 #include "../window.hpp"
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
-#include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 
 #include "../imgui/imgui.hpp"
@@ -18,15 +17,14 @@ namespace wr
 		std::function<void()> in_imgui_func;
 		d3d12::DescriptorHeap* out_descriptor_heap;
 	};
-
-	using ImGuiRenderTask_t = RenderTask<ImGuiTaskData>;
 	
 	namespace internal
 	{
 
-		inline void SetupImGuiTask(RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data, bool resize)
+		inline void SetupImGuiTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<ImGuiTaskData>(handle);
 
 			if (!n_render_system.m_window.has_value())
 			{
@@ -71,15 +69,16 @@ namespace wr
 			ImGui::StyleColorsCherry();
 		}
 
-		inline void ExecuteImGuiTask(RenderSystem & render_system, ImGuiRenderTask_t & task, SceneGraph & scene_graph, ImGuiTaskData & data)
+		inline void ExecuteImGuiTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<ImGuiTaskData>(handle);
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			// Temp rendering
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
-
 				// Prepare imgui
 				ImGui_ImplDX12_NewFrame();
 				ImGui_ImplWin32_NewFrame();
@@ -101,7 +100,7 @@ namespace wr
 			}
 		}
 
-		inline void DestroyImGuiTask(ImGuiRenderTask_t & task, ImGuiTaskData& data, bool resize)
+		inline void DestroyImGuiTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 			if (resize)
 			{
@@ -116,31 +115,41 @@ namespace wr
 		}
 
 	} /* internal */
-	
 
-	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<ImGuiRenderTask_t> GetImGuiTask(std::function<void()> imgui_func)
+	[[nodiscard]] inline RenderTaskDesc GetImGuiTask(std::function<void()> imgui_func)
 	{
-		auto ptr = std::make_unique<ImGuiRenderTask_t>(nullptr, "ImGui Render Task", RenderTaskType::DIRECT, false,
-			RenderTargetProperties {
-				true,
-				std::nullopt,
-				std::nullopt,
-				std::nullopt,
-				std::nullopt,
-				false,
-				Format::UNKNOWN,
-				{ Format::R8G8B8A8_UNORM },
-				1,
-				false,
-				false
-			},
-			[imgui_func](RenderSystem & render_system, ImGuiRenderTask_t & task, ImGuiTaskData & data, bool resize) { data.in_imgui_func = imgui_func; internal::SetupImGuiTask(render_system, task, data, resize); },
-			[](RenderSystem & render_system, ImGuiRenderTask_t & task, SceneGraph & scene_graph, ImGuiTaskData & data) { internal::ExecuteImGuiTask(render_system, task, scene_graph, data); },
-			[](ImGuiRenderTask_t & task, ImGuiTaskData & data, bool resize) { internal::DestroyImGuiTask(task, data, resize); }
-		);
+		RenderTargetProperties rt_properties
+		{
+			true,
+			std::nullopt,
+			std::nullopt,
+			std::nullopt,
+			std::nullopt,
+			false,
+			Format::UNKNOWN,
+			{ Format::R8G8B8A8_UNORM },
+			1,
+			false,
+			false
+		};
 
-		return ptr;
+		RenderTaskDesc desc;
+		desc.m_setup_func = [imgui_func](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			fg.GetData<ImGuiTaskData>(handle).in_imgui_func = imgui_func;
+			internal::SetupImGuiTask(rs, fg, handle, resize);
+		};
+		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
+			internal::ExecuteImGuiTask(rs, fg, sg, handle);
+		};
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyImGuiTask(fg, handle, resize);
+		};
+		desc.m_name = "Dear ImGui";
+		desc.m_properties = rt_properties;
+		desc.m_type = RenderTaskType::DIRECT;
+		desc.m_allow_multithreading = false;
+
+		return desc;
 	}
 
 } /* wr */
