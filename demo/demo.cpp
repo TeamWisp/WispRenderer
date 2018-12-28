@@ -1,6 +1,7 @@
 #include <memory>
 #include <algorithm>
 #include "wisp.hpp"
+#include "render_tasks/d3d12_test_render_task.hpp"
 #include "render_tasks/d3d12_imgui_render_task.hpp"
 #include "render_tasks/d3d12_deferred_main.hpp"
 #include "render_tasks/d3d12_deferred_composition.hpp"
@@ -14,8 +15,6 @@
 #include "scene_pbr.hpp"
 
 #include "model_loader_assimp.hpp"
-
-#include <benchmark/benchmark.h>
 
 #define SCENE viknell_scene
 
@@ -70,16 +69,16 @@ int WispEntry()
 	wr::FrameGraph frame_graph;
 	if (do_raytracing)
 	{
-		frame_graph.AddTask<wr::DeferredMainTaskData>(wr::GetDeferredMainTask());
-		wr::AddDeferredCompositionTask(frame_graph);
-		frame_graph.AddTask<wr::RenderTargetCopyTaskData>(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
+		frame_graph.AddTask(wr::GetDeferredMainTask());
+		frame_graph.AddTask(wr::GetDeferredCompositionTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
 	}
 	else
 	{
-		frame_graph.AddTask<wr::RaytracingData>(wr::GetRaytracingTask());
-		frame_graph.AddTask<wr::RenderTargetCopyTaskData>(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
+		frame_graph.AddTask(wr::GetRaytracingTask());
+		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
 	}
-	frame_graph.AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(&RenderEditor));
+	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
 	frame_graph.Setup(*render_system);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
