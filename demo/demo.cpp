@@ -15,8 +15,6 @@
 
 #include "model_loader_assimp.hpp"
 
-#include <benchmark/benchmark.h>
-
 #define SCENE viknell_scene
 
 constexpr bool do_raytracing = true;
