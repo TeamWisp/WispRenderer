@@ -6,8 +6,19 @@ add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 project(Wisp)
 
 option(ENABLE_UNIT_TEST "enables unit tests." OFF)
-
+option(USE_UWP "Compile for Universal Windows Platform." OFF)
 option(BUILD_SHARED_LIBS OFF)
+
+if (USE_UWP)
+	set_property(GLOBAL PROPERTY LINK_FLAGS /WINMD)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /ZW")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /ZW:nostdlib")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D WINAPI_FAMILY=WINAPI_FAMILY_APP")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D __WRL_NO_DEFAULT_LIB__")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MDd")
+	add_compile_options(/wd4146 /wd4996 /wd4703)
+	add_definitions(-DUSE_UWP)
+endif()
 
 ##### OUTPUT DIRECTORIES #####
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -41,8 +52,8 @@ source_group("D3D12" FILES ${D3D12_SOURCES} ${D3D12_HEADERS})
 source_group("Utility" FILES ${UTIL_SOURCES} ${UTIL_HEADERS})
 source_group("ImGui" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
-set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+#set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+#set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 ## dependencies ##
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fmt ${CMAKE_BINARY_DIR}/fmt)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/DirectXTex ${CMAKE_BINARY_DIR}/DirectXTex)

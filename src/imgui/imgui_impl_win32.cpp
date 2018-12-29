@@ -47,6 +47,8 @@ static void ImGui_ImplWin32_InitPlatformInterface();
 static void ImGui_ImplWin32_ShutdownPlatformInterface();
 static void ImGui_ImplWin32_UpdateMonitors();
 
+#ifndef USE_UWP
+
 // Functions
 bool    ImGui_ImplWin32_Init(void* hwnd)
 {
@@ -704,3 +706,5 @@ static void ImGui_ImplWin32_ShutdownPlatformInterface()
 {
 	::UnregisterClass(_T("ImGui Platform"), ::GetModuleHandle(NULL));
 }
+
+#endif

@@ -58,7 +58,9 @@ namespace wr
 			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows (FIXME: Currently broken in DX12 back-end, need some work!)
 			io.ConfigDockingWithShift = true;
 
+#ifndef USE_UWP
 			ImGui_ImplWin32_Init(n_render_system.m_window.value()->GetWindowHandle());
+#endif
 			ImGui_ImplDX12_Init(n_render_system.m_device->m_native,
 				d3d12::settings::num_back_buffers,
 				(DXGI_FORMAT)d3d12::settings::back_buffer_format,

@@ -31,14 +31,14 @@ void RenderEditor()
 
 int WispEntry()
 {
-	// ImGui Logging
+	/*// ImGui Logging
 	util::log_callback::impl = [&](std::string const & str)
 	{
 		engine::debug_console.AddLog(str.c_str());
 	};
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
-	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+	auto window = std::make_unique<wr::Window>("D3D12 Test App", 1280, 720);
 
 	window->SetKeyCallback([](int key, int action, int mods)
 	{
@@ -100,8 +100,34 @@ int WispEntry()
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 	frame_graph.Destroy();
-	render_system.reset();
+	render_system.reset();*/
 	return 0;
 }
 
-WISP_ENTRY(WispEntry)
+class MyWindow : public wr::Window
+{
+	virtual void Init()
+	{
+
+	}
+
+	virtual void Loop()
+	{
+
+	}
+
+	virtual void OnResize(int width, int height)
+	{
+
+	}
+};
+
+//WISP_ENTRY(WispEntry)
+//CREATE_GAME(MyWindow, 1280, 720, "Welcome back UWP");
+
+int main(Platform::Array<Platform::String^>^) \
+{ \
+auto direct3DApplicationSource = ref new wr::Direct3DApplicationSource<MyWindow, 1280, 720>(); \
+Windows::ApplicationModel::Core::CoreApplication::Run(direct3DApplicationSource); \
+return 0; \
+}

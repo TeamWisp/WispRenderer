@@ -96,8 +96,11 @@ namespace wr::d3d12
 	void Destroy(TextureResource* tex);
 
 	// RenderWindow
+#ifndef USE_UWP
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
+#else
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, IUnknown* window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
+#endif
 	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height, bool fullscreen);
 	void Present(RenderWindow* render_window, Device* device);
 	void Destroy(RenderWindow* render_window);

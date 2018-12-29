@@ -30,6 +30,7 @@ namespace wr::d3d12
 		}
 	}
 
+#ifndef USE_UWP
 	RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers)
 	{
 		auto render_window = new RenderWindow();
@@ -69,6 +70,8 @@ namespace wr::d3d12
 		return render_window;
 	}
 
+#else
+
 	RenderWindow* CreateRenderWindow(Device* device, IUnknown* window, CommandQueue* cmd_queue, unsigned int num_back_buffers)
 	{
 		auto render_window = new RenderWindow();
@@ -104,6 +107,7 @@ namespace wr::d3d12
 
 		return render_window;
 	}
+#endif
 
 	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height, bool fullscreen)
 	{
