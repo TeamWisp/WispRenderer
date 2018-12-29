@@ -18,6 +18,7 @@
 namespace wr
 {
 	class DynamicDescriptorHeap;
+	class DescriptorAllocation;
 }
 
 namespace wr::d3d12
@@ -258,28 +259,27 @@ namespace wr::d3d12
 		bool m_is_staged;
 	};
 
-	struct TextureResource : Texture
-	{
-		std::size_t m_width;
-		std::size_t m_height;
-		std::size_t m_depth;
-		std::size_t m_array_size;
-		std::size_t m_mip_levels;
+	//struct TextureResource : Texture
+	//{
+	//	std::size_t m_width;
+	//	std::size_t m_height;
+	//	std::size_t m_depth;
+	//	std::size_t m_array_size;
+	//	std::size_t m_mip_levels;
 
-		Format m_format;
+	//	Format m_format;
 
-		ID3D12Resource* m_resource;
-		ID3D12Resource* m_intermediate;
-		ResourceState m_current_state;
-		DescHeapCPUHandle m_cpu_descriptor_handle;
-		size_t m_offset_in_heap;
+	//	ID3D12Resource* m_resource;
+	//	ID3D12Resource* m_intermediate;
+	//	ResourceState m_current_state;
+	//	DescHeapCPUHandle m_cpu_descriptor_handle;
 
-		uint8_t* m_allocated_memory;
+	//	uint8_t* m_allocated_memory;
 
-		bool m_is_staged = false;
-		bool m_need_mips = false;
-		bool m_is_cubemap = false;
-	};
+	//	bool m_is_staged = false;
+	//	bool m_need_mips = false;
+	//	bool m_is_cubemap = false;
+	//};
 
 	struct HeapResource;
 	namespace detail

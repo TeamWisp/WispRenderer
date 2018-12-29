@@ -105,7 +105,7 @@ namespace wr
 
 		/**
 		* Return a descriptor back to the heap.
-		* @param frameNumber Stale descriptors are not freed directly, but put
+		* Stale descriptors are not freed directly, but put
 		* on a stale allocations queue. Stale allocations are returned to the heap
 		* using the DescriptorAllocatorPage::ReleaseStaleAllocations method.
 		*/

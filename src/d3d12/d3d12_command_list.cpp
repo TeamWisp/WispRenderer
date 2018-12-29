@@ -1,5 +1,6 @@
 #include "d3d12_functions.hpp"
 #include "d3d12_dynamic_descriptor_heap.hpp"
+#include "d3d12_texture_resources.hpp"
 
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"

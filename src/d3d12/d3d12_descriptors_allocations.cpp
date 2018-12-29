@@ -82,9 +82,9 @@ namespace wr
 	// Get a descriptor at a particular offset in the allocation.
 	d3d12::DescHeapCPUHandle DescriptorAllocation::GetDescriptorHandle(uint32_t offset) const
 	{
-		if (offset < m_num_handles)
+		if (offset > m_num_handles)
 		{
-			LOGC("Specified offset is smaller than the number of handles in this Descriptor Allocation");
+			LOGC("Specified offset is greater than the number of handles in this Descriptor Allocation");
 		}
 
 		return { m_descriptor.m_native.ptr + (m_descriptor_size * offset) };

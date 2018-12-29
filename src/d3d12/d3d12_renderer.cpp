@@ -187,6 +187,9 @@ namespace wr
 
 		m_bound_model_pool = nullptr;
 
+		//Signal end of frame to the texture pool so that stale descriptors can be freed.
+		m_texture_pool->EndOfFrame();
+
 		return std::unique_ptr<TextureHandle>();
 	}
 

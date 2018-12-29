@@ -280,8 +280,8 @@ namespace wr
 						d3d12::Offset(albedo_cpu_handle, 4 + material_internal->GetAlbedo().m_id, data.out_rt_heap->m_increment_size);
 						d3d12::Offset(normal_cpu_handle, 4 + material_internal->GetNormal().m_id, data.out_rt_heap->m_increment_size);
 
-						d3d12::CreateSRVFromTexture(albedo_internal, albedo_cpu_handle);
-						d3d12::CreateSRVFromTexture(normal_internal, normal_cpu_handle);
+						d3d12::CreateSRVFromTexture(albedo_internal);
+						d3d12::CreateSRVFromTexture(normal_internal);
 					}
 
 					data.out_init = false;

@@ -10,6 +10,8 @@
 
 namespace wr::d3d12
 {
+	struct TextureResource;
+
 
 	// Device
 	[[nodiscard]] Device* CreateDevice();
@@ -94,7 +96,7 @@ namespace wr::d3d12
 	// Texture
 	[[nodiscard]] TextureResource* CreateTexture(Device* device, desc::TextureDesc* description, bool allow_uav);
 	void SetName(TextureResource* tex, std::wstring name);
-	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle);
+	void CreateSRVFromTexture(TextureResource* tex);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void SetShaderResourceView(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
 	void Destroy(TextureResource* tex);
