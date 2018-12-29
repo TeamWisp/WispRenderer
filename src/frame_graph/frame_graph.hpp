@@ -38,9 +38,9 @@ namespace wr
 	struct RenderTaskDesc
 	{
 		// Typedef the function pointer types to keep the code readable.
-		using setup_func_t =   util::delegate<void(RenderSystem&, FrameGraph&, RenderTaskHandle, bool)>;
-		using execute_func_t = util::delegate<void(RenderSystem&, FrameGraph&, SceneGraph&, RenderTaskHandle)>;
-		using destroy_func_t = util::delegate<void(FrameGraph&, RenderTaskHandle, bool)>;
+		using setup_func_t =   util::Delegate<void(RenderSystem&, FrameGraph&, RenderTaskHandle, bool)>;
+		using execute_func_t = util::Delegate<void(RenderSystem&, FrameGraph&, SceneGraph&, RenderTaskHandle)>;
+		using destroy_func_t = util::Delegate<void(FrameGraph&, RenderTaskHandle, bool)>;
 
 		/*! The name of the render task. (Mainly used for debug purposes) */
 		const char* m_name;
@@ -319,6 +319,12 @@ namespace wr
 			return *static_cast<T*>(nullptr);
 		}
 
+		/*! Get the render target of a previously ran task. (Constant) */
+		/*!
+			This function loops over all tasks and checks whether it has the same type information as the template variable.
+			If no task is found with the type specified a nullptr will be returned and a error message send to the logging system.
+			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
+		*/
 		template<typename T>
 		inline RenderTarget* GetPredecessorRenderTarget()
 		{
@@ -432,6 +438,7 @@ namespace wr
 			m_num_tasks++;
 		}
 
+		/*! Return the frame graph's unique id.*/
 		const std::uint64_t GetUID() const
 		{
 			return m_uid;
@@ -516,6 +523,7 @@ namespace wr
 			}
 		}
 
+		/*! Execute a single task */
 		inline void ExecuteSingleTask(RenderSystem& rs, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto cmd_list = m_cmd_lists[handle];
@@ -542,6 +550,7 @@ namespace wr
 			}
 		}
 
+		/*! Get a free unique ID. */
 		static std::uint64_t GetFreeUID()
 		{
 			if (m_free_uids.size() > 0)
@@ -555,6 +564,7 @@ namespace wr
 			return uid;
 		}
 
+		/*! Get a release a unique ID for reuse. */
 		static void ReleaseUID(std::uint64_t uid)
 		{
 			m_free_uids.push(uid);

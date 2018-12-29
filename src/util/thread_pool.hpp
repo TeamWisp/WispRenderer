@@ -54,7 +54,7 @@ namespace util
 		// need to keep track of threads so we can join them
 		std::vector<std::thread> m_workers;
 		// the task queue
-		std::queue<delegate<void()>> m_tasks;
+		std::queue<Delegate<void()>> m_tasks;
 
 		// synchronization
 		std::mutex m_queue_mutex;
@@ -72,7 +72,7 @@ namespace util
 		{
 			for (;;)
 			{
-				delegate<void()> task;
+				Delegate<void()> task;
 
 				{
 					std::unique_lock<std::mutex> lock(m_queue_mutex);
