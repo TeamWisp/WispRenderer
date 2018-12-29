@@ -2,6 +2,7 @@
 /build_vs2017_arm/
 /build_vs2017_win64/
 /build_vs2017_win32/
+/build_vs2017_uwp/
 *.swp
 *.swo
 /cmake-build-debug/
