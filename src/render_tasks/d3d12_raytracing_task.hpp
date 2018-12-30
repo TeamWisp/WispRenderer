@@ -124,11 +124,11 @@ namespace wr
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 
 			// Pipeline State Object
-			auto rt_registry = RTPipelineRegistry::Get();
+			auto& rt_registry = RTPipelineRegistry::Get();
 			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
 
 			// Root Signature
-			auto rs_registry = RootSignatureRegistry::Get();
+			auto& rs_registry = RootSignatureRegistry::Get();
 			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
 
 			CreateShaderTables(device, data, 0);
