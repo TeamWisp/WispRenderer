@@ -450,27 +450,14 @@ namespace wr
 		inline void Setup_MT_Impl(RenderSystem& render_system)
 		{
 			// Multithreading behaviour
-			const auto num_mt_render_tasks = m_multi_threaded_tasks.size();
-			constexpr auto num_threads = settings::num_frame_graph_threads;
-			const std::size_t num_tasks = num_mt_render_tasks / settings::num_frame_graph_threads, num_tougher_threads = num_mt_render_tasks % settings::num_frame_graph_threads;
-
-			auto ThreadDivider = [&](unsigned int const thread_id)
+			m_thread_pool->DivideWork(m_multi_threaded_tasks.size(), [&](std::uint64_t index)
 			{
-				for (std::size_t index0 = (thread_id < num_tougher_threads ? thread_id * (num_tasks + 1) : num_mt_render_tasks - (num_threads - thread_id) * num_tasks), index = index0; index < index0 + num_tasks + (thread_id < num_tougher_threads); ++index)
+				const auto handle = m_multi_threaded_tasks[index];
+				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system]
 				{
-					const auto handle = m_multi_threaded_tasks[index];
-
-					m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system]
-					{
-						m_setup_funcs[handle](render_system, *this, handle, false);
-					});
-				}
-			};
-
-			for (auto i = 0u; i < num_threads; i++)
-			{
-				ThreadDivider(i);
-			}
+					m_setup_funcs[handle](render_system, *this, handle, false);
+				});
+			});
 
 			// Singlethreading behaviour
 			for (const auto handle : m_single_threaded_tasks)
@@ -483,29 +470,17 @@ namespace wr
 		inline void Execute_MT_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
 		{
 			// Multithreading behaviour
-			const auto num_mt_render_tasks = m_multi_threaded_tasks.size();
-			constexpr auto num_threads = settings::num_frame_graph_threads;
-			const std::size_t num_tasks = num_mt_render_tasks / settings::num_frame_graph_threads, num_tougher_threads = num_mt_render_tasks % settings::num_frame_graph_threads;
-
-			auto ThreadDivider = [&](unsigned int const thread_id)
+			m_thread_pool->DivideWork(m_multi_threaded_tasks.size(), [&](std::uint64_t index)
 			{
-				for (std::size_t index0 = (thread_id < num_tougher_threads ? thread_id * (num_tasks + 1) : num_mt_render_tasks - (num_threads - thread_id) * num_tasks), index = index0; index < index0 + num_tasks + (thread_id < num_tougher_threads); ++index)
+				const auto handle = m_multi_threaded_tasks[index];
+
+				WaitForCompletion(handle);
+
+				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system, &scene_graph]
 				{
-					const auto handle = m_multi_threaded_tasks[index];
-
-					WaitForCompletion(handle);
-
-					m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system, &scene_graph]
-					{
-						ExecuteSingleTask(render_system, scene_graph, handle);
-					});
-				}
-			};
-
-			for (auto i = 0u; i < num_threads; i++)
-			{
-				ThreadDivider(i);
-			}
+					ExecuteSingleTask(render_system, scene_graph, handle);
+				});
+			});
 
 			// Singlethreading behaviour
 			for (const auto handle : m_single_threaded_tasks)
