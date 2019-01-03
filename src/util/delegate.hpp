@@ -17,8 +17,8 @@ namespace util
 		using stub_ptr_type = R(*)(void*, A&&...);
 
 		Delegate(void* const o, stub_ptr_type const m) noexcept :
-			object_ptr_(o),
-			stub_ptr_(m)
+			m_object_ptr(o),
+			m_stub_ptr(m)
 		{
 		}
 
@@ -34,14 +34,14 @@ namespace util
 		template <class C, typename =
 			typename ::std::enable_if < ::std::is_class<C>{} > ::type >
 			explicit Delegate(C const* const o) noexcept :
-			object_ptr_(const_cast<C*>(o))
+			m_object_ptr(const_cast<C*>(o))
 		{
 		}
 
 		template <class C, typename =
 			typename ::std::enable_if < ::std::is_class<C>{} > ::type >
 			explicit Delegate(C const& o) noexcept :
-			object_ptr_(const_cast<C*>(&o))
+			m_object_ptr(const_cast<C*>(&o))
 		{
 		}
 
@@ -76,19 +76,19 @@ namespace util
 			> ::type
 		>
 				Delegate(T&& f) :
-				store_(operator new(sizeof(typename ::std::decay<T>::type)),
+				m_store(operator new(sizeof(typename ::std::decay<T>::type)),
 					functor_deleter<typename ::std::decay<T>::type>),
-				store_size_(sizeof(typename ::std::decay<T>::type))
+				m_store_size(sizeof(typename ::std::decay<T>::type))
 			{
 				using functor_type = typename ::std::decay<T>::type;
 
-				new (store_.get()) functor_type(::std::forward<T>(f));
+				new (m_store.get()) functor_type(::std::forward<T>(f));
 
-				object_ptr_ = store_.get();
+				m_object_ptr = m_store.get();
 
-				stub_ptr_ = functor_stub<functor_type>;
+				m_stub_ptr = functor_stub<functor_type>;
 
-				deleter_ = deleter_stub<functor_type>;
+				m_deleter = deleter_stub<functor_type>;
 			}
 
 			Delegate& operator=(Delegate const&) = default;
@@ -98,13 +98,13 @@ namespace util
 			template <class C>
 			Delegate& operator=(R(C::* const rhs)(A...))
 			{
-				return *this = from(static_cast<C*>(object_ptr_), rhs);
+				return *this = from(static_cast<C*>(m_object_ptr), rhs);
 			}
 
 			template <class C>
 			Delegate& operator=(R(C::* const rhs)(A...) const)
 			{
-				return *this = from(static_cast<C const*>(object_ptr_), rhs);
+				return *this = from(static_cast<C const*>(m_object_ptr), rhs);
 			}
 
 			template <
@@ -117,25 +117,25 @@ namespace util
 				{
 					using functor_type = typename ::std::decay<T>::type;
 
-					if ((sizeof(functor_type) > store_size_) || !store_.unique())
+					if ((sizeof(functor_type) > m_store_size) || !m_store.unique())
 					{
-						store_.reset(operator new(sizeof(functor_type)),
+						m_store.reset(operator new(sizeof(functor_type)),
 							functor_deleter<functor_type>);
 
-						store_size_ = sizeof(functor_type);
+						m_store_size = sizeof(functor_type);
 					}
 					else
 					{
-						deleter_(store_.get());
+						m_deleter(m_store.get());
 					}
 
-					new (store_.get()) functor_type(::std::forward<T>(f));
+					new (m_store.get()) functor_type(::std::forward<T>(f));
 
-					object_ptr_ = store_.get();
+					m_object_ptr = m_store.get();
 
-					stub_ptr_ = functor_stub<functor_type>;
+					m_stub_ptr = functor_stub<functor_type>;
 
-					deleter_ = deleter_stub<functor_type>;
+					m_deleter = deleter_stub<functor_type>;
 
 					return *this;
 				}
@@ -216,15 +216,15 @@ namespace util
 					return const_member_pair<C>(&object, method_ptr);
 				}
 
-				void reset() { stub_ptr_ = nullptr; store_.reset(); }
+				void reset() { m_stub_ptr = nullptr; m_store.reset(); }
 
-				void reset_stub() noexcept { stub_ptr_ = nullptr; }
+				void reset_stub() noexcept { m_stub_ptr = nullptr; }
 
 				void swap(Delegate& other) noexcept { ::std::swap(*this, other); }
 
 				bool operator==(Delegate const& rhs) const noexcept
 				{
-					return (object_ptr_ == rhs.object_ptr_) && (stub_ptr_ == rhs.stub_ptr_);
+					return (m_object_ptr == rhs.m_object_ptr) && (m_stub_ptr == rhs.m_stub_ptr);
 				}
 
 				bool operator!=(Delegate const& rhs) const noexcept
@@ -234,26 +234,26 @@ namespace util
 
 				bool operator<(Delegate const& rhs) const noexcept
 				{
-					return (object_ptr_ < rhs.object_ptr_) ||
-						((object_ptr_ == rhs.object_ptr_) && (stub_ptr_ < rhs.stub_ptr_));
+					return (m_object_ptr < rhs.m_object_ptr) ||
+						((m_object_ptr == rhs.m_object_ptr) && (m_stub_ptr < rhs.m_stub_ptr));
 				}
 
 				bool operator==(::std::nullptr_t const) const noexcept
 				{
-					return !stub_ptr_;
+					return !m_stub_ptr;
 				}
 
 				bool operator!=(::std::nullptr_t const) const noexcept
 				{
-					return stub_ptr_;
+					return m_stub_ptr;
 				}
 
-				explicit operator bool() const noexcept { return stub_ptr_; }
+				explicit operator bool() const noexcept { return m_stub_ptr; }
 
 				R operator()(A... args) const
 				{
 					//  assert(stub_ptr);
-					return stub_ptr_(object_ptr_, ::std::forward<A>(args)...);
+					return m_stub_ptr(m_object_ptr, ::std::forward<A>(args)...);
 				}
 
 	private:
@@ -261,13 +261,13 @@ namespace util
 
 		using deleter_type = void(*)(void*);
 
-		void* object_ptr_;
-		stub_ptr_type stub_ptr_{};
+		void* m_object_ptr;
+		stub_ptr_type m_stub_ptr{};
 
-		deleter_type deleter_;
+		deleter_type m_deleter;
 
-		::std::shared_ptr<void> store_;
-		::std::size_t store_size_;
+		::std::shared_ptr<void> m_store;
+		::std::size_t m_store_size;
 
 		template <class T>
 		static void functor_deleter(void* const p)
