@@ -4,11 +4,7 @@
 #include <chrono>
 
 #include "wisp.hpp"
-#include "render_tasks/d3d12_imgui_render_task.hpp"
-#include "render_tasks/d3d12_deferred_main.hpp"
-#include "render_tasks/d3d12_deferred_composition.hpp"
-#include "render_tasks/d3d12_deferred_render_target_copy.hpp"
-#include "render_tasks/d3d12_raytracing_task.hpp"
+#include "demo_frame_graphs.hpp"
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
@@ -100,6 +96,10 @@ int WispEntry()
 		{
 			engine::show_imgui = !engine::show_imgui;
 		}
+		if (action == WM_KEYUP && key == VK_F2)
+		{
+			fg_manager::Next();
+		}
 	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
@@ -114,27 +114,14 @@ int WispEntry()
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
-	wr::FrameGraph frame_graph;
-	if (do_raytracing)
-	{
-		frame_graph.AddTask<wr::DeferredMainTaskData>(wr::GetDeferredMainTask());
-		wr::AddDeferredCompositionTask(frame_graph);
-		frame_graph.AddTask<wr::RenderTargetCopyTaskData>(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
-	}
-	else
-	{
-		frame_graph.AddTask<wr::RaytracingData>(wr::GetRaytracingTask());
-		frame_graph.AddTask<wr::RenderTargetCopyTaskData>(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
-	}
-	frame_graph.AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(&RenderEditor));
-	frame_graph.Setup(*render_system);
+	fg_manager::Setup(*render_system.get(), &RenderEditor);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
 		viknell_scene::camera->SetAspectRatio((float)width / (float)height);
-		frame_graph.Resize(*render_system.get(), width, height);
+		fg_manager::Get()->Resize(*render_system.get(), width, height);
 	});
 
 	SetupShaderDirWatcher();
@@ -145,13 +132,13 @@ int WispEntry()
 
 		SCENE::UpdateScene();
 
-		auto texture = render_system->Render(scene_graph, frame_graph);
+		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
 	}
 
 	delete assimp_model_loader;
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
-	frame_graph.Destroy();
+	fg_manager::Destroy();
 	render_system.reset();
 	return 0;
 }

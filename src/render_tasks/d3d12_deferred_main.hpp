@@ -60,7 +60,7 @@ namespace wr
 
 	} /* internal */
 
-	[[nodiscard]] inline RenderTaskDesc GetDeferredMainTask()
+	inline void AddDeferredMainTask(FrameGraph& fg)
 	{
 		RenderTargetProperties rt_properties
 		{
@@ -92,7 +92,7 @@ namespace wr
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
-		return desc;
+		fg.AddTask<DeferredMainTaskData>(desc);
 	}
 
 } /* wr */

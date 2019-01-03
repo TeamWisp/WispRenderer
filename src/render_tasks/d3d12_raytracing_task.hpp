@@ -342,7 +342,7 @@ namespace wr
 
 	} /* internal */
 
-	[[nodiscard]] inline RenderTaskDesc GetRaytracingTask()
+	inline void AddRaytracingTask(FrameGraph& frame_graph)
 	{
 		RenderTargetProperties rt_properties
 		{
@@ -374,7 +374,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		return desc;
+		frame_graph.AddTask<RaytracingData>(desc);
 	}
 
 } /* wr */

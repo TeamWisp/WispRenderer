@@ -46,7 +46,7 @@ namespace wr
 	} /* internal */
 
 	template<typename T>
-	[[nodiscard]] inline RenderTaskDesc GetRenderTargetCopyTask()
+	inline void AddRenderTargetCopyTask(FrameGraph& frame_graph)
 	{
 		RenderTargetProperties rt_properties {
 			true,
@@ -77,7 +77,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COPY;
 		desc.m_allow_multithreading = true;
 
-		return desc;
+		frame_graph.AddTask<RenderTargetCopyTaskData>(desc);
 	}
 
 } /* wr */

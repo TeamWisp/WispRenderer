@@ -152,7 +152,7 @@ namespace wr
 
 	} /* internal */
 
-	[[nodiscard]] inline void AddDeferredCompositionTask(FrameGraph& fg)
+	inline void AddDeferredCompositionTask(FrameGraph& fg)
 	{
 		RenderTargetProperties rt_properties
 		{
