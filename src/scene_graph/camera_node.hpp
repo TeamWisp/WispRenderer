@@ -21,6 +21,8 @@ namespace wr
 
 		void SetFov(float deg);
 
+		void SetAspectRatio(float ratio);
+
 		void UpdateTemp(unsigned int frame_idx);
 
 		bool InView(std::shared_ptr<MeshNode>& node);
