@@ -130,7 +130,6 @@ uint3 Load3x32BitIndices(uint offsetBytes)
 
 inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset, unsigned int seed)
 {
-#define DEPTH_OF_FIELD
 #ifdef DEPTH_OF_FIELD
 	float2 pixelOff = float2(nextRand(seed), nextRand(seed));  // Random offset in pixel to reduce floating point error.
 
