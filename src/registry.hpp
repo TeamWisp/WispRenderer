@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 
 #include "util/log.hpp"
 
@@ -44,8 +45,17 @@ namespace wr::internal
 			//return instance;
 		}
 
+		void RequestReload(RegistryHandle handle)
+		{
+			m_reload_request_mutex.lock();
+			m_requested_reload.push_back(handle);
+			m_reload_request_mutex.unlock();
+		}
+
 		std::map<RegistryHandle, TD> m_descriptions;
 		std::map<RegistryHandle, TO*> m_objects;
+		std::vector<RegistryHandle> m_requested_reload;
+		std::mutex m_reload_request_mutex;
 
 	protected:
 		RegistryHandle m_next_handle;

@@ -162,6 +162,41 @@ namespace wr
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
 		
+		// Perform reload requests
+		{
+			// Root Signatures
+			auto& rt_registry = RootSignatureRegistry::Get();
+			for (auto request : rt_registry.m_requested_reload)
+			{
+				// ReloadPipelineRegistryEntry(request);
+			}
+
+			// Shaders
+			auto& shader_registry = ShaderRegistry::Get();
+			for (auto request : shader_registry.m_requested_reload)
+			{
+				// ReloadPipelineRegistryEntry(request);
+			}
+
+			// Pipelines
+			auto& pipeline_registry = PipelineRegistry::Get();
+			pipeline_registry.m_reload_request_mutex.lock();
+			for (auto request : pipeline_registry.m_requested_reload)
+			{
+				ReloadPipelineRegistryEntry(request);
+			}
+			pipeline_registry.m_requested_reload.clear();
+			pipeline_registry.m_reload_request_mutex.unlock();
+
+			// RT Pipelines
+			auto& rt_pipeline_registry = RTPipelineRegistry::Get();
+			for (auto request : rt_pipeline_registry.m_requested_reload)
+			{
+				// ReloadPipelineRegistryEntry(request);
+			}
+		}
+
+
 		bool clear_frame_buffer = false;
 
 		if (frame_graph.GetUID() != m_buffer_frame_graph_uids[frame_idx])
@@ -532,6 +567,55 @@ namespace wr
 		}
 	}
 
+	void D3D12RenderSystem::ReloadPipelineRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = PipelineRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto n_pipeline = static_cast<D3D12Pipeline*>(registry.Find(handle))->m_native;
+
+		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		{
+			if (!pipeline_shader) return;
+
+			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+				pipeline_shader->m_path,
+				pipeline_shader->m_entry);
+
+			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+			{
+				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+			}
+			else
+			{
+				error_msg = std::get<std::string>(new_shader_variant);
+			}
+		};
+
+		// Vertex Shader
+		{
+			recompile_shader(n_pipeline->m_vertex_shader);
+		}
+		// Pixel Shader
+		if (!error_msg.has_value()) {
+			recompile_shader(n_pipeline->m_pixel_shader);
+		}
+		// Compute Shader
+		if (!error_msg.has_value()) {
+			recompile_shader(n_pipeline->m_compute_shader);
+		}
+
+		if (error_msg.has_value())
+		{
+			LOGW(error_msg.value());
+			//open_shader_compiler_popup = true;
+			//shader_compiler_error = error_msg.value();
+		}
+		else
+		{
+			d3d12::RefinalizePipeline(n_pipeline);
+		}
+	}
+
 	void D3D12RenderSystem::PrepareRTPipelineRegistry()
 	{
 		auto& registry = RTPipelineRegistry::Get();
@@ -588,16 +672,12 @@ namespace wr
 
 	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		/*for (auto& node : nodes)
-		{
-			for (auto& mesh : node->m_model->m_meshes)
-			{
-			}
-		}*/
 	}
 
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
+		if (nodes.empty()) return;
+
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
 		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
 
@@ -681,20 +761,25 @@ namespace wr
 
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		/*for (auto& node : nodes)
+		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
+				continue;
+			}
 
-			//Update
-			node->SignalUpdate(GetFrameIdx());
-		}*/
+			node->Update(GetFrameIdx());
+		}
 	}
 
 	void D3D12RenderSystem::Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
+				continue;
+			}
 
 			node->UpdateTemp(GetFrameIdx());
 
@@ -718,7 +803,10 @@ namespace wr
 		{
 			std::shared_ptr<LightNode>& node = light_nodes[i];
 
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
+				continue;
+			}
 
 			if (!should_update)
 			{

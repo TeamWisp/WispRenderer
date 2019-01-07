@@ -45,7 +45,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(uav_ranges.size(), uav_ranges.data(), D3D12_SHADER_VISIBILITY_ALL); return d; }(),
 		},
 		{
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP }
 		}
 		});
 
