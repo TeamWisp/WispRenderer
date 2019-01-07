@@ -98,7 +98,7 @@ namespace wr::d3d12
 	void SetName(TextureResource* tex, std::wstring name);
 	void CreateSRVFromTexture(TextureResource* tex);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
-	void SetShaderResourceView(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
 	void Destroy(TextureResource* tex);
 
 	// RenderWindow

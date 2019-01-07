@@ -141,7 +141,7 @@ namespace wr::d3d12
 		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
 	}
 
-	void SetShaderResourceView(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
 	{
 		d3d12::DescHeapCPUHandle handle = tex->m_desc_allocation.GetDescriptorHandle();
 
