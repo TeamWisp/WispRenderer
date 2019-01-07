@@ -17,8 +17,8 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(1, 10);
-		material_pool = render_system->CreateMaterialPool(1);
+		texture_pool = render_system->CreateTexturePool(8, 20);
+		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
 		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);
@@ -51,7 +51,7 @@ namespace resources
 		rock_material_internal->SetNormal(rock_normal);
 		rock_material_internal->SetRoughness(rock_roughness);
 		rock_material_internal->SetMetallic(rock_metallic);
-
+	
 		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
@@ -138,7 +138,6 @@ namespace resources
 				m.second = &rusty_metal_material;
 			}
 		}
-
 	}
 
 }

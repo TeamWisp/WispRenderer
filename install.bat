@@ -92,7 +92,7 @@ REM ##### DOWNLOAD DEPS #####
 call :colorEcho %header_color% "#### Downloading Dependencies ####"
 cd "%workspace_path%"
 git submodule init
-git submodule update --recursive --remote
+git submodule update --recursive --remote --depth 1 --jobs 8
 EXIT /B 0
 REM ##### DOWNLOAD DEPS #####
 

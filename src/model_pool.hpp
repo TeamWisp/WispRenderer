@@ -6,6 +6,7 @@
 #include <map>
 #include <stack>
 //#include <d3d12.h>
+#include <DirectXMath.h>
 
 #include "util/defines.hpp"
 #include "material_pool.hpp"
@@ -49,6 +50,43 @@ namespace wr
 		std::vector<std::pair<Mesh*, MaterialHandle*>> m_meshes;
 		ModelPool* m_model_pool;
 		std::string m_model_name;
+
+		//AABB data; -X, X, -Y, Y, -Z, Z
+		DirectX::XMVECTOR m_box[6] = {
+			{
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max()
+			},
+			{
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max()
+			},
+			{
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max()
+			},
+			{
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max()
+			},
+			{
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max()
+			},
+			{
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max(),
+				-std::numeric_limits<float>::max()
+			}
+		};
+
+		void CalculateAABB(float (&pos)[3]);
+
 	};
 
 	class ModelPool
@@ -138,6 +176,15 @@ namespace wr
 			}
 			model->m_meshes.push_back(
 				std::make_pair(mesh, nullptr));
+
+			if constexpr (std::is_same<TV, Vertex>::value || std::is_same<TV, VertexNoTangent>::value)
+			{
+				for (uint32_t j = 0, k = (uint32_t) meshes[i].m_vertices.size(); j < k; ++j)
+				{
+					model->CalculateAABB(meshes[i].m_vertices[j].m_pos);
+				}
+			}
+
 		}
 
 		model->m_model_pool = this;

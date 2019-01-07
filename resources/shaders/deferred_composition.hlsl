@@ -1,5 +1,6 @@
 #include "fullscreen_quad.hlsl"
 #include "pbr_util.hlsl"
+#include "hdr_util.hlsl"
 
 struct Light 
 {
@@ -15,8 +16,8 @@ struct Light
 
 StructuredBuffer<Light> lights : register(t3);
 
-Texture2D gbuffer_albedo : register(t0);
-Texture2D gbuffer_normal : register(t1);
+Texture2D gbuffer_albedo_roughness : register(t0);
+Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
@@ -46,7 +47,7 @@ float3 world_to_view(float4 pos, float4x4 view) {
 	return vpos.xyz;
 }
 
-float3 shade_light(float3 vpos, float3 V, float3 albedo, float3 normal, Light light) 
+float3 shade_light(float3 vpos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light)
 {
 	uint tid = light.tid & 3;
 
@@ -69,15 +70,14 @@ float3 shade_light(float3 vpos, float3 V, float3 albedo, float3 normal, Light li
 	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
 	float3 radiance = (light.col * spot_intensity) * attenuation;
 
-	float3 lighting = BRDF(L, V, normal, 0.001f, 0.999f, albedo, radiance, light.col);
+	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance, light.col);
 
 	return lighting;
 
 }
 
-float3 shade_pixel(float3 vpos, float3 V, float3 albedo, float3 normal)
+float3 shade_pixel(float3 vpos, float3 V, float3 albedo, float metallic, float roughness, float3 normal)
 {
-
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
 	float ambient = 0.1f;
@@ -85,11 +85,10 @@ float3 shade_pixel(float3 vpos, float3 V, float3 albedo, float3 normal)
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += shade_light(vpos, V, albedo, normal, lights[i]);
+		res += shade_light(vpos, V, albedo, normal, metallic, roughness, lights[i]);
 	}
 
 	return res * albedo;
-
 }
 
 [numthreads(16, 16, 1)]
@@ -102,14 +101,23 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_coord = int2(dispatch_thread_id.x, screen_size.y - dispatch_thread_id.y);
 
 	// GBuffer contents
-	const float3 albedo = gbuffer_albedo[screen_coord].xyz;
-	const float3 normal = gbuffer_normal[screen_coord].xyz;
+	const float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
+	const float roughness = gbuffer_albedo_roughness[screen_coord].w;
+	const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
+	const float metallic = gbuffer_normal_metallic[screen_coord].w;
+	
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
 	float3 vpos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection);
 	float3 V = normalize(-vpos);
 
+	float3 retval = shade_pixel(vpos, V, albedo, metallic, roughness, normal);
+	
+	float gamma = 1;
+	float exposure = 1;
+	retval = linearToneMapping(retval, exposure, gamma);
+	
 	//Do shading
-	output[int2(dispatch_thread_id.xy)] = float4(shade_pixel(vpos, V, albedo, normal), 1.f);
+	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
 }

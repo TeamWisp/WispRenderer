@@ -8,11 +8,6 @@
 
 namespace wr
 {
-	class FrameGraph;
-} /* wr */
-
-namespace wr
-{
 
 	struct TextureHandle;
 
