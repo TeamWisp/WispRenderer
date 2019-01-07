@@ -6,7 +6,6 @@
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../d3d12/d3d12_model_pool.hpp"
 #include "../d3d12/d3d12_resource_pool_texture.hpp"
-#include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
@@ -26,35 +25,34 @@ namespace wr
 		d3d12::TextureResource* in_equirectangular;
 		d3d12::TextureResource* out_cubemap;
 	};
-	using EquirectToCubemapTask_t = RenderTask<EquirectToCubemapTaskData>;
 	
 	namespace internal
 	{
 
-		inline void SetupEquirectToCubemapTask(RenderSystem& render_system, EquirectToCubemapTask_t& task, EquirectToCubemapTaskData& data)
+		inline void SetupEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::basic_deferred); //TODO: pipelines::equirect_to_cubemap
-
-			const auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
-			auto render_target = task.GetRenderTarget<d3d12::RenderTarget>();
 		}
 
-		inline void ExecuteEquirectToCubemapTask(RenderSystem& render_system, EquirectToCubemapTask_t& task, SceneGraph& scene_graph, EquirectToCubemapTaskData& data)
+		inline void ExecuteEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
+				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+				auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 				d3d12::TextureResource* cubemap = data.out_cubemap;
+				
 				const auto viewport = d3d12::CreateViewport(cubemap->m_width, cubemap->m_height);
 
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
-				auto render_target = task.GetRenderTarget<d3d12::RenderTarget>();
 
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
@@ -73,37 +71,41 @@ namespace wr
 				scene_graph.Render(cmd_list, scene_graph.GetActiveCamera().get());
 			}
 		}
-
-		inline void DestroyEquirectToCubemapTask(EquirectToCubemapTask_t& task, EquirectToCubemapTaskData& data)
-		{
-		}
-
 	} /* internal */
 	
-
-	//! Used to create a new equirectangular to cubemap task.
-	[[nodiscard]] inline std::unique_ptr<EquirectToCubemapTask_t> GetEquirectToCubemapTask(std::size_t width, std::size_t height)
+	inline void AddEquirectToCubemapTask(FrameGraph& fg, std::size_t width, std::size_t height)
 	{
-		auto ptr = std::make_unique<EquirectToCubemapTask_t>(nullptr, "Equirect To Cubemap Task", RenderTaskType::DIRECT, true,
-			RenderTargetProperties{
-				false,
-				width,
-				height,
-				ResourceState::RENDER_TARGET,
-				ResourceState::NON_PIXEL_SHADER_RESOURCE,
-				true,
-				Format::D32_FLOAT,
-				{ Format::R32G32B32A32_FLOAT },
-				1,
-				true,
-				true
-			},
-			[](RenderSystem& render_system, EquirectToCubemapTask_t& task, EquirectToCubemapTaskData& data, bool) { internal::SetupEquirectToCubemapTask(render_system, task, data); },
-			[](RenderSystem& render_system, EquirectToCubemapTask_t& task, SceneGraph& scene_graph, EquirectToCubemapTaskData& data) { internal::ExecuteEquirectToCubemapTask(render_system, task, scene_graph, data); },
-			[](EquirectToCubemapTask_t& task, EquirectToCubemapTaskData& data, bool) { internal::DestroyEquirectToCubemapTask(task, data); }
-		);
+		RenderTargetProperties rt_properties
+		{
+			false,
+			width,
+			height,
+			ResourceState::RENDER_TARGET,
+			ResourceState::NON_PIXEL_SHADER_RESOURCE,
+			true,
+			Format::D32_FLOAT,
+			{ Format::R32G32B32A32_FLOAT },
+			1,
+			true,
+			true
+		};
 
-		return ptr;
+		RenderTaskDesc desc;
+		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
+			internal::SetupEquirectToCubemapTask(rs, fg, handle);
+		};
+		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
+			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);
+		};
+		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
+			// Nothing to destroy
+		};
+		desc.m_name = "Equirect To Cubemap";
+		desc.m_properties = rt_properties;
+		desc.m_type = RenderTaskType::DIRECT;
+		desc.m_allow_multithreading = true;
+
+		fg.AddTask<EquirectToCubemapTaskData>(desc);
 	}
 
 } /* wr */
