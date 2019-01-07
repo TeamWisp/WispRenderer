@@ -17,7 +17,9 @@ struct VS_OUTPUT
 	float4 pos : SV_POSITION;
 	float2 uv : TEXCOORD;
 	float3 normal : NORMAL;
-	float3x3 tbn : TBNMATRIX;
+	float3 tbn0 : TBNMATRIX0;
+	float3 tbn1 : TBNMATRIX1;
+	float3 tbn2 : TBNMATRIX2;
 	float4x4 mv : MODELVIEW;
 };
 
@@ -57,7 +59,10 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float3 tangent = normalize(mul(vm, float4(input.tangent, 0))).xyz;
 	float3 bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
 
-	output.tbn = transpose(float3x3(tangent, bitangent, output.normal));
+	float3x3 outputTbn = transpose(float3x3(tangent, -bitangent, output.normal));
+	output.tbn0 = outputTbn._m00_m01_m02;
+	output.tbn1 = outputTbn._m10_m11_m12;
+	output.tbn2 = outputTbn._m20_m21_m22;
 	output.mv = vm;
 
 	return output;
@@ -79,14 +84,14 @@ SamplerState s0 : register(s0);
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
-	
+	float3x3 tbn = {input.tbn0, input.tbn1, input.tbn2};
 	float4 albedo = material_albedo.Sample(s0, input.uv);
 	float4 roughness = material_roughness.Sample(s0, input.uv);
 	float4 metallic = material_metallic.Sample(s0, input.uv);
 
 	float3 normal = material_normal.Sample(s0, input.uv).rgb;
 	normal = normalize((normal * 2.0) - float3(1.0, 1.0, 1.0));
-	normal = normalize(mul(input.tbn, normal));
+	normal = normalize(mul(tbn, normal));
 	
 	
 
