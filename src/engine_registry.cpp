@@ -45,7 +45,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(uav_ranges.size(), uav_ranges.data(), D3D12_SHADER_VISIBILITY_ALL); return d; }(),
 		},
 		{
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP }
 		}
 		});
 
@@ -154,8 +154,8 @@ namespace wr
 
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> r = {
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1); return r; }(), // indices
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1+20, 3); return r; }(), // Materials (1) Textures (+20) 
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1); return r; }(), // indices, light
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1+20, 4); return r; }(), // Materials (1) Textures (+20) 
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset); return r; }(), // Materials (1) Textures (+20) 
 	};
 
@@ -165,7 +165,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
 			//[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(), // Indices
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(2); return d; }(), // Vertices
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
 		},
 		{
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
@@ -199,9 +199,9 @@ namespace wr
 	{
 		so_desc.first,     // Description
 		so_desc.second,    // Library
-		(sizeof(float)*4), // Max payload size
+		(sizeof(float)*7 + sizeof(unsigned int)), // Max payload size
 		(sizeof(float)*2), // Max attributes size
-		1,				   // Max recursion depth
+		4,				   // Max recursion depth
 		root_signatures::rt_test_global,      // Global root signature
 		std::vector<RegistryHandle>{ root_signatures::rt_test_local },      // Local Root Signatures
 	});

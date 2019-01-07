@@ -114,9 +114,8 @@ namespace wr::d3d12
 	{
 		auto n_device = device->m_native;
 
-		pipeline_state->m_type = desc.m_type;
-		pipeline_state->m_topology_type = (D3D12_PRIMITIVE_TOPOLOGY_TYPE)desc.m_topology_type;
-		pipeline_state->m_input_layout = desc.m_input_layout;
+		pipeline_state->m_device = device;
+		pipeline_state->m_desc = desc;
 
 		std::variant<D3D12_GRAPHICS_PIPELINE_STATE_DESC, D3D12_COMPUTE_PIPELINE_STATE_DESC> pso_desc;
 		switch (desc.m_type)
@@ -124,7 +123,7 @@ namespace wr::d3d12
 		case PipelineType::GRAPHICS_PIPELINE:
 		{
 			pso_desc = internal::GetGraphicsPipelineStateDescriptor(desc,
-				pipeline_state->m_input_layout,
+				desc.m_input_layout,
 				pipeline_state->m_root_signature,
 				pipeline_state->m_vertex_shader,
 				pipeline_state->m_pixel_shader);
@@ -158,9 +157,9 @@ namespace wr::d3d12
 		NAME_D3D12RESOURCE(pipeline_state->m_native)
 	}
 
-	void RefinalizePipeline(PipelineState* pipeline_state, Device* device, desc::PipelineStateDesc desc)
+	void RefinalizePipeline(PipelineState* pipeline_state)
 	{
-		FinalizePipeline(pipeline_state, device, desc);
+		FinalizePipeline(pipeline_state, pipeline_state->m_device, pipeline_state->m_desc);
 	}
 
 	void Destroy(PipelineState* pipeline_state)

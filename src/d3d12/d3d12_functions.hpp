@@ -1,12 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <variant>
+#include <DirectXMath.h>
 
 #include "d3d12_structs.hpp"
-
 #include "d3d12_constant_buffer_pool.hpp"
-
-#include <DirectXMath.h>
 
 namespace wr::d3d12
 {
@@ -124,9 +123,7 @@ namespace wr::d3d12
 	void ResizeViewport(Viewport& viewport, int width, int height);
 
 	// Shader
-	[[nodiscard]] Shader* LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
-	[[nodiscard]] Shader* LoadDXCShader(ShaderType type, std::string const & path, std::string const & entry = "main");
-	bool ReloadShader(Shader* shader);
+	[[nodiscard]] std::variant<Shader*, std::string> LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
 	void Destroy(Shader* shader);
 
 	// Root Signature
@@ -143,7 +140,7 @@ namespace wr::d3d12
 	void SetComputeShader(PipelineState* pipeline_state, Shader* shader);
 	void SetRootSignature(PipelineState* pipeline_state, RootSignature* root_signature);
 	void FinalizePipeline(PipelineState* pipeline_state, Device* device, desc::PipelineStateDesc desc);
-	void RefinalizePipeline(PipelineState* pipeline_state, Device* device, desc::PipelineStateDesc desc);
+	void RefinalizePipeline(PipelineState* pipeline_state); // TODO: Deprecate this. This should be part of create so it
 	void Destroy(PipelineState* pipeline_state);
 
 	// Staging Buffer
@@ -215,7 +212,8 @@ namespace wr::d3d12
 	void StageBuffer(CommandList* cmd_list, IndirectCommandBuffer* buffer, void* data, std::size_t num_commands, uint32_t frame_idx);
 
 	// State Object
-	[[nodiscard]] StateObject* CreateStateObject(Device* device, CD3DX12_STATE_OBJECT_DESC desc);
+	[[nodiscard]] StateObject* CreateStateObject(Device* device, desc::StateObjectDesc desc);
+	void RecreateStateObject(StateObject* state_object);
 	void SetGlobalRootSignature(StateObject* state_object, RootSignature* global_root_signature);
 	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj);
 	[[nodiscard]] void* GetShaderIdentifier(Device* device, StateObject* obj, std::string const & name);
@@ -243,5 +241,6 @@ namespace wr::d3d12
 			std::uint64_t shader_record_size);
 	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
 	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name);
+	void Destroy(ShaderTable* table);
 
 } /* wr::d3d12 */

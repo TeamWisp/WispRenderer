@@ -14,6 +14,9 @@
 #include "scene_graph/light_node.hpp"
 #include "scene_graph/mesh_node.hpp"
 #include "model_pool.hpp"
+#include "d3d12/d3d12_shader_registry.hpp"
+#include "d3d12/d3d12_rt_pipeline_registry.hpp"
+#include "d3d12/d3d12_pipeline_registry.hpp"
 
 namespace wr::imgui::internal
 {
@@ -386,17 +389,13 @@ namespace wr::imgui::window
 
 					internal::AddressText(obj);
 
-					if (ImGui::Button("Reload"))
-					{
-						// ..
-					}
-
 					ImGui::TreePop();
 				}
 			}
 
 			ImGui::End();
 		}
+
 	}
 
 	void PipelineRegistry()
@@ -407,7 +406,7 @@ namespace wr::imgui::window
 
 			ImGui::Begin("Pipeline Registry", &open_pipeline_registry);
 
-			ImGui::Text("Num descriptors: %d", registry.m_descriptions.size());
+			ImGui::Text("Num descriptions: %d", registry.m_descriptions.size());
 			ImGui::Text("Num objects: %d", registry.m_objects.size());
 			ImGui::Separator();
 
@@ -455,8 +454,164 @@ namespace wr::imgui::window
 
 					internal::AddressText(obj);
 
+					if (ImGui::Button("Reload"))
+					{
+						std::optional<std::string> error_msg = std::nullopt;
+						auto n_pipeline = static_cast<D3D12Pipeline*>(obj)->m_native;
+
+						auto recompile_shader = [&error_msg](auto& pipeline_shader)
+						{
+							auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+								pipeline_shader->m_path,
+								pipeline_shader->m_entry);
+
+							if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+							{
+								pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+							}
+							else
+							{
+								error_msg = std::get<std::string>(new_shader_variant);
+							}
+						};
+
+						// Vertex Shader
+						{
+							recompile_shader(n_pipeline->m_vertex_shader);
+						}
+						// Pixel Shader
+						if (!error_msg.has_value()) {
+							recompile_shader(n_pipeline->m_pixel_shader);
+						}
+
+						if (error_msg.has_value())
+						{
+							open_shader_compiler_popup = true;
+							shader_compiler_error = error_msg.value();
+						}
+						else
+						{
+							d3d12::RefinalizePipeline(n_pipeline);
+						}
+					}
+
 					ImGui::TreePop();
 				}
+			}
+
+			auto& rt_registry = RTPipelineRegistry::Get();
+
+			ImGui::Separator();
+
+			ImGui::Text("Num raytracing descriptions: %d", rt_registry.m_descriptions.size());
+			ImGui::Text("Num raytracing objects: %d", rt_registry.m_objects.size());
+			ImGui::Separator();
+
+			for (auto desc : rt_registry.m_descriptions)
+			{
+				StateObject* obj = nullptr;
+				auto obj_it = rt_registry.m_objects.find(desc.first);
+				if (obj_it != rt_registry.m_objects.end())
+				{
+					obj = obj_it->second;
+				}
+
+				std::string tree_name = "Raytracing Pipeline[" + std::to_string(desc.first) + "]";
+				if (ImGui::TreeNode(tree_name.c_str()))
+				{
+					if (ImGui::TreeNode("Description"))
+					{
+						ImGui::Text("ID: %d", desc.first);
+
+						auto text_handle = [](std::string handle_name, std::optional<int> handle)
+						{
+							if (handle.has_value())
+							{
+								std::string text = handle_name + " Handle: %d";
+								ImGui::Text(text.c_str(), handle);
+							}
+						};
+
+						text_handle("Library Shader", desc.second.library_desc.shader_handle);
+						text_handle("Global RootSignature", desc.second.global_root_signature.value_or(-1));
+
+						if (desc.second.local_root_signatures.has_value())
+						{
+							for (auto i = 0; i < desc.second.local_root_signatures.value().size(); i++)
+							{
+								ImGui::Text("Local Root Signature [%d] = %d", i, desc.second.local_root_signatures.value()[i]);
+							}
+						}
+
+						ImGui::TreePop();
+					}
+
+					internal::AddressText(obj);
+
+					if (ImGui::Button("Reload"))
+					{
+						std::optional<std::string> error_msg = std::nullopt;
+						auto n_pipeline = static_cast<D3D12StateObject*>(obj)->m_native;
+
+						auto recompile_shader = [&error_msg](auto& pipeline_shader)
+						{
+							auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+								pipeline_shader->m_path,
+								pipeline_shader->m_entry);
+
+							if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+							{
+								pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+							}
+							else
+							{
+								error_msg = std::get<std::string>(new_shader_variant);
+							}
+						};
+
+						// Vertex Shader
+						{
+							recompile_shader(n_pipeline->m_desc.m_library);
+						}
+
+						if (error_msg.has_value())
+						{
+							open_shader_compiler_popup = true;
+							shader_compiler_error = error_msg.value();
+						}
+						else
+						{
+							//*n_pipeline = *CreateStateObject(n_pipeline->m_device, n_pipeline->m_desc);
+							d3d12::RecreateStateObject(n_pipeline);
+						}
+					}
+
+					ImGui::TreePop();
+				}
+			}
+
+
+			if (open_shader_compiler_popup)
+			{
+				ImGui::OpenPopup("DirectXCompiler Output");
+				open_shader_compiler_popup = false;
+			}
+
+			auto viewport_size = ImGui::GetMainViewport()->Size;
+
+			ImGui::SetNextWindowSize(viewport_size);
+			if (ImGui::BeginPopupModal("DirectXCompiler Output", nullptr, ImGuiWindowFlags_AlwaysAutoResize |
+				ImGuiWindowFlags_NoSavedSettings |
+				ImGuiWindowFlags_NoCollapse |
+				ImGuiWindowFlags_NoMove |
+				ImGuiWindowFlags_NoDocking))
+			{
+				ImGui::Text("%s", shader_compiler_error.c_str());
+
+				ImGui::Separator();
+
+				if (ImGui::IsKeyReleased(ImGuiKey_Enter) || ImGui::Button("OK")) { ImGui::CloseCurrentPopup(); }
+				ImGui::EndPopup();
 			}
 
 			ImGui::End();

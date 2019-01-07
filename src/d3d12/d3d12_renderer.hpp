@@ -100,6 +100,7 @@ namespace wr
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
+		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void PrepareRTPipelineRegistry() final;
 
 		void WaitForAllPreviousWork() final;
@@ -130,6 +131,8 @@ namespace wr
 		void Update_LightNodes(SceneGraph& scene_graph);
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
 
+		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
+
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 		void BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list);
 
@@ -148,6 +151,8 @@ namespace wr
 		d3d12::CommandList* m_direct_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 
+		std::vector<std::uint64_t> m_buffer_frame_graph_uids;
+
 		std::shared_ptr<TexturePool> m_texture_pool;
 
 		d3d12::HeapResource* m_light_buffer;
@@ -161,10 +166,10 @@ namespace wr
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
     
-		float temp_metal = 0.2f;
-		float temp_rough = 0.8f;
+		float temp_metal = 0.5f;
+		float temp_rough = 0.45f;
 		float light_radius = 50;
-		float temp_intensity = 2;
+		float temp_intensity = 1;
 	private:
 
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;

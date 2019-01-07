@@ -1,12 +1,10 @@
 #include <memory>
 #include <algorithm>
+#include <thread>
+#include <chrono>
+
 #include "wisp.hpp"
-#include "render_tasks/d3d12_test_render_task.hpp"
-#include "render_tasks/d3d12_imgui_render_task.hpp"
-#include "render_tasks/d3d12_deferred_main.hpp"
-#include "render_tasks/d3d12_deferred_composition.hpp"
-#include "render_tasks/d3d12_deferred_render_target_copy.hpp"
-#include "render_tasks/d3d12_raytracing_task.hpp"
+#include "demo_frame_graphs.hpp"
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
@@ -28,6 +26,52 @@ std::shared_ptr<wr::TexturePool> texture_pool;
 void RenderEditor()
 {
 	engine::RenderEngine(render_system.get(), scene_graph.get());
+}
+
+void SetupShaderDirWatcher()
+{
+	auto handle = FindFirstChangeNotificationA("resources/shaders/", false,
+		FILE_NOTIFY_CHANGE_FILE_NAME |
+		FILE_NOTIFY_CHANGE_DIR_NAME |
+		FILE_NOTIFY_CHANGE_ATTRIBUTES |
+		FILE_NOTIFY_CHANGE_LAST_WRITE |
+		FILE_NOTIFY_CHANGE_SECURITY
+	);
+
+	auto thread = std::thread([handle]()
+	{
+		while (true)
+		{
+			auto wait_status = WaitForSingleObject(handle, INFINITE);
+			auto& registry = wr::PipelineRegistry::Get();
+
+			switch (wait_status)
+			{
+			case WAIT_OBJECT_0:
+				LOG("Change detected in the shader directory. Reloading pipelines and shaders.");
+
+				for (auto it : registry.m_objects)
+				{
+					registry.RequestReload(it.first);
+				}
+
+				if (FindNextChangeNotification(handle) == FALSE)
+				{
+					LOGW("FindNextChangeNotification function failed.");
+				}
+
+				using namespace std::chrono_literals;
+				std::this_thread::sleep_for(1s);
+
+				break;
+			default:
+				LOGW("Unhandled wait status.");
+				break;
+			}
+		}
+	});
+
+	thread.detach();
 }
 
 int WispEntry()
@@ -52,6 +96,10 @@ int WispEntry()
 		{
 			engine::show_imgui = !engine::show_imgui;
 		}
+		if (action == WM_KEYUP && key == VK_F2)
+		{
+			fg_manager::Next();
+		}
 	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
@@ -66,27 +114,17 @@ int WispEntry()
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
-	wr::FrameGraph frame_graph;
-	if (do_raytracing)
-	{
-		frame_graph.AddTask(wr::GetDeferredMainTask());
-		frame_graph.AddTask(wr::GetDeferredCompositionTask());
-		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::DeferredCompositionTaskData>());
-	}
-	else
-	{
-		frame_graph.AddTask(wr::GetRaytracingTask());
-		frame_graph.AddTask(wr::GetRenderTargetCopyTask<wr::RaytracingData>());
-	}
-	frame_graph.AddTask(wr::GetImGuiTask(&RenderEditor));
-	frame_graph.Setup(*render_system);
+	fg_manager::Setup(*render_system.get(), &RenderEditor);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
 		render_system->WaitForAllPreviousWork();
-		frame_graph.Resize(*render_system.get(), width, height);
 		render_system->Resize(width, height);
+		viknell_scene::camera->SetAspectRatio((float)width / (float)height);
+		fg_manager::Get()->Resize(*render_system.get(), width, height);
 	});
+
+	SetupShaderDirWatcher();
 
 	while (window->IsRunning())
 	{
@@ -94,13 +132,13 @@ int WispEntry()
 
 		SCENE::UpdateScene();
 
-		auto texture = render_system->Render(scene_graph, frame_graph);
+		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
 	}
 
 	delete assimp_model_loader;
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
-	frame_graph.Destroy();
+	fg_manager::Destroy();
 	render_system.reset();
 	return 0;
 }
