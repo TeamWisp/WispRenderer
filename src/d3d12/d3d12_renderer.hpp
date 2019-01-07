@@ -169,7 +169,7 @@ namespace wr
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
     
-		float temp_metal = 0.5f;
+		float temp_metal = 1.0f;
 		float temp_rough = 0.45f;
 		bool clear_path = false;
 		float light_radius = 50;

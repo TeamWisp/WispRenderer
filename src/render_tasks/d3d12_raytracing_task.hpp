@@ -226,15 +226,12 @@ namespace wr
 									materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
 									materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
 
-									auto upper3x3 = util::StripTranslationAndLowerVector(transform);
-
-									materials[material_id].m_model = XMMatrixTranspose(XMMatrixInverse(nullptr, upper3x3));;
+									materials[material_id].m_model = XMMatrixTranspose(XMMatrixInverse(nullptr, transform));
 
 									blas_list.push_back({ std::make_pair(blas, material_id), transform });
 
 									material_id++;
 								}
-
 							}
 						}
 					}

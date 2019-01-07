@@ -61,8 +61,8 @@ cbuffer CameraProperties : register(b0)
 	float3 camera_position;
 	float padding;
 
-	float dep_light_radius;
-	float dep_metal;
+	float focal_radius;
+	float focal_len;
 	float frame_idx;
 	float intensity;
 };
@@ -128,18 +128,40 @@ uint3 Load3x32BitIndices(uint offsetBytes)
  	return g_indices.Load3(offsetBytes);
 }
 
-inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset)
+inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset, unsigned int seed)
 {
-    float2 xy = (index + offset) + 0.5f; // center in the middle of the pixel.
+	float2 pixelOff = float2(nextRand(seed), nextRand(seed));  // Random offset in pixel to reduce floating point error.
+
+	float3 cameraU = float3(1, 0, 0);
+	float3 cameraV = float3(0, 1, 0);
+	float3 cameraW = float3(0, 0, 1);
+
+    float2 xy = (index + offset + pixelOff) + 0.5f; // center in the middle of the pixel.
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
     // Unproject the pixel coordinate into a world positon.
     float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
-    world.xyz /= world.w;
+	world.xyz = world.x * cameraU + world.y * cameraV + cameraW;
+    world.xyz /= 1;
+
+	float2 pixelCenter = (index + offset) / DispatchRaysDimensions().xy;            // Pixel ID -> [0..1] over screen
+	float2 ndc = float2(2, -2) * pixelCenter + float2(-1, 1);             // Convert to [-1..1]
+	float3 rayDir = ndc.x * cameraU + ndc.y * cameraV + cameraW;  // Ray to point on near plane
+	rayDir /= 1;
+
+	float focallen = focal_len;
+	float lensrad = focal_len / (2.0f * 16);
+	float3 focalPt = cameraPosition + focallen * world;  
+
+	float2 rngLens = float2(6.2831853f * nextRand(seed), lensrad*nextRand(seed));
+	float2 lensPos = float2(cos(rngLens.x) * rngLens.y, sin(rngLens.x) * rngLens.y);
+
+	//lensPos = mul(float4(lensPos, 0, 0), projectionToWorld);
 
     Ray ray;
-    ray.origin = cameraPosition;
-    ray.direction = normalize(world.xyz - ray.origin);
+    ray.origin = cameraPosition + float3(lensPos, 0);
+    ray.direction = normalize(focalPt.xyz - ray.origin);
+
 
     return ray;
 }
@@ -187,24 +209,26 @@ void RaygenEntry()
 
 #define FOUR_X_AA
 #ifdef FOUR_X_AA
-	Ray a = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.5, 0));
-	Ray b = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(-0.5, 0));
-	Ray c = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, 0.5));
-	Ray d = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, -0.5));
+	Ray a = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.5, 0), rand_seed);
+	Ray b = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(-0.5, 0), rand_seed);
+	Ray c = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, 0.5), rand_seed);
+	Ray d = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, -0.5), rand_seed);
 
 	float3 result_a = TraceColorRay(a.origin, a.direction, 0, rand_seed);
+	nextRand(rand_seed);
 	float3 result_b = TraceColorRay(b.origin, b.direction, 0, rand_seed);
+	nextRand(rand_seed);
 	float3 result_c = TraceColorRay(c.origin, c.direction, 0, rand_seed);
+	nextRand(rand_seed);
 	float3 result_d = TraceColorRay(d.origin, d.direction, 0, rand_seed);
 
 	float3 result = (result_a + result_b + result_c + result_d) / 4;
 #else
-	Ray ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0, 0));
+	Ray ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0, 0), rand_seed);
 	float3 result = TraceColorRay(ray.origin, ray.direction, 0, rand_seed);
 #endif
-	const float3 albedo = g_textures[12][DispatchRaysIndex().xy].xyz;
-
-	if (frame_idx > 0)
+	
+	if (frame_idx > 0 && !any(isnan(result)))
 	{
 		gOutput[DispatchRaysIndex().xy] += float4(result, 1);
 	}
@@ -310,6 +334,9 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const Vertex v1 = g_vertices[indices.y];
 	const Vertex v2 = g_vertices[indices.z];
 
+	// Variables
+	float3 V = normalize(payload.origin - hit_pos);
+
 	// Calculate actual "fragment" attributes.
 	float3 frag_pos = HitAttribute(v0.pos, v1.pos, v2.pos, attr);
 	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
@@ -320,26 +347,22 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
 	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).xyz;
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
+	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
-	if (roughness == 0 && metal == 0 && albedo.x == 0 && albedo.y == 0 && albedo.z == 0)
+	if (material.albedo_id == 12)
 	{
-		albedo = float3(2, 2, 2);
-		payload.color = albedo;
+		payload.color = float3(20, 20, 20);
 		return;
 	}
 
-	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
-	float3 N = mul(model_matrix, float4(normal, 1));
-	float3 T = mul(model_matrix, float4(tangent, 1));
-	float3 B = mul(model_matrix, float4(bitangent, 1));
+	float3 N = mul(model_matrix, float4(normal, 0));
+	float3 T = mul(model_matrix, float4(tangent, 0));
+	float3 B = mul(model_matrix, float4(bitangent, 0));
 	float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
-	//float3 fN = N;
-
-	// Variables
-	float3 V = normalize(payload.origin - hit_pos);
+	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Indirect lighting
 	float3 irradiance = float3(0, 0, 0);
@@ -348,33 +371,17 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	for (int i = 0; i < num_rays; i++)
 	{
 		float3 rand_dir   = getCosHemisphereSample(payload.seed, fN);
-		//uint rand_seed = initRand(DispatchRaysIndex().x + i + DispatchRaysIndex().y * DispatchRaysDimensions().x, i);
-		irradiance += TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed);
-
-		//float3 rhd = rand_dir.xyz;
-		//float cos_theta = (dot(rhd, Fn));
-		//irradiance += cos_theta * (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, rand_seed) * (albedo / PI)) / pdf;
+		float cos_theta = cos(dot(rand_dir, fN));
+		irradiance += (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
 	}
-
 	irradiance /= num_rays;
 
+	// Direct
+	float3 reflect_dir = ReflectRay(V, fN);
 
-	// Diffuse
-	float3 lighting = albedo * irradiance;
-
-	float4 reflection = TraceColorRay(hit_pos, ReflectRay(V, fN), payload.depth + 1, payload.seed);
-	
-	float3 result;
-	if (payload.depth == MAX_RECURSION - 1)
-	{
-		result = lighting;
-	}
-	else
-	{
-		float metal2 = 1.f - metal;
-		result = (reflection.xyz * (1.f - metal2)) + (lighting * metal2);
-	}
+	bool horizon = (dot(V, fN) > 0.0f);
+	float4 reflection = TraceColorRay(hit_pos, reflect_dir, payload.depth + 1, payload.seed);
 
 	// Output
-	payload.color = result;
+	payload.color = (irradiance + (reflection.xyz * metal));
 }

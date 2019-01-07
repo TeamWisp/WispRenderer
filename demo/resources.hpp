@@ -54,7 +54,7 @@ namespace resources
 		wr::Material* light_internal = material_pool->GetMaterial(light_material.m_id);
 
 		light_internal->SetAlbedo(black);
-		light_internal->SetNormal(rusty_metal_normal);
+		light_internal->SetNormal(black);
 		light_internal->SetRoughness(black);
 		light_internal->SetMetallic(black);
 
