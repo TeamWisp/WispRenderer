@@ -296,7 +296,7 @@ namespace wr
 			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
 		*/
 		template<typename T>
-		inline auto const & GetPredecessorData() const
+		inline auto const & GetPredecessorData()
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||

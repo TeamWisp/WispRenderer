@@ -130,6 +130,8 @@ uint3 Load3x32BitIndices(uint offsetBytes)
 
 inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset, unsigned int seed)
 {
+#define DEPTH_OF_FIELD
+#ifdef DEPTH_OF_FIELD
 	float2 pixelOff = float2(nextRand(seed), nextRand(seed));  // Random offset in pixel to reduce floating point error.
 
 	float3 cameraU = float3(1, 0, 0);
@@ -160,7 +162,19 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 
     Ray ray;
     ray.origin = cameraPosition + float3(lensPos, 0);
-    ray.direction = normalize(focalPt.xyz - ray.origin);
+	ray.direction = normalize(focalPt.xyz - ray.origin);
+#else
+    float2 xy = (index + offset) + 0.5f; // center in the middle of the pixel.
+    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+
+    // Unproject the pixel coordinate into a world positon.
+    float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
+    world.xyz /= world.w;
+
+    Ray ray;
+    ray.origin = cameraPosition;
+    ray.direction = normalize(world.xyz - ray.origin);
+#endif
 
 
     return ray;
@@ -365,16 +379,9 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Indirect lighting
-	float3 irradiance = float3(0, 0, 0);
-
-	int num_rays = 1;
-	for (int i = 0; i < num_rays; i++)
-	{
-		float3 rand_dir   = getCosHemisphereSample(payload.seed, fN);
-		float cos_theta = cos(dot(rand_dir, fN));
-		irradiance += (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
-	}
-	irradiance /= num_rays;
+	float3 rand_dir = getCosHemisphereSample(payload.seed, fN);
+	float cos_theta = cos(dot(rand_dir, fN));
+	float3 irradiance = (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
 
 	// Direct
 	float3 reflect_dir = ReflectRay(V, fN);

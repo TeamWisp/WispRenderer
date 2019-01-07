@@ -32,4 +32,9 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	float accum_count = frame_idx;
 	
 	return current / accum_count;
+	if (frame_idx > 0)
+	{
+		return (accum_count * previous + current) / (accum_count + 1);
+	}
+	return current;
 }

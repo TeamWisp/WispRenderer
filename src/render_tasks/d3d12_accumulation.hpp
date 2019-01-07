@@ -16,18 +16,18 @@ namespace wr
 		d3d12::HeapResource* out_cb;
 		ID3D12Resource* out_previous;
 	};
-	using AccumulationRenderTask_t = RenderTask<AccumulationData>;
 
 	int versions = 1;
 
 	namespace internal
 	{
 
-		inline void SetupAccumulationTask(RenderSystem & render_system, AccumulationRenderTask_t & task, AccumulationData & data)
+		inline void SetupAccumulationTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto n_render_target = static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>());
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
-			auto* fg = task.GetFrameGraph();
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<AccumulationData>(handle);
+			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
+			d3d12::SetName(n_render_target, L"Accumulation RT");
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::accumulation))->m_native;
@@ -40,10 +40,10 @@ namespace wr
 			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
 			SetName(data.out_srv_heap, L"Deferred Render Task SRV");
 
-			auto source_data = fg->GetData<RaytracingData>();
-			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(source_data.m_render_target);
+			auto& source_data = fg.GetPredecessorData<RaytracingData>();
+			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<RaytracingData>());
 
-			data.out_cb = source_data.m_data.out_cb_camera_handle->m_native;
+			data.out_cb = source_data.out_cb_camera_handle->m_native;
 
 			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
 			{
@@ -55,15 +55,15 @@ namespace wr
 			}
 		}
 
-		inline void ExecuteAccumulationTask(RenderSystem & render_system, AccumulationRenderTask_t & task, SceneGraph & scene_graph, AccumulationData & data)
+		inline void ExecuteAccumulationTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
-			auto n_render_target = static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>());
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& device = n_render_system.m_device;
+			auto& data = fg.GetData<AccumulationData>(handle);
+			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
-			auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			const auto viewport = n_render_system.m_viewport;
-			auto device = n_render_system.m_device;
-
 
 			d3d12::BindPipeline(cmd_list, data.out_pipeline);
 
@@ -82,49 +82,56 @@ namespace wr
 			d3d12::Draw(cmd_list, 4, 1, 0);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[1], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST));
+			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[0], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE));
 
-			cmd_list->m_native->CopyResource(n_render_target->m_render_targets[1], data.out_source_rt->m_render_targets[frame_idx % versions]);
+			cmd_list->m_native->CopyResource(n_render_target->m_render_targets[1], n_render_target->m_render_targets[0]);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[1], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET));
+			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[0], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 		}
 
-
-		inline void ResizeAccumulationTask(AccumulationRenderTask_t & task, AccumulationData & data, std::uint32_t width, std::uint32_t height)
+		inline void DestroyAccumulationTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			d3d12::Destroy(data.out_srv_heap);
-		}
+			auto& data = fg.GetData<AccumulationData>(handle);
 
-		inline void DestroyAccumulationTask(AccumulationRenderTask_t & task, AccumulationData& data)
-		{
 			d3d12::Destroy(data.out_srv_heap);
 		}
 
 	} /* internal */
 
-
-	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<AccumulationRenderTask_t> GetAccumulationTask()
+	inline void AddAccumulationTask(FrameGraph& frame_graph)
 	{
-		auto ptr = std::make_unique<AccumulationRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT, true,
-			RenderTargetProperties{
-				false,
-				std::nullopt,
-				std::nullopt,
-				ResourceState::RENDER_TARGET,
-				ResourceState::COPY_SOURCE,
-				false,
-				Format::UNKNOWN,
-				{ Format::R8G8B8A8_UNORM, Format::R32G32B32A32_FLOAT },
-				2,
-				false,
-				false
-			},
-			[](RenderSystem & render_system, AccumulationRenderTask_t & task, AccumulationData & data, bool) { internal::SetupAccumulationTask(render_system, task, data); },
-			[](RenderSystem & render_system, AccumulationRenderTask_t & task, SceneGraph & scene_graph, AccumulationData & data) { internal::ExecuteAccumulationTask(render_system, task, scene_graph, data); },
-			[](AccumulationRenderTask_t & task, AccumulationData & data, bool) { internal::DestroyAccumulationTask(task, data); }
-		);
+		RenderTargetProperties rt_properties
+		{
+			false,
+			std::nullopt,
+			std::nullopt,
+			ResourceState::RENDER_TARGET,
+			ResourceState::COPY_SOURCE,
+			false,
+			Format::UNKNOWN,
+			{ Format::R8G8B8A8_UNORM, Format::R8G8B8A8_UNORM }, // Output and Previous
+			2,
+			false,
+			false
+		};
 
-		return ptr;
+		RenderTaskDesc desc;
+		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::SetupAccumulationTask(rs, fg, handle, resize);
+		};
+		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
+			internal::ExecuteAccumulationTask(rs, fg, sg, handle);
+		};
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyAccumulationTask(fg, handle, resize);
+		};
+		desc.m_name = "Accumulation";
+		desc.m_properties = rt_properties;
+		desc.m_type = RenderTaskType::DIRECT;
+		desc.m_allow_multithreading = true;
+
+		frame_graph.AddTask<AccumulationData>(desc);
 	}
 
 } /* wr */

@@ -99,8 +99,8 @@ namespace wr
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<RaytracingData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
+			d3d12::SetName(n_render_target, L"Raytracing Target");
 
-			n_render_target->m_render_targets[0]->SetName(L"Raytracing Target");
 
 			data.out_init = true;
 
@@ -114,14 +114,6 @@ namespace wr
 			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
 
 			// materials are not versioned atm
-
-<<<<<<< HEAD
-=======
-			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
-
-			// Material Structured Buffer
->>>>>>> master
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 			// Pipeline State Object
 			auto& rt_registry = RTPipelineRegistry::Get();
@@ -157,7 +149,7 @@ namespace wr
 
 		std::vector<temp::RayTracingMaterial_CBData> materials(d3d12::settings::num_max_rt_materials);
 		int fc = -10;
-		inline void ExecuteRaytracingTask((RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
+		inline void ExecuteRaytracingTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto window = n_render_system.m_window.value();
@@ -352,7 +344,7 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);
 
 #ifdef _DEBUG
-				CreateShaderTables(device, data, frame_idx);
+				//CreateShaderTables(device, data, frame_idx);
 #endif
 
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1);
