@@ -40,9 +40,9 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 
 Texture2D g_textures[20] : register(t5);
-Texture2D gbuffer_albedo : register(t31);
-Texture2D gbuffer_normal : register(t32);
-Texture2D gbuffer_depth : register(t33);
+Texture2D gbuffer_albedo : register(t30);
+Texture2D gbuffer_normal : register(t31);
+Texture2D gbuffer_depth : register(t32);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -56,6 +56,7 @@ cbuffer CameraProperties : register(b0)
 {
 	float4x4 inv_view;
 	float4x4 inv_projection;
+	float4x4 inv_vp;
 };
 
 struct Ray
@@ -80,25 +81,28 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float TraceShadowRay(inout HitInfo payload, float3 origin, float3 direction, unsigned int depth)
+float TraceShadowRay(float3 origin, float3 direction, unsigned int depth)
 {
 	if (depth >= MAX_RECURSION)
 	{
 		return float(1.0);
 	}
 
+	HitInfo payload = {1.0, depth};
+
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = 0.00001;
+	ray.TMin = 0.0000;
 	ray.TMax = 10000.0;
 
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH
-		| RAY_FLAG_FORCE_OPAQUE,
+RAY_FLAG_NONE,
+		//RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH
+		// RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		1, // MultiplierForGeometryContributionToHitGroupIndex
@@ -109,41 +113,57 @@ float TraceShadowRay(inout HitInfo payload, float3 origin, float3 direction, uns
 	return payload.shadow_factor;
 }
 
-float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv)
+float3 unpack_position(float2 uv, float depth)
 {
-	// Get view space position
-	const float4 ndc = float4(uv * 2.0 -1.0, depth, 1.0);
-	float4 vpos = mul(proj_inv, ndc);
-	vpos /= vpos.w;
-	// Get and return projection space position
-	float4 wpos = mul(view_inv, float4(vpos.xyz, 1.0));
-	return wpos.xyz;
+	// Get world space position
+	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
+	float4 wpos = mul(inv_vp, ndc);
+	return (wpos.xyz / wpos.w).xyz;
+}
+
+float3 unpack_direction(float3 dir)
+{
+	// Get world space normal
+	const float4 vnormal = float4(dir.xyz, 0.0);
+	float4 wnormal = mul(inv_view, vnormal);
+	return wnormal.xyz;
 }
 
 [shader("raygeneration")]
 void RaygenEntry()
 {
-	// HitInfo payload = {1.0, depth};
+	// Texture UV coordinates [0, 1>
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+	
 
-
-	// Screen coordinates [0, 1]
-	float2 screenCo = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy);
-
-	// Texture UV coordinates [0, 1] (inverted y)
-	int2 uv = DispatchRaysIndex().xy;
-	uv.y = DispatchRaysDimensions().y - uv.y;
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screenCo = DispatchRaysIndex().xy;
+	screenCo.y = (DispatchRaysDimensions().y - screenCo.y - 1);
 
 	// Get g-buffer information
-	float3 albedo = gbuffer_albedo[DispatchRaysIndex().xy].xyz;
-	float3 norm = gbuffer_normal[DispatchRaysIndex().xy].xyz;
-	float depth = gbuffer_depth[uv.xy].x;
+	float3 albedo = gbuffer_albedo[screenCo.xy].xyz;
+	float3 normal = unpack_direction(gbuffer_normal[screenCo.xy].xyz);
+	float depth = gbuffer_depth[screenCo.xy].x;
 
 	// Get world position
-	float3 wpos = unpack_position(screenCo, depth, inv_projection, inv_view);
+	const float n = 0.1f;
+	const float f = 25.0f;
+	const float z = (2 * n) / (f + n - depth * (f - n)) / f;
 
+	float3 wpos = unpack_position(uv, depth) + (normal * 5e-3f);
+
+	// Set temp light direction
+	float3 light_dir = normalize(float3(0.0, -1.0, 0.0));
+	//float3 light_dir = normalize(float3(lights[0].dir.xyz));
+
+	// Trace shadow ray
+	float shadow_factor = TraceShadowRay(wpos.xyz, light_dir, 0);
 
 	// Output world position
-	gOutput[DispatchRaysIndex().xy] = float4(wpos.xyz, 1.0);
+	gOutput[DispatchRaysIndex().xy] = float4(albedo.xyz * shadow_factor, 1.0);
+	//gOutput[DispatchRaysIndex().xy] = float4(wpos.xyz, 1.0);
+	//gOutput[DispatchRaysIndex().xy] = float4(normal.xyz, 1.0);
+	//gOutput[DispatchRaysIndex().xy] = float4((wpos.xyz+ 1.0) * 0.5, 1.0);
 }
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
@@ -168,5 +188,5 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	// NOT USED
+	payload.shadow_factor = 1.0;
 }

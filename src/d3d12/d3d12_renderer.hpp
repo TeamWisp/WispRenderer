@@ -55,6 +55,7 @@ namespace wr
 		{
 			DirectX::XMMATRIX m_inverse_view;
 			DirectX::XMMATRIX m_inverse_projection;
+			DirectX::XMMATRIX m_inv_vp;
 		};
 
 		struct RayTracingCamera_CBData
