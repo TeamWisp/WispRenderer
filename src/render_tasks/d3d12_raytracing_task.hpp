@@ -4,7 +4,6 @@
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_constant_buffer_pool.hpp"
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
-#include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
@@ -32,7 +31,6 @@ namespace wr
 
 		bool out_init;
 	};
-	using RaytracingTask = RenderTask<RaytracingData>;
 
 	namespace internal
 	{
@@ -95,11 +93,12 @@ namespace wr
 			}
 		}
 
-		inline void SetupRaytracingTask(RenderSystem & render_system, RaytracingTask & task, RaytracingData & data)
+		inline void SetupRaytracingTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& device = n_render_system.m_device;
-			auto n_render_target = static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>());
+			auto& data = fg.GetData<RaytracingData>(handle);
+			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			n_render_target->m_render_targets[0]->SetName(L"Raytracing Target");
 
@@ -120,16 +119,16 @@ namespace wr
 
 			// Camera constant buffer
 			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
-			
+
 			// Material Structured Buffer
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 
 			// Pipeline State Object
-			auto rt_registry = RTPipelineRegistry::Get();
+			auto& rt_registry = RTPipelineRegistry::Get();
 			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
 
 			// Root Signature
-			auto rs_registry = RootSignatureRegistry::Get();
+			auto& rs_registry = RootSignatureRegistry::Get();
 			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
 
 			CreateShaderTables(device, data, 0);
@@ -147,12 +146,13 @@ namespace wr
 
 		std::vector<temp::RayTracingMaterial_CBData> materials(d3d12::settings::num_max_rt_materials);
 
-		inline void ExecuteRaytracingTask(RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data)
+		inline void ExecuteRaytracingTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
-			auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+			auto& data = fg.GetData<RaytracingData>(handle);
 
 			auto frame_idx = n_render_system.GetFrameIdx();
 
@@ -321,7 +321,7 @@ namespace wr
 				{
 					d3d12::BindComputeShaderResourceView(cmd_list, tlas.m_native, 1);
 				}
-				else if(d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 				{
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, tlas.m_fallback_tlas_ptr);
 				}
@@ -336,36 +336,45 @@ namespace wr
 			}
 		}
 
-		inline void DestroyRaytracingTask(RaytracingTask & task, RaytracingData& data)
+		inline void DestroyRaytracingTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 		}
 
 	} /* internal */
 
-
-	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<RaytracingTask> GetRaytracingTask()
+	inline void AddRaytracingTask(FrameGraph& frame_graph)
 	{
-		auto ptr = std::make_unique<RaytracingTask>(nullptr, "Deferred Render Task", RenderTaskType::COMPUTE, true,
-			RenderTargetProperties{
-				false,
-				std::nullopt,
-				std::nullopt,
-				ResourceState::UNORDERED_ACCESS,
-				ResourceState::COPY_SOURCE,
-				false,
-				Format::UNKNOWN,
-				{ Format::R8G8B8A8_UNORM },
-				1,
-				true,
-				true
-			},
-			[](RenderSystem & render_system, RaytracingTask & task, RaytracingData & data, bool) { internal::SetupRaytracingTask(render_system, task, data); },
-			[](RenderSystem & render_system, RaytracingTask & task, SceneGraph & scene_graph, RaytracingData & data) { internal::ExecuteRaytracingTask(render_system, task, scene_graph, data); },
-			[](RaytracingTask & task, RaytracingData & data, bool) { internal::DestroyRaytracingTask(task, data); }
-		);
+		RenderTargetProperties rt_properties
+		{
+			false,
+			std::nullopt,
+			std::nullopt,
+			ResourceState::UNORDERED_ACCESS,
+			ResourceState::COPY_SOURCE,
+			false,
+			Format::UNKNOWN,
+			{ Format::R8G8B8A8_UNORM },
+			1,
+			true,
+			true
+		};
 
-		return ptr;
+		RenderTaskDesc desc;
+		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::SetupRaytracingTask(rs, fg, handle, resize);
+		};
+		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
+			internal::ExecuteRaytracingTask(rs, fg, sg, handle);
+		};
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyRaytracingTask(fg, handle, resize);
+		};
+		desc.m_name = "Raytracing";
+		desc.m_properties = rt_properties;
+		desc.m_type = RenderTaskType::COMPUTE;
+		desc.m_allow_multithreading = true;
+
+		frame_graph.AddTask<RaytracingData>(desc);
 	}
 
 } /* wr */

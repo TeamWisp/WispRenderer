@@ -87,7 +87,8 @@ namespace wr::d3d12
 
 		if (FAILED(hr))
 		{
-			LOGC("Failed to compile {} (entry: {}), Incorrect entry or path?", path, entry);
+			std::string error_msg = "Failed to compile " + path + " (entry: " + entry + "), Incorrect entry or path?";
+			return error_msg;
 		}
 
 		// compiler output

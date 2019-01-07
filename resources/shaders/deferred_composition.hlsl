@@ -1,5 +1,6 @@
 #include "fullscreen_quad.hlsl"
 #include "pbr_util.hlsl"
+#include "hdr_util.hlsl"
 
 struct Light 
 {
@@ -77,7 +78,6 @@ float3 shade_light(float3 vpos, float3 V, float3 albedo, float3 normal, float me
 
 float3 shade_pixel(float3 vpos, float3 V, float3 albedo, float metallic, float roughness, float3 normal)
 {
-
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
 	float ambient = 0.1f;
@@ -89,7 +89,6 @@ float3 shade_pixel(float3 vpos, float3 V, float3 albedo, float metallic, float r
 	}
 
 	return res * albedo;
-
 }
 
 [numthreads(16, 16, 1)]
@@ -113,6 +112,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 vpos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection);
 	float3 V = normalize(-vpos);
 
+	float3 retval = shade_pixel(vpos, V, albedo, metallic, roughness, normal);
+	
+	float gamma = 1;
+	float exposure = 1;
+	retval = linearToneMapping(retval, exposure, gamma);
+	
 	//Do shading
-	output[int2(dispatch_thread_id.xy)] = float4(shade_pixel(vpos, V, albedo, metallic, roughness, normal), 1.f);
+	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
 }
