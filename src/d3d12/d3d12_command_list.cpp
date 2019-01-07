@@ -227,10 +227,10 @@ namespace wr::d3d12
 			cmd_list->m_native->SetPipelineState1(state_object->m_native);
 		}
 
-		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
-		{
-			cmd_list->m_dynamic_descriptor_heaps[i]->ParseRootSignature(*state_object->m_global_root_signature);
-		}
+		//for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		//{
+		//	cmd_list->m_dynamic_descriptor_heaps[i]->ParseRootSignature(*state_object->m_global_root_signature);
+		//}
 	}
 
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport)
@@ -479,10 +479,10 @@ namespace wr::d3d12
 		desc.Height = height;
 		desc.Depth = depth;
 
-		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
-		{
-			cmd_list->m_dynamic_descriptor_heaps[i]->CommitStagedDescriptorsForDispatch(*cmd_list);
-		}
+		//for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		//{
+		//	cmd_list->m_dynamic_descriptor_heaps[i]->CommitStagedDescriptorsForDispatch(*cmd_list);
+		//}
 
 
 		if (cmd_list->m_native_fallback)
