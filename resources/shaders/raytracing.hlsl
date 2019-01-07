@@ -363,7 +363,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
 	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
-	if (material.albedo_id == 12)
+	if (material.albedo_id == 0)
 	{
 		payload.color = float3(20, 20, 20);
 		return;

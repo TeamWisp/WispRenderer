@@ -238,14 +238,6 @@ namespace wr
 					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, blas_list);
 					tlas.m_native->SetName(L"Highlevelaccel");
 
-					//tlas.m_native->
-					CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-						tlas.m_native,
-						D3D12_RESOURCE_STATE_GENERIC_READ,
-						D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
-					);
-					//cmd_list->m_native->ResourceBarrier(1, &barrier);
-
 					// Transition all model pools back to whatever they were.
 					for (auto& pool : model_pools)
 					{
@@ -344,7 +336,7 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, temp_vb->m_buffer, 3);
 
 #ifdef _DEBUG
-				//CreateShaderTables(device, data, frame_idx);
+				CreateShaderTables(device, data, frame_idx);
 #endif
 
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1);

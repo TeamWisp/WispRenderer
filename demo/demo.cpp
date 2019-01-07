@@ -16,8 +16,6 @@
 
 #define SCENE viknell_scene
 
-constexpr bool do_raytracing = false;
-
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 

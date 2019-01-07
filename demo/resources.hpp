@@ -16,7 +16,6 @@ namespace resources
 	static wr::Model* ball_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
-	static wr::MaterialHandle harsh_brick_material;
 	static wr::MaterialHandle ball_material;
 	static wr::MaterialHandle light_material;
 
@@ -26,27 +25,22 @@ namespace resources
 		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
-		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);
-		wr::TextureHandle rusty_metal_normal = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_normal.png", false, true);
-		wr::TextureHandle rusty_metal_roughness = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_roughness.png", false, true);
-		wr::TextureHandle rusty_metal_metallic = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_metallic.png", false, true);
+		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
 
 		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", false, true);
 		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metal-splotchy-normal-dx.png", false, true);
 		wr::TextureHandle metal_splotchy_roughness = texture_pool->Load("resources/materials/metal-splotchy-rough.png", false, true);
 		wr::TextureHandle metal_splotchy_metallic = texture_pool->Load("resources/materials/metal-splotchy-metal.png", false, true);
 
-		wr::TextureHandle metal_grid_albedo = texture_pool->Load("resources/materials/metalgrid2_basecolor.png", false, true);
-		wr::TextureHandle metal_grid_normal = texture_pool->Load("resources/materials/metalgrid2_normal-dx.png", false, true);
-		wr::TextureHandle metal_grid_roughness = texture_pool->Load("resources/materials/metalgrid2_roughness.png", false, true);
-		wr::TextureHandle metal_grid_metallic = texture_pool->Load("resources/materials/metalgrid2_metallic.png", false, true);
-
-		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
-
 		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", false, true);
 		wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
+
+		wr::TextureHandle ball_material_albedo = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Base_Color.png", false, true);
+		wr::TextureHandle ball_material_normal = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Normal_DirectX.png", false, true);
+		wr::TextureHandle ball_material_roughness = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Roughness.png", false, true);
+		wr::TextureHandle ball_material_metallic = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Metallic.png", false, true);
 
 		// Create Material
 		light_material = material_pool->Create();
@@ -68,12 +62,6 @@ namespace resources
 		rusty_metal_internal->SetRoughness(metal_splotchy_roughness);
 		rusty_metal_internal->SetMetallic(metal_splotchy_metallic);
 
-		// Load Texture.
-		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
-		wr::TextureHandle rock_normal = texture_pool->Load("resources/materials/rock/rock_normal.png", false, true);
-		wr::TextureHandle rock_roughness = texture_pool->Load("resources/materials/rock/rock_roughness.png", false, true);
-		wr::TextureHandle rock_metallic = texture_pool->Load("resources/materials/rock/rock_metallic.png", false, true);
-
 		// Create Material
 		rock_material = material_pool->Create();
 
@@ -83,28 +71,6 @@ namespace resources
 		rock_material_internal->SetNormal(bamboo_normal);
 		rock_material_internal->SetRoughness(bamboo_roughness);
 		rock_material_internal->SetMetallic(bamboo_metallic);
-
-		//Load harsh rock texture
-		wr::TextureHandle harsh_brick_albedo =		texture_pool->Load("resources/materials/harsh_bricks/harshbricks-albedo.png", false, true);
-		wr::TextureHandle harsh_brick_normal =		texture_pool->Load("resources/materials/harsh_bricks/harshbricks-normal.png", false, true);
-		wr::TextureHandle harsh_brick_roughness =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-roughness.png", false, true);
-		wr::TextureHandle harsh_brick_metallic =	texture_pool->Load("resources/materials/harsh_bricks/harshbricks-metalness.png", false, true);
-	
-		//Create Material
-		harsh_brick_material = material_pool->Create();
-
-		wr::Material* harsh_brick_material_internal = material_pool->GetMaterial(harsh_brick_material.m_id);
-
-		harsh_brick_material_internal->SetAlbedo(harsh_brick_albedo);
-		harsh_brick_material_internal->SetNormal(harsh_brick_normal);
-		harsh_brick_material_internal->SetRoughness(harsh_brick_roughness);
-		harsh_brick_material_internal->SetMetallic(harsh_brick_metallic);
-
-		//Load harsh rock texture
-		wr::TextureHandle ball_material_albedo =	texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Base_Color.png", false, true);
-		wr::TextureHandle ball_material_normal =	texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Normal_DirectX.png", false, true);
-		wr::TextureHandle ball_material_roughness = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Roughness.png", false, true);
-		wr::TextureHandle ball_material_metallic =	texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Metallic.png", false, true);
 
 		//Create Material
 		ball_material = material_pool->Create();
