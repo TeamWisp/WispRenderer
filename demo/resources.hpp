@@ -13,10 +13,8 @@ namespace resources
 	static wr::Model* plane_model;
 	static wr::Model* light_model;
 	static wr::Model* test_model;
-	static wr::Model* ball_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
-	static wr::MaterialHandle ball_material;
 	static wr::MaterialHandle light_material;
 
 	void CreateResources(wr::RenderSystem* render_system)
@@ -36,11 +34,6 @@ namespace resources
 		wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
-
-		wr::TextureHandle ball_material_albedo = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Base_Color.png", false, true);
-		wr::TextureHandle ball_material_normal = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Normal_DirectX.png", false, true);
-		wr::TextureHandle ball_material_roughness = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Roughness.png", false, true);
-		wr::TextureHandle ball_material_metallic = texture_pool->Load("resources/materials/ball_material/DefaultMaterial_Metallic.png", false, true);
 
 		// Create Material
 		light_material = material_pool->Create();
@@ -71,17 +64,7 @@ namespace resources
 		rock_material_internal->SetNormal(bamboo_normal);
 		rock_material_internal->SetRoughness(bamboo_roughness);
 		rock_material_internal->SetMetallic(bamboo_metallic);
-
-		//Create Material
-		ball_material = material_pool->Create();
-
-		wr::Material* ball_material_internal = material_pool->GetMaterial(ball_material.m_id);
-
-		ball_material_internal->SetAlbedo(ball_material_albedo);
-		ball_material_internal->SetNormal(ball_material_normal);
-		ball_material_internal->SetRoughness(ball_material_roughness);
-		ball_material_internal->SetMetallic(ball_material_metallic);
-		
+	
 		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
@@ -172,14 +155,6 @@ namespace resources
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
-			}
-		}
-		{
-			ball_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/matterialBall.fbx");
-
-			for (auto& m : ball_model->m_meshes)
-			{
-				m.second = &ball_material;
 			}
 		}
 	}

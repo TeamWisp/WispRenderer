@@ -354,7 +354,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 frag_pos = HitAttribute(v0.pos, v1.pos, v2.pos, attr);
 	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
 	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
-	float3 bitangent = cross(normal, tangent);
+	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
 	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
 	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
