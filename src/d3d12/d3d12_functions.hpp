@@ -95,6 +95,11 @@ namespace wr::d3d12
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void Destroy(TextureResource* tex);
 
+	// Read-back buffer
+	[[nodiscard]] ReadbackBuffer* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);
+	void SetName(ReadbackBuffer* readback_buffer, std::wstring name);
+	void Destroy(ReadbackBuffer* readback_buffer);
+
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, IUnknown* window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
