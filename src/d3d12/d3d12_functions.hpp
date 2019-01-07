@@ -40,8 +40,7 @@ namespace wr::d3d12
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object, bool fallback = false);
-	void SetDescriptorHeap(CommandList* cmd_list, DescriptorHeap* heap, DescriptorHeapType type, unsigned int frame_idx, bool fallback = false);
-	//void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback = false);
+	void BindDescriptorHeap(CommandList* cmd_list, DescriptorHeap* heap, DescriptorHeapType type, unsigned int frame_idx, bool fallback = false);
 	void BindDescriptorHeaps(CommandList* cmd_list, unsigned int frame_idx, bool fallback = false);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);

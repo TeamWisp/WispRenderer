@@ -3,9 +3,7 @@
 #include "d3d12_functions.hpp"
 #include "../util/log.hpp"
 
-///////////////////////////
-// DESCRIPTOR ALLOCATION //
-///////////////////////////
+// DESCRIPTOR ALLOCATION FUNCTIONS
 
 namespace wr
 {
@@ -101,10 +99,7 @@ namespace wr
 	}
 }
 
-
-///////////////////////////////
-// DESCRIPTOR ALLOCATOR PAGE //
-///////////////////////////////
+// DESCRIPTOR ALLOCATOR PAGE FUNCTIONS
 
 namespace wr
 {
@@ -224,21 +219,21 @@ namespace wr
 	{
 		// Find the first element whose offset is greater than the specified offset.
 		// This is the block that should appear after the block that is being freed.
-		auto nextBlockIt = m_freelist_by_offset.upper_bound(offset);
+		auto next_block_it = m_freelist_by_offset.upper_bound(offset);
 
 		// Find the block that appears before the block being freed.
-		auto prevBlockIt = nextBlockIt;
+		auto prev_block_it = next_block_it;
 		// If it's not the first block in the list.
-		if (prevBlockIt != m_freelist_by_offset.begin())
+		if (prev_block_it != m_freelist_by_offset.begin())
 		{
 			// Go to the previous block in the list.
-			--prevBlockIt;
+			--prev_block_it;
 		}
 		else
 		{
 			// Otherwise, just set it to the end of the list to indicate that no
 			// block comes before the one being freed.
-			prevBlockIt = m_freelist_by_offset.end();
+			prev_block_it = m_freelist_by_offset.end();
 		}
 
 		// Add the number of free handles back to the heap.
@@ -246,8 +241,8 @@ namespace wr
 		// blocks modifies the numDescriptors variable.
 		m_num_free_handles += num_descriptors;
 
-		if (prevBlockIt != m_freelist_by_offset.end() &&
-			offset == prevBlockIt->first + prevBlockIt->second.m_size)
+		if (prev_block_it != m_freelist_by_offset.end() &&
+			offset == prev_block_it->first + prev_block_it->second.m_size)
 		{
 			// The previous block is exactly behind the block that is to be freed.
 			//
@@ -257,16 +252,16 @@ namespace wr
 			//
 
 			// Increase the block size by the size of merging with the previous block.
-			offset = prevBlockIt->first;
-			num_descriptors += prevBlockIt->second.m_size;
+			offset = prev_block_it->first;
+			num_descriptors += prev_block_it->second.m_size;
 
 			// Remove the previous block from the free list.
-			m_freelist_by_size.erase(prevBlockIt->second.m_freelist_by_size_itr);
-			m_freelist_by_offset.erase(prevBlockIt);
+			m_freelist_by_size.erase(prev_block_it->second.m_freelist_by_size_itr);
+			m_freelist_by_offset.erase(prev_block_it);
 		}
 
-		if (nextBlockIt != m_freelist_by_offset.end() &&
-			offset + num_descriptors == nextBlockIt->first)
+		if (next_block_it != m_freelist_by_offset.end() &&
+			offset + num_descriptors == next_block_it->first)
 		{
 			// The next block is exactly in front of the block that is to be freed.
 			//
@@ -275,11 +270,11 @@ namespace wr
 			// |<------Size-------->|<-----NextBlock.Size----->|
 
 			// Increase the block size by the size of merging with the next block.
-			num_descriptors += nextBlockIt->second.m_size;
+			num_descriptors += next_block_it->second.m_size;
 
 			// Remove the next block from the free list.
-			m_freelist_by_size.erase(nextBlockIt->second.m_freelist_by_size_itr);
-			m_freelist_by_offset.erase(nextBlockIt);
+			m_freelist_by_size.erase(next_block_it->second.m_freelist_by_size_itr);
+			m_freelist_by_offset.erase(next_block_it);
 		}
 
 		// Add the freed block to the free list.
@@ -306,9 +301,7 @@ namespace wr
 	}
 }
 
-//////////////////////////
-// DESCRIPTOR ALLOCATOR //
-//////////////////////////
+// DESCRIPTOR ALLOCATOR FUNCTIONS
 
 namespace wr
 {
@@ -340,11 +333,11 @@ namespace wr
 
 		for (auto iter = m_available_heaps.begin(); iter != m_available_heaps.end(); ++iter)
 		{
-			auto allocatorPage = m_heap_pool[*iter];
+			auto allocator_page = m_heap_pool[*iter];
 
-			allocation = allocatorPage->Allocate(num_dscriptors);
+			allocation = allocator_page->Allocate(num_dscriptors);
 
-			if (allocatorPage->NumFreeHandles() == 0)
+			if (allocator_page->NumFreeHandles() == 0)
 			{
 				iter = m_available_heaps.erase(iter);
 			}

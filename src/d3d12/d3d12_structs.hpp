@@ -197,9 +197,9 @@ namespace wr::d3d12
 		desc::RootSignatureDesc m_create_info;
 		ID3D12RootSignature* m_native;
 
-		uint32_t m_num_descriptors_per_table[32];
-		uint32_t m_sampler_table_bit_mask;
-		uint32_t m_descriptor_table_bit_mask;
+		std::uint32_t m_num_descriptors_per_table[32];
+		std::uint32_t m_sampler_table_bit_mask;
+		std::uint32_t m_descriptor_table_bit_mask;
 	};
 
 	struct PipelineState;
@@ -258,28 +258,6 @@ namespace wr::d3d12
 		std::uint8_t* m_cpu_address;
 		bool m_is_staged;
 	};
-
-	//struct TextureResource : Texture
-	//{
-	//	std::size_t m_width;
-	//	std::size_t m_height;
-	//	std::size_t m_depth;
-	//	std::size_t m_array_size;
-	//	std::size_t m_mip_levels;
-
-	//	Format m_format;
-
-	//	ID3D12Resource* m_resource;
-	//	ID3D12Resource* m_intermediate;
-	//	ResourceState m_current_state;
-	//	DescHeapCPUHandle m_cpu_descriptor_handle;
-
-	//	uint8_t* m_allocated_memory;
-
-	//	bool m_is_staged = false;
-	//	bool m_need_mips = false;
-	//	bool m_is_cubemap = false;
-	//};
 
 	struct HeapResource;
 	namespace detail

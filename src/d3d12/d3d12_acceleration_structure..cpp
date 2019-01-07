@@ -192,8 +192,7 @@ namespace wr::d3d12
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-			//d3d12::BindDescriptorHeaps(cmd_list, { desc_heap }, 0, true);//TODO: note this non frame idx
-			d3d12::SetDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true);
+			d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
 			BuildAccelerationStructure(cmd_list->m_native_fallback);
 		}
 
@@ -330,8 +329,7 @@ namespace wr::d3d12
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-			//d3d12::BindDescriptorHeaps(cmd_list, { desc_heap }, 0, true);//TODO: note this non frame idx
-			d3d12::SetDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true);
+			d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
 			BuildAccelerationStructure(cmd_list->m_native_fallback);
 		}
 

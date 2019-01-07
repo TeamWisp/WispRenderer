@@ -164,7 +164,7 @@ namespace wr
 				m_current_gpu_desc_handle = d3d12::GetGPUHandle(m_current_descriptor_heap, 0);
 				m_num_free_handles = m_num_descr_per_heap;
 
-				d3d12::SetDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
+				d3d12::BindDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
 
 				// When updating the descriptor heap on the command list, all descriptor
 				// tables must be (re)recopied to the new descriptor heap (not just
@@ -221,7 +221,7 @@ namespace wr
 				m_current_gpu_desc_handle = d3d12::GetGPUHandle(m_current_descriptor_heap, 0);
 				m_num_free_handles = m_num_descr_per_heap;
 
-				d3d12::SetDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
+				d3d12::BindDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
 
 				// When updating the descriptor heap on the command list, all descriptor
 				// tables must be (re)recopied to the new descriptor heap (not just
@@ -274,7 +274,7 @@ namespace wr
 
 			m_num_free_handles = m_num_descr_per_heap;
 
-			d3d12::SetDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
+			d3d12::BindDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
 
 			// When updating the descriptor heap on the command list, all descriptor
 			// tables must be (re)recopied to the new descriptor heap (not just

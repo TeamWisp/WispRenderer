@@ -166,7 +166,7 @@ namespace wr::d3d12
 		}
 	}
 
-	void SetDescriptorHeap(CommandList* cmd_list, DescriptorHeap* heap, DescriptorHeapType type, unsigned int frame_idx, bool fallback)
+	void BindDescriptorHeap(CommandList* cmd_list, DescriptorHeap* heap, DescriptorHeapType type, unsigned int frame_idx, bool fallback)
 	{
 		size_t heap_idx = frame_idx % heap->m_create_info.m_versions;
 
@@ -200,26 +200,6 @@ namespace wr::d3d12
 			cmd_list->m_native->SetDescriptorHeaps(num_heaps, n_heaps);
 		}
 	}
-
-	//void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback)
-	//{
-	//	auto num = heaps.size();
-	//	std::vector<ID3D12DescriptorHeap*> n_heaps(num);
-
-	//	for (decltype(num) i = 0; i < num; i++)
-	//	{
-	//		n_heaps[i] = heaps[i]->m_native[frame_idx % heaps[i]->m_create_info.m_versions];
-	//	}
-
-	//	if (fallback)
-	//	{
-	//		cmd_list->m_native_fallback->SetDescriptorHeaps(num, n_heaps.data());
-	//	}
-	//	else
-	//	{
-	//		cmd_list->m_native->SetDescriptorHeaps(num, n_heaps.data());
-	//	}
-	//}
 
 	void BindComputePipeline(CommandList* cmd_list, PipelineState * pipeline_state)
 	{
