@@ -12,12 +12,8 @@ namespace resources
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
 	static wr::Model* test_model;
-	static wr::Model* ball_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
-	static wr::MaterialHandle harsh_brick_material;
-	static wr::MaterialHandle ball_material;
-	static wr::MaterialHandle brick_material;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
