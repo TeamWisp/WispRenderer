@@ -80,6 +80,13 @@ namespace wr::d3d12
 
 	void CreateSRVFromTexture(TextureResource* tex)
 	{
+		d3d12::DescHeapCPUHandle handle = tex->m_desc_allocation.GetDescriptorHandle();
+
+		CreateSRVFromTexture(tex, handle);
+	}
+
+	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle)
+	{
 		decltype(Device::m_native) n_device;
 
 		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
@@ -135,8 +142,6 @@ namespace wr::d3d12
 		}
 
 		srv_desc.ViewDimension = dimension;
-
-		d3d12::DescHeapCPUHandle handle = tex->m_desc_allocation.GetDescriptorHandle();
 
 		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
 	}
