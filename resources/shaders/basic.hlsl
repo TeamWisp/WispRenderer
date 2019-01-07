@@ -90,8 +90,8 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float4 metallic = material_metallic.Sample(s0, input.uv);
 
 	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);	
-	float3 normal = normalize(mul(input.tbn, tex_normal));
-	
+	float3 normal = normalize(mul(tbn, tex_normal));
+
 	output.albedo_roughness = float4(albedo.xyz, roughness.r);
 	output.normal_metallic = float4(normal, metallic.r);
 	return output;
