@@ -1,3 +1,4 @@
+#define REGISTER register(t2)
 #include "pbr_util.hlsl"
 #include "lighting.hlsl"
 
@@ -24,8 +25,7 @@ struct Material
 RWTexture2D<float4> gOutput : register(u0);
 RaytracingAccelerationStructure Scene : register(t0, space0);
 ByteAddressBuffer g_indices : register(t1);
-
-StructuredBuffer<Vertex> g_vertices : register(t2);
+StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 
 Texture2D g_textures[20] : register(t5);

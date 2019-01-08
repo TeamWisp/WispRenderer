@@ -1,4 +1,3 @@
-
 //48 KiB; 48 * 1024 / sizeof(MeshNode)
 //48 * 1024 / (4 * 4 * 4) = 48 * 1024 / 64 = 48 * 16 = 768
 #define MAX_INSTANCES 768

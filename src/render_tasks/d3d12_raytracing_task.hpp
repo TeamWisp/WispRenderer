@@ -292,7 +292,7 @@ namespace wr
 				{
 					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 				}
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, 3);
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, 2);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 
 				// Update material data
