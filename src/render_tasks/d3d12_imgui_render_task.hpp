@@ -4,6 +4,7 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../frame_graph/frame_graph.hpp"
+#include "../imgui/ImGuizmo.h"
 
 #include "../imgui/imgui.hpp"
 #include "../imgui/imgui_impl_win32.hpp"
@@ -83,6 +84,7 @@ namespace wr
 				ImGui_ImplDX12_NewFrame();
 				ImGui_ImplWin32_NewFrame();
 				ImGui::NewFrame();
+				ImGuizmo::BeginFrame();
 
 				data.in_imgui_func();
 
