@@ -3,6 +3,7 @@
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
 #include "d3dx12.hpp"
+#include "d3d12_texture_resources.hpp"
 
 namespace wr::d3d12
 {
@@ -77,6 +78,13 @@ namespace wr::d3d12
 		tex->m_resource->SetName(name.c_str());
 	}
 
+	void CreateSRVFromTexture(TextureResource* tex)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_desc_allocation.GetDescriptorHandle();
+
+		CreateSRVFromTexture(tex, handle);
+	}
+
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle)
 	{
 		decltype(Device::m_native) n_device;
@@ -136,6 +144,13 @@ namespace wr::d3d12
 		srv_desc.ViewDimension = dimension;
 
 		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
+	}
+
+	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_desc_allocation.GetDescriptorHandle();
+
+		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
 	}
 
 	void Destroy(TextureResource* tex)

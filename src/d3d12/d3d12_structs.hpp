@@ -15,6 +15,12 @@
 #include "d3d12_settings.hpp"
 #include "d3dx12.hpp"
 
+namespace wr
+{
+	class DynamicDescriptorHeap;
+	class DescriptorAllocation;
+}
+
 namespace wr::d3d12
 {
 
@@ -147,6 +153,12 @@ namespace wr::d3d12
 		std::vector<ID3D12CommandAllocator*> m_allocators;
 		ID3D12GraphicsCommandList5* m_native;
 		ID3D12RaytracingFallbackCommandList* m_native_fallback;
+
+		// Dynamic descriptor heap where staging happens
+		std::unique_ptr<DynamicDescriptorHeap> m_dynamic_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
+		
+		// Keep track of currently bound heaps, so that we can avoid changing when not needed
+		ID3D12DescriptorHeap* m_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 	};
 
 	struct CommandSignature
@@ -184,6 +196,10 @@ namespace wr::d3d12
 	{
 		desc::RootSignatureDesc m_create_info;
 		ID3D12RootSignature* m_native;
+
+		std::uint32_t m_num_descriptors_per_table[32];
+		std::uint32_t m_sampler_table_bit_mask;
+		std::uint32_t m_descriptor_table_bit_mask;
 	};
 
 	struct PipelineState;
@@ -241,29 +257,6 @@ namespace wr::d3d12
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 		std::uint8_t* m_cpu_address;
 		bool m_is_staged;
-	};
-
-	struct TextureResource : Texture
-	{
-		std::size_t m_width;
-		std::size_t m_height;
-		std::size_t m_depth;
-		std::size_t m_array_size;
-		std::size_t m_mip_levels;
-
-		Format m_format;
-
-		ID3D12Resource* m_resource;
-		ID3D12Resource* m_intermediate;
-		ResourceState m_current_state;
-		DescHeapCPUHandle m_cpu_descriptor_handle;
-		size_t m_offset_in_heap;
-
-		uint8_t* m_allocated_memory;
-
-		bool m_is_staged = false;
-		bool m_need_mips = false;
-		bool m_is_cubemap = false;
 	};
 
 	struct HeapResource;
