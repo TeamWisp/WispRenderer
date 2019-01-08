@@ -54,8 +54,8 @@ namespace wr::d3d12
 		{
 			ResourceState m_initial_state = ResourceState::COPY_DEST;
 
-			// Size of the buffer (width * height * bytes per pixel)
-			UINT64 m_buffer_size;
+			// Size of the buffer in bytes (width * height * bytes per pixel)
+			std::uint64_t m_buffer_size;
 		};
 
 		struct PipelineStateDesc
@@ -274,7 +274,7 @@ namespace wr::d3d12
 		bool m_is_cubemap = false;
 	};
 
-	struct ReadbackBuffer
+	struct ReadbackBuffer : wr::ReadbackBuffer
 	{
 		ID3D12Resource* m_resource;
 	};
