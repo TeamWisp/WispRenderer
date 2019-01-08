@@ -27,7 +27,7 @@ namespace wr::d3d12
 			LOGC("Error: Couldn't create readback buffer");
 		}
 
-		return nullptr;
+		return readbackBuffer;
 	}
 
 	void SetName(ReadbackBuffer* readback_buffer, std::wstring name)
@@ -38,6 +38,10 @@ namespace wr::d3d12
 	void Destroy(ReadbackBuffer* readback_buffer)
 	{
 		SAFE_RELEASE(readback_buffer->m_resource);
+
+		if (readback_buffer->m_data != nullptr)
+			delete readback_buffer->m_data;
+		
 		delete readback_buffer;
 	}
 
