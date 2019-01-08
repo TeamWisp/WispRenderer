@@ -97,6 +97,10 @@ namespace wr
 		// Raytracing cb pool
 		m_raytracing_cb_pool = CreateConstantBufferPool(1);
 
+		// Simple Shapes Model Pool
+		m_shapes_pool = CreateModelPool(4, 4);
+		LoadPrimitiveShapes();
+
 		// Material raytracing sb pool
 		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
 		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
@@ -1018,6 +1022,84 @@ namespace wr
 		{
 			LOGW("Called `D3D12RenderSystem::GetRenderWindow` without a window!");
 			return nullptr;
+		}
+	}
+
+	wr::Model* D3D12RenderSystem::GetSimpleShape(SimpleShapes type)
+	{
+		if (type == SimpleShapes::COUNT)
+		{
+			LOGC("Nice try boiii! That's not a shape.");
+		}
+
+		return m_simple_shapes[type];
+	}
+
+	void D3D12RenderSystem::LoadPrimitiveShapes()
+	{
+		// Load Cube.
+		{
+			wr::MeshData<wr::Vertex> mesh;
+
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0, 6, 5,
+				4, 7, 6, 4, 10, 9, 8, 11,
+				10, 8, 14, 13, 12, 15, 14, 12,
+				18, 17, 16, 19, 18, 16, 22, 21,
+				20, 23, 22, 20
+			};
+
+			mesh.m_vertices = {
+				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0 },
+				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+			};
+
+			m_simple_shapes[SimpleShapes::CUBE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
+		}
+
+		{
+			wr::MeshData<wr::Vertex> mesh;
+
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0
+			};
+
+			mesh.m_vertices = {
+				//POS				UV			NORMAL				TANGENT			BINORMAL
+				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+			};
+
+			m_simple_shapes[SimpleShapes::PLANE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
 		}
 	}
 

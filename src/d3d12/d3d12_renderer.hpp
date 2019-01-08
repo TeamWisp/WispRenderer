@@ -140,6 +140,9 @@ namespace wr
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
 
+		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
+		wr::Model* GetSimpleShape(SimpleShapes type) final;
+
 	public:
 		d3d12::Device* m_device;
 		std::optional<d3d12::RenderWindow*> m_render_window;
@@ -171,7 +174,10 @@ namespace wr
 		float temp_rough = 0.45f;
 		float light_radius = 50;
 		float temp_intensity = 1;
+
 	private:
+
+		void LoadPrimitiveShapes();
 
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
