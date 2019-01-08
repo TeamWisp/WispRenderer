@@ -15,8 +15,6 @@
 
 #define SCENE viknell_scene
 
-constexpr bool do_raytracing = true;
-
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 
@@ -43,6 +41,7 @@ void SetupShaderDirWatcher()
 		{
 			auto wait_status = WaitForSingleObject(handle, INFINITE);
 			auto& registry = wr::PipelineRegistry::Get();
+			auto& rt_registry = wr::RTPipelineRegistry::Get();
 
 			switch (wait_status)
 			{
@@ -52,6 +51,11 @@ void SetupShaderDirWatcher()
 				for (auto it : registry.m_objects)
 				{
 					registry.RequestReload(it.first);
+				}
+
+				for (auto it : rt_registry.m_objects)
+				{
+					// rt_registry.RequestReload(it.first);
 				}
 
 				if (FindNextChangeNotification(handle) == FALSE)

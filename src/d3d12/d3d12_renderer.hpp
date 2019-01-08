@@ -71,6 +71,10 @@ namespace wr
 			float vertex_offset;
 			float albedo_id;
 			float normal_id;
+			float roughness_id;
+			float metallicness_id;
+			float padding0;
+			float padding1;
 		};
 
 		static const constexpr float size = 1.0f;
@@ -103,6 +107,7 @@ namespace wr
 		void PreparePipelineRegistry() final;
 		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void PrepareRTPipelineRegistry() final;
+		void ReloadRTPipelineRegistryEntry(RegistryHandle handle);
 
 		void WaitForAllPreviousWork() final;
 
@@ -170,8 +175,9 @@ namespace wr
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
     
-		float temp_metal = 0.5f;
+		float temp_metal = 1.0f;
 		float temp_rough = 0.45f;
+		bool clear_path = false;
 		float light_radius = 50;
 		float temp_intensity = 1;
 
