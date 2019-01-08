@@ -290,6 +290,11 @@ namespace wr::d3d12
 		cmd_list->m_native->SetComputeRootShaderResourceView(root_parameter_idx, resource->GetGPUVirtualAddress());
 	}
 
+	void BindComputeUnorederedAccessView(CommandList * cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx)
+	{
+		cmd_list->m_native->SetComputeRootUnorderedAccessView(root_parameter_idx, resource->GetGPUVirtualAddress());
+	}
+
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index)
 	{
 		cmd_list->m_native->SetGraphicsRootDescriptorTable(root_param_index, handle.m_native);
