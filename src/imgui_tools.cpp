@@ -5,7 +5,7 @@
 #include <sstream>
 #include <optional>
 
-
+#include "scene_graph/camera_node.hpp"
 #include "shader_registry.hpp"
 #include "pipeline_registry.hpp"
 #include "root_signature_registry.hpp"
@@ -17,6 +17,7 @@
 #include "d3d12/d3d12_shader_registry.hpp"
 #include "d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "d3d12/d3d12_pipeline_registry.hpp"
+#include "imgui/ImGuizmo.h"
 
 namespace wr::imgui::internal
 {
@@ -234,6 +235,29 @@ namespace wr::imgui::window
 			}
 
 			ImGui::End();
+
+			auto ml = lights[0];
+			DirectX::XMFLOAT4X4 rmat;
+			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
+			DirectX::XMStoreFloat4x4(&rmat, mat);
+
+			rmat._42 *= -1;
+
+			auto cam = scene_graph->GetActiveCamera();
+			DirectX::XMFLOAT4X4 rview;
+			DirectX::XMFLOAT4X4 rproj;
+			DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
+			DirectX::XMStoreFloat4x4(&rview, cam->m_view);
+
+
+			ImGuiIO& io = ImGui::GetIO();
+			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+			ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
+
+			ml->m_position = { rmat._41, rmat._42*-1, rmat._43 };
+
+			ml->SignalTransformChange();
+			ml->SignalChange();
 		}
 	}
 
