@@ -8,12 +8,13 @@
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
+#include "scene_rt_shadow.hpp"
 #include "resources.hpp"
 #include "scene_cubes.hpp"
 
 #include "model_loader_assimp.hpp"
 
-#define SCENE viknell_scene
+#define SCENE rt_shadow_scene
 
 constexpr bool do_raytracing = true;
 

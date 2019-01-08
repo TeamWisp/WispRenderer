@@ -88,7 +88,7 @@ float TraceShadowRay(float3 origin, float3 direction, unsigned int depth)
 		return float(1.0);
 	}
 
-	HitInfo payload = {1.0, depth};
+	HitInfo payload = {1.5, depth};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -149,14 +149,18 @@ void RaygenEntry()
 	const float f = 25.0f;
 	const float z = (2 * n) / (f + n - depth * (f - n)) / f;
 
-	float3 wpos = unpack_position(uv, depth) + (normal * 0.005);
+	float3 wpos = unpack_position(uv, depth) + (normal * 0.05);
 
-	// Set temp light direction
-	float3 light_dir = normalize(float3(0.0, 0.0, -1.0));
-	//float3 light_dir = normalize(float3(lights[0].dir.xyz));
+	float shadow_factor = 1.0;
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	// Trace shadow ray
-	float shadow_factor = TraceShadowRay(wpos.xyz, light_dir, 0);
+	for (uint i = 0; i < light_count; i++)
+	{
+		float3 light_dir = normalize(float3(lights[i].dir.xyz));
+
+		// Trace shadow ray
+		shadow_factor *= TraceShadowRay(wpos.xyz, light_dir, 0);
+	}
 
 	// Output world position
 	gOutput[DispatchRaysIndex().xy] = float4(albedo.xyz * shadow_factor, 1.0);
@@ -180,7 +184,7 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
-	payload.shadow_factor *= 0.3;
+	payload.shadow_factor = 0.75;
 }
 
 

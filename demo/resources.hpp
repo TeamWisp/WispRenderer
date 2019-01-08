@@ -15,6 +15,10 @@ namespace resources
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
 
+	static wr::Model* robot_model;
+	static wr::Model* pica_scene;
+	static wr::MaterialHandle pica_scene_material;
+
 	void CreateResources(wr::RenderSystem* render_system)
 	{
 		texture_pool = render_system->CreateTexturePool(8, 20);
@@ -51,6 +55,22 @@ namespace resources
 		rock_material_internal->SetNormal(rock_normal);
 		rock_material_internal->SetRoughness(rock_roughness);
 		rock_material_internal->SetMetallic(rock_metallic);
+
+		// Load Texture.
+		wr::TextureHandle pica_albedo = texture_pool->Load("resources/materials/floor/albedo.png", false, true);
+		wr::TextureHandle pica_normal = texture_pool->Load("resources/materials/floor/normal.png", false, true);
+		wr::TextureHandle pica_roughness = texture_pool->Load("resources/materials/floor/roughness.png", false, true);
+		wr::TextureHandle pica_metallic = texture_pool->Load("resources/materials/floor/metallic.png", false, true);
+
+		// Create Material
+		pica_scene_material = material_pool->Create();
+
+		wr::Material* pica_scene_material_internal = material_pool->GetMaterial(pica_scene_material.m_id);
+
+		pica_scene_material_internal->SetAlbedo(pica_albedo);
+		pica_scene_material_internal->SetNormal(pica_normal);
+		pica_scene_material_internal->SetRoughness(pica_roughness);
+		pica_scene_material_internal->SetMetallic(pica_metallic);
 	
 		model_pool = render_system->CreateModelPool(16, 16);
 
@@ -129,13 +149,30 @@ namespace resources
 			}
 		}
 
-
 		{
 			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 		
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
+			}
+		}
+
+
+		{
+			//robot_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/robot.fbx");
+
+			//for (auto& m : robot_model->m_meshes)
+			{
+				//m.second = &rusty_metal_material;
+			}
+		}
+		{
+			pica_scene = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/pica_scene.fbx");
+
+			for (auto& m : pica_scene->m_meshes)
+			{
+				m.second = &pica_scene_material;
 			}
 		}
 	}

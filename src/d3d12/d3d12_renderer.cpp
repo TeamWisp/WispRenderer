@@ -721,7 +721,7 @@ namespace wr
 
 			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
 
-			float clear_color[] = { 0.f,0.f,0.f,0.f };
+			float clear_color[] = { 0.5f,0.5f,0.5f,1.0f };
 
 			m_direct_cmd_list->m_native->ResourceBarrier(1,
 				&CD3DX12_RESOURCE_BARRIER::Transition(
@@ -957,6 +957,7 @@ namespace wr
 
 			//Reset instances
 			batch.num_instances = 0;
+			m_last_material = nullptr;
 		}
 
 		if constexpr (d3d12::settings::use_exec_indirect)
