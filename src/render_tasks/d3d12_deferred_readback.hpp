@@ -65,7 +65,7 @@ namespace wr
 			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, &readback_description);
 
 			// Map the read back buffer to a CPU pointer to allow the application to read the frame pixel data out of RAM
-			MapReadbackBuffer(data.readback_buffer);
+			MapReadbackBuffer(data.readback_buffer, readback_description.m_buffer_size);
 
 			// Allow the application to access the data outsize of the render task by pointing to the original data
 			// The user does not have to worry about deallocating the memory. Just check whether it is a nullptr...
@@ -118,6 +118,9 @@ namespace wr
 			true						// Clear depth flag
 		};
 
+		// Render task information
+		RenderTaskDesc render_task_description;
+
 		// Set-up
 		render_task_description.m_setup_func = [&](RenderSystem& render_system, FrameGraph& frame_graph, RenderTaskHandle render_task_handle, bool) {
 			internal::SetupReadBackTask<T>(render_system, frame_graph, render_task_handle, out_buffer_data, out_buffer_size);
@@ -133,8 +136,6 @@ namespace wr
 			internal::DestroyReadBackTask(frame_graph, handle);
 		};
 
-		// Render task information
-		RenderTaskDesc render_task_description;
 		render_task_description.m_name = std::string(std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
 		render_task_description.m_properties = rt_properties;
 		render_task_description.m_type = RenderTaskType::COPY;
