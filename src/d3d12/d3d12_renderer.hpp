@@ -107,6 +107,7 @@ namespace wr
 		void PreparePipelineRegistry() final;
 		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void PrepareRTPipelineRegistry() final;
+		void ReloadRTPipelineRegistryEntry(RegistryHandle handle);
 
 		void WaitForAllPreviousWork() final;
 

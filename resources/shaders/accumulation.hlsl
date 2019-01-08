@@ -27,5 +27,6 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 
 	float accum_count = frame_idx;
 	
+	return current;
 	return current / accum_count;
 }

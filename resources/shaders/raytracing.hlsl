@@ -1,6 +1,7 @@
 #include "pbr_util.hlsl"
 
 #define MAX_RECURSION 3
+//#define PATH_TRACING
 
 struct Light 
 {
@@ -175,7 +176,6 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
     ray.direction = normalize(world.xyz - ray.origin);
 #endif
 
-
     return ray;
 }
 
@@ -196,7 +196,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = 0.00001;
+	ray.TMin = 0;
 	ray.TMax = 10000.0;
 
 	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
@@ -241,6 +241,7 @@ void RaygenEntry()
 	float3 result = TraceColorRay(ray.origin, ray.direction, 0, rand_seed);
 #endif
 	
+#ifdef PATH_TRACING
 	if (frame_idx > 0 && !any(isnan(result)))
 	{
 		gOutput[DispatchRaysIndex().xy] += float4(result, 1);
@@ -249,6 +250,9 @@ void RaygenEntry()
 	{
 		gOutput[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
 	}
+#else
+	gOutput[DispatchRaysIndex().xy] = float4(result, 1);
+#endif
 }
 
 [shader("miss")]
@@ -368,26 +372,28 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		return;
 	}
 
-
-	float3 N = mul(model_matrix, float4(normal, 0));
-	float3 T = mul(model_matrix, float4(tangent, 0));
-	float3 B = mul(model_matrix, float4(bitangent, 0));
+	float3 N = normalize(mul(model_matrix, float4(normal, 0)));
+	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
+	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
 	float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
+	// Direct
+	float3 reflect_dir = ReflectRay(V, fN);
+	bool horizon = (dot(V, fN) > 0.0f);
+	float3 reflection = TraceColorRay(hit_pos + (N * 0.000001), reflect_dir, payload.depth + 1, payload.seed);
+
+#ifdef PATH_TRACING
 	// Indirect lighting
 	float3 rand_dir = getCosHemisphereSample(payload.seed, fN);
 	float cos_theta = cos(dot(rand_dir, fN));
-	float3 irradiance = (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
+	float3 irradiance = (TraceColorRay(hit_pos + (N * 0.000001), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
 
-	// Direct
-	float3 reflect_dir = ReflectRay(V, fN);
-
-	bool horizon = (dot(V, fN) > 0.0f);
-	float4 reflection = TraceColorRay(hit_pos, reflect_dir, payload.depth + 1, payload.seed);
-
-	// Output
 	payload.color = (irradiance + (reflection.xyz * metal));
+#else
+	float3 retval = ShadePixel(hit_pos, V, albedo, fN, roughness, metal);
+	payload.color = retval + (reflection.xyz * metal);
+#endif
 }

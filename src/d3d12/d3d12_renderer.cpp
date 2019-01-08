@@ -184,7 +184,7 @@ namespace wr
 			auto& rt_pipeline_registry = RTPipelineRegistry::Get();
 			for (auto request : rt_pipeline_registry.m_requested_reload)
 			{
-				// ReloadPipelineRegistryEntry(request);
+				ReloadRTPipelineRegistryEntry(request);
 			}
 		}
 
@@ -603,6 +603,45 @@ namespace wr
 		else
 		{
 			d3d12::RefinalizePipeline(n_pipeline);
+		}
+	}
+
+	void D3D12RenderSystem::ReloadRTPipelineRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = RTPipelineRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto n_pipeline = static_cast<D3D12StateObject*>(registry.Find(handle))->m_native;
+
+		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		{
+			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+				pipeline_shader->m_path,
+				pipeline_shader->m_entry);
+
+			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+			{
+				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+			}
+			else
+			{
+				error_msg = std::get<std::string>(new_shader_variant);
+			}
+		};
+
+		// Vertex Shader
+		{
+			recompile_shader(n_pipeline->m_desc.m_library);
+		}
+
+		if (error_msg.has_value())
+		{
+			LOGW(error_msg.value());
+			//open_shader_compiler_popup = true;
+			//shader_compiler_error = error_msg.value();
+		}
+		else
+		{
+			d3d12::RecreateStateObject(n_pipeline);
 		}
 	}
 
