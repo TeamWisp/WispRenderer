@@ -6,6 +6,7 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
+#include "render_tasks/d3d12_rt_shadow_task.hpp"
 
 namespace fg_manager
 {
@@ -14,10 +15,11 @@ namespace fg_manager
 	{
 		RAYTRACING = 0,
 		DEFERRED = 1,
+		RT_SHADOW = 2,
 	};
 
-	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
-	static std::array<wr::FrameGraph*, 2> frame_graphs = {};
+	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::RT_SHADOW;
+	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
 	{
@@ -41,6 +43,19 @@ namespace fg_manager
 			wr::AddDeferredMainTask(*fg);
 			wr::AddDeferredCompositionTask(*fg);
 			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+
+			fg->Setup(rs);
+		}
+
+		// Raytracing Shadows
+		{
+			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_SHADOW];
+			fg = new wr::FrameGraph(4);
+
+			wr::AddDeferredMainTask(*fg);
+			wr::AddRTShadowTask(*fg);
+			wr::AddRenderTargetCopyTask<wr::RTShadowData>(*fg);
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
 			fg->Setup(rs);

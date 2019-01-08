@@ -134,7 +134,6 @@ void RaygenEntry()
 {
 	// Texture UV coordinates [0, 1>
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
-	
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screenCo = DispatchRaysIndex().xy;
@@ -150,10 +149,10 @@ void RaygenEntry()
 	const float f = 25.0f;
 	const float z = (2 * n) / (f + n - depth * (f - n)) / f;
 
-	float3 wpos = unpack_position(uv, depth) + (normal * 5e-3f);
+	float3 wpos = unpack_position(uv, depth) + (normal * 0.005);
 
 	// Set temp light direction
-	float3 light_dir = normalize(float3(0.0, -1.0, 0.0));
+	float3 light_dir = normalize(float3(0.0, 0.0, -1.0));
 	//float3 light_dir = normalize(float3(lights[0].dir.xyz));
 
 	// Trace shadow ray

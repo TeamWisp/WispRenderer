@@ -35,8 +35,9 @@ namespace viknell_scene
 		left_wall->SetRotation({ 0, -90_deg, 0 });
 		right_wall->SetPosition({ 1, 0, 0 });
 		right_wall->SetRotation({ 0, 90_deg, 0 });
+
 		test_model->SetPosition({ 0,1,0.75 });
-		test_model->SetRotation({ 0,0,135_deg });
+		test_model->SetRotation({ 0,0,180_deg });
 		test_model->SetScale({ 0.01f,0.01f,0.01f });
 
 		// Lights
