@@ -265,6 +265,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	// Diffuse
     float3 lighting = ShadePixel(hit_pos, V, albedo, world_normal);
 
+	/*
 	float4 reflection = TraceColorRay(hit_pos, ReflectRay(V, normalize(world_normal)), payload.depth + 1);
 
 	float3 result;
@@ -277,7 +278,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		float metal2 = 1.f - metal;
 		result = (reflection.xyz * (1.f - metal2)) + (lighting * metal2);
 	}
+	*/
 
 	// Output
-	payload.color = float4(result.xyz, 1);
+	payload.color = float4(lighting.xyz, 1);
 }

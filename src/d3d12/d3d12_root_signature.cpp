@@ -67,6 +67,40 @@ namespace wr::d3d12
 			samplers.data(),
 			flags);
 
+		//Create root signature bit masks, used for dynamic gpu descriptor heaps
+		auto num_params = create_info.m_parameters.size();
+
+		for (size_t i = 0; i < num_params; ++i)
+		{
+			auto param = create_info.m_parameters.at(i);
+
+			if (param.ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE)
+			{
+				auto num_desc_ranges = param.DescriptorTable.NumDescriptorRanges;
+
+				// Set the bit mask depending on the type of descriptor table.
+				if (num_desc_ranges > 0)
+				{
+					switch (param.DescriptorTable.pDescriptorRanges[0].RangeType)
+					{
+					case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+					case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+					case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
+						root_signature->m_descriptor_table_bit_mask |= (1 << i);
+						break;
+					case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
+						root_signature->m_sampler_table_bit_mask |= (1 << i);
+						break;
+					}
+				}
+
+				for (size_t j = 0; j < num_desc_ranges; ++j)
+				{
+					root_signature->m_num_descriptors_per_table[i] += param.DescriptorTable.pDescriptorRanges[j].NumDescriptors;
+				}
+			}
+		}
+
 		if (create_info.m_rtx && GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			// Fallback
