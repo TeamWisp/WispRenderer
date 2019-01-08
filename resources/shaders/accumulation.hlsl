@@ -8,8 +8,8 @@ cbuffer CameraProperties : register(b0)
 	float3 camera_position;
 	float padding;
 
-	float dep_light_radius;
-	float dep_metal;
+	float unused0;
+	float unused1;
 	float frame_idx;
 	float intensity;
 };
