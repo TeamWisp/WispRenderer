@@ -29,12 +29,10 @@ namespace resources
 		// Create Material
 		rusty_metal_material = material_pool->Create();
 
-		wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material.m_id);
-
-		rusty_metal_internal->SetAlbedo(rusty_metal_albedo);
-		rusty_metal_internal->SetNormal(rusty_metal_normal);
-		rusty_metal_internal->SetRoughness(rusty_metal_roughness);
-		rusty_metal_internal->SetMetallic(rusty_metal_metallic);
+		rusty_metal_material.SetAlbedo(rusty_metal_albedo);
+		rusty_metal_material.SetNormal(rusty_metal_normal);
+		rusty_metal_material.SetRoughness(rusty_metal_roughness);
+		rusty_metal_material.SetMetallic(rusty_metal_metallic);
 
 		// Load Texture.
 		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
@@ -45,12 +43,10 @@ namespace resources
 		// Create Material
 		rock_material = material_pool->Create();
 
-		wr::Material* rock_material_internal = material_pool->GetMaterial(rock_material.m_id);
-
-		rock_material_internal->SetAlbedo(rock_albedo);
-		rock_material_internal->SetNormal(rock_normal);
-		rock_material_internal->SetRoughness(rock_roughness);
-		rock_material_internal->SetMetallic(rock_metallic);
+		rock_material.SetAlbedo(rock_albedo);
+		rock_material.SetNormal(rock_normal);
+		rock_material.SetRoughness(rock_roughness);
+		rock_material.SetMetallic(rock_metallic);
 	
 		model_pool = render_system->CreateModelPool(16, 16);
 
@@ -99,11 +95,6 @@ namespace resources
 			};
 
 			cube_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-
-			for (auto& m : cube_model->m_meshes)
-			{
-				m.second = &rock_material;
-			}
 		}
 
 		{
@@ -122,21 +113,11 @@ namespace resources
 			};
 
 			plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-
-			for (auto& m : plane_model->m_meshes)
-			{
-				m.second = &rock_material;
-			}
 		}
 
 
 		{
 			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-		
-			for (auto& m : test_model->m_meshes)
-			{
-				m.second = &rusty_metal_material;
-			}
 		}
 	}
 
