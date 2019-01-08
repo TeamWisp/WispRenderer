@@ -160,8 +160,7 @@ namespace wr
 	});
 
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> accum_r = {
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0); return r; }(), // source texture
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(), // source texture
 	};
 
 	REGISTER(root_signatures::accumulation) = RootSignatureRegistry::Get().Register({

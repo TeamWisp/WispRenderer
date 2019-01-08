@@ -25,6 +25,7 @@ namespace wr
 	class D3D12StructuredBufferPool;
 	class D3D12ModelPool;
 	class D3D12TexturePool;
+	class DynamicDescriptorHeap;
 
 	namespace temp
 	{
@@ -183,12 +184,6 @@ namespace wr
 		d3d12::CommandSignature* m_cmd_signature_indexed;
 
 		std::optional<bool> m_requested_fullscreen_state;
-
-	public:
-		d3d12::DescriptorHeap* m_rendering_heap;
-		d3d12::DescHeapGPUHandle m_rendering_heap_gpu;
-		d3d12::DescHeapCPUHandle m_rendering_heap_cpu;
-
 
 		MaterialHandle* m_last_material = nullptr;
 	};

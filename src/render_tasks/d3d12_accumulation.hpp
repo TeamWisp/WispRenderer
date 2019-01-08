@@ -10,11 +10,12 @@ namespace wr
 {
 	struct AccumulationData
 	{
-		d3d12::DescriptorHeap* out_srv_heap;
 		d3d12::RenderTarget* out_source_rt;
 		d3d12::PipelineState* out_pipeline;
 		d3d12::HeapResource* out_cb;
 		ID3D12Resource* out_previous;
+		DescriptorAllocator* out_allocator;
+		DescriptorAllocation out_allocation;
 	};
 
 	int versions = 1;
@@ -29,29 +30,22 @@ namespace wr
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			d3d12::SetName(n_render_target, L"Accumulation RT");
 
+			data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+			data.out_allocation = data.out_allocator->Allocate(1);
+
 			auto& ps_registry = PipelineRegistry::Get();
 			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::accumulation))->m_native;
 
-			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_shader_visible = true;
-			heap_desc.m_num_descriptors = 3;
-			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-			heap_desc.m_versions = versions;
-			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
-			SetName(data.out_srv_heap, L"Deferred Render Task SRV");
-
-			auto& source_data = fg.GetPredecessorData<RaytracingData>();
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<RaytracingData>());
 
+			auto& source_data = fg.GetPredecessorData<RaytracingData>();
 			data.out_cb = source_data.out_cb_camera_handle->m_native;
 
 			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
 			{
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle();
 
-				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, frame_idx, source_rt->m_create_info.m_rtv_formats[0]);
-				d3d12::CreateSRVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
-				d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, frame_idx, source_rt->m_create_info.m_rtv_formats[frame_idx]);
 			}
 		}
 
@@ -69,9 +63,8 @@ namespace wr
 
 			d3d12::BindViewport(cmd_list, viewport);
 
-			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx % versions);
-			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx % versions);
-			d3d12::BindDescriptorTable(cmd_list, gpu_handle, 0);
+			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 1, data.out_allocation.GetDescriptorHandle());
+
 			d3d12::BindConstantBuffer(cmd_list, data.out_cb, 1, frame_idx);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
@@ -80,21 +73,13 @@ namespace wr
 			d3d12::BindVertexBuffer(cmd_list, n_render_system.m_fullscreen_quad_vb, 0, n_render_system.m_fullscreen_quad_vb->m_size, sizeof(Vertex2D));
 
 			d3d12::Draw(cmd_list, 4, 1, 0);
-
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[1], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST));
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[0], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE));
-
-			cmd_list->m_native->CopyResource(n_render_target->m_render_targets[1], n_render_target->m_render_targets[0]);
-
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[1], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET));
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(n_render_target->m_render_targets[0], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 		}
 
 		inline void DestroyAccumulationTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 			auto& data = fg.GetData<AccumulationData>(handle);
 
-			d3d12::Destroy(data.out_srv_heap);
+			// d3d12::Destroy(data.out_srv_heap);
 		}
 
 	} /* internal */
@@ -110,8 +95,8 @@ namespace wr
 			ResourceState::COPY_SOURCE,
 			false,
 			Format::UNKNOWN,
-			{ Format::R8G8B8A8_UNORM, Format::R8G8B8A8_UNORM }, // Output and Previous
-			2,
+			{ Format::R8G8B8A8_UNORM }, // Output and Previous
+			1,
 			false,
 			false
 		};

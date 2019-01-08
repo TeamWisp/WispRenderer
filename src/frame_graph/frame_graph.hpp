@@ -406,7 +406,7 @@ namespace wr
 				std::is_floating_point<T>::value ||
 				std::is_integral<T>::value,
 				"The template variable should be a class, struct, floating point value or a integral value.");
-			static_assert(std::is_default_constructible<T>::value && std::is_nothrow_constructible<T>::value,
+			static_assert(std::is_default_constructible<T>::value,
 				"The template variable is not default constructible or nothrow consructible!");
 			static_assert(!std::is_pointer<T>::value,
 				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");

@@ -126,7 +126,6 @@ namespace wr
 			// Camera constant buffer
 			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
 
-
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
 			{
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx);
@@ -301,7 +300,6 @@ namespace wr
 					n_render_system.clear_path = false;
 				}
 
-
 				n_render_system.temp_rough = fc;
 				fc++;
 
@@ -318,7 +316,7 @@ namespace wr
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				d3d12::BindDescriptorHeaps(cmd_list, { data.out_rt_heap }, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK); // here
+				d3d12::BindDescriptorHeap(cmd_list, data.out_rt_heap, data.out_rt_heap->m_create_info.m_type, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				auto gpu_handle = d3d12::GetGPUHandle(data.out_rt_heap, 0); // here
 				d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 0);
