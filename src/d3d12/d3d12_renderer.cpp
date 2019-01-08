@@ -903,6 +903,9 @@ namespace wr
 				}
 
 				//Render meshes
+
+				int i = 0;
+
 				for (auto& mesh : model->m_meshes)
 				{
 					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
@@ -925,7 +928,7 @@ namespace wr
 					
 					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
-					auto material_handle = mesh.second;
+					auto material_handle = batch.materials[i];
 					
 					if (material_handle != m_last_material)
 					{
@@ -942,6 +945,7 @@ namespace wr
 					{
 						d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
 					}
+					++i;
 				}
 			}
 

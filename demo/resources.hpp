@@ -29,10 +29,10 @@ namespace resources
 		// Create Material
 		rusty_metal_material = material_pool->Create();
 
-		rusty_metal_material.SetAlbedo(rusty_metal_albedo);
-		rusty_metal_material.SetNormal(rusty_metal_normal);
-		rusty_metal_material.SetRoughness(rusty_metal_roughness);
-		rusty_metal_material.SetMetallic(rusty_metal_metallic);
+		wr::MaterialPool::SetMaterialHandleAlbedo(rusty_metal_material, rusty_metal_albedo);
+		wr::MaterialPool::SetMaterialHandleNormal(rusty_metal_material, rusty_metal_normal);
+		wr::MaterialPool::SetMaterialHandleRoughness(rusty_metal_material, rusty_metal_roughness);
+		wr::MaterialPool::SetMaterialHandleMetallic(rusty_metal_material, rusty_metal_metallic);
 
 		// Load Texture.
 		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
@@ -43,10 +43,10 @@ namespace resources
 		// Create Material
 		rock_material = material_pool->Create();
 
-		rock_material.SetAlbedo(rock_albedo);
-		rock_material.SetNormal(rock_normal);
-		rock_material.SetRoughness(rock_roughness);
-		rock_material.SetMetallic(rock_metallic);
+		wr::MaterialPool::SetMaterialHandleAlbedo(rock_material, rock_albedo);
+		wr::MaterialPool::SetMaterialHandleNormal(rock_material, rock_normal);
+		wr::MaterialPool::SetMaterialHandleRoughness(rock_material, rock_roughness);
+		wr::MaterialPool::SetMaterialHandleMetallic(rock_material, rock_metallic);
 	
 		model_pool = render_system->CreateModelPool(16, 16);
 

@@ -107,6 +107,21 @@ namespace wr
 
 		virtual Material* GetMaterial(uint64_t material_id);
 
+		static TextureHandle GetMaterialHandleAlbedo(MaterialHandle handle) { return handle.m_pool->GetMaterial(handle.m_id)->GetAlbedo(); };
+		static void SetMaterialHandleAlbedo(MaterialHandle handle, TextureHandle albedo) { handle.m_pool->GetMaterial(handle.m_id)->SetAlbedo(albedo); };
+
+		static TextureHandle GetMaterialHandleNormal(MaterialHandle handle) { return handle.m_pool->GetMaterial(handle.m_id)->GetNormal(); };
+		static void SetMaterialHandleNormal(MaterialHandle handle, TextureHandle normal) { handle.m_pool->GetMaterial(handle.m_id)->SetNormal(normal); };
+
+		static TextureHandle GetMaterialHandleRoughness(MaterialHandle handle) { return handle.m_pool->GetMaterial(handle.m_id)->GetRoughness(); };
+		static void SetMaterialHandleRoughness(MaterialHandle handle, TextureHandle roughness) { handle.m_pool->GetMaterial(handle.m_id)->SetRoughness(roughness); };
+
+		static TextureHandle GetMaterialHandleMetallic(MaterialHandle handle) { return handle.m_pool->GetMaterial(handle.m_id)->GetMetallic(); };
+		static void SetMaterialHandleMetallic(MaterialHandle handle, TextureHandle metallic) { handle.m_pool->GetMaterial(handle.m_id)->SetMetallic(metallic); };
+
+		static TextureHandle GetMaterialHandleAmbientOcclusion(MaterialHandle handle) { return handle.m_pool->GetMaterial(handle.m_id)->GetAmbientOcclusion(); };
+		static void SetMaterialHandleAmbientOcclusion(MaterialHandle handle, TextureHandle ao) { handle.m_pool->GetMaterial(handle.m_id)->SetAmbientOcclusion(ao); };
+
 	protected:
 
 		std::unordered_map<uint64_t, Material*> m_materials;

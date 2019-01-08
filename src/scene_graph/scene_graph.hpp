@@ -109,9 +109,10 @@ namespace wr
 			unsigned int num_instances = 0;
 			ConstantBufferHandle* batch_buffer;
 			MeshBatch_CBData data;
+			std::vector<MaterialHandle*> materials;
 		};
 
-		using MeshBatches = std::unordered_map<Model*, MeshBatch>;
+		using MeshBatches = std::unordered_multimap<Model*, MeshBatch>;
 
 	}
 

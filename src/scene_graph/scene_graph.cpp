@@ -197,7 +197,9 @@ namespace wr
 			for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
 
 				auto node = m_mesh_nodes[i];
-				auto it = m_batches.find(node->m_model);
+				std::pair<std::unordered_multimap<Model*, temp::MeshBatch>::iterator, 
+					std::unordered_multimap<Model*, temp::MeshBatch>::iterator>
+					iterators = m_batches.equal_range(node->m_model);
 
 				if (node->m_model == nullptr || (!GetActiveCamera()->InView(node) && d3d12::settings::enable_object_culling))
 				{
@@ -205,23 +207,73 @@ namespace wr
 				}
 
 				//Insert new if doesn't exist
-				if (it == m_batches.end())
+				if (std::distance(iterators.first,iterators.second) == 0)
 				{
 
 					ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
 
-					auto& batch = m_batches[node->m_model];
+					temp::MeshBatch temp_batch = {};
+					std::unordered_multimap<Model*, temp::MeshBatch>::iterator it = 
+						m_batches.emplace(std::make_pair(node->m_model, temp_batch));
+
+					temp::MeshBatch& batch = it->second;
+
 					batch.batch_buffer = object_buffer;
 					batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
-
-					it = m_batches.find(node->m_model);
+					batch.materials = node->GetModelMaterials();
+					
+					iterators = m_batches.equal_range(node->m_model);
 				}
 
-				//Replace data in buffer
-				temp::MeshBatch& batch = it->second;
-				unsigned int& offset = batch.num_instances;
-				batch.data.objects[offset] = { node->m_transform };
-				++offset;
+				bool found_batch = false;
+
+				for (std::unordered_multimap<Model*, temp::MeshBatch>::iterator it = iterators.first; it != iterators.second; ++it)
+				{
+					if (it->second.num_instances < max_size)
+					{
+						bool materials_equal = true;
+						std::vector<MaterialHandle*> model_materials = node->GetModelMaterials();
+						std::vector<MaterialHandle*> batch_materials = it->second.materials;
+						for (int j = 0; j < batch_materials.size(); ++j)
+						{
+							if ((*model_materials[j]) != (*batch_materials[j]))
+							{
+								materials_equal = false;
+								break;
+							}
+						}
+						if (materials_equal == false)
+						{
+							continue;
+						}
+
+						temp::MeshBatch& batch = it->second;
+						unsigned int& offset = batch.num_instances;
+						batch.data.objects[offset] = { node->m_transform };
+						++offset;
+
+						found_batch = true;
+						break;
+					}
+				}
+
+				if (!found_batch)
+				{
+					ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
+
+					temp::MeshBatch temp_batch = {};
+					std::unordered_multimap<Model*, temp::MeshBatch>::iterator it =
+						m_batches.emplace(std::make_pair(node->m_model, temp_batch));
+
+					temp::MeshBatch& batch = it->second;
+
+					batch.batch_buffer = object_buffer;
+					batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
+					batch.materials = node->GetModelMaterials();
+					unsigned int& offset = batch.num_instances;
+					batch.data.objects[offset] = { node->m_transform };
+					++offset;					
+				}
 
 			}
 
