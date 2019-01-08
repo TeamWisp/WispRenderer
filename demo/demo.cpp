@@ -55,7 +55,7 @@ void SetupShaderDirWatcher()
 
 				for (auto it : rt_registry.m_objects)
 				{
-					rt_registry.RequestReload(it.first);
+					// rt_registry.RequestReload(it.first);
 				}
 
 				if (FindNextChangeNotification(handle) == FALSE)
