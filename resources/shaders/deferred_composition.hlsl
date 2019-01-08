@@ -36,24 +36,15 @@ static uint light_type_spot = 2;
 static uint min_depth = 0xFFFFFFFF;
 static uint max_depth = 0x0;
 
-float3 unpack_position(float2 uv, float depth, float4x4 proj_inv) {
+float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-	//const float4 vpos = mul(proj_inv, ndc);
-	return (ndc / ndc.w).xyz;
-}
-
-float3 world_to_view(float4 pos, float4x4 view) {
-	const float4 vpos = mul(view, pos);
-	return vpos.xyz;
+	const float4 pos = mul( view_inv, mul(proj_inv, ndc));
+	return (pos / pos.w).xyz;
 }
 
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light)
 {
 	uint tid = light.tid & 3;
-
-	// Light pos and view directon to view.
-	// float3 light_vpos = float4(light.pos, 1).xyz;
-	// float3 light_vdir = normalize(mul(view, float4(light.dir, 0))).xyz;
 
 	//Light direction (constant with directional, position dependent with other)
 	float3 L = (lerp(light.pos - pos, light.dir, tid == light_type_directional));
@@ -109,7 +100,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
-	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection);
+	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, transpose(view));
 	float3 V = normalize(-pos);
 
 	float3 retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
