@@ -119,30 +119,30 @@ namespace wr
 		};
 
 		// Render task information
-		RenderTaskDesc render_task_description;
+		RenderTaskDesc readback_task_description;
 
 		// Set-up
-		render_task_description.m_setup_func = [&](RenderSystem& render_system, FrameGraph& frame_graph, RenderTaskHandle render_task_handle, bool) {
+		readback_task_description.m_setup_func = [&](RenderSystem& render_system, FrameGraph& frame_graph, RenderTaskHandle render_task_handle, bool) {
 			internal::SetupReadBackTask<T>(render_system, frame_graph, render_task_handle, out_buffer_data, out_buffer_size);
 		};
 
 		// Execution
-		render_task_description.m_execute_func = [](RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle) {
+		readback_task_description.m_execute_func = [](RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle) {
 			internal::ExecuteReadBackTask(render_system, frame_graph, scene_graph, handle);
 		};
 
 		// Destruction and clean-up
-		render_task_description.m_destroy_func = [](FrameGraph& frame_graph, RenderTaskHandle handle, bool) {
+		readback_task_description.m_destroy_func = [](FrameGraph& frame_graph, RenderTaskHandle handle, bool) {
 			internal::DestroyReadBackTask(frame_graph, handle);
 		};
 
-		render_task_description.m_name = std::string(std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
-		render_task_description.m_properties = rt_properties;
-		render_task_description.m_type = RenderTaskType::COPY;
-		render_task_description.m_allow_multithreading = true;
+		readback_task_description.m_name = std::string(std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
+		readback_task_description.m_properties = rt_properties;
+		readback_task_description.m_type = RenderTaskType::COPY;
+		readback_task_description.m_allow_multithreading = true;
 
 		// Save this task to the frame graph system
-		frame_graph.AddTask<RenderTargetReadBackTaskData>(render_task_description);
+		frame_graph.AddTask<RenderTargetReadBackTaskData>(readback_task_description);
 	}
 
 } /* wr */
