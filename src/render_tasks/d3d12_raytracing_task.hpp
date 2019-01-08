@@ -280,6 +280,43 @@ namespace wr
 					data.out_init = false;
 				}
 
+				{
+					int blas_idx = 0;
+					scene_graph.Optimize();
+					auto& batches = scene_graph.GetBatches();
+
+					for (auto& batch : batches)
+					{
+						auto n_model_pool = static_cast<D3D12ModelPool*>(batch.first->m_model_pool);
+						auto vb = n_model_pool->GetVertexStagingBuffer();
+						auto ib = n_model_pool->GetIndexStagingBuffer();
+						auto model = batch.first;
+
+						temp_ib = ib;
+						temp_vb = vb;
+
+						for (auto& mesh : model->m_meshes)
+						{
+							auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
+
+							// Push instances into a array for later use.
+							for (auto i = 0; i < batch.second.num_instances; i++)
+							{
+								auto transform = batch.second.data.objects[i].m_model;
+								blas_list[blas_idx].second = transform;
+
+								blas_idx++;
+							}
+						}
+
+						//Reset instances
+						batch.second.num_instances = 0;
+					}
+
+
+					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, blas_list);
+				}
+
 				auto frame_idx = n_render_system.GetFrameIdx();
 
 				// Get light buffer

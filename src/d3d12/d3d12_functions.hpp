@@ -239,6 +239,11 @@ namespace wr::d3d12
 		DescriptorHeap* desc_heap,
 		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list);
 
+	[[nodiscard]] AccelerationStructure UpdateTopLevelAccelerationStructure(Device* device,
+		CommandList* cmd_list,
+		DescriptorHeap* desc_heap,
+		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list);
+
 	// Shader Record
 	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);
 	void CopyShaderRecord(ShaderRecord src, void* dest);

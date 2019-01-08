@@ -26,7 +26,7 @@ namespace resources
 		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
 
 		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", false, true);
-		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metal-splotchy-normal-dx.png", false, true);
+		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metalgrid2_normal-dx.png", false, true);
 		wr::TextureHandle metal_splotchy_roughness = texture_pool->Load("resources/materials/metal-splotchy-rough.png", false, true);
 		wr::TextureHandle metal_splotchy_metallic = texture_pool->Load("resources/materials/metal-splotchy-metal.png", false, true);
 
