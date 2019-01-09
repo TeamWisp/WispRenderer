@@ -90,6 +90,8 @@ int WispEntry()
 
 	window->SetKeyCallback([](int key, int action, int mods)
 	{
+		SCENE::camera->KeyAction(key, action);
+
 		if (action == WM_KEYUP && key == 0xC0)
 		{
 			engine::open_console = !engine::open_console;
@@ -103,6 +105,11 @@ int WispEntry()
 		{
 			fg_manager::Next();
 		}
+	});
+
+	window->SetMouseCallback([](int key, int action, int mods)
+	{
+		SCENE::camera->MouseAction(key, action);
 	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
