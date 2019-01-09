@@ -8,9 +8,25 @@ class DebugCamera : public wr::CameraNode
 {
 public:
 	DebugCamera(float fov, float aspect_ratio)
-		: wr::CameraNode(fov, aspect_ratio), m_forward_axis(0), m_right_axis(0), m_up_axis(0), m_rmb_down(false), m_speed(1), m_sensitivity(0.01)
+		: wr::CameraNode(fov, aspect_ratio), m_forward_axis(0), m_right_axis(0), m_up_axis(0), m_rmb_down(false), m_speed(1), m_sensitivity(0.01), m_position_lerp_speed(10.f), m_rotation_lerp_speed(5.f)
 	{
 		GetCursorPos(&m_last_cursor_pos);
+		m_target_rotation_euler = m_rotation_radians;
+		m_target_position = m_position;
+	}
+
+	//Takes roll, pitch and yaw and converts it to quaternion
+	virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw) override
+	{
+		m_rotation_radians = roll_pitch_yaw;
+		m_target_rotation_euler = roll_pitch_yaw;
+	}
+
+	//Sets position
+	virtual void SetPosition(DirectX::XMVECTOR position) override
+	{
+		m_position = position;
+		m_target_position = position;
 	}
 
 	virtual void Update(float delta)
@@ -33,15 +49,13 @@ public:
 			DirectX::XMVECTOR up = DirectX::XMVector3Normalize(m_transform.r[1]);
 			DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
-			m_position = DirectX::XMVectorAdd(m_position, DirectX::XMVectorScale(forward, delta * m_speed * m_forward_axis));
-			m_position = DirectX::XMVectorAdd(m_position, DirectX::XMVectorScale(up, delta * m_speed * m_up_axis));
-			m_position = DirectX::XMVectorAdd(m_position, DirectX::XMVectorScale(right, delta * m_speed * m_right_axis));
+			m_target_position = DirectX::XMVectorAdd(m_target_position, DirectX::XMVectorScale(forward, delta * m_speed * m_forward_axis));
+			m_target_position = DirectX::XMVectorAdd(m_target_position, DirectX::XMVectorScale(up, delta * m_speed * m_up_axis));
+			m_target_position = DirectX::XMVectorAdd(m_target_position, DirectX::XMVectorScale(right, delta * m_speed * m_right_axis));
 
 			// Rotation
 			DirectX::XMVECTOR new_rot{ cursor_pos.y - m_last_cursor_pos.y, cursor_pos.x - m_last_cursor_pos.x };
-			m_rotation_radians = DirectX::XMVectorSubtract(m_rotation_radians, DirectX::XMVectorScale(new_rot, m_sensitivity));
-
-			SignalTransformChange();
+			m_target_rotation_euler = DirectX::XMVectorSubtract(m_target_rotation_euler, DirectX::XMVectorScale(new_rot, m_sensitivity));
 		}
 		else
 		{
@@ -49,6 +63,10 @@ public:
 			m_right_axis = 0;
 			m_up_axis = 0;
 		}
+
+		m_position = DirectX::XMVectorLerp(m_position, m_target_position, delta * m_position_lerp_speed);
+		m_rotation_radians = DirectX::XMVectorLerp(m_rotation_radians, m_target_rotation_euler, delta * m_rotation_lerp_speed);
+		SignalTransformChange();
 
 		m_last_cursor_pos = cursor_pos;
 	}
@@ -126,6 +144,10 @@ public:
 	}
 
 private:
+	float m_position_lerp_speed;
+	float m_rotation_lerp_speed;
+	DirectX::XMVECTOR m_target_rotation_euler;
+	DirectX::XMVECTOR m_target_position;
 	POINT m_last_cursor_pos;
 	bool m_rmb_down;
 	float m_speed;

@@ -33,16 +33,16 @@ namespace wr
 		bool RequiresTransformUpdate(unsigned int frame_idx);
 
 		//Takes roll, pitch and yaw and converts it to quaternion
-		void SetRotation(DirectX::XMVECTOR roll_pitch_yaw);
+		virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw);
 
 		//Sets position
-		void SetPosition(DirectX::XMVECTOR position);
+		virtual void SetPosition(DirectX::XMVECTOR position);
 
 		//Sets scale
-		void SetScale(DirectX::XMVECTOR scale);
+		virtual void SetScale(DirectX::XMVECTOR scale);
 
 		//Position, rotation (roll, pitch, yaw) and scale
-		void SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation, DirectX::XMVECTOR scale);
+		virtual void SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation, DirectX::XMVECTOR scale);
 
 		//Update the transform; done automatically when SignalChange is called
 		void UpdateTransform();
