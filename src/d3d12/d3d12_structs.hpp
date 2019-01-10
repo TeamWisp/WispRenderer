@@ -15,11 +15,19 @@
 #include "d3d12_settings.hpp"
 #include "d3dx12.hpp"
 
+namespace wr
+{
+	class DynamicDescriptorHeap;
+	class DescriptorAllocation;
+}
+
 namespace wr::d3d12
 {
 
 	// Forward declare
 	struct StagingBuffer;
+	struct Shader;
+	struct RootSignature;
 
 	namespace desc
 	{
@@ -99,6 +107,19 @@ namespace wr::d3d12
 			std::uint64_t m_vertex_stride;
 		};
 
+		struct StateObjectDesc
+		{
+			Shader* m_library;
+			std::vector<std::wstring> m_library_exports;
+
+			std::uint64_t max_payload_size;
+			std::uint64_t max_attributes_size;
+			std::uint64_t max_recursion_depth;
+
+			std::optional<RootSignature*> global_root_signature;
+			std::optional<std::vector<RootSignature*>> local_root_signatures;
+		};
+
 	} /* desc */
 
 	struct Device
@@ -112,6 +133,8 @@ namespace wr::d3d12
 		DXGI_ADAPTER_DESC3 m_adapter_info;
 		ID3D12Debug1* m_debug_controller;
 		ID3D12InfoQueue* m_info_queue;
+		
+		static IDxcCompiler2* m_compiler;
 
 		// Fallback
 		bool m_dxr_fallback_support;
@@ -130,6 +153,12 @@ namespace wr::d3d12
 		std::vector<ID3D12CommandAllocator*> m_allocators;
 		ID3D12GraphicsCommandList5* m_native;
 		ID3D12RaytracingFallbackCommandList* m_native_fallback;
+
+		// Dynamic descriptor heap where staging happens
+		std::unique_ptr<DynamicDescriptorHeap> m_dynamic_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
+		
+		// Keep track of currently bound heaps, so that we can avoid changing when not needed
+		ID3D12DescriptorHeap* m_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 	};
 
 	struct CommandSignature
@@ -167,8 +196,14 @@ namespace wr::d3d12
 	{
 		desc::RootSignatureDesc m_create_info;
 		ID3D12RootSignature* m_native;
+
+		std::uint32_t m_num_descriptors_per_table[32];
+		std::uint32_t m_sampler_table_bit_mask;
+		std::uint32_t m_descriptor_table_bit_mask;
 	};
 
+	struct PipelineState;
+	struct StateObject;
 	struct Shader
 	{
 		IDxcBlob* m_native;
@@ -179,14 +214,13 @@ namespace wr::d3d12
 
 	struct PipelineState
 	{
-		PipelineType m_type;
 		ID3D12PipelineState* m_native;
 		RootSignature* m_root_signature;
 		Shader* m_vertex_shader;
 		Shader* m_pixel_shader;
 		Shader* m_compute_shader;
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE m_topology_type;
-		std::vector<D3D12_INPUT_ELEMENT_DESC> m_input_layout; // TODO: This should be defaulted.
+		Device* m_device; // only used for refinalization.
+		desc::PipelineStateDesc m_desc;
 	};
 
 	struct Viewport
@@ -223,29 +257,6 @@ namespace wr::d3d12
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 		std::uint8_t* m_cpu_address;
 		bool m_is_staged;
-	};
-
-	struct TextureResource : Texture
-	{
-		std::size_t m_width;
-		std::size_t m_height;
-		std::size_t m_depth;
-		std::size_t m_array_size;
-		std::size_t m_mip_levels;
-
-		Format m_format;
-
-		ID3D12Resource* m_resource;
-		ID3D12Resource* m_intermediate;
-		ResourceState m_current_state;
-		DescHeapCPUHandle m_cpu_descriptor_handle;
-		size_t m_offset_in_heap;
-
-		uint8_t* m_allocated_memory;
-
-		bool m_is_staged = false;
-		bool m_need_mips = false;
-		bool m_is_cubemap = false;
 	};
 
 	struct HeapResource;
@@ -333,11 +344,11 @@ namespace wr::d3d12
 
 	struct IndirectCommandBuffer
 	{
-		std::size_t m_num_buffers;
-		std::size_t m_max_num_buffers;
+		std::size_t m_num_commands;
+		std::size_t m_num_max_commands;
 		std::size_t m_command_size;
-		ID3D12Resource* m_native;
-		ID3D12Resource* m_native_upload;
+		std::vector<ID3D12Resource*> m_native;
+		std::vector<ID3D12Resource*> m_native_upload;
 	};
 
 	struct StateObject
@@ -347,6 +358,9 @@ namespace wr::d3d12
 		ID3D12StateObjectProperties* m_properties;
 
 		ID3D12RaytracingFallbackStateObject* m_fallback_native;
+
+		desc::StateObjectDesc m_desc;
+		Device* m_device; // Only for refinalization.
 	};
 
 	struct AccelerationStructure

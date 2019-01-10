@@ -80,10 +80,13 @@ namespace wr::d3d12
 			UINT desc_heap_idx = index; // TODO don't hardcode this.
 			if (!device->m_fallback_native->UsingRaytracingDriver())
 			{
-				// desc_heap_idx = AllocateDescriptor(heap, increment_size, &bottomLevelDescriptor, index);
-				bottom_level_descriptor = d3d12::GetCPUHandle(heap, 0, 0); // TODO: Don't harcode this.
-				d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
-				device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
+				for (auto frame_idx = 0; frame_idx < 3; frame_idx++)
+				{
+					// desc_heap_idx = AllocateDescriptor(heap, increment_size, &bottomLevelDescriptor, index);
+					bottom_level_descriptor = d3d12::GetCPUHandle(heap, frame_idx, 0); // TODO: Don't harcode this.
+					d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
+					device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
+				}
 			}
 			return device->m_fallback_native->GetWrappedPointerSimple(desc_heap_idx, resource->GetGPUVirtualAddress());
 		}
@@ -192,7 +195,7 @@ namespace wr::d3d12
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-			d3d12::BindDescriptorHeaps(cmd_list, { desc_heap }, 0, true);//TODO: note this non frame idx
+			d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
 			BuildAccelerationStructure(cmd_list->m_native_fallback);
 		}
 
@@ -329,7 +332,7 @@ namespace wr::d3d12
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-			d3d12::BindDescriptorHeaps(cmd_list, { desc_heap }, 0, true);//TODO: note this non frame idx
+			d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
 			BuildAccelerationStructure(cmd_list->m_native_fallback);
 		}
 

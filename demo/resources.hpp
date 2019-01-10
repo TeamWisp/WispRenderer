@@ -11,40 +11,61 @@ namespace resources
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
+	static wr::Model* light_model;
 	static wr::Model* test_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
+	static wr::MaterialHandle light_material;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(1, 10);
-		material_pool = render_system->CreateMaterialPool(1);
+		texture_pool = render_system->CreateTexturePool(16, 14);
+		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
-		wr::TextureHandle rusty_metal_albedo = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_albedo.png", false, true);
-		wr::TextureHandle rusty_metal_normal = texture_pool->Load("resources/materials/rusty_metal/rusty_metal_normal.png", false, true);
+		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
+
+		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", false, true);
+		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metal-splotchy-normal-dx.png", false, true);
+		wr::TextureHandle metal_splotchy_roughness = texture_pool->Load("resources/materials/metal-splotchy-rough.png", false, true);
+		wr::TextureHandle metal_splotchy_metallic = texture_pool->Load("resources/materials/metal-splotchy-metal.png", false, true);
+
+		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", false, true);
+		wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
+		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
+		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
+
+		// Create Material
+		light_material = material_pool->Create();
+
+		wr::Material* light_internal = material_pool->GetMaterial(light_material.m_id);
+
+		light_internal->SetAlbedo(black);
+		light_internal->SetNormal(black);
+		light_internal->SetRoughness(black);
+		light_internal->SetMetallic(black);
 
 		// Create Material
 		rusty_metal_material = material_pool->Create();
 
 		wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material.m_id);
 
-		rusty_metal_internal->SetAlbedo(rusty_metal_albedo);
-		rusty_metal_internal->SetNormal(rusty_metal_normal);
-
-		// Load Texture.
-		wr::TextureHandle rock_albedo = texture_pool->Load("resources/materials/rock/rock_albedo.png", false, true);
-		wr::TextureHandle rock_normal = texture_pool->Load("resources/materials/rock/rock_normal.png", false, true);
+		rusty_metal_internal->SetAlbedo(metal_splotchy_albedo);
+		rusty_metal_internal->SetNormal(metal_splotchy_normal);
+		rusty_metal_internal->SetRoughness(metal_splotchy_roughness);
+		rusty_metal_internal->SetMetallic(metal_splotchy_metallic);
 
 		// Create Material
 		rock_material = material_pool->Create();
 
 		wr::Material* rock_material_internal = material_pool->GetMaterial(rock_material.m_id);
 
-		rock_material_internal->SetAlbedo(rock_albedo);
-		rock_material_internal->SetNormal(rock_normal);
-
-		model_pool = render_system->CreateModelPool(2, 2);
+		rock_material_internal->SetAlbedo(bamboo_albedo);
+		rock_material_internal->SetNormal(bamboo_normal);
+		rock_material_internal->SetRoughness(bamboo_roughness);
+		rock_material_internal->SetMetallic(bamboo_metallic);
+	
+		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
 		{
@@ -113,24 +134,29 @@ namespace resources
 				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
 			};
 
+			light_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
 			plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
 
 			for (auto& m : plane_model->m_meshes)
 			{
 				m.second = &rock_material;
 			}
+
+			for (auto& m : light_model->m_meshes)
+			{
+				m.second = &light_material;
+			}
 		}
 
 
 		{
-			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx", wr::ModelType::FBX);
-
+			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+		
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
 			}
 		}
-
 	}
 
 }

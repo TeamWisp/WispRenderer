@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../resource_pool_texture.hpp"
-#include "d3d12_structs.hpp"
+#include "d3d12_texture_resources.hpp"
 #include <DirectXMath.h>
+
 
 namespace wr
 {
@@ -12,6 +13,7 @@ namespace wr
 	};
 
 	class D3D12RenderSystem;
+	class DescriptorAllocator;
 
 	class D3D12TexturePool : public TexturePool
 	{
@@ -23,10 +25,10 @@ namespace wr
 		void MakeResident() final;
 		void Stage(CommandList* cmd_list) final;
 		void PostStageClear() final;
+		void EndOfFrame() final;
 
 		d3d12::TextureResource* GetTexture(uint64_t texture_id) final;
-
-		d3d12::DescriptorHeap* GetHeap() { return m_descriptor_heap; }
+		void Unload(uint64_t texture_id) final;
 
 	protected:
 
@@ -48,8 +50,7 @@ namespace wr
 
 		//CPU only visible heap used for staging of descriptors.
 		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
-		d3d12::DescriptorHeap* m_descriptor_heap;
-		d3d12::DescHeapCPUHandle m_descriptor_handle;
+		DescriptorAllocator* m_texture_heap_allocator;
 
 		//Descriptor heap used for compute pipeline when doing mipmapping
 		d3d12::DescriptorHeap* m_mipmapping_heap;

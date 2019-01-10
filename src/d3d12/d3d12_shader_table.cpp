@@ -70,4 +70,10 @@ namespace wr::d3d12
 		table->m_mapped_shader_records += table->m_shader_record_size;
 	}
 
+	void Destroy(ShaderTable* table)
+	{
+		SAFE_RELEASE(table->m_resource);
+		delete table;
+	}
+
 } /* wr::d3d12 */

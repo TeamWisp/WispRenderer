@@ -20,6 +20,8 @@
 #include "imgui.hpp"
 #include "imgui_impl_dx12.hpp"
 
+#include "../d3d12/d3d12_structs.hpp"
+
 // DirectX
 #include <d3d12.h>
 #include <dxgi1_5.h>
@@ -46,6 +48,9 @@ struct FrameResources
 static FrameResources*              g_pFrameResources = NULL;
 static UINT                         g_numFramesInFlight = 0;
 static UINT                         g_frameIndex = UINT_MAX;
+
+static bool							g_initialized = false;
+static wr::d3d12::DescriptorHeap*	g_descriptor_heap = {};
 
 struct VERTEX_CONSTANT_BUFFER
 {
@@ -566,6 +571,16 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
 	return true;
 }
 
+IMGUI_IMPL_API bool ImGui_ImplDX12_IsInitialized()
+{
+	return g_initialized;
+}
+
+IMGUI_IMPL_API wr::d3d12::DescriptorHeap * ImGui_ImplDX12_GetDescriptorHeap()
+{
+	return g_descriptor_heap;
+}
+
 void    ImGui_ImplDX12_InvalidateDeviceObjects()
 {
 	if (!g_pd3dDevice)
@@ -584,8 +599,11 @@ void    ImGui_ImplDX12_InvalidateDeviceObjects()
 }
 
 bool ImGui_ImplDX12_Init(ID3D12Device* device, int num_frames_in_flight, DXGI_FORMAT rtv_format,
-	D3D12_CPU_DESCRIPTOR_HANDLE font_srv_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE font_srv_gpu_desc_handle)
+	D3D12_CPU_DESCRIPTOR_HANDLE font_srv_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE font_srv_gpu_desc_handle, wr::d3d12::DescriptorHeap* descriptor_heap)
 {
+	g_initialized = true;
+	g_descriptor_heap = descriptor_heap;
+
 	g_pd3dDevice = device;
 	g_RTVFormat = rtv_format;
 	g_hFontSrvCpuDescHandle = font_srv_cpu_desc_handle;
@@ -608,6 +626,7 @@ bool ImGui_ImplDX12_Init(ID3D12Device* device, int num_frames_in_flight, DXGI_FO
 
 void ImGui_ImplDX12_Shutdown()
 {
+	g_initialized = false;
 	ImGui_ImplDX12_InvalidateDeviceObjects();
 	delete[] g_pFrameResources;
 	g_pd3dDevice = NULL;

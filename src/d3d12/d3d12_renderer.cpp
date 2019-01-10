@@ -18,6 +18,7 @@
 #include "d3d12_shader_registry.hpp"
 #include "d3d12_root_signature_registry.hpp"
 #include "d3d12_resource_pool_texture.hpp"
+#include "d3d12_dynamic_descriptor_heap.hpp"
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -93,15 +94,6 @@ namespace wr
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
-		//TEMP
-		//Create Rendering Descriptor Heap
-		d3d12::desc::DescriptorHeapDesc heap_desc;
-		heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-		heap_desc.m_versions = d3d12::settings::num_back_buffers;
-		heap_desc.m_num_descriptors = 256;
-
-		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
-
 		// Raytracing cb pool
 		m_raytracing_cb_pool = CreateConstantBufferPool(1);
 
@@ -119,9 +111,9 @@ namespace wr
 		// Execute Indirect code
 		if (d3d12::settings::use_exec_indirect)
 		{
-			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommand));
+			m_indirect_cmd_buffer = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_draw_commands, sizeof(temp::IndirectCommand), d3d12::settings::num_back_buffers);
 			SetName(m_indirect_cmd_buffer, L"Default indirect command buffer");
-			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, m_max_commands, sizeof(temp::IndirectCommandIndexed));
+			m_indirect_cmd_buffer_indexed = d3d12::CreateIndirectCommandBuffer(m_device, d3d12::settings::num_indirect_index_commands, sizeof(temp::IndirectCommandIndexed), d3d12::settings::num_back_buffers);
 			SetName(m_indirect_cmd_buffer_indexed, L"Default indirect command buffer indexed");
 
 			std::vector<D3D12_INDIRECT_ARGUMENT_DESC> arg_descs(4);
@@ -145,6 +137,8 @@ namespace wr
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
+
+		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 	}
 
 	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
@@ -159,27 +153,51 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-
-		d3d12::Begin(m_direct_cmd_list, frame_idx);
-
-		for (int i = 0; i < m_structured_buffer_pools.size(); ++i) 
+		
+		// Perform reload requests
 		{
-			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
+			// Root Signatures
+			auto& rt_registry = RootSignatureRegistry::Get();
+			for (auto request : rt_registry.m_requested_reload)
+			{
+				// ReloadPipelineRegistryEntry(request);
+			}
+
+			// Shaders
+			auto& shader_registry = ShaderRegistry::Get();
+			for (auto request : shader_registry.m_requested_reload)
+			{
+				// ReloadPipelineRegistryEntry(request);
+			}
+
+			// Pipelines
+			auto& pipeline_registry = PipelineRegistry::Get();
+			pipeline_registry.m_reload_request_mutex.lock();
+			for (auto request : pipeline_registry.m_requested_reload)
+			{
+				ReloadPipelineRegistryEntry(request);
+			}
+			pipeline_registry.m_requested_reload.clear();
+			pipeline_registry.m_reload_request_mutex.unlock();
+
+			// RT Pipelines
+			auto& rt_pipeline_registry = RTPipelineRegistry::Get();
+			for (auto request : rt_pipeline_registry.m_requested_reload)
+			{
+				ReloadRTPipelineRegistryEntry(request);
+			}
 		}
 
-		for (int i = 0; i < m_model_pools.size(); ++i) 
+
+		bool clear_frame_buffer = false;
+
+		if (frame_graph.GetUID() != m_buffer_frame_graph_uids[frame_idx])
 		{
-			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
+			m_buffer_frame_graph_uids[frame_idx] = frame_graph.GetUID();
+			clear_frame_buffer = true;
 		}
 
-		m_texture_pool->Stage(m_direct_cmd_list);
-
-		d3d12::End(m_direct_cmd_list);
-
-		//Reset cpu and gpu handles to the start of the rendering heap. 
-		//Heap will be filled in the node rendering function.
-		m_rendering_heap_gpu = d3d12::GetGPUHandle(m_rendering_heap, frame_idx);
-		m_rendering_heap_cpu = d3d12::GetCPUHandle(m_rendering_heap, frame_idx);
+		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
 		scene_graph->Update();
 
@@ -203,6 +221,9 @@ namespace wr
 		}
 
 		m_bound_model_pool = nullptr;
+
+		//Signal end of frame to the texture pool so that stale descriptors can be freed.
+		m_texture_pool->EndOfFrame();
 
 		return std::unique_ptr<TextureHandle>();
 	}
@@ -469,10 +490,18 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto n_shader = d3d12::LoadDXCShader(desc.second.type, desc.second.path, desc.second.entry);
-			shader->m_native = n_shader;
+			auto shader_error = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
 
-			registry.m_objects.insert({ desc.first, shader });
+			if (std::holds_alternative<d3d12::Shader*>(shader_error))
+			{
+				auto n_shader = std::get<d3d12::Shader*>(shader_error);
+				shader->m_native = n_shader;
+				registry.m_objects.insert({ desc.first, shader });
+			}
+			else
+			{
+				LOGC("Failed to load shader. compiler error: {}", std::get<std::string>(shader_error));
+			}
 		}
 	}
 
@@ -498,17 +527,20 @@ namespace wr
 			if (desc.second.m_vertex_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
-				d3d12::SetVertexShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				d3d12::SetVertexShader(n_pipeline, shader);
 			}
 			if (desc.second.m_pixel_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
-				d3d12::SetFragmentShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				d3d12::SetFragmentShader(n_pipeline, shader);
 			}
 			if (desc.second.m_compute_shader_handle.has_value())
 			{
 				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
-				d3d12::SetComputeShader(n_pipeline, static_cast<D3D12Shader*>(obj)->m_native);
+				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				d3d12::SetComputeShader(n_pipeline, shader);
 			}
 			{
 				auto obj = RootSignatureRegistry::Get().Find(desc.second.m_root_signature_handle);
@@ -525,6 +557,94 @@ namespace wr
 		}
 	}
 
+	void D3D12RenderSystem::ReloadPipelineRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = PipelineRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto n_pipeline = static_cast<D3D12Pipeline*>(registry.Find(handle))->m_native;
+
+		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		{
+			if (!pipeline_shader) return;
+
+			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+				pipeline_shader->m_path,
+				pipeline_shader->m_entry);
+
+			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+			{
+				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+			}
+			else
+			{
+				error_msg = std::get<std::string>(new_shader_variant);
+			}
+		};
+
+		// Vertex Shader
+		{
+			recompile_shader(n_pipeline->m_vertex_shader);
+		}
+		// Pixel Shader
+		if (!error_msg.has_value()) {
+			recompile_shader(n_pipeline->m_pixel_shader);
+		}
+		// Compute Shader
+		if (!error_msg.has_value()) {
+			recompile_shader(n_pipeline->m_compute_shader);
+		}
+
+		if (error_msg.has_value())
+		{
+			LOGW(error_msg.value());
+			//open_shader_compiler_popup = true;
+			//shader_compiler_error = error_msg.value();
+		}
+		else
+		{
+			d3d12::RefinalizePipeline(n_pipeline);
+		}
+	}
+
+	void D3D12RenderSystem::ReloadRTPipelineRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = RTPipelineRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto n_pipeline = static_cast<D3D12StateObject*>(registry.Find(handle))->m_native;
+
+		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		{
+			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+				pipeline_shader->m_path,
+				pipeline_shader->m_entry);
+
+			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+			{
+				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+			}
+			else
+			{
+				error_msg = std::get<std::string>(new_shader_variant);
+			}
+		};
+
+		// Vertex Shader
+		{
+			recompile_shader(n_pipeline->m_desc.m_library);
+		}
+
+		if (error_msg.has_value())
+		{
+			LOGW(error_msg.value());
+			//open_shader_compiler_popup = true;
+			//shader_compiler_error = error_msg.value();
+		}
+		else
+		{
+			d3d12::RecreateStateObject(n_pipeline);
+		}
+	}
+
 	void D3D12RenderSystem::PrepareRTPipelineRegistry()
 	{
 		auto& registry = RTPipelineRegistry::Get();
@@ -534,77 +654,32 @@ namespace wr
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
 
-			d3d12::RootSignature* global_root_signature = nullptr;
+			auto library = static_cast<D3D12Shader*>(ShaderRegistry::Get().Find(desc.library_desc.shader_handle));
 
-			// Shader Library
+			d3d12::desc::StateObjectDesc n_desc;
+			n_desc.m_library = library->m_native;
+			n_desc.m_library_exports = desc.library_desc.exports;
+			n_desc.max_attributes_size = desc.max_attributes_size;
+			n_desc.max_payload_size = desc.max_payload_size;
+			n_desc.max_recursion_depth = desc.max_recursion_depth;
+
+			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
 			{
-				auto& shader_registry = ShaderRegistry::Get();
-				auto shader_lib = static_cast<D3D12Shader*>(shader_registry.Find(desc.library_desc.shader_handle));
-
-				D3D12_SHADER_BYTECODE bytecode = {};
-				bytecode.BytecodeLength = shader_lib->m_native->m_native->GetBufferSize();
-				bytecode.pShaderBytecode = shader_lib->m_native->m_native->GetBufferPointer();
-				auto lib = desc.desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-				for (auto exp : desc.library_desc.exports)
-				{
-					lib->DefineExport(exp.c_str());
-				}
-				lib->SetDXILLibrary(&bytecode);
+				auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+				n_desc.global_root_signature = library->m_native;
 			}
 
-			// Shader Config
-			{
-				auto shader_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
-				shader_config->Config(desc.max_payload_size, desc.max_attributes_size);
-			}
-
-			// Hitgroup
-			{
-				auto hitGroup = desc.desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-				hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
-				hitGroup->SetHitGroupExport(L"MyHitGroup");
-				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
-			}
-
-			// Global Root Signature
-			if (auto rs_handle = desc.global_root_signature.value_or(-1); desc.global_root_signature.has_value())
-			{
-				auto& rs_registry = RootSignatureRegistry::Get();
-				global_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle))->m_native;
-
-				auto global_rs = desc.desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-				global_rs->SetRootSignature(global_root_signature->m_native);
-			}
-
-			// Local Root Signatures
 			if (desc.local_root_signatures.has_value())
 			{
-				for (auto& rs_handle : desc.local_root_signatures.value())
+				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
+				for (auto rt_handle : desc.local_root_signatures.value())
 				{
-					auto& rs_registry = RootSignatureRegistry::Get();
-					auto n_rs = static_cast<D3D12RootSignature*>(rs_registry.Find(rs_handle));
-
-					auto local_rs = desc.desc.CreateSubobject<CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
-					local_rs->SetRootSignature(n_rs->m_native->m_native);
-					// Define explicit shader association for the local root signature.
-					{
-						//auto rootSignatureAssociation = desc.desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
-						//rootSignatureAssociation->SetSubobjectToAssociate(*local_rs);
-						//rootSignatureAssociation->AddExport(L"MyHitGroup");
-					}
+					auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+					n_desc.local_root_signatures.value().push_back(library->m_native);
 				}
 			}
 
-			// Pipeline Config
-			{
-				auto pipeline_config = desc.desc.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
-				pipeline_config->Config(desc.max_recursion_depth);
-			}
-
-			obj->m_native = d3d12::CreateStateObject(m_device, desc.desc);
-			d3d12::SetGlobalRootSignature(obj->m_native, global_root_signature);
-
-			desc.desc.DeleteHelpers();
+			obj->m_native = d3d12::CreateStateObject(m_device, n_desc);
 
 			registry.m_objects.insert({ it.first, obj });
 		}
@@ -626,16 +701,12 @@ namespace wr
 
 	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		/*for (auto& node : nodes)
-		{
-			for (auto& mesh : node->m_model->m_meshes)
-			{
-			}
-		}*/
 	}
 
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
+		if (nodes.empty()) return;
+
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
 		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
 
@@ -669,22 +740,75 @@ namespace wr
 
 	}
 
+	void D3D12RenderSystem::PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx)
+	{
+		d3d12::Begin(m_direct_cmd_list, frame_idx);
+
+		if (clear_frame_buffer)
+		{
+			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_descriptor(m_render_window.value()->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart());
+
+			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
+
+			float clear_color[] = { 0.f,0.f,0.f,0.f };
+
+			m_direct_cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(
+					m_render_window.value()->m_render_targets[frame_idx],
+					D3D12_RESOURCE_STATE_PRESENT,
+					D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+			m_direct_cmd_list->m_native->ClearRenderTargetView(
+				rtv_descriptor,
+				clear_color,
+				0,
+				nullptr
+			);
+
+
+			m_direct_cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(
+					m_render_window.value()->m_render_targets[frame_idx],
+					D3D12_RESOURCE_STATE_RENDER_TARGET,
+					D3D12_RESOURCE_STATE_PRESENT));
+		}
+
+		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
+		{
+			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
+		}
+
+		for (int i = 0; i < m_model_pools.size(); ++i)
+		{
+			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
+		}
+
+		m_texture_pool->Stage(m_direct_cmd_list);
+
+		d3d12::End(m_direct_cmd_list);
+	}
+
 	void D3D12RenderSystem::Update_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)
 	{
-		/*for (auto& node : nodes)
+		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
+				continue;
+			}
 
-			//Update
-			node->SignalUpdate(GetFrameIdx());
-		}*/
+			node->Update(GetFrameIdx());
+		}
 	}
 
 	void D3D12RenderSystem::Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
 		for (auto& node : nodes)
 		{
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
+				continue;
+			}
 
 			node->UpdateTemp(GetFrameIdx());
 
@@ -708,7 +832,10 @@ namespace wr
 		{
 			std::shared_ptr<LightNode>& node = light_nodes[i];
 
-			if (!node->RequiresUpdate(GetFrameIdx())) continue;
+			if (!node->RequiresUpdate(GetFrameIdx()))
+			{
+				continue;
+			}
 
 			if (!should_update)
 			{
@@ -835,7 +962,7 @@ namespace wr
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
 					
-					d3d12::BindDescriptorHeaps(n_cmd_list, { m_rendering_heap }, frame_idx);
+					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
 					auto material_handle = mesh.second;
 					
@@ -855,28 +982,27 @@ namespace wr
 						d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
 					}
 				}
-
-				//Reset instances
-				batch.num_instances = 0;
 			}
 
-			if (d3d12::settings::use_exec_indirect)
-			{
-				if (std::size_t size = commands.size(); size > 0)
-				{
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
-					d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size);
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
-					d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer);
-				}
-				if (std::size_t size = indexed_commands.size(); size > 0)
-				{
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST);
-					d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size);
-					d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT);
-					d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed);
-				}
+			//Reset instances
+			batch.num_instances = 0;
+		}
 
+		if constexpr (d3d12::settings::use_exec_indirect)
+		{
+			if (std::size_t size = commands.size(); size > 0)
+			{
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST, frame_idx);
+				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer, commands.data(), size, frame_idx);
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT, frame_idx);
+				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature, m_indirect_cmd_buffer, frame_idx);
+			}
+			if (std::size_t size = indexed_commands.size(); size > 0)
+			{
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::INDIRECT_ARGUMENT, ResourceState::COPY_DEST, frame_idx);
+				d3d12::StageBuffer(n_cmd_list, m_indirect_cmd_buffer_indexed, indexed_commands.data(), size, frame_idx);
+				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT, frame_idx);
+				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed, frame_idx);
 			}
 		}
 	}
@@ -893,32 +1019,18 @@ namespace wr
 		auto normal_handle = material_internal->GetNormal();
 		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
 
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
+		auto roughness_handle = material_internal->GetRoughness();
+		auto* roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTexture(roughness_handle.m_id));
 
-		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
-		{
-			m_rendering_heap_cpu.m_native
-		};
-		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
-		{
-			src_cpu_handle_albedo.m_native,
-			src_cpu_handle_normal.m_native
-		};
+		auto metallic_handle = material_internal->GetMetallic();
+		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		UINT sizes[] = { 2 };
-
-		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-			2, pSrcDescriptorRangeStarts,
-			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
-
-		d3d12::Offset(m_rendering_heap_cpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
-		d3d12::Offset(m_rendering_heap_gpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 0, albedo_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 1, normal_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 2, roughness_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 3, metallic_internal);
 	}
 	
-
 	unsigned int D3D12RenderSystem::GetFrameIdx()
 	{
 		if (m_render_window.has_value())

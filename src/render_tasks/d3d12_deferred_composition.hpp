@@ -4,7 +4,6 @@
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_constant_buffer_pool.hpp"
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
-#include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
@@ -23,7 +22,6 @@ namespace wr
 		std::array<d3d12::CommandList*, d3d12::settings::num_back_buffers> out_bundle_cmd_lists;
 		bool out_requires_bundle_recording;
 	};
-	using DeferredCompositionRenderTask_t = RenderTask<DeferredCompositionTaskData>;
 
 	namespace internal
 	{
@@ -33,7 +31,7 @@ namespace wr
 			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
 			
 
-			d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
+			d3d12::BindDescriptorHeap(cmd_list, data.out_srv_heap, data.out_srv_heap->m_create_info.m_type, frame_idx);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
@@ -48,10 +46,10 @@ namespace wr
 				1);
 		}
 
-		inline void SetupDeferredTask(RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data)
+		inline void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
-			auto* fg = task.GetFrameGraph();
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::deferred_composition);
@@ -68,21 +66,22 @@ namespace wr
 			{
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, i);
 
-				auto deferred_main_data = fg->GetData<DeferredMainTaskData>();
-				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(deferred_main_data.m_render_target);
-				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_data.m_rt_properties.m_rtv_formats.data());
+				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
+				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
 
 			}
 		}
 
-		inline void ExecuteDeferredTask(RenderSystem & render_system, DeferredCompositionRenderTask_t & task, SceneGraph & scene_graph, DeferredCompositionTaskData & data)
+		inline void ExecuteDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
@@ -93,12 +92,11 @@ namespace wr
 					return;
 				}
 
-
 				//Get light buffer
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 				std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
-				d3d12::CreateUAVFromRTV(static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()), cpu_handle, 1, formats.data());
+				d3d12::CreateUAVFromRTV(render_target, cpu_handle, 1, formats.data());
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
@@ -122,13 +120,13 @@ namespace wr
 				d3d12::BindViewport(cmd_list, viewport);
 
 				d3d12::Transition(cmd_list,
-					static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()),
+					render_target,
 					wr::ResourceState::COPY_SOURCE,
 					wr::ResourceState::UNORDERED_ACCESS);
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
-					d3d12::BindDescriptorHeaps(cmd_list, { data.out_srv_heap }, frame_idx);
+					d3d12::BindDescriptorHeap(cmd_list, data.out_srv_heap, data.out_srv_heap->m_create_info.m_type, frame_idx);
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
@@ -137,7 +135,7 @@ namespace wr
 				}
 
 				d3d12::Transition(cmd_list,
-					static_cast<d3d12::RenderTarget*>(task.GetRenderTarget<RenderTarget>()),
+					render_target,
 					wr::ResourceState::UNORDERED_ACCESS,
 					wr::ResourceState::COPY_SOURCE);
 
@@ -145,43 +143,48 @@ namespace wr
 			}
 		}
 
-
-		inline void ResizeDeferredTask(DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data, std::uint32_t width, std::uint32_t height)
+		inline void DestroyDeferredCompositionTask(FrameGraph& fg, RenderTaskHandle handle)
 		{
-			d3d12::Destroy(data.out_srv_heap);
-		}
+			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
 
-		inline void DestroyTestTask(DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData& data)
-		{
 			d3d12::Destroy(data.out_srv_heap);
 		}
 
 	} /* internal */
 
-
-	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<DeferredCompositionRenderTask_t> GetDeferredCompositionTask()
+	inline void AddDeferredCompositionTask(FrameGraph& fg)
 	{
-		auto ptr = std::make_unique<DeferredCompositionRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::COMPUTE, true,
-			RenderTargetProperties{
-				false,
-				std::nullopt,
-				std::nullopt,
-				ResourceState::UNORDERED_ACCESS,
-				ResourceState::COPY_SOURCE,
-				false,
-				Format::UNKNOWN,
-				{ Format::R8G8B8A8_UNORM },
-				1,
-				true,
-				true
-			},
-			[](RenderSystem & render_system, DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data, bool) { internal::SetupDeferredTask(render_system, task, data); },
-			[](RenderSystem & render_system, DeferredCompositionRenderTask_t & task, SceneGraph & scene_graph, DeferredCompositionTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
-			[](DeferredCompositionRenderTask_t & task, DeferredCompositionTaskData & data, bool) { internal::DestroyTestTask(task, data); }
-		);
+		RenderTargetProperties rt_properties
+		{
+			false,
+			std::nullopt,
+			std::nullopt,
+			ResourceState::UNORDERED_ACCESS,
+			ResourceState::COPY_SOURCE,
+			false,
+			Format::UNKNOWN,
+			{ Format::R8G8B8A8_UNORM },
+			1,
+			true,
+			true
+		};
 
-		return ptr;
+		RenderTaskDesc desc;
+		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
+			internal::SetupDeferredCompositionTask(rs, fg, handle);
+		};
+		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
+			internal::ExecuteDeferredCompositionTask(rs, fg, sg, handle);
+		};
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool) {
+			internal::DestroyDeferredCompositionTask(fg, handle);
+		};
+		desc.m_name = "Deferred Composition";
+		desc.m_properties = rt_properties;
+		desc.m_type = RenderTaskType::COMPUTE;
+		desc.m_allow_multithreading = true;
+
+		fg.AddTask<DeferredCompositionTaskData>(desc);
 	}
 
 } /* wr */

@@ -1,4 +1,6 @@
 #include "d3d12_functions.hpp"
+#include "d3d12_dynamic_descriptor_heap.hpp"
+#include "d3d12_texture_resources.hpp"
 
 #include "../util/log.hpp"
 #include "d3d12_defines.hpp"
@@ -37,6 +39,13 @@ namespace wr::d3d12
 			device->m_fallback_native->QueryRaytracingCommandList(cmd_list->m_native, IID_PPV_ARGS(&cmd_list->m_native_fallback));
 		}
 
+		//Create the heaps
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			cmd_list->m_dynamic_descriptor_heaps[i] = std::make_unique<DynamicDescriptorHeap>(device, static_cast<DescriptorHeapType>(i));
+			cmd_list->m_descriptor_heaps[i] = nullptr;
+		}
+
 		return cmd_list;
 	}
 
@@ -65,6 +74,12 @@ namespace wr::d3d12
 		// Otherwise its just easier to pass NULL and suffer the insignificant performance loss.
 		TRY_M(cmd_list->m_native->Reset(cmd_list->m_allocators[frame_idx], NULL),
 			"Failed to reset command list.");
+
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			cmd_list->m_dynamic_descriptor_heaps[i]->Reset();
+			cmd_list->m_descriptor_heaps[i] = nullptr;
+		}
 	}
 
 	void End(CommandList* cmd_list)
@@ -77,9 +92,9 @@ namespace wr::d3d12
 		cmd_list->m_native->ExecuteBundle(bundle->m_native);
 	}
 
-	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer)
+	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer, uint32_t frame_idx)
 	{
-		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, buffer->m_num_buffers, buffer->m_native, 0, nullptr, 0);
+		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, buffer->m_num_commands, buffer->m_native[frame_idx], 0, nullptr, 0);
 	}
 
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear, bool clear_depth)
@@ -145,34 +160,59 @@ namespace wr::d3d12
 	{
 		cmd_list->m_native->SetPipelineState(pipeline_state->m_native);
 		cmd_list->m_native->SetGraphicsRootSignature(pipeline_state->m_root_signature->m_native);
+
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			cmd_list->m_dynamic_descriptor_heaps[i]->ParseRootSignature(*pipeline_state->m_root_signature);
+		}
 	}
 
-	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback)
+	void BindDescriptorHeap(CommandList* cmd_list, DescriptorHeap* heap, DescriptorHeapType type, unsigned int frame_idx, bool fallback)
 	{
-		auto num = heaps.size();
-		std::vector<ID3D12DescriptorHeap*> n_heaps(num);
+		size_t heap_idx = frame_idx % heap->m_create_info.m_versions;
 
-		for (decltype(num) i = 0; i < num; i++)
+		if (cmd_list->m_descriptor_heaps[static_cast<size_t>(type)] != heap->m_native[heap_idx])
 		{
-			n_heaps[i] = heaps[i]->m_native[frame_idx % heaps[i]->m_create_info.m_versions];
+			cmd_list->m_descriptor_heaps[static_cast<size_t>(type)] = heap->m_native[heap_idx];
+			BindDescriptorHeaps(cmd_list, frame_idx, fallback);
+		}
+	}
+
+	void BindDescriptorHeaps(CommandList* cmd_list, unsigned int frame_idx, bool fallback)
+	{
+		size_t num_heaps = 0;
+		ID3D12DescriptorHeap* n_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
+
+		for (uint32_t i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			ID3D12DescriptorHeap* heap = cmd_list->m_descriptor_heaps[i];
+			if (heap)
+			{
+				n_heaps[num_heaps++] = heap;
+			}
 		}
 
 		if (fallback)
 		{
-			cmd_list->m_native_fallback->SetDescriptorHeaps(num, n_heaps.data());
+			cmd_list->m_native_fallback->SetDescriptorHeaps(num_heaps, n_heaps);
 		}
 		else
 		{
-			cmd_list->m_native->SetDescriptorHeaps(num, n_heaps.data());
+			cmd_list->m_native->SetDescriptorHeaps(num_heaps, n_heaps);
 		}
 	}
 
 	void BindComputePipeline(CommandList* cmd_list, PipelineState * pipeline_state)
 	{
-		if (pipeline_state->m_type != PipelineType::COMPUTE_PIPELINE)
+		if (pipeline_state->m_desc.m_type != PipelineType::COMPUTE_PIPELINE)
 			LOGW("Tried to bind a graphics pipeline as a compute pipeline");
 		cmd_list->m_native->SetPipelineState(pipeline_state->m_native);
 		cmd_list->m_native->SetComputeRootSignature(pipeline_state->m_root_signature->m_native);
+
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			cmd_list->m_dynamic_descriptor_heaps[i]->ParseRootSignature(*pipeline_state->m_root_signature);
+		}
 	}
 
 	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object, bool fallback)
@@ -186,6 +226,11 @@ namespace wr::d3d12
 		{
 			cmd_list->m_native->SetPipelineState1(state_object->m_native);
 		}
+
+		//for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		//{
+		//	cmd_list->m_dynamic_descriptor_heaps[i]->ParseRootSignature(*state_object->m_global_root_signature);
+		//}
 	}
 
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport)
@@ -245,6 +290,11 @@ namespace wr::d3d12
 		cmd_list->m_native->SetComputeRootShaderResourceView(root_parameter_idx, resource->GetGPUVirtualAddress());
 	}
 
+	void BindComputeUnorederedAccessView(CommandList * cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx)
+	{
+		cmd_list->m_native->SetComputeRootUnorderedAccessView(root_parameter_idx, resource->GetGPUVirtualAddress());
+	}
+
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index)
 	{
 		cmd_list->m_native->SetGraphicsRootDescriptorTable(root_param_index, handle.m_native);
@@ -262,16 +312,31 @@ namespace wr::d3d12
 
 	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count, unsigned int vertex_start)
 	{
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			cmd_list->m_dynamic_descriptor_heaps[i]->CommitStagedDescriptorsForDraw(*cmd_list);
+		}
+
 		cmd_list->m_native->DrawInstanced(vertex_count, inst_count, vertex_start, 0);
 	}
 
 	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count, unsigned int idx_start, unsigned int vertex_start)
 	{
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			cmd_list->m_dynamic_descriptor_heaps[i]->CommitStagedDescriptorsForDraw(*cmd_list);
+		}
+
 		cmd_list->m_native->DrawIndexedInstanced(idx_count, inst_count, idx_start, vertex_start, 0);
 	}
 
 	void Dispatch(CommandList * cmd_list, unsigned int thread_group_count_x, unsigned int thread_group_count_y, unsigned int thread_group_count_z)
 	{
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			cmd_list->m_dynamic_descriptor_heaps[i]->CommitStagedDescriptorsForDispatch(*cmd_list);
+		}
+
 		cmd_list->m_native->Dispatch(thread_group_count_x, thread_group_count_y, thread_group_count_z);
 	}
 
@@ -355,16 +420,16 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(number_of_barriers, &CD3DX12_RESOURCE_BARRIER::UAV(resource->m_resource));
 	}
 
-	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to)
+	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			buffer->m_native,
+			buffer->m_native[frame_idx],
 			(D3D12_RESOURCE_STATES)from,
 			(D3D12_RESOURCE_STATES)to
 		);
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
-
+	
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -418,6 +483,12 @@ namespace wr::d3d12
 		desc.Width = width;
 		desc.Height = height;
 		desc.Depth = depth;
+
+		//for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		//{
+		//	cmd_list->m_dynamic_descriptor_heaps[i]->CommitStagedDescriptorsForDispatch(*cmd_list);
+		//}
+
 
 		if (cmd_list->m_native_fallback)
 		{

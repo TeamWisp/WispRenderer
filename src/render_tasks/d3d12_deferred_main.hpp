@@ -6,7 +6,6 @@
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../d3d12/d3d12_model_pool.hpp"
 #include "../d3d12/d3d12_resource_pool_texture.hpp"
-#include "../frame_graph/render_task.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
@@ -23,32 +22,30 @@ namespace wr
 	{
 		D3D12Pipeline* in_pipeline;
 	};
-	using DeferredMainRenderTask_t = RenderTask<DeferredMainTaskData>;
 	
 	namespace internal
 	{
 
-		inline void SetupDeferredTask(RenderSystem & render_system, DeferredMainRenderTask_t & task, DeferredMainTaskData & data)
+		inline void SetupDeferredTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<DeferredMainTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::basic_deferred);
-
-			const auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
-			auto render_target = task.GetRenderTarget<d3d12::RenderTarget>();
 		}
 
-		inline void ExecuteDeferredTask(RenderSystem & render_system, DeferredMainRenderTask_t & task, SceneGraph & scene_graph, DeferredMainTaskData & data)
+		inline void ExecuteDeferredTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<DeferredMainTaskData>(handle);
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto cmd_list = task.GetCommandList<d3d12::CommandList>().first;
 				const auto viewport = n_render_system.m_viewport;
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
-				auto render_target = task.GetRenderTarget<d3d12::RenderTarget>();
 
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
@@ -61,36 +58,41 @@ namespace wr
 			}
 		}
 
-		inline void DestroyTestTask(DeferredMainRenderTask_t & task, DeferredMainTaskData& data)
-		{
-		}
-
 	} /* internal */
-	
 
-	//! Used to create a new defferred task.
-	[[nodiscard]] inline std::unique_ptr<DeferredMainRenderTask_t> GetDeferredMainTask()
+	inline void AddDeferredMainTask(FrameGraph& fg)
 	{
-		auto ptr = std::make_unique<DeferredMainRenderTask_t>(nullptr, "Deferred Render Task", RenderTaskType::DIRECT, true,
-			RenderTargetProperties{
-				false,
-				std::nullopt,
-				std::nullopt,
-				ResourceState::RENDER_TARGET,
-				ResourceState::NON_PIXEL_SHADER_RESOURCE,
-				true,
-				Format::D32_FLOAT,
-				{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },
-				2,
-				true,
-				true
-			},
-			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, DeferredMainTaskData & data, bool) { internal::SetupDeferredTask(render_system, task, data); },
-			[](RenderSystem & render_system, DeferredMainRenderTask_t & task, SceneGraph & scene_graph, DeferredMainTaskData & data) { internal::ExecuteDeferredTask(render_system, task, scene_graph, data); },
-			[](DeferredMainRenderTask_t & task, DeferredMainTaskData & data, bool) { internal::DestroyTestTask(task, data); }
-		);
+		RenderTargetProperties rt_properties
+		{
+			false,
+			std::nullopt,
+			std::nullopt,
+			ResourceState::RENDER_TARGET,
+			ResourceState::NON_PIXEL_SHADER_RESOURCE,
+			true,
+			Format::D32_FLOAT,
+			{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },
+			2,
+			true,
+			true
+		};
 
-		return ptr;
+		RenderTaskDesc desc;
+		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
+			internal::SetupDeferredTask(rs, fg, handle);
+		};
+		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
+			internal::ExecuteDeferredTask(rs, fg, sg, handle);
+		};
+		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
+			// Nothing to destroy
+		};
+		desc.m_name = "Deferred Main";
+		desc.m_properties = rt_properties;
+		desc.m_type = RenderTaskType::DIRECT;
+		desc.m_allow_multithreading = true;
+
+		fg.AddTask<DeferredMainTaskData>(desc);
 	}
 
 } /* wr */
