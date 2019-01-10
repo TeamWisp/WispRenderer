@@ -98,7 +98,7 @@ namespace wr
 		m_raytracing_cb_pool = CreateConstantBufferPool(1);
 
 		// Simple Shapes Model Pool
-		m_shapes_pool = CreateModelPool(4, 4);
+		m_shapes_pool = CreateModelPool(8, 8);
 		LoadPrimitiveShapes();
 
 		// Material raytracing sb pool
