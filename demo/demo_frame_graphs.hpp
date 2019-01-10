@@ -6,7 +6,7 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
-#include "render_tasks/d3d12_rt_shadow_task.hpp"
+#include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
 
 namespace fg_manager
@@ -16,10 +16,10 @@ namespace fg_manager
 	{
 		RAYTRACING = 0,
 		DEFERRED = 1,
-		RT_SHADOW = 2,
+		RT_HYBRID = 2,
 	};
 
-	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::RT_SHADOW;
+	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::RT_HYBRID;
 	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
@@ -50,14 +50,14 @@ namespace fg_manager
 			fg->Setup(rs);
 		}
 
-		// Raytracing Shadows
+		// Hybrid raytracing
 		{
-			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_SHADOW];
+			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
 			fg = new wr::FrameGraph(4);
 
 			wr::AddDeferredMainTask(*fg);
-			wr::AddRTShadowTask(*fg);
-			wr::AddRenderTargetCopyTask<wr::RTShadowData>(*fg);
+			wr::AddRTHybridTask(*fg);
+			wr::AddRenderTargetCopyTask<wr::RTHybridData>(*fg);
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
 			fg->Setup(rs);

@@ -129,6 +129,29 @@ float3 unpack_direction(float3 dir)
 	return wnormal.xyz;
 }
 
+float DoShadow(float3 wpos, float depth)
+{
+	float shadow_factor = 1.0;
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+
+	for (uint i = 0; i < light_count; i++)
+	{
+		float3 light_dir = normalize(lights[i].dir);
+
+		// Trace shadow ray
+		shadow_factor *= TraceShadowRay(wpos, light_dir, 0);
+	}
+
+	//TODO: Calculate episilion depending on distance
+	const float n = 0.1f;
+	const float f = 25.0f;
+	const float z = (2 * n) / (f + n - depth * (f - n)) / f;
+
+	//Output
+	return shadow_factor;
+}
+
+
 [shader("raygeneration")]
 void RaygenEntry()
 {
@@ -136,37 +159,20 @@ void RaygenEntry()
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
 	// Screen coordinates [0, resolution] (inverted y)
-	int2 screenCo = DispatchRaysIndex().xy;
-	screenCo.y = (DispatchRaysDimensions().y - screenCo.y - 1);
+	int2 screen_co = DispatchRaysIndex().xy;
+	screen_co.y = (DispatchRaysDimensions().y - screen_co.y - 1);
 
 	// Get g-buffer information
-	float3 albedo = gbuffer_albedo[screenCo.xy].xyz;
-	float3 normal = unpack_direction(gbuffer_normal[screenCo.xy].xyz);
-	float depth = gbuffer_depth[screenCo.xy].x;
+	float3 albedo = gbuffer_albedo[screen_co].xyz;
+	float3 normal = unpack_direction(gbuffer_normal[screen_co].xyz);
+	float depth = gbuffer_depth[screen_co].x;
 
 	// Get world position
-	const float n = 0.1f;
-	const float f = 25.0f;
-	const float z = (2 * n) / (f + n - depth * (f - n)) / f;
-
 	float3 wpos = unpack_position(uv, depth) + (normal * 0.05);
 
-	float shadow_factor = 1.0;
-	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+	float shadow_factor = DoShadow(wpos, depth);
+	gOutput[DispatchRaysIndex().xy] = float4(shadow_factor * albedo, 1);
 
-	for (uint i = 0; i < light_count; i++)
-	{
-		float3 light_dir = normalize(float3(lights[i].dir.xyz));
-
-		// Trace shadow ray
-		shadow_factor *= TraceShadowRay(wpos.xyz, light_dir, 0);
-	}
-
-	// Output world position
-	gOutput[DispatchRaysIndex().xy] = float4(albedo.xyz * shadow_factor, 1.0);
-	//gOutput[DispatchRaysIndex().xy] = float4(wpos.xyz, 1.0);
-	//gOutput[DispatchRaysIndex().xy] = float4(normal.xyz, 1.0);
-	//gOutput[DispatchRaysIndex().xy] = float4((wpos.xyz+ 1.0) * 0.5, 1.0);
 }
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)

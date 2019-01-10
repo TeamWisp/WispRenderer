@@ -17,7 +17,7 @@
 
 namespace wr
 {
-	struct RTShadowData
+	struct RTHybridData
 	{
 		d3d12::DescriptorHeap* out_rt_heap;
 
@@ -38,7 +38,7 @@ namespace wr
 	namespace internal
 	{
 
-		inline void CreateShaderTables(d3d12::Device* device, RTShadowData& data, int frame_idx)
+		inline void CreateShaderTables(d3d12::Device* device, RTHybridData& data, int frame_idx)
 		{
 			if (data.out_miss_shader_table[frame_idx])
 			{
@@ -96,11 +96,11 @@ namespace wr
 			}
 		}
 
-		inline void SetupRTShadowTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle)
+		inline void SetupRTHybridTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto& device = n_render_system.m_device;
-			auto& data = fg.GetData<RTShadowData>(handle);
+			auto& data = fg.GetData<RTHybridData>(handle);
 			auto n_render_target = static_cast<d3d12::RenderTarget*>(fg.GetRenderTarget<RenderTarget>(handle));
 
 			n_render_target->m_render_targets[0]->SetName(L"Raytracing Target");
@@ -129,18 +129,18 @@ namespace wr
 			}
 
 			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTShadowCamera_CBData)));
+			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
 
 			// Material Structured Buffer
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 
 			// Pipeline State Object
 			auto& rt_registry = RTPipelineRegistry::Get();
-			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_shadow_state_object))->m_native;
+			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_hybrid_state_object))->m_native;
 
 			// Root Signature
 			auto& rs_registry = RootSignatureRegistry::Get();
-			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_shadow_global))->m_native;
+			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
 
 			CreateShaderTables(device, data, 0);
 			CreateShaderTables(device, data, 1);
@@ -160,13 +160,13 @@ namespace wr
 			std::vector<wr::temp::RayTracingMaterial_CBData> materials(d3d12::settings::num_max_rt_materials);
 		}
 
-		inline void ExecuteRTShadowTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
+		inline void ExecuteRTHybridTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			auto& data = fg.GetData<RTShadowData>(handle);
+			auto& data = fg.GetData<RTHybridData>(handle);
 
 			auto frame_idx = n_render_system.GetFrameIdx();
 
@@ -314,11 +314,11 @@ namespace wr
 
 				// Update camera cb
 				auto camera = scene_graph.GetActiveCamera();
-				temp::RTShadowCamera_CBData cam_data;
+				temp::RTHybridCamera_CBData cam_data;
 				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view );
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
-				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTShadowCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
+				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
@@ -352,7 +352,7 @@ namespace wr
 
 	} /* internal */
 
-	inline void AddRTShadowTask(FrameGraph& fg)
+	inline void AddRTHybridTask(FrameGraph& fg)
 	{
 		RenderTargetProperties rt_properties
 		{
@@ -368,26 +368,26 @@ namespace wr
 			true,
 			true
 		};
-		//RTShadowData
+		//RTHybridData
 		RenderTaskDesc desc;
 		desc.m_setup_func = [] (RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
-			internal::SetupRTShadowTask(rs, fg, handle);
+			internal::SetupRTHybridTask(rs, fg, handle);
 		};
 		desc.m_execute_func = [] (RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
-			internal::ExecuteRTShadowTask(rs, fg, sg, handle);
+			internal::ExecuteRTHybridTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [] (FrameGraph&, RenderTaskHandle, bool)
 		{
 			// Nothing to destroy
 		};
-		desc.m_name = "Raytracing Shadows";
+		desc.m_name = "Hybrid raytracing";
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<RTShadowData>(desc);
+		fg.AddTask<RTHybridData>(desc);
 	}
 
 } /* wr */

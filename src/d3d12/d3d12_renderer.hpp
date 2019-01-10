@@ -52,7 +52,7 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 		};
 
-		struct RTShadowCamera_CBData
+		struct RTHybridCamera_CBData
 		{
 			DirectX::XMMATRIX m_inverse_view;
 			DirectX::XMMATRIX m_inverse_projection;
