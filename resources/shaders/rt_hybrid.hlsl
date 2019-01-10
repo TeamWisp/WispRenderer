@@ -88,7 +88,7 @@ float TraceShadowRay(float3 origin, float3 direction, unsigned int depth)
 		return float(1.0);
 	}
 
-	HitInfo payload = {1.5, depth};
+	HitInfo payload = {1.0, depth};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -136,10 +136,31 @@ float DoShadow(float3 wpos, float depth)
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		float3 light_dir = normalize(lights[i].dir);
+		int light_type = lights[i].tid & 3;
+		// Point light
+		if (light_type == light_type_point)
+		{
+			// Get distance to light
+			float3 distance = lights[i].pos - wpos;
+			float dist_length = length(distance);
 
-		// Trace shadow ray
-		shadow_factor *= TraceShadowRay(wpos, light_dir, 0);
+			// Get light direction
+			float3 light_dir = normalize(distance);
+
+			// Trace shadow ray if is inside point radius
+			if (dist_length < light[i].radius)
+			{
+				shadow_factor *= TraceShadowRay(wpos, light_dir, 0);
+			}
+		}
+		// Directional light
+		else if (light_type == light_type_directional)
+		{
+			float3 light_dir = normalize(lights[i].dir);
+
+			// Trace shadow ray
+			shadow_factor *= TraceShadowRay(wpos, light_dir, 0);
+		}
 	}
 
 	//TODO: Calculate episilion depending on distance
