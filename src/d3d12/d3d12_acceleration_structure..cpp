@@ -339,7 +339,7 @@ namespace wr::d3d12
 		return tlas;
 	}
 
-	AccelerationStructure UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
+	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
 		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list)
@@ -440,8 +440,6 @@ namespace wr::d3d12
 			d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
 			BuildAccelerationStructure(cmd_list->m_native_fallback);
 		}
-
-		return tlas;
 	}
 
 	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name)
