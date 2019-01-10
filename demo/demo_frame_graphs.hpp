@@ -7,6 +7,7 @@
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_rt_shadow_task.hpp"
+#include "render_tasks/d3d12_accumulation.hpp"
 
 namespace fg_manager
 {
@@ -29,7 +30,8 @@ namespace fg_manager
 			fg = new wr::FrameGraph(3);
 
 			wr::AddRaytracingTask(*fg);
-			wr::AddRenderTargetCopyTask<wr::RaytracingData>(*fg);
+			wr::AddAccumulationTask(*fg);
+			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
 			fg->Setup(rs);

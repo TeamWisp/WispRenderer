@@ -14,6 +14,7 @@ namespace wr
 		static RegistryHandle mip_mapping;
 		static RegistryHandle rt_shadow_global;
 		static RegistryHandle rt_shadow_local;
+		static RegistryHandle accumulation;
 	};
 
 	struct shaders
@@ -25,6 +26,7 @@ namespace wr
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_shadow_lib;
 		static RegistryHandle mip_mapping_cs;
+		static RegistryHandle accumulation;
 	};
 
 	struct pipelines
@@ -32,6 +34,7 @@ namespace wr
 		static RegistryHandle basic_deferred;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle mip_mapping;
+		static RegistryHandle accumulation;
 	};
 
 	struct state_objects

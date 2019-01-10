@@ -6,9 +6,12 @@
 
 #include "d3d12_structs.hpp"
 #include "d3d12_constant_buffer_pool.hpp"
+#include "d3d12_dynamic_descriptor_heap.hpp"
 
 namespace wr::d3d12
 {
+	struct TextureResource;
+
 
 	// Device
 	[[nodiscard]] Device* CreateDevice();
@@ -37,12 +40,14 @@ namespace wr::d3d12
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object, bool fallback = false);
-	void BindDescriptorHeaps(CommandList* cmd_list, std::vector<DescriptorHeap*> heaps, unsigned int frame_idx, bool fallback = false);
+	void BindDescriptorHeap(CommandList* cmd_list, DescriptorHeap* heap, DescriptorHeapType type, unsigned int frame_idx, bool fallback = false);
+	void BindDescriptorHeaps(CommandList* cmd_list, unsigned int frame_idx, bool fallback = false);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	void BindCompute32BitConstants(CommandList* cmd_list, const void* data_to_set, unsigned int num_of_values_to_set, unsigned int dest_offset_in_32bit_values, unsigned int root_parameter_idx);
 	void BindComputeConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	void BindComputeShaderResourceView(CommandList* cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx);
+	void BindComputeUnorederedAccessView(CommandList* cmd_list, ID3D12Resource* resource, unsigned int root_parameter_idx);
 	//void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 	void BindDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 	void BindComputeDescriptorTable(CommandList* cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
@@ -78,6 +83,7 @@ namespace wr::d3d12
 	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle);
 	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
 	void CreateUAVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
+	void CreateUAVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	void CreateSRVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id); // FIXME: Wrong location
 	// void CreateUAVFromTexture(Texture* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
@@ -91,8 +97,10 @@ namespace wr::d3d12
 	// Texture
 	[[nodiscard]] TextureResource* CreateTexture(Device* device, desc::TextureDesc* description, bool allow_uav);
 	void SetName(TextureResource* tex, std::wstring name);
+	void CreateSRVFromTexture(TextureResource* tex);
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
+	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
 	void Destroy(TextureResource* tex);
 
 	// RenderWindow

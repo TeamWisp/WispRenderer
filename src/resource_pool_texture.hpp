@@ -32,11 +32,13 @@ namespace wr
 		TexturePool& operator=(TexturePool&&) = delete;
 
 		[[nodiscard]] TextureHandle Load(std::string_view path, bool srgb, bool generate_mips);
+		virtual void Unload(uint64_t texture_id) = 0;
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
 		virtual void Stage(CommandList* cmd_list) = 0;
 		virtual void PostStageClear() = 0;
+		virtual void EndOfFrame() = 0;
 
 		virtual Texture* GetTexture(uint64_t texture_id) = 0;
 
