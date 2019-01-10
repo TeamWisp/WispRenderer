@@ -14,7 +14,6 @@
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../imgui_tools.hpp"
 
-
 namespace wr
 {
 	struct RaytracingData
@@ -288,12 +287,7 @@ namespace wr
 					for (auto& batch : batches)
 					{
 						auto n_model_pool = static_cast<D3D12ModelPool*>(batch.first->m_model_pool);
-						auto vb = n_model_pool->GetVertexStagingBuffer();
-						auto ib = n_model_pool->GetIndexStagingBuffer();
 						auto model = batch.first;
-
-						temp_ib = ib;
-						temp_vb = vb;
 
 						for (auto& mesh : model->m_meshes)
 						{
@@ -314,7 +308,7 @@ namespace wr
 					}
 
 
-					tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, blas_list);
+					tlas = d3d12::UpdateTopLevelAccelerationStructure(tlas, device, cmd_list, data.out_rt_heap, blas_list);
 				}
 
 				auto frame_idx = n_render_system.GetFrameIdx();

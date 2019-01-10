@@ -134,17 +134,12 @@ namespace resources
 				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
 			};
 
-			light_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
 			plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+			light_model = plane_model;
 
 			for (auto& m : plane_model->m_meshes)
 			{
 				m.second = &rock_material;
-			}
-
-			for (auto& m : light_model->m_meshes)
-			{
-				m.second = &light_material;
 			}
 		}
 
