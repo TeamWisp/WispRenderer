@@ -55,6 +55,7 @@ namespace wr::d3d12
 	void UpdateStagingBuffer(StagingBuffer* buffer, void * data, std::uint64_t size, std::uint64_t offset)
 	{
 		memcpy(static_cast<std::uint8_t*>(buffer->m_data) + offset, data, size);
+		memcpy(buffer->m_cpu_address + offset, static_cast<std::uint8_t*>(buffer->m_data) + offset, size);
 	}
 
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list)
@@ -83,8 +84,6 @@ namespace wr::d3d12
 		{
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state, D3D12_RESOURCE_STATE_COPY_DEST));
 		}
-
-		memcpy(buffer->m_cpu_address + offset, static_cast<std::uint8_t*>(buffer->m_data) + offset, size);
 
 		cmd_list->m_native->CopyBufferRegion(buffer->m_buffer, offset, buffer->m_staging, offset, size);
 

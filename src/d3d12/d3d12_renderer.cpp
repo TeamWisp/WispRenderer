@@ -37,6 +37,8 @@ namespace wr
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
+		delete m_thread_pool;
+
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
 		{
 			m_structured_buffer_pools[i].reset();
@@ -139,6 +141,8 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
+
+		m_thread_pool = new util::ThreadPool(d3d12::settings::max_threads);
 	}
 
 	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
@@ -1029,6 +1033,11 @@ namespace wr
 		d3d12::SetShaderTexture(n_cmd_list, 2, 1, normal_internal);
 		d3d12::SetShaderTexture(n_cmd_list, 2, 2, roughness_internal);
 		d3d12::SetShaderTexture(n_cmd_list, 2, 3, metallic_internal);
+	}
+
+	util::ThreadPool * D3D12RenderSystem::GetThreadPool()
+	{
+		return m_thread_pool;
 	}
 	
 	unsigned int D3D12RenderSystem::GetFrameIdx()

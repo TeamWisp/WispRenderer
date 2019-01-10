@@ -3,6 +3,8 @@
 #include "../model_pool.hpp"
 #include "d3d12_structs.hpp"
 
+#include "../util/thread_pool.hpp"
+
 #include <queue>
 
 namespace wr::d3d12
@@ -26,12 +28,14 @@ namespace wr
 			std::size_t m_vertex_staging_buffer_stride;
 			std::size_t m_vertex_count;
 			void* m_vertex_memory_block;
+			std::future<void> m_vertex_upload_finished;
 			D3D12_GPU_VIRTUAL_ADDRESS m_index_buffer_base_address;
 			std::size_t m_index_staging_buffer_offset;
 			std::size_t m_index_count_offset;
 			std::size_t m_index_staging_buffer_size;
 			std::size_t m_index_count;
 			void* m_index_memory_block;
+			std::future<void> m_index_upload_finished;
 		};
 	}
 
@@ -46,7 +50,7 @@ namespace wr
 		void Evict() final;
 		void MakeResident() final;
 
-		void StageMeshes(d3d12::CommandList* cmd_list);
+		void StageMeshes();
 
 		d3d12::StagingBuffer* GetVertexStagingBuffer();
 		d3d12::StagingBuffer* GetIndexStagingBuffer();
@@ -78,10 +82,18 @@ namespace wr
 		MemoryBlock* AllocateMemory(MemoryBlock* start_block, std::size_t size, std::size_t alignment);
 		void FreeMemory(MemoryBlock* heap_start_block,  MemoryBlock* block);
 		
-		std::queue<internal::MeshInternal*> m_mesh_stage_queue;
+		std::vector<std::queue<internal::MeshInternal*>> m_mesh_stage_queues;
+
+		std::uint32_t m_current_queue;
 
 		std::uint64_t m_vertex_buffer_size;
 		std::uint64_t m_index_buffer_size;
+
+		util::ThreadPool* m_thread_pool;
+
+		std::vector<d3d12::CommandList*> m_command_lists;
+
+		d3d12::Fence* m_staging_fence;
 
 		D3D12RenderSystem& m_render_system;
 	};

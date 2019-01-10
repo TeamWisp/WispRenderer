@@ -9,6 +9,8 @@
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
 
+#include "../util/thread_pool.hpp"
+
 
 namespace wr
 {
@@ -142,6 +144,8 @@ namespace wr
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 		void BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list);
 
+		util::ThreadPool* GetThreadPool();
+
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
 
@@ -187,6 +191,8 @@ namespace wr
 		std::optional<bool> m_requested_fullscreen_state;
 
 		MaterialHandle* m_last_material = nullptr;
+
+		util::ThreadPool* m_thread_pool;
 	};
 
 } /* wr */
