@@ -64,7 +64,24 @@ namespace wr
 		{
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
 		}
-		});
+	});
+
+
+	//Equirectangular texture to cubemap conversion Root Signature
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> equirect_to_cubemap_ranges
+	{
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(),
+	};
+	REGISTER(root_signatures::equirect_to_cubemap) = RootSignatureRegistry::Get().Register({
+		{
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(equirect_to_cubemap_ranges.size(), equirect_to_cubemap_ranges.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
+		},
+		{
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
+		}
+	});
 
 
 	REGISTER(shaders::basic_vs) = ShaderRegistry::Get().Register({
@@ -98,6 +115,17 @@ namespace wr
 		ShaderType::DIRECT_COMPUTE_SHADER
 	});
 
+	REGISTER(shaders::equirect_to_cubemap_vs) = ShaderRegistry::Get().Register({
+		"resources/shaders/equirect_to_cubemap_conversion.hlsl",
+		"main_vs",
+		ShaderType::VERTEX_SHADER
+	});
+
+	REGISTER(shaders::equirect_to_cubemap_ps) = ShaderRegistry::Get().Register({
+		"resources/shaders/equirect_to_cubemap_conversion.hlsl",
+		"main_ps",
+		ShaderType::PIXEL_SHADER
+	});
 
 	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<Vertex>({
 		shaders::basic_vs,
@@ -131,19 +159,36 @@ namespace wr
 
 	REGISTER(pipelines::mip_mapping) = PipelineRegistry::Get().Register<Vertex>(
 	{
+			std::nullopt,
+			std::nullopt,
+			shaders::mip_mapping_cs,
+			root_signatures::mip_mapping,
+			Format::UNKNOWN,
+			{ }, //This compute shader doesn't use any render target
+			0,
+			PipelineType::COMPUTE_PIPELINE,
+			CullMode::CULL_BACK,
+			false,
+			true,
+			TopologyType::TRIANGLE
+	});
+
+	REGISTER(pipelines::equirect_to_cubemap) = PipelineRegistry::Get().Register<Vertex>(
+	{
+		shaders::equirect_to_cubemap_vs,
+		shaders::equirect_to_cubemap_ps,
 		std::nullopt,
-		std::nullopt,
-		shaders::mip_mapping_cs,
-		root_signatures::mip_mapping,
+		root_signatures::equirect_to_cubemap,
 		Format::UNKNOWN,
-		{ }, //This compute shader doesn't use any render target
-		0,
-		PipelineType::COMPUTE_PIPELINE,
-		CullMode::CULL_BACK,
+		{ Format::R32G32B32A32_FLOAT },
+		1,
+		PipelineType::GRAPHICS_PIPELINE,
+		CullMode::CULL_FRONT,
 		false,
-		true,
+		false,
 		TopologyType::TRIANGLE
 	});
+
 
 	/* ### Raytracing ### */
 	REGISTER(shaders::accumulation) = ShaderRegistry::Get().Register(

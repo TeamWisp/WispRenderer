@@ -28,6 +28,9 @@ namespace wr
 		void EndOfFrame() final;
 
 		d3d12::TextureResource* GetTexture(uint64_t texture_id) final;
+
+		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
+
 		void Unload(uint64_t texture_id) final;
 
 	protected:

@@ -12,6 +12,7 @@ namespace wr
 		static RegistryHandle rt_test_global;
 		static RegistryHandle rt_test_local;
 		static RegistryHandle mip_mapping;
+		static RegistryHandle equirect_to_cubemap;
 		static RegistryHandle accumulation;
 	};
 
@@ -23,6 +24,8 @@ namespace wr
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 		static RegistryHandle mip_mapping_cs;
+		static RegistryHandle equirect_to_cubemap_vs;
+		static RegistryHandle equirect_to_cubemap_ps;
 		static RegistryHandle accumulation;
 	};
 
@@ -31,6 +34,7 @@ namespace wr
 		static RegistryHandle basic_deferred;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle mip_mapping;
+		static RegistryHandle equirect_to_cubemap;
 		static RegistryHandle accumulation;
 	};
 

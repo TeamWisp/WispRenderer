@@ -104,6 +104,76 @@ namespace wr
 		return static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));
 	}
 
+	TextureHandle D3D12TexturePool::CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest)
+	{
+		auto device = m_render_system.m_device;
+
+		d3d12::desc::TextureDesc desc;
+
+		uint32_t mip_lvl_final = mip_levels;
+
+		// 0 means generate max number of mip levels
+		if (mip_lvl_final == 0)
+		{
+			mip_lvl_final = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+		}
+
+		desc.m_width = width;
+		desc.m_height = height;
+		desc.m_is_cubemap = true;
+		desc.m_depth = 1;
+		desc.m_array_size = 6;
+		desc.m_mip_levels = mip_lvl_final;
+		desc.m_texture_format = format;
+		desc.m_initial_state = allow_render_dest ? ResourceState::RENDER_TARGET : ResourceState::COPY_DEST;
+
+		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, false);
+
+		texture->m_allocated_memory = nullptr;
+		texture->m_allow_render_dest = allow_render_dest;
+		texture->m_is_staged = true;
+		texture->m_need_mips = false;
+		
+		std::wstring wide_string(name.begin(), name.end());
+
+		d3d12::SetName(texture, wide_string);
+
+		DescriptorAllocation alloc = m_texture_heap_allocator->Allocate();
+
+		if (alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+
+		texture->m_desc_allocation = std::move(alloc);
+
+		if (allow_render_dest)
+		{
+			DescriptorAllocation alloc = m_texture_heap_allocator->Allocate(6);
+
+			if (alloc.IsNull())
+			{
+				LOGC("Couldn't allocate descriptor for the texture resource");
+			}
+
+			texture->m_rtv_allocation = std::move(alloc);
+		}
+
+		d3d12::CreateSRVFromTexture(texture);
+
+		m_loaded_textures++;
+
+		uint64_t texture_id = m_id_factory.GetUnusedID();
+
+		TextureHandle texture_handle;
+		texture_handle.m_pool = this;
+		texture_handle.m_id = texture_id;
+
+		m_staged_textures.insert(std::make_pair(texture_id, texture));
+
+		return texture_handle;
+	}
+
 	void D3D12TexturePool::Unload(uint64_t texture_id)
 	{
 		d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));

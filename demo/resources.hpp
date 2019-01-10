@@ -1,6 +1,7 @@
 #pragma once
 
 #include "wisp.hpp"
+#include "d3d12/d3d12_structs.hpp"
 
 namespace resources
 {

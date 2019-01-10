@@ -17,15 +17,18 @@
 
 namespace wr
 {
-
 	struct EquirectToCubemapTaskData
 	{
 		D3D12Pipeline* in_pipeline;
 
 		d3d12::TextureResource* in_equirectangular;
 		d3d12::TextureResource* out_cubemap;
+
+		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
+		DirectX::XMMATRIX proj_mat;
+		DirectX::XMMATRIX view_mat;
 	};
-	
+
 	namespace internal
 	{
 
@@ -35,7 +38,36 @@ namespace wr
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::basic_deferred); //TODO: pipelines::equirect_to_cubemap
+			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::equirect_to_cubemap);
+
+			data.camera_cb_pool = rs.CreateConstantBufferPool(1);
+
+
+			data.proj_mat = DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(90.0f), 1.0f, 0.1f, 10.0f);
+
+			data.view_mat = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+				DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f),
+				DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+			/*data.views_array[1] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+															DirectX::XMVectorSet(-1.0f, 0.0f, 0.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
+
+			data.views_array[2] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
+
+			data.views_array[3] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
+
+			data.views_array[4] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
+
+			data.views_array[5] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f),
+															DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));*/
 		}
 
 		inline void ExecuteEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
@@ -49,7 +81,7 @@ namespace wr
 				auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 				d3d12::TextureResource* cubemap = data.out_cubemap;
-				
+
 				const auto viewport = d3d12::CreateViewport(cubemap->m_width, cubemap->m_height);
 
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
@@ -64,15 +96,45 @@ namespace wr
 					DirectX::XMMATRIX m_projection;
 				};
 
-				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
+				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CB)));
 
-				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 0, frame_idx);
+				ProjectionView_CB cb_data;
+				cb_data.m_projection = data.proj_mat;
+				cb_data.m_view = data.view_mat;
+
+				d3d12_cb_handle->m_pool->Update(d3d12_cb_handle, sizeof(ProjectionView_CB), 0, (uint8_t*)&cb_data);
+
+				d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 1, frame_idx);
+				d3d12::SetShaderTexture(cmd_list, 2, 0, data.in_equirectangular);
+
+				for (uint32_t i = 0; i < 6; ++i)
+				{
+					//Get render target handle.
+					d3d12::DescHeapCPUHandle rtv_handle = data.in_equirectangular->m_rtv_allocation->GetDescriptorHandle(i);
+
+					cmd_list->m_native->OMSetRenderTargets(1, &rtv_handle.m_native, false, nullptr);
+
+					const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+					cmd_list->m_native->ClearRenderTargetView(rtv_handle.m_native, clear_color, 0, nullptr);
+
+					d3d12::BindCompute32BitConstants(cmd_list, &i, 1, 0, 0);
+
+					//bind cube and render
+					Model* cube_model 
+
+				}
+
+
+				//HERE: Bind render target view created from the cubemap 
+
+
 
 				scene_graph.Render(cmd_list, scene_graph.GetActiveCamera().get());
 			}
 		}
 	} /* internal */
-	
+
 	inline void AddEquirectToCubemapTask(FrameGraph& fg, std::size_t width, std::size_t height)
 	{
 		RenderTargetProperties rt_properties
