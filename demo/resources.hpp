@@ -57,10 +57,10 @@ namespace resources
 		rock_material_internal->SetMetallic(rock_metallic);
 
 		// Load Texture.
-		wr::TextureHandle pica_albedo = texture_pool->Load("resources/materials/floor/albedo.png", false, true);
-		wr::TextureHandle pica_normal = texture_pool->Load("resources/materials/floor/normal.png", false, true);
-		wr::TextureHandle pica_roughness = texture_pool->Load("resources/materials/floor/roughness.png", false, true);
-		wr::TextureHandle pica_metallic = texture_pool->Load("resources/materials/floor/metallic.png", false, true);
+		wr::TextureHandle pica_albedo = texture_pool->Load("resources/materials/pica/albedo.png", false, true);
+		wr::TextureHandle pica_normal = texture_pool->Load("resources/materials/pica/normal.png", false, true);
+		wr::TextureHandle pica_roughness = texture_pool->Load("resources/materials/pica/roughness.png", false, true);
+		wr::TextureHandle pica_metallic = texture_pool->Load("resources/materials/pica/metallic.png", false, true);
 
 		// Create Material
 		pica_scene_material = material_pool->Create();
@@ -159,14 +159,6 @@ namespace resources
 		}
 
 
-		{
-			//robot_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/robot.fbx");
-
-			//for (auto& m : robot_model->m_meshes)
-			{
-				//m.second = &rusty_metal_material;
-			}
-		}
 		{
 			pica_scene = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/pica_scene.fbx");
 
