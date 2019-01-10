@@ -105,17 +105,17 @@ namespace wr
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
 		RenderTargetProperties rt_properties{
-			false,						// This pass does not use the render window
-			target_width,				// Width of the frame
-			target_height,				// Height of the frame
-			ResourceState::COPY_SOURCE,	// Execution state
-			ResourceState::COPY_SOURCE,	// Finished state
-			false,						// Do not create a depth-stencil-view
-			Format::UNKNOWN,			// Depth-stencil-view format
-			{ Format::R8G8B8A8_UNORM },	// Render target array containing all formats for this render target
-			1,							// Number of render target formats
-			true,						// Clear flag
-			true						// Clear depth flag
+			false,							// This pass does not use the render window
+			target_width,					// Width of the frame
+			target_height,					// Height of the frame
+			ResourceState::COPY_SOURCE,		// Execution state
+			ResourceState::RENDER_TARGET,	// Finished state
+			false,							// Do not create a depth-stencil-view
+			Format::UNKNOWN,				// Depth-stencil-view format
+			{ Format::R8G8B8A8_UNORM },		// Render target array containing all formats for this render target
+			1,								// Number of render target formats
+			true,							// Clear flag
+			true							// Clear depth flag
 		};
 
 		// Render task information
@@ -139,7 +139,7 @@ namespace wr
 		readback_task_description.m_name = std::string(std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
 		readback_task_description.m_properties = rt_properties;
 		readback_task_description.m_type = RenderTaskType::COPY;
-		readback_task_description.m_allow_multithreading = true;
+		readback_task_description.m_allow_multithreading = false;
 
 		// Save this task to the frame graph system
 		frame_graph.AddTask<RenderTargetReadBackTaskData>(readback_task_description);
