@@ -1,4 +1,4 @@
-#define LIGHTS_EGISTER register(t3)
+#define LIGHTS_REGISTER register(t3)
 
 #include "fullscreen_quad.hlsl"
 #include "pbr_util.hlsl"

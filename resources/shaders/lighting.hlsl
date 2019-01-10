@@ -10,7 +10,7 @@ struct Light
 	float ang;			//Angle for spot; in radians
 };
 
-StructuredBuffer<Light> lights : LIGHTS_EGISTER;
+StructuredBuffer<Light> lights : LIGHTS_REGISTER;
 
 static uint light_type_point = 0;
 static uint light_type_directional = 1;

@@ -1,4 +1,4 @@
-#define LIGHTS_EGISTER register(t2)
+#define LIGHTS_REGISTER register(t2)
 #include "pbr_util.hlsl"
 #include "lighting.hlsl"
 
