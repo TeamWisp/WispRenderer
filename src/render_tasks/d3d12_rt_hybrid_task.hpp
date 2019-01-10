@@ -70,29 +70,37 @@ namespace wr
 			// Miss Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 1;
+				UINT shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
 
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
+				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
+
+				auto reflection_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ReflectionMiss");
+				auto reflection_miss_record = d3d12::CreateShaderRecord(reflection_miss_identifier, shader_identifier_size);
 
 				// Create Table
 				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shader_record);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], reflection_miss_record);
 			}
 
 			// Hit Group Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 1;
+				UINT shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
 
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
+				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
+
+				auto reflection_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ReflectionHitGroup");
+				auto reflection_hit_record = d3d12::CreateShaderRecord(reflection_hit_identifier, shader_identifier_size);
 
 				// Create Table
 				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shader_record);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shadow_hit_record);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], reflection_hit_record);
 			}
 		}
 

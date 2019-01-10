@@ -43,6 +43,15 @@ namespace wr::d3d12
 			hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
 			hitGroup->SetHitGroupExport(L"MyHitGroup");
 			hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+
+			if (desc.is_hybrid)
+			{
+				auto reflectionHitGroup = n_desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+				reflectionHitGroup->SetClosestHitShaderImport(L"ReflectionHit");
+				reflectionHitGroup->SetHitGroupExport(L"ReflectionHitGroup");
+				reflectionHitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+			}
+
 		}
 
 		// Global Root Signature

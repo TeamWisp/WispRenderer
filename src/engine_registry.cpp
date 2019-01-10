@@ -239,6 +239,7 @@ namespace wr
 		(sizeof(float)*7 + sizeof(unsigned int)), // Max payload size
 		(sizeof(float)*2), // Max attributes size
 		3,				   // Max recursion depth
+		false,			   //Not hybrid
 		root_signatures::rt_test_global,      // Global root signature
 		std::vector<RegistryHandle>{ root_signatures::rt_test_local },      // Local Root Signatures
 	});
@@ -291,6 +292,8 @@ namespace wr
 		lib.exports.push_back(L"RaygenEntry");
 		lib.exports.push_back(L"ClosestHitEntry");
 		lib.exports.push_back(L"MissEntry");
+		lib.exports.push_back(L"ReflectionHit");
+		lib.exports.push_back(L"ReflectionMiss");
 
 		return std::make_pair(desc, lib);
 	}();
@@ -299,9 +302,10 @@ namespace wr
 		{
 			rt_hybrid_so_desc.first,     // Description
 			rt_hybrid_so_desc.second,    // Library
-			(sizeof(float) * 1 + sizeof(unsigned int)), // Max payload size
+			(sizeof(float) * 3), // Max payload size
 			(sizeof(float) * 2), // Max attributes size
 			4,				   // Max recursion depth
+			true,			   //Is hybrid
 			root_signatures::rt_hybrid_global,      // Global root signature
 			std::vector<RegistryHandle>{ root_signatures::rt_hybrid_local },      // Local Root Signatures
 		});
