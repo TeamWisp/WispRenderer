@@ -22,6 +22,7 @@ namespace viknell_scene
 		// Geometry
 		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto roof_light = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::light_model);
 		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
@@ -32,6 +33,10 @@ namespace viknell_scene
 		roof->SetPosition({ 0, -1, 0 });
 		roof->SetRotation({ 90_deg, 0, 0 });
 		roof->SetMeshMaterial(0, &resources::rock_material);
+		roof_light->SetPosition({ 0, -0.999, 0 });
+		roof_light->SetRotation({ 90_deg, 0, 0 });
+		roof_light->SetScale({ 0.7, 0.7, 0.7 });
+		roof_light->SetMeshMaterial(0, &resources::light_material);
 		back_wall->SetPosition({ 0, 0, 1 });
 		back_wall->SetMeshMaterial(0, &resources::rock_material);
 		left_wall->SetPosition({ -1, 0, 0 });
@@ -40,22 +45,22 @@ namespace viknell_scene
 		right_wall->SetPosition({ 1, 0, 0 });
 		right_wall->SetRotation({ 0, 90_deg, 0 });
 		right_wall->SetMeshMaterial(0, &resources::rock_material);
-		test_model->SetPosition({ 0,1,0.75 });
+		test_model->SetPosition({ 0, 1, 0 });
 		test_model->SetRotation({ 0,0,180_deg });
 		test_model->SetScale({ 0.01f,0.01f,0.01f });
 		test_model->SetMeshMaterial(0, &resources::rusty_metal_material);
 		test_model->SetMeshMaterial(1, &resources::rusty_metal_material);
 
 		// Lights
-		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 10, 10, 10 });
+		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 5, 5, 5 });
 		point_light_0->SetRadius(3.0f);
 		point_light_0->SetPosition({ 0, 0, 0 });
 
-		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 10, 0, 10 });
+		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 5, 0, 0 });
 		point_light_1->SetRadius(2.0f);
 		point_light_1->SetPosition({ 0.5, 0, 0 });
 
-		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 0, 6, 5});
+		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 0, 0, 5});
 		point_light_2->SetRadius(3.0f);
 		point_light_2->SetPosition({ -0.7, 0.5, 0 });
 

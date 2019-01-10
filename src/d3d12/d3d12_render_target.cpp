@@ -202,6 +202,22 @@ namespace wr::d3d12
 		Offset(handle, 1, increment_size);
 	}
 
+	void CreateUAVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format)
+	{
+		decltype(Device::m_native) n_device;
+		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));
+
+		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
+		uav_desc.Format = (DXGI_FORMAT)format;
+		uav_desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+		uav_desc.Texture2D.MipSlice = 0;
+
+		n_device->CreateUnorderedAccessView(render_target->m_render_targets[id], nullptr, &uav_desc, handle.m_native);
+		Offset(handle, 1, increment_size);
+	}
+
 	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height)
 	{
 		if ((*render_target)->m_create_info.m_dsv_format == Format::UNKNOWN && (*render_target)->m_create_info.m_create_dsv_buffer)
