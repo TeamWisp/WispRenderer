@@ -1,8 +1,8 @@
 #define LIGHTS_REGISTER register(t2)
 #include "pbr_util.hlsl"
+#include "shadow_ray.hlsl"
 #include "lighting.hlsl"
 
-#define MAX_RECURSION 3
 //#define PATH_TRACING
 
 struct Vertex
@@ -27,7 +27,6 @@ struct Material
 };
 
 RWTexture2D<float4> gOutput : register(u0);
-RaytracingAccelerationStructure Scene : register(t0, space0);
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -192,7 +191,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 		RAY_FLAG_NONE,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
-		1, // MultiplierForGeometryContributionToHitGroupIndex
+		0, // MultiplierForGeometryContributionToHitGroupIndex
 		0, // miss shader index
 		ray,
 		payload);
@@ -205,6 +204,7 @@ void RaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
+//#define FOUR_X_AA
 #ifdef FOUR_X_AA
 	Ray a = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.5, 0), rand_seed);
 	Ray b = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(-0.5, 0), rand_seed);
@@ -323,6 +323,17 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
+	// Shadow
+	float shadow_factor = 1;
+	for (int i = 0; i < 3; i++)
+	{
+		float3 diff = lights[i].pos - hit_pos;
+		float3 light_dir = normalize(diff);
+		float3 light_dist = length(diff);
+		bool shadow = TraceShadowRay(hit_pos + (N * 0.000001), light_dir, light_dist, payload.depth + 1, payload.seed);
+		if (shadow) shadow_factor -= 0.3;
+	}
+
 	// Direct
 	float3 reflect_dir = ReflectRay(V, fN);
 	bool horizon = (dot(V, fN) > 0.0f);
@@ -337,6 +348,6 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	payload.color = (irradiance + (reflection.xyz * metal));
 #else
 	float3 retval = shade_pixel(hit_pos, V, albedo, metal, roughness, fN);
-	payload.color = retval + (reflection.xyz * metal);
+	payload.color = (retval + (reflection.xyz * metal)) * shadow_factor;
 #endif
 }
