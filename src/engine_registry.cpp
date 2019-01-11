@@ -205,7 +205,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
 		},
 		{
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_BORDER }
 		},
 		true // rtx
 	});

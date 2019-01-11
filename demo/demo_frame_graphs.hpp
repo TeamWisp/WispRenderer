@@ -7,6 +7,7 @@
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
+#include "render_tasks/d3d12_build_acceleration_structures.hpp"
 
 namespace fg_manager
 {
@@ -27,6 +28,7 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
 			fg = new wr::FrameGraph(3);
 
+			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
 			wr::AddAccumulationTask(*fg);
 			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);

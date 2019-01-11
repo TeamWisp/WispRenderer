@@ -13,6 +13,7 @@ namespace viknell_scene
 
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
+	static std::shared_ptr<wr::MeshNode> test_model;
 	static float t = 0;
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
@@ -27,8 +28,11 @@ namespace viknell_scene
 		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		auto test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
+		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
+		auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
 		floor->SetPosition({ 0, 1, 0 });
+		sphere->SetPosition({ -1, 1, 1 });
+		sphere->SetScale({ 0.6f, 0.6f, 0.6f });
 		floor->SetRotation({ -90_deg, 0, 0 });
 		roof->SetPosition({ 0, -1, 0 });
 		roof->SetRotation({ 90_deg, 0, 0 });
@@ -62,8 +66,12 @@ namespace viknell_scene
 
 	void UpdateScene()
 	{
-
 		t += 10.f * ImGui::GetIO().DeltaTime;
+
+		auto pos = test_model->m_position;
+		pos.m128_f32[0] = sin(t * 0.1);
+		test_model->SetPosition(pos);
+
 		camera->Update(ImGui::GetIO().DeltaTime);
 	}
 } /* cube_scene */
