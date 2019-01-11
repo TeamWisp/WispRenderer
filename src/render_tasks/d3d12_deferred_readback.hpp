@@ -7,7 +7,7 @@
 
 namespace wr
 {
-	struct RenderTargetReadBackTaskData
+	struct ReadbackTaskInternalData
 	{
 		// Render target of the previous render task (should be the output from the composition task
 		d3d12::RenderTarget* predecessor_render_target;
@@ -23,7 +23,7 @@ namespace wr
 		template<typename T>
 		inline void SetupReadBackTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
-			auto& data = fg.GetData<RenderTargetReadBackTaskData>(handle);
+			auto& data = fg.GetData<ReadbackTaskInternalData>(handle);
 			auto& dx12_render_system = static_cast<D3D12RenderSystem&>(rs);
 
 			// Save the previous render target for use in the execute function
@@ -47,7 +47,7 @@ namespace wr
 		inline void ExecuteReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& dx12_render_system = static_cast<D3D12RenderSystem&>(render_system);
-			auto& data = frame_graph.GetData<RenderTargetReadBackTaskData>(handle);
+			auto& data = frame_graph.GetData<ReadbackTaskInternalData>(handle);
 			auto command_list = frame_graph.GetCommandList<d3d12::CommandList>(handle);
 
 			D3D12_TEXTURE_COPY_LOCATION destination = {};
@@ -71,7 +71,7 @@ namespace wr
 		inline void DestroyReadBackTask(FrameGraph& fg, RenderTaskHandle handle)
 		{
 			// Data used for this render task
-			auto& data = fg.GetData<RenderTargetReadBackTaskData>(handle);
+			auto& data = fg.GetData<ReadbackTaskInternalData>(handle);
 
 			// Clean up the read back buffer
 			Destroy(data.readback_buffer);
@@ -122,7 +122,7 @@ namespace wr
 		readback_task_description.m_allow_multithreading = false;
 
 		// Save this task to the frame graph system
-		frame_graph.AddTask<RenderTargetReadBackTaskData>(readback_task_description);
+		frame_graph.AddTask<ReadbackTaskInternalData>(readback_task_description);
 	}
 
 } /* wr */
