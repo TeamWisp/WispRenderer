@@ -6,42 +6,48 @@
 
 namespace wr::d3d12
 {
-	ReadbackBuffer* wr::d3d12::CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description)
+	ReadbackBufferResource* wr::d3d12::CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description)
 	{
-		CD3DX12_HEAP_PROPERTIES readbackHeapProperties(D3D12_HEAP_TYPE_READBACK);
-
 		auto native_device = device->m_native;
 
-		auto* readbackBuffer = new ReadbackBuffer();
+		auto* readbackBuffer = new ReadbackBufferResource();
 
 		HRESULT res = native_device->CreateCommittedResource(
-			&readbackHeapProperties,
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(description->m_buffer_size),
-			static_cast<D3D12_RESOURCE_STATES>(description->m_initial_state),
+			D3D12_RESOURCE_STATE_COPY_DEST,
 			nullptr,
 			IID_PPV_ARGS(&readbackBuffer->m_resource));
 
 		if (FAILED(res))
 		{
-			LOGC("Error: Couldn't create readback buffer");
+			LOGC("Error: Could not create a readback buffer!");
 		}
 
 		return readbackBuffer;
 	}
 
-	void SetName(ReadbackBuffer* readback_buffer, std::wstring name)
+	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint64_t buffer_size)
+	{
+		void* memory = nullptr;
+		readback_buffer->m_resource->Map(0, &CD3DX12_RANGE(0, buffer_size), &memory);
+		return memory;
+	}
+
+	void UnmapReadbackBuffer(ReadbackBufferResource* const readback_buffer)
+	{
+		readback_buffer->m_resource->Unmap(0, &CD3DX12_RANGE(0, 0));
+	}
+
+	void SetName(ReadbackBufferResource* readback_buffer, std::wstring name)
 	{
 		readback_buffer->m_resource->SetName(name.c_str());
 	}
 
-	void Destroy(ReadbackBuffer* readback_buffer)
+	void Destroy(ReadbackBufferResource* readback_buffer)
 	{
 		SAFE_RELEASE(readback_buffer->m_resource);
-
-		if (readback_buffer->m_data != nullptr)
-			delete readback_buffer->m_data;
-		
 		delete readback_buffer;
 	}
 

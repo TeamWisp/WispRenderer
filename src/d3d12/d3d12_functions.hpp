@@ -96,9 +96,11 @@ namespace wr::d3d12
 	void Destroy(TextureResource* tex);
 
 	// Read-back buffer
-	[[nodiscard]] ReadbackBuffer* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);
-	void SetName(ReadbackBuffer* readback_buffer, std::wstring name);
-	void Destroy(ReadbackBuffer* readback_buffer);
+	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);
+	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint64_t buffer_size);
+	void UnmapReadbackBuffer(ReadbackBufferResource* const readback_buffer);
+	void SetName(ReadbackBufferResource* readback_buffer, std::wstring name);
+	void Destroy(ReadbackBufferResource* readback_buffer);
 
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);

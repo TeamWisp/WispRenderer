@@ -52,8 +52,6 @@ namespace wr::d3d12
 
 		struct ReadbackDesc
 		{
-			ResourceState m_initial_state = ResourceState::COPY_DEST;
-
 			// Size of the buffer in bytes (width * height * bytes per pixel)
 			std::uint64_t m_buffer_size;
 		};
@@ -274,7 +272,7 @@ namespace wr::d3d12
 		bool m_is_cubemap = false;
 	};
 
-	struct ReadbackBuffer : wr::ReadbackBuffer
+	struct ReadbackBufferResource : ReadbackBuffer
 	{
 		ID3D12Resource* m_resource;
 	};
