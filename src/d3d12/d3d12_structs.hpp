@@ -116,6 +116,8 @@ namespace wr::d3d12
 			std::uint64_t max_attributes_size;
 			std::uint64_t max_recursion_depth;
 
+			bool is_hybrid;
+
 			std::optional<RootSignature*> global_root_signature;
 			std::optional<std::vector<RootSignature*>> local_root_signatures;
 		};

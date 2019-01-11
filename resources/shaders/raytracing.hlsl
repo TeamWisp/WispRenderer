@@ -6,13 +6,13 @@
 struct Light 
 {
 	float3 pos;			//Position in world space for spot & point
-	float radius;			//Radius for point, height for spot
+	float radius;		//Radius for point, height for spot
 
-	float3 color;			//Color
+	float3 color;		//Color
 	uint tid;			//Type id; light_type_x
 
 	float3 dir;			//Direction for spot & directional
-	float angel;			//Angle for spot; in radians
+	float angle;		//Angle for spot; in radians
 };
 
 struct Vertex

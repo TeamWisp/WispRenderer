@@ -70,29 +70,37 @@ namespace wr
 			// Miss Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 1;
+				UINT shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
 
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
+				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
+
+				auto reflection_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ReflectionMiss");
+				auto reflection_miss_record = d3d12::CreateShaderRecord(reflection_miss_identifier, shader_identifier_size);
 
 				// Create Table
 				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shader_record);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], reflection_miss_record);
 			}
 
 			// Hit Group Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 1;
+				UINT shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
 
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
+				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
+
+				auto reflection_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ReflectionHitGroup");
+				auto reflection_hit_record = d3d12::CreateShaderRecord(reflection_hit_identifier, shader_identifier_size);
 
 				// Create Table
 				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shader_record);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shadow_hit_record);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], reflection_hit_record);
 			}
 		}
 
@@ -109,7 +117,7 @@ namespace wr
 
 			// top level, bottom level and output buffer. (even though I don't use bottom level.)
 			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_num_descriptors = 100; // FIXME: size
+			heap_desc.m_num_descriptors = 600; // FIXME: size
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_versions = d3d12::settings::num_back_buffers;
@@ -122,7 +130,7 @@ namespace wr
 				d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
 				cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
-				d3d12::Offset(cpu_handle, 29, data.out_rt_heap->m_increment_size);
+				d3d12::Offset(cpu_handle, 24, data.out_rt_heap->m_increment_size);
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
@@ -318,6 +326,7 @@ namespace wr
 				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view );
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
+				cam_data.m_intensity = n_render_system.temp_intensity;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);

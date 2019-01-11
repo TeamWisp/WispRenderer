@@ -29,6 +29,8 @@ namespace wr
 		std::uint64_t max_attributes_size;
 		std::uint64_t max_recursion_depth;
 
+		bool is_hybrid;
+
 		std::optional<RegistryHandle> global_root_signature;
 		std::optional<std::vector<RegistryHandle>> local_root_signatures;
 	};
