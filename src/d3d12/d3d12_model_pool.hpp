@@ -99,6 +99,8 @@ namespace wr
 		d3d12::Fence* m_staging_fence;
 		d3d12::Fence* m_transition_fence;
 
+		bool m_waiting_for_staging;
+
 		D3D12RenderSystem& m_render_system;
 	};
 } /* wr::d3d12 */

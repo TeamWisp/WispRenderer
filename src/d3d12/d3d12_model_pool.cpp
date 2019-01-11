@@ -14,7 +14,8 @@ namespace wr
 		std::size_t index_buffer_size_in_mb) :
 		ModelPool(vertex_buffer_size_in_mb, index_buffer_size_in_mb),
 		m_render_system(render_system),
-		m_current_queue(0)
+		m_current_queue(0),
+		m_waiting_for_staging(false)
 	{
 		m_vertex_buffer = d3d12::CreateStagingBuffer(render_system.m_device,
 			nullptr,
@@ -48,12 +49,12 @@ namespace wr
 
 		m_thread_pool = render_system.GetThreadPool();
 
-		m_command_lists.resize(d3d12::settings::max_threads);
+		m_command_lists.resize(d3d12::settings::max_threads + 2);
 
 
 		for (auto& list : m_command_lists)
 		{
-			list = d3d12::CreateCommandList(m_render_system.m_device, 1, wr::CmdListType::CMD_LIST_COPY);
+			list = d3d12::CreateCommandList(m_render_system.m_device, 1, wr::CmdListType::CMD_LIST_DIRECT);
 		}
 
 		m_transition_command_lists.resize(2);
@@ -142,11 +143,15 @@ namespace wr
 
 		if (queues_empty)
 		{
-			d3d12::Signal(m_transition_fence, m_render_system.m_direct_queue);
 			return;
 		}
 
-		d3d12::Begin(m_transition_command_lists[0], 0);
+		if (m_waiting_for_staging)
+		{
+			WaitForStaging();
+		}
+
+		d3d12::Begin(m_command_lists[0], 0);
 
 		if (m_vertex_buffer->m_is_staged && !m_index_buffer->m_is_staged)
 		{
@@ -155,29 +160,21 @@ namespace wr
 				CD3DX12_RESOURCE_BARRIER::Transition(
 					m_vertex_buffer->m_buffer,
 					(D3D12_RESOURCE_STATES)m_vertex_buffer->m_target_resource_state,
-					D3D12_RESOURCE_STATE_COMMON) ,
-				CD3DX12_RESOURCE_BARRIER::Transition(
-					m_index_buffer->m_buffer,
-					D3D12_RESOURCE_STATE_COPY_DEST,
-					D3D12_RESOURCE_STATE_COMMON)
+					D3D12_RESOURCE_STATE_COPY_DEST)
 			};
 
-			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
+			m_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
 		}
 		else if (!m_vertex_buffer->m_is_staged && m_index_buffer->m_is_staged)
 		{
 			std::vector<D3D12_RESOURCE_BARRIER> barriers = {
 				CD3DX12_RESOURCE_BARRIER::Transition(
-					m_vertex_buffer->m_buffer,
-					D3D12_RESOURCE_STATE_COPY_DEST,
-					D3D12_RESOURCE_STATE_COMMON) ,
-				CD3DX12_RESOURCE_BARRIER::Transition(
 					m_index_buffer->m_buffer,
 					(D3D12_RESOURCE_STATES)m_index_buffer->m_target_resource_state,
-					D3D12_RESOURCE_STATE_COMMON)
+					D3D12_RESOURCE_STATE_COPY_DEST)
 			};
 
-			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
+			m_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
 		}
 		else if (m_vertex_buffer->m_is_staged && m_index_buffer->m_is_staged)
 		{
@@ -185,49 +182,33 @@ namespace wr
 				CD3DX12_RESOURCE_BARRIER::Transition(
 					m_vertex_buffer->m_buffer,
 					(D3D12_RESOURCE_STATES)m_vertex_buffer->m_target_resource_state,
-					D3D12_RESOURCE_STATE_COMMON) ,
+					D3D12_RESOURCE_STATE_COPY_DEST) ,
 				CD3DX12_RESOURCE_BARRIER::Transition(
 					m_index_buffer->m_buffer,
 					(D3D12_RESOURCE_STATES)m_index_buffer->m_target_resource_state,
-					D3D12_RESOURCE_STATE_COMMON)
+					D3D12_RESOURCE_STATE_COPY_DEST)
 			};
 
-			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
-		}
-		else
-		{
-
-			std::vector<D3D12_RESOURCE_BARRIER> barriers = {
-				CD3DX12_RESOURCE_BARRIER::Transition(
-					m_vertex_buffer->m_buffer,
-					D3D12_RESOURCE_STATE_COPY_DEST,
-					D3D12_RESOURCE_STATE_COMMON) ,
-				CD3DX12_RESOURCE_BARRIER::Transition(
-					m_index_buffer->m_buffer,
-					D3D12_RESOURCE_STATE_COPY_DEST,
-					D3D12_RESOURCE_STATE_COMMON)
-			};
-
-			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
+			m_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
 		}
 
-		d3d12::End(m_transition_command_lists[0]);
-
-		d3d12::Execute(m_render_system.m_direct_queue, { m_transition_command_lists[0] }, m_transition_fence);
+		d3d12::End(m_command_lists[0]);
 
 		std::vector<std::future<void>> command_recording_futures(m_mesh_stage_queues.size());
 
-		for (int i = 0; i < m_command_lists.size(); ++i)
+		for (int i = 1; i < m_command_lists.size() - 1; ++i)
 		{
-			command_recording_futures[i] = m_thread_pool->Enqueue([](
-				std::queue<internal::MeshInternal*>& mesh_queue, 
-				d3d12::CommandList* command_list, 
+			command_recording_futures[i - 1] = m_thread_pool->Enqueue([](
+				std::queue<internal::MeshInternal*>& mesh_queue,
+				d3d12::CommandList* command_list,
 				wr::D3D12ModelPool* model_pool)
 			{
+				
 				d3d12::Begin(command_list, 0);
 				while (!mesh_queue.empty())
 				{
 					internal::D3D12MeshInternal* d3d12_mesh = static_cast<internal::D3D12MeshInternal*>(mesh_queue.front());
+					d3d12_mesh->m_vertex_upload_finished.get();
 					command_list->m_native->CopyBufferRegion(
 						model_pool->GetVertexStagingBuffer()->m_buffer,
 						d3d12_mesh->m_vertex_staging_buffer_offset*d3d12_mesh->m_vertex_staging_buffer_stride,
@@ -235,8 +216,9 @@ namespace wr
 						d3d12_mesh->m_vertex_staging_buffer_offset*d3d12_mesh->m_vertex_staging_buffer_stride,
 						d3d12_mesh->m_vertex_staging_buffer_size
 					);
-					if(d3d12_mesh->m_index_staging_buffer_size!=0)
+					if (d3d12_mesh->m_index_staging_buffer_size != 0)
 					{
+						d3d12_mesh->m_index_upload_finished.get();
 						command_list->m_native->CopyBufferRegion(
 							model_pool->GetIndexStagingBuffer()->m_buffer,
 							d3d12_mesh->m_index_staging_buffer_offset * sizeof(std::uint32_t),
@@ -249,58 +231,49 @@ namespace wr
 				}
 				d3d12::End(command_list);
 			},
-				m_mesh_stage_queues[i], m_command_lists[i], this);
+				m_mesh_stage_queues[i - 1], m_command_lists[i], this);
 		}
 
-		d3d12::Begin(m_transition_command_lists[1], 0);
+		d3d12::Begin(m_command_lists[m_command_lists.size() - 1], 0);
 
 		std::vector<D3D12_RESOURCE_BARRIER> barriers = {
 			CD3DX12_RESOURCE_BARRIER::Transition(
 				m_vertex_buffer->m_buffer,
-				D3D12_RESOURCE_STATE_COMMON,
+				D3D12_RESOURCE_STATE_COPY_DEST,
 				(D3D12_RESOURCE_STATES)m_vertex_buffer->m_target_resource_state),
 			CD3DX12_RESOURCE_BARRIER::Transition(
 				m_index_buffer->m_buffer,
-				D3D12_RESOURCE_STATE_COMMON,
+				D3D12_RESOURCE_STATE_COPY_DEST,
 				(D3D12_RESOURCE_STATES)m_index_buffer->m_target_resource_state)
 		};
 
-		m_transition_command_lists[1]->m_native->ResourceBarrier(2, barriers.data());
+		m_command_lists[m_command_lists.size() - 1]->m_native->ResourceBarrier(2, barriers.data());
 
-		d3d12::End(m_transition_command_lists[1]);
-		
-		for (auto& future : command_recording_futures)
-		{
-			future.wait();
-		}
+		d3d12::End(m_command_lists[m_command_lists.size() - 1]);
 
-		for (auto& meshes : m_loaded_meshes)
+		for (int i = 0; i < m_mesh_stage_queues.size(); ++i)
 		{
-			static_cast<internal::D3D12MeshInternal*>(meshes.second)->m_vertex_upload_finished.wait();
-			if (static_cast<internal::D3D12MeshInternal*>(meshes.second)->m_index_count > 0)
-			{
-				static_cast<internal::D3D12MeshInternal*>(meshes.second)->m_index_upload_finished.wait();
-			}
+			command_recording_futures[i].get();
 		}
 
 		m_vertex_buffer->m_gpu_address = m_vertex_buffer->m_buffer->GetGPUVirtualAddress();
 		m_vertex_buffer->m_is_staged = true;
 
-		m_index_buffer->m_gpu_address = m_vertex_buffer->m_buffer->GetGPUVirtualAddress();
+		m_index_buffer->m_gpu_address = m_index_buffer->m_buffer->GetGPUVirtualAddress();
 		m_index_buffer->m_is_staged = true;
-
-		m_render_system.m_copy_queue->m_native->Wait(m_transition_fence->m_native, m_transition_fence->m_fence_value);
-
-		d3d12::Execute(m_render_system.m_copy_queue, m_command_lists, m_staging_fence);
 		
-		m_render_system.m_direct_queue->m_native->Wait(m_staging_fence->m_native, m_staging_fence->m_fence_value);
+		d3d12::Execute(m_render_system.m_direct_queue, m_command_lists, m_staging_fence);
 
-		d3d12::Execute(m_render_system.m_direct_queue, { m_transition_command_lists[1] }, m_transition_fence);
+		m_waiting_for_staging = true;
 	}
 
 	void D3D12ModelPool::WaitForStaging()
 	{
-		d3d12::WaitFor(m_transition_fence);
+		if (m_waiting_for_staging)
+		{
+			d3d12::WaitFor(m_staging_fence);
+			m_waiting_for_staging = false;
+		}
 	}
 
 	d3d12::StagingBuffer * D3D12ModelPool::GetVertexStagingBuffer()

@@ -59,6 +59,7 @@ namespace wr
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
 		m_window = window;
+		m_thread_pool = new util::ThreadPool(d3d12::settings::max_threads);
 		m_device = d3d12::CreateDevice();
 		SetName(m_device, L"Default D3D12 Device");
 		m_direct_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
@@ -146,7 +147,6 @@ namespace wr
 
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 
-		m_thread_pool = new util::ThreadPool(d3d12::settings::max_threads);
 	}
 
 	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
