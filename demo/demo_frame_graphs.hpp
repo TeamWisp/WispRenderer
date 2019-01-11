@@ -20,9 +20,6 @@ namespace fg_manager
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 2> frame_graphs = {};
 
-	float* const output_data = nullptr;
-	std::uint64_t buffer_size = 0;
-
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
 	{
 		// Ray tracing
@@ -34,7 +31,7 @@ namespace fg_manager
 			wr::AddRaytracingTask(*fg);
 
 			// Copy the scene render pixel data to a buffer that is CPU-accessible
-			wr::AddRenderTargetReadBackTask<wr::RaytracingData>(*fg, std::nullopt, std::nullopt, output_data, buffer_size);
+			wr::AddRenderTargetReadBackTask<wr::RaytracingData>(*fg, std::nullopt, std::nullopt);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::RaytracingData>(*fg);
@@ -58,7 +55,7 @@ namespace fg_manager
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Copy the composition pixel data to a buffer that is CPU-accessible
-			wr::AddRenderTargetReadBackTask<wr::DeferredCompositionTaskData>(*fg, std::nullopt, std::nullopt, output_data, buffer_size);
+			wr::AddRenderTargetReadBackTask<wr::DeferredCompositionTaskData>(*fg, std::nullopt, std::nullopt);
 
 			// Copy the composition pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);

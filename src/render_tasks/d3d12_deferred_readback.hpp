@@ -21,7 +21,7 @@ namespace wr
 	namespace internal
 	{
 		template<typename T>
-		inline void SetupReadBackTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, void* out_buffer_cpu_location, std::uint64_t& out_buffer_size)
+		inline void SetupReadBackTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
 			auto& data = fg.GetData<RenderTargetReadBackTaskData>(handle);
 			auto& dx12_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -39,63 +39,39 @@ namespace wr
 			data.readback_buffer_desc = {};
 			data.readback_buffer_desc.m_buffer_size = dx12_render_system.m_viewport.m_viewport.Width * dx12_render_system.m_viewport.m_viewport.Height * bytesPerPixel;
 
-			// Allows external code to retrieve the read back buffer size
-			out_buffer_size = data.readback_buffer_desc.m_buffer_size;
-			
 			// Create the actual read back buffer
 			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, &data.readback_buffer_desc);
-
-			// Keep it mapped for the lifetime of the render task
-			out_buffer_cpu_location = MapReadbackBuffer(data.readback_buffer, data.readback_buffer_desc.m_buffer_size);
+			d3d12::SetName(data.readback_buffer, L"Deferred read back render pass");
  		}
 
-		inline void ExecuteReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle, void* out_buffer_cpu_location)
+		inline void ExecuteReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& dx12_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto& data = frame_graph.GetData<RenderTargetReadBackTaskData>(handle);
 			auto command_list = frame_graph.GetCommandList<d3d12::CommandList>(handle);
 
-			// The render task sets the execution resource state to COPY_SOURCE, so the resource copy can take place without any additional transitions
-			//command_list->m_native->CopyResource(data.readback_buffer->m_resource, data.predecessor_render_target->m_render_targets[0]);
-			
-			D3D12_SUBRESOURCE_FOOTPRINT footprint = {};
-			footprint.Width = 1280;
-			footprint.Height = 720;
-			footprint.Depth = 1;
-			footprint.RowPitch = 5120;
-			footprint.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			D3D12_TEXTURE_COPY_LOCATION destination = {};
+			destination.pResource = data.readback_buffer->m_resource;
+			destination.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			destination.SubresourceIndex = 0;
+			destination.PlacedFootprint.Footprint.Format = static_cast<DXGI_FORMAT>(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
+			destination.PlacedFootprint.Footprint.Width = dx12_render_system.m_viewport.m_viewport.Width;
+			destination.PlacedFootprint.Footprint.Height = dx12_render_system.m_viewport.m_viewport.Height;
+			destination.PlacedFootprint.Footprint.Depth = 1;
+			destination.PlacedFootprint.Footprint.RowPitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
 
-			D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed_res_footprint = {};
-			placed_res_footprint.Offset = 0;
-			placed_res_footprint.Footprint = footprint;
+			D3D12_TEXTURE_COPY_LOCATION source = {};
+			source.pResource = data.predecessor_render_target->m_render_targets[0];
+			source.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			source.SubresourceIndex = 0;
 
-			D3D12_TEXTURE_COPY_LOCATION dst = {};
-			dst.pResource = data.readback_buffer->m_resource;
-			dst.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-			dst.SubresourceIndex = 0;
-			dst.PlacedFootprint = placed_res_footprint;
-
-			D3D12_TEXTURE_COPY_LOCATION src = {};
-			src.pResource = data.predecessor_render_target->m_render_targets[0];
-			src.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-			src.SubresourceIndex = 0;
-
-			command_list->m_native->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
-
-			// Ensure the cache is coherent by calling map again, this is free on systems that do not need it, but
-			// ensures correctness on systems which do need the map call.
-			// Section 3.4:
-			// https://software.intel.com/en-us/articles/tutorial-migrating-your-apps-to-directx-12-part-3
-			out_buffer_cpu_location = MapReadbackBuffer(data.readback_buffer, data.readback_buffer_desc.m_buffer_size);
+			command_list->m_native->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
 		}
 		
 		inline void DestroyReadBackTask(FrameGraph& fg, RenderTaskHandle handle)
 		{
 			// Data used for this render task
 			auto& data = fg.GetData<RenderTargetReadBackTaskData>(handle);
-
-			// Clean up the mapping
-			UnmapReadbackBuffer(data.readback_buffer);
 
 			// Clean up the read back buffer
 			Destroy(data.readback_buffer);
@@ -104,7 +80,7 @@ namespace wr
 	} /* internal */
 
 	template<typename T>
-	inline void AddRenderTargetReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height, void* out_buffer_cpu_location, std::uint64_t& out_buffer_size)
+	inline void AddRenderTargetReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
@@ -126,13 +102,13 @@ namespace wr
 		RenderTaskDesc readback_task_description;
 
 		// Set-up
-		readback_task_description.m_setup_func = [&](RenderSystem& render_system, FrameGraph& frame_graph, RenderTaskHandle render_task_handle, bool) {
-			internal::SetupReadBackTask<T>(render_system, frame_graph, render_task_handle, out_buffer_cpu_location, out_buffer_size);
+		readback_task_description.m_setup_func = [](RenderSystem& render_system, FrameGraph& frame_graph, RenderTaskHandle render_task_handle, bool) {
+			internal::SetupReadBackTask<T>(render_system, frame_graph, render_task_handle);
 		};
 
 		// Execution
-		readback_task_description.m_execute_func = [&](RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle) {
-			internal::ExecuteReadBackTask(render_system, frame_graph, scene_graph, handle, out_buffer_cpu_location);
+		readback_task_description.m_execute_func = [](RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle) {
+			internal::ExecuteReadBackTask(render_system, frame_graph, scene_graph, handle);
 		};
 
 		// Destruction and clean-up
