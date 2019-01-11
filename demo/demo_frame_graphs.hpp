@@ -7,6 +7,7 @@
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
+#include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 
 namespace fg_manager
 {
@@ -38,11 +39,12 @@ namespace fg_manager
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(4);
+			fg = new wr::FrameGraph(5);
 
 			wr::AddDeferredMainTask(*fg);
 			wr::AddDeferredCompositionTask(*fg);
 			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddEquirectToCubemapTask(*fg, &resources::equirectangular_environment_map, &resources::cubemap_environment_map);
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
 			fg->Setup(rs);

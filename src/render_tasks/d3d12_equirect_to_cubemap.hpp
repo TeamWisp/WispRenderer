@@ -27,12 +27,14 @@ namespace wr
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
 		DirectX::XMMATRIX proj_mat;
 		DirectX::XMMATRIX view_mat;
+
+		bool should_run = false;
 	};
 
 	namespace internal
 	{
 
-		inline void SetupEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
+		inline void SetupEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, TextureHandle* in_equirect, TextureHandle* out_cubemap)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
@@ -40,8 +42,10 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::equirect_to_cubemap);
 
-			data.camera_cb_pool = rs.CreateConstantBufferPool(1);
+			d3d12::TextureResource* equirect_text = static_cast<d3d12::TextureResource*>(in_equirect->m_pool->GetTexture(in_equirect->m_id));
+			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(out_cubemap->m_pool->GetTexture(out_cubemap->m_id));
 
+			data.camera_cb_pool = rs.CreateConstantBufferPool(1);
 
 			data.proj_mat = DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(90.0f), 1.0f, 0.1f, 10.0f);
 
@@ -121,27 +125,45 @@ namespace wr
 					d3d12::BindCompute32BitConstants(cmd_list, &i, 1, 0, 0);
 
 					//bind cube and render
-					Model* cube_model 
+					Model* cube_model = rs.GetSimpleShape(RenderSystem::SimpleShapes::CUBE);
 
+					//Render meshes
+					for (auto& mesh : cube_model->m_meshes)
+					{
+						auto n_mesh = static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetMeshData(mesh.first->id);
+					
+						d3d12::BindVertexBuffer(cmd_list, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetVertexStagingBuffer(),
+								0, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetVertexStagingBuffer()->m_size,
+								n_mesh->m_vertex_staging_buffer_stride);
+
+						d3d12::BindIndexBuffer(cmd_list, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer(),
+								0, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer()->m_size);
+
+
+						d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
+
+						if (n_mesh->m_index_count != 0)
+						{
+							d3d12::DrawIndexed(cmd_list, n_mesh->m_index_count, 1, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
+						}
+						else
+						{
+							d3d12::Draw(cmd_list, n_mesh->m_vertex_count, 1, n_mesh->m_vertex_staging_buffer_offset);
+						}
+					}
 				}
 
-
-				//HERE: Bind render target view created from the cubemap 
-
-
-
-				scene_graph.Render(cmd_list, scene_graph.GetActiveCamera().get());
 			}
 		}
 	} /* internal */
 
-	inline void AddEquirectToCubemapTask(FrameGraph& fg, std::size_t width, std::size_t height)
+	inline void AddEquirectToCubemapTask(FrameGraph& fg, TextureHandle* in_equirect, TextureHandle* out_cubemap)
 	{
 		RenderTargetProperties rt_properties
 		{
 			false,
-			width,
-			height,
+			std::nullopt,
+			std::nullopt,
 			ResourceState::RENDER_TARGET,
 			ResourceState::NON_PIXEL_SHADER_RESOURCE,
 			true,
@@ -153,8 +175,8 @@ namespace wr
 		};
 
 		RenderTaskDesc desc;
-		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::SetupEquirectToCubemapTask(rs, fg, handle);
+		desc.m_setup_func = [&](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
+			internal::SetupEquirectToCubemapTask(rs, fg, handle, in_equirect, out_cubemap);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);

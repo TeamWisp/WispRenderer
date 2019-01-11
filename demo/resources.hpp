@@ -17,6 +17,8 @@ namespace resources
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
 	static wr::MaterialHandle light_material;
+	static wr::TextureHandle equirectangular_environment_map;
+	static wr::TextureHandle cubemap_environment_map;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
