@@ -30,6 +30,9 @@ namespace wr::d3d12
 
 	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint64_t buffer_size)
 	{
+		if (!readback_buffer)
+			return nullptr;
+
 		void* memory = nullptr;
 		readback_buffer->m_resource->Map(0, &CD3DX12_RANGE(0, buffer_size), &memory);
 		return memory;
@@ -37,6 +40,9 @@ namespace wr::d3d12
 
 	void UnmapReadbackBuffer(ReadbackBufferResource* const readback_buffer)
 	{
+		if (!readback_buffer)
+			return;
+
 		readback_buffer->m_resource->Unmap(0, &CD3DX12_RANGE(0, 0));
 	}
 
