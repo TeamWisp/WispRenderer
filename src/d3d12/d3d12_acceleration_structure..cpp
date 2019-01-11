@@ -55,6 +55,14 @@ namespace wr::d3d12
 			(*resource)->Unmap(0, nullptr);
 		}
 
+		inline void UpdateUploadbuffer(void* data, UINT64 size, ID3D12Resource* resource)
+		{
+			void *mapped_data;
+			resource->Map(0, nullptr, &mapped_data);
+			memcpy(mapped_data, data, size);
+			resource->Unmap(0, nullptr);
+		}
+
 		WRAPPED_GPU_POINTER CreateFallbackWrappedPointer(
 			Device* device,
 			DescriptorHeap* heap,
@@ -374,8 +382,8 @@ namespace wr::d3d12
 				instance_desc.AccelerationStructure = blas.m_native->GetGPUVirtualAddress();
 				instance_descs.push_back(instance_desc);
 			}
-
-			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), &tlas.m_instance_desc, L"InstanceDescs");
+			
+			internal::UpdateUploadbuffer(instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), tlas.m_instance_desc);
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
@@ -400,7 +408,7 @@ namespace wr::d3d12
 				fallback_heap_idx++;
 			}
 
-			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * instance_descs.size(), &tlas.m_instance_desc, L"InstanceDescs");
+			internal::UpdateUploadbuffer(instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * instance_descs.size(), tlas.m_instance_desc);
 		}
 
 		// TODO WHY HERE AND NOT EARLIER?
