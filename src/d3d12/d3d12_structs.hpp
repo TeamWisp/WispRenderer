@@ -111,6 +111,7 @@ namespace wr::d3d12
 		{
 			Shader* m_library;
 			std::vector<std::wstring> m_library_exports;
+			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
 
 			std::uint64_t max_payload_size;
 			std::uint64_t max_attributes_size;
