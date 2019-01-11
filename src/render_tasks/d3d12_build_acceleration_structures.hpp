@@ -5,9 +5,6 @@
 #include "../d3d12/d3d12_constant_buffer_pool.hpp"
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../frame_graph/frame_graph.hpp"
-#include "../scene_graph/camera_node.hpp"
-#include "../d3d12/d3d12_rt_pipeline_registry.hpp"
-#include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
 #include "../util/math.hpp"
 
@@ -35,6 +32,8 @@ namespace wr
 
 		inline void SetupBuildASTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
+			if (resize) return;
+
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<ASBuildData>(handle);

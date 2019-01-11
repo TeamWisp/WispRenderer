@@ -13,9 +13,10 @@ namespace resources
 	static wr::Model* plane_model;
 	static wr::Model* light_model;
 	static wr::Model* test_model;
+	static wr::Model* sphere_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
-	static wr::MaterialHandle light_material;
+	static wr::MaterialHandle mirror_material;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
@@ -24,6 +25,8 @@ namespace resources
 
 		// Load Texture.
 		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
+		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
+		wr::TextureHandle flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
 
 		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", false, true);
 		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metalgrid2_normal-dx.png", false, true);
@@ -36,14 +39,14 @@ namespace resources
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
 		// Create Material
-		light_material = material_pool->Create();
+		mirror_material = material_pool->Create();
 
-		wr::Material* light_internal = material_pool->GetMaterial(light_material.m_id);
+		wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material.m_id);
 
-		light_internal->SetAlbedo(black);
-		light_internal->SetNormal(black);
-		light_internal->SetRoughness(black);
-		light_internal->SetMetallic(black);
+		mirror_internal->SetAlbedo(white);
+		mirror_internal->SetNormal(flat_normal);
+		mirror_internal->SetRoughness(black);
+		mirror_internal->SetMetallic(white);
 
 		// Create Material
 		rusty_metal_material = material_pool->Create();
@@ -64,7 +67,7 @@ namespace resources
 		rock_material_internal->SetNormal(bamboo_normal);
 		rock_material_internal->SetRoughness(bamboo_roughness);
 		rock_material_internal->SetMetallic(bamboo_metallic);
-	
+
 		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
@@ -80,35 +83,35 @@ namespace resources
 			};
 
 			mesh.m_vertices = {
-				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0 },
-				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,        1, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0 },
+				{ 1, -1, -1,    0, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,    0, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    1, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,        1, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        0, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        1, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,        1, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, 1,        1, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        0, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, -1,    0, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,    1, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        1, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,    0, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,    0, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        1, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    1, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,        1, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, -1,        1, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    0, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        0, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
 			};
 
 			cube_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
@@ -117,41 +120,84 @@ namespace resources
 			{
 				m.second = &rock_material;
 			}
-		}
 
-		{
-			wr::MeshData<wr::Vertex> mesh;
-
-			mesh.m_indices = {
-				2, 1, 0, 3, 2, 0
-			};
-
-			mesh.m_vertices = {
-				//POS				UV			NORMAL				TANGENT			BINORMAL
-				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-			};
-
-			plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-			light_model = plane_model;
-
-			for (auto& m : plane_model->m_meshes)
 			{
-				m.second = &rock_material;
+				wr::MeshData<wr::Vertex> mesh;
+
+				mesh.m_indices = {
+					2, 1, 0, 3, 2, 0
+				};
+
+				mesh.m_vertices = {
+					//POS                UV            NORMAL                TANGENT            BINORMAL
+					{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+				};
+
+				plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+
+				light_model = plane_model;
+
+				for (auto& m : plane_model->m_meshes)
+				{
+					m.second = &rock_material;
+				}
 			}
-		}
 
-
-		{
-			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-		
-			for (auto& m : test_model->m_meshes)
 			{
-				m.second = &rusty_metal_material;
+				test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				sphere_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
+
+				for (auto& m : test_model->m_meshes)
+				{
+					m.second = &rusty_metal_material;
+				}
+
+				for (auto& m : sphere_model->m_meshes)
+				{
+					m.second = &mirror_material;
+				}
 			}
+
 		}
+
+#pragma region REPLACE_LOADING_WITH_THIS
+		// Once the ray tracing implementation supports multiple model pools
+		// Replace the loading code above with this one.
+
+		//// Load Cube.
+		//{
+		//	cube_model = render_system->GetSimpleShape(wr::RenderSystem::SimpleShapes::CUBE);
+
+		//	for (auto& m : cube_model->m_meshes)
+		//	{
+		//		m.second = &rock_material;
+		//	}
+		//}
+
+		//{
+		//	plane_model = render_system->GetSimpleShape(wr::RenderSystem::SimpleShapes::PLANE);
+
+		//	light_model = plane_model;
+
+		//	for (auto& m : plane_model->m_meshes)
+		//	{
+		//		m.second = &rock_material;
+		//	}
+		//}
+
+
+		//{
+		//	test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+
+		//	for (auto& m : test_model->m_meshes)
+		//	{
+		//		m.second = &rusty_metal_material;
+		//	}
+		//}
+#pragma endregion
+
 	}
-
 }

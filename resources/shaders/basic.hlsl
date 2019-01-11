@@ -1,4 +1,3 @@
-
 //48 KiB; 48 * 1024 / sizeof(MeshNode)
 //48 * 1024 / (4 * 4 * 4) = 48 * 1024 / 64 = 48 * 16 = 768
 #define MAX_INSTANCES 768
@@ -19,7 +18,6 @@ struct VS_OUTPUT
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 bitangent : BITANGENT;
-	float4x4 mv : MODELVIEW;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -53,11 +51,9 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
 	output.uv = input.uv;
-	output.tangent = normalize(mul(vm, float4(input.tangent, 0))).xyz;
-	output.bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
-	output.normal = normalize(mul(vm, float4(input.normal, 0))).xyz;
-	
-	output.mv = vm;
+	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
+	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
+	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
 
 	return output;
 }

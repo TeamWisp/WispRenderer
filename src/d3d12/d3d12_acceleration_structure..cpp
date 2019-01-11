@@ -274,7 +274,7 @@ namespace wr::d3d12
 				instance_descs.push_back(instance_desc);
 			}
 
-			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * blas_list.size(), &tlas.m_instance_desc, L"InstanceDescs");
+			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), &tlas.m_instance_desc, L"InstanceDescs");
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
@@ -344,7 +344,7 @@ namespace wr::d3d12
 		DescriptorHeap* desc_heap,
 		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list)
 	{
-		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
@@ -375,7 +375,7 @@ namespace wr::d3d12
 				instance_descs.push_back(instance_desc);
 			}
 
-			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * blas_list.size(), &tlas.m_instance_desc, L"InstanceDescs");
+			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), &tlas.m_instance_desc, L"InstanceDescs");
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
@@ -414,8 +414,6 @@ namespace wr::d3d12
 		// Top Level Acceleration Structure desc
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
 		{
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(tlas.m_native));
-
 			top_level_inputs.InstanceDescs = tlas.m_instance_desc->GetGPUVirtualAddress();
 			top_level_build_desc.Inputs = top_level_inputs;
 			top_level_build_desc.SourceAccelerationStructureData = tlas.m_native->GetGPUVirtualAddress();
@@ -432,7 +430,6 @@ namespace wr::d3d12
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
 			BuildAccelerationStructure(cmd_list->m_native);
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(tlas.m_native));
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
