@@ -48,14 +48,23 @@ namespace wr
 
 		m_thread_pool = render_system.GetThreadPool();
 
-		m_command_lists.resize(d3d12::settings::max_threads + 2);
+		m_command_lists.resize(d3d12::settings::max_threads);
 
-		for (auto &list : m_command_lists)
+
+		for (auto& list : m_command_lists)
 		{
 			list = d3d12::CreateCommandList(m_render_system.m_device, 1, wr::CmdListType::CMD_LIST_COPY);
 		}
 
+		m_transition_command_lists.resize(2);
+
+		for (auto& list : m_transition_command_lists)
+		{
+			list = d3d12::CreateCommandList(m_render_system.m_device, 1, wr::CmdListType::CMD_LIST_DIRECT);
+		}
+
 		m_staging_fence = d3d12::CreateFence(m_render_system.m_device);
+		m_transition_fence = d3d12::CreateFence(m_render_system.m_device);
 
 		m_mesh_stage_queues.resize(d3d12::settings::max_threads);
 	}
@@ -65,12 +74,15 @@ namespace wr
 		d3d12::WaitFor(m_staging_fence);
 		d3d12::Destroy(m_staging_fence);
 
+		d3d12::WaitFor(m_transition_fence);
+		d3d12::Destroy(m_transition_fence);
+
 		for (auto& handle : m_loaded_meshes)
 		{
-			static_cast<wr::internal::D3D12MeshInternal*>(handle.second)->m_vertex_upload_finished.get();
+			static_cast<wr::internal::D3D12MeshInternal*>(handle.second)->m_vertex_upload_finished.wait();
 			if (static_cast<wr::internal::D3D12MeshInternal*>(handle.second)->m_index_count > 0)
 			{
-				static_cast<wr::internal::D3D12MeshInternal*>(handle.second)->m_index_upload_finished.get();
+				static_cast<wr::internal::D3D12MeshInternal*>(handle.second)->m_index_upload_finished.wait();
 			}
 			delete handle.second;
 		}
@@ -80,10 +92,15 @@ namespace wr
 			d3d12::Destroy(list);
 		}
 
+		for (auto& list : m_transition_command_lists)
+		{
+			d3d12::Destroy(list);
+		}
+
 		d3d12::Destroy(m_vertex_buffer);
 		d3d12::Destroy(m_index_buffer);
 
-		while (m_vertex_heap_start_block != nullptr) 
+		while (m_vertex_heap_start_block != nullptr)
 		{
 			MemoryBlock* temp = m_vertex_heap_start_block;
 			m_vertex_heap_start_block = m_vertex_heap_start_block->m_next_block;
@@ -125,28 +142,42 @@ namespace wr
 
 		if (queues_empty)
 		{
+			d3d12::Signal(m_transition_fence, m_render_system.m_direct_queue);
 			return;
 		}
-		
-		d3d12::Begin(m_command_lists[0], 0);
+
+		d3d12::Begin(m_transition_command_lists[0], 0);
 
 		if (m_vertex_buffer->m_is_staged && !m_index_buffer->m_is_staged)
 		{
-			m_command_lists[0]->m_native->ResourceBarrier(
-				1, 
-				&CD3DX12_RESOURCE_BARRIER::Transition(
-					m_vertex_buffer->m_buffer, 
+
+			std::vector<D3D12_RESOURCE_BARRIER> barriers = {
+				CD3DX12_RESOURCE_BARRIER::Transition(
+					m_vertex_buffer->m_buffer,
 					(D3D12_RESOURCE_STATES)m_vertex_buffer->m_target_resource_state,
-					D3D12_RESOURCE_STATE_COPY_DEST));
+					D3D12_RESOURCE_STATE_COMMON) ,
+				CD3DX12_RESOURCE_BARRIER::Transition(
+					m_index_buffer->m_buffer,
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					D3D12_RESOURCE_STATE_COMMON)
+			};
+
+			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
 		}
-		else if(!m_vertex_buffer->m_is_staged && m_index_buffer->m_is_staged)
+		else if (!m_vertex_buffer->m_is_staged && m_index_buffer->m_is_staged)
 		{
-			m_command_lists[0]->m_native->ResourceBarrier(
-				1,
-				&CD3DX12_RESOURCE_BARRIER::Transition(
+			std::vector<D3D12_RESOURCE_BARRIER> barriers = {
+				CD3DX12_RESOURCE_BARRIER::Transition(
+					m_vertex_buffer->m_buffer,
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					D3D12_RESOURCE_STATE_COMMON) ,
+				CD3DX12_RESOURCE_BARRIER::Transition(
 					m_index_buffer->m_buffer,
 					(D3D12_RESOURCE_STATES)m_index_buffer->m_target_resource_state,
-					D3D12_RESOURCE_STATE_COPY_DEST));
+					D3D12_RESOURCE_STATE_COMMON)
+			};
+
+			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
 		}
 		else if (m_vertex_buffer->m_is_staged && m_index_buffer->m_is_staged)
 		{
@@ -154,51 +185,122 @@ namespace wr
 				CD3DX12_RESOURCE_BARRIER::Transition(
 					m_vertex_buffer->m_buffer,
 					(D3D12_RESOURCE_STATES)m_vertex_buffer->m_target_resource_state,
-					D3D12_RESOURCE_STATE_COPY_DEST) ,
+					D3D12_RESOURCE_STATE_COMMON) ,
 				CD3DX12_RESOURCE_BARRIER::Transition(
 					m_index_buffer->m_buffer,
 					(D3D12_RESOURCE_STATES)m_index_buffer->m_target_resource_state,
-					D3D12_RESOURCE_STATE_COPY_DEST)
+					D3D12_RESOURCE_STATE_COMMON)
 			};
 
-			m_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
+			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
 		}
-
-		d3d12::End(m_command_lists[0]);
-
-		while (!m_mesh_stage_queue.empty())
+		else
 		{
-			internal::D3D12MeshInternal* d3d12_mesh = static_cast<internal::D3D12MeshInternal*>(m_mesh_stage_queue.front());
-			d3d12::StageBufferRegion(m_vertex_buffer,
-				d3d12_mesh->m_vertex_staging_buffer_size,
-				d3d12_mesh->m_vertex_staging_buffer_offset * d3d12_mesh->m_vertex_staging_buffer_stride,
-				cmd_list);
-			if (d3d12_mesh->m_index_staging_buffer_size != 0)
-			{
-				d3d12::StageBufferRegion(m_index_buffer,
-					d3d12_mesh->m_index_staging_buffer_size,
-					d3d12_mesh->m_index_staging_buffer_offset * sizeof(std::uint32_t),
-					cmd_list);
-			}
-			m_mesh_stage_queue.pop();
+
+			std::vector<D3D12_RESOURCE_BARRIER> barriers = {
+				CD3DX12_RESOURCE_BARRIER::Transition(
+					m_vertex_buffer->m_buffer,
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					D3D12_RESOURCE_STATE_COMMON) ,
+				CD3DX12_RESOURCE_BARRIER::Transition(
+					m_index_buffer->m_buffer,
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					D3D12_RESOURCE_STATE_COMMON)
+			};
+
+			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
 		}
 
-		d3d12::Begin(m_command_lists[m_command_lists.size() - 1], 0);
+		d3d12::End(m_transition_command_lists[0]);
+
+		d3d12::Execute(m_render_system.m_direct_queue, { m_transition_command_lists[0] }, m_transition_fence);
+
+		std::vector<std::future<void>> command_recording_futures(m_mesh_stage_queues.size());
+
+		for (int i = 0; i < m_command_lists.size(); ++i)
+		{
+			command_recording_futures[i] = m_thread_pool->Enqueue([](
+				std::queue<internal::MeshInternal*>& mesh_queue, 
+				d3d12::CommandList* command_list, 
+				wr::D3D12ModelPool* model_pool)
+			{
+				d3d12::Begin(command_list, 0);
+				while (!mesh_queue.empty())
+				{
+					internal::D3D12MeshInternal* d3d12_mesh = static_cast<internal::D3D12MeshInternal*>(mesh_queue.front());
+					command_list->m_native->CopyBufferRegion(
+						model_pool->GetVertexStagingBuffer()->m_buffer,
+						d3d12_mesh->m_vertex_staging_buffer_offset*d3d12_mesh->m_vertex_staging_buffer_stride,
+						model_pool->GetVertexStagingBuffer()->m_staging,
+						d3d12_mesh->m_vertex_staging_buffer_offset*d3d12_mesh->m_vertex_staging_buffer_stride,
+						d3d12_mesh->m_vertex_staging_buffer_size
+					);
+					if(d3d12_mesh->m_index_staging_buffer_size!=0)
+					{
+						command_list->m_native->CopyBufferRegion(
+							model_pool->GetIndexStagingBuffer()->m_buffer,
+							d3d12_mesh->m_index_staging_buffer_offset * sizeof(std::uint32_t),
+							model_pool->GetIndexStagingBuffer()->m_staging,
+							d3d12_mesh->m_index_staging_buffer_offset * sizeof(std::uint32_t),
+							d3d12_mesh->m_index_staging_buffer_size
+						);
+					}
+					mesh_queue.pop();
+				}
+				d3d12::End(command_list);
+			},
+				m_mesh_stage_queues[i], m_command_lists[i], this);
+		}
+
+		d3d12::Begin(m_transition_command_lists[1], 0);
 
 		std::vector<D3D12_RESOURCE_BARRIER> barriers = {
 			CD3DX12_RESOURCE_BARRIER::Transition(
 				m_vertex_buffer->m_buffer,
-				D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_COMMON,
 				(D3D12_RESOURCE_STATES)m_vertex_buffer->m_target_resource_state),
 			CD3DX12_RESOURCE_BARRIER::Transition(
 				m_index_buffer->m_buffer,
-				D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_COMMON,
 				(D3D12_RESOURCE_STATES)m_index_buffer->m_target_resource_state)
 		};
 
-		m_command_lists[m_command_lists.size() - 1]->m_native->ResourceBarrier(2, barriers.data());
+		m_transition_command_lists[1]->m_native->ResourceBarrier(2, barriers.data());
 
-		d3d12::End(m_command_lists[m_command_lists.size() - 1]);
+		d3d12::End(m_transition_command_lists[1]);
+		
+		for (auto& future : command_recording_futures)
+		{
+			future.wait();
+		}
+
+		for (auto& meshes : m_loaded_meshes)
+		{
+			static_cast<internal::D3D12MeshInternal*>(meshes.second)->m_vertex_upload_finished.wait();
+			if (static_cast<internal::D3D12MeshInternal*>(meshes.second)->m_index_count > 0)
+			{
+				static_cast<internal::D3D12MeshInternal*>(meshes.second)->m_index_upload_finished.wait();
+			}
+		}
+
+		m_vertex_buffer->m_gpu_address = m_vertex_buffer->m_buffer->GetGPUVirtualAddress();
+		m_vertex_buffer->m_is_staged = true;
+
+		m_index_buffer->m_gpu_address = m_vertex_buffer->m_buffer->GetGPUVirtualAddress();
+		m_index_buffer->m_is_staged = true;
+
+		m_render_system.m_copy_queue->m_native->Wait(m_transition_fence->m_native, m_transition_fence->m_fence_value);
+
+		d3d12::Execute(m_render_system.m_copy_queue, m_command_lists, m_staging_fence);
+		
+		m_render_system.m_direct_queue->m_native->Wait(m_staging_fence->m_native, m_staging_fence->m_fence_value);
+
+		d3d12::Execute(m_render_system.m_direct_queue, { m_transition_command_lists[1] }, m_transition_fence);
+	}
+
+	void D3D12ModelPool::WaitForStaging()
+	{
+		d3d12::WaitFor(m_transition_fence);
 	}
 
 	d3d12::StagingBuffer * D3D12ModelPool::GetVertexStagingBuffer()
@@ -215,7 +317,7 @@ namespace wr
 	{
 		return static_cast<internal::D3D12MeshInternal*>(m_loaded_meshes[mesh_handle]);
 	}
-	
+
 	internal::MeshInternal* D3D12ModelPool::LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size)
 	{
 		internal::D3D12MeshInternal* mesh = new internal::D3D12MeshInternal();
@@ -231,10 +333,10 @@ namespace wr
 		{
 			//We haven't found enough pages, so delete the mesh and return a nullptr
 			LOGE("Model pool vertex buffer has run out of memory")
-			delete mesh;
+				delete mesh;
 			return nullptr;
 		}
-		
+
 		//Repeat the same procedure as before, but now for the index buffer
 		auto index_memory_block = AllocateMemory(m_index_heap_start_block, num_indices*index_size, index_size);
 
@@ -243,7 +345,7 @@ namespace wr
 		{
 			//We haven't found enough pages, so delete the mesh and return a nullptr
 			LOGE("Model pool index buffer has run out of memory")
-			FreeMemory(m_vertex_heap_start_block, vertex_memory_block);
+				FreeMemory(m_vertex_heap_start_block, vertex_memory_block);
 			delete mesh;
 			return nullptr;
 		}
@@ -258,10 +360,10 @@ namespace wr
 		mesh->m_vertex_buffer_base_address = m_vertex_buffer->m_gpu_address;
 
 		//Send the vertex data to the vertex staging buffer
-		mesh->m_vertex_upload_finished = m_thread_pool->Enqueue(d3d12::UpdateStagingBuffer, 
-			m_vertex_buffer, 
+		mesh->m_vertex_upload_finished = m_thread_pool->Enqueue(d3d12::UpdateStagingBuffer,
+			m_vertex_buffer,
 			vertices_data,
-			num_vertices*vertex_size, 
+			num_vertices*vertex_size,
 			mesh->m_vertex_staging_buffer_offset * vertex_size);
 
 		//Store the offset of the allocated memory from the start of the staging buffer
@@ -278,7 +380,7 @@ namespace wr
 			indices_data,
 			num_indices*index_size,
 			mesh->m_index_staging_buffer_offset*index_size);
-		
+
 		m_mesh_stage_queues[m_current_queue].push(mesh);
 		m_current_queue = (m_current_queue + 1) % m_mesh_stage_queues.size();
 
@@ -291,7 +393,7 @@ namespace wr
 		memset(mesh, 0, sizeof(internal::D3D12MeshInternal));
 
 		//Allocate vertex buffer memory
-		
+
 		auto vertex_memory_block = AllocateMemory(m_vertex_heap_start_block, num_vertices*vertex_size, vertex_size);
 
 		//The loop has exited, see if we've found enough free pages
@@ -318,7 +420,7 @@ namespace wr
 			vertices_data,
 			num_vertices*vertex_size,
 			mesh->m_vertex_staging_buffer_offset * vertex_size);
-		
+
 		m_mesh_stage_queues[m_current_queue].push(mesh);
 		m_current_queue = (m_current_queue + 1) % m_mesh_stage_queues.size();
 
@@ -344,9 +446,9 @@ namespace wr
 		if (mesh == nullptr)
 		{
 			LOGW("Tried to destroy a mesh that was a nullptr")
-			return;
+				return;
 		}
-		
+
 		std::map<std::uint64_t, internal::MeshInternal*>::iterator it;
 		for (it = m_loaded_meshes.begin(); it != m_loaded_meshes.end(); ++it)
 		{
@@ -362,12 +464,12 @@ namespace wr
 
 			internal::D3D12MeshInternal* n_mesh = static_cast<internal::D3D12MeshInternal*>(mesh);
 
-			n_mesh->m_vertex_upload_finished.get();
+			n_mesh->m_vertex_upload_finished.wait();
 			FreeMemory(m_vertex_heap_start_block, static_cast<MemoryBlock*>(n_mesh->m_vertex_memory_block));
 
 			if (n_mesh->m_index_memory_block != nullptr)
 			{
-				n_mesh->m_index_upload_finished.get();
+				n_mesh->m_index_upload_finished.wait();
 				FreeMemory(m_index_heap_start_block, static_cast<MemoryBlock*>(n_mesh->m_index_memory_block));
 			}
 
@@ -378,7 +480,7 @@ namespace wr
 
 	D3D12ModelPool::MemoryBlock * D3D12ModelPool::AllocateMemory(MemoryBlock * start_block, std::size_t size, std::size_t alignment)
 	{
-		while (start_block != nullptr) 
+		while (start_block != nullptr)
 		{
 			if (start_block->m_size >= size + (start_block->m_offset%alignment == 0 ? 0 : (alignment - start_block->m_offset%alignment)) &&
 				start_block->m_free)
@@ -400,7 +502,7 @@ namespace wr
 					new_block->m_size = start_block->m_size - needed_size;
 					new_block->m_offset = start_block->m_offset + needed_size;
 
-					if (new_block->m_next_block != nullptr) 
+					if (new_block->m_next_block != nullptr)
 					{
 						new_block->m_next_block->m_prev_block = new_block;
 					}
@@ -423,7 +525,7 @@ namespace wr
 		MemoryBlock* heap_block = heap_start_block;
 		while (heap_block != nullptr)
 		{
-			if (heap_block == block) 
+			if (heap_block == block)
 			{
 				if (heap_block->m_prev_block != nullptr)
 				{

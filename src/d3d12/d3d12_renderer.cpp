@@ -217,6 +217,11 @@ namespace wr
 			n_cmd_lists.push_back(list);
 		}
 
+		for (auto& model_pool : m_model_pools)
+		{
+			model_pool->WaitForStaging();
+		}
+
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
 		if (m_render_window.has_value())
@@ -784,7 +789,7 @@ namespace wr
 
 		for (int i = 0; i < m_model_pools.size(); ++i)
 		{
-			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
+			m_model_pools[i]->StageMeshes();
 		}
 
 		m_texture_pool->Stage(m_direct_cmd_list);

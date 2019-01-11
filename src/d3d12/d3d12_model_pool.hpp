@@ -52,6 +52,8 @@ namespace wr
 
 		void StageMeshes();
 
+		void WaitForStaging();
+
 		d3d12::StagingBuffer* GetVertexStagingBuffer();
 		d3d12::StagingBuffer* GetIndexStagingBuffer();
 
@@ -92,8 +94,10 @@ namespace wr
 		util::ThreadPool* m_thread_pool;
 
 		std::vector<d3d12::CommandList*> m_command_lists;
+		std::vector<d3d12::CommandList*> m_transition_command_lists;
 
 		d3d12::Fence* m_staging_fence;
+		d3d12::Fence* m_transition_fence;
 
 		D3D12RenderSystem& m_render_system;
 	};
