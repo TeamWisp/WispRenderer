@@ -130,7 +130,7 @@ namespace wr
 				d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
 				cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
-				d3d12::Offset(cpu_handle, 29, data.out_rt_heap->m_increment_size);
+				d3d12::Offset(cpu_handle, 24, data.out_rt_heap->m_increment_size);
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);

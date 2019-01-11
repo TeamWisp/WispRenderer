@@ -43,9 +43,9 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 
 Texture2D g_textures[20] : register(t5);
-Texture2D gbuffer_albedo : register(t30);
-Texture2D gbuffer_normal : register(t31);
-Texture2D gbuffer_depth : register(t32);
+Texture2D gbuffer_albedo : register(t25);
+Texture2D gbuffer_normal : register(t26);
+Texture2D gbuffer_depth : register(t27);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -248,7 +248,12 @@ void RaygenEntry()
 	float shadow_factor = DoShadow(wpos, depth, normal);
 	float3 reflection = DoReflection(wpos, normal, metallic, roughness);
 
-	gOutput[DispatchRaysIndex().xy] = float4(reflection, 1);
+	// Calculate reflection combined with fresnel
+
+	const float fresnel = 0.5;
+	float3 fresnel_reflection = lerp(albedo, reflection, fresnel);
+
+	gOutput[DispatchRaysIndex().xy] = float4(normal, 1);
 
 }
 
