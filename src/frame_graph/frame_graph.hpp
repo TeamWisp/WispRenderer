@@ -13,6 +13,7 @@
 #include "../platform_independend_structs.hpp"
 #include "../settings.hpp"
 #include "../d3d12/d3d12_settings.hpp"
+#include "../structs.hpp"
 
 #define FG_MAX_PERFORMANCE
 
@@ -194,6 +195,8 @@ namespace wr
 		*/
 		inline void Execute(RenderSystem& render_system, SceneGraph& scene_graph)
 		{
+			ResetOutputTexture();
+
 			if constexpr (settings::use_multithreading)
 			{
 				Execute_MT_Impl(render_system, scene_graph);
@@ -444,6 +447,29 @@ namespace wr
 			return m_uid;
 		};
 
+		/*! Return the cpu texture. */
+		const std::optional<CPUTexture> GetOutputTexture()
+		{
+			return m_output_cpu_texture;
+		}
+
+		/*! Set the cpu texture's data. */
+		void SetOutputTexture(const CPUTexture& output_texture)
+		{
+			// Only allow a single render task each frame to use this variable
+			if (m_output_cpu_texture.has_value())
+				LOGC("ERROR: More than one render task is trying to write to the output CPU texture!");
+
+			m_output_cpu_texture = output_texture;
+		}
+
+		/*! Resets the CPU texture data for this frame. */
+		void ResetOutputTexture()
+		{
+			// Frame has been rendered, allow a task to write to the CPU texture in the next frame
+			m_output_cpu_texture = std::nullopt;
+		}
+
 	private:
 
 		/*! Setup tasks multi threaded */
@@ -553,6 +579,9 @@ namespace wr
 		/*! Vectors which allow us to itterate over only single threader or only multithreaded tasks. */
 		std::vector<RenderTaskHandle> m_multi_threaded_tasks;
 		std::vector<RenderTaskHandle> m_single_threaded_tasks;
+
+		/*! A single task can output its buffer to give the CPU access to the data. */
+		std::optional<CPUTexture> m_output_cpu_texture;
 
 		/*! Task function pointers. */
 		std::vector<setup_func_t> m_setup_funcs;

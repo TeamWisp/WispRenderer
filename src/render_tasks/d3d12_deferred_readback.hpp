@@ -16,6 +16,9 @@ namespace wr
 		d3d12::ReadbackBufferResource* readback_buffer;
 
 		d3d12::desc::ReadbackDesc readback_buffer_desc;
+
+		// Stores the final pixel data
+		CPUTexture cpu_texture_output;
 	};
 
 	namespace internal
@@ -66,6 +69,11 @@ namespace wr
 			source.SubresourceIndex = 0;
 
 			command_list->m_native->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+
+			// Read texture data
+			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, data.readback_buffer_desc.m_buffer_size));
+			data.cpu_texture_output.m_size = data.readback_buffer_desc.m_buffer_size;
+			UnmapReadbackBuffer(data.readback_buffer);
 		}
 		
 		inline void DestroyReadBackTask(FrameGraph& fg, RenderTaskHandle handle)

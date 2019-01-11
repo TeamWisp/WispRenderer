@@ -16,6 +16,12 @@ namespace wr
 		uint64_t m_id;
 	};
 
+	struct CPUTexture
+	{
+		float* m_data = nullptr;
+		std::uint64_t m_size = 0;
+	};
+
 	class MaterialPool;
 
 	struct MaterialHandle
