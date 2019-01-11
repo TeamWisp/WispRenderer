@@ -302,7 +302,7 @@ namespace wr
 		{
 			rt_hybrid_so_desc.first,     // Description
 			rt_hybrid_so_desc.second,    // Library
-			(sizeof(float) * 3), // Max payload size
+			(sizeof(float) * 6), // Max payload size
 			(sizeof(float) * 2), // Max attributes size
 			4,				   // Max recursion depth
 			true,			   //Is hybrid

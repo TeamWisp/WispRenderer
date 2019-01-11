@@ -117,7 +117,7 @@ namespace wr
 
 			// top level, bottom level and output buffer. (even though I don't use bottom level.)
 			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_num_descriptors = 100; // FIXME: size
+			heap_desc.m_num_descriptors = 600; // FIXME: size
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_versions = d3d12::settings::num_back_buffers;
@@ -326,6 +326,7 @@ namespace wr
 				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view );
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
+				cam_data.m_intensity = n_render_system.temp_intensity;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
