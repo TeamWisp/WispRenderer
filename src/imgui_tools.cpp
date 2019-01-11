@@ -244,20 +244,18 @@ namespace wr::imgui::window
 			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
 			DirectX::XMStoreFloat4x4(&rmat, mat);
 
-			rmat._42 *= -1;
-
 			auto cam = scene_graph->GetActiveCamera();
 			DirectX::XMFLOAT4X4 rview;
 			DirectX::XMFLOAT4X4 rproj;
+			auto view = DirectX::XMMatrixMultiply(cam->m_view, DirectX::XMMatrixScaling(1, -1, 1));
 			DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
-			DirectX::XMStoreFloat4x4(&rview, cam->m_view);
-
+			DirectX::XMStoreFloat4x4(&rview, view);
 
 			ImGuiIO& io = ImGui::GetIO();
 			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 			ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
 
-			ml->m_position = { rmat._41, rmat._42*-1, rmat._43 };
+			ml->m_position = { rmat._41, rmat._42, rmat._43 };
 
 			ml->SignalTransformChange();
 			ml->SignalChange();
