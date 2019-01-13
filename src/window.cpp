@@ -109,6 +109,11 @@ namespace wr
 		m_key_callback = callback;
 	}
 
+	void Window::SetMouseCallback(MouseCallback callback)
+	{
+		m_mouse_callback = callback;
+	}
+
 	void Window::SetResizeCallback(ResizeCallback callback)
 	{
 		m_resize_callback = callback;
@@ -168,6 +173,15 @@ namespace wr
 		case WM_DESTROY:
 			m_running = false;
 			PostQuitMessage(0);
+			return 0;
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONUP:
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONUP:
+			if (m_mouse_callback)
+			{
+				m_mouse_callback((int)w_param, msg, (int)l_param);
+			}
 			return 0;
 		case WM_KEYDOWN:
 		case WM_KEYUP:

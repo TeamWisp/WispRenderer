@@ -6,17 +6,18 @@
 #include "scene_graph/scene_graph.hpp"
 #include "resources.hpp"
 #include "imgui/imgui.hpp"
+#include "debug_camera.hpp"
 
 namespace viknell_scene
 {
 
-	static std::shared_ptr<wr::CameraNode> camera;
+	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
 	static float t = 0;
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
-		camera = scene_graph->CreateChild<wr::CameraNode>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
+		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 0, 0, -1 });
 		
 		// Geometry
@@ -63,5 +64,6 @@ namespace viknell_scene
 	{
 
 		t += 10.f * ImGui::GetIO().DeltaTime;
+		camera->Update(ImGui::GetIO().DeltaTime);
 	}
 } /* cube_scene */
