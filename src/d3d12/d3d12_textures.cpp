@@ -78,7 +78,7 @@ namespace wr::d3d12
 		return texture;
 	}
 
-	void SetName(TextureResource * tex, std::wstring name)
+	void SetName(TextureResource* tex, std::wstring name)
 	{
 		tex->m_resource->SetName(name.c_str());
 	}
@@ -155,6 +155,9 @@ namespace wr::d3d12
 	{
 		decltype(Device::m_native) n_device;
 
+		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
+
+
 		if (tex->m_rtv_allocation == std::nullopt)
 		{
 			LOGC("This texture was not created with the intent of being used as a RTV.");
@@ -173,6 +176,8 @@ namespace wr::d3d12
 	void CreateRTVFromCubemap(TextureResource* tex)
 	{
 		decltype(Device::m_native) n_device;
+
+		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
 
 		if (!tex->m_is_cubemap)
 		{

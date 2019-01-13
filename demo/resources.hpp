@@ -38,6 +38,9 @@ namespace resources
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
+		equirectangular_environment_map = texture_pool->Load("resources/materials/UenoShrine.hdr", false, false);
+		cubemap_environment_map = texture_pool->CreateCubemap("EnvironmentMap", 1024, 1024, 1, wr::Format::R32G32B32A32_FLOAT, true);
+
 		// Create Material
 		light_material = material_pool->Create();
 

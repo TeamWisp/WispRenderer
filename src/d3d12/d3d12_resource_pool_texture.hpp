@@ -54,6 +54,7 @@ namespace wr
 		//CPU only visible heap used for staging of descriptors.
 		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
 		DescriptorAllocator* m_texture_heap_allocator;
+		DescriptorAllocator* m_rtv_heap_allocator;
 
 		//Descriptor heap used for compute pipeline when doing mipmapping
 		d3d12::DescriptorHeap* m_mipmapping_heap;

@@ -28,8 +28,8 @@ namespace wr::d3d12::settings
 	static const constexpr DXGI_SCALING swapchain_scaling = DXGI_SCALING_STRETCH;
 	static const constexpr DXGI_ALPHA_MODE swapchain_alpha_mode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	static const constexpr bool enable_gpu_timeout = false;
-	static const constexpr bool enable_debug_factory = true;
-	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;
+	static const constexpr bool enable_debug_factory = false;
+	static const constexpr DebugLayer enable_debug_layer = DebugLayer::DISABLE;
 	static const constexpr char* default_shader_model = "6_3";
 	static std::array<LPCWSTR, 1> debug_shader_args = { L"/O3" };
 	static std::array<LPCWSTR, 1> release_shader_args = { L"/O3" };

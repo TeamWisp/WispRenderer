@@ -1,6 +1,10 @@
 struct VS_INPUT
 {
 	float3 pos : POSITION;
+	float2 uv : TEXCOORD;
+	float3 normal : NORMAL;
+	float3 tangent : TANGENT;
+	float3 bitangent : BITANGENT;
 };
 
 struct VS_OUTPUT
@@ -66,6 +70,8 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float2 uv = SampleSphericalMap(normalize(input.local_pos));
 
 	float3 color = equirectangular_texture.Sample(s0, uv).rgb;
+
+	color = float3(1.0f, 0.0f, 0.0f);
 
 	output.color = float4(color, 1.0f);
 

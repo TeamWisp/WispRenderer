@@ -162,7 +162,7 @@ namespace wr
 
 		std::vector<std::uint64_t> m_buffer_frame_graph_uids;
 
-		std::shared_ptr<TexturePool> m_texture_pool;
+		std::vector <std::shared_ptr<TexturePool>> m_texture_pools;
 
 		d3d12::HeapResource* m_light_buffer;
 		std::shared_ptr<ConstantBufferPool> m_camera_pool; // TODO: Should be part of the scene graph

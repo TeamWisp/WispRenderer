@@ -183,7 +183,7 @@ namespace wr
 		{ Format::R32G32B32A32_FLOAT },
 		1,
 		PipelineType::GRAPHICS_PIPELINE,
-		CullMode::CULL_FRONT,
+		CullMode::CULL_NONE,
 		false,
 		false,
 		TopologyType::TRIANGLE

@@ -21,6 +21,8 @@ namespace wr
 
 		//Staging heap
 		m_texture_heap_allocator = new DescriptorAllocator(render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+		m_rtv_heap_allocator = new DescriptorAllocator(render_system, DescriptorHeapType::DESC_HEAP_TYPE_RTV);
+
 
 		//Mipmapping heap creation
 		d3d12::desc::DescriptorHeapDesc mipmap_heap_desc;
@@ -40,6 +42,7 @@ namespace wr
 		d3d12::Destroy(m_mipmapping_heap);
 
 		delete m_texture_heap_allocator;
+		delete m_rtv_heap_allocator;
 	}
 
 	void D3D12TexturePool::Evict()
@@ -59,6 +62,7 @@ namespace wr
 			d3d12::CommandList* cmdlist = static_cast<d3d12::CommandList*>(cmd_list);
 
 			std::vector<d3d12::TextureResource*> unstaged_textures;
+			std::vector<d3d12::TextureResource*> need_mipmapping;
 
 			auto itr = m_unstaged_textures.begin();
 
@@ -80,11 +84,16 @@ namespace wr
 				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, 0, 1, &subresourceData);
 
 				texture->m_is_staged = true;
+
+				if (texture->m_need_mips)
+				{
+					need_mipmapping.push_back(texture);
+				}
 			}
 
 			d3d12::Transition(cmdlist, unstaged_textures, wr::ResourceState::COPY_DEST, wr::ResourceState::PIXEL_SHADER_RESOURCE);
 
-			GenerateMips(unstaged_textures, cmd_list);
+			GenerateMips(need_mipmapping, cmd_list);
 
 			MoveStagedTextures();
 		}
@@ -97,6 +106,7 @@ namespace wr
 	void D3D12TexturePool::EndOfFrame()
 	{
 		m_texture_heap_allocator->ReleaseStaleDescriptors();
+		m_rtv_heap_allocator->ReleaseStaleDescriptors();
 	}
 
 	d3d12::TextureResource* D3D12TexturePool::GetTexture(uint64_t texture_id)
@@ -147,9 +157,11 @@ namespace wr
 
 		texture->m_desc_allocation = std::move(alloc);
 
+		d3d12::CreateSRVFromTexture(texture);
+
 		if (allow_render_dest)
 		{
-			DescriptorAllocation alloc = m_texture_heap_allocator->Allocate(6);
+			DescriptorAllocation alloc = m_rtv_heap_allocator->Allocate(6);
 
 			if (alloc.IsNull())
 			{
@@ -157,9 +169,9 @@ namespace wr
 			}
 
 			texture->m_rtv_allocation = std::move(alloc);
-		}
 
-		d3d12::CreateSRVFromTexture(texture);
+			d3d12::CreateRTVFromCubemap(texture);
+		}
 
 		m_loaded_textures++;
 
