@@ -751,7 +751,7 @@ namespace wr
 
 			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
 
-			float clear_color[] = { 0.5f,0.5f,0.5f,1.0f };
+			float clear_color[] = { 0, 0, 0, 0 };
 
 			m_direct_cmd_list->m_native->ResourceBarrier(1,
 				&CD3DX12_RESOURCE_BARRIER::Transition(

@@ -39,7 +39,7 @@ namespace wr::d3d12
 			Format m_dsv_format;
 			std::array<Format, 8> m_rtv_formats;
 			unsigned int m_num_rtv_formats;
-			float m_clear_color[4] = { 0.5f, 0.5f, 0.5, 1 };
+			float m_clear_color[4] = { 0, 0, 0, 0 };
 		};
 
 		struct TextureDesc
