@@ -138,6 +138,8 @@ int WispEntry()
 		{
 			// Use the cpu-visible texture data here!
 			LOG("CPU DATA AVAILABLE");
+
+			// Example: memcpy(data_block, texture.m_data, texture.m_size);
 		}
 	}
 

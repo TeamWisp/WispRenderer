@@ -45,6 +45,10 @@ namespace wr
 			// Create the actual read back buffer
 			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, &data.readback_buffer_desc);
 			d3d12::SetName(data.readback_buffer, L"Deferred read back render pass");
+
+			// Keep the read back buffer mapped for the duration of the entire application
+			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, data.readback_buffer_desc.m_buffer_size));
+			data.cpu_texture_output.m_size = data.readback_buffer_desc.m_buffer_size;
  		}
 
 		inline void ExecuteReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle)
@@ -68,12 +72,11 @@ namespace wr
 			source.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
 			source.SubresourceIndex = 0;
 
+			// Copy pixel data
 			command_list->m_native->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
 
-			// Read texture data
-			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, data.readback_buffer_desc.m_buffer_size));
-			data.cpu_texture_output.m_size = data.readback_buffer_desc.m_buffer_size;
-			UnmapReadbackBuffer(data.readback_buffer);
+			// Update the frame graph output texture (allows the renderer to access this data)
+			frame_graph.SetOutputTexture(data.cpu_texture_output);
 		}
 		
 		inline void DestroyReadBackTask(FrameGraph& fg, RenderTaskHandle handle)
@@ -82,6 +85,7 @@ namespace wr
 			auto& data = fg.GetData<ReadbackTaskInternalData>(handle);
 
 			// Clean up the read back buffer
+			UnmapReadbackBuffer(data.readback_buffer);
 			Destroy(data.readback_buffer);
 		}
 
