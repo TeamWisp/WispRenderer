@@ -68,6 +68,9 @@ namespace wr
 		m_transition_fence = d3d12::CreateFence(m_render_system.m_device);
 
 		m_mesh_stage_queues.resize(d3d12::settings::max_threads);
+
+		m_command_recording_futures.resize(d3d12::settings::max_threads);
+		m_command_recording_launched.resize(d3d12::settings::max_threads);
 	}
 
 	D3D12ModelPool::~D3D12ModelPool()
@@ -194,44 +197,53 @@ namespace wr
 
 		d3d12::End(m_command_lists[0]);
 
-		std::vector<std::future<void>> command_recording_futures(m_mesh_stage_queues.size());
-
+		std::vector<bool> bools(d3d12::settings::max_threads);
+		
 		for (int i = 1; i < m_command_lists.size() - 1; ++i)
 		{
-			command_recording_futures[i - 1] = m_thread_pool->Enqueue([](
+			/*if (m_mesh_stage_queues[i - 1].size() == 0)
+			{
+				m_command_recording_launched[i - 1] = false;
+				continue;
+			}
+			else
+			{
+				m_command_recording_launched[i - 1] = true;
+			}*/
+			/*m_command_recording_futures[i - 1] = m_thread_pool->Enqueue([&bools, i](
 				std::queue<internal::MeshInternal*>& mesh_queue,
 				d3d12::CommandList* command_list,
 				wr::D3D12ModelPool* model_pool)
-			{
-				
-				d3d12::Begin(command_list, 0);
-				while (!mesh_queue.empty())
+			{*/
+
+				d3d12::Begin(m_command_lists[i], 0);
+				while (!m_mesh_stage_queues[i-1].empty())
 				{
-					internal::D3D12MeshInternal* d3d12_mesh = static_cast<internal::D3D12MeshInternal*>(mesh_queue.front());
+					internal::D3D12MeshInternal* d3d12_mesh = static_cast<internal::D3D12MeshInternal*>(m_mesh_stage_queues[i - 1].front());
 					d3d12_mesh->m_vertex_upload_finished.get();
-					command_list->m_native->CopyBufferRegion(
-						model_pool->GetVertexStagingBuffer()->m_buffer,
+					m_command_lists[i]->m_native->CopyBufferRegion(
+						m_vertex_buffer->m_buffer,
 						d3d12_mesh->m_vertex_staging_buffer_offset*d3d12_mesh->m_vertex_staging_buffer_stride,
-						model_pool->GetVertexStagingBuffer()->m_staging,
+						m_vertex_buffer->m_staging,
 						d3d12_mesh->m_vertex_staging_buffer_offset*d3d12_mesh->m_vertex_staging_buffer_stride,
 						d3d12_mesh->m_vertex_staging_buffer_size
 					);
 					if (d3d12_mesh->m_index_staging_buffer_size != 0)
 					{
 						d3d12_mesh->m_index_upload_finished.get();
-						command_list->m_native->CopyBufferRegion(
-							model_pool->GetIndexStagingBuffer()->m_buffer,
+						m_command_lists[i]->m_native->CopyBufferRegion(
+							m_index_buffer->m_buffer,
 							d3d12_mesh->m_index_staging_buffer_offset * sizeof(std::uint32_t),
-							model_pool->GetIndexStagingBuffer()->m_staging,
+							m_index_buffer->m_staging,
 							d3d12_mesh->m_index_staging_buffer_offset * sizeof(std::uint32_t),
 							d3d12_mesh->m_index_staging_buffer_size
 						);
 					}
-					mesh_queue.pop();
+					m_mesh_stage_queues[i - 1].pop();
 				}
-				d3d12::End(command_list);
+				d3d12::End(m_command_lists[i]);/*
 			},
-				m_mesh_stage_queues[i - 1], m_command_lists[i], this);
+				m_mesh_stage_queues[i - 1], m_command_lists[i], this);*/
 		}
 
 		d3d12::Begin(m_command_lists[m_command_lists.size() - 1], 0);
@@ -251,20 +263,16 @@ namespace wr
 
 		d3d12::End(m_command_lists[m_command_lists.size() - 1]);
 
-		for (int i = 0; i < m_mesh_stage_queues.size(); ++i)
-		{
-			command_recording_futures[i].get();
-		}
-
 		m_vertex_buffer->m_gpu_address = m_vertex_buffer->m_buffer->GetGPUVirtualAddress();
 		m_vertex_buffer->m_is_staged = true;
 
 		m_index_buffer->m_gpu_address = m_index_buffer->m_buffer->GetGPUVirtualAddress();
 		m_index_buffer->m_is_staged = true;
-		
+
 		d3d12::Execute(m_render_system.m_direct_queue, m_command_lists, m_staging_fence);
 
 		m_waiting_for_staging = true;
+
 	}
 
 	void D3D12ModelPool::WaitForStaging()

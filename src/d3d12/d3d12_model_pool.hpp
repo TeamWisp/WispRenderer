@@ -96,6 +96,9 @@ namespace wr
 		std::vector<d3d12::CommandList*> m_command_lists;
 		std::vector<d3d12::CommandList*> m_transition_command_lists;
 
+		std::vector<std::future<void>> m_command_recording_futures;
+		std::vector<bool> m_command_recording_launched;
+
 		d3d12::Fence* m_staging_fence;
 		d3d12::Fence* m_transition_fence;
 
