@@ -216,7 +216,7 @@ float DoShadow(float3 wpos, float depth, float3 normal)
 	return shadow_factor;
 }
 
-float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic)
+float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic, float3 albedo)
 {
 
 	// Get direction to camera
@@ -235,11 +235,16 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic)
 
 	float3 reflection = TraceReflectionRay(wpos, reflected);
 
-	// TODO: Get reflectiveness from roughness and metallic
+	// TODO: Roughness
 
-	float reflectiveness = 1;
+	// TODO: Calculate reflection combined with fresnel
 
-	return reflection * reflectiveness;
+	float cosTheta = max(-dot(normal, cdir), 0);
+	float fresnel = pow(1 - cosTheta, 5 / (4.9 * metallic + 0.1));
+
+	float3 fresnel_reflection = lerp(albedo, reflection, fresnel);
+
+	return fresnel_reflection;
 }
 
 [shader("raygeneration")]
@@ -267,14 +272,9 @@ void RaygenEntry()
 	// Do lighting
 
 	float shadow_factor = DoShadow(wpos, depth, normal);
-	float3 reflection = DoReflection(wpos, normal, metallic, roughness);
+	float3 reflection = DoReflection(wpos, normal, metallic, roughness, albedo);
 
-	// Calculate reflection combined with fresnel
-
-	const float fresnel = 0.5;
-	float3 fresnel_reflection = lerp(albedo, reflection, fresnel);
-
-	gOutput[DispatchRaysIndex().xy] = float4(normal, 1);
+	gOutput[DispatchRaysIndex().xy] = float4(reflection * shadow_factor, 1);
 
 }
 
