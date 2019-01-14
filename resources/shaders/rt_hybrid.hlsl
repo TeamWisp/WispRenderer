@@ -51,7 +51,7 @@ SamplerState s0 : register(s0);
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct ShadowHitInfo
 {
-	float shadow_factor;
+	bool shadow_hit;
 };
 
 struct ReflectionHitInfo
@@ -95,9 +95,9 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float TraceShadowRay(float3 origin, float3 direction)
+bool TraceShadowRay(float3 origin, float3 direction)
 {
-	ShadowHitInfo payload = { 1 };
+	ShadowHitInfo payload = { false };
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -119,7 +119,7 @@ RAY_FLAG_NONE,
 		ray,
 		payload);
 
-	return payload.shadow_factor;
+	return payload.shadow_hit;
 }
 
 float3 TraceReflectionRay(float3 origin, float3 direction)
@@ -192,7 +192,10 @@ float DoShadow(float3 wpos, float depth, float3 normal)
 		float3 light_dir = normalize(lights[i].dir);
 
 		// Trace shadow ray
-		shadow_factor *= TraceShadowRay(origin, light_dir);
+		if (TraceShadowRay(origin, light_dir))
+		{
+			shadow_factor *= 0.75;
+		}
 	}
 
 	return shadow_factor;
@@ -283,13 +286,13 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 [shader("closesthit")]
 void ClosestHitEntry(inout ShadowHitInfo payload, in MyAttributes attr)
 {
-	payload.shadow_factor = 0.75;
+	payload.shadow_hit = true;
 }
 
 [shader("miss")]
 void MissEntry(inout ShadowHitInfo payload)
 {
-	payload.shadow_factor = 1.0;
+	payload.shadow_hit = false;
 }
 
 //Reflections
