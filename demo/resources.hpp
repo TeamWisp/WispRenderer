@@ -100,35 +100,35 @@ namespace resources
 			};
 
 			mesh.m_vertices = {
-				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0 },
-				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,        1, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0 },
+				{ 1, -1, -1,    0, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,    0, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    1, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,        1, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        0, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        1, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,        1, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, 1,        1, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        0, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, -1,    0, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,    1, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        1, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,    0, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,    0, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        1, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    1, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,        1, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, -1,        1, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    0, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        0, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
 			};
 
 			cube_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
@@ -137,40 +137,35 @@ namespace resources
 			{
 				m.second = &rock_material;
 			}
-		}
 
-		{
-			wr::MeshData<wr::Vertex> mesh;
-
-			mesh.m_indices = {
-				2, 1, 0, 3, 2, 0
-			};
-
-			mesh.m_vertices = {
-				//POS				UV			NORMAL				TANGENT			BINORMAL
-				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-			};
-
-			light_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-			plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-
-			for (auto& m : plane_model->m_meshes)
 			{
-				m.second = &rock_material;
-			}
+				wr::MeshData<wr::Vertex> mesh;
 
-			for (auto& m : light_model->m_meshes)
-			{
-				m.second = &light_material;
+				mesh.m_indices = {
+					2, 1, 0, 3, 2, 0
+				};
+
+				mesh.m_vertices = {
+					//POS                UV            NORMAL                TANGENT            BINORMAL
+					{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+				};
+
+				plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+
+				light_model = plane_model;
+
+				for (auto& m : plane_model->m_meshes)
+				{
+					m.second = &rock_material;
+				}
 			}
-		}
 
 		{
 			test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-		
+
 			for (auto& m : test_model->m_meshes)
 			{
 				m.second = &rusty_metal_material;
@@ -188,4 +183,41 @@ namespace resources
 		}
 	}
 
+#pragma region REPLACE_LOADING_WITH_THIS
+		// Once the ray tracing implementation supports multiple model pools
+		// Replace the loading code above with this one.
+
+		//// Load Cube.
+		//{
+		//	cube_model = render_system->GetSimpleShape(wr::RenderSystem::SimpleShapes::CUBE);
+
+		//	for (auto& m : cube_model->m_meshes)
+		//	{
+		//		m.second = &rock_material;
+		//	}
+		//}
+
+		//{
+		//	plane_model = render_system->GetSimpleShape(wr::RenderSystem::SimpleShapes::PLANE);
+
+		//	light_model = plane_model;
+
+		//	for (auto& m : plane_model->m_meshes)
+		//	{
+		//		m.second = &rock_material;
+		//	}
+		//}
+
+
+		//{
+		//	test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+
+		//	for (auto& m : test_model->m_meshes)
+		//	{
+		//		m.second = &rusty_metal_material;
+		//	}
+		//}
+#pragma endregion
+
+	}
 }

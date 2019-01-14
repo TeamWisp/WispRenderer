@@ -1,19 +1,9 @@
+#define LIGHTS_REGISTER register(t2)
 #include "pbr_util.hlsl"
+#include "lighting.hlsl"
 
 #define MAX_RECURSION 3
 //#define PATH_TRACING
-
-struct Light 
-{
-	float3 pos;			//Position in world space for spot & point
-	float radius;		//Radius for point, height for spot
-
-	float3 color;		//Color
-	uint tid;			//Type id; light_type_x
-
-	float3 dir;			//Direction for spot & directional
-	float angle;		//Angle for spot; in radians
-};
 
 struct Vertex
 {
@@ -39,7 +29,6 @@ struct Material
 RWTexture2D<float4> gOutput : register(u0);
 RaytracingAccelerationStructure Scene : register(t0, space0);
 ByteAddressBuffer g_indices : register(t1);
-StructuredBuffer<Light> lights : register(t2);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 
@@ -73,10 +62,6 @@ struct Ray
 	float3 origin;
 	float3 direction;
 };
-
-static const uint light_type_point = 0;
-static const uint light_type_directional = 1;
-static const uint light_type_spot = 2;
 
 uint initRand(uint val0, uint val1, uint backoff = 16)
 {
@@ -279,47 +264,6 @@ float calc_attenuation(float r, float d) {
 	return 1.0f - smoothstep(r * 0, r, d);
 }
 
-float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light)
-{
-	uint tid = /*light.tid & 3*/ 0;
-
-	//Light direction (constant with directional, position dependent with other)
-	//float3 L = (lerp(light_pos - vpos, light_dir, tid == light_type_directional));
-	//float light_dist = length(L);
-	//L /= light_dist;
-
-	float3 dir = light.pos - vpos;
-	const float distance = length(dir);
-	dir = normalize(dir);
-
-	float range = light.radius;
-	const float attenuation = calc_attenuation(range, distance);
-	const float3 radiance = (intensity * light.color) * attenuation; 
-
-	//Attenuation & spot intensity (only used with point or spot)
-	//float attenuation = lerp(1.0f - smoothstep(0, light_rad, light_dist), 1, tid == light_type_directional);
-	//float3 radiance = (light_col * intensity) * attenuation;
-
-	float3 lighting = BRDF(dir, V, normal, metal, roughness, albedo, radiance, light.color);
-
-	return lighting;
-}
-
-float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal)
-{
-	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
-
-	float ambient = 0.1f;
-	float3 res = float3(ambient, ambient, ambient);
-
-	for (uint i = 0; i < light_count; i++)
-	{
-		res += ShadeLight(vpos, V, albedo, normal, roughness, metal, lights[i]);
-	}
-
-	return res * albedo;
-}
-
 float3 ReflectRay(float3 v1, float3 v2)
 {
 	return (v2 * ((2.f * dot(v1, v2))) - v1);
@@ -393,7 +337,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	payload.color = (irradiance + (reflection.xyz * metal));
 #else
-	float3 retval = ShadePixel(hit_pos, V, albedo, fN, roughness, metal);
+	float3 retval = shade_pixel(hit_pos, V, albedo, metal, roughness, fN);
 	payload.color = retval + (reflection.xyz * metal);
 #endif
 }
