@@ -51,7 +51,7 @@ SamplerState s0 : register(s0);
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct ShadowHitInfo
 {
-	float shadow_factor;
+	bool shadow_hit;
 };
 
 struct ReflectionHitInfo
@@ -92,9 +92,9 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float TraceShadowRay(float3 origin, float3 direction)
+bool TraceShadowRay(float3 origin, float3 direction)
 {
-	ShadowHitInfo payload = { 1 };
+	ShadowHitInfo payload = { false };
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -116,7 +116,7 @@ RAY_FLAG_NONE,
 		ray,
 		payload);
 
-	return payload.shadow_factor;
+	return payload.shadow_hit;
 }
 
 float3 TraceReflectionRay(float3 origin, float3 direction)
@@ -164,15 +164,8 @@ float3 unpack_direction(float3 dir)
 	return wnormal.xyz;
 }
 
-float DoShadow(float3 wpos, float depth, float3 normal)
+float DoShadow(float3 wpos, float3 normal)
 {
-
-	//TODO: Calculate epsilon depending on distance
-
-	const float n = 0.1f;
-	const float f = 25.0f;
-	const float z = (2 * n) / (f + n - depth * (f - n)) / f;
-
 	float epsilon = 0.05;
 
 	//Calculate origin
@@ -187,30 +180,15 @@ float DoShadow(float3 wpos, float depth, float3 normal)
 	for (uint i = 0; i < light_count; i++)
 	{
 		int light_type = lights[i].tid & 3;
-		// Point light
-		if (light_type == light_type_point)
+
+		float3 light_dir = normalize(lights[i].dir);
+
+		// Trace shadow ray
+		if (TraceShadowRay(wpos, light_dir))
 		{
-			// Get distance to light
-			float3 distance = lights[i].pos - wpos;
-			float dist_length = length(distance);
-
-			// Get light direction
-			float3 light_dir = normalize(distance);
-
-			// Trace shadow ray if is inside point radius
-			if (dist_length < lights[i].radius)
-			{
-				shadow_factor *= TraceShadowRay(wpos, light_dir, 0);
-			}
+			shadow_factor *= 0.75;
 		}
-		// Directional light
-		else if (light_type == light_type_directional)
-		{
-			float3 light_dir = normalize(lights[i].dir);
 
-			// Trace shadow ray
-			shadow_factor *= TraceShadowRay(wpos, light_dir, 0);
-		}
 	}
 
 	return shadow_factor;
@@ -269,9 +247,9 @@ void RaygenEntry()
 	float3 normal = unpack_direction(normal_metallic.xyz);
 	float metallic = normal_metallic.w;
 
-	// Do lighting
 
-	float shadow_factor = DoShadow(wpos, depth, normal);
+	// Do lighting
+	float shadow_factor = DoShadow(wpos, normal);
 	float3 reflection = DoReflection(wpos, normal, metallic, roughness, albedo);
 
 	gOutput[DispatchRaysIndex().xy] = float4(reflection * shadow_factor, 1);
@@ -295,13 +273,13 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 [shader("closesthit")]
 void ClosestHitEntry(inout ShadowHitInfo payload, in MyAttributes attr)
 {
-	payload.shadow_factor = 0.75;
+	payload.shadow_hit = true;
 }
 
 [shader("miss")]
 void MissEntry(inout ShadowHitInfo payload)
 {
-	payload.shadow_factor = 1.0;
+	payload.shadow_hit = false;
 }
 
 //Reflections
@@ -331,6 +309,9 @@ float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, float rou
 	//float3 radiance = (light_col * intensity) * attenuation;
 
 	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
+
+	//bool shadow_hit = TraceShadowRay(vpos, L);
+	//lighting = lerp(lighting, lighting * 0.3, shadow_hit);
 
 	return lighting;
 }
