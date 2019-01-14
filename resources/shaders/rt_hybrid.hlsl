@@ -80,6 +80,9 @@ static const uint light_type_point = 0;
 static const uint light_type_directional = 1;
 static const uint light_type_spot = 2;
 
+//TODO: Replace sky_color by sampling an envmap
+static const float3 sky_color = float3(0x1E / 255.f, 0x90 / 255.f, 0xFF / 255.f);
+
 uint3 Load3x32BitIndices(uint offsetBytes)
 {
 	// Load first 2 indices
@@ -184,11 +187,10 @@ float DoShadow(float3 wpos, float3 normal)
 		float3 light_dir = normalize(lights[i].dir);
 
 		// Trace shadow ray
-		if (TraceShadowRay(wpos, light_dir))
+		if (TraceShadowRay(origin, light_dir))
 		{
 			shadow_factor *= 0.75;
 		}
-
 	}
 
 	return shadow_factor;
@@ -228,7 +230,7 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic,
 [shader("raygeneration")]
 void RaygenEntry()
 {
-	// Texture UV coordinates [0, 1>
+	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
 	// Screen coordinates [0, resolution] (inverted y)
@@ -247,6 +249,11 @@ void RaygenEntry()
 	float3 normal = unpack_direction(normal_metallic.xyz);
 	float metallic = normal_metallic.w;
 
+	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
+	{
+		gOutput[DispatchRaysIndex().xy] = float4(sky_color, 1);
+		return;
+	}
 
 	// Do lighting
 	float shadow_factor = DoShadow(wpos, normal);
@@ -389,5 +396,5 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
-	payload.color = float3(0x1E / 255.f, 0x90 / 255.f, 0xFF / 255.f);
+	payload.color = sky_color;
 }
