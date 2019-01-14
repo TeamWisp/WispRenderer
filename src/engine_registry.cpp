@@ -50,7 +50,7 @@ namespace wr
 		});
 
 
-		//MipMapping Root Signature
+	//MipMapping Root Signature
 	std::array< CD3DX12_DESCRIPTOR_RANGE, 2> mip_in_out_ranges
 	{
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } (),
@@ -67,16 +67,31 @@ namespace wr
 	});
 
 
-	//Equirectangular texture to cubemap conversion Root Signature
-	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> equirect_to_cubemap_ranges
+	//Cubemap conversion root signature
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> cubemap_tasks_ranges
 	{
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(),
 	};
-	REGISTER(root_signatures::equirect_to_cubemap) = RootSignatureRegistry::Get().Register({
+	REGISTER(root_signatures::cubemap_conversion) = RootSignatureRegistry::Get().Register({
 		{
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(equirect_to_cubemap_ranges.size(), equirect_to_cubemap_ranges.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(cubemap_tasks_ranges.size(), cubemap_tasks_ranges.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
+		},
+		{
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
+		}
+	});
+
+	//Cubemap convolution root signature
+	std::array< CD3DX12_DESCRIPTOR_RANGE, 2> cubemap_convolution_ranges
+	{
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } (),
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0); return r; } ()
+	};
+	REGISTER(root_signatures::cubemap_convolution) = RootSignatureRegistry::Get().Register({
+		{
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(cubemap_convolution_ranges.size(), cubemap_convolution_ranges.data()); return d; }()
 		},
 		{
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
@@ -126,6 +141,13 @@ namespace wr
 		"main_ps",
 		ShaderType::PIXEL_SHADER
 	});
+
+	REGISTER(shaders::cubemap_convolution_cs) = ShaderRegistry::Get().Register({
+		"resources/shaders/cubemap_convolution.hlsl",
+		"main_cs",
+		ShaderType::DIRECT_COMPUTE_SHADER
+	});
+
 
 	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<Vertex>({
 		shaders::basic_vs,
@@ -178,11 +200,27 @@ namespace wr
 		shaders::equirect_to_cubemap_vs,
 		shaders::equirect_to_cubemap_ps,
 		std::nullopt,
-		root_signatures::equirect_to_cubemap,
+		root_signatures::cubemap_conversion,
 		Format::UNKNOWN,
 		{ Format::R32G32B32A32_FLOAT },
 		1,
 		PipelineType::GRAPHICS_PIPELINE,
+		CullMode::CULL_NONE,
+		false,
+		false,
+		TopologyType::TRIANGLE
+	});
+
+	REGISTER(pipelines::cubemap_convolution) = PipelineRegistry::Get().Register<Vertex>(
+	{
+		std::nullopt,
+		std::nullopt,
+		shaders::cubemap_convolution_cs,
+		root_signatures::cubemap_convolution,
+		Format::UNKNOWN,
+		{ },
+		0,
+		PipelineType::COMPUTE_PIPELINE,
 		CullMode::CULL_NONE,
 		false,
 		false,

@@ -20,17 +20,9 @@ cbuffer PassIndex : register (b0)
 
 cbuffer CameraProperties : register(b1)
 {
-	float4x4 view;
 	float4x4 projection;
+	float4x4 view[6];
 };
-
-// For textures arrays
-// 0 is +X -> matrix to rotate 90° cw around Y
-// 1 is -X -> matrix to rotate 90° ccw around Y
-// 2 is +Y -> matrix to rotate 90° ccw around X
-// 3 is -Y -> matrix to rotate 90° cw around X
-// 4 is +Z -> identity matrix
-// 5 is -Z -> matrix to rotate 180° cw around Y
 
 VS_OUTPUT main_vs(VS_INPUT input)
 {
@@ -38,7 +30,7 @@ VS_OUTPUT main_vs(VS_INPUT input)
 
 	output.local_pos = input.pos.xyz;
 
-	float4x4 vp = mul(projection, view);
+	float4x4 vp = mul(projection, view[idx]);
 	output.pos =  mul(vp, float4(output.local_pos, 1.0f));
 
 	return output;

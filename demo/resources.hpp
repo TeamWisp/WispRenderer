@@ -19,6 +19,7 @@ namespace resources
 	static wr::MaterialHandle light_material;
 	static wr::TextureHandle equirectangular_environment_map;
 	static wr::TextureHandle cubemap_environment_map;
+	static wr::TextureHandle convoluted_environment_map;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
@@ -40,6 +41,7 @@ namespace resources
 
 		equirectangular_environment_map = texture_pool->Load("resources/materials/UenoShrine.hdr", false, false);
 		cubemap_environment_map = texture_pool->CreateCubemap("EnvironmentMap", 1024, 1024, 1, wr::Format::R32G32B32A32_FLOAT, true);
+		convoluted_environment_map = texture_pool->CreateCubemap("ConvolutedMap", 256, 256, 1, wr::Format::R32G32B32A32_FLOAT, true);
 
 		// Create Material
 		light_material = material_pool->Create();

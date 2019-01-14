@@ -22,28 +22,27 @@ namespace wr
 	{
 		D3D12Pipeline* in_pipeline;
 
-		TextureHandle in_equirectangular;
+		TextureHandle in_equirect;
 		TextureHandle out_cubemap;
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
 		D3D12ConstantBufferHandle* cb_handle;
 
 		DirectX::XMMATRIX proj_mat;
-		DirectX::XMMATRIX view_mat;
+		DirectX::XMMATRIX view_mat[6];
 
 		bool should_run = true;
 	};
 
-	struct ProjectionView_CB
-	{
-		DirectX::XMMATRIX m_view;
-		DirectX::XMMATRIX m_projection;
-	};
-
 	namespace internal
 	{
+		struct ProjectionView_CB
+		{
+			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_view[6];
+		};
 
-		inline void SetupEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, TextureHandle in_equirect, TextureHandle out_cubemap)
+		inline void SetupCubemapFunctionalitiesTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, TextureHandle in_equirect, TextureHandle out_cubemap)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
@@ -51,51 +50,47 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::equirect_to_cubemap);
 
-			data.camera_cb_pool = rs.CreateConstantBufferPool(1);
+			data.camera_cb_pool = rs.CreateConstantBufferPool(2);
 			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CB)));
 
-			data.in_equirectangular = in_equirect;
+			data.in_equirect = in_equirect;
 			data.out_cubemap = out_cubemap;
 
 			data.proj_mat = DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(90.0f), 1.0f, 0.1f, 10.0f);
 
-			data.view_mat = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
-				DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f),
-				DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+			data.view_mat[0] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
 
-			data.view_mat = DirectX::XMMatrixLookToRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
-				DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f),
-				DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+			data.view_mat[1] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(-1.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
 
-			/*data.views_array[1] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
-															DirectX::XMVectorSet(-1.0f, 0.0f, 0.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
+			data.view_mat[2] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
 
-			data.views_array[2] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
+			data.view_mat[3] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
 
-			data.views_array[3] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
+			data.view_mat[4] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
 
-			data.views_array[4] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
-
-			data.views_array[5] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f),
-															DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));*/
+			data.view_mat[5] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
 		}
 
-		inline void ExecuteEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
+		inline void ExecuteCubemapFunctionalitiesTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
-			if (/*data.should_run*/true)
+			if (data.should_run)
 			{
-				d3d12::TextureResource* equirect_text = static_cast<d3d12::TextureResource*>(data.in_equirectangular.m_pool->GetTexture(data.in_equirectangular.m_id));
+				d3d12::TextureResource* equirect_text = static_cast<d3d12::TextureResource*>(data.in_equirect.m_pool->GetTexture(data.in_equirect.m_id));
 				d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(data.out_cubemap.m_pool->GetTexture(data.out_cubemap.m_id));
 
 				if (n_render_system.m_render_window.has_value())
@@ -111,6 +106,19 @@ namespace wr
 					d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 					d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+					ProjectionView_CB cb_data;
+					cb_data.m_view[0] = data.view_mat[0];
+					cb_data.m_view[1] = data.view_mat[1];
+					cb_data.m_view[2] = data.view_mat[2];
+					cb_data.m_view[3] = data.view_mat[3];
+					cb_data.m_view[4] = data.view_mat[4];
+					cb_data.m_view[5] = data.view_mat[5];
+					cb_data.m_projection = data.proj_mat;
+
+					data.cb_handle->m_pool->Update(data.cb_handle, sizeof(ProjectionView_CB), 0, frame_idx, (uint8_t*)&cb_data);
+
+					d3d12::BindConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);
+
 					for (uint32_t i = 0; i < 6; ++i)
 					{
 						//Get render target handle.
@@ -118,22 +126,11 @@ namespace wr
 
 						cmd_list->m_native->OMSetRenderTargets(1, &rtv_handle.m_native, false, nullptr);
 
-						const float clear_color[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
+						const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-						if (i % 2 == 0)
-						{
-							cmd_list->m_native->ClearRenderTargetView(rtv_handle.m_native, clear_color, 0, nullptr);
-						}
+						cmd_list->m_native->ClearRenderTargetView(rtv_handle.m_native, clear_color, 0, nullptr);
 
 						d3d12::Bind32BitConstants(cmd_list, &i, 1, 0, 0);
-
-						ProjectionView_CB cb_data;
-						cb_data.m_view = data.view_mat;
-						cb_data.m_projection = data.proj_mat;
-
-						data.cb_handle->m_pool->Update(data.cb_handle, sizeof(ProjectionView_CB), 0, frame_idx, (uint8_t*)&cb_data);
-
-						d3d12::BindConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);
 
 						//bind cube and render
 						Model* cube_model = rs.GetSimpleShape(RenderSystem::SimpleShapes::CUBE);
@@ -190,17 +187,17 @@ namespace wr
 
 		RenderTaskDesc desc;
 		desc.m_setup_func = [&](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::SetupEquirectToCubemapTask(rs, fg, handle, in_equirect, out_cubemap);
+			internal::SetupCubemapFunctionalitiesTask(rs, fg, handle, in_equirect, out_cubemap);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);
+			internal::ExecuteCubemapFunctionalitiesTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 			// Nothing to destroy
 		};
 		desc.m_name = "Equirect To Cubemap";
 		desc.m_properties = rt_properties;
-		desc.m_type = RenderTaskType::DIRECT;
+		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = false;
 
 		fg.AddTask<EquirectToCubemapTaskData>(desc);

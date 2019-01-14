@@ -40,12 +40,13 @@ namespace fg_manager
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(5);
+			fg = new wr::FrameGraph(6);
 			
+			wr::AddEquirectToCubemapTask(*fg, resources::equirectangular_environment_map, resources::cubemap_environment_map);
+			//wr::AddCubemapConvolutionTask(*fg, resources::cubemap_environment_map, resources::convoluted_environment_map);
 			wr::AddDeferredMainTask(*fg);
 			wr::AddDeferredCompositionTask(*fg);
 			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
-			wr::AddEquirectToCubemapTask(*fg, resources::equirectangular_environment_map, resources::cubemap_environment_map);
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
 			fg->Setup(rs);
