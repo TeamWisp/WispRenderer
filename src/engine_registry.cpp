@@ -99,7 +99,7 @@ namespace wr
 	});
 
 
-	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<Vertex>({
+	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<VertexColor>({
 		shaders::basic_vs,
 		shaders::basic_ps,
 		std::nullopt,
@@ -129,7 +129,7 @@ namespace wr
 		TopologyType::TRIANGLE
 	});
 
-	REGISTER(pipelines::mip_mapping) = PipelineRegistry::Get().Register<Vertex>(
+	REGISTER(pipelines::mip_mapping) = PipelineRegistry::Get().Register<VertexColor>(
 	{
 		std::nullopt,
 		std::nullopt,
