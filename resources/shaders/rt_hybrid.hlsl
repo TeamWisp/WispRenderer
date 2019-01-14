@@ -95,7 +95,7 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-bool TraceShadowRay(float3 origin, float3 direction)
+bool TraceShadowRay(float3 origin, float3 direction, float TMax)
 {
 	ShadowHitInfo payload = { false };
 
@@ -104,7 +104,7 @@ bool TraceShadowRay(float3 origin, float3 direction)
 	ray.Origin = origin;
 	ray.Direction = direction;
 	ray.TMin = 0.0000;
-	ray.TMax = 10000.0;
+	ray.TMax = TMax;
 
 	// Trace the ray
 	TraceRay(
@@ -191,8 +191,11 @@ float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, float rou
 
 	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
 
+	// Check if pixel is shaded
 	float3 origin = vpos + normal * 0.05;
-	bool  is_shadow = TraceShadowRay(origin, L);
+	float TMax = lerp(light_dist, 10000.0, tid == light_type_directional);
+	bool is_shadow = TraceShadowRay(origin, L, TMax);
+
 	lighting = lerp(lighting, float3(0, 0, 0), is_shadow);
 
 	return lighting;
@@ -211,36 +214,6 @@ float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal, float rou
 	}
 
 	return res * albedo;
-}
-
-float DoShadow(float3 wpos, float depth, float3 normal)
-{
-	float epsilon = 0.05;
-
-	//Calculate origin
-
-	float3 origin = wpos + normal * epsilon;
-
-	//Calculate shadow factor
-
-	float shadow_factor = 1.0;
-	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
-
-	for (uint i = 0; i < light_count; i++)
-	{
-		uint tid = lights[i].tid & 3;
-		float3 L = (lerp(lights[i].pos - wpos, lights[i].dir, tid == light_type_directional));
-		float light_dist = length(L);
-		L /= light_dist;
-
-		// Trace shadow ray
-		if (TraceShadowRay(origin, L))
-		{
-			shadow_factor *= 0.75;
-		}
-	}
-
-	return shadow_factor;
 }
 
 float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic, float3 albedo)
