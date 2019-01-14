@@ -167,6 +167,52 @@ float3 unpack_direction(float3 dir)
 	return wnormal.xyz;
 }
 
+float calc_attenuation(float r, float d)
+{
+	return 1.0f - smoothstep(r * 0, r, d);
+}
+
+float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light)
+{
+	uint tid = light.tid & 3;
+
+	//Light direction (constant with directional, position dependent with other)
+	float3 L = (lerp(light.pos - vpos, light.dir, tid == light_type_directional));
+	float light_dist = length(L);
+	L /= light_dist;
+
+	float range = light.radius;
+	const float attenuation = calc_attenuation(range, light_dist);
+	const float3 radiance = (intensity * light.color) * attenuation;
+
+	//Attenuation & spot intensity (only used with point or spot)
+	//float attenuation = lerp(1.0f - smoothstep(0, light_rad, light_dist), 1, tid == light_type_directional);
+	//float3 radiance = (light_col * intensity) * attenuation;
+
+	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
+
+	float3 origin = vpos + normal * 0.05;
+	bool  is_shadow = TraceShadowRay(origin, L);
+	lighting = lerp(lighting, float3(0, 0, 0), is_shadow);
+
+	return lighting;
+}
+
+float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal)
+{
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+
+	float ambient = 0.1f;
+	float3 res = float3(ambient, ambient, ambient);
+
+	for (uint i = 0; i < light_count; i++)
+	{
+		res += ShadeLight(vpos, V, albedo, normal, roughness, metal, lights[i]);
+	}
+
+	return res * albedo;
+}
+
 float DoShadow(float3 wpos, float depth, float3 normal)
 {
 
@@ -189,10 +235,13 @@ float DoShadow(float3 wpos, float depth, float3 normal)
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		float3 light_dir = normalize(lights[i].dir);
+		uint tid = lights[i].tid & 3;
+		float3 L = (lerp(lights[i].pos - wpos, lights[i].dir, tid == light_type_directional));
+		float light_dist = length(L);
+		L /= light_dist;
 
 		// Trace shadow ray
-		if (TraceShadowRay(origin, light_dir))
+		if (TraceShadowRay(origin, L))
 		{
 			shadow_factor *= 0.75;
 		}
@@ -262,10 +311,13 @@ void RaygenEntry()
 
 	// Do lighting
 
-	float shadow_factor = DoShadow(wpos, depth, normal);
-	float3 reflection = DoReflection(wpos, normal, metallic, roughness, albedo);
+	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(cpos - wpos);
 
-	gOutput[DispatchRaysIndex().xy] = float4(reflection * shadow_factor, 1);
+	float3 lighting = ShadePixel(wpos, V, albedo, normal, roughness, metallic);
+	float3 reflection = DoReflection(wpos, normal, metallic, roughness, lighting);
+
+	gOutput[DispatchRaysIndex().xy] = float4(reflection, 1);
 
 }
 
@@ -296,50 +348,6 @@ void MissEntry(inout ShadowHitInfo payload)
 }
 
 //Reflections
-
-
-
-float calc_attenuation(float r, float d)
-{
-	return 1.0f - smoothstep(r * 0, r, d);
-}
-
-float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light)
-{
-	uint tid = light.tid & 3;
-
-	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - vpos, light.dir, tid == light_type_directional));
-	float light_dist = length(L);
-	L /= light_dist;
-
-	float range = light.radius;
-	const float attenuation = calc_attenuation(range, light_dist);
-	const float3 radiance = (intensity * light.color) * attenuation;
-
-	//Attenuation & spot intensity (only used with point or spot)
-	//float attenuation = lerp(1.0f - smoothstep(0, light_rad, light_dist), 1, tid == light_type_directional);
-	//float3 radiance = (light_col * intensity) * attenuation;
-
-	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
-
-	return lighting;
-}
-
-float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal)
-{
-	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
-
-	float ambient = 0.1f;
-	float3 res = float3(ambient, ambient, ambient);
-
-	for (uint i = 0; i < light_count; i++)
-	{
-		res += ShadeLight(vpos, V, albedo, normal, roughness, metal, lights[i]);
-	}
-
-	return res * albedo;
-}
 
 [shader("closesthit")]
 void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
