@@ -6,6 +6,7 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
+#include "render_tasks/d3d12_accumulation.hpp"
 #include "render_tasks/d3d12_deferred_readback.hpp"
 
 namespace fg_manager
@@ -29,12 +30,13 @@ namespace fg_manager
 
 			// Perform a scene render using DXR
 			wr::AddRaytracingTask(*fg);
-
+			wr::AddAccumulationTask(*fg);
+			
 			// Copy the scene render pixel data to a buffer that is CPU-accessible
 			wr::AddRenderTargetReadBackTask<wr::RaytracingData>(*fg, std::nullopt, std::nullopt);
-
+			
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::RaytracingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));

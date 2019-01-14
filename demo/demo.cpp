@@ -10,13 +10,10 @@
 #include "scene_viknell.hpp"
 #include "resources.hpp"
 #include "scene_cubes.hpp"
-#include "scene_pbr.hpp"
 
 #include "model_loader_assimp.hpp"
 
 #define SCENE viknell_scene
-
-constexpr bool do_raytracing = true;
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -44,6 +41,7 @@ void SetupShaderDirWatcher()
 		{
 			auto wait_status = WaitForSingleObject(handle, INFINITE);
 			auto& registry = wr::PipelineRegistry::Get();
+			auto& rt_registry = wr::RTPipelineRegistry::Get();
 
 			switch (wait_status)
 			{
@@ -53,6 +51,11 @@ void SetupShaderDirWatcher()
 				for (auto it : registry.m_objects)
 				{
 					registry.RequestReload(it.first);
+				}
+
+				for (auto it : rt_registry.m_objects)
+				{
+					// rt_registry.RequestReload(it.first);
 				}
 
 				if (FindNextChangeNotification(handle) == FALSE)
@@ -87,6 +90,8 @@ int WispEntry()
 
 	window->SetKeyCallback([](int key, int action, int mods)
 	{
+		SCENE::camera->KeyAction(key, action);
+
 		if (action == WM_KEYUP && key == 0xC0)
 		{
 			engine::open_console = !engine::open_console;
@@ -100,6 +105,11 @@ int WispEntry()
 		{
 			fg_manager::Next();
 		}
+	});
+
+	window->SetMouseCallback([](int key, int action, int mods)
+	{
+		SCENE::camera->MouseAction(key, action);
 	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();

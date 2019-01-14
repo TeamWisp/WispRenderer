@@ -32,7 +32,7 @@ namespace wr::d3d12
 
 	DescHeapGPUHandle GetGPUHandle(DescriptorHeap* desc_heap, unsigned int frame_idx, unsigned int index)
 	{
-		DescHeapGPUHandle retval;;
+		DescHeapGPUHandle retval;
 
 		retval.m_native = desc_heap->m_native[frame_idx % desc_heap->m_create_info.m_versions]->GetGPUDescriptorHandleForHeapStart();
 
