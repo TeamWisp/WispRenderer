@@ -266,7 +266,7 @@ void RaygenEntry()
 	float3 wpos = unpack_position(uv, depth);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
-	float3 normal = unpack_direction(normal_metallic.xyz);
+	float3 normal = normal_metallic.xyz;
 	float metallic = normal_metallic.w;
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect

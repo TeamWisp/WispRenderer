@@ -34,6 +34,7 @@ namespace rt_shadow_scene
 
 	void UpdateScene()
 	{
+		camera->Update(ImGui::GetIO().DeltaTime);
 
 		t += 10.f * ImGui::GetIO().DeltaTime;
 	}

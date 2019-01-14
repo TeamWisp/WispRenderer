@@ -113,6 +113,11 @@ int WispEntry()
 		SCENE::camera->MouseAction(key, action);
 	});
 
+	window->SetMouseWheelCallback([](int amount, int action, int mods)
+	{
+		SCENE::camera->MouseWheel(amount);
+	});
+
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
 
 	render_system->Init(window.get());	
