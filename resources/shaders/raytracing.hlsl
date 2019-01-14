@@ -271,6 +271,8 @@ float3 ReflectRay(float3 v1, float3 v2)
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
+	float gamma = 2.2;
+	
 	// Calculate the essentials
 	const Material material = g_materials[InstanceID()];
 	const float3 hit_pos = HitWorldPosition();
@@ -305,19 +307,16 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
 	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).xyz;
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
+	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).r;
+	roughness = max(0.05, roughness);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).r;
 	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
-
-	if (material.albedo_id == 0)
-	{
-		payload.color = float3(20, 20, 20);
-		return;
-	}
 
 	float3 N = normalize(mul(model_matrix, float4(normal, 0)));
 	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
-	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
+	T = normalize(T - dot(T, N) * N);
+	float3 B = cross(N, T);
+
 	float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
@@ -330,24 +329,33 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		float3 diff = lights[i].pos - hit_pos;
 		float3 light_dir = normalize(diff);
 		float3 light_dist = length(diff);
-		bool shadow = TraceShadowRay(hit_pos + (N * 0.000001), light_dir, light_dist, payload.depth + 1, payload.seed);
+		bool shadow = TraceShadowRay(hit_pos + (fN * 0.000001), light_dir, light_dist, payload.depth + 1, payload.seed);
 		if (shadow) shadow_factor -= 0.3;
 	}
 
 	// Direct
 	float3 reflect_dir = ReflectRay(V, fN);
 	bool horizon = (dot(V, fN) > 0.0f);
-	float3 reflection = TraceColorRay(hit_pos + (N * 0.000001), reflect_dir, payload.depth + 1, payload.seed);
+	float3 reflection = TraceColorRay(hit_pos + (fN * 0.0001), reflect_dir, payload.depth + 1, payload.seed);
 
 #ifdef PATH_TRACING
 	// Indirect lighting
 	float3 rand_dir = getCosHemisphereSample(payload.seed, fN);
 	float cos_theta = cos(dot(rand_dir, fN));
-	float3 irradiance = (TraceColorRay(hit_pos + (N * 0.000001), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
+	float3 irradiance = (TraceColorRay(hit_pos + (fN * 0.000001), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
 
 	payload.color = (irradiance + (reflection.xyz * metal));
 #else
+	float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
+	float3 kS = F;
+    float3 kD = 1.0 - kS;
+    kD *= 1.0 - metal;
+
 	float3 retval = shade_pixel(hit_pos, V, albedo, metal, roughness, fN);
-	payload.color = (retval + (reflection.xyz * metal)) * shadow_factor;
+	float3 specular = (reflection.xyz) * F;
+	float3 diffuse = float3(0, 0, 0);
+	float3 ambient = (kD * diffuse + specular);
+	payload.color = ambient + (retval * shadow_factor);
+	//payload.color = pow(payload.color, 1.0/gamma);
 #endif
 }

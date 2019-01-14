@@ -24,16 +24,16 @@ namespace resources
 		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
-		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
+		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
 		wr::TextureHandle flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
 
-		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", false, true);
-		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metalgrid2_normal-dx.png", false, true);
+		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", true, true);
+		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metal-splotchy-normal-dx.png", false, true);
 		wr::TextureHandle metal_splotchy_roughness = texture_pool->Load("resources/materials/metal-splotchy-rough.png", false, true);
 		wr::TextureHandle metal_splotchy_metallic = texture_pool->Load("resources/materials/metal-splotchy-metal.png", false, true);
 
-		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", false, true);
+		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
 		wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
