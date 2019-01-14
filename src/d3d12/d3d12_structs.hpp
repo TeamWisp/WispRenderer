@@ -7,6 +7,7 @@
 #include <utility>
 #include <dxcapi.h>
 #include <array>
+#include <mutex>
 #include <D3D12RaytracingFallback.h>
 
 #include "../structs.hpp"

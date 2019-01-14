@@ -38,9 +38,8 @@ namespace wr::d3d12
 		{
 			memcpy(buffer->m_data, data, size);
 		}
-
+		
 		CD3DX12_RANGE read_range(0, 0);
-
 		buffer->m_staging->Map(0, &read_range, reinterpret_cast<void**>(&(buffer->m_cpu_address)));
 
 		return buffer;

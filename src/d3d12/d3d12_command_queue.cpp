@@ -38,6 +38,11 @@ namespace wr::d3d12
 
 	}
 
+	void WaitFor(CommandQueue * cmd_queue, Fence * fence)
+	{
+		cmd_queue->m_native->Wait(fence->m_native, fence->m_fence_value);
+	}
+
 	void Destroy(CommandQueue* cmd_queue)
 	{
 		SAFE_RELEASE(cmd_queue->m_native);

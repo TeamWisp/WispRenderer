@@ -22,6 +22,7 @@ namespace wr::d3d12
 	// CommandQueue
 	[[nodiscard]] CommandQueue* CreateCommandQueue(Device* device, CmdListType type);
 	void Execute(CommandQueue* cmd_queue, std::vector<CommandList*> const & cmd_lists, Fence* fence);
+	void WaitFor(CommandQueue* cmd_queue, Fence* fence);
 	void Destroy(CommandQueue* cmd_queue);
 	void SetName(CommandQueue* cmd_queue, std::wstring name);
 

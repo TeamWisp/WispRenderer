@@ -28,14 +28,16 @@ namespace wr
 			std::size_t m_vertex_staging_buffer_stride;
 			std::size_t m_vertex_count;
 			void* m_vertex_memory_block;
-			std::future<void> m_vertex_upload_finished;
+			void* m_vertex_data_temp;
+			bool m_vertex_upload_finished;
 			D3D12_GPU_VIRTUAL_ADDRESS m_index_buffer_base_address;
 			std::size_t m_index_staging_buffer_offset;
 			std::size_t m_index_count_offset;
 			std::size_t m_index_staging_buffer_size;
 			std::size_t m_index_count;
 			void* m_index_memory_block;
-			std::future<void> m_index_upload_finished;
+			void* m_index_data_temp;
+			bool m_index_upload_finished;
 		};
 	}
 
