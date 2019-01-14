@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../d3d12/d3d12_renderer.hpp"
+#include "../d3d12/d3d12_defines.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_constant_buffer_pool.hpp"
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
@@ -25,10 +26,18 @@ namespace wr
 		TextureHandle out_cubemap;
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
+		D3D12ConstantBufferHandle* cb_handle;
+
 		DirectX::XMMATRIX proj_mat;
 		DirectX::XMMATRIX view_mat;
 
 		bool should_run = true;
+	};
+
+	struct ProjectionView_CB
+	{
+		DirectX::XMMATRIX m_view;
+		DirectX::XMMATRIX m_projection;
 	};
 
 	namespace internal
@@ -43,6 +52,7 @@ namespace wr
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::equirect_to_cubemap);
 
 			data.camera_cb_pool = rs.CreateConstantBufferPool(1);
+			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CB)));
 
 			data.in_equirectangular = in_equirect;
 			data.out_cubemap = out_cubemap;
@@ -51,6 +61,10 @@ namespace wr
 
 			data.view_mat = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
 				DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f),
+				DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+			data.view_mat = DirectX::XMMatrixLookToRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+				DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f),
 				DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 
 			/*data.views_array[1] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
@@ -79,7 +93,7 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
-			if (data.should_run)
+			if (/*data.should_run*/true)
 			{
 				d3d12::TextureResource* equirect_text = static_cast<d3d12::TextureResource*>(data.in_equirectangular.m_pool->GetTexture(data.in_equirectangular.m_id));
 				d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(data.out_cubemap.m_pool->GetTexture(data.out_cubemap.m_id));
@@ -97,22 +111,6 @@ namespace wr
 					d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
 					d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-					struct ProjectionView_CB
-					{
-						DirectX::XMMATRIX m_view;
-						DirectX::XMMATRIX m_projection;
-					};
-
-					auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CB)));
-
-					ProjectionView_CB cb_data;
-					cb_data.m_projection = data.proj_mat;
-					cb_data.m_view = data.view_mat;
-
-					d3d12_cb_handle->m_pool->Update(d3d12_cb_handle, sizeof(ProjectionView_CB), 0, (uint8_t*)&cb_data);
-
-					d3d12::BindConstantBuffer(cmd_list, d3d12_cb_handle->m_native, 1, frame_idx);
-
 					for (uint32_t i = 0; i < 6; ++i)
 					{
 						//Get render target handle.
@@ -128,6 +126,14 @@ namespace wr
 						}
 
 						d3d12::Bind32BitConstants(cmd_list, &i, 1, 0, 0);
+
+						ProjectionView_CB cb_data;
+						cb_data.m_view = data.view_mat;
+						cb_data.m_projection = data.proj_mat;
+
+						data.cb_handle->m_pool->Update(data.cb_handle, sizeof(ProjectionView_CB), 0, frame_idx, (uint8_t*)&cb_data);
+
+						d3d12::BindConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);
 
 						//bind cube and render
 						Model* cube_model = rs.GetSimpleShape(RenderSystem::SimpleShapes::CUBE);

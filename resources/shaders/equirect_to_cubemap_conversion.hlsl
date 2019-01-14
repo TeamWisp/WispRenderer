@@ -13,12 +13,12 @@ struct VS_OUTPUT
 	float3 local_pos : LOCPOS;
 };
 
-cbuffer PassIndex : register (b1)
+cbuffer PassIndex : register (b0)
 {
 	int idx;
 }
 
-cbuffer CameraProperties : register(b0)
+cbuffer CameraProperties : register(b1)
 {
 	float4x4 view;
 	float4x4 projection;
@@ -40,7 +40,7 @@ VS_OUTPUT main_vs(VS_INPUT input)
 
 	float4x4 vp = mul(projection, view);
 	output.pos =  mul(vp, float4(output.local_pos, 1.0f));
-	
+
 	return output;
 }
 
@@ -70,8 +70,6 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float2 uv = SampleSphericalMap(normalize(input.local_pos));
 
 	float3 color = equirectangular_texture.Sample(s0, uv).rgb;
-
-	color = float3(1.0f, 0.0f, 0.0f);
 
 	output.color = float4(color, 1.0f);
 
