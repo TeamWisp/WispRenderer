@@ -136,7 +136,8 @@ namespace resources
 					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
 				};
 
-				plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+				//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+				plane_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 
 				light_model = plane_model;
 

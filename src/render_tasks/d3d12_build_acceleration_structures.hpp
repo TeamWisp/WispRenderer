@@ -18,11 +18,13 @@ namespace wr
 		d3d12::DescriptorHeap* out_rt_heap;
 		d3d12::AccelerationStructure out_tlas;
 		D3D12StructuredBufferHandle* out_sb_material_handle;
-		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> out_blas_list;
+		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> out_blas_list;
 		std::vector<temp::RayTracingMaterial_CBData> out_materials;
 		std::vector<MaterialHandle*> out_material_handles;
 		d3d12::StagingBuffer* out_scene_ib;
 		d3d12::StagingBuffer* out_scene_vb;
+
+		std::unordered_map<std::uint64_t, d3d12::AccelerationStructure> blasses;
 
 		bool out_init;
 	};
@@ -94,36 +96,42 @@ namespace wr
 						cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
 						blas.m_native->SetName(L"Bottomlevelaccel");
 
-						data.out_material_handles.push_back(mesh.second); // Used to steal the textures from the texture pool.
+						data.blasses.insert({mesh.first->id, blas});
+
+						data.out_material_handles.push_back(mesh.second); // Used to st eal the textures from the texture pool.
+
+						// Build material
+						auto* material_internal = mesh.second->m_pool->GetMaterial(mesh.second->m_id);
+						data.out_materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
+						data.out_materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
+						data.out_materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
+						data.out_materials[material_id].normal_id = material_internal->GetNormal().m_id;
+						data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
+						data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
 
 						// Push instances into a array for later use.
 						for (auto i = 0; i < batch.second.num_instances; i++)
 						{
 							auto transform = batch.second.data.objects[i].m_model;
 
-							// Build material
-							auto* material_internal = mesh.second->m_pool->GetMaterial(mesh.second->m_id);
-							data.out_materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
-							data.out_materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
-							data.out_materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
-							data.out_materials[material_id].normal_id = material_internal->GetNormal().m_id;
-							data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
-							data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
-
-							data.out_materials[material_id].m_model = XMMatrixTranspose(XMMatrixInverse(nullptr, transform));
-
-							data.out_blas_list.push_back({ std::make_pair(blas, material_id), transform });
-
-							material_id++;
+							data.out_blas_list.push_back({ blas, material_id, transform});
 						}
+
+						material_id++;
 					}
+
+					batch.second.num_instances = 0;
 				}
 			}
 
 			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
-				int blas_idx = 0;
 				auto& batches = scene_graph.GetBatches();
+
+				auto prev_size = data.out_blas_list.size();
+				data.out_blas_list.clear();
+				data.out_blas_list.reserve(prev_size);
+				unsigned int material_id = 0;
 
 				// Update transformations
 				for (auto& batch : batches)
@@ -133,20 +141,35 @@ namespace wr
 
 					for (auto& mesh : model->m_meshes)
 					{
-						auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(
-							mesh.first->id);
+						auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
+
+						auto blas = (*data.blasses.find(mesh.first->id)).second;
+
+
+						// Build material
+						auto* material_internal = mesh.second->m_pool->GetMaterial(mesh.second->m_id);
+						data.out_materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
+						data.out_materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
+						data.out_materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
+						data.out_materials[material_id].normal_id = material_internal->GetNormal().m_id;
+						data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
+						data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
 
 						// Push instances into a array for later use.
 						for (auto i = 0; i < batch.second.num_instances; i++)
 						{
 							auto transform = batch.second.data.objects[i].m_model;
-							data.out_blas_list[blas_idx].second = transform;
 
-							blas_idx++;
+							data.out_blas_list.push_back({ 
+								blas,
+								material_id,
+								transform 
+							});
 						}
+
+						material_id++;
 					}
 
-					//Reset instances
 					batch.second.num_instances = 0;
 				}
 
@@ -199,8 +222,6 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<ASBuildData>(handle);
 
-			scene_graph.Optimize();
-
 			// Initialize requirements
 			if (data.out_init)
 			{
@@ -231,7 +252,7 @@ namespace wr
 			}
 			else
 			{
-				internal::UpdateTLAS(device, cmd_list, scene_graph, data);
+				//internal::UpdateTLAS(device, cmd_list, scene_graph, data);
 			}
 		}
 

@@ -16,14 +16,12 @@ struct Vertex
 
 struct Material
 {
-	float4x4 model;
 	float idx_offset;
 	float vertex_offset;
 	float albedo_id;
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
-	float2 padding;
 };
 
 RWTexture2D<float4> gOutput : register(u0);
@@ -278,7 +276,6 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 hit_pos = HitWorldPosition();
 	const float index_offset = material.idx_offset;
 	const float vertex_offset = material.vertex_offset;
-	const float4x4 model_matrix = material.model;
 	
 	// Find first index location
 	const uint index_size = 4;
@@ -306,21 +303,23 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
 	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
-	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).r;
+	float dist = length(payload.origin - hit_pos);
+	float mip_level = 0;
+
+	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
+	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r;
 	roughness = max(0.05, roughness);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).r;
-	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
+	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
-	float3 N = normalize(mul(model_matrix, float4(normal, 0)));
-	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
-	T = normalize(T - dot(T, N) * N);
+	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
+	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
+	//float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
 	float3 B = cross(N, T);
-
 	float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
-	if (dot(fN, V) <= 0.0f) fN = -fN;
+	//if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Shadow
 	float shadow_factor = 1;
@@ -356,6 +355,5 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 diffuse = float3(0, 0, 0);
 	float3 ambient = (kD * diffuse + specular);
 	payload.color = ambient + (retval * shadow_factor);
-	//payload.color = pow(payload.color, 1.0/gamma);
 #endif
 }

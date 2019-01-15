@@ -204,6 +204,7 @@ namespace wr
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
 		scene_graph->Update();
+		scene_graph->Optimize();
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
