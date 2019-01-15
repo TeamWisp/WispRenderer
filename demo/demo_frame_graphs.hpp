@@ -8,6 +8,7 @@
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
+#include "render_tasks/d3d12_cubemap_convolution.hpp"
 #include "resources.hpp"
 
 namespace fg_manager
@@ -43,7 +44,7 @@ namespace fg_manager
 			fg = new wr::FrameGraph(6);
 			
 			wr::AddEquirectToCubemapTask(*fg, resources::equirectangular_environment_map, resources::cubemap_environment_map);
-			//wr::AddCubemapConvolutionTask(*fg, resources::cubemap_environment_map, resources::convoluted_environment_map);
+			wr::AddCubemapConvolutionTask(*fg, resources::cubemap_environment_map, resources::convoluted_environment_map);
 			wr::AddDeferredMainTask(*fg);
 			wr::AddDeferredCompositionTask(*fg);
 			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);

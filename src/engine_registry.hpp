@@ -27,7 +27,7 @@ namespace wr
 		static RegistryHandle mip_mapping_cs;
 		static RegistryHandle equirect_to_cubemap_vs;
 		static RegistryHandle equirect_to_cubemap_ps;
-		static RegistryHandle cubemap_convolution_cs;
+		static RegistryHandle cubemap_convolution_ps;
 		static RegistryHandle accumulation;
 	};
 

@@ -20,9 +20,11 @@ namespace wr
 		auto device = m_render_system.m_device;
 
 		//Staging heap
-		m_texture_heap_allocator = new DescriptorAllocator(render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-		m_rtv_heap_allocator = new DescriptorAllocator(render_system, DescriptorHeapType::DESC_HEAP_TYPE_RTV);
 
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			m_allocators[i] = new DescriptorAllocator(render_system, static_cast<DescriptorHeapType>(i));
+		}
 
 		//Mipmapping heap creation
 		d3d12::desc::DescriptorHeapDesc mipmap_heap_desc;
@@ -41,8 +43,10 @@ namespace wr
 	{
 		d3d12::Destroy(m_mipmapping_heap);
 
-		delete m_texture_heap_allocator;
-		delete m_rtv_heap_allocator;
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			delete m_allocators[i];
+		}
 	}
 
 	void D3D12TexturePool::Evict()
@@ -72,16 +76,46 @@ namespace wr
 
 				unstaged_textures.push_back(texture);
 
-				size_t row_pitch, slice_pitch;
+				if (texture->m_width == 1024)
+				{
+					int x = 0;
+				}
 
-				DirectX::ComputePitch(static_cast<DXGI_FORMAT>(texture->m_format), texture->m_width, texture->m_height, row_pitch, slice_pitch);
 
-				D3D12_SUBRESOURCE_DATA subresourceData = {};
-				subresourceData.pData = texture->m_allocated_memory;
-				subresourceData.RowPitch = row_pitch;
-				subresourceData.SlicePitch = slice_pitch;
+				decltype(d3d12::Device::m_native) n_device;
+				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
 
-				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, 0, 1, &subresourceData);
+				D3D12_RESOURCE_DESC desc = texture->m_resource->GetDesc();
+
+				std::uint32_t num_subresources = texture->m_array_size * texture->m_mip_levels;
+
+				std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints;
+				footprints.resize(num_subresources);
+				std::vector<UINT> num_rows;
+				num_rows.resize(num_subresources);
+				std::vector<UINT64> row_sizes;
+				row_sizes.resize(num_subresources);
+				UINT64 total_size;
+
+				n_device->GetCopyableFootprints(&desc, 0, num_subresources, 0, &footprints[0], &num_rows[0], &row_sizes[0], &total_size);
+
+				std::vector<D3D12_SUBRESOURCE_DATA> subresource_data;
+				subresource_data.resize(num_subresources);
+
+				for (uint32_t i = 0; i < num_subresources; ++i)
+				{
+					D3D12_SUBRESOURCE_FOOTPRINT& footprint = footprints[i].Footprint;
+
+					size_t row_pitch, slice_pitch;
+
+					DirectX::ComputePitch(static_cast<DXGI_FORMAT>(footprint.Format), footprint.Width, footprint.Height, row_pitch, slice_pitch);
+
+					subresource_data[i].pData = texture->m_allocated_memory;
+					subresource_data[i].RowPitch = row_pitch;
+					subresource_data[i].SlicePitch = slice_pitch;
+				}
+
+				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
 
 				texture->m_is_staged = true;
 
@@ -105,8 +139,10 @@ namespace wr
 
 	void D3D12TexturePool::EndOfFrame()
 	{
-		m_texture_heap_allocator->ReleaseStaleDescriptors();
-		m_rtv_heap_allocator->ReleaseStaleDescriptors();
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			m_allocators[i]->ReleaseStaleDescriptors();
+		}
 	}
 
 	d3d12::TextureResource* D3D12TexturePool::GetTexture(uint64_t texture_id)
@@ -137,7 +173,7 @@ namespace wr
 		desc.m_texture_format = format;
 		desc.m_initial_state = allow_render_dest ? ResourceState::RENDER_TARGET : ResourceState::COPY_DEST;
 
-		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, false);
+		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, true);
 
 		texture->m_allocated_memory = nullptr;
 		texture->m_allow_render_dest = allow_render_dest;
@@ -148,20 +184,26 @@ namespace wr
 
 		d3d12::SetName(texture, wide_string);
 
-		DescriptorAllocation alloc = m_texture_heap_allocator->Allocate();
+		DescriptorAllocation srv_alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+		DescriptorAllocation uav_alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
-		if (alloc.IsNull())
+		if (srv_alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+		if (uav_alloc.IsNull())
 		{
 			LOGC("Couldn't allocate descriptor for the texture resource");
 		}
 
-		texture->m_desc_allocation = std::move(alloc);
+		texture->m_srv_allocation = std::move(srv_alloc);
+		texture->m_uav_allocation = std::move(uav_alloc);
 
 		d3d12::CreateSRVFromTexture(texture);
 
 		if (allow_render_dest)
 		{
-			DescriptorAllocation alloc = m_rtv_heap_allocator->Allocate(6);
+			DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]->Allocate(6);
 
 			if (alloc.IsNull())
 			{
@@ -184,6 +226,11 @@ namespace wr
 		m_staged_textures.insert(std::make_pair(texture_id, texture));
 
 		return texture_handle;
+	}
+
+	DescriptorAllocator * D3D12TexturePool::GetAllocator(DescriptorHeapType type)
+	{
+		return m_allocators[static_cast<size_t>(type)];
 	}
 
 	void D3D12TexturePool::Unload(uint64_t texture_id)
@@ -240,7 +287,7 @@ namespace wr
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		DescriptorAllocation alloc = m_texture_heap_allocator->Allocate();
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
 		if (alloc.IsNull())
 		{
@@ -248,7 +295,7 @@ namespace wr
 		}
 
 		texture->m_need_mips = generate_mips;
-		texture->m_desc_allocation = std::move(alloc);
+		texture->m_srv_allocation = std::move(alloc);
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture);
@@ -303,7 +350,7 @@ namespace wr
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		DescriptorAllocation alloc = m_texture_heap_allocator->Allocate();
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
 		if (alloc.IsNull())
 		{
@@ -311,7 +358,7 @@ namespace wr
 		}
 
 		texture->m_need_mips = generate_mips;
-		texture->m_desc_allocation = std::move(alloc);
+		texture->m_srv_allocation = std::move(alloc);
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture);
@@ -365,7 +412,7 @@ namespace wr
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		DescriptorAllocation alloc = m_texture_heap_allocator->Allocate();
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
 		if (alloc.IsNull())
 		{
@@ -373,7 +420,7 @@ namespace wr
 		}
 
 		texture->m_need_mips = generate_mips;
-		texture->m_desc_allocation = std::move(alloc);
+		texture->m_srv_allocation = std::move(alloc);
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture);

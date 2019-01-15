@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../resource_pool_texture.hpp"
+#include "d3d12_enums.hpp"
 #include "d3d12_texture_resources.hpp"
 #include <DirectXMath.h>
 
@@ -31,6 +32,8 @@ namespace wr
 
 		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 
+		DescriptorAllocator* GetAllocator(DescriptorHeapType type);
+
 		void Unload(uint64_t texture_id) final;
 
 	protected:
@@ -51,10 +54,10 @@ namespace wr
 
 		D3D12RenderSystem& m_render_system;
 
-		//CPU only visible heap used for staging of descriptors.
+		//CPU only visible heaps used for staging of descriptors.
 		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
-		DescriptorAllocator* m_texture_heap_allocator;
-		DescriptorAllocator* m_rtv_heap_allocator;
+		DescriptorAllocator* m_allocators[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
+
 
 		//Descriptor heap used for compute pipeline when doing mipmapping
 		d3d12::DescriptorHeap* m_mipmapping_heap;

@@ -45,7 +45,7 @@ namespace wr::d3d12
 
 		// Create intermediate resource on upload heap for staging
 		uint64_t textureUploadBufferSize;
-		device->m_native->GetCopyableFootprints(&desc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
+		device->m_native->GetCopyableFootprints(&desc, 0, desc.MipLevels * desc.DepthOrArraySize, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
 
 		ID3D12Resource* intermediate;
 
@@ -85,7 +85,7 @@ namespace wr::d3d12
 
 	void CreateSRVFromTexture(TextureResource* tex)
 	{
-		d3d12::DescHeapCPUHandle handle = tex->m_desc_allocation.GetDescriptorHandle();
+		d3d12::DescHeapCPUHandle handle = tex->m_srv_allocation.GetDescriptorHandle();
 
 		CreateSRVFromTexture(tex, handle);
 	}
@@ -151,6 +151,81 @@ namespace wr::d3d12
 		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
 	}
 
+	void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice)
+	{
+		decltype(Device::m_native) n_device;
+
+		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
+
+		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
+		
+		uav_desc.Format = (DXGI_FORMAT)tex->m_format;
+
+		//Calculate dimension
+		D3D12_UAV_DIMENSION dimension;
+
+		if (tex->m_is_cubemap)
+		{
+			dimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+
+			uav_desc.Texture2DArray.MipSlice = mip_slice;
+			uav_desc.Texture2DArray.ArraySize = tex->m_array_size;
+		}
+		else
+		{
+			if (tex->m_depth > 1)
+			{
+				//Then it's a 3D texture
+				dimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+
+				uav_desc.Texture3D.MipSlice = mip_slice;
+			}
+			else
+			{
+				if (tex->m_height > 1)
+				{
+					if (tex->m_array_size > 1)
+					{
+						dimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+
+						uav_desc.Texture2DArray.MipSlice = mip_slice;
+						uav_desc.Texture2DArray.ArraySize = tex->m_array_size;
+					}
+					else
+					{
+						dimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+
+						uav_desc.Texture2D.MipSlice = mip_slice;
+					}
+				}
+				else
+				{
+					//Then it's a 1D texture
+					if (tex->m_array_size > 1)
+					{
+						dimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+
+						uav_desc.Texture1DArray.MipSlice = mip_slice;
+						uav_desc.Texture1DArray.ArraySize = tex->m_array_size;
+					}
+					else
+					{
+						dimension = D3D12_UAV_DIMENSION_TEXTURE1D;
+
+						uav_desc.Texture1D.MipSlice = mip_slice;
+					}
+				}
+			}
+
+		}
+
+		uav_desc.ViewDimension = dimension;
+
+		n_device->CreateUnorderedAccessView(tex->m_resource, nullptr, &uav_desc, handle.m_native);
+	}
+
 	void CreateRTVFromTexture2D(TextureResource* tex)
 	{
 		decltype(Device::m_native) n_device;
@@ -211,7 +286,14 @@ namespace wr::d3d12
 
 	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
 	{
-		d3d12::DescHeapCPUHandle handle = tex->m_desc_allocation.GetDescriptorHandle();
+		d3d12::DescHeapCPUHandle handle = tex->m_srv_allocation.GetDescriptorHandle();
+
+		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_uav_allocation.GetDescriptorHandle();
 
 		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
 	}

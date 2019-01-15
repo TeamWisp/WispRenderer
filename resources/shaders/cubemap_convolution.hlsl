@@ -1,94 +1,85 @@
-static const float PI = 3.141592;
-static const float TwoPI = 2 * PI;
-static const float Epsilon = 0.00001;
-
-static const uint NumSamples = 64 * 1024;
-static const float InvNumSamples = 1.0 / float(NumSamples);
-
-TextureCube inputTexture : register(t0);
-RWTexture2DArray<float4> outputTexture : register(u0);
-
-SamplerState defaultSampler : register(s0);
-
-float radicalInverse_VdC(uint bits)
+struct VS_INPUT
 {
-	bits = (bits << 16u) | (bits >> 16u);
-	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-	return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+	float3 pos : POSITION;
+	float2 uv : TEXCOORD;
+	float3 normal : NORMAL;
+	float3 tangent : TANGENT;
+	float3 bitangent : BITANGENT;
+};
+
+struct VS_OUTPUT
+{
+	float4 pos : SV_POSITION;
+	float3 local_pos : LOCPOS;
+};
+
+cbuffer PassIndex : register (b0)
+{
+	int idx;
 }
 
-float2 sampleHammersley(uint i)
+cbuffer CameraProperties : register(b1)
 {
-	return float2(i * InvNumSamples, radicalInverse_VdC(i));
+	float4x4 projection;
+	float4x4 view[6];
+};
+
+VS_OUTPUT main_vs(VS_INPUT input)
+{
+	VS_OUTPUT output;
+
+	output.local_pos = input.pos.xyz;
+
+	float4x4 vp = mul(projection, view[idx]);
+	output.pos =  mul(vp, float4(output.local_pos, 1.0f));
+
+	return output;
 }
 
-float3 sampleHemisphere(float u1, float u2)
+struct PS_OUTPUT
 {
-	const float u1p = sqrt(max(0.0, 1.0 - u1 * u1));
-	return float3(cos(TwoPI*u2) * u1p, sin(TwoPI*u2) * u1p, u1);
-}
+	float4 color;
+};
 
-float3 getSamplingVector(uint3 ThreadID)
+TextureCube environment_cubemap : register(t0);
+SamplerState s0 : register(s0);
+
+PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
-	float outputWidth, outputHeight, outputDepth;
-	outputTexture.GetDimensions(outputWidth, outputHeight, outputDepth);
+	PS_OUTPUT output;
 
-	float2 st = ThreadID.xy / float2(outputWidth, outputHeight);
-	float2 uv = 2.0 * float2(st.x, 1.0 - st.y) - 1.0;
+	const float PI = 3.14159265359f;
 
-	// Select vector based on cubemap face index.
-	float3 ret;
-	switch (ThreadID.z)
+	float3 normal = normalize(input.local_pos);
+	float3 irradiance = float3(0.0f, 0.0f, 0.0f);
+
+	float3 up = float3(0.0f, 1.0f, 0.0f);
+	float3 right = cross(up, normal);
+	
+	up = cross(normal, right);
+
+	float sample_delta = 0.025f;
+	float nr_samples = 0.0f;
+
+	for (float phi = 0.0f; phi < 2.0f * PI; phi += sample_delta)
 	{
-	case 0: ret = float3(1.0, uv.y, -uv.x); break;
-	case 1: ret = float3(-1.0, uv.y, uv.x); break;
-	case 2: ret = float3(uv.x, 1.0, -uv.y); break;
-	case 3: ret = float3(uv.x, -1.0, uv.y); break;
-	case 4: ret = float3(uv.x, uv.y, 1.0); break;
-	case 5: ret = float3(-uv.x, uv.y, -1.0); break;
+		for (float theta = 0.0f; theta < 0.5f * PI; theta += sample_delta)
+		{
+			float cos_theta = cos(theta);
+			float sin_theta = sin(theta);
+
+			float3 tangent_sample = float3(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
+			float3 sample_vec = tangent_sample.x * right + tangent_sample.y * up + tangent_sample.z * normal;
+
+			irradiance += environment_cubemap.Sample(s0, sample_vec).rgb * cos_theta * sin_theta;
+
+			nr_samples++;
+		}
 	}
-	return normalize(ret);
-}
 
-void computeBasisVectors(const float3 N, out float3 S, out float3 T)
-{
-	// Branchless select non-degenerate T.
-	T = cross(N, float3(0.0, 1.0, 0.0));
-	T = lerp(cross(N, float3(1.0, 0.0, 0.0)), T, step(Epsilon, dot(T, T)));
+	irradiance = PI * irradiance * (1.0f / nr_samples);
+	
+	output.color = float4(irradiance.rgb, 1.0f);
 
-	T = normalize(T);
-	S = normalize(cross(N, T));
-}
-
-float3 tangentToWorld(const float3 v, const float3 N, const float3 S, const float3 T)
-{
-	return S * v.x + T * v.y + N * v.z;
-}
-
-[numthreads(32, 32, 1)]
-void main_cs(uint3 ThreadID : SV_DispatchThreadID)
-{
-	float3 N = getSamplingVector(ThreadID);
-
-	float3 S, T;
-	computeBasisVectors(N, S, T);
-
-	// Monte Carlo integration of hemispherical irradiance.
-	// As a small optimization this also includes Lambertian BRDF assuming perfectly white surface (albedo of 1.0)
-	// so we don't need to normalize in PBR fragment shader (so technically it encodes exitant radiance rather than irradiance).
-	float3 irradiance = 0.0;
-	for (uint i = 0; i < NumSamples; ++i) {
-		float2 u = sampleHammersley(i);
-		float3 Li = tangentToWorld(sampleHemisphere(u.x, u.y), N, S, T);
-		float cosTheta = max(0.0, dot(Li, N));
-
-		// PIs here cancel out because of division by pdf.
-		irradiance += 2.0 * inputTexture.SampleLevel(defaultSampler, Li, 0).rgb * cosTheta;
-	}
-	irradiance /= float(NumSamples);
-
-	outputTexture[ThreadID] = float4(irradiance, 1.0);
+	return output;
 }

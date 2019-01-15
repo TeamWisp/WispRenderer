@@ -42,7 +42,7 @@ namespace wr
 			DirectX::XMMATRIX m_view[6];
 		};
 
-		inline void SetupCubemapFunctionalitiesTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, TextureHandle in_equirect, TextureHandle out_cubemap)
+		inline void SetupEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, TextureHandle in_equirect, TextureHandle out_cubemap)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
@@ -83,7 +83,7 @@ namespace wr
 														 DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
 		}
 
-		inline void ExecuteCubemapFunctionalitiesTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
+		inline void ExecuteEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
@@ -160,9 +160,11 @@ namespace wr
 							}
 						}
 					}
-				}
 
-				data.should_run = false;
+					d3d12::Transition(cmd_list, cubemap_text, cubemap_text->m_current_state, ResourceState::PIXEL_SHADER_RESOURCE);
+
+					data.should_run = false;
+				}
 			}
 			//if (data.should_run)
 		}
@@ -187,10 +189,10 @@ namespace wr
 
 		RenderTaskDesc desc;
 		desc.m_setup_func = [&](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::SetupCubemapFunctionalitiesTask(rs, fg, handle, in_equirect, out_cubemap);
+			internal::SetupEquirectToCubemapTask(rs, fg, handle, in_equirect, out_cubemap);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteCubemapFunctionalitiesTask(rs, fg, sg, handle);
+			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 			// Nothing to destroy

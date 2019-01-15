@@ -22,7 +22,8 @@ namespace wr::d3d12
 		ID3D12Resource* m_resource;
 		ID3D12Resource* m_intermediate;
 		ResourceState m_current_state;
-		DescriptorAllocation m_desc_allocation;
+		DescriptorAllocation m_srv_allocation;
+		DescriptorAllocation m_uav_allocation;
 
 		//This allocation can be either 1 or 6 continous descriptors based on m_is_cubemap
 		std::optional<DescriptorAllocation> m_rtv_allocation = std::nullopt;
