@@ -111,6 +111,7 @@ namespace wr::d3d12
 		{
 			Shader* m_library;
 			std::vector<std::wstring> m_library_exports;
+			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
 
 			std::uint64_t max_payload_size;
 			std::uint64_t max_attributes_size;
@@ -368,6 +369,7 @@ namespace wr::d3d12
 	struct AccelerationStructure
 	{
 		ID3D12Resource* m_scratch;       // Scratch memory for AS builder
+		bool m_rebuild_scratch;
 		ID3D12Resource* m_native;        // Where the AS is
 		ID3D12Resource* m_instance_desc; // Hold the matrices of the instances
 		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;

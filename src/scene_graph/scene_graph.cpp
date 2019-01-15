@@ -120,7 +120,6 @@ namespace wr
 	*/
 	void SceneGraph::Render(CommandList* cmd_list, CameraNode* camera)
 	{
-		Optimize();
 		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
 	}
 

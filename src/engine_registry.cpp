@@ -201,11 +201,10 @@ namespace wr
 			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(r.size(), r.data()); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
-			//[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(), // Indices
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
 		},
 		{
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_BORDER }
 		},
 		true // rtx
 	});
@@ -228,6 +227,10 @@ namespace wr
 		lib.exports.push_back(L"RaygenEntry");
 		lib.exports.push_back(L"ClosestHitEntry");
 		lib.exports.push_back(L"MissEntry");
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
+		lib.m_hit_groups.push_back({ L"MyHitGroup", L"ClosestHitEntry" });
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
 
 		return std::make_pair(desc, lib);
 	}();
@@ -236,8 +239,8 @@ namespace wr
 	{
 		so_desc.first,     // Description
 		so_desc.second,    // Library
-		(sizeof(float)*7 + sizeof(unsigned int)), // Max payload size
-		(sizeof(float)*2), // Max attributes size
+		(sizeof(float)* 7) + sizeof(unsigned int), // Max payload size
+		(sizeof(float)* 4), // Max attributes size
 		3,				   // Max recursion depth
 		false,			   //Not hybrid
 		root_signatures::rt_test_global,      // Global root signature
@@ -245,7 +248,7 @@ namespace wr
 	});
 
 
-	/* ### Shadow Raytracing ### */
+	/* ### Hybrid Raytracing ### */
 	REGISTER(shaders::rt_hybrid_lib) = ShaderRegistry::Get().Register({
 		"resources/shaders/rt_hybrid.hlsl",
 		"RaygenEntry",
@@ -257,6 +260,7 @@ namespace wr
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1); return r; }(), // indices, light
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 21, 4); return r; }(), // Materials (1) Textures (+20) 
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 25); return r; }(),
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 550, d3d12::settings::fallback_ptrs_offset); return r; }(),
 	};
 
 	REGISTER(root_signatures::rt_hybrid_global) = RootSignatureRegistry::Get().Register({
@@ -264,7 +268,6 @@ namespace wr
 			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(rt_hybrid_ranges.size(), rt_hybrid_ranges.data()); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
-			//[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(), // Indices
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
 		},
 		{
@@ -293,6 +296,8 @@ namespace wr
 		lib.exports.push_back(L"MissEntry");
 		lib.exports.push_back(L"ReflectionHit");
 		lib.exports.push_back(L"ReflectionMiss");
+		lib.m_hit_groups.push_back({L"MyHitGroup", L"ClosestHitEntry"});
+		lib.m_hit_groups.push_back({L"ReflectionHitGroup", L"ReflectionHit"});
 
 		return std::make_pair(desc, lib);
 	}();

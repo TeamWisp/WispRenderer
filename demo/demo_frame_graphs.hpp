@@ -8,6 +8,7 @@
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
+#include "render_tasks/d3d12_build_acceleration_structures.hpp"
 
 namespace fg_manager
 {
@@ -29,6 +30,7 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
 			fg = new wr::FrameGraph(3);
 
+			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
 			wr::AddAccumulationTask(*fg);
 			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
@@ -53,9 +55,10 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(4);
+			fg = new wr::FrameGraph(5);
 
 			wr::AddDeferredMainTask(*fg);
+			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRTHybridTask(*fg);
 			wr::AddRenderTargetCopyTask<wr::RTHybridData>(*fg);
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));

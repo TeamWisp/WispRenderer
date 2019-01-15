@@ -58,7 +58,8 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inv_vp;
 
-			uint32_t m_padding[3];
+			uint32_t m_padding[2];
+			float m_roughness;
 			float m_intensity;
 		};
 
@@ -78,15 +79,12 @@ namespace wr
 
 		struct RayTracingMaterial_CBData
 		{
-			DirectX::XMMATRIX m_model;
 			float idx_offset;
 			float vertex_offset;
 			float albedo_id;
 			float normal_id;
 			float roughness_id;
 			float metallicness_id;
-			float padding0;
-			float padding1;
 		};
 
 		static const constexpr float size = 1.0f;

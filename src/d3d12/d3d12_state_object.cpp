@@ -39,19 +39,13 @@ namespace wr::d3d12
 
 		// Hitgroup
 		{
-			auto hitGroup = n_desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-			hitGroup->SetClosestHitShaderImport(L"ClosestHitEntry");
-			hitGroup->SetHitGroupExport(L"MyHitGroup");
-			hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
-
-			if (desc.is_hybrid)
+			for (auto def : desc.m_hit_groups)
 			{
-				auto reflectionHitGroup = n_desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-				reflectionHitGroup->SetClosestHitShaderImport(L"ReflectionHit");
-				reflectionHitGroup->SetHitGroupExport(L"ReflectionHitGroup");
-				reflectionHitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+				auto hitGroup = n_desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+				hitGroup->SetClosestHitShaderImport(def.second.c_str());
+				hitGroup->SetHitGroupExport(def.first.c_str());
+				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
 			}
-
 		}
 
 		// Global Root Signature

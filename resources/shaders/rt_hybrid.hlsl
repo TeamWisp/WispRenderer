@@ -67,7 +67,8 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float3 padding;
+	float2 padding;
+	float pbr_roughness;
 	float intensity;
 };
 
