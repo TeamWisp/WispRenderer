@@ -187,7 +187,6 @@ namespace wr
 		R8G8B8A8_UINT = (int)DXGI_FORMAT_R8G8B8A8_UINT,
 		R8G8B8A8_SINT = (int)DXGI_FORMAT_R8G8B8A8_SINT,
 		R16G16_FLOAT = (int)DXGI_FORMAT_R16G16_FLOAT,
-		R16G16_UNORM = (int)DXGI_FORMAT_R8G8B8A8_UNORM,
 		R16G16_UINT = (int)DXGI_FORMAT_R16G16_UINT,
 		R16G16_SNORM = (int)DXGI_FORMAT_R16G16_SNORM,
 		R16G16_SINT = (int)DXGI_FORMAT_R16G16_SINT,
@@ -271,6 +270,186 @@ namespace wr
 		case Format::R8_UNORM: return "R8_UNORM";
 		default: return "UNKNOWN (DEFAULT SWITCH STATEMENT)";
 		}
+	}
+
+	// From: https://github.com/Microsoft/DirectXTK/blob/master/Src/LoaderHelpers.h
+	static inline unsigned int BitsPerPixel(Format format)
+	{
+		switch (format)
+		{
+		//case Format::R32G32B32A32_TYPELESS:
+		case Format::R32G32B32A32_FLOAT:
+		case Format::R32G32B32A32_UINT:
+		case Format::R32G32B32A32_SINT:
+			return 128;
+
+		//case Format::R32G32B32_TYPELESS:
+		case Format::R32G32B32_FLOAT:
+		case Format::R32G32B32_UINT:
+		case Format::R32G32B32_SINT:
+			return 96;
+
+		//case Format::R16G16B16A16_TYPELESS:
+		case Format::R16G16B16A16_FLOAT:
+		case Format::R16G16B16A16_UNORM:
+		case Format::R16G16B16A16_UINT:
+		case Format::R16G16B16A16_SNORM:
+		case Format::R16G16B16A16_SINT:
+		//case Format::R32G32_TYPELESS:
+		case Format::R32G32_FLOAT:
+		case Format::R32G32_UINT:
+		case Format::R32G32_SINT:
+		//case Format::R32G8X24_TYPELESS:
+		case Format::D32_FLOAT_S8X24_UINT:
+		//case Format::R32_FLOAT_X8X24_TYPELESS:
+		//case Format::X32_TYPELESS_G8X24_UINT:
+		//case Format::Y416:
+		//case Format::Y210:
+		//case Format::Y216:
+			return 64;
+
+		//case Format::R10G10B10A2_TYPELESS:
+		//case Format::R10G10B10A2_UNORM:
+		//case Format::R10G10B10A2_UINT:
+		//case Format::R11G11B10_FLOAT:
+		//case Format::R8G8B8A8_TYPELESS:
+		case Format::R8G8B8A8_UNORM:
+		case Format::R8G8B8A8_UNORM_SRGB:
+		case Format::R8G8B8A8_UINT:
+		case Format::R8G8B8A8_SNORM:
+		case Format::R8G8B8A8_SINT:
+		//case Format::R16G16_TYPELESS:
+		case Format::R16G16_FLOAT:
+		//case Format::R16G16_UNORM:
+		case Format::R16G16_UINT:
+		case Format::R16G16_SNORM:
+		case Format::R16G16_SINT:
+		case Format::R32_TYPELESS:
+		case Format::D32_FLOAT:
+		case Format::R32_FLOAT:
+		case Format::R32_UINT:
+		case Format::R32_SINT:
+		//case Format::R24G8_TYPELESS:
+		//case Format::D24_UNORM_S8_UINT:
+		//case Format::R24_UNORM_X8_TYPELESS:
+		//case Format::X24_TYPELESS_G8_UINT:
+		//case Format::R9G9B9E5_SHAREDEXP:
+		//case Format::R8G8_B8G8_UNORM:
+		//case Format::G8R8_G8B8_UNORM:
+		case Format::B8G8R8A8_UNORM:
+		case Format::B8G8R8X8_UNORM:
+		//case Format::R10G10B10_XR_BIAS_A2_UNORM:
+		//case Format::B8G8R8A8_TYPELESS:
+		case Format::B8G8R8A8_UNORM_SRGB:
+		//case Format::B8G8R8X8_TYPELESS:
+		case Format::B8G8R8X8_UNORM_SRGB:
+		//case Format::AYUV:
+		//case Format::Y410:
+		//case Format::YUY2:
+			return 32;
+
+		//case Format::P010:
+		//case Format::P016:
+		//	return 24;
+
+		//case Format::R8G8_TYPELESS:
+		//case Format::R8G8_UNORM:
+		//case Format::R8G8_UINT:
+		//case Format::R8G8_SNORM:
+		//case Format::R8G8_SINT:
+		//case Format::R16_TYPELESS:
+		case Format::R16_FLOAT:
+		//case Format::D16_UNORM:
+		case Format::R16_UNORM:
+		case Format::R16_UINT:
+		//case Format::R16_SNORM:
+		case Format::R16_SINT:
+		//case Format::B5G6R5_UNORM:
+		//case Format::B5G5R5A1_UNORM:
+		//case Format::A8P8:
+		//case Format::B4G4R4A4_UNORM:
+			return 16;
+
+		//case Format::NV12:
+		//case Format::420_OPAQUE:
+		//case Format::NV11:
+		//	return 12;
+
+		//case Format::R8_TYPELESS:
+		case Format::R8_UNORM:
+		case Format::R8_UINT:
+		case Format::R8_SNORM:
+		case Format::R8_SINT:
+		//case Format::A8_UNORM:
+		//case Format::AI44:
+		//case Format::IA44:
+		//case Format::P8:
+			return 8;
+
+		//case Format::R1_UNORM:
+		//	return 1;
+
+		//case Format::BC1_TYPELESS:
+		//case Format::BC1_UNORM:
+		//case Format::BC1_UNORM_SRGB:
+		//case Format::BC4_TYPELESS:
+		//case Format::BC4_UNORM:
+		//case Format::BC4_SNORM:
+		//	return 4;
+
+		//case Format::BC2_TYPELESS:
+		//case Format::BC2_UNORM:
+		//case Format::BC2_UNORM_SRGB:
+		//case Format::BC3_TYPELESS:
+		//case Format::BC3_UNORM:
+		//case Format::BC3_UNORM_SRGB:
+		//case Format::BC5_TYPELESS:
+		//case Format::BC5_UNORM:
+		//case Format::BC5_SNORM:
+		//case Format::BC6H_TYPELESS:
+		//case Format::BC6H_UF16:
+		//case Format::BC6H_SF16:
+		//case Format::BC7_TYPELESS:
+		//case Format::BC7_UNORM:
+		//case Format::BC7_UNORM_SRGB:
+		//	return 8;
+
+//#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10)
+//
+//		case Format::V408:
+//			return 24;
+//
+//		case Format::P208:
+//		case Format::V208:
+//			return 16;
+//
+//#endif // (_WIN32_WINNT >= _WIN32_WINNT_WIN10)
+//
+//#if defined(_XBOX_ONE) && defined(_TITLE)
+//
+//		case Format::R10G10B10_7E3_A2_FLOAT:
+//		case Format::R10G10B10_6E4_A2_FLOAT:
+//		case Format::R10G10B10_SNORM_A2_UNORM:
+//			return 32;
+//
+//		case Format::D16_UNORM_S8_UINT:
+//		case Format::R16_UNORM_X8_TYPELESS:
+//		case Format::X16_TYPELESS_G8_UINT:
+//			return 24;
+//
+//		case Format::R4G4_UNORM:
+//			return 8;
+//
+//#endif // _XBOX_ONE && _TITLE
+
+		default:
+			return 0;
+		}
+	}
+
+	static inline unsigned int BytesPerPixel(Format format)
+	{
+		return BitsPerPixel(format) / 8;
 	}
 
 } /* wr */

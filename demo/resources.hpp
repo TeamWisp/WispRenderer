@@ -14,9 +14,11 @@ namespace resources
 	static wr::Model* plane_model;
 	static wr::Model* light_model;
 	static wr::Model* test_model;
+	static wr::Model* sphere_model;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
 	static wr::MaterialHandle light_material;
+	static wr::MaterialHandle mirror_material;
 	static wr::TextureHandle equirectangular_environment_map;
 	static wr::TextureHandle cubemap_environment_map;
 	static wr::TextureHandle loaded_skybox;
@@ -28,14 +30,16 @@ namespace resources
 		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
+		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
 		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
+		wr::TextureHandle flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
 
-		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", false, true);
+		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", true, true);
 		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metal-splotchy-normal-dx.png", false, true);
 		wr::TextureHandle metal_splotchy_roughness = texture_pool->Load("resources/materials/metal-splotchy-rough.png", false, true);
 		wr::TextureHandle metal_splotchy_metallic = texture_pool->Load("resources/materials/metal-splotchy-metal.png", false, true);
 
-		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", false, true);
+		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
 		wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
@@ -46,14 +50,14 @@ namespace resources
 		convoluted_environment_map = texture_pool->CreateCubemap("ConvolutedMap", 32, 32, 1, wr::Format::R32G32B32A32_FLOAT, true);
 
 		// Create Material
-		light_material = material_pool->Create();
+		mirror_material = material_pool->Create();
 
-		wr::Material* light_internal = material_pool->GetMaterial(light_material.m_id);
+		wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material.m_id);
 
-		light_internal->SetAlbedo(black);
-		light_internal->SetNormal(black);
-		light_internal->SetRoughness(black);
-		light_internal->SetMetallic(black);
+		mirror_internal->SetAlbedo(white);
+		mirror_internal->SetNormal(flat_normal);
+		mirror_internal->SetRoughness(black);
+		mirror_internal->SetMetallic(white);
 
 		// Create Material
 		rusty_metal_material = material_pool->Create();
@@ -143,7 +147,8 @@ namespace resources
 					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
 				};
 
-				plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+				//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+				plane_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 
 				light_model = plane_model;
 
@@ -153,13 +158,18 @@ namespace resources
 				}
 			}
 
-
 			{
 				test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				sphere_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)
 				{
 					m.second = &rusty_metal_material;
+				}
+
+				for (auto& m : sphere_model->m_meshes)
+				{
+					m.second = &mirror_material;
 				}
 			}
 

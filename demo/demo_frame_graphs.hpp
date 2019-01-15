@@ -28,8 +28,9 @@ namespace fg_manager
 		// Raytracing
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
-			fg = new wr::FrameGraph(3);
+			fg = new wr::FrameGraph(4);
 
+			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
 			wr::AddAccumulationTask(*fg);
 			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
@@ -45,8 +46,8 @@ namespace fg_manager
 			
 			wr::AddEquirectToCubemapTask(*fg, resources::equirectangular_environment_map, resources::cubemap_environment_map);
 			wr::AddCubemapConvolutionTask(*fg, resources::loaded_skybox, resources::convoluted_environment_map);
-			wr::AddDeferredMainTask(*fg);
-			wr::AddDeferredCompositionTask(*fg);
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
