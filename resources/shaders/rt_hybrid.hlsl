@@ -173,27 +173,31 @@ float calc_attenuation(float r, float d)
 	return 1.0f - smoothstep(r * 0, r, d);
 }
 
-float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light)
+float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light)
 {
 	uint tid = light.tid & 3;
 
 	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - vpos, light.dir, tid == light_type_directional));
+	float3 L = (lerp(light.pos - wpos, -light.dir, tid == light_type_directional));
 	float light_dist = length(L);
 	L /= light_dist;
 
 	float range = light.radius;
 	const float attenuation = calc_attenuation(range, light_dist);
-	const float3 radiance = (intensity * light.color) * attenuation;
 
-	//Attenuation & spot intensity (only used with point or spot)
-	//float attenuation = lerp(1.0f - smoothstep(0, light_rad, light_dist), 1, tid == light_type_directional);
-	//float3 radiance = (light_col * intensity) * attenuation;
+	//Spot intensity (only used with spot; but always calculated)
+	float min_cos = cos(light.angle);
+	float max_cos = lerp(min_cos, 1, 0.5f);
+	float cos_angle = dot(light.dir, -L);
+	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
+
+	// Calculate radiance
+	const float3 radiance = (intensity * spot_intensity * light.color) * attenuation;
 
 	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
 
 	// Check if pixel is shaded
-	float3 origin = vpos + normal * 0.05;
+	float3 origin = wpos + normal * 0.05;
 	float TMax = lerp(light_dist, 10000.0, tid == light_type_directional);
 	bool is_shadow = TraceShadowRay(origin, L, TMax);
 
@@ -245,7 +249,7 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic,
 
 	float3 fresnel_reflection = lerp(albedo, reflection, 0.5f);
 
-	return fresnel_reflection;
+	return albedo;
 }
 
 [shader("raygeneration")]
@@ -361,10 +365,11 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
 	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
 
-	float3 N = normalize(mul(model_matrix, float4(normal, 0)).xyz);
-	float3 T = normalize(mul(model_matrix, float4(tangent, 0)).xyz);
-	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)).xyz);
-	float3x3 TBN = float3x3(T, B, N);
+	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
+	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
+	//float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
+	const float3 B = cross(N, T);
+	const float3x3 TBN = float3x3(T, B, N);
 
 	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
