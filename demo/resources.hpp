@@ -2,8 +2,6 @@
 
 #include "wisp.hpp"
 
-#include "util/profiling.hpp"
-
 namespace resources
 {
 
@@ -25,7 +23,6 @@ namespace resources
 		texture_pool = render_system->CreateTexturePool(16, 14);
 		material_pool = render_system->CreateMaterialPool(8);
 
-		profiling::resource_creation_measurement.StartMeasurement();
 		// Load Texture.
 		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);

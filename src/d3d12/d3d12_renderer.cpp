@@ -24,13 +24,6 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
 
-#include "../util/profiling.hpp"
-
-namespace profiling
-{
-	Measurement resource_creation_measurement;
-}
-
 namespace wr
 {
 	LINK_SG_RENDER_MESHES(D3D12RenderSystem, Render_MeshNodes)
@@ -234,12 +227,6 @@ namespace wr
 		}
 		
 		m_texture_pool->WaitForStaging();
-
-		if (!profiling::resource_creation_measurement.HasBeenMeasured())
-		{
-			profiling::resource_creation_measurement.EndMeasurement();
-			LOGW("Resource loading took " + std::to_string(profiling::resource_creation_measurement.GetElapsedTime()) + " milliseconds");
-		}
 		
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
