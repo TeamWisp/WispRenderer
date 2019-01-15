@@ -33,9 +33,6 @@ namespace fg_manager
 			wr::AddRaytracingTask(*fg);
 			wr::AddAccumulationTask(*fg);
 			
-			// Copy the scene render pixel data to a buffer that is CPU-accessible
-			wr::AddRenderTargetReadBackTask<wr::RaytracingData>(*fg, std::nullopt, std::nullopt);
-			
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
 
@@ -56,9 +53,6 @@ namespace fg_manager
 
 			// Merge the G-buffer into one final texture
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
-
-			// Copy the composition pixel data to a buffer that is CPU-accessible
-			wr::AddRenderTargetReadBackTask<wr::DeferredCompositionTaskData>(*fg, std::nullopt, std::nullopt);
 
 			// Copy the composition pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
