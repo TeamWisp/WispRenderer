@@ -7,7 +7,7 @@
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
-#include "render_tasks/d3d12_deferred_readback.hpp"
+#include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
 
 namespace fg_manager

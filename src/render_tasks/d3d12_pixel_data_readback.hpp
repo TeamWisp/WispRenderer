@@ -48,7 +48,7 @@ namespace wr
 
 			// Create the actual read back buffer
 			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, &data.readback_buffer_desc);
-			d3d12::SetName(data.readback_buffer, L"Deferred read back render pass");
+			d3d12::SetName(data.readback_buffer, L"Pixel data read back render pass");
 
 			// Keep the read back buffer mapped for the duration of the entire application
 			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, buffer_size));
