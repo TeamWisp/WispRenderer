@@ -4,6 +4,7 @@
 #include "d3d12_renderer.hpp"
 
 #include "../renderer.hpp"
+#include "../settings.hpp"
 #include "d3d12_renderer.hpp"
 #include "d3d12_structs.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
@@ -19,7 +20,9 @@ namespace wr
 	{
 		auto device = m_render_system.m_device;
 
-		num_of_textures += 4; // + 4 default textures
+		// Append size and num values for the default textures.
+		num_of_textures += settings::default_textures_count;
+		size_in_mb += settings::default_textures_size_in_mb;
 
 		//Staging heap
 
@@ -39,11 +42,12 @@ namespace wr
 		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
 		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);
 
-		m_default_albedo = Load("resources/materials/metalgrid2_basecolor.png", false, false);
-		m_default_normal = Load("resources/materials/flat_normal.png", false, false);
-		m_default_roughness = Load("resources/materials/white.png", false, false);
-		m_default_metalic = Load("resources/materials/black.png", false, false);
-		m_default_ao = Load("resources/materials/black.png", false, false);
+		// Load the default textures
+		m_default_albedo = Load(settings::default_albedo_path, false, false);
+		m_default_normal = Load(settings::default_normal_path, false, false);
+		m_default_roughness = Load(settings::default_roughness_path, false, false);
+		m_default_metalic = Load(settings::default_metalic_path, false, false);
+		m_default_ao = Load(settings::default_ao_path, false, false);
 	}
 
 	D3D12TexturePool::~D3D12TexturePool()
@@ -290,8 +294,7 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
-		texture->m_allocated_memory_size = image.GetPixelsSize();
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
@@ -354,8 +357,7 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
-		texture->m_allocated_memory_size = image.GetPixelsSize();
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
@@ -417,8 +419,7 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
-		texture->m_allocated_memory_size = image.GetPixelsSize();
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 

@@ -29,7 +29,7 @@ namespace wr::d3d12
 		std::optional<DescriptorAllocation> m_rtv_allocation = std::nullopt;
 
 		uint8_t* m_allocated_memory;
-		size_t m_allocated_memory_size;
+		size_t m_needed_memory;
 
 		bool m_is_staged = false;
 		bool m_need_mips = false;
