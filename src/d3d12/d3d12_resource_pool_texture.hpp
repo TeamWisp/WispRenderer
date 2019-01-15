@@ -2,6 +2,7 @@
 
 #include "../resource_pool_texture.hpp"
 #include "d3d12_texture_resources.hpp"
+#include "../util/thread_pool.hpp"
 #include <DirectXMath.h>
 
 
@@ -24,6 +25,8 @@ namespace wr
 		void Evict() final;
 		void MakeResident() final;
 		void Stage(CommandList* cmd_list) final;
+		void Stage() final;
+		void WaitForStaging() final;
 		void PostStageClear() final;
 		void EndOfFrame() final;
 
@@ -47,6 +50,15 @@ namespace wr
 		bool CheckSRGBFormat(Format format);
 
 		D3D12RenderSystem& m_render_system;
+
+		util::ThreadPool* m_thread_pool;
+
+		std::vector<d3d12::CommandList*> m_command_lists;
+		std::vector<std::future<void>> m_command_recording_futures;
+
+		d3d12::Fence* m_staging_fence;
+
+		bool m_is_staging;
 
 		//CPU only visible heap used for staging of descriptors.
 		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.

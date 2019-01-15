@@ -16,6 +16,7 @@ namespace wr
 	D3D12TexturePool::D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_mb, std::size_t num_of_textures)
 		: TexturePool(size_in_mb)
 		, m_render_system(render_system)
+		, m_is_staging(false)
 	{
 		auto device = m_render_system.m_device;
 
@@ -33,10 +34,30 @@ namespace wr
 		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
 		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);
 
+		m_thread_pool = m_render_system.GetThreadPool();
+
+		m_command_lists.resize(d3d12::settings::max_threads + 1);
+
+		for (auto& list : m_command_lists)
+		{
+			list = d3d12::CreateCommandList(m_render_system.m_device, 1, wr::CmdListType::CMD_LIST_DIRECT);
+		}
+
+		m_command_recording_futures.resize(d3d12::settings::max_threads + 1);
+
+		m_staging_fence = d3d12::CreateFence(m_render_system.m_device);
 	}
 
 	D3D12TexturePool::~D3D12TexturePool()
 	{
+		d3d12::WaitFor(m_staging_fence);
+		d3d12::Destroy(m_staging_fence);
+
+		for (auto& cmd_list : m_command_lists)
+		{
+			d3d12::Destroy(static_cast<d3d12::CommandList*>(cmd_list));
+		}
+
 		d3d12::Destroy(m_mipmapping_heap);
 
 		delete m_texture_heap_allocator;
@@ -90,6 +111,109 @@ namespace wr
 		}
 	}
 
+	void D3D12TexturePool::Stage()
+	{
+		size_t unstaged_number = m_unstaged_textures.size();
+
+		if (unstaged_number > 0)
+		{
+			if (m_is_staging)
+			{
+				d3d12::WaitFor(m_staging_fence);
+				m_is_staging = false;
+			}
+
+			std::vector<d3d12::TextureResource*> unstaged_textures;
+
+			auto itr = m_unstaged_textures.begin();
+
+			for (itr; itr != m_unstaged_textures.end(); ++itr)
+			{
+				unstaged_textures.push_back(static_cast<d3d12::TextureResource*>(itr->second));
+			}
+
+			for (int i = 0; i < d3d12::settings::max_threads; ++i) {
+
+				d3d12::CommandList* cmdlist = m_command_lists[i];
+
+				m_command_recording_futures[i] = m_thread_pool->Enqueue([i](
+					d3d12::CommandList* cmdlist,
+					std::vector<d3d12::TextureResource*>& unstaged_textures)
+				{
+
+					d3d12::Begin(cmdlist, 0);
+
+					for (int j = 0; j<unstaged_textures.size(); ++j)
+					{
+						if (j%d3d12::settings::max_threads != i)
+						{
+							continue;
+						}
+
+						d3d12::TextureResource* texture = unstaged_textures[j];
+						
+						size_t row_pitch, slice_pitch;
+
+						DirectX::ComputePitch(static_cast<DXGI_FORMAT>(texture->m_format), texture->m_width, texture->m_height, row_pitch, slice_pitch);
+
+						D3D12_SUBRESOURCE_DATA subresourceData = {};
+						subresourceData.pData = texture->m_allocated_memory;
+						subresourceData.RowPitch = row_pitch;
+						subresourceData.SlicePitch = slice_pitch;
+
+						UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, 0, 1, &subresourceData);
+
+						texture->m_is_staged = true;
+					}
+
+					d3d12::End(cmdlist);
+				},
+					cmdlist, unstaged_textures);
+
+			}
+
+			m_command_recording_futures[m_command_recording_futures.size() - 1] =
+				m_thread_pool->Enqueue([this](
+					d3d12::CommandList* cmd_list,
+					std::vector<d3d12::TextureResource*>& unstaged_textures
+					)
+			{
+
+				d3d12::Begin(cmd_list, 0);
+
+				d3d12::Transition(cmd_list,
+					unstaged_textures,
+					wr::ResourceState::COPY_DEST,
+					wr::ResourceState::PIXEL_SHADER_RESOURCE);
+
+				GenerateMips(unstaged_textures, cmd_list);
+
+				d3d12::End(cmd_list);
+
+			},
+					m_command_lists[m_command_lists.size() - 1], unstaged_textures);
+
+			for (auto& future : m_command_recording_futures)
+			{
+				future.get();
+			}
+
+			MoveStagedTextures();
+
+			d3d12::Execute(m_render_system.m_direct_queue, m_command_lists, m_staging_fence);
+			m_is_staging = true;
+		}
+	}
+
+	void D3D12TexturePool::WaitForStaging()
+	{
+		if (m_is_staging)
+		{
+			d3d12::WaitFor(m_staging_fence);
+			m_is_staging = false;
+		}
+	}
+	
 	void D3D12TexturePool::PostStageClear()
 	{
 	}

@@ -225,7 +225,9 @@ namespace wr
 		{
 			model_pool->WaitForStaging();
 		}
-
+		
+		m_texture_pool->WaitForStaging();
+		
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
 		if (m_render_window.has_value())
@@ -797,7 +799,7 @@ namespace wr
 			m_model_pools[i]->StageMeshes();
 		}
 
-		m_texture_pool->Stage(m_direct_cmd_list);
+		m_texture_pool->Stage();
 
 		d3d12::End(m_direct_cmd_list);
 	}

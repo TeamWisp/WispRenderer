@@ -166,7 +166,7 @@ namespace wr
 					D3D12_RESOURCE_STATE_COPY_DEST)
 			};
 
-			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
+			m_transition_command_lists[0]->m_native->ResourceBarrier(1, barriers.data());
 		}
 		else if (!m_vertex_buffer->m_is_staged && m_index_buffer->m_is_staged)
 		{
@@ -177,7 +177,7 @@ namespace wr
 					D3D12_RESOURCE_STATE_COPY_DEST)
 			};
 
-			m_transition_command_lists[0]->m_native->ResourceBarrier(2, barriers.data());
+			m_transition_command_lists[0]->m_native->ResourceBarrier(1, barriers.data());
 		}
 		else if (m_vertex_buffer->m_is_staged && m_index_buffer->m_is_staged)
 		{
