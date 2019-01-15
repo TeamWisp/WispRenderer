@@ -21,6 +21,7 @@ struct Vertex
 	float3 normal;
 	float3 tangent;
 	float3 bitangent;
+	float3 color;
 };
 
 struct Material
@@ -95,7 +96,7 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-bool TraceShadowRay(float3 origin, float3 direction)
+bool TraceShadowRay(float3 origin, float3 direction, float TMax)
 {
 	ShadowHitInfo payload = { false };
 
@@ -104,7 +105,7 @@ bool TraceShadowRay(float3 origin, float3 direction)
 	ray.Origin = origin;
 	ray.Direction = direction;
 	ray.TMin = 0.0000;
-	ray.TMax = 10000.0;
+	ray.TMax = TMax;
 
 	// Trace the ray
 	TraceRay(
@@ -191,8 +192,11 @@ float3 ShadeLight(float3 vpos, float3 V, float3 albedo, float3 normal, float rou
 
 	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
 
+	// Check if pixel is shaded
 	float3 origin = vpos + normal * 0.05;
-	bool  is_shadow = TraceShadowRay(origin, L);
+	float TMax = lerp(light_dist, 10000.0, tid == light_type_directional);
+	bool is_shadow = TraceShadowRay(origin, L, TMax);
+
 	lighting = lerp(lighting, float3(0, 0, 0), is_shadow);
 
 	return lighting;
@@ -211,43 +215,6 @@ float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal, float rou
 	}
 
 	return res * albedo;
-}
-
-float DoShadow(float3 wpos, float depth, float3 normal)
-{
-
-	//TODO: Calculate epsilon depending on distance
-
-	const float n = 0.1f;
-	const float f = 25.0f;
-	const float z = (2 * n) / (f + n - depth * (f - n)) / f;
-
-	float epsilon = 0.05;
-
-	//Calculate origin
-
-	float3 origin = wpos + normal * epsilon;
-
-	//Calculate shadow factor
-
-	float shadow_factor = 1.0;
-	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
-
-	for (uint i = 0; i < light_count; i++)
-	{
-		uint tid = lights[i].tid & 3;
-		float3 L = (lerp(lights[i].pos - wpos, lights[i].dir, tid == light_type_directional));
-		float light_dist = length(L);
-		L /= light_dist;
-
-		// Trace shadow ray
-		if (TraceShadowRay(origin, L))
-		{
-			shadow_factor *= 0.75;
-		}
-	}
-
-	return shadow_factor;
 }
 
 float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic, float3 albedo)
@@ -276,7 +243,7 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic,
 	float cosTheta = max(-dot(normal, cdir), 0);
 	float fresnel = pow(1 - cosTheta, 5 / (4.9 * metallic + 0.1));
 
-	float3 fresnel_reflection = lerp(albedo, reflection, fresnel);
+	float3 fresnel_reflection = lerp(albedo, reflection, 0.5f);
 
 	return fresnel_reflection;
 }
@@ -372,6 +339,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const Vertex v0 = g_vertices[indices.x];
 	const Vertex v1 = g_vertices[indices.y];
 	const Vertex v2 = g_vertices[indices.z];
+
+	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
 	
 	//Get data from VBO
 	float3 uvw = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
@@ -379,6 +348,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
 	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x;
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
+
+	albedo = lerp(albedo, color, length(color) != 0);
 
 	//Direction & position
 
