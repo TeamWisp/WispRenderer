@@ -24,8 +24,8 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(1940, 300);
-		material_pool = render_system->CreateMaterialPool(300);
+		texture_pool = render_system->CreateTexturePool(16, 14);
+		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
 		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
@@ -42,7 +42,7 @@ namespace resources
 
 		equirectangular_environment_map = texture_pool->Load("resources/materials/UenoShrine.hdr", false, false);
 		cubemap_environment_map = texture_pool->CreateCubemap("EnvironmentMap", 1024, 1024, 1, wr::Format::R32G32B32A32_FLOAT, true);
-		//loaded_skybox = texture_pool->Load("resources/materials/skybox.dds", false, false);
+		loaded_skybox = texture_pool->Load("resources/materials/skybox.dds", false, false);
 		convoluted_environment_map = texture_pool->CreateCubemap("ConvolutedMap", 32, 32, 1, wr::Format::R32G32B32A32_FLOAT, true);
 
 		// Create Material
@@ -75,7 +75,7 @@ namespace resources
 		rock_material_internal->SetRoughness(bamboo_roughness);
 		rock_material_internal->SetMetallic(bamboo_metallic);
 
-		model_pool = render_system->CreateModelPool(160, 160);
+		model_pool = render_system->CreateModelPool(16, 16);
 
 		// Load Cube.
 		{
@@ -155,12 +155,12 @@ namespace resources
 
 
 			{
-				test_model = model_pool->LoadWithMaterials<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple.fbx");
+				test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 
-				//for (auto& m : test_model->m_meshes)
-				//{
-				//	m.second = &rusty_metal_material;
-				//}
+				for (auto& m : test_model->m_meshes)
+				{
+					m.second = &rusty_metal_material;
+				}
 			}
 
 		}

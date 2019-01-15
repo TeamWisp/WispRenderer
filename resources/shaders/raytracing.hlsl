@@ -306,25 +306,28 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
 	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	float roughness = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).y;
-	//roughness = 0.5;
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).z;
+	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).xyz;
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
 	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
-	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
-	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
-	//float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
-	const float3 B = cross(N, T);
-	const float3x3 TBN = float3x3(T, B, N);
+	if (material.albedo_id == 0)
+	{
+		payload.color = float3(20, 20, 20);
+		return;
+	}
+
+	float3 N = normalize(mul(model_matrix, float4(normal, 0)));
+	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
+	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
+	float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
-	//fN = N;
 
 	// Direct
 	float3 reflect_dir = ReflectRay(V, fN);
 	bool horizon = (dot(V, fN) > 0.0f);
-	float3 reflection = TraceColorRay(hit_pos + (N * 0.0001), reflect_dir, payload.depth + 1, payload.seed);
+	float3 reflection = TraceColorRay(hit_pos + (N * 0.000001), reflect_dir, payload.depth + 1, payload.seed);
 
 #ifdef PATH_TRACING
 	// Indirect lighting
@@ -334,17 +337,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	payload.color = (irradiance + (reflection.xyz * metal));
 #else
-	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
-	float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metal;
-
 	float3 retval = shade_pixel(hit_pos, V, albedo, metal, roughness, fN);
-	float3 specular = (reflection.xyz) * F;
-	float3 diffuse = float3(0.1, 0.1, 0.1);
-	float3 ambient = (kD * diffuse + specular);
-	payload.color = ambient + (retval);
-	//payload.color =  g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).y;
-	//float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).xyz;
+	payload.color = retval + (reflection.xyz * metal);
 #endif
 }
