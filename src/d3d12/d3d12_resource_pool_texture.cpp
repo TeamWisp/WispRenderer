@@ -110,7 +110,7 @@ namespace wr
 
 					DirectX::ComputePitch(static_cast<DXGI_FORMAT>(footprint.Format), footprint.Width, footprint.Height, row_pitch, slice_pitch);
 
-					subresource_data[i].pData = texture->m_allocated_memory;
+					subresource_data[i].pData = texture->m_allocated_memory + footprints[i].Offset;
 					subresource_data[i].RowPitch = row_pitch;
 					subresource_data[i].SlicePitch = slice_pitch;
 				}
@@ -284,6 +284,7 @@ namespace wr
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_allocated_memory_size = image.GetPixelsSize();
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
@@ -347,6 +348,7 @@ namespace wr
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_allocated_memory_size = image.GetPixelsSize();
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
@@ -409,6 +411,7 @@ namespace wr
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_allocated_memory_size = image.GetPixelsSize();
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
