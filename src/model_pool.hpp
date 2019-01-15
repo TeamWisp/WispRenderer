@@ -268,7 +268,7 @@ namespace wr
 				}
 				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
 				{
-					albedo = texture_pool->Load(material->m_albedo_texture);
+					albedo = texture_pool->Load(material->m_albedo_texture, false, false);
 				}
 			}
 			else
@@ -286,7 +286,7 @@ namespace wr
 				}
 				else if (material->m_normal_map_texture_location == TextureLocation::EXTERNAL)
 				{
-					normals = texture_pool->Load(material->m_normal_map_texture);
+					normals = texture_pool->Load(material->m_normal_map_texture, false, false);
 				}
 			}
 			else
@@ -304,7 +304,7 @@ namespace wr
 				}
 				else if (material->m_metallic_texture_location == TextureLocation::EXTERNAL)
 				{
-					metallic = texture_pool->Load(material->m_metallic_texture);
+					metallic = texture_pool->Load(material->m_metallic_texture, false, false);
 				}
 			}
 			else
@@ -322,7 +322,7 @@ namespace wr
 				}
 				else if (material->m_roughness_texture_location == TextureLocation::EXTERNAL)
 				{
-					roughness = texture_pool->Load(material->m_roughness_texture);
+					roughness = texture_pool->Load(material->m_roughness_texture, false, false);
 				}
 			}
 			else
@@ -340,7 +340,7 @@ namespace wr
 				}
 				else if (material->m_ambient_occlusion_texture_location == TextureLocation::EXTERNAL)
 				{
-					ambient_occlusion = texture_pool->Load(material->m_ambient_occlusion_texture);
+					ambient_occlusion = texture_pool->Load(material->m_ambient_occlusion_texture, false, false);
 				}
 			}
 			else
@@ -352,8 +352,8 @@ namespace wr
 
 			float opacity = material->m_base_transparency;
 
-			material_pool->Create(albedo, normals, metallic, ambient_occlusion, opacity < 1.f, two_sided);
-			material_handles.push_back();
+			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, false, true);
+			material_handles.push_back(new_handle);
 		}
 
 		int ret = LoadNodeMeshesWithMaterials<TV, TI>(data, model, material_handles);

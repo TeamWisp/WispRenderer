@@ -19,6 +19,8 @@ namespace wr
 	{
 		auto device = m_render_system.m_device;
 
+		num_of_textures += 4; // + 4 default textures
+
 		//Staging heap
 
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
@@ -37,6 +39,11 @@ namespace wr
 		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
 		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);
 
+		m_default_albedo = Load("resources/materials/metalgrid2_basecolor.png", false, false);
+		m_default_normal = Load("resources/materials/flat_normal.png", false, false);
+		m_default_roughness = Load("resources/materials/white.png", false, false);
+		m_default_metalic = Load("resources/materials/black.png", false, false);
+		m_default_ao = Load("resources/materials/black.png", false, false);
 	}
 
 	D3D12TexturePool::~D3D12TexturePool()
