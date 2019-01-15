@@ -145,9 +145,10 @@ namespace wr
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 	}
 
-	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	CPUTexture D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
-		if (m_requested_fullscreen_state.has_value())
+
+ 		if (m_requested_fullscreen_state.has_value())
 		{
 			WaitForAllPreviousWork();
 			m_render_window.value()->m_swap_chain->SetFullscreenState(m_requested_fullscreen_state.value(), nullptr);
@@ -229,8 +230,14 @@ namespace wr
 
 		//Signal end of frame to the texture pool so that stale descriptors can be freed.
 		m_texture_pool->EndOfFrame();
+		// Optional CPU-visible copy of the render target pixel data
+		const auto cpu_output_texture = frame_graph.GetOutputTexture();
 
-		return std::unique_ptr<TextureHandle>();
+		// If no pixel data is available, return null, else, return GPU pixel data
+		if (cpu_output_texture.has_value())
+			return cpu_output_texture.value();
+		else
+			return CPUTexture();
 	}
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)

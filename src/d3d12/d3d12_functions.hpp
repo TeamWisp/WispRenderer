@@ -103,6 +103,13 @@ namespace wr::d3d12
 	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
 	void Destroy(TextureResource* tex);
 
+	// Read-back buffer
+	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);
+	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint64_t buffer_size);
+	void UnmapReadbackBuffer(ReadbackBufferResource* const readback_buffer);
+	void SetName(ReadbackBufferResource* readback_buffer, std::wstring name);
+	void Destroy(ReadbackBufferResource* readback_buffer);
+
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, IUnknown* window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
