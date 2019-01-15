@@ -204,6 +204,7 @@ namespace wr
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
 		scene_graph->Update();
+		scene_graph->Optimize();
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
@@ -666,6 +667,7 @@ namespace wr
 			n_desc.max_attributes_size = desc.max_attributes_size;
 			n_desc.max_payload_size = desc.max_payload_size;
 			n_desc.max_recursion_depth = desc.max_recursion_depth;
+			n_desc.m_hit_groups = desc.library_desc.m_hit_groups;
 
 			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
 			{

@@ -205,7 +205,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
 		},
 		{
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_BORDER }
 		},
 		true // rtx
 	});
@@ -228,6 +228,10 @@ namespace wr
 		lib.exports.push_back(L"RaygenEntry");
 		lib.exports.push_back(L"ClosestHitEntry");
 		lib.exports.push_back(L"MissEntry");
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
+		lib.m_hit_groups.push_back({ L"MyHitGroup", L"ClosestHitEntry" });
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
 
 		return std::make_pair(desc, lib);
 	}();
@@ -236,8 +240,8 @@ namespace wr
 	{
 		so_desc.first,     // Description
 		so_desc.second,    // Library
-		(sizeof(float)*7 + sizeof(unsigned int)), // Max payload size
-		(sizeof(float)*2), // Max attributes size
+		(sizeof(float)* 7) + sizeof(unsigned int), // Max payload size
+		(sizeof(float)* 4), // Max attributes size
 		3,				   // Max recursion depth
 		root_signatures::rt_test_global,      // Global root signature
 		std::vector<RegistryHandle>{ root_signatures::rt_test_local },      // Local Root Signatures
