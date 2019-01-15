@@ -74,6 +74,7 @@ namespace wr::d3d12
 		texture->m_need_mips = (texture->m_mip_levels > 1);
 		texture->m_is_cubemap = description->m_is_cubemap;
 		texture->m_is_staged = false;
+		texture->m_needed_memory = textureUploadBufferSize;
 
 		return texture;
 	}

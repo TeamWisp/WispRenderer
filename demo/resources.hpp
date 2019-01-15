@@ -43,7 +43,7 @@ namespace resources
 		equirectangular_environment_map = texture_pool->Load("resources/materials/UenoShrine.hdr", false, false);
 		cubemap_environment_map = texture_pool->CreateCubemap("EnvironmentMap", 1024, 1024, 1, wr::Format::R32G32B32A32_FLOAT, true);
 		loaded_skybox = texture_pool->Load("resources/materials/skybox.dds", false, false);
-		convoluted_environment_map = texture_pool->CreateCubemap("ConvolutedMap", 32, 32, 1, wr::Format::R8G8B8A8_UNORM, true);
+		convoluted_environment_map = texture_pool->CreateCubemap("ConvolutedMap", 32, 32, 1, wr::Format::R32G32B32A32_FLOAT, true);
 
 		// Create Material
 		light_material = material_pool->Create();

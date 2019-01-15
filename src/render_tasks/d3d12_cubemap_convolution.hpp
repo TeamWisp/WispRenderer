@@ -161,7 +161,7 @@ namespace wr
 						}
 					}
 
-					d3d12::Transition(cmd_list, irradiance, irradiance->m_current_state, ResourceState::PIXEL_SHADER_RESOURCE);
+					//d3d12::Transition(cmd_list, irradiance, irradiance->m_current_state, ResourceState::PIXEL_SHADER_RESOURCE);
 
 					data.should_run = false;
 				}

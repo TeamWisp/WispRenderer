@@ -283,8 +283,7 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
-		texture->m_allocated_memory_size = image.GetPixelsSize();
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
@@ -347,8 +346,7 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
-		texture->m_allocated_memory_size = image.GetPixelsSize();
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
@@ -410,8 +408,7 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
-		texture->m_allocated_memory_size = image.GetPixelsSize();
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
