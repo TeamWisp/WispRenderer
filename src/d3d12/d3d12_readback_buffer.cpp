@@ -15,7 +15,7 @@ namespace wr::d3d12
 		HRESULT res = native_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(description->m_buffer_size),
+			&CD3DX12_RESOURCE_DESC::Buffer(description->m_buffer_width * description->m_buffer_height * description->m_bytes_per_pixel),
 			D3D12_RESOURCE_STATE_COPY_DEST,
 			nullptr,
 			IID_PPV_ARGS(&readbackBuffer->m_resource));

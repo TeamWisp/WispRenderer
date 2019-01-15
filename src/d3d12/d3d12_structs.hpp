@@ -58,8 +58,9 @@ namespace wr::d3d12
 
 		struct ReadbackDesc
 		{
-			// Size of the buffer in bytes (width * height * bytes per pixel)
-			std::uint64_t m_buffer_size;
+			unsigned int m_buffer_width;
+			unsigned int m_buffer_height;
+			unsigned int m_bytes_per_pixel;
 		};
 
 		struct PipelineStateDesc

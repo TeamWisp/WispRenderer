@@ -143,14 +143,6 @@ int WispEntry()
 		SCENE::UpdateScene();
 
 		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
-
-		if (0 != texture.m_size && nullptr != texture.m_data)
-		{
-			// Use the cpu-visible texture data here!
-			LOG("CPU DATA AVAILABLE");
-
-			// Example: memcpy(data_block, texture.m_data, texture.m_size);
-		}
 	}
 
 	delete assimp_model_loader;

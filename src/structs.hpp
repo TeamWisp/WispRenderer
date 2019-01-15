@@ -19,7 +19,9 @@ namespace wr
 	struct CPUTexture
 	{
 		float* m_data = nullptr;
-		std::uint64_t m_size = 0;
+		unsigned int m_buffer_width;
+		unsigned int m_buffer_height;
+		unsigned int m_bytes_per_pixel;
 	};
 
 	class MaterialPool;
