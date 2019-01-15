@@ -8,6 +8,7 @@
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
 #include "render_tasks/d3d12_deferred_readback.hpp"
+#include "render_tasks/d3d12_build_acceleration_structures.hpp"
 
 namespace fg_manager
 {
@@ -28,7 +29,7 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
 			fg = new wr::FrameGraph(3);
 
-			// Perform a scene render using DXR
+			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
 			wr::AddAccumulationTask(*fg);
 			

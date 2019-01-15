@@ -58,7 +58,8 @@ namespace util
 
 			const auto ThreadDivider = [&](unsigned int const thread_id)
 			{
-				for (std::size_t index0 = (thread_id < num_tougher_threads ? thread_id * (num_tasks_per_thread + 1) : num_tasks_per_thread - (num_threads - thread_id) * num_tasks_per_thread), index = index0; index < index0 + num_tasks_per_thread + (thread_id < num_tougher_threads); ++index)
+				int index0 = num_tasks_per_thread - (num_threads - thread_id) * num_tasks_per_thread;
+				for (std::size_t index0 = (thread_id < num_tougher_threads ? thread_id * (num_tasks_per_thread + 1) : num_tasks - (num_threads - thread_id) * num_tasks_per_thread), index = index0; index < index0 + num_tasks_per_thread + (thread_id < num_tougher_threads); ++index)
 				{
 					func(index);
 				}
