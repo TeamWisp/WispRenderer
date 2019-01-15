@@ -143,6 +143,8 @@ namespace wr
 			auto& data = fg.GetData<RaytracingData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
+			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
+
 			if (n_render_system.m_render_window.has_value())
 			{
 				auto frame_idx = n_render_system.GetFrameIdx();
