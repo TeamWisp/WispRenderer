@@ -1,4 +1,4 @@
-#define MAX_RECURSION 3
+#include "rt_global.hlsl"
 
 struct ShadowHitInfo
 {
@@ -9,8 +9,6 @@ struct Attributes
 {
 	float2 uv;
 };
-
-RaytracingAccelerationStructure Scene : register(t0, space0);
 
 bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int depth, unsigned int seed)
 {

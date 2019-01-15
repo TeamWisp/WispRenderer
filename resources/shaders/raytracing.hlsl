@@ -3,8 +3,6 @@
 #include "shadow_ray.hlsl"
 #include "lighting.hlsl"
 
-//#define PATH_TRACING
-
 struct Vertex
 {
 	float3 pos;
@@ -257,10 +255,6 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
         attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
 
-float calc_attenuation(float r, float d) {
-	return 1.0f - smoothstep(r * 0, r, d);
-}
-
 float3 ReflectRay(float3 v1, float3 v2)
 {
 	return (v2 * ((2.f * dot(v1, v2))) - v1);
@@ -294,58 +288,57 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const Vertex v2 = g_vertices[indices.z];
 
 	// Variables
-	float3 V = normalize(payload.origin - hit_pos);
+	const float3 V = normalize(payload.origin - hit_pos);
 
 	// Calculate actual "fragment" attributes.
-	float3 frag_pos = HitAttribute(v0.pos, v1.pos, v2.pos, attr);
-	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
-	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
-	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
-	float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
+	const float3 frag_pos = HitAttribute(v0.pos, v1.pos, v2.pos, attr);
+	const float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
+	const float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
+	const float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
+	const float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
-	float dist = length(payload.origin - hit_pos);
 	float mip_level = 0;
 
-	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r;
-	roughness = max(0.05, roughness);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
-	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
+	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
+	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
+	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
-	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
-	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
+	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
+	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 	//float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
-	float3 B = cross(N, T);
-	float3x3 TBN = float3x3(T, B, N);
+	const float3 B = cross(N, T);
+	const float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
-	//if (dot(fN, V) <= 0.0f) fN = -fN;
+	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Shadow
 	float shadow_factor = 1;
+	[unroll]
 	for (int i = 0; i < 3; i++)
 	{
 		float3 diff = lights[i].pos - hit_pos;
 		float3 light_dir = normalize(diff);
 		float3 light_dist = length(diff);
-		bool shadow = TraceShadowRay(hit_pos + (fN * 0.000001), light_dir, light_dist, payload.depth + 1, payload.seed);
+		bool shadow = TraceShadowRay(hit_pos + (fN * EPSILON), light_dir, light_dist, payload.depth + 1, payload.seed);
 		if (shadow) shadow_factor -= 0.3;
 	}
 
 	// Direct
 	float3 reflect_dir = ReflectRay(V, fN);
 	bool horizon = (dot(V, fN) > 0.0f);
-	float3 reflection = TraceColorRay(hit_pos + (fN * 0.0001), reflect_dir, payload.depth + 1, payload.seed);
+	float3 reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
 
 #ifdef PATH_TRACING
 	// Indirect lighting
-	float3 rand_dir = getCosHemisphereSample(payload.seed, fN);
-	float cos_theta = cos(dot(rand_dir, fN));
-	float3 irradiance = (TraceColorRay(hit_pos + (fN * 0.000001), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
+	const float3 rand_dir = getCosHemisphereSample(payload.seed, fN);
+	const float cos_theta = cos(dot(rand_dir, fN));
+	float3 irradiance = (TraceColorRay(hit_pos + (fN * EPSILON), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
 
 	payload.color = (irradiance + (reflection.xyz * metal));
 #else
-	float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
+	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
 	float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
