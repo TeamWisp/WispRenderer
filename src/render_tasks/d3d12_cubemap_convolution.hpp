@@ -91,7 +91,7 @@ namespace wr
 			d3d12::TextureResource* radiance = static_cast<d3d12::TextureResource*>(data.in_radiance.m_pool->GetTexture(data.in_radiance.m_id));
 			d3d12::TextureResource* irradiance = static_cast<d3d12::TextureResource*>(data.out_irradiance.m_pool->GetTexture(data.out_irradiance.m_id));
 
-			if (/*data.should_run && */radiance->m_is_staged)
+			if (data.should_run && radiance->m_is_staged)
 			{
 				if (n_render_system.m_render_window.has_value())
 				{
@@ -161,7 +161,7 @@ namespace wr
 						}
 					}
 
-					//d3d12::Transition(cmd_list, irradiance, irradiance->m_current_state, ResourceState::PIXEL_SHADER_RESOURCE);
+					d3d12::Transition(cmd_list, irradiance, irradiance->m_current_state, ResourceState::PIXEL_SHADER_RESOURCE);
 
 					data.should_run = false;
 				}

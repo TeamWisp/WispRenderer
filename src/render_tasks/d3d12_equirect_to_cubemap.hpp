@@ -67,12 +67,12 @@ namespace wr
 														 DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
 
 			data.view_mat[2] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
-														 DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
-														 DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
-
-			data.view_mat[3] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
 														 DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 1.0f),
 														 DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
+
+			data.view_mat[3] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
+														 DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
 
 			data.view_mat[4] = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
 														 DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f),
