@@ -21,7 +21,7 @@ namespace viknell_scene
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 0, 0, -1 });
 
-		scene_graph->m_skybox = resources::loaded_skybox2;
+		scene_graph->m_skybox = resources::loaded_skybox;
 		
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::loaded_skybox);
 

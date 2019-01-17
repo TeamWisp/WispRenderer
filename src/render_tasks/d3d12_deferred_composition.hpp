@@ -39,7 +39,7 @@ namespace wr
 
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
 			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 1);
-			d3d12::Offset(gpu_handle, 5, data.out_srv_heap->m_increment_size);
+			d3d12::Offset(gpu_handle, 6, data.out_srv_heap->m_increment_size);
 			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 2);
 
 			d3d12::Dispatch(cmd_list, 
@@ -104,7 +104,7 @@ namespace wr
 				auto skybox = scene_graph.GetCurrentSkybox();
 				if (skybox != nullptr)
 				{
-					auto skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(skybox->m_texture.m_pool->GetTexture(skybox->m_texture.m_id));
+					auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(skybox->m_texture.m_pool->GetTexture(skybox->m_texture.m_id));
 					d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
 					Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
 				}

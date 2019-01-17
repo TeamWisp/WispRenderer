@@ -40,13 +40,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 screen_coord = int2(dispatch_thread_id.x, screen_size.y - dispatch_thread_id.y);
 
-	// GBuffer contents
-	const float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
-	const float roughness = gbuffer_albedo_roughness[screen_coord].w;
-	const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
-	const float metallic = gbuffer_normal_metallic[screen_coord].w;
-	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0);
-	
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
@@ -62,8 +55,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
+		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0);
 
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
 	}
 	else
 	{	
@@ -75,8 +69,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float gamma = 1;
 	float exposure = 1;
 	retval = linearToneMapping(retval, exposure, gamma);
-
-	retval = normal;
 
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);

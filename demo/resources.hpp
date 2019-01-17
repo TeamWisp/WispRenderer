@@ -25,7 +25,7 @@ namespace resources
 	static wr::TextureHandle loaded_skybox;
 	static wr::TextureHandle loaded_irradiance;
 	static wr::TextureHandle convoluted_environment_map;
-	static wr::TextureHandle loaded_skybox2;
+	//static wr::TextureHandle loaded_skybox2;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
@@ -50,7 +50,7 @@ namespace resources
 		equirectangular_environment_map = texture_pool->Load("resources/materials/UenoShrine.hdr", false, false);
 		cubemap_environment_map = texture_pool->CreateCubemap("EnvironmentMap", 1024, 1024, 1, wr::Format::R32G32B32A32_FLOAT, true);
 
-		loaded_skybox2 = texture_pool->Load("resources/materials/LA_Downtown_Afternoon_Fishing_3k.hdr", false, false);
+		//loaded_skybox2 = texture_pool->Load("resources/materials/LA_Downtown_Afternoon_Fishing_3k.hdr", false, false);
 		loaded_skybox = texture_pool->Load("resources/materials/skybox.dds", false, false);
 		loaded_irradiance = texture_pool->Load("resources/materials/irradiance.dds", false, false);
 		convoluted_environment_map = texture_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R32G32B32A32_FLOAT, true);

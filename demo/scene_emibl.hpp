@@ -21,6 +21,10 @@ namespace emibl_scene
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 0, -25, -100 });
 		camera->SetSpeed(50.0f);
+		
+		scene_graph->m_skybox = resources::cubemap_environment_map;
+		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::cubemap_environment_map);
+
 
 		// Geometry
 		auto platform1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
