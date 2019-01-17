@@ -20,6 +20,8 @@ namespace viknell_scene
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 0, 0, -1 });
+
+		scene_graph->m_skybox = resources::loaded_skybox2;
 		
 		// Geometry
 		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);

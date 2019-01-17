@@ -28,6 +28,91 @@ namespace wr::d3d12
 
 			return swap_chain_desc;
 		}
+
+		inline void EnsureSwapchainColorSpace(RenderWindow* render_window, std::uint32_t swapchain_bit_depth, bool enable_st2084)
+		{
+			DXGI_COLOR_SPACE_TYPE color_space = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+
+			switch (swapchain_bit_depth)
+			{
+			default:
+				break;
+
+			case 10:
+				color_space = enable_st2084 ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+				break;
+
+			case 16:
+				color_space = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+				break;
+			}
+
+			UINT support = 0;
+			if (SUCCEEDED(render_window->m_swap_chain->CheckColorSpaceSupport(color_space, &support)) &&
+				((support & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) == DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
+			{
+				render_window->m_swap_chain->SetColorSpace1(color_space);
+			}
+		}
+
+		inline void SetHDRMetaData(RenderWindow* render_window, std::uint32_t swapchain_bit_depth,
+			float MaxOutputNits /*=1000.0f*/,
+			float MinOutputNits /*=0.001f*/,
+			float MaxCLL /*=2000.0f*/,
+			float MaxFALL /*=500.0f*/)
+		{
+			struct DisplayChromacities
+			{
+				float RedX;
+				float RedY;
+				float GreenX;
+				float GreenY;
+				float BlueX;
+				float BlueY;
+				float WhiteX;
+				float WhiteY;
+			};
+
+			static const DisplayChromacities DisplayChromacityList[] =
+			{
+				{ 0.64000f, 0.33000f, 0.30000f, 0.60000f, 0.15000f, 0.06000f, 0.31270f, 0.32900f }, // Display Gamut Rec709 
+				{ 0.70800f, 0.29200f, 0.17000f, 0.79700f, 0.13100f, 0.04600f, 0.31270f, 0.32900f }, // Display Gamut Rec2020
+			};
+
+			// Select the chromaticity based on HDR format of the DWM.
+			int selectedChroma = 0;
+			if (swapchain_bit_depth == 16)
+			{
+				selectedChroma = 0;
+			}
+			else if (swapchain_bit_depth == 10)
+			{
+				selectedChroma = 1;
+			}
+			else
+			{
+				// Reset the metadata since this is not a supported HDR format.
+				TRY_M(render_window->m_swap_chain->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_NONE, 0, nullptr), "Failed to set hdr meta data");
+				return;
+			}
+
+			// Set HDR meta data
+			const DisplayChromacities& Chroma = DisplayChromacityList[selectedChroma];
+			DXGI_HDR_METADATA_HDR10 HDR10MetaData = {};
+			HDR10MetaData.RedPrimary[0] = static_cast<UINT16>(Chroma.RedX * 50000.0f);
+			HDR10MetaData.RedPrimary[1] = static_cast<UINT16>(Chroma.RedY * 50000.0f);
+			HDR10MetaData.GreenPrimary[0] = static_cast<UINT16>(Chroma.GreenX * 50000.0f);
+			HDR10MetaData.GreenPrimary[1] = static_cast<UINT16>(Chroma.GreenY * 50000.0f);
+			HDR10MetaData.BluePrimary[0] = static_cast<UINT16>(Chroma.BlueX * 50000.0f);
+			HDR10MetaData.BluePrimary[1] = static_cast<UINT16>(Chroma.BlueY * 50000.0f);
+			HDR10MetaData.WhitePoint[0] = static_cast<UINT16>(Chroma.WhiteX * 50000.0f);
+			HDR10MetaData.WhitePoint[1] = static_cast<UINT16>(Chroma.WhiteY * 50000.0f);
+			HDR10MetaData.MaxMasteringLuminance = static_cast<UINT>(MaxOutputNits * 10000.0f);
+			HDR10MetaData.MinMasteringLuminance = static_cast<UINT>(MinOutputNits * 10000.0f);
+			HDR10MetaData.MaxContentLightLevel = static_cast<UINT16>(MaxCLL);
+			HDR10MetaData.MaxFrameAverageLightLevel = static_cast<UINT16>(MaxFALL);
+			TRY_M(render_window->m_swap_chain->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &HDR10MetaData), "Failed to set hdr meta data");
+		}
 	}
 
 	RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers)
@@ -55,6 +140,23 @@ namespace wr::d3d12
 
 		render_window->m_swap_chain = static_cast<IDXGISwapChain4*>(temp_swap_chain);
 		render_window->m_frame_idx = (render_window->m_swap_chain)->GetCurrentBackBufferIndex();
+
+		const float HDRMetaDataPool[4][4] =
+		{
+			// MaxOutputNits, MinOutputNits, MaxCLL, MaxFALL
+			// These values are made up for testing. You need to figure out those numbers for your app.
+			{ 1000.0f, 0.001f, 2000.0f, 500.0f },
+			{ 500.0f, 0.001f, 2000.0f, 500.0f },
+			{ 500.0f, 0.100f, 500.0f, 100.0f },
+			{ 2000.0f, 1.000f, 2000.0f, 1000.0f }
+		};
+		int m_hdrMetaDataPoolIdx = 3;
+
+		if (d3d12::settings::output_hdr)
+		{
+			internal::EnsureSwapchainColorSpace(render_window, 16, true);
+			internal::SetHDRMetaData(render_window, 16, HDRMetaDataPool[m_hdrMetaDataPoolIdx][0], HDRMetaDataPool[m_hdrMetaDataPoolIdx][1], HDRMetaDataPool[m_hdrMetaDataPoolIdx][2], HDRMetaDataPool[m_hdrMetaDataPoolIdx][3]);
+		}
 
 		render_window->m_render_targets.resize(num_back_buffers);
 		for (decltype(num_back_buffers) i = 0; i < num_back_buffers; i++)
