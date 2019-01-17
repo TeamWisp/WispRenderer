@@ -23,6 +23,8 @@ namespace viknell_scene
 
 		scene_graph->m_skybox = resources::loaded_skybox2;
 		
+		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::loaded_skybox);
+
 		// Geometry
 		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);

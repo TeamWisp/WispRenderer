@@ -8,6 +8,7 @@
 Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
+TextureCube skybox : register(t4);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -36,12 +37,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 uv = float2(dispatch_thread_id.x / screen_size.x, 1.f - (dispatch_thread_id.y / screen_size.y));
 
 	float2 screen_coord = int2(dispatch_thread_id.x, screen_size.y - dispatch_thread_id.y);
-
-	// GBuffer contents
-	const float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
-	const float roughness = gbuffer_albedo_roughness[screen_coord].w;
-	const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
-	const float metallic = gbuffer_normal_metallic[screen_coord].w;
 	
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
@@ -49,7 +44,24 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
 	float3 V = normalize(-pos);
 
-	float3 retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
+	float3 retval;
+
+	if(depth_f != 1.0f)
+	{
+		// GBuffer contents
+		const float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
+		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
+		const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
+		const float metallic = gbuffer_normal_metallic[screen_coord].w;
+
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
+	}
+	else
+	{	
+		const float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+		const float3 cdir = normalize(cpos - pos);
+		retval = skybox.SampleLevel(s0, cdir , 0);
+	}
 	
 	float gamma = 1;
 	float exposure = 1;

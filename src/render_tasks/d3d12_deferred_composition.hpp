@@ -6,6 +6,7 @@
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
+#include "../scene_graph/skybox_node.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
 #include "../engine_registry.hpp"
 
@@ -37,7 +38,7 @@ namespace wr
 
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
 			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 1);
-			d3d12::Offset(gpu_handle, 4, data.out_srv_heap->m_increment_size);
+			d3d12::Offset(gpu_handle, 5, data.out_srv_heap->m_increment_size);
 			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 2);
 
 			d3d12::Dispatch(cmd_list, 
@@ -56,7 +57,7 @@ namespace wr
 
 			d3d12::desc::DescriptorHeapDesc heap_desc;
 			heap_desc.m_shader_visible = true;
-			heap_desc.m_num_descriptors = 5;
+			heap_desc.m_num_descriptors = 7;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_versions = d3d12::settings::num_back_buffers;
 			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
@@ -95,6 +96,16 @@ namespace wr
 				//Get light buffer
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
+				
+				//GetSkybox //TODO: Use Texture pool system
+				auto skybox = scene_graph.GetCurrentSkybox();
+				if (skybox != nullptr)
+				{
+					auto skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(skybox->m_texture.m_pool->GetTexture(skybox->m_texture.m_id));
+					d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
+					Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
+				}
+
 				std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
 				d3d12::CreateUAVFromRTV(render_target, cpu_handle, 1, formats.data());
 
