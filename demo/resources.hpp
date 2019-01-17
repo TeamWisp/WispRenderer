@@ -23,6 +23,7 @@ namespace resources
 	static wr::TextureHandle equirectangular_environment_map;
 	static wr::TextureHandle cubemap_environment_map;
 	static wr::TextureHandle loaded_skybox;
+	static wr::TextureHandle loaded_irradiance;
 	static wr::TextureHandle convoluted_environment_map;
 
 	void CreateResources(wr::RenderSystem* render_system)
@@ -48,7 +49,8 @@ namespace resources
 		equirectangular_environment_map = texture_pool->Load("resources/materials/UenoShrine.hdr", false, false);
 		cubemap_environment_map = texture_pool->CreateCubemap("EnvironmentMap", 1024, 1024, 1, wr::Format::R32G32B32A32_FLOAT, true);
 		loaded_skybox = texture_pool->Load("resources/materials/skybox.dds", false, false);
-		convoluted_environment_map = texture_pool->CreateCubemap("ConvolutedMap", 32, 32, 1, wr::Format::R32G32B32A32_FLOAT, true);
+		loaded_irradiance = texture_pool->Load("resources/materials/irradiance.dds", false, false);
+		convoluted_environment_map = texture_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R32G32B32A32_FLOAT, true);
 
 		// Create Material
 		mirror_material = material_pool->Create();
@@ -96,33 +98,33 @@ namespace resources
 
 			mesh.m_vertices = {
 				{ 1, 1, -1,        1, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0 },
-				{ 1, -1, -1,    0, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
-				{ -1, -1, -1,    0, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
-				{ -1, 1, -1,    1, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, -1,       0, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,      0, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,       1, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, 1, 1,        1, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, 1,         1, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
 				{ -1, 1, 1,        0, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
-				{ -1, -1, 1,    0, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,       0, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
 				{ 1, -1, 1,        1, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
 
 				{ 1, 1, -1,        1, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
-				{ 1, 1, 1,        1, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, 1,         1, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
 				{ 1, -1, 1,        0, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
-				{ 1, -1, -1,    0, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, -1,       0, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, -1, -1,    1, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, -1,       1, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
 				{ 1, -1, 1,        1, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
-				{ -1, -1, 1,    0, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
-				{ -1, -1, -1,    0, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,       0, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,      0, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ -1, -1, -1,    0, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
-				{ -1, -1, 1,    0, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,      0, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,       0, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
 				{ -1, 1, 1,        1, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
-				{ -1, 1, -1,    1, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,       1, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
 
-				{ 1, 1, 1,        1, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, 1,         1, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
 				{ 1, 1, -1,        1, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
-				{ -1, 1, -1,    0, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,       0, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
 				{ -1, 1, 1,        0, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
 			};
 
@@ -163,9 +165,22 @@ namespace resources
 				test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 				sphere_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
+				//for (auto& m : test_model->m_meshes)
+				//{
+				//	m.second = &rusty_metal_material;
+				//}
+
+				wr::TextureHandle albedo = texture_pool->GetDefaultAlbedo();
+				wr::TextureHandle normal = texture_pool->GetDefaultNormal();
+				wr::TextureHandle rough = texture_pool->GetDefaultRoughness();
+				wr::TextureHandle metall = texture_pool->GetDefaultMetalic();
+				wr::TextureHandle ao = texture_pool->GetDefaultAO();
+
+				wr::MaterialHandle* mat = material_pool->Create(albedo, normal, rough, metall, ao, false, false);
+
 				for (auto& m : test_model->m_meshes)
 				{
-					m.second = &rusty_metal_material;
+					m.second = mat;
 				}
 
 				for (auto& m : sphere_model->m_meshes)
@@ -177,10 +192,18 @@ namespace resources
 			{
 				material_ball = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
 
-				for (auto& m : material_ball->m_meshes)
-				{
-					m.second = &rusty_metal_material;
-				}
+				//wr::TextureHandle albedo = texture_pool->GetDefaultAlbedo();
+				//wr::TextureHandle normal = texture_pool->GetDefaultNormal();
+				//wr::TextureHandle rough = texture_pool->GetDefaultRoughness();
+				//wr::TextureHandle metall = texture_pool->GetDefaultMetalic();
+				//wr::TextureHandle ao = texture_pool->GetDefaultAO();
+
+				//wr::MaterialHandle* mat = material_pool->Create(albedo, normal, rough, metall, ao, false, false);
+
+				//for (auto& m : material_ball->m_meshes)
+				//{
+				//	m.second = mat;
+				//}
 			}
 
 		}

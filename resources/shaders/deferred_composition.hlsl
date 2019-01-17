@@ -43,6 +43,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 	const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 	const float metallic = gbuffer_normal_metallic[screen_coord].w;
+	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0);
 	
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
@@ -50,7 +51,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, transpose(view));
 	float3 V = normalize(-pos);
 
-	float3 retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
+	float3 retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance);
 	
 	float gamma = 1;
 	float exposure = 1;

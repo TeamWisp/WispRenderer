@@ -16,6 +16,7 @@ static uint light_type_point = 0;
 static uint light_type_directional = 1;
 static uint light_type_spot = 2;
 
+//Copied version for testing stuff
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light)
 {
 	uint tid = light.tid & 3;
@@ -48,10 +49,30 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	float ambient = 0.1f;
 	float3 res = float3(ambient, ambient, ambient);
 
+	for (uint i = 0; i < light_count; i++)
+	{
+		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
+	}
+
+	return res * albedo;
+}
+
+float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, float3 irradiance)
+{
+	float3 res = float3(0.0f, 0.0f, 0.0f);
+
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+
+	float3 kS = F_SchlickRoughness(max(dot(normal, V), 0.0f), metallic, albedo, roughness);
+	float3 kD = 1.0f - kS;
+	kD *= 1.0f - metallic;
+	float3 diffuse = irradiance * albedo;
+	float3 ambient = (kD * diffuse) * 1.0f; //Replace 1.0f with AO, when we have it.
+
 	Light hardcoded_light;
 	hardcoded_light.pos = float3(0.0f, 0.0f, 0.0f);
 	hardcoded_light.rad = 0.0f;
-	hardcoded_light.col = float3(10.0f, 10.0f, 10.0f);
+	hardcoded_light.col = float3(1.0f, 1.0f, 1.0f);
 	hardcoded_light.tid = 1;
 	hardcoded_light.dir = float3(0.0f, -1.0f, 0.0f);
 	hardcoded_light.ang = 0.0f;
@@ -63,5 +84,5 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	//	res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
 	//}
 
-	return res * albedo;
+	return ambient + res;
 }

@@ -23,12 +23,13 @@ namespace emibl_scene
 		camera->SetSpeed(50.0f);
 
 		// Geometry
-		auto platform1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::cube_model);
+		auto platform1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		/*auto platform2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::cube_model);
 		auto platform3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::cube_model);*/
 
 		platform1->SetPosition({ 0, 0, 0 });
-		platform1->SetScale({ 80, 1, 80 });
+		platform1->SetScale({ 80, 80, 1 });
+		platform1->SetRotation({ -90_deg, 0, 0 });
 
 		//platform2->SetPosition({ 0, 0, 0 });
 		//platform2->SetScale({ 10, 1, 10 });
@@ -36,7 +37,7 @@ namespace emibl_scene
 		//platform3->SetPosition({ 22, 0, 0 });
 		//platform3->SetScale({ 10, 1, 10 });
 
-		auto model1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_ball);
+		auto model1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		/*auto model2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		auto model3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);*/
 
@@ -47,6 +48,10 @@ namespace emibl_scene
 		model1->SetRotation({ 0,0,180_deg });
 		/*model2->SetRotation({ 0,0,180_deg });
 		model3->SetRotation({ 0,0,180_deg });*/
+
+		model1->SetPosition({ 0, 0, 0 });
+		model1->SetRotation({ 0,0,180_deg });
+		model1->SetScale({ 0.1f,0.1f,0.1f });
 
 		//model1->SetScale({ 0.01f,0.01f,0.01f });
 		//model2->SetScale({ 0.01f,0.01f,0.01f });
