@@ -176,7 +176,7 @@ namespace wr
 				{
 					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 				}
-				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, 2);
+				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 2);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 
 				// Update material data
@@ -210,7 +210,7 @@ namespace wr
 
 				d3d12::BindDescriptorHeap(cmd_list, as_build_data.out_rt_heap, as_build_data.out_rt_heap->m_create_info.m_type, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				auto gpu_handle = d3d12::GetGPUHandle(as_build_data.out_rt_heap, frame_idx); // here
+				auto gpu_handle = d3d12::GetGPUHandle(as_build_data.out_rt_heap, 0); // here
 				d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 0);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
@@ -227,7 +227,7 @@ namespace wr
 
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1);
-			
+
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}

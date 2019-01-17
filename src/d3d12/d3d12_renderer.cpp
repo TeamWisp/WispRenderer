@@ -992,7 +992,7 @@ namespace wr
 			}
 
 			//Reset instances
-			batch.num_instances = 0;
+			//batch.num_instances = 0;
 			m_last_material = nullptr;
 		}
 
