@@ -56,62 +56,62 @@ namespace wr::d3d12
 		}
 
 		inline void SetHDRMetaData(RenderWindow* render_window, std::uint32_t swapchain_bit_depth,
-			float MaxOutputNits /*=1000.0f*/,
-			float MinOutputNits /*=0.001f*/,
-			float MaxCLL /*=2000.0f*/,
-			float MaxFALL /*=500.0f*/)
+			float max_output_nits,
+			float min_output_nits,
+			float max_cll,
+			float max_fall)
 		{
 			struct DisplayChromacities
 			{
-				float RedX;
-				float RedY;
-				float GreenX;
-				float GreenY;
-				float BlueX;
-				float BlueY;
-				float WhiteX;
-				float WhiteY;
+				float m_red_x;
+				float m_red_y;
+				float m_green_x;
+				float m_green_y;
+				float m_blue_x;
+				float m_blue_y;
+				float m_white_x;
+				float m_white_y;
 			};
 
-			static const DisplayChromacities DisplayChromacityList[] =
+			static const DisplayChromacities chromaticity[] =
 			{
 				{ 0.64000f, 0.33000f, 0.30000f, 0.60000f, 0.15000f, 0.06000f, 0.31270f, 0.32900f }, // Display Gamut Rec709 
 				{ 0.70800f, 0.29200f, 0.17000f, 0.79700f, 0.13100f, 0.04600f, 0.31270f, 0.32900f }, // Display Gamut Rec2020
 			};
 
 			// Select the chromaticity based on HDR format of the DWM.
-			int selectedChroma = 0;
+			int selected_chroma = 0;
 			if (swapchain_bit_depth == 16)
 			{
-				selectedChroma = 0;
+				selected_chroma = 0;
 			}
 			else if (swapchain_bit_depth == 10)
 			{
-				selectedChroma = 1;
+				selected_chroma = 1;
 			}
 			else
 			{
 				// Reset the metadata since this is not a supported HDR format.
-				TRY_M(render_window->m_swap_chain->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_NONE, 0, nullptr), "Failed to set hdr meta data");
+				TRY_M(render_window->m_swap_chain->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_NONE, 0, nullptr), "Failed to reset hdr meta data");
 				return;
 			}
 
 			// Set HDR meta data
-			const DisplayChromacities& Chroma = DisplayChromacityList[selectedChroma];
-			DXGI_HDR_METADATA_HDR10 HDR10MetaData = {};
-			HDR10MetaData.RedPrimary[0] = static_cast<UINT16>(Chroma.RedX * 50000.0f);
-			HDR10MetaData.RedPrimary[1] = static_cast<UINT16>(Chroma.RedY * 50000.0f);
-			HDR10MetaData.GreenPrimary[0] = static_cast<UINT16>(Chroma.GreenX * 50000.0f);
-			HDR10MetaData.GreenPrimary[1] = static_cast<UINT16>(Chroma.GreenY * 50000.0f);
-			HDR10MetaData.BluePrimary[0] = static_cast<UINT16>(Chroma.BlueX * 50000.0f);
-			HDR10MetaData.BluePrimary[1] = static_cast<UINT16>(Chroma.BlueY * 50000.0f);
-			HDR10MetaData.WhitePoint[0] = static_cast<UINT16>(Chroma.WhiteX * 50000.0f);
-			HDR10MetaData.WhitePoint[1] = static_cast<UINT16>(Chroma.WhiteY * 50000.0f);
-			HDR10MetaData.MaxMasteringLuminance = static_cast<UINT>(MaxOutputNits * 10000.0f);
-			HDR10MetaData.MinMasteringLuminance = static_cast<UINT>(MinOutputNits * 10000.0f);
-			HDR10MetaData.MaxContentLightLevel = static_cast<UINT16>(MaxCLL);
-			HDR10MetaData.MaxFrameAverageLightLevel = static_cast<UINT16>(MaxFALL);
-			TRY_M(render_window->m_swap_chain->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &HDR10MetaData), "Failed to set hdr meta data");
+			const DisplayChromacities& chroma = chromaticity[selected_chroma];
+			DXGI_HDR_METADATA_HDR10 hdr10_metadata = {};
+			hdr10_metadata.RedPrimary[0] = static_cast<std::uint16_t>(chroma.m_red_x * 50000.0f);
+			hdr10_metadata.RedPrimary[1] = static_cast<std::uint16_t>(chroma.m_red_y * 50000.0f);
+			hdr10_metadata.GreenPrimary[0] = static_cast<std::uint16_t>(chroma.m_green_x * 50000.0f);
+			hdr10_metadata.GreenPrimary[1] = static_cast<std::uint16_t>(chroma.m_green_y * 50000.0f);
+			hdr10_metadata.BluePrimary[0] = static_cast<std::uint16_t>(chroma.m_blue_x * 50000.0f);
+			hdr10_metadata.BluePrimary[1] = static_cast<std::uint16_t>(chroma.m_blue_y * 50000.0f);
+			hdr10_metadata.WhitePoint[0] = static_cast<std::uint16_t>(chroma.m_white_x * 50000.0f);
+			hdr10_metadata.WhitePoint[1] = static_cast<std::uint16_t>(chroma.m_white_y * 50000.0f);
+			hdr10_metadata.MaxMasteringLuminance = static_cast<std::uint32_t>(max_output_nits * 10000.0f);
+			hdr10_metadata.MinMasteringLuminance = static_cast<std::uint32_t>(min_output_nits * 10000.0f);
+			hdr10_metadata.MaxContentLightLevel = static_cast<std::uint16_t>(max_cll);
+			hdr10_metadata.MaxFrameAverageLightLevel = static_cast<std::uint16_t>(max_fall);
+			TRY_M(render_window->m_swap_chain->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_metadata), "Failed to set hdr meta data");
 		}
 	}
 
