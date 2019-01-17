@@ -28,6 +28,11 @@ namespace wr
 		void EndOfFrame() final;
 
 		d3d12::TextureResource* GetTexture(uint64_t texture_id) final;
+
+		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
+
+		DescriptorAllocator* GetAllocator(DescriptorHeapType type);
+
 		void Unload(uint64_t texture_id) final;
 
 	protected:
@@ -48,17 +53,13 @@ namespace wr
 
 		D3D12RenderSystem& m_render_system;
 
-		//CPU only visible heap used for staging of descriptors.
-		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
-		DescriptorAllocator* m_texture_heap_allocator;
+		//CPU only visible heaps used for staging of descriptors.
+		DescriptorAllocator* m_allocators[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 
 		//Descriptor heap used for compute pipeline when doing mipmapping
 		d3d12::DescriptorHeap* m_mipmapping_heap;
 		d3d12::DescHeapCPUHandle m_mipmapping_cpu_handle;
 		d3d12::DescHeapGPUHandle m_mipmapping_gpu_handle;
 	};
-
-
-
 
 }

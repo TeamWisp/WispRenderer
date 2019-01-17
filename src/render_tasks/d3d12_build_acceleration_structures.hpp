@@ -200,7 +200,7 @@ namespace wr
 							auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
 							auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
-							d3d12::Offset(cpu_handle, 4 + texture_handle.m_id, data.out_rt_heap->m_increment_size);
+							d3d12::Offset(cpu_handle, 5 + texture_handle.m_id, data.out_rt_heap->m_increment_size);
 							d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
 						};
 
