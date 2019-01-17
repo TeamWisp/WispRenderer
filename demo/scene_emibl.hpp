@@ -37,7 +37,7 @@ namespace emibl_scene
 		//platform3->SetPosition({ 22, 0, 0 });
 		//platform3->SetScale({ 10, 1, 10 });
 
-		auto model1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
+		auto model1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_ball);
 		/*auto model2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		auto model3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);*/
 
@@ -49,9 +49,9 @@ namespace emibl_scene
 		/*model2->SetRotation({ 0,0,180_deg });
 		model3->SetRotation({ 0,0,180_deg });*/
 
-		model1->SetPosition({ 0, 0, 0 });
-		model1->SetRotation({ 0,0,180_deg });
-		model1->SetScale({ 0.1f,0.1f,0.1f });
+		//model1->SetPosition({ 0, 0, 0 });
+		//model1->SetRotation({ 0,0,180_deg });
+		//model1->SetScale({ 0.1f,0.1f,0.1f });
 
 		//model1->SetScale({ 0.01f,0.01f,0.01f });
 		//model2->SetScale({ 0.01f,0.01f,0.01f });
@@ -59,7 +59,7 @@ namespace emibl_scene
 
 
 		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 0, 1, 0 });
-		directional_light_node->SetDirectional({ 0, -1, 0 }, { 1, 1, 1 });
+		directional_light_node->SetDirectional({ 0, 1, 0 }, { 15, 15, 15 });
 	}
 
 	void UpdateScene()

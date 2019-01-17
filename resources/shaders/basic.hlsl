@@ -74,13 +74,13 @@ SamplerState s0 : register(s0);
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
-	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
+	float3x3 tbn = {input.tangent, input.bitangent, float3(input.normal.x, -input.normal.y, input.normal.z)};
 	float4 albedo = material_albedo.Sample(s0, input.uv);
 	float4 roughness = material_roughness.Sample(s0, input.uv);
 	float4 metallic = material_metallic.Sample(s0, input.uv);
 
-	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);	
-	float3 normal = normalize(mul( tex_normal, tbn));
+	float3 tex_normal = (material_normal.Sample(s0, input.uv).rgb * 2.0f - 1.0f);	
+	float3 normal = normalize(mul(tex_normal, tbn));
 
 	output.albedo_roughness = float4(albedo.xyz, roughness.r);
 	output.normal_metallic = float4(normal, metallic.r);

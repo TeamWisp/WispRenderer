@@ -57,7 +57,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float gamma = 1;
 	float exposure = 1;
 	retval = linearToneMapping(retval, exposure, gamma);
-	
+
+	retval = normal;
+
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
 }

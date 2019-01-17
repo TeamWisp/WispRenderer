@@ -69,20 +69,12 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	float3 diffuse = irradiance * albedo;
 	float3 ambient = (kD * diffuse) * 1.0f; //Replace 1.0f with AO, when we have it.
 
-	Light hardcoded_light;
-	hardcoded_light.pos = float3(0.0f, 0.0f, 0.0f);
-	hardcoded_light.rad = 0.0f;
-	hardcoded_light.col = float3(1.0f, 1.0f, 1.0f);
-	hardcoded_light.tid = 1;
-	hardcoded_light.dir = float3(0.0f, -1.0f, 0.0f);
-	hardcoded_light.ang = 0.0f;
+	res = float3(0.1f, 0.1f, 0.1f);
 
-	res += shade_light(pos, V, albedo, normal, metallic, roughness, hardcoded_light);
+	for (uint i = 0; i < light_count; i++)
+	{
+		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
+	}
 
-	//for (uint i = 0; i < light_count; i++)
-	//{
-	//	res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
-	//}
-
-	return ambient + res;
+	return res * albedo;
 }
