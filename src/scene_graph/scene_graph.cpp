@@ -84,7 +84,7 @@ namespace wr
 		constexpr auto model_size = sizeof(temp::ObjectData) * d3d12::settings::num_instances_per_batch;
 		constexpr auto model_cbs_size = SizeAlign(model_size, 256) * d3d12::settings::num_back_buffers;
 
-		m_constant_buffer_pool = m_render_system->CreateConstantBufferPool((uint32_t) std::ceil(model_cbs_size / (1024 * 1024.f)));
+		m_constant_buffer_pool = m_render_system->CreateConstantBufferPool((uint32_t) model_cbs_size*1024);
 
 		// Initialize cameras
 
@@ -96,7 +96,7 @@ namespace wr
 		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * light_count;
 		uint64_t light_buffer_aligned_size = SizeAlign(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
 
-		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t) std::ceil(light_buffer_aligned_size / (1024 * 1024.f)));
+		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t)light_buffer_aligned_size );
 		m_light_buffer = m_structured_buffer->Create(light_buffer_size, light_buffer_stride, false);
 
 		//Initialize lights

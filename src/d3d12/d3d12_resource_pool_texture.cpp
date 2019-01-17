@@ -1,6 +1,7 @@
 #include "d3d12_resource_pool_texture.hpp"
 
 #include "d3d12_functions.hpp"
+#include "d3d12_defines.hpp"
 #include "d3d12_renderer.hpp"
 
 #include "../renderer.hpp"
@@ -13,8 +14,8 @@
 
 namespace wr
 {
-	D3D12TexturePool::D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_mb, std::size_t num_of_textures)
-		: TexturePool(size_in_mb)
+	D3D12TexturePool::D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_bytes, std::size_t num_of_textures)
+		: TexturePool(SizeAlign(size_in_bytes, 65536))
 		, m_render_system(render_system)
 	{
 		auto device = m_render_system.m_device;

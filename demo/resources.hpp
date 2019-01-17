@@ -20,8 +20,8 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(16, 14);
-		material_pool = render_system->CreateMaterialPool(8);
+		texture_pool = render_system->CreateTexturePool(16*1024*1024, 14);
+		material_pool = render_system->CreateMaterialPool(8*1024*1024);
 
 		// Load Texture.
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
@@ -68,7 +68,7 @@ namespace resources
 		rock_material_internal->SetRoughness(bamboo_roughness);
 		rock_material_internal->SetMetallic(bamboo_metallic);
 
-		model_pool = render_system->CreateModelPool(16, 16);
+		model_pool = render_system->CreateModelPool(16*1024*1024, 16*1024*1024);
 
 		// Load Cube.
 		{

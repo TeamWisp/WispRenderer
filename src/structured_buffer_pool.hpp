@@ -13,7 +13,7 @@ namespace wr
 	class StructuredBufferPool
 	{
 	public:
-		explicit StructuredBufferPool(std::size_t size_in_mb);
+		explicit StructuredBufferPool(std::size_t size_in_bytes);
 		virtual ~StructuredBufferPool() = default;
 
 		StructuredBufferPool(StructuredBufferPool const &) = delete;
@@ -34,7 +34,7 @@ namespace wr
 		virtual void DestroyBuffer(StructuredBufferHandle* handle) = 0;
 		virtual void UpdateBuffer(StructuredBufferHandle* handle, void* data, std::size_t size, std::size_t offset) = 0;
 
-		std::size_t m_size_in_mb;
+		std::size_t m_size_in_bytes;
 
 	};
 

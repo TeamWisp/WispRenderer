@@ -18,7 +18,7 @@ namespace wr
 	class D3D12TexturePool : public TexturePool
 	{
 	public:
-		explicit D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_mb, std::size_t num_of_textures);
+		explicit D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_bytes, std::size_t num_of_textures);
 		~D3D12TexturePool() final;
 
 		void Evict() final;

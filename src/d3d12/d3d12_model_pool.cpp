@@ -10,26 +10,26 @@ namespace wr
 {
 
 	D3D12ModelPool::D3D12ModelPool(D3D12RenderSystem& render_system,
-		std::size_t vertex_buffer_size_in_mb,
-		std::size_t index_buffer_size_in_mb) :
-		ModelPool(vertex_buffer_size_in_mb, index_buffer_size_in_mb),
+		std::size_t vertex_buffer_size_in_bytes,
+		std::size_t index_buffer_size_in_bytes) :
+		ModelPool(SizeAlign(vertex_buffer_size_in_bytes, 65536), SizeAlign(index_buffer_size_in_bytes, 65536)),
 		m_render_system(render_system)
 	{
 		m_vertex_buffer = d3d12::CreateStagingBuffer(render_system.m_device,
 			nullptr,
-			vertex_buffer_size_in_mb * 1024 * 1024,
+			SizeAlign(vertex_buffer_size_in_bytes, 65536),
 			sizeof(Vertex),
 			ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 		SetName(m_vertex_buffer, L"Model Pool Vertex Buffer");
-		m_vertex_buffer_size = vertex_buffer_size_in_mb * 1024 * 1024;
+		m_vertex_buffer_size = SizeAlign(vertex_buffer_size_in_bytes, 65536);
 
 		m_index_buffer = d3d12::CreateStagingBuffer(render_system.m_device,
 			nullptr,
-			index_buffer_size_in_mb * 1024 * 1024,
+			SizeAlign(index_buffer_size_in_bytes, 65536),
 			sizeof(std::uint32_t),
 			ResourceState::INDEX_BUFFER);
 		SetName(m_index_buffer, L"Model Pool Index Buffer");
-		m_index_buffer_size = index_buffer_size_in_mb * 1024 * 1024;
+		m_index_buffer_size = SizeAlign(index_buffer_size_in_bytes, 65536);
 
 		m_vertex_heap_start_block = new MemoryBlock;
 		m_vertex_heap_start_block->m_free = true;
