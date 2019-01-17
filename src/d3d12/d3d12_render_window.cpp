@@ -141,7 +141,7 @@ namespace wr::d3d12
 		render_window->m_swap_chain = static_cast<IDXGISwapChain4*>(temp_swap_chain);
 		render_window->m_frame_idx = (render_window->m_swap_chain)->GetCurrentBackBufferIndex();
 
-		const float HDRMetaDataPool[4][4] =
+		const float meta_data_args_pool[4][4] =
 		{
 			// MaxOutputNits, MinOutputNits, MaxCLL, MaxFALL
 			// These values are made up for testing. You need to figure out those numbers for your app.
@@ -150,12 +150,16 @@ namespace wr::d3d12
 			{ 500.0f, 0.100f, 500.0f, 100.0f },
 			{ 2000.0f, 1.000f, 2000.0f, 1000.0f }
 		};
-		int m_hdrMetaDataPoolIdx = 3;
+		int meta_data_args_idx = 0;
 
 		if (d3d12::settings::output_hdr)
 		{
 			internal::EnsureSwapchainColorSpace(render_window, 16, true);
-			internal::SetHDRMetaData(render_window, 16, HDRMetaDataPool[m_hdrMetaDataPoolIdx][0], HDRMetaDataPool[m_hdrMetaDataPoolIdx][1], HDRMetaDataPool[m_hdrMetaDataPoolIdx][2], HDRMetaDataPool[m_hdrMetaDataPoolIdx][3]);
+			internal::SetHDRMetaData(render_window, 16,
+				meta_data_args_pool[meta_data_args_idx][0],
+				meta_data_args_pool[meta_data_args_idx][1],
+				meta_data_args_pool[meta_data_args_idx][2],
+				meta_data_args_pool[meta_data_args_idx][3]);
 		}
 
 		render_window->m_render_targets.resize(num_back_buffers);
