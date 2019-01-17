@@ -1,4 +1,3 @@
-
 //48 KiB; 48 * 1024 / sizeof(MeshNode)
 //48 * 1024 / (4 * 4 * 4) = 48 * 1024 / 64 = 48 * 16 = 768
 #define MAX_INSTANCES 768
@@ -17,8 +16,8 @@ struct VS_OUTPUT
 	float4 pos : SV_POSITION;
 	float2 uv : TEXCOORD;
 	float3 normal : NORMAL;
-	float3x3 tbn : TBNMATRIX;
-	float4x4 mv : MODELVIEW;
+	float3 tangent : TANGENT;
+	float3 bitangent : BITANGENT;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -52,13 +51,9 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
 	output.uv = input.uv;
-	output.normal = normalize(mul(vm, float4(input.normal, 0))).xyz;
-
-	float3 tangent = normalize(mul(vm, float4(input.tangent, 0))).xyz;
-	float3 bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
-
-	output.tbn = transpose(float3x3(tangent, bitangent, output.normal));
-	output.mv = vm;
+	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
+	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
+	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
 
 	return output;
 }
@@ -79,15 +74,15 @@ SamplerState s0 : register(s0);
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
-	
+	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
 	float4 albedo = material_albedo.Sample(s0, input.uv);
 	float4 roughness = material_roughness.Sample(s0, input.uv);
 	float4 metallic = material_metallic.Sample(s0, input.uv);
-	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
-	
-	float3 normal = normalize(mul(input.tbn, tex_normal));
+
+	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);	
+	float3 normal = normalize(mul( tex_normal, tbn));
 
 	output.albedo_roughness = float4(albedo.xyz, roughness.r);
-	output.normal_metallic = float4(input.normal, metallic.r);
+	output.normal_metallic = float4(normal, metallic.r);
 	return output;
 }

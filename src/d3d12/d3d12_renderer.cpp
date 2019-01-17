@@ -18,6 +18,7 @@
 #include "d3d12_shader_registry.hpp"
 #include "d3d12_root_signature_registry.hpp"
 #include "d3d12_resource_pool_texture.hpp"
+#include "d3d12_dynamic_descriptor_heap.hpp"
 
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -93,17 +94,12 @@ namespace wr
 		m_direct_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
 		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
-		//TEMP
-		//Create Rendering Descriptor Heap
-		d3d12::desc::DescriptorHeapDesc heap_desc;
-		heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-		heap_desc.m_versions = d3d12::settings::num_back_buffers;
-		heap_desc.m_num_descriptors = 256;
-
-		m_rendering_heap = d3d12::CreateDescriptorHeap(m_device, heap_desc);
-
 		// Raytracing cb pool
 		m_raytracing_cb_pool = CreateConstantBufferPool(1);
+
+		// Simple Shapes Model Pool
+		m_shapes_pool = CreateModelPool(8, 8);
+		LoadPrimitiveShapes();
 
 		// Material raytracing sb pool
 		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
@@ -149,9 +145,10 @@ namespace wr
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 	}
 
-	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	CPUTexture D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
-		if (m_requested_fullscreen_state.has_value())
+
+ 		if (m_requested_fullscreen_state.has_value())
 		{
 			WaitForAllPreviousWork();
 			m_render_window.value()->m_swap_chain->SetFullscreenState(m_requested_fullscreen_state.value(), nullptr);
@@ -162,6 +159,41 @@ namespace wr
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
 		
+		// Perform reload requests
+		{
+			// Root Signatures
+			auto& rt_registry = RootSignatureRegistry::Get();
+			for (auto request : rt_registry.m_requested_reload)
+			{
+				// ReloadPipelineRegistryEntry(request);
+			}
+
+			// Shaders
+			auto& shader_registry = ShaderRegistry::Get();
+			for (auto request : shader_registry.m_requested_reload)
+			{
+				// ReloadPipelineRegistryEntry(request);
+			}
+
+			// Pipelines
+			auto& pipeline_registry = PipelineRegistry::Get();
+			pipeline_registry.m_reload_request_mutex.lock();
+			for (auto request : pipeline_registry.m_requested_reload)
+			{
+				ReloadPipelineRegistryEntry(request);
+			}
+			pipeline_registry.m_requested_reload.clear();
+			pipeline_registry.m_reload_request_mutex.unlock();
+
+			// RT Pipelines
+			auto& rt_pipeline_registry = RTPipelineRegistry::Get();
+			for (auto request : rt_pipeline_registry.m_requested_reload)
+			{
+				ReloadRTPipelineRegistryEntry(request);
+			}
+		}
+
+
 		bool clear_frame_buffer = false;
 
 		if (frame_graph.GetUID() != m_buffer_frame_graph_uids[frame_idx])
@@ -172,12 +204,8 @@ namespace wr
 
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
-		//Reset cpu and gpu handles to the start of the rendering heap. 
-		//Heap will be filled in the node rendering function.
-		m_rendering_heap_gpu = d3d12::GetGPUHandle(m_rendering_heap, frame_idx);
-		m_rendering_heap_cpu = d3d12::GetCPUHandle(m_rendering_heap, frame_idx);
-
 		scene_graph->Update();
+		scene_graph->Optimize();
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
@@ -200,7 +228,16 @@ namespace wr
 
 		m_bound_model_pool = nullptr;
 
-		return std::unique_ptr<TextureHandle>();
+		//Signal end of frame to the texture pool so that stale descriptors can be freed.
+		m_texture_pool->EndOfFrame();
+		// Optional CPU-visible copy of the render target pixel data
+		const auto cpu_output_texture = frame_graph.GetOutputTexture();
+
+		// If no pixel data is available, return null, else, return GPU pixel data
+		if (cpu_output_texture.has_value())
+			return cpu_output_texture.value();
+		else
+			return CPUTexture();
 	}
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
@@ -532,6 +569,94 @@ namespace wr
 		}
 	}
 
+	void D3D12RenderSystem::ReloadPipelineRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = PipelineRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto n_pipeline = static_cast<D3D12Pipeline*>(registry.Find(handle))->m_native;
+
+		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		{
+			if (!pipeline_shader) return;
+
+			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+				pipeline_shader->m_path,
+				pipeline_shader->m_entry);
+
+			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+			{
+				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+			}
+			else
+			{
+				error_msg = std::get<std::string>(new_shader_variant);
+			}
+		};
+
+		// Vertex Shader
+		{
+			recompile_shader(n_pipeline->m_vertex_shader);
+		}
+		// Pixel Shader
+		if (!error_msg.has_value()) {
+			recompile_shader(n_pipeline->m_pixel_shader);
+		}
+		// Compute Shader
+		if (!error_msg.has_value()) {
+			recompile_shader(n_pipeline->m_compute_shader);
+		}
+
+		if (error_msg.has_value())
+		{
+			LOGW(error_msg.value());
+			//open_shader_compiler_popup = true;
+			//shader_compiler_error = error_msg.value();
+		}
+		else
+		{
+			d3d12::RefinalizePipeline(n_pipeline);
+		}
+	}
+
+	void D3D12RenderSystem::ReloadRTPipelineRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = RTPipelineRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto n_pipeline = static_cast<D3D12StateObject*>(registry.Find(handle))->m_native;
+
+		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		{
+			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+				pipeline_shader->m_path,
+				pipeline_shader->m_entry);
+
+			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+			{
+				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
+			}
+			else
+			{
+				error_msg = std::get<std::string>(new_shader_variant);
+			}
+		};
+
+		// Vertex Shader
+		{
+			recompile_shader(n_pipeline->m_desc.m_library);
+		}
+
+		if (error_msg.has_value())
+		{
+			LOGW(error_msg.value());
+			//open_shader_compiler_popup = true;
+			//shader_compiler_error = error_msg.value();
+		}
+		else
+		{
+			d3d12::RecreateStateObject(n_pipeline);
+		}
+	}
+
 	void D3D12RenderSystem::PrepareRTPipelineRegistry()
 	{
 		auto& registry = RTPipelineRegistry::Get();
@@ -549,6 +674,7 @@ namespace wr
 			n_desc.max_attributes_size = desc.max_attributes_size;
 			n_desc.max_payload_size = desc.max_payload_size;
 			n_desc.max_recursion_depth = desc.max_recursion_depth;
+			n_desc.m_hit_groups = desc.library_desc.m_hit_groups;
 
 			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
 			{
@@ -592,6 +718,8 @@ namespace wr
 
 	void D3D12RenderSystem::Init_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes)
 	{
+		if (nodes.empty()) return;
+
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
 		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(std::ceil(cam_align_size) / (1024.f*1024.f)));
 
@@ -847,7 +975,7 @@ namespace wr
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
 					
-					d3d12::BindDescriptorHeaps(n_cmd_list, { m_rendering_heap }, frame_idx);
+					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
 					auto material_handle = mesh.second;
 					
@@ -889,9 +1017,7 @@ namespace wr
 				d3d12::Transition(n_cmd_list, m_indirect_cmd_buffer_indexed, ResourceState::COPY_DEST, ResourceState::INDIRECT_ARGUMENT, frame_idx);
 				d3d12::ExecuteIndirect(n_cmd_list, m_cmd_signature_indexed, m_indirect_cmd_buffer_indexed, frame_idx);
 			}
-
 		}
-
 	}
 
 	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
@@ -912,36 +1038,12 @@ namespace wr
 		auto metallic_handle = material_internal->GetMetallic();
 		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_albedo = albedo_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_normal = normal_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_roughness = roughness_internal->m_cpu_descriptor_handle;
-		wr::d3d12::DescHeapCPUHandle src_cpu_handle_metallic = metallic_internal->m_cpu_descriptor_handle;
-
-		D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
-		{
-			m_rendering_heap_cpu.m_native
-		};
-		D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[] =
-		{
-			src_cpu_handle_albedo.m_native,
-			src_cpu_handle_normal.m_native,
-			src_cpu_handle_roughness.m_native,
-			src_cpu_handle_metallic.m_native
-		};
-
-		UINT sizes[] = { 4 };
-
-		m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, sizes,
-			4, pSrcDescriptorRangeStarts,
-			nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-		d3d12::BindDescriptorTable(n_cmd_list, m_rendering_heap_gpu, 2);
-
-		d3d12::Offset(m_rendering_heap_cpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
-		d3d12::Offset(m_rendering_heap_gpu, static_cast<unsigned int>(MaterialPBR::COUNT), m_rendering_heap->m_increment_size);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 0, albedo_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 1, normal_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 2, roughness_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 3, metallic_internal);
 	}
 	
-
 	unsigned int D3D12RenderSystem::GetFrameIdx()
 	{
 		if (m_render_window.has_value())
@@ -965,6 +1067,84 @@ namespace wr
 		{
 			LOGW("Called `D3D12RenderSystem::GetRenderWindow` without a window!");
 			return nullptr;
+		}
+	}
+
+	wr::Model* D3D12RenderSystem::GetSimpleShape(SimpleShapes type)
+	{
+		if (type == SimpleShapes::COUNT)
+		{
+			LOGC("Nice try boiii! That's not a shape.");
+		}
+
+		return m_simple_shapes[type];
+	}
+
+	void D3D12RenderSystem::LoadPrimitiveShapes()
+	{
+		// Load Cube.
+		{
+			wr::MeshData<wr::Vertex> mesh;
+
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0, 6, 5,
+				4, 7, 6, 4, 10, 9, 8, 11,
+				10, 8, 14, 13, 12, 15, 14, 12,
+				18, 17, 16, 19, 18, 16, 22, 21,
+				20, 23, 22, 20
+			};
+
+			mesh.m_vertices = {
+				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0 },
+				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+			};
+
+			m_simple_shapes[SimpleShapes::CUBE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
+		}
+
+		{
+			wr::MeshData<wr::Vertex> mesh;
+
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0
+			};
+
+			mesh.m_vertices = {
+				//POS				UV			NORMAL				TANGENT			BINORMAL
+				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+			};
+
+			m_simple_shapes[SimpleShapes::PLANE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
 		}
 	}
 

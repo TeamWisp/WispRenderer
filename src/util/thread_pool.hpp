@@ -37,6 +37,8 @@ freely, subject to the following restrictions:
 #include <functional>
 #include <stdexcept>
 
+#include "delegate.hpp"
+
 namespace util
 {
 
@@ -48,11 +50,32 @@ namespace util
 		decltype(auto) Enqueue(F&& f, Args&&... args);
 		~ThreadPool();
 
+		inline void DivideWork(const std::size_t num_tasks, util::Delegate<void(std::uint64_t)> func)
+		{
+			auto num_threads = m_workers.size();
+			const std::size_t num_tasks_per_thread = num_tasks / num_threads;
+			const std::size_t num_tougher_threads = num_tasks % num_threads;
+
+			const auto ThreadDivider = [&](unsigned int const thread_id)
+			{
+				int index0 = num_tasks_per_thread - (num_threads - thread_id) * num_tasks_per_thread;
+				for (std::size_t index0 = (thread_id < num_tougher_threads ? thread_id * (num_tasks_per_thread + 1) : num_tasks - (num_threads - thread_id) * num_tasks_per_thread), index = index0; index < index0 + num_tasks_per_thread + (thread_id < num_tougher_threads); ++index)
+				{
+					func(index);
+				}
+			};
+
+			for (decltype(num_threads) i = 0; i < num_threads; i++)
+			{
+				ThreadDivider(i);
+			}
+		}
+
 	private:
 		// need to keep track of threads so we can join them
 		std::vector<std::thread> m_workers;
 		// the task queue
-		std::queue<std::function<void()>> m_tasks;
+		std::queue<Delegate<void()>> m_tasks;
 
 		// synchronization
 		std::mutex m_queue_mutex;
@@ -70,16 +93,10 @@ namespace util
 		{
 			for (;;)
 			{
-				std::function<void()> task;
+				Delegate<void()> task;
 
 				{
 					std::unique_lock<std::mutex> lock(m_queue_mutex);
-
-					// !!! condition notify_all() may lost, then worker thread will hang on condtion.wait
-					// suppose worker is execute here, meanwhile the pool instance is destructing: set stop = true and execute condition.notify_all();
-					// if here lacks check stop, this worker will hang on condtion.wait() because notify is lost
-					//if (m_stop)
-					//	return;
 
 					m_condition.wait(lock,
 						[this] { return m_stop || !m_tasks.empty(); });

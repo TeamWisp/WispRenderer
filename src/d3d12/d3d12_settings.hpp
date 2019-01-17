@@ -31,7 +31,7 @@ namespace wr::d3d12::settings
 	static const constexpr bool enable_debug_factory = true;
 	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;
 	static const constexpr char* default_shader_model = "6_3";
-	static std::array<LPCWSTR, 2> debug_shader_args = { L"/Zi", L"/Od" };
+	static std::array<LPCWSTR, 1> debug_shader_args = { L"/O3" };
 	static std::array<LPCWSTR, 1> release_shader_args = { L"/O3" };
 	static const constexpr std::uint8_t num_back_buffers = 3;
 	static const constexpr std::uint32_t num_instances_per_batch = 768U;		//48 KiB for ObjectData[]
@@ -42,8 +42,8 @@ namespace wr::d3d12::settings
 	static const constexpr bool use_exec_indirect = false;
 	static const constexpr bool force_dxr_fallback = false;
 	static const constexpr bool disable_rtx = false;
-	static const constexpr bool enable_object_culling = true;
+	static const constexpr bool enable_object_culling = false;
 	static const constexpr unsigned int num_max_rt_materials = 10;
 	static const constexpr unsigned int fallback_ptrs_offset = 26;
-
+	
 } /* wr::d3d12::settings */

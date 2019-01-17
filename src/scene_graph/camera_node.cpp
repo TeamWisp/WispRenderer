@@ -10,6 +10,12 @@ namespace wr
 		SignalChange();
 	}
 
+	void CameraNode::SetAspectRatio(float ratio)
+	{
+		m_aspect_ratio = ratio;
+		SignalChange();
+	}
+
 	void CameraNode::UpdateTemp(unsigned int frame_idx)
 	{
 		DirectX::XMVECTOR pos = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };

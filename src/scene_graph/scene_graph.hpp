@@ -12,6 +12,7 @@
 #include "../constant_buffer_pool.hpp"
 #include "../structured_buffer_pool.hpp"
 #include "../model_pool.hpp"
+#include "../util/delegate.hpp"
 
 namespace wr
 {
@@ -32,16 +33,16 @@ namespace wr
 		bool RequiresTransformUpdate(unsigned int frame_idx);
 
 		//Takes roll, pitch and yaw and converts it to quaternion
-		void SetRotation(DirectX::XMVECTOR roll_pitch_yaw);
+		virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw);
 
 		//Sets position
-		void SetPosition(DirectX::XMVECTOR position);
+		virtual void SetPosition(DirectX::XMVECTOR position);
 
 		//Sets scale
-		void SetScale(DirectX::XMVECTOR scale);
+		virtual void SetScale(DirectX::XMVECTOR scale);
 
 		//Position, rotation (roll, pitch, yaw) and scale
-		void SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation, DirectX::XMVECTOR scale);
+		virtual void SetTransform(DirectX::XMVECTOR position, DirectX::XMVECTOR rotation, DirectX::XMVECTOR scale);
 
 		//Update the transform; done automatically when SignalChange is called
 		void UpdateTransform();
@@ -121,14 +122,14 @@ namespace wr
 		~SceneGraph();
 
 		// Impl Functions
-		static std::function<void(RenderSystem*, temp::MeshBatches&, CameraNode* camera, CommandList*)> m_render_meshes_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_init_meshes_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_init_cameras_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
-		static std::function<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
-		static std::function<void(RenderSystem* render_system, SceneGraph& scene_graph)> m_update_lights_func_impl;
-		static std::function<void(RenderSystem* render_system, SceneGraph& scene_graph, std::shared_ptr<Node>&)> m_update_transforms_func_impl;
+		static util::Delegate<void(RenderSystem*, temp::MeshBatches&, CameraNode* camera, CommandList*)> m_render_meshes_func_impl;
+		static util::Delegate<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_init_meshes_func_impl;
+		static util::Delegate<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_init_cameras_func_impl;
+		static util::Delegate<void(RenderSystem*, std::vector<std::shared_ptr<LightNode>>&, std::vector<Light>&)> m_init_lights_func_impl;
+		static util::Delegate<void(RenderSystem*, std::vector<std::shared_ptr<MeshNode>>&)> m_update_meshes_func_impl;
+		static util::Delegate<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
+		static util::Delegate<void(RenderSystem* render_system, SceneGraph& scene_graph)> m_update_lights_func_impl;
+		static util::Delegate<void(RenderSystem* render_system, SceneGraph& scene_graph, std::shared_ptr<Node>&)> m_update_transforms_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -199,15 +200,15 @@ namespace wr
 		p->m_children.push_back(new_node);
 		new_node->m_parent = p;
 
-		if constexpr (std::is_same<T, CameraNode>::value)
+		if constexpr (std::is_base_of<CameraNode, T>::value)
 		{
 			m_camera_nodes.push_back(new_node);
 		}
-		else if constexpr (std::is_same<T, MeshNode>::value)
+		else if constexpr (std::is_base_of<MeshNode, T>::value)
 		{
 			m_mesh_nodes.push_back(new_node);
 		}
-		else if constexpr (std::is_same<T, LightNode>::value)
+		else if constexpr (std::is_base_of<LightNode, T>::value)
 		{
 			RegisterLight(new_node);
 		}
@@ -218,7 +219,7 @@ namespace wr
 	template<typename T>
 	void SceneGraph::DestroyNode(std::shared_ptr<T> node) 
 	{
-		if constexpr (std::is_same<T, CameraNode>::value)
+		if constexpr (std::is_base_of<CameraNode, T>::value)
 		{
 			for (size_t i = 0, j = m_camera_nodes.size(); i < j; ++i)
 			{
@@ -229,7 +230,7 @@ namespace wr
 				}
 			}
 		}
-		else if constexpr (std::is_same<T, MeshNode>::value)
+		else if constexpr (std::is_base_of<MeshNode, T>::value)
 		{
 			for (size_t i = 0, j = m_mesh_nodes.size(); i < j; ++i)
 			{
@@ -240,7 +241,7 @@ namespace wr
 				}
 			}
 		}
-		else if constexpr (std::is_same<T, LightNode>::value)
+		else if constexpr (std::is_base_of<LightNode, T>::value)
 		{
 			for (size_t i = 0, j = m_light_nodes.size(); i < j; ++i)
 			{

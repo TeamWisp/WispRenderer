@@ -20,6 +20,7 @@ namespace wr
 		{
 			RegistryHandle shader_handle;
 			std::vector<std::wstring> exports;
+			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
 		};
 
 		CD3DX12_STATE_OBJECT_DESC desc;

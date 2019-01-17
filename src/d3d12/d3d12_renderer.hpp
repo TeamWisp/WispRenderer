@@ -25,6 +25,7 @@ namespace wr
 	class D3D12StructuredBufferPool;
 	class D3D12ModelPool;
 	class D3D12TexturePool;
+	class DynamicDescriptorHeap;
 
 	namespace temp
 	{
@@ -65,11 +66,12 @@ namespace wr
 
 		struct RayTracingMaterial_CBData
 		{
-			DirectX::XMMATRIX m_model;
 			float idx_offset;
 			float vertex_offset;
 			float albedo_id;
 			float normal_id;
+			float roughness_id;
+			float metallicness_id;
 		};
 
 		static const constexpr float size = 1.0f;
@@ -88,7 +90,7 @@ namespace wr
 		~D3D12RenderSystem() final;
 
 		void Init(std::optional<Window*> window) final;
-		std::unique_ptr<TextureHandle> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
+		CPUTexture Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
 		void Resize(std::uint32_t width, std::uint32_t height) final;
 
 		std::shared_ptr<TexturePool> CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures) final;
@@ -100,7 +102,9 @@ namespace wr
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
+		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void PrepareRTPipelineRegistry() final;
+		void ReloadRTPipelineRegistryEntry(RegistryHandle handle);
 
 		void WaitForAllPreviousWork() final;
 
@@ -138,6 +142,9 @@ namespace wr
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
 
+		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
+		wr::Model* GetSimpleShape(SimpleShapes type) final;
+
 	public:
 		d3d12::Device* m_device;
 		std::optional<d3d12::RenderWindow*> m_render_window;
@@ -165,11 +172,15 @@ namespace wr
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
     
-		float temp_metal = 0.5f;
+		float temp_metal = 1.0f;
 		float temp_rough = 0.45f;
+		bool clear_path = false;
 		float light_radius = 50;
 		float temp_intensity = 1;
+
 	private:
+
+		void LoadPrimitiveShapes();
 
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
@@ -177,12 +188,6 @@ namespace wr
 		d3d12::CommandSignature* m_cmd_signature_indexed;
 
 		std::optional<bool> m_requested_fullscreen_state;
-
-	public:
-		d3d12::DescriptorHeap* m_rendering_heap;
-		d3d12::DescHeapGPUHandle m_rendering_heap_gpu;
-		d3d12::DescHeapCPUHandle m_rendering_heap_cpu;
-
 
 		MaterialHandle* m_last_material = nullptr;
 	};

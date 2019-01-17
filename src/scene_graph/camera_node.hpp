@@ -12,7 +12,7 @@ namespace wr
 		CameraNode(float fov_deg, float aspect_ratio)
 			: Node(),
 			m_active(true),
-			m_frustum_near(1.f),
+			m_frustum_near(0.1f),
 			m_frustum_far(125.f),
 			m_fov(fov_deg / 180 * 3.1415926535f),
 			m_aspect_ratio(aspect_ratio)
@@ -20,6 +20,8 @@ namespace wr
 		}
 
 		void SetFov(float deg);
+
+		void SetAspectRatio(float ratio);
 
 		void UpdateTemp(unsigned int frame_idx);
 
