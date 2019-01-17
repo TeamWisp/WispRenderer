@@ -23,6 +23,7 @@
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
+#include "../scene_graph/skybox_node.hpp"
 
 namespace wr
 {
