@@ -19,6 +19,7 @@ namespace resources
 	static wr::MaterialHandle mirror_material;
 
 	static wr::TextureHandle loaded_skybox;
+	static wr::TextureHandle loaded_skybox2;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
@@ -40,6 +41,8 @@ namespace resources
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
+
+		loaded_skybox2 = texture_pool->Load("resources/materials/LA_Downtown_Afternoon_Fishing_3k.hdr", false, false);
 		loaded_skybox = texture_pool->Load("resources/materials/skybox.dds", false, false);
 
 		// Create Material

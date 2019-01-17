@@ -150,12 +150,22 @@ namespace wr
 				auto frame_idx = n_render_system.GetFrameIdx();
 
 				// Get light buffer
-				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
 				{
-					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
+					{
+						static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					}
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 2); // here
+					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 				}
-				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 2); // here
-				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
+
+				// Get skybox
+				if (scene_graph.m_skybox.has_value()) {
+					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 4); // here
+					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
+				}
+
 
 				// Update material data
 				n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*)as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
