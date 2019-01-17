@@ -48,10 +48,20 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	float ambient = 0.1f;
 	float3 res = float3(ambient, ambient, ambient);
 
-	for (uint i = 0; i < light_count; i++)
-	{
-		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
-	}
+	Light hardcoded_light;
+	hardcoded_light.pos = float3(0.0f, 0.0f, 0.0f);
+	hardcoded_light.rad = 0.0f;
+	hardcoded_light.col = float3(10.0f, 10.0f, 10.0f);
+	hardcoded_light.tid = 1;
+	hardcoded_light.dir = float3(0.0f, -1.0f, 0.0f);
+	hardcoded_light.ang = 0.0f;
+
+	res += shade_light(pos, V, albedo, normal, metallic, roughness, hardcoded_light);
+
+	//for (uint i = 0; i < light_count; i++)
+	//{
+	//	res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
+	//}
 
 	return res * albedo;
 }

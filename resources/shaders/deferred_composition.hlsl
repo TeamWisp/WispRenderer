@@ -8,6 +8,8 @@
 Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
+//Consider SRV for light buffer in register t3
+TextureCube irradiance_map : register(t4);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 

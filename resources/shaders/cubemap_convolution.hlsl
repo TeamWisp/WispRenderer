@@ -55,7 +55,6 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 
 	float3 up = float3(0.0f, 1.0f, 0.0f);
 	float3 right = cross(up, normal);
-	
 	up = cross(normal, right);
 
 	float sample_delta = 0.025f;
@@ -77,7 +76,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 		}
 	}
 
-	irradiance = PI * irradiance * (1.0f / nr_samples);
+	irradiance = PI * irradiance * (1.0f / float(nr_samples));
 	
 	output.color = float4(irradiance.rgb, 1.0f);
 

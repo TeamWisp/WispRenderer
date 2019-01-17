@@ -54,7 +54,7 @@ namespace wr
 			data.out_irradiance = out_irradiance;
 
 			data.camera_cb_pool = rs.CreateConstantBufferPool(2);
-			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CB)));
+			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CBuffer)));
 
 			data.proj_mat = DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(90.0f), 1.0f, 0.1f, 10.0f);
 
@@ -115,7 +115,7 @@ namespace wr
 					cb_data.m_view[5] = data.view_mat[5];
 					cb_data.m_projection = data.proj_mat;
 
-					data.cb_handle->m_pool->Update(data.cb_handle, sizeof(ProjectionView_CB), 0, frame_idx, (uint8_t*)&cb_data);
+					data.cb_handle->m_pool->Update(data.cb_handle, sizeof(ProjectionView_CBuffer), 0, frame_idx, (uint8_t*)&cb_data);
 
 					d3d12::BindConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);
 

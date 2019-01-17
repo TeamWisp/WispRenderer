@@ -15,6 +15,7 @@ namespace resources
 	static wr::Model* light_model;
 	static wr::Model* test_model;
 	static wr::Model* sphere_model;
+	static wr::Model* material_ball;
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle rock_material;
 	static wr::MaterialHandle light_material;
@@ -170,6 +171,15 @@ namespace resources
 				for (auto& m : sphere_model->m_meshes)
 				{
 					m.second = &mirror_material;
+				}
+			}
+
+			{
+				material_ball = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
+
+				for (auto& m : material_ball->m_meshes)
+				{
+					m.second = &rusty_metal_material;
 				}
 			}
 

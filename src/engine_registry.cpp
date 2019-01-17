@@ -31,7 +31,7 @@ namespace wr
 	//Deferred Composition Root Signature
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> srv_ranges
 	{ 
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); return r; }(),
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0); return r; }(),
 		
 	};
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> uav_ranges

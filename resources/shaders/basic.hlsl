@@ -84,5 +84,6 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 
 	output.albedo_roughness = float4(albedo.xyz, roughness.r);
 	output.normal_metallic = float4(normal, metallic.r);
+
 	return output;
 }

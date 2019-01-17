@@ -10,10 +10,11 @@
 #include "scene_viknell.hpp"
 #include "resources.hpp"
 #include "scene_cubes.hpp"
+#include "scene_emibl.hpp"
 
 #include "model_loader_assimp.hpp"
 
-#define SCENE viknell_scene
+#define SCENE emibl_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -130,7 +131,7 @@ int WispEntry()
 	{
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
-		viknell_scene::camera->SetAspectRatio((float)width / (float)height);
+		SCENE::camera->SetAspectRatio((float)width / (float)height);
 		fg_manager::Get()->Resize(*render_system.get(), width, height);
 	});
 
