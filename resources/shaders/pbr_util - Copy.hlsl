@@ -60,26 +60,16 @@ float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 {
 	float r = (roughness + 1.0);
 	float k = (r*r) / 8.0;
-	//float GL = dotNL / (dotNL * (1.0 - k) + k);
-	//float GV = dotNV / (dotNV * (1.0 - k) + k);
-	//return GL * GV;
-	float nom = dotNV;
-	float denom = dotNV * (1.0f - k) + k;
-
-	return nom / denom;
-
+	float GL = dotNL / (dotNL * (1.0 - k) + k);
+	float GV = dotNV / (dotNV * (1.0 - k) + k);
+	return GL * GV;
 }
  
  // Fresnel function
-float3 F_Schlick(float cos_theta, float3 F0)
-{ 
-	return F0 + (1.0 - F0) * pow(1.0 - cos_theta, 5.0);
-}
-
 float3 F_Schlick(float cos_theta, float metallic, float3 material_color)
 {
 	float3 F0 = lerp(float3(0.04, 0.04, 0.04), material_color, metallic); // * material.specular
-	float3 F = F0 + (1.0 - F0) * pow(1.0 - cos_theta, 5.0);
+	float3 F = F0 + (1.0 - F0) * pow(1.0 - cos_theta, 5.0); 
 	return F;
 }
  

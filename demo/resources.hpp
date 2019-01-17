@@ -173,19 +173,6 @@ namespace resources
 					m.second = &rusty_metal_material;
 				}
 
-				wr::TextureHandle albedo = texture_pool->GetDefaultAlbedo();
-				wr::TextureHandle normal = texture_pool->GetDefaultNormal();
-				wr::TextureHandle rough = texture_pool->GetDefaultRoughness();
-				wr::TextureHandle metall = texture_pool->GetDefaultMetalic();
-				wr::TextureHandle ao = texture_pool->GetDefaultAO();
-
-				wr::MaterialHandle* mat = material_pool->Create(albedo, normal, rough, metall, ao, false, false);
-
-				for (auto& m : test_model->m_meshes)
-				{
-					m.second = &rock_material;
-				}
-
 				for (auto& m : sphere_model->m_meshes)
 				{
 					m.second = &mirror_material;
@@ -195,17 +182,9 @@ namespace resources
 			{
 				material_ball = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
 
-				wr::TextureHandle albedo = texture_pool->GetDefaultAlbedo();
-				wr::TextureHandle normal = texture_pool->GetDefaultNormal();
-				wr::TextureHandle rough = texture_pool->GetDefaultRoughness();
-				wr::TextureHandle metall = texture_pool->GetDefaultMetalic();
-				wr::TextureHandle ao = texture_pool->GetDefaultAO();
-
-				wr::MaterialHandle* mat = material_pool->Create(albedo, normal, rough, metall, ao, false, false);
-
 				for (auto& m : material_ball->m_meshes)
 				{
-					m.second = mat;
+					m.second = &rusty_metal_material;
 				}
 			}
 
