@@ -73,20 +73,20 @@ namespace resources
 		rock_material_internal->SetMetallic(bamboo_metallic);
 
 		// Load Texture.
-		wr::TextureHandle pica_albedo = texture_pool->Load("resources/materials/pica/albedo.png", false, true);
-		wr::TextureHandle pica_normal = texture_pool->Load("resources/materials/pica/normal.png", false, true);
-		wr::TextureHandle pica_roughness = texture_pool->Load("resources/materials/pica/roughness.png", false, true);
-		wr::TextureHandle pica_metallic = texture_pool->Load("resources/materials/pica/metallic.png", false, true);
+		//wr::TextureHandle pica_albedo = texture_pool->Load("resources/materials/pica/albedo.png", false, true);
+		//wr::TextureHandle pica_normal = texture_pool->Load("resources/materials/pica/normal.png", false, true);
+		//wr::TextureHandle pica_roughness = texture_pool->Load("resources/materials/pica/roughness.png", false, true);
+		//wr::TextureHandle pica_metallic = texture_pool->Load("resources/materials/pica/metallic.png", false, true);
 
-		// Create Material
-		pica_scene_material = material_pool->Create();
+		//// Create Material
+		//pica_scene_material = material_pool->Create();
 
-		wr::Material* pica_scene_material_internal = material_pool->GetMaterial(pica_scene_material.m_id);
+		//wr::Material* pica_scene_material_internal = material_pool->GetMaterial(pica_scene_material.m_id);
 
-		pica_scene_material_internal->SetAlbedo(pica_albedo);
-		pica_scene_material_internal->SetNormal(pica_normal);
-		pica_scene_material_internal->SetRoughness(pica_roughness);
-		pica_scene_material_internal->SetMetallic(pica_metallic);
+		//pica_scene_material_internal->SetAlbedo(pica_albedo);
+		//pica_scene_material_internal->SetNormal(pica_normal);
+		//pica_scene_material_internal->SetRoughness(pica_roughness);
+		//pica_scene_material_internal->SetMetallic(pica_metallic);
 	
 		model_pool = render_system->CreateModelPool(16, 16);
 
@@ -98,15 +98,15 @@ namespace resources
 				};
 
 				mesh.m_vertices = {
-					//POS                UV            NORMAL                TANGENT            BINORMAL
-					{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
-					{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0},
-					{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0},
-					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					//POS                UV            NORMAL                TANGENT            BINORMAL	COLOR
+					{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+					{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+					{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
 				};
 
 				//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-				plane_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
+				plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 
 			plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
 			light_model = plane_model;
@@ -119,8 +119,8 @@ namespace resources
 
 		{
 			{
-				test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-				sphere_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
+				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)
 				{

@@ -8,13 +8,13 @@
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
-#include "scene_rt_shadow.hpp"
+//#include "scene_rt_shadow.hpp"
 #include "resources.hpp"
 #include "scene_cubes.hpp"
 
 #include "model_loader_assimp.hpp"
 
-#define SCENE rt_shadow_scene
+#define SCENE viknell_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;

@@ -24,9 +24,9 @@ namespace rt_shadow_scene
 		camera->SetRotation({-11_deg, -26.75_deg, 0});
 
 		// Geometry
-		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::pica_scene);
-		floor->SetPosition({0, 1, 0});
-		floor->SetRotation({0, 0, 180_deg});
+		//auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::pica_scene);
+		//floor->SetPosition({0, 1, 0});
+		//floor->SetRotation({0, 0, 180_deg});
 
 		// Lights
 		auto dir_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, DirectX::XMVECTOR{-37_deg, -120.0_deg, 0.0});

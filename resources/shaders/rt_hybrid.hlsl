@@ -26,14 +26,12 @@ struct Vertex
 
 struct Material
 {
-	float4x4 model;
 	float idx_offset;
 	float vertex_offset;
 	float albedo_id;
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
-	float2 padding;
 };
 
 RWTexture2D<float4> gOutput : register(u0);
@@ -327,7 +325,6 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const Material material = g_materials[InstanceID()];
 	const float index_offset = material.idx_offset;
 	const float vertex_offset = material.vertex_offset;
-	const float4x4 model_matrix = material.model;
 
 	// Find first index location
 	const uint index_size = 4;

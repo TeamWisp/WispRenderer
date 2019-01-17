@@ -53,9 +53,9 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
 	output.uv = input.uv;
-	output.tangent = normalize(mul(vm, float4(input.tangent, 0))).xyz;
-	output.bitangent = normalize(mul(vm, float4(input.bitangent, 0))).xyz;
-	output.normal = normalize(mul(vm, float4(input.normal, 0))).xyz;
+	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
+	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
+	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
 	output.color = input.color;
 
 	return output;

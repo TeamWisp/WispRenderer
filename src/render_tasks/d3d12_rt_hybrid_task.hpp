@@ -133,8 +133,7 @@ namespace wr
 				d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
 				// Bind g-buffers (albedo, normal, depth)
-				cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx);
-				d3d12::Offset(cpu_handle, 24, data.out_rt_heap->m_increment_size);
+				cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, 24);
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
@@ -177,8 +176,8 @@ namespace wr
 				{
 					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 				}
-				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 2);
-				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, 0);
+				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, 2);
+				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 
 				// Update material data
 				n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*) as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
@@ -211,7 +210,7 @@ namespace wr
 
 				d3d12::BindDescriptorHeap(cmd_list, as_build_data.out_rt_heap, as_build_data.out_rt_heap->m_create_info.m_type, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				auto gpu_handle = d3d12::GetGPUHandle(as_build_data.out_rt_heap, 0); // here
+				auto gpu_handle = d3d12::GetGPUHandle(as_build_data.out_rt_heap, frame_idx); // here
 				d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 0);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
