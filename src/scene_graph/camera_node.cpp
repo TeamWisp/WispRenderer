@@ -24,9 +24,9 @@ namespace wr
 		DirectX::XMVECTOR forward = DirectX::XMVector3Normalize(m_transform.r[2]);
 		DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
-		m_view = DirectX::XMMatrixLookAtRH(pos, DirectX::XMVectorAdd(pos, forward), up);
-		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
-		m_view_projection = DirectX::XMMatrixMultiply(m_view, m_projection);
+		m_view = DirectX::XMMatrixLookAtLH(pos, DirectX::XMVectorAdd(pos, forward), up);
+		m_projection = DirectX::XMMatrixPerspectiveFovLH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
+		m_view_projection = DirectX::XMMatrixMultiply(m_projection, m_view);
 		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 
 		CalculatePlanes();

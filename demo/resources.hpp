@@ -24,16 +24,16 @@ namespace resources
 		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
-		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
 		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
+		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
 		wr::TextureHandle flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
 
-		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", true, true);
-		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metal-splotchy-normal-dx.png", false, true);
+		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", false, true);
+		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metalgrid2_normal-dx.png", false, true);
 		wr::TextureHandle metal_splotchy_roughness = texture_pool->Load("resources/materials/metal-splotchy-rough.png", false, true);
 		wr::TextureHandle metal_splotchy_metallic = texture_pool->Load("resources/materials/metal-splotchy-metal.png", false, true);
 
-		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
+		wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", false, true);
 		wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
@@ -75,11 +75,11 @@ namespace resources
 			wr::MeshData<wr::Vertex> mesh;
 
 			mesh.m_indices = {
-				2, 1, 0, 3, 2, 0, 6, 5,
-				4, 7, 6, 4, 10, 9, 8, 11,
-				10, 8, 14, 13, 12, 15, 14, 12,
-				18, 17, 16, 19, 18, 16, 22, 21,
-				20, 23, 22, 20
+				0, 1, 2, 0, 2, 3, 4, 5,
+				6, 4, 6, 7, 8, 9, 10, 8,
+				10, 11, 12, 13, 14, 12, 14, 15,
+				16, 17, 18, 16, 18, 19, 20, 21,
+				22, 20, 22, 23
 			};
 
 			mesh.m_vertices = {
@@ -125,7 +125,7 @@ namespace resources
 				wr::MeshData<wr::Vertex> mesh;
 
 				mesh.m_indices = {
-					2, 1, 0, 3, 2, 0
+					0, 1, 2, 0, 2, 3
 				};
 
 				mesh.m_vertices = {
@@ -136,8 +136,7 @@ namespace resources
 					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
 				};
 
-				//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-				plane_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
+				plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
 
 				light_model = plane_model;
 

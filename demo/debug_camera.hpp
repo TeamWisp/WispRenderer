@@ -54,7 +54,7 @@ public:
 			m_target_position = DirectX::XMVectorAdd(m_target_position, DirectX::XMVectorScale(right, delta * m_speed * m_right_axis));
 
 			// Rotation
-			DirectX::XMVECTOR new_rot{ cursor_pos.y - m_last_cursor_pos.y, cursor_pos.x - m_last_cursor_pos.x };
+			DirectX::XMVECTOR new_rot{ m_last_cursor_pos.y - cursor_pos.y, m_last_cursor_pos.x - cursor_pos.x };
 			m_target_rotation_euler = DirectX::XMVectorSubtract(m_target_rotation_euler, DirectX::XMVectorScale(new_rot, m_sensitivity));
 		}
 		else
@@ -96,21 +96,21 @@ public:
 			{
 				m_forward_axis += -1;
 			}
-			if (key == 0x44) // A
+			if (key == 0x41) // A
 			{
 				m_right_axis += -1;
 			}
-			if (key == 0x41) // S
+			if (key == 0x44) // D
 			{
 				m_right_axis += 1;
 			}
 			if (key == VK_SPACE)
 			{
-				m_up_axis += -1;
+				m_up_axis += 1;
 			}
 			if (key == VK_CONTROL)
 			{
-				m_up_axis += 1;
+				m_up_axis += -1;
 			}
 		}
 		
@@ -124,21 +124,21 @@ public:
 			{
 				m_forward_axis -= -1;
 			}
-			if (key == 0x44) // A
+			if (key == 0x41) // A
 			{
 				m_right_axis -= -1;
 			}
-			if (key == 0x41) // S
+			if (key == 0x44) // D
 			{
 				m_right_axis -= 1;
 			}
 			if (key == VK_SPACE)
 			{
-				m_up_axis -= -1;
+				m_up_axis -= 1;
 			}
 			if (key == VK_CONTROL)
 			{
-				m_up_axis -= 1;
+				m_up_axis -= -1;
 			}
 		}
 	}

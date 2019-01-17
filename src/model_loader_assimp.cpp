@@ -22,8 +22,7 @@ namespace wr
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices |
 			aiProcess_OptimizeMeshes |
-			aiProcess_ImproveCacheLocality |
-			aiProcess_MakeLeftHanded);
+			aiProcess_ImproveCacheLocality);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{

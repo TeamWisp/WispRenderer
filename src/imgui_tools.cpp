@@ -247,7 +247,7 @@ namespace wr::imgui::window
 			auto cam = scene_graph->GetActiveCamera();
 			DirectX::XMFLOAT4X4 rview;
 			DirectX::XMFLOAT4X4 rproj;
-			auto view = DirectX::XMMatrixMultiply(cam->m_view, DirectX::XMMatrixScaling(1, -1, 1));
+			auto view = DirectX::XMMatrixMultiply(cam->m_view, DirectX::XMMatrixScaling(1, 1, 1));
 			DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
 			DirectX::XMStoreFloat4x4(&rview, view);
 
