@@ -133,7 +133,7 @@ namespace wr
 				d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
 				// Bind g-buffers (albedo, normal, depth)
-				cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, 24);
+				cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, d3d12::settings::hybrid_g_buffer_offset);
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
