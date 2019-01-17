@@ -56,6 +56,8 @@ namespace wr
 		d3d12::DescriptorHeap* m_mipmapping_heap;
 		d3d12::DescHeapCPUHandle m_mipmapping_cpu_handle;
 		d3d12::DescHeapGPUHandle m_mipmapping_gpu_handle;
+
+		std::vector<std::vector<d3d12::TextureResource*>> m_post_stage_clear_textures;
 	};
 
 

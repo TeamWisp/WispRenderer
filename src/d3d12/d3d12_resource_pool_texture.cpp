@@ -34,6 +34,8 @@ namespace wr
 		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
 		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);
 
+		m_post_stage_clear_textures.resize(d3d12::settings::num_back_buffers);
+
 	}
 
 	D3D12TexturePool::~D3D12TexturePool()
@@ -59,6 +61,8 @@ namespace wr
 		{
 			d3d12::CommandList* cmdlist = static_cast<d3d12::CommandList*>(cmd_list);
 
+			int frame = m_render_system.GetFrameIdx();
+
 			std::vector<d3d12::TextureResource*> unstaged_textures;
 
 			auto itr = m_unstaged_textures.begin();
@@ -68,6 +72,7 @@ namespace wr
 				d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(itr->second);
 
 				unstaged_textures.push_back(texture);
+				m_post_stage_clear_textures[frame].push_back(texture);
 
 				size_t row_pitch, slice_pitch;
 
@@ -95,6 +100,13 @@ namespace wr
 
 	void D3D12TexturePool::PostStageClear()
 	{
+		int frame = m_render_system.GetFrameIdx();
+		for (int i = 0; i < m_post_stage_clear_textures[frame].size(); ++i)
+		{
+			m_post_stage_clear_textures[frame][i]->m_intermediate->Release();
+		}
+
+		m_post_stage_clear_textures[frame].clear();
 	}
 
 	void D3D12TexturePool::EndOfFrame()

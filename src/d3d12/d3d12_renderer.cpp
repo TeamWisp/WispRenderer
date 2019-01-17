@@ -796,6 +796,8 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
+		m_texture_pool->PostStageClear();
+
 		m_texture_pool->Stage(m_direct_cmd_list);
 
 		d3d12::End(m_direct_cmd_list);

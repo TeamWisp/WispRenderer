@@ -260,7 +260,6 @@ namespace wr::d3d12
 		ID3D12Resource* m_staging;
 		unsigned int m_size;
 		unsigned int m_stride_in_bytes;
-		void* m_data;
 		ResourceState m_target_resource_state;
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 		std::uint8_t* m_cpu_address;
