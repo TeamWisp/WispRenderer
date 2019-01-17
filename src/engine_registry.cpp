@@ -150,7 +150,7 @@ namespace wr
 		{
 			"resources/shaders/accumulation.hlsl",
 			"main",
-			ShaderType::PIXEL_SHADER
+			ShaderType::DIRECT_COMPUTE_SHADER
 		});
 
 	REGISTER(shaders::rt_lib) = ShaderRegistry::Get().Register({
@@ -160,6 +160,7 @@ namespace wr
 	});
 
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> accum_r = {
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // source texture
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(), // source texture
 	};
 
@@ -175,15 +176,15 @@ namespace wr
 
 	REGISTER(pipelines::accumulation) = PipelineRegistry::Get().Register<Vertex2D>(
 		{
-			shaders::fullscreen_quad_vs,
-			shaders::accumulation,
 			std::nullopt,
+			std::nullopt,
+			shaders::accumulation,
 			root_signatures::accumulation,
 			Format::UNKNOWN,
 			{ d3d12::settings::back_buffer_format }, //This compute shader doesn't use any render target
 			1,
-			PipelineType::GRAPHICS_PIPELINE,
-			CullMode::CULL_BACK,
+			PipelineType::COMPUTE_PIPELINE,
+			CullMode::CULL_NONE,
 			false,
 			true,
 			TopologyType::TRIANGLE

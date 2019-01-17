@@ -6,7 +6,7 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
-#include "render_tasks/d3d12_accumulation.hpp"
+#include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
 
@@ -31,7 +31,7 @@ namespace fg_manager
 
 			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
-			wr::AddAccumulationTask(*fg);
+			wr::AddAccumulationTask<wr::RaytracingData>(*fg);
 			
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
@@ -54,8 +54,11 @@ namespace fg_manager
 			// Merge the G-buffer into one final texture
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
+			// Do some post processing
+			wr::AddAccumulationTask<wr::DeferredCompositionTaskData>(*fg);
+
 			// Copy the composition pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));

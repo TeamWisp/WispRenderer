@@ -123,7 +123,7 @@ float4x4 ContrastMatrix(float contrast)
 float3 AllTonemappingAlgorithms(float3 color, float rotation, float exposure, float gamma) {
 	float3 result = color;
 
-	float n = 8;
+	float n = 9;
 	int i = int(n * (rotation / 2));
 
 	if (i == 0) result = linearToneMapping(color, exposure, gamma);
@@ -134,6 +134,7 @@ float3 AllTonemappingAlgorithms(float3 color, float rotation, float exposure, fl
 	if (i == 5) result = filmicToneMapping(color);
 	if (i == 6) result = Uncharted2ToneMapping(color, exposure, gamma);
 	if (i == 7) result = GrayscaleToneMapping(color);
+	if (i == 8) result = color;
 
 	return result;
 }
