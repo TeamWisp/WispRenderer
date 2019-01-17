@@ -512,7 +512,7 @@ namespace wr
 			}
 			else
 			{
-				LOGC("Failed to load shader. compiler error: {}", std::get<std::string>(shader_error));
+				LOGC(std::get<std::string>(shader_error));
 			}
 		}
 	}
