@@ -18,6 +18,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 view;
 	float4x4 projection;
 	float4x4 inv_projection;
+	float4x4 inv_view;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -48,7 +49,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
-	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, transpose(view));
+	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
 	float3 V = normalize(-pos);
 
 	float3 retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance);
