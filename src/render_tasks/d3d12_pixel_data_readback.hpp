@@ -134,7 +134,7 @@ namespace wr
 			internal::DestroyReadBackTask(frame_graph, handle);
 		};
 
-		readback_task_description.m_name = std::string(std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
+		readback_task_description.m_name = std::string(std::string("Render target pixel data (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
 		readback_task_description.m_properties = rt_properties;
 		readback_task_description.m_type = RenderTaskType::COPY;
 		readback_task_description.m_allow_multithreading = false;
