@@ -59,7 +59,7 @@ namespace wr
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
 		m_window = window;
-		m_thread_pool = new util::ThreadPool(d3d12::settings::max_threads);
+		m_thread_pool = new util::ThreadPool(settings::num_frame_graph_threads);
 		m_device = d3d12::CreateDevice();
 		SetName(m_device, L"Default D3D12 Device");
 		m_direct_queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
@@ -161,7 +161,7 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-		
+
 		// Perform reload requests
 		{
 			// Root Signatures
@@ -207,27 +207,36 @@ namespace wr
 
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
+		std::vector<d3d12::CommandList*> n_cmd_lists;
+
+		n_cmd_lists.push_back(m_direct_cmd_list);
+
+		for (auto& model_pool : m_model_pools)
+		{
+			std::vector<d3d12::CommandList*> cmd_lists = model_pool->StageMeshes();
+			for (auto cmd_list : cmd_lists)
+			{
+				n_cmd_lists.push_back(cmd_list);
+			}
+		}
+
+		std::vector<d3d12::CommandList*> texture_staging_command_lists = static_cast<D3D12TexturePool*>(m_texture_pool.get())->Stage();
+		for (int i = 0; i < texture_staging_command_lists.size(); ++i)
+		{
+			n_cmd_lists.push_back(texture_staging_command_lists[i]);
+		}
+
 		scene_graph->Update();
 		scene_graph->Optimize();
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
-		std::vector<d3d12::CommandList*> n_cmd_lists;
-
-		n_cmd_lists.push_back(m_direct_cmd_list);
-
+		
 		for (auto& list : cmd_lists)
 		{
 			n_cmd_lists.push_back(list);
 		}
-
-		for (auto& model_pool : m_model_pools)
-		{
-			model_pool->WaitForStaging();
-		}
-		
-		m_texture_pool->WaitForStaging();
 		
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
@@ -794,13 +803,6 @@ namespace wr
 		{
 			m_structured_buffer_pools[i]->UpdateBuffers(m_direct_cmd_list, frame_idx);
 		}
-
-		for (int i = 0; i < m_model_pools.size(); ++i)
-		{
-			m_model_pools[i]->StageMeshes();
-		}
-
-		m_texture_pool->Stage();
 
 		d3d12::End(m_direct_cmd_list);
 	}

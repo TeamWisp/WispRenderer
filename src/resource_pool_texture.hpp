@@ -37,8 +37,6 @@ namespace wr
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
 		virtual void Stage(CommandList* cmd_list) = 0;
-		virtual void Stage() = 0;
-		virtual void WaitForStaging() = 0;
 		virtual void PostStageClear() = 0;
 		virtual void EndOfFrame() = 0;
 

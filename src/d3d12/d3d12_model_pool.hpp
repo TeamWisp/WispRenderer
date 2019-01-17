@@ -52,9 +52,7 @@ namespace wr
 		void Evict() final;
 		void MakeResident() final;
 
-		void StageMeshes();
-
-		void WaitForStaging();
+		[[nodiscard]] std::vector<d3d12::CommandList*> StageMeshes();
 
 		d3d12::StagingBuffer* GetVertexStagingBuffer();
 		d3d12::StagingBuffer* GetIndexStagingBuffer();
@@ -96,16 +94,9 @@ namespace wr
 		util::ThreadPool* m_thread_pool;
 
 		std::vector<d3d12::CommandList*> m_command_lists;
-		std::vector<d3d12::CommandList*> m_transition_command_lists;
 
 		std::vector<std::future<void>> m_command_recording_futures;
-		std::vector<bool> m_command_recording_launched;
-
-		d3d12::Fence* m_staging_fence;
-		d3d12::Fence* m_transition_fence;
-
-		bool m_waiting_for_staging;
-
+		
 		D3D12RenderSystem& m_render_system;
 	};
 } /* wr::d3d12 */

@@ -45,6 +45,5 @@ namespace wr::d3d12::settings
 	static const constexpr bool enable_object_culling = false;
 	static const constexpr unsigned int num_max_rt_materials = 10;
 	static const constexpr unsigned int fallback_ptrs_offset = 26;
-	static const constexpr unsigned int max_threads = 4;
 
 } /* wr::d3d12::settings */

@@ -4,6 +4,7 @@
 #include "d3d12_renderer.hpp"
 
 #include "../renderer.hpp"
+#include "../settings.hpp"
 #include "d3d12_renderer.hpp"
 #include "d3d12_structs.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
@@ -16,7 +17,6 @@ namespace wr
 	D3D12TexturePool::D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_mb, std::size_t num_of_textures)
 		: TexturePool(size_in_mb)
 		, m_render_system(render_system)
-		, m_is_staging(false)
 	{
 		auto device = m_render_system.m_device;
 
@@ -36,23 +36,18 @@ namespace wr
 
 		m_thread_pool = m_render_system.GetThreadPool();
 
-		m_command_lists.resize(d3d12::settings::max_threads + 1);
+		m_command_lists.resize(settings::num_frame_graph_threads + 1);
 
 		for (auto& list : m_command_lists)
 		{
-			list = d3d12::CreateCommandList(m_render_system.m_device, 1, wr::CmdListType::CMD_LIST_DIRECT);
+			list = d3d12::CreateCommandList(m_render_system.m_device, d3d12::settings::num_back_buffers, wr::CmdListType::CMD_LIST_DIRECT);
 		}
 
-		m_command_recording_futures.resize(d3d12::settings::max_threads + 1);
-
-		m_staging_fence = d3d12::CreateFence(m_render_system.m_device);
+		m_command_recording_futures.resize(settings::num_frame_graph_threads);
 	}
 
 	D3D12TexturePool::~D3D12TexturePool()
 	{
-		d3d12::WaitFor(m_staging_fence);
-		d3d12::Destroy(m_staging_fence);
-
 		for (auto& cmd_list : m_command_lists)
 		{
 			d3d12::Destroy(static_cast<d3d12::CommandList*>(cmd_list));
@@ -111,41 +106,38 @@ namespace wr
 		}
 	}
 
-	void D3D12TexturePool::Stage()
+	std::vector<d3d12::CommandList*> D3D12TexturePool::Stage()
 	{
 		size_t unstaged_number = m_unstaged_textures.size();
 
 		if (unstaged_number > 0)
 		{
-			if (m_is_staging)
-			{
-				d3d12::WaitFor(m_staging_fence);
-				m_is_staging = false;
-			}
-
 			std::vector<d3d12::TextureResource*> unstaged_textures;
 
 			auto itr = m_unstaged_textures.begin();
+
+			unsigned int current_frame = m_render_system.GetFrameIdx();
 
 			for (itr; itr != m_unstaged_textures.end(); ++itr)
 			{
 				unstaged_textures.push_back(static_cast<d3d12::TextureResource*>(itr->second));
 			}
 
-			for (int i = 0; i < d3d12::settings::max_threads; ++i) {
+			m_thread_pool->DivideWork(m_command_recording_futures.size(), [&](std::uint64_t index) 
+			{
 
-				d3d12::CommandList* cmdlist = m_command_lists[i];
+				d3d12::CommandList* cmdlist = m_command_lists[index];
 
-				m_command_recording_futures[i] = m_thread_pool->Enqueue([i](
+				m_command_recording_futures[index] = m_thread_pool->Enqueue([current_frame, index](
 					d3d12::CommandList* cmdlist,
 					std::vector<d3d12::TextureResource*>& unstaged_textures)
 				{
 
-					d3d12::Begin(cmdlist, 0);
+					d3d12::Begin(cmdlist, current_frame);
 
 					for (int j = 0; j<unstaged_textures.size(); ++j)
 					{
-						if (j%d3d12::settings::max_threads != i)
+						if (j%settings::num_frame_graph_threads != index)
 						{
 							continue;
 						}
@@ -170,28 +162,18 @@ namespace wr
 				},
 					cmdlist, unstaged_textures);
 
-			}
+			});
 
-			m_command_recording_futures[m_command_recording_futures.size() - 1] =
-				m_thread_pool->Enqueue([this](
-					d3d12::CommandList* cmd_list,
-					std::vector<d3d12::TextureResource*>& unstaged_textures
-					)
-			{
+			d3d12::Begin(m_command_lists[m_command_lists.size() - 1], current_frame);
 
-				d3d12::Begin(cmd_list, 0);
+			d3d12::Transition(m_command_lists[m_command_lists.size() - 1],
+				unstaged_textures,
+				wr::ResourceState::COPY_DEST,
+				wr::ResourceState::PIXEL_SHADER_RESOURCE);
 
-				d3d12::Transition(cmd_list,
-					unstaged_textures,
-					wr::ResourceState::COPY_DEST,
-					wr::ResourceState::PIXEL_SHADER_RESOURCE);
+			GenerateMips(unstaged_textures, m_command_lists[m_command_lists.size() - 1]);
 
-				GenerateMips(unstaged_textures, cmd_list);
-
-				d3d12::End(cmd_list);
-
-			},
-					m_command_lists[m_command_lists.size() - 1], unstaged_textures);
+			d3d12::End(m_command_lists[m_command_lists.size() - 1]);
 
 			for (auto& future : m_command_recording_futures)
 			{
@@ -200,18 +182,10 @@ namespace wr
 
 			MoveStagedTextures();
 
-			d3d12::Execute(m_render_system.m_direct_queue, m_command_lists, m_staging_fence);
-			m_is_staging = true;
+			return m_command_lists;
 		}
-	}
 
-	void D3D12TexturePool::WaitForStaging()
-	{
-		if (m_is_staging)
-		{
-			d3d12::WaitFor(m_staging_fence);
-			m_is_staging = false;
-		}
+		else return {};
 	}
 	
 	void D3D12TexturePool::PostStageClear()
