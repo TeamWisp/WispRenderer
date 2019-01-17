@@ -829,6 +829,7 @@ namespace wr
 			data.m_projection = node->m_projection;
 			data.m_inverse_projection = node->m_inverse_projection;
 			data.m_view = node->m_view;
+			data.m_inverse_view = node->m_inverse_view;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &data);
 		}
