@@ -82,7 +82,7 @@ namespace wr
 			command_list->m_native->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
 
 			// Update the frame graph output texture (allows the renderer to access this data)
-			frame_graph.SetOutputTexture(data.cpu_texture_output);
+			frame_graph.SetOutputTexture(data.cpu_texture_output, CPUTextureType::PIXEL_DATA);
 		}
 		
 		inline void DestroyReadBackTask(FrameGraph& fg, RenderTaskHandle handle)
