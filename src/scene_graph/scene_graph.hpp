@@ -75,6 +75,7 @@ namespace wr
 	struct CameraNode;
 	struct MeshNode;
 	struct LightNode;
+	struct SkyboxNode;
 
 	enum class LightType : uint32_t
 	{
@@ -145,6 +146,7 @@ namespace wr
 
 		std::vector<std::shared_ptr<LightNode>>& GetLightNodes();
 		std::vector<std::shared_ptr<MeshNode>>& GetMeshNodes();
+		std::shared_ptr<SkyboxNode> GetCurrentSkybox();
 
 		void Init();
 		void Update();
@@ -183,6 +185,7 @@ namespace wr
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
 		std::vector<std::shared_ptr<LightNode>> m_light_nodes;
+		std::vector< std::shared_ptr<SkyboxNode>>	m_skybox_nodes;
 
 		uint32_t m_next_light_id = 0;
 	};
@@ -211,6 +214,10 @@ namespace wr
 		else if constexpr (std::is_base_of<LightNode, T>::value)
 		{
 			RegisterLight(new_node);
+		}
+		else if constexpr (std::is_same<T, SkyboxNode>::value)
+		{
+			m_skybox_nodes.push_back(new_node);
 		}
 
 		return new_node;
