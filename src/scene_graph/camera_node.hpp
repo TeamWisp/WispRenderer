@@ -40,6 +40,7 @@ namespace wr
 		DirectX::XMMATRIX m_projection;
 		DirectX::XMMATRIX m_view_projection;
 		DirectX::XMMATRIX m_inverse_projection;
+		DirectX::XMMATRIX m_inverse_view;
 
 		DirectX::XMVECTOR m_planes[6];
 
