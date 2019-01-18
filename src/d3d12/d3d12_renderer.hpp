@@ -181,6 +181,7 @@ namespace wr
 
 	private:
 
+		void ResetBatches(SceneGraph& sg);
 		void LoadPrimitiveShapes();
 
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;

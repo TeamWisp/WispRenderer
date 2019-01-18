@@ -220,6 +220,9 @@ namespace wr
 			n_cmd_lists.push_back(list);
 		}
 
+		// Reset the batches.
+		ResetBatches(*scene_graph.get());
+
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
 		if (m_render_window.has_value())
@@ -993,9 +996,6 @@ namespace wr
 					}
 				}
 			}
-
-			//Reset instances
-			batch.num_instances = 0;
 		}
 
 		if constexpr (d3d12::settings::use_exec_indirect)
@@ -1075,6 +1075,14 @@ namespace wr
 		}
 
 		return m_simple_shapes[type];
+	}
+
+	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)
+	{
+		for (auto& batch : sg.GetBatches())
+		{
+			batch.second.num_instances = 0;
+		}
 	}
 
 	void D3D12RenderSystem::LoadPrimitiveShapes()
