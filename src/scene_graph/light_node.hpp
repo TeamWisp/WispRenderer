@@ -48,6 +48,7 @@ namespace wr
 		//! Physical data
 		Light m_temp;
 
+		bool m_imgui_selected = false;
 	};
 
 } /* wr */

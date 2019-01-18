@@ -196,7 +196,7 @@ namespace wr::imgui::window
 					int type = (int)light.tid & 3;
 					ImGui::Combo("Type", &type, listbox_items, 3);
 					light.tid = type;
-					
+
 					if (i == 0)
 						light.tid |= (uint32_t) lights.size() << 2;
 
@@ -204,7 +204,7 @@ namespace wr::imgui::window
 					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
 
 					if (type != (uint32_t)LightType::POINT)
-					{		
+					{
 						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
 						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
 						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
@@ -232,17 +232,37 @@ namespace wr::imgui::window
 					{
 						scene_graph->DestroyNode<LightNode>(lights[i]);
 					}
-
+					
+					ImGui::Checkbox("Select", &lights[i]->m_imgui_selected);
+					
 					ImGui::TreePop();
 				}
 			}
 
 			ImGui::End();
 
-			auto ml = lights[0];
+			unsigned int firstLight = -1;
+			int i = 0;
+			
+			while (firstLight == -1 && i < lights.size())
+			{
+				if (lights[i]->m_imgui_selected)
+				{
+					firstLight = i;
+				}
+				i++;
+			}
+
+			if (firstLight == -1)
+			{
+				return;
+			}
+
+			auto ml = lights[firstLight];
 			DirectX::XMFLOAT4X4 rmat;
 			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
 			DirectX::XMStoreFloat4x4(&rmat, mat);
+			DirectX::XMVECTOR oldVec = { rmat._41, rmat._42, rmat._43 };
 
 			auto cam = scene_graph->GetActiveCamera();
 			DirectX::XMFLOAT4X4 rview;
@@ -257,8 +277,22 @@ namespace wr::imgui::window
 
 			ml->m_position = { rmat._41, rmat._42, rmat._43 };
 
-			ml->SignalTransformChange();
-			ml->SignalChange();
+			if (!DirectX::XMVector3Equal(ml->m_position, oldVec))
+			{
+				ml->SignalTransformChange();
+				ml->SignalChange();
+				DirectX::XMVECTOR pos = { rmat._41, rmat._42, rmat._43 };
+				auto diff = DirectX::XMVectorSubtract(pos, oldVec);
+				for (int j = firstLight + 1; j < lights.size(); ++j)
+				{
+					if (lights[j]->m_imgui_selected)
+					{
+						lights[j]->m_position = DirectX::XMVectorAdd(lights[j]->m_position, diff);
+						lights[j]->SignalTransformChange();
+						lights[j]->SignalChange();
+					}
+				}
+			}	
 		}
 	}
 
