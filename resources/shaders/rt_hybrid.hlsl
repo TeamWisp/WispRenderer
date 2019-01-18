@@ -95,7 +95,7 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-bool TraceShadowRay(float3 origin, float3 direction, float TMax)
+bool TraceShadowRay(float3 origin, float3 direction, float t_max)
 {
 	ShadowHitInfo payload = { false };
 
@@ -104,14 +104,14 @@ bool TraceShadowRay(float3 origin, float3 direction, float TMax)
 	ray.Origin = origin;
 	ray.Direction = direction;
 	ray.TMin = 0.0000;
-	ray.TMax = TMax;
+	ray.TMax = t_max;
 
 	// Trace the ray
 	TraceRay(
 		Scene,
-RAY_FLAG_NONE,
-		//RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH
-		// RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
+		// TODO: Change flags if transparency is added
+		RAY_FLAG_FORCE_OPAQUE // Treat all geometry as opaque.
+		| RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, // Accept first hit
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		1, // MultiplierForGeometryContributionToHitGroupIndex
@@ -124,7 +124,7 @@ RAY_FLAG_NONE,
 
 float3 TraceReflectionRay(float3 origin, float3 direction)
 {
-	float epsilon = 0.05;
+	float epsilon = 0.005;
 
 	ReflectionHitInfo payload = { origin + direction * epsilon, float3(0, 0, 1) };
 
@@ -159,14 +159,6 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float3 unpack_direction(float3 dir)
-{
-	// Get world space normal
-	const float4 vnormal = float4(dir.xyz, 0.0);
-	float4 wnormal = mul(inv_view, vnormal);
-	return wnormal.xyz;
-}
-
 float calc_attenuation(float r, float d)
 {
 	return 1.0f - smoothstep(r * 0, r, d);
@@ -198,8 +190,8 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 	// Check if pixel is shaded
 	float epsilon = 0.005; // Hard-coded; use depth buffer to get depth value in linear space and use that to determine the epsilon (to minimize precision errors)
 	float3 origin = wpos + normal * 0.005;
-	float TMax = lerp(light_dist, 10000.0, tid == light_type_directional);
-	bool is_shadow = TraceShadowRay(origin, L, TMax);
+	float t_max = lerp(light_dist, 10000.0, tid == light_type_directional);
+	bool is_shadow = TraceShadowRay(origin, L, t_max);
 
 	lighting = lerp(lighting, float3(0, 0, 0), is_shadow);
 
@@ -249,7 +241,7 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic,
 
 	float3 fresnel_reflection = lerp(albedo, reflection, 0.5f);
 
-	return albedo;
+	return albedo; // Set to fresnel_reflection for reflections
 }
 
 [shader("raygeneration")]
@@ -305,21 +297,13 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 }
 
 //Shadows
-
 [shader("closesthit")]
-void ClosestHitEntry(inout ShadowHitInfo payload, in MyAttributes attr)
+void ShadowHit(inout ShadowHitInfo payload, in MyAttributes attr)
 {
 	payload.shadow_hit = true;
 }
 
-[shader("miss")]
-void MissEntry(inout ShadowHitInfo payload)
-{
-	payload.shadow_hit = false;
-}
-
 //Reflections
-
 [shader("closesthit")]
 void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 {

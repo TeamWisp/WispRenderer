@@ -19,14 +19,17 @@ namespace wr
 {
 	struct RTHybridData
 	{
+		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
 
+		// Pipeline objects
 		d3d12::StateObject* out_state_object;
 		d3d12::RootSignature* out_root_signature;
-		D3D12ConstantBufferHandle* out_cb_camera_handle;
 
+		// Structures and buffers
+		D3D12ConstantBufferHandle* out_cb_camera_handle;
 		d3d12::RenderTarget* out_deferred_main_rt;
 	};
 
@@ -35,6 +38,7 @@ namespace wr
 
 		inline void CreateShaderTables(d3d12::Device* device, RTHybridData& data, int frame_idx)
 		{
+			// Delete existing shader table
 			if (data.out_miss_shader_table[frame_idx])
 			{
 				d3d12::Destroy(data.out_miss_shader_table[frame_idx]);
@@ -48,7 +52,7 @@ namespace wr
 				d3d12::Destroy(data.out_raygen_shader_table[frame_idx]);
 			}
 
-			// Raygen Shader Table
+			// Set up Raygen Shader Table
 			{
 				// Create Record(s)
 				UINT shader_record_count = 1;
@@ -62,37 +66,33 @@ namespace wr
 				d3d12::AddShaderRecord(data.out_raygen_shader_table[frame_idx], shader_record);
 			}
 
-			// Miss Shader Table
+			// Set up Miss Shader Table
 			{
 				// Create Record(s)
 				UINT shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-
-				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MissEntry");
-				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
 
 				auto reflection_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ReflectionMiss");
 				auto reflection_miss_record = d3d12::CreateShaderRecord(reflection_miss_identifier, shader_identifier_size);
 
-				// Create Table
+				// Create Table(s)
 				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], reflection_miss_record);
 			}
 
-			// Hit Group Shader Table
+			// Set up Hit Group Shader Table
 			{
 				// Create Record(s)
 				UINT shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
 
-				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "MyHitGroup");
+				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowHitGroup");
 				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
 
 				auto reflection_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ReflectionHitGroup");
 				auto reflection_hit_record = d3d12::CreateShaderRecord(reflection_hit_identifier, shader_identifier_size);
 
-				// Create Table
+				// Create Table(s)
 				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
 				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shadow_hit_record);
 				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], reflection_hit_record);
@@ -101,11 +101,11 @@ namespace wr
 
 		inline void SetupRTHybridTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle)
 		{
+			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-
 			d3d12::SetName(n_render_target, L"Raytracing Target");
 
 			// Get AS build data
@@ -144,6 +144,7 @@ namespace wr
 
 		inline void ExecuteRTHybridTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
 		{
+			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
@@ -151,6 +152,7 @@ namespace wr
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
+			// Wait for AS to be built
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
 
 			if (n_render_system.m_render_window.has_value())
@@ -168,17 +170,7 @@ namespace wr
 				// Update material data
 				n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*) as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
 
-				// Update camera cb
-				static int fc = -10;
-				if (n_render_system.clear_path)
-				{
-					fc = -1;
-					n_render_system.clear_path = false;
-				}
-
-				n_render_system.temp_rough = fc;
-				fc++;
-
+				// Update camera constant buffer
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTHybridCamera_CBData cam_data;
 				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view );
@@ -237,7 +229,7 @@ namespace wr
 			true,
 			true
 		};
-		//RTHybridData
+
 		RenderTaskDesc desc;
 		desc.m_setup_func = [] (RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
