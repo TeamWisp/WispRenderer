@@ -991,13 +991,16 @@ namespace wr
 					
 					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
-					auto material_handle = batch.materials[i];
+					auto& material_handle = batch.materials[i];
 					
 					if (material_handle != m_last_material)
 					{
 						m_last_material = material_handle;
 
-						BindMaterial(material_handle, cmd_list);
+						if (material_handle.m_pool != nullptr)
+						{
+							BindMaterial(material_handle, cmd_list);
+						}
 					}
 
 					if (n_mesh->m_index_count != 0)
@@ -1032,11 +1035,11 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
+	void D3D12RenderSystem::BindMaterial(MaterialHandle material_handle, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 
-		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+		auto* material_internal = material_handle.m_pool->GetMaterial(material_handle.m_id);
 
 		auto albedo_handle = material_internal->GetAlbedo();
 		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));

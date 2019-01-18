@@ -138,7 +138,7 @@ namespace wr
 		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
-		void BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list);
+		void BindMaterial(MaterialHandle material_handle, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -191,7 +191,7 @@ namespace wr
 
 		std::optional<bool> m_requested_fullscreen_state;
 
-		MaterialHandle* m_last_material = nullptr;
+		MaterialHandle m_last_material;
 	};
 
 } /* wr */

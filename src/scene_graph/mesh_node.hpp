@@ -8,7 +8,7 @@ namespace wr
 	struct MeshNode : Node
 	{
 		Model* m_model;
-		std::vector<MaterialHandle*> m_materials;
+		std::vector<MaterialHandle> m_materials;
 
 		DirectX::XMVECTOR m_aabb[2];
 
@@ -17,11 +17,11 @@ namespace wr
 			m_materials.resize(m_model->m_meshes.size());
 			for (int i = 0; i < m_materials.size(); ++i)
 			{
-				m_materials[i] = m_model->m_meshes[i].second;
+				m_materials[i] = (*m_model->m_meshes[i].second);
 			}
 		}
 
-		void SetMeshMaterial(int mesh_index, MaterialHandle* material)
+		void SetMeshMaterial(int mesh_index, MaterialHandle material)
 		{
 			if (mesh_index < m_materials.size())
 			{
@@ -29,7 +29,7 @@ namespace wr
 			}
 		}
 
-		void SetMeshMaterials(Mesh* mesh, MaterialHandle* material)
+		void SetMeshMaterials(Mesh* mesh, MaterialHandle material)
 		{
 			for (int i = 0; i < m_model->m_meshes.size(); ++i)
 			{
@@ -40,7 +40,7 @@ namespace wr
 			}
 		}
 
-		MaterialHandle* GetMeshMaterial(int mesh_index)
+		MaterialHandle GetMeshMaterial(int mesh_index)
 		{
 			if (mesh_index < m_materials.size())
 			{
@@ -48,9 +48,9 @@ namespace wr
 			}
 		}
 
-		std::vector<MaterialHandle*> GetMeshMaterials(Mesh* mesh)
+		std::vector<MaterialHandle> GetMeshMaterials(Mesh* mesh)
 		{
-			std::vector<MaterialHandle*> materials;
+			std::vector<MaterialHandle> materials;
 			for (int i = 0; i < m_model->m_meshes.size(); ++i)
 			{
 				if (m_model->m_meshes[i].first->id == mesh->id)
@@ -64,7 +64,7 @@ namespace wr
 		{
 			if (mesh_index < m_materials.size())
 			{
-				m_materials[mesh_index] = m_model->m_meshes[mesh_index].second;
+				m_materials[mesh_index] = (*m_model->m_meshes[mesh_index].second);
 			}
 		}
 
@@ -74,7 +74,7 @@ namespace wr
 			{
 				if (m_model->m_meshes[i].first->id == mesh->id)
 				{
-					m_materials[i] = m_model->m_meshes[i].second;
+					m_materials[i] = (*m_model->m_meshes[i].second);
 				}
 			}
 		}
@@ -103,11 +103,11 @@ namespace wr
 		{
 			for (int i = 0; i < m_model->m_meshes.size(); ++i)
 			{
-				m_materials[i] = m_model->m_meshes[i].second;
+				m_materials[i] = (*m_model->m_meshes[i].second);
 			}
 		}
 
-		std::vector<MaterialHandle*> GetModelMaterials()
+		std::vector<MaterialHandle> GetModelMaterials()
 		{
 			return m_materials;
 		}
