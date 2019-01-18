@@ -62,8 +62,6 @@ namespace wr
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
-			cmd_list->m_native->SetComputeRoot32BitConstant(0, d3d12::settings::output_hdr, 0);
-
 			float hdr_type = static_cast<float>(d3d12::settings::output_hdr);
 			d3d12::BindCompute32BitConstants(cmd_list, &hdr_type, 1, 0, 1);
 

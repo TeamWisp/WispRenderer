@@ -233,7 +233,13 @@ namespace wr
 		m_bound_model_pool = nullptr;
 
 		//Signal end of frame to the texture pool so that stale descriptors can be freed.
-		m_texture_pool->EndOfFrame();
+		for (auto pool : m_texture_pools)
+		{
+			pool->EndOfFrame();
+		}
+
+		// Optional CPU-visible copy of the render target pixel data
+		const auto cpu_output_texture = frame_graph.GetOutputTexture();
 
 		// Optional CPU-visible copy of the render target pixel and/or depth data
 		return frame_graph.GetOutputTexture();
@@ -252,8 +258,9 @@ namespace wr
 
 	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures)
 	{
-		m_texture_pool = std::make_shared<D3D12TexturePool>(*this, size_in_mb, num_of_textures);
-		return m_texture_pool;
+		std::shared_ptr<D3D12TexturePool> pool = std::make_shared<D3D12TexturePool>(*this, size_in_mb, num_of_textures);
+		m_texture_pools.push_back(pool);
+		return pool;
 	}
 
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
@@ -795,7 +802,11 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
-		m_texture_pool->Stage(m_direct_cmd_list);
+		
+		for (auto pool : m_texture_pools)
+		{
+			pool->Stage(m_direct_cmd_list);
+		}
 
 		d3d12::End(m_direct_cmd_list);
 	}
@@ -1039,10 +1050,10 @@ namespace wr
 		auto metallic_handle = material_internal->GetMetallic();
 		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		d3d12::SetShaderTexture(n_cmd_list, 2, 0, albedo_internal);
-		d3d12::SetShaderTexture(n_cmd_list, 2, 1, normal_internal);
-		d3d12::SetShaderTexture(n_cmd_list, 2, 2, roughness_internal);
-		d3d12::SetShaderTexture(n_cmd_list, 2, 3, metallic_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, 0, albedo_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, 1, normal_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, 2, roughness_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, 3, metallic_internal);
 	}
 	
 	unsigned int D3D12RenderSystem::GetFrameIdx()

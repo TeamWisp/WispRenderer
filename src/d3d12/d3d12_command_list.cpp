@@ -274,6 +274,11 @@ namespace wr::d3d12
 		cmd_list->m_native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer->m_gpu_addresses[frame_idx]);
 	}
 
+	void Bind32BitConstants(CommandList* cmd_list, const void* data_to_set, unsigned int num_of_values_to_set, unsigned int dest_offset_in_32bit_values, unsigned int root_parameter_idx)
+	{
+		cmd_list->m_native->SetGraphicsRoot32BitConstants(root_parameter_idx, num_of_values_to_set, data_to_set, dest_offset_in_32bit_values);
+	}
+
 	void BindCompute32BitConstants(CommandList* cmd_list, const void* data_to_set, unsigned int num_of_values_to_set, unsigned int dest_offset_in_32bit_values, unsigned int root_parameter_idx)
 	{
 		cmd_list->m_native->SetComputeRoot32BitConstants(root_parameter_idx, num_of_values_to_set, data_to_set, dest_offset_in_32bit_values);

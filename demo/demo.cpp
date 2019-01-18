@@ -10,6 +10,7 @@
 #include "scene_viknell.hpp"
 #include "resources.hpp"
 #include "scene_cubes.hpp"
+#include "scene_emibl.hpp"
 
 #include "model_loader_assimp.hpp"
 
@@ -130,7 +131,7 @@ int WispEntry()
 	{
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
-		viknell_scene::camera->SetAspectRatio((float)width / (float)height);
+		SCENE::camera->SetAspectRatio((float)width / (float)height);
 		fg_manager::Get()->Resize(*render_system.get(), width, height);
 	});
 
