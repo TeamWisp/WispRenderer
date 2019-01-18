@@ -206,7 +206,7 @@ float3 ShadePixel(float3 pos, float3 V, float3 albedo, float3 normal, float roug
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += ShadeLight(pos, -V, albedo, normal, roughness, metal, lights[i]);
+		res += ShadeLight(pos, V, albedo, normal, roughness, metal, lights[i]);
 	}
 
 	return res * albedo;
@@ -218,20 +218,12 @@ float3 ReflectRay(float3 v1, float3 v2)
 	return (v2 * ((2.f * dot(v1, v2))) - v1);
 }
 
-float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic, float3 albedo, float3 lighting)
+float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float metallic, float3 albedo, float3 lighting)
 {
-
-	// Get direction to camera
-
-	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
-
-	float3 cdir = wpos - cpos;
-	float cdist = length(cdir);
-	cdir /= cdist;
 
 	// Calculate ray info
 
-	float3 reflected = reflect(cdir, normal);
+	float3 reflected = ReflectRay(V, normal);
 
 	// Shoot reflection ray
 	
@@ -239,7 +231,7 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic,
 
 	// Calculate reflection combined with fresnel
 
-	const float3 F = F_SchlickRoughness(max(dot(reflected, cdir), 0.0), metallic, albedo, roughness);
+	const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
 	const float3 kS = F;
 	float3 kD = 1.0 - kS;
 	kD *= 1.0 - metallic;
@@ -296,16 +288,16 @@ void RaygenEntry()
 
 	// Do lighting
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
-	float3 V = normalize(wpos - cpos);
+	float3 V = normalize(cpos - wpos);
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		gOutput[DispatchRaysIndex().xy] = float4(SampleSkybox(V), 1);
+		gOutput[DispatchRaysIndex().xy] = float4(SampleSkybox(-V), 1);
 		return;
 	}
 
 	float3 lighting = ShadePixel(wpos, V, albedo, normal, roughness, metallic);
-	float3 reflection = DoReflection(wpos, normal, roughness, metallic, albedo, lighting);
+	float3 reflection = DoReflection(wpos, V, normal, roughness, metallic, albedo, lighting);
 
 	gOutput[DispatchRaysIndex().xy] = float4(reflection, 1);
 
@@ -380,10 +372,11 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//Normal mapping
 	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
 	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
+	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
 
 	float3 N = normalize(mul(model_matrix, float4(normal, 0)).xyz);
 	float3 T = normalize(mul(model_matrix, float4(tangent, 0)).xyz);
-	const float3 B = cross(N, T);
+	float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
 	float3x3 TBN = float3x3(T, B, N);
 
 	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
@@ -394,7 +387,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//TODO: Reflections
 
 	//Shading
-	payload.color = ShadePixel(hit_pos, V, albedo, normal, roughness, metal);
+	payload.color = ShadePixel(hit_pos, V, albedo, fN, roughness, metal);
 }
 
 //Reflection skybox

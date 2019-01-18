@@ -324,8 +324,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
-	//float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
-	const float3 B = cross(N, T);
+	float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
+	//const float3 B = cross(N, T);
 	const float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
