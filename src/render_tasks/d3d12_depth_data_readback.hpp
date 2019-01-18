@@ -7,26 +7,26 @@
 
 namespace wr
 {
-	struct PixelReadbackTaskData
+	struct DepthReadbackTaskData
 	{
-		// Render target of the previous render task (should be the output from the composition task
+		// Render target of the previous render task (should be the render target from the main deferred task)
 		d3d12::RenderTarget* predecessor_render_target;
 
-		// Read back buffer used to retrieve the depth data on the GPU
+		// Read back buffer used to retrieve the pixel data on the GPU
 		d3d12::ReadbackBufferResource* readback_buffer;
 
 		d3d12::desc::ReadbackDesc readback_buffer_desc;
 
-		// Stores the final depth data
+		// Stores the final pixel data
 		CPUTexture cpu_texture_output;
 	};
 
 	namespace internal
 	{
 		template<typename T>
-		inline void SetupPixelDataReadBackTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
+		inline void SetupDepthDataReadBackTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
-			auto& data = fg.GetData<PixelReadbackTaskData>(handle);
+			auto& data = fg.GetData<DepthReadbackTaskData>(handle);
 			auto& dx12_render_system = static_cast<D3D12RenderSystem&>(rs);
 
 			// Save the previous render target for use in the execute function
@@ -35,8 +35,8 @@ namespace wr
 			// Information about the previous render target
 			wr::d3d12::desc::RenderTargetDesc predecessor_rt_desc = data.predecessor_render_target->m_create_info;
 
-			// Bytes per pixel of the previous render target
-			unsigned int bytesPerPixel = BytesPerPixel(predecessor_rt_desc.m_rtv_formats[0]);
+			// Bytes per pixel of the previous render target (depth)
+			unsigned int bytesPerPixel = BytesPerPixel(predecessor_rt_desc.m_dsv_format);
 
 			// Information for creating the read back buffer object
 			data.readback_buffer_desc = {};
@@ -48,47 +48,53 @@ namespace wr
 
 			// Create the actual read back buffer
 			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, &data.readback_buffer_desc);
-			d3d12::SetName(data.readback_buffer, L"Pixel data read back render pass");
+			d3d12::SetName(data.readback_buffer, L"Depth data read back render pass");
 
 			// Keep the read back buffer mapped for the duration of the entire application
 			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, buffer_size));
 			data.cpu_texture_output.m_buffer_width = data.readback_buffer_desc.m_buffer_width;
 			data.cpu_texture_output.m_buffer_height = data.readback_buffer_desc.m_buffer_height;
 			data.cpu_texture_output.m_bytes_per_pixel = data.readback_buffer_desc.m_bytes_per_pixel;
- 		}
+		}
 
-		inline void ExecutePixelDataReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle)
+		inline void ExecuteDepthDataReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& dx12_render_system = static_cast<D3D12RenderSystem&>(render_system);
-			auto& data = frame_graph.GetData<PixelReadbackTaskData>(handle);
+			auto& data = frame_graph.GetData<DepthReadbackTaskData>(handle);
 			auto command_list = frame_graph.GetCommandList<d3d12::CommandList>(handle);
 
 			D3D12_TEXTURE_COPY_LOCATION destination = {};
 			destination.pResource = data.readback_buffer->m_resource;
 			destination.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 			destination.SubresourceIndex = 0;
-			destination.PlacedFootprint.Footprint.Format = static_cast<DXGI_FORMAT>(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
+			destination.PlacedFootprint.Footprint.Format = static_cast<DXGI_FORMAT>(data.predecessor_render_target->m_create_info.m_dsv_format);
 			destination.PlacedFootprint.Footprint.Width = dx12_render_system.m_viewport.m_viewport.Width;
 			destination.PlacedFootprint.Footprint.Height = dx12_render_system.m_viewport.m_viewport.Height;
 			destination.PlacedFootprint.Footprint.Depth = 1;
-			destination.PlacedFootprint.Footprint.RowPitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
+			destination.PlacedFootprint.Footprint.RowPitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_dsv_format);
 
 			D3D12_TEXTURE_COPY_LOCATION source = {};
-			source.pResource = data.predecessor_render_target->m_render_targets[0];
+			source.pResource = data.predecessor_render_target->m_depth_stencil_buffer;
 			source.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
 			source.SubresourceIndex = 0;
+
+			// Depth is still in write state, so transition it to a copy state
+			TransitionDepth(command_list, data.predecessor_render_target, ResourceState::DEPTH_WRITE, ResourceState::COPY_SOURCE);
 
 			// Copy pixel data
 			command_list->m_native->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
 
+			// Transition the depth buffer back to its original state
+			TransitionDepth(command_list, data.predecessor_render_target, ResourceState::COPY_SOURCE, ResourceState::DEPTH_WRITE);
+
 			// Update the frame graph output texture (allows the renderer to access this data)
-			frame_graph.SetOutputTexture(data.cpu_texture_output, CPUTextureType::PIXEL_DATA);
+			frame_graph.SetOutputTexture(data.cpu_texture_output, CPUTextureType::DEPTH_DATA);
 		}
-		
-		inline void DestroyPixelDataReadBackTask(FrameGraph& fg, RenderTaskHandle handle)
+
+		inline void DestroyDepthDataReadBackTask(FrameGraph& fg, RenderTaskHandle handle)
 		{
 			// Data used for this render task
-			auto& data = fg.GetData<PixelReadbackTaskData>(handle);
+			auto& data = fg.GetData<DepthReadbackTaskData>(handle);
 
 			// Clean up the read back buffer
 			UnmapReadbackBuffer(data.readback_buffer);
@@ -98,7 +104,7 @@ namespace wr
 	} /* internal */
 
 	template<typename T>
-	inline void AddPixelDataReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
+	inline void AddDepthDataReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
@@ -121,26 +127,26 @@ namespace wr
 
 		// Set-up
 		readback_task_description.m_setup_func = [](RenderSystem& render_system, FrameGraph& frame_graph, RenderTaskHandle render_task_handle, bool) {
-			internal::SetupPixelDataReadBackTask<T>(render_system, frame_graph, render_task_handle);
+			internal::SetupDepthDataReadBackTask<T>(render_system, frame_graph, render_task_handle);
 		};
 
 		// Execution
 		readback_task_description.m_execute_func = [](RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle) {
-			internal::ExecutePixelDataReadBackTask(render_system, frame_graph, scene_graph, handle);
+			internal::ExecuteDepthDataReadBackTask(render_system, frame_graph, scene_graph, handle);
 		};
 
 		// Destruction and clean-up
 		readback_task_description.m_destroy_func = [](FrameGraph& frame_graph, RenderTaskHandle handle, bool) {
-			internal::DestroyPixelDataReadBackTask(frame_graph, handle);
+			internal::DestroyDepthDataReadBackTask(frame_graph, handle);
 		};
 
-		readback_task_description.m_name = std::string(std::string("Render target pixel data (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
+		readback_task_description.m_name = std::string(std::string("Render target depth data (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
 		readback_task_description.m_properties = rt_properties;
 		readback_task_description.m_type = RenderTaskType::COPY;
 		readback_task_description.m_allow_multithreading = false;
 
 		// Save this task to the frame graph system
-		frame_graph.AddTask<PixelReadbackTaskData>(readback_task_description);
+		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description);
 	}
 
 } /* wr */
