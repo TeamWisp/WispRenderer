@@ -7,6 +7,7 @@
 
 #include "camera_node.hpp"
 #include "mesh_node.hpp"
+#include "skybox_node.hpp"
 
 //TODO: Make platform independent
 #include "../d3d12/d3d12_defines.hpp"
@@ -74,6 +75,18 @@ namespace wr
 		return m_mesh_nodes;
 	}
 
+	std::shared_ptr<SkyboxNode> SceneGraph::GetCurrentSkybox()
+	{
+		if (!m_skybox_nodes.empty())
+		{
+			return m_skybox_nodes.at(0);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
 	//! Initialize the scene graph
 	void SceneGraph::Init()
 	{
@@ -120,7 +133,6 @@ namespace wr
 	*/
 	void SceneGraph::Render(CommandList* cmd_list, CameraNode* camera)
 	{
-		Optimize();
 		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
 	}
 

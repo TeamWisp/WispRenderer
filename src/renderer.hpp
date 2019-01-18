@@ -10,6 +10,8 @@ namespace wr
 {
 
 	struct TextureHandle;
+	struct Model;
+	struct CPUTextures;
 
 	class Window;
 	class SceneGraph;
@@ -59,10 +61,24 @@ namespace wr
 		virtual void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 
 		virtual void Init(std::optional<Window*> window) = 0;
-		virtual std::unique_ptr<TextureHandle> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
+		virtual CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
 		virtual void Resize(std::uint32_t width, std::uint32_t height) = 0;
 		
 		std::optional<Window*> m_window;
+
+		enum SimpleShapes : std::size_t
+		{
+			CUBE,
+			PLANE,
+
+			COUNT
+		};
+
+		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
+		virtual wr::Model* GetSimpleShape(SimpleShapes type) = 0;
+
+		std::shared_ptr<ModelPool> m_shapes_pool;
+		wr::Model* m_simple_shapes[COUNT];
 	};
 
 } /* wr */

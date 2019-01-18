@@ -50,6 +50,7 @@ namespace wr
 			DirectX::XMMATRIX m_view;
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
+			DirectX::XMMATRIX m_inverse_view;
 		};
 
 		struct RayTracingCamera_CBData
@@ -66,15 +67,12 @@ namespace wr
 
 		struct RayTracingMaterial_CBData
 		{
-			DirectX::XMMATRIX m_model;
 			float idx_offset;
 			float vertex_offset;
 			float albedo_id;
 			float normal_id;
 			float roughness_id;
 			float metallicness_id;
-			float padding0;
-			float padding1;
 		};
 
 		static const constexpr float size = 1.0f;
@@ -93,7 +91,7 @@ namespace wr
 		~D3D12RenderSystem() final;
 
 		void Init(std::optional<Window*> window) final;
-		std::unique_ptr<TextureHandle> Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
+		CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
 		void Resize(std::uint32_t width, std::uint32_t height) final;
 
 		std::shared_ptr<TexturePool> CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures) final;
@@ -145,6 +143,9 @@ namespace wr
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
 
+		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
+		wr::Model* GetSimpleShape(SimpleShapes type) final;
+
 	public:
 		d3d12::Device* m_device;
 		std::optional<d3d12::RenderWindow*> m_render_window;
@@ -177,7 +178,11 @@ namespace wr
 		bool clear_path = false;
 		float light_radius = 50;
 		float temp_intensity = 1;
+
 	private:
+
+		void ResetBatches(SceneGraph& sg);
+		void LoadPrimitiveShapes();
 
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;

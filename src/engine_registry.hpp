@@ -12,7 +12,7 @@ namespace wr
 		static RegistryHandle rt_test_global;
 		static RegistryHandle rt_test_local;
 		static RegistryHandle mip_mapping;
-		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct shaders
@@ -23,7 +23,7 @@ namespace wr
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 		static RegistryHandle mip_mapping_cs;
-		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct pipelines
@@ -31,7 +31,7 @@ namespace wr
 		static RegistryHandle basic_deferred;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle mip_mapping;
-		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct state_objects

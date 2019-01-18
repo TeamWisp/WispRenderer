@@ -99,9 +99,20 @@ namespace wr::d3d12
 	void SetName(TextureResource* tex, std::wstring name);
 	void CreateSRVFromTexture(TextureResource* tex);
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle);
+	void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice);
+	void CreateRTVFromTexture2D(TextureResource* tex);
+	void CreateRTVFromCubemap(TextureResource* tex);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
 	void Destroy(TextureResource* tex);
+
+	// Read-back buffer
+	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);
+	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint64_t buffer_size);
+	void UnmapReadbackBuffer(ReadbackBufferResource* const readback_buffer);
+	void SetName(ReadbackBufferResource* readback_buffer, std::wstring name);
+	void Destroy(ReadbackBufferResource* readback_buffer);
 
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
@@ -237,7 +248,12 @@ namespace wr::d3d12
 	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::pair<std::pair<d3d12::AccelerationStructure, unsigned int>, DirectX::XMMATRIX>> blas_list);
+		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list);
+
+	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
+		CommandList* cmd_list,
+		DescriptorHeap* desc_heap,
+		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list);
 
 	// Shader Record
 	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);

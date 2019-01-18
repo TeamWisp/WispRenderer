@@ -8,6 +8,7 @@
 Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
+TextureCube skybox : register(t4);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -16,6 +17,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 view;
 	float4x4 projection;
 	float4x4 inv_projection;
+	float4x4 inv_view;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -35,24 +37,31 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 uv = float2(dispatch_thread_id.x / screen_size.x, 1.f - (dispatch_thread_id.y / screen_size.y));
 
 	float2 screen_coord = int2(dispatch_thread_id.x, screen_size.y - dispatch_thread_id.y);
-
-	// GBuffer contents
-	const float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
-	const float roughness = gbuffer_albedo_roughness[screen_coord].w;
-	const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
-	const float metallic = gbuffer_normal_metallic[screen_coord].w;
 	
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
-	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, transpose(view));
+	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
 	float3 V = normalize(-pos);
 
-	float3 retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
-	
-	float gamma = 1;
-	float exposure = 1;
-	retval = linearToneMapping(retval, exposure, gamma);
+	float3 retval;
+
+	if(depth_f != 1.0f)
+	{
+		// GBuffer contents
+		float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
+		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
+		const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
+		const float metallic = gbuffer_normal_metallic[screen_coord].w;
+
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
+	}
+	else
+	{	
+		const float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+		const float3 cdir = normalize(cpos - pos);
+		retval = pow(skybox.SampleLevel(s0, cdir , 0), 2.2);
+	}
 	
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);

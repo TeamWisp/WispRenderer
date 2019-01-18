@@ -23,6 +23,7 @@
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
+#include "../scene_graph/skybox_node.hpp"
 
 namespace wr
 {
@@ -97,6 +98,10 @@ namespace wr
 		// Raytracing cb pool
 		m_raytracing_cb_pool = CreateConstantBufferPool(1);
 
+		// Simple Shapes Model Pool
+		m_shapes_pool = CreateModelPool(8, 8);
+		LoadPrimitiveShapes();
+
 		// Material raytracing sb pool
 		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
 		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
@@ -141,9 +146,10 @@ namespace wr
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 	}
 
-	std::unique_ptr<TextureHandle> D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
-		if (m_requested_fullscreen_state.has_value())
+
+ 		if (m_requested_fullscreen_state.has_value())
 		{
 			WaitForAllPreviousWork();
 			m_render_window.value()->m_swap_chain->SetFullscreenState(m_requested_fullscreen_state.value(), nullptr);
@@ -200,6 +206,7 @@ namespace wr
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
 		scene_graph->Update();
+		scene_graph->Optimize();
 
 		frame_graph.Execute(*this, *scene_graph.get());
 
@@ -213,6 +220,9 @@ namespace wr
 			n_cmd_lists.push_back(list);
 		}
 
+		// Reset the batches.
+		ResetBatches(*scene_graph.get());
+
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
 		if (m_render_window.has_value())
@@ -225,7 +235,8 @@ namespace wr
 		//Signal end of frame to the texture pool so that stale descriptors can be freed.
 		m_texture_pool->EndOfFrame();
 
-		return std::unique_ptr<TextureHandle>();
+		// Optional CPU-visible copy of the render target pixel and/or depth data
+		return frame_graph.GetOutputTexture();
 	}
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
@@ -500,7 +511,7 @@ namespace wr
 			}
 			else
 			{
-				LOGC("Failed to load shader. compiler error: {}", std::get<std::string>(shader_error));
+				LOGC(std::get<std::string>(shader_error));
 			}
 		}
 	}
@@ -662,6 +673,7 @@ namespace wr
 			n_desc.max_attributes_size = desc.max_attributes_size;
 			n_desc.max_payload_size = desc.max_payload_size;
 			n_desc.max_recursion_depth = desc.max_recursion_depth;
+			n_desc.m_hit_groups = desc.library_desc.m_hit_groups;
 
 			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
 			{
@@ -816,6 +828,7 @@ namespace wr
 			data.m_projection = node->m_projection;
 			data.m_inverse_projection = node->m_inverse_projection;
 			data.m_view = node->m_view;
+			data.m_inverse_view = node->m_inverse_view;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &data);
 		}
@@ -987,9 +1000,6 @@ namespace wr
 					++i;
 				}
 			}
-
-			//Reset instances
-			batch.num_instances = 0;
 		}
 
 		if constexpr (d3d12::settings::use_exec_indirect)
@@ -1058,6 +1068,92 @@ namespace wr
 		{
 			LOGW("Called `D3D12RenderSystem::GetRenderWindow` without a window!");
 			return nullptr;
+		}
+	}
+
+	wr::Model* D3D12RenderSystem::GetSimpleShape(SimpleShapes type)
+	{
+		if (type == SimpleShapes::COUNT)
+		{
+			LOGC("Nice try boiii! That's not a shape.");
+		}
+
+		return m_simple_shapes[type];
+	}
+
+	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)
+	{
+		for (auto& batch : sg.GetBatches())
+		{
+			batch.second.num_instances = 0;
+		}
+	}
+
+	void D3D12RenderSystem::LoadPrimitiveShapes()
+	{
+		// Load Cube.
+		{
+			wr::MeshData<wr::Vertex> mesh;
+
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0, 6, 5,
+				4, 7, 6, 4, 10, 9, 8, 11,
+				10, 8, 14, 13, 12, 15, 14, 12,
+				18, 17, 16, 19, 18, 16, 22, 21,
+				20, 23, 22, 20
+			};
+
+			mesh.m_vertices = {
+				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0 },
+				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+
+				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+			};
+
+			m_simple_shapes[SimpleShapes::CUBE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
+		}
+
+		{
+			wr::MeshData<wr::Vertex> mesh;
+
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0
+			};
+
+			mesh.m_vertices = {
+				//POS				UV			NORMAL				TANGENT			BINORMAL
+				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+			};
+
+			m_simple_shapes[SimpleShapes::PLANE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
 		}
 	}
 
