@@ -45,7 +45,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 V = normalize(-pos);
 
 	float3 retval;
-
+	const float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	const float3 cdir = normalize(cpos - pos);
+	
 	if(depth_f != 1.0f)
 	{
 		// GBuffer contents
@@ -53,13 +55,25 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
+		float shadow_factor = 1.0f;
+
+		float3 skyboxReflection = skybox.SampleLevel(s0, reflect(cdir, normal), 0);
+
+		const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
+		float3 kS = F;
+		float3 kD = 1.0 - kS;
+		kD *= 1.0 - metallic;
 
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
+		float3 specular = (skyboxReflection.xyz) * F;
+		float3 diffuse = float3(0, 0, 0);
+		float3 ambient = (kD * diffuse + specular);
+		retval = ambient + (retval * shadow_factor);//shadows
+	
 	}
 	else
 	{	
-		const float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
-		const float3 cdir = normalize(cpos - pos);
+		
 		retval = skybox.SampleLevel(s0, cdir , 0);
 	}
 	
