@@ -15,6 +15,7 @@ namespace wr
 		static RegistryHandle rt_hybrid_global;
 		static RegistryHandle rt_hybrid_local;
 		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct shaders
@@ -26,7 +27,7 @@ namespace wr
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_hybrid_lib;
 		static RegistryHandle mip_mapping_cs;
-		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct pipelines
@@ -34,7 +35,7 @@ namespace wr
 		static RegistryHandle basic_deferred;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle mip_mapping;
-		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct state_objects

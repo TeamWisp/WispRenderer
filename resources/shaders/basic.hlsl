@@ -78,7 +78,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
 	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
-	float4 albedo = material_albedo.Sample(s0, input.uv);
+	float4 albedo = pow(material_albedo.Sample(s0, input.uv), 2.2);
 	float4 roughness = material_roughness.Sample(s0, input.uv);
 	float4 metallic = material_metallic.Sample(s0, input.uv);
 
