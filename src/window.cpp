@@ -114,6 +114,11 @@ namespace wr
 		m_mouse_callback = callback;
 	}
 
+	void Window::SetMouseWheelCallback(MouseWheelCallback callback)
+	{
+		m_mouse_wheel_callback = callback;
+	}
+
 	void Window::SetResizeCallback(ResizeCallback callback)
 	{
 		m_resize_callback = callback;
@@ -191,6 +196,15 @@ namespace wr
 			}
 
 			return 0;
+
+		case WM_MOUSEWHEEL:
+			if (m_mouse_wheel_callback)
+			{
+				m_mouse_wheel_callback((int)w_param, msg, (int)l_param);
+			}
+
+			return 0;
+
 		case WM_SIZE:
 			if (w_param != SIZE_MINIMIZED)
 			{

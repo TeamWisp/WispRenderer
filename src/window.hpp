@@ -11,6 +11,7 @@ namespace wr
 		using KeyCallback = std::function<void(int key, int action, int mods)>;
 		using MouseCallback = std::function<void(int key, int action, int mods)>;
 		using ResizeCallback = std::function<void(std::uint32_t width, std::uint32_t height)>;
+		using MouseWheelCallback = std::function<void(int key, int action, int mods)>;
 	public:
 		/*!
 		* @param instance A handle to the current instance of the application.
@@ -39,6 +40,8 @@ namespace wr
 		void SetKeyCallback(KeyCallback callback);
 		/*! Used to set the mouse callback function */
 		void SetMouseCallback(MouseCallback callback);
+		/*! Used to set the mouse wheel callback function */
+		void SetMouseWheelCallback(MouseWheelCallback callback);
 		/*! Used to set the resize callback function */
 		void SetResizeCallback(ResizeCallback callback);
 
@@ -62,6 +65,7 @@ namespace wr
 		KeyCallback m_key_callback;
 		MouseCallback m_mouse_callback;
 		ResizeCallback m_resize_callback;
+		MouseWheelCallback m_mouse_wheel_callback;
 
 		bool m_running;
 		HWND m_handle;

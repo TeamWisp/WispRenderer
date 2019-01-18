@@ -26,6 +26,18 @@ namespace wr
 		COPY
 	};
 
+	enum class CPUTextureType
+	{
+		PIXEL_DATA,
+		DEPTH_DATA
+	};
+
+	struct CPUTextures
+	{
+		std::optional<CPUTexture> pixel_data = std::nullopt;
+		std::optional<CPUTexture> depth_data = std::nullopt;
+	};
+
 	//! Typedef for the render task handle.
 	using RenderTaskHandle = std::uint32_t;
 
@@ -448,26 +460,45 @@ namespace wr
 		};
 
 		/*! Return the cpu texture. */
-		const std::optional<CPUTexture> GetOutputTexture()
+		const CPUTextures& GetOutputTexture()
 		{
-			return m_output_cpu_texture;
+			return m_output_cpu_textures;
 		}
 
 		/*! Set the cpu texture's data. */
-		void SetOutputTexture(const CPUTexture& output_texture)
+		void SetOutputTexture(const CPUTexture& output_texture, CPUTextureType type)
 		{
-			// Only allow a single render task each frame to use this variable
-			if (m_output_cpu_texture.has_value())
-				LOGC("ERROR: More than one render task is trying to write to the output CPU texture!");
+			switch (type)
+			{
+			case wr::CPUTextureType::PIXEL_DATA:
+				if (m_output_cpu_textures.pixel_data != std::nullopt)
+					LOGW("Warning: CPU texture pixel data is written to more than once a frame!");
 
-			m_output_cpu_texture = output_texture;
+				// Save the pixel data
+				m_output_cpu_textures.pixel_data = output_texture;
+				break;
+
+			case wr::CPUTextureType::DEPTH_DATA:
+				if (m_output_cpu_textures.depth_data != std::nullopt)
+					LOGW("Warning: CPU texture depth data is written to more than once a frame!");
+
+				// Save the depth data
+				m_output_cpu_textures.depth_data = output_texture;
+				break;
+
+			default:
+				// Should never happen
+				LOGC("Invalid CPU texture type supplied!");
+				break;
+			}
 		}
 
 		/*! Resets the CPU texture data for this frame. */
 		void ResetOutputTexture()
 		{
 			// Frame has been rendered, allow a task to write to the CPU texture in the next frame
-			m_output_cpu_texture = std::nullopt;
+			m_output_cpu_textures.pixel_data = std::nullopt;
+			m_output_cpu_textures.depth_data = std::nullopt;
 		}
 
 	private:
@@ -580,8 +611,8 @@ namespace wr
 		std::vector<RenderTaskHandle> m_multi_threaded_tasks;
 		std::vector<RenderTaskHandle> m_single_threaded_tasks;
 
-		/*! A single task can output its buffer to give the CPU access to the data. */
-		std::optional<CPUTexture> m_output_cpu_texture;
+		/*! Holds the textures that can be written to memory. */
+		CPUTextures m_output_cpu_textures;
 
 		/*! Task function pointers. */
 		std::vector<setup_func_t> m_setup_funcs;
