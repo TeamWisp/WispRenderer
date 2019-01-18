@@ -31,10 +31,10 @@ namespace fg_manager
 
 			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
-			wr::AddAccumulationTask<wr::RaytracingData>(*fg);
+			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
 			
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
@@ -55,10 +55,10 @@ namespace fg_manager
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
-			wr::AddAccumulationTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the composition pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));

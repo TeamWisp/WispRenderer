@@ -7,16 +7,9 @@ SamplerState s0 : register(s0);
 
 cbuffer CameraProperties : register(b0)
 {
-	float4x4 view;
-	float4x4 inv_projection_view;
-	float3 camera_position;
-	float padding;
-
-	float unused0;
-	float unused1;
-	float frame_idx;
-	float intensity;
+	float hdr;
 };
+
 
 float4 ChromaticAberration(Texture2D tex, float2 uv, float strength) {
 	float2 r_offset = float2(strength, 0);
@@ -45,16 +38,19 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	//float3 color = ChromaticAberration(input, uv, 0.001).rgb;
 	float3 color = input[DTid.xy].rgb;
 
-	//color = linearToneMapping(color, exposure, gamma);
-	//color = simpleReinhardToneMapping(color, exposure, gamma);
-	//color = lumaBasedReinhardToneMapping(color, gamma);
-	//color = whitePreservingLumaBasedReinhardToneMapping(color, gamma);
-	//color = RomBinDaHouseToneMapping(color, gamma);
-	//color = filmicToneMapping(color);
-	//color = Uncharted2ToneMapping(color, exposure, gamma);
-	//color = GrayscaleToneMapping(color);
-	color = AllTonemappingAlgorithms(color.rgb, uv.x + uv.y, exposure, gamma);
-	//color = Vignette(color, uv, 1.5, 0.5, 1);
+	if (hdr == 0)
+	{
+		color = linearToneMapping(color, exposure, gamma);
+		//color = simpleReinhardToneMapping(color, exposure, gamma);
+		//color = lumaBasedReinhardToneMapping(color, gamma);
+		//color = whitePreservingLumaBasedReinhardToneMapping(color, gamma);
+		//color = RomBinDaHouseToneMapping(color, gamma);
+		//color = filmicToneMapping(color);
+		//color = Uncharted2ToneMapping(color, exposure, gamma);
+		//color = GrayscaleToneMapping(color);
+		//color = AllTonemappingAlgorithms(color.rgb, uv.x + uv.y, exposure, gamma);
+		//color = Vignette(color, uv, 1.5, 0.5, 1);
+	}
 
 	output[DTid.xy] = float4(color, 1);
 
