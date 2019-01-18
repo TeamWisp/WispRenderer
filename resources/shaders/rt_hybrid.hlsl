@@ -124,15 +124,13 @@ bool TraceShadowRay(float3 origin, float3 direction, float t_max)
 
 float3 TraceReflectionRay(float3 origin, float3 direction)
 {
-	float epsilon = 0.005;
-
-	ReflectionHitInfo payload = { origin + direction * epsilon, float3(0, 0, 1) };
+	ReflectionHitInfo payload = { origin, float3(0, 0, 1) };
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = epsilon;
+	ray.TMin = 0;
 	ray.TMax = 10000.0;
 
 	// Trace the ray
@@ -203,14 +201,14 @@ float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal, float rou
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
 	float ambient = 0.1f;
-	float3 res = float3(ambient, ambient, ambient);
+	float3 res = float3(ambient, ambient, ambient) * albedo;
 
 	for (uint i = 0; i < light_count; i++)
 	{
 		res += ShadeLight(vpos, V, albedo, normal, roughness, metal, lights[i]);
 	}
 
-	return res * albedo;
+	return res;
 }
 
 float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic, float3 albedo)
@@ -229,8 +227,9 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic,
 	float3 reflected = reflect(cdir, normal);
 
 	// Shoot reflection ray
-
-	float3 reflection = TraceReflectionRay(wpos, reflected);
+	
+	const float epsilon = 3e-3;
+	float3 reflection = TraceReflectionRay(wpos + normal * epsilon, reflected);
 
 	// TODO: Roughness
 
@@ -241,7 +240,7 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic,
 
 	float3 fresnel_reflection = lerp(albedo, reflection, 0.5f);
 
-	return albedo; // Set to fresnel_reflection for reflections
+	return fresnel_reflection; // Set to fresnel_reflection for reflections
 }
 
 [shader("raygeneration")]
@@ -277,22 +276,100 @@ void RaygenEntry()
 	float3 V = normalize(cpos - wpos);
 
 	float3 lighting = ShadePixel(wpos, V, albedo, normal, roughness, metallic);
+	float3 reflection = DoReflection(wpos, normal, roughness, metallic, lighting);
 
-	gOutput[DispatchRaysIndex().xy] = float4(lighting, 1);
+	gOutput[DispatchRaysIndex().xy] = float4(reflection, 1);
 
 }
 
 //Shadows
+
 [shader("closesthit")]
 void ShadowHit(inout ShadowHitInfo payload, in MyAttributes attr)
 {
 	payload.shadow_hit = true;
 }
 
-//Shadows
 [shader("miss")]
 void ShadowMiss(inout ShadowHitInfo payload)
 {
 	payload.shadow_hit = false;
 }
 
+//Reflections
+
+float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
+{
+	float3 vertexAttribute[3];
+	vertexAttribute[0] = a;
+	vertexAttribute[1] = b;
+	vertexAttribute[2] = c;
+
+	return vertexAttribute[0] +
+		attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
+		attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
+}
+
+[shader("closesthit")]
+void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
+{
+	const Material material = g_materials[InstanceID()];
+	const float index_offset = material.idx_offset;
+	const float vertex_offset = material.vertex_offset;
+	const float3x4 model_matrix = ObjectToWorld3x4();
+
+	// Find first index location
+	const uint index_size = 4;
+	const uint indices_per_triangle = 3;
+	const uint triangle_idx_stride = indices_per_triangle * index_size;
+
+	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+	base_idx += index_offset * 4; // offset the start
+
+	uint3 indices = Load3x32BitIndices(base_idx);
+	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
+
+	// Gather triangle vertices
+	const Vertex v0 = g_vertices[indices.x];
+	const Vertex v1 = g_vertices[indices.y];
+	const Vertex v2 = g_vertices[indices.z];
+
+	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
+
+	//Get data from VBO
+	float3 uvw = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
+	float2 uv = uvw.xy;
+	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
+	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x;
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
+
+	albedo = lerp(albedo, color, length(color) != 0);
+
+	//Direction & position
+
+	const float3 hit_pos = HitWorldPosition();
+	float3 V = normalize(payload.origin - hit_pos);
+
+	//Normal mapping
+	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
+	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
+
+	float3 N = normalize(mul(model_matrix, float4(normal, 0)).xyz);
+	float3 T = normalize(mul(model_matrix, float4(tangent, 0)).xyz);
+	const float3 B = cross(N, T);
+	float3x3 TBN = float3x3(T, B, N);
+
+	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+
+	float3 fN = normalize(mul(normal_t, TBN));
+	if (dot(fN, V) <= 0.0f) fN = -fN;
+
+	//Shading
+	payload.color = ShadePixel(hit_pos, V, albedo, normal, roughness, metal);
+}
+
+[shader("miss")]
+void ReflectionMiss(inout ReflectionHitInfo payload)
+{
+	payload.color = sky_color;
+}

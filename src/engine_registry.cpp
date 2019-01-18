@@ -294,6 +294,9 @@ namespace wr
 		lib.exports.push_back(L"ShadowHit");
 		lib.exports.push_back(L"ShadowMiss");
 		lib.m_hit_groups.push_back({L"ShadowHitGroup", L"ShadowHit"});
+		lib.exports.push_back(L"ReflectionHit");
+		lib.exports.push_back(L"ReflectionMiss");
+		lib.m_hit_groups.push_back({L"ReflectionHitGroup", L"ReflectionHit"});
 
 		return std::make_pair(desc, lib);
 	}();
