@@ -30,7 +30,7 @@ namespace wr::d3d12::settings
 	static const constexpr DXGI_ALPHA_MODE swapchain_alpha_mode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	static const constexpr bool enable_gpu_timeout = false;
 	static const constexpr bool enable_debug_factory = true;
-	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE_WITH_GPU_VALIDATION;
+	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;	//Don't use ENABLE_WITH_GPU_VALIDATION (Raytracing); it breaks
 	static const constexpr char* default_shader_model = "6_3";
 	static std::array<LPCWSTR, 1> debug_shader_args = { L"/O3" };
 	static std::array<LPCWSTR, 1> release_shader_args = { L"/O3" };
@@ -44,7 +44,7 @@ namespace wr::d3d12::settings
 	static const constexpr bool force_dxr_fallback = false;
 	static const constexpr bool disable_rtx = false;
 	static const constexpr bool enable_object_culling = false;
-	static const constexpr unsigned int num_max_rt_materials = 10;
-	static const constexpr unsigned int fallback_ptrs_offset = 26;
+	static const constexpr unsigned int num_max_rt_materials = 2000;
+	static const constexpr unsigned int fallback_ptrs_offset = 29;
 	
 } /* wr::d3d12::settings */

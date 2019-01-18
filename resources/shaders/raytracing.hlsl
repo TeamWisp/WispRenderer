@@ -12,6 +12,7 @@ struct Vertex
 	float3 normal;
 	float3 tangent;
 	float3 bitangent;
+	float3 color;
 };
 
 struct Material
@@ -314,16 +315,18 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
 	const float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
-	float mip_level = 2;
+	float mip_level = 0;
 
 #define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
-	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
+	metal = metal * roughness;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #else
-	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
+	//const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
+	const float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
 	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
 	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);

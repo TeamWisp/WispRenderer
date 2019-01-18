@@ -476,11 +476,11 @@ namespace wr::d3d12
 		D3D12_DISPATCH_RAYS_DESC desc = {};
 		desc.HitGroupTable.StartAddress = hitgroup_table->m_resource->GetGPUVirtualAddress();
 		desc.HitGroupTable.SizeInBytes = hitgroup_table->m_resource->GetDesc().Width;
-		desc.HitGroupTable.StrideInBytes = 32;
+		desc.HitGroupTable.StrideInBytes = hitgroup_table->m_shader_record_size;
 
 		desc.MissShaderTable.StartAddress = miss_table->m_resource->GetGPUVirtualAddress();
 		desc.MissShaderTable.SizeInBytes = miss_table->m_resource->GetDesc().Width;
-		desc.MissShaderTable.StrideInBytes = 32;
+		desc.MissShaderTable.StrideInBytes = miss_table->m_shader_record_size;
 
 		desc.RayGenerationShaderRecord.StartAddress = raygen_table->m_resource->GetGPUVirtualAddress();
 		desc.RayGenerationShaderRecord.SizeInBytes = raygen_table->m_resource->GetDesc().Width;

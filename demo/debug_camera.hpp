@@ -88,6 +88,21 @@ public:
 		}
 	}
 
+	const float m_scroll_speed = 0.25f;
+
+	void MouseWheel(int amount)
+	{
+		if (m_rmb_down)
+		{
+			float percent = (float) GET_WHEEL_DELTA_WPARAM(amount) / WHEEL_DELTA * m_scroll_speed;
+
+			if (percent + m_speed > 0)
+			{
+				m_speed += percent;
+			}
+		}
+	}
+
 	// Due to the lack of a input manager I cheat input like this.
 	void KeyAction(int key, int action)
 	{
