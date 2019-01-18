@@ -87,12 +87,6 @@ namespace wr
 
 				unstaged_textures.push_back(texture);
 
-				if (texture->m_width == 1024)
-				{
-					int x = 0;
-				}
-
-
 				decltype(d3d12::Device::m_native) n_device;
 				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
 
