@@ -56,6 +56,13 @@ namespace wr::d3d12
 			bool m_is_cubemap;
 		};
 
+		struct ReadbackDesc
+		{
+			unsigned int m_buffer_width;
+			unsigned int m_buffer_height;
+			unsigned int m_bytes_per_pixel;
+		};
+
 		struct PipelineStateDesc
 		{
 			Format m_dsv_format;
@@ -258,6 +265,11 @@ namespace wr::d3d12
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
 		std::uint8_t* m_cpu_address;
 		bool m_is_staged;
+	};
+
+	struct ReadbackBufferResource : ReadbackBuffer
+	{
+		ID3D12Resource* m_resource;
 	};
 
 	struct HeapResource;

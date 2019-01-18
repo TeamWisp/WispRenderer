@@ -42,9 +42,9 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 
 Texture2D g_textures[20] : register(t5);
-Texture2D gbuffer_albedo : register(t25);
-Texture2D gbuffer_normal : register(t26);
-Texture2D gbuffer_depth : register(t27);
+Texture2D gbuffer_albedo : register(t26);
+Texture2D gbuffer_normal : register(t27);
+Texture2D gbuffer_depth : register(t28);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;

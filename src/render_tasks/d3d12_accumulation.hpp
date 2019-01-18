@@ -95,7 +95,7 @@ namespace wr
 			ResourceState::COPY_SOURCE,
 			false,
 			Format::UNKNOWN,
-			{ Format::R8G8B8A8_UNORM }, // Output and Previous
+			{ d3d12::settings::back_buffer_format }, // Output and Previous
 			1,
 			false,
 			false
