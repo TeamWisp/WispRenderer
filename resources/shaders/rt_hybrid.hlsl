@@ -196,7 +196,8 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
 
 	// Check if pixel is shaded
-	float3 origin = wpos + normal * 0.05;
+	float epsilon = 0.005; // Hard-coded; use depth buffer to get depth value in linear space and use that to determine the epsilon (to minimize precision errors)
+	float3 origin = wpos + normal * 0.005;
 	float TMax = lerp(light_dist, 10000.0, tid == light_type_directional);
 	bool is_shadow = TraceShadowRay(origin, L, TMax);
 
@@ -270,7 +271,7 @@ void RaygenEntry()
 	float3 wpos = unpack_position(uv, depth);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
-	float3 normal = unpack_direction(normal_metallic.xyz);
+	float3 normal = normal_metallic.xyz;
 	float metallic = normal_metallic.w;
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect

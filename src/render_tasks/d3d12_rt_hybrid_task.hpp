@@ -19,8 +19,6 @@ namespace wr
 {
 	struct RTHybridData
 	{
-		d3d12::DescriptorHeap* out_rt_heap;
-
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
@@ -110,30 +108,18 @@ namespace wr
 
 			d3d12::SetName(n_render_target, L"Raytracing Target");
 
-			// Create descriptor heap
-			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_num_descriptors = 600; // FIXME: 600
-			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-			heap_desc.m_shader_visible = true;
-			heap_desc.m_versions = d3d12::settings::num_back_buffers;
-			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
-			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
-
 			// Get AS build data
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-			// Bind AS (supposed to be in frame_idx loop, but only requires to be in frame_idx 0 as of right now)
-			auto as_cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0);
-			d3d12::CreateUAVFromSpecificRTV(n_render_target, as_cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
 			// Versioning
 			for (int frame_idx = 0; frame_idx < d3d12::settings::num_back_buffers; ++frame_idx)
 			{
 				// Bind output texture
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx);
-				d3d12::CreateUAVFromRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
+				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
 				// Bind g-buffers (albedo, normal, depth)
-				cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, frame_idx, d3d12::settings::hybrid_g_buffer_offset);
+				cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, 24);
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
