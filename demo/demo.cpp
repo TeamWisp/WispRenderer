@@ -143,6 +143,17 @@ int WispEntry()
 		SCENE::UpdateScene();
 
 		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
+
+		// Example usage of the render function output:
+		if (texture.pixel_data != std::nullopt)
+		{
+			// Use pixel data here
+		}
+
+		if (texture.depth_data != std::nullopt)
+		{
+			// Use depth data here
+		}
 	}
 
 	delete assimp_model_loader;
