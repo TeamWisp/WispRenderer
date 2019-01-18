@@ -7,7 +7,10 @@
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_rt_hybrid_task.hpp"
-#include "render_tasks/d3d12_accumulation.hpp"
+#include "render_tasks/d3d12_equirect_to_cubemap.hpp"
+#include "render_tasks/d3d12_cubemap_convolution.hpp"
+#include "resources.hpp"
+#include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
 
@@ -26,50 +29,50 @@ namespace fg_manager
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
 	{
-		// Ray tracing
+		// Raytracing
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
-			fg = new wr::FrameGraph(3);
+			fg = new wr::FrameGraph(4);
 
 			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
-			wr::AddAccumulationTask(*fg);
+			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
 			
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
-			// Finalize the frame graph
 			fg->Setup(rs);
 		}
 
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(4);
-
-			// Construct the G-buffer
+			fg = new wr::FrameGraph(6);
+			
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
-
-			// Merge the G-buffer into one final texture
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
+			// Do some post processing
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+
 			// Copy the composition pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
-			// Finalize the frame graph
 			fg->Setup(rs);
 		}
 
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(5);
+			fg = new wr::FrameGraph(6);
 
 			 // Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
@@ -80,8 +83,11 @@ namespace fg_manager
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
 
+			// Do some post processing
+			wr::AddPostProcessingTask<wr::RTHybridData>(*fg);
+
 			// Copy the raytracing pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::RTHybridData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));

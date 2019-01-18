@@ -358,7 +358,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//Get data from VBO
 	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
-	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
+	float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz, 2.2);
 	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x;
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
 

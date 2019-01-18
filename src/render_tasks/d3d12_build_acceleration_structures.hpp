@@ -119,8 +119,6 @@ namespace wr
 
 						material_id++;
 					}
-
-					batch.second.num_instances = 0;
 				}
 			}
 
@@ -169,8 +167,6 @@ namespace wr
 
 						material_id++;
 					}
-
-					batch.second.num_instances = 0;
 				}
 
 				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, data.out_rt_heap, data.out_blas_list);

@@ -41,6 +41,12 @@ namespace wr
 		virtual void PostStageClear() = 0;
 		virtual void EndOfFrame() = 0;
 
+		TextureHandle GetDefaultAlbedo();
+		TextureHandle GetDefaultNormal();
+		TextureHandle GetDefaultRoughness();
+		TextureHandle GetDefaultMetalic();
+		TextureHandle GetDefaultAO();
+
 		virtual Texture* GetTexture(uint64_t texture_id) = 0;
 
 	protected:
@@ -54,6 +60,12 @@ namespace wr
 
 		std::size_t m_size_in_mb;
 		std::size_t m_loaded_textures = 0;
+
+		TextureHandle m_default_albedo;
+		TextureHandle m_default_normal;
+		TextureHandle m_default_roughness;
+		TextureHandle m_default_metalic;
+		TextureHandle m_default_ao;
 
 		IDFactory m_id_factory;
 	};

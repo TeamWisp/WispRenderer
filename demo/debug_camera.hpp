@@ -29,6 +29,11 @@ public:
 		m_target_position = position;
 	}
 
+	virtual void SetSpeed(float speed)
+	{
+		m_speed = speed;
+	}
+
 	virtual void Update(float delta)
 	{
 		POINT cursor_pos;

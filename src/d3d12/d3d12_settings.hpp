@@ -30,7 +30,7 @@ namespace wr::d3d12::settings
 	static const constexpr DXGI_ALPHA_MODE swapchain_alpha_mode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	static const constexpr bool enable_gpu_timeout = false;
 	static const constexpr bool enable_debug_factory = true;
-	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;
+	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;	//Don't use ENABLE_WITH_GPU_VALIDATION (Raytracing); it breaks
 	static const constexpr char* default_shader_model = "6_3";
 	static std::array<LPCWSTR, 1> debug_shader_args = { L"/O3" };
 	static std::array<LPCWSTR, 1> release_shader_args = { L"/O3" };

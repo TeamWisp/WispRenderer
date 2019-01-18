@@ -31,7 +31,7 @@ namespace wr
 	//Deferred Composition Root Signature
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> srv_ranges
 	{ 
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0); return r; }(),
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0); return r; }(),
 		
 	};
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> uav_ranges
@@ -50,7 +50,7 @@ namespace wr
 		});
 
 
-		//MipMapping Root Signature
+	//MipMapping Root Signature
 	std::array< CD3DX12_DESCRIPTOR_RANGE, 2> mip_in_out_ranges
 	{
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } (),
@@ -64,7 +64,40 @@ namespace wr
 		{
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
 		}
-		});
+	});
+
+
+	//Cubemap conversion root signature
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> cubemap_tasks_ranges
+	{
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(),
+	};
+	REGISTER(root_signatures::cubemap_conversion) = RootSignatureRegistry::Get().Register({
+		{
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(cubemap_tasks_ranges.size(), cubemap_tasks_ranges.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
+		},
+		{
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
+		}
+	});
+	
+	//Cubemap convolution root signature
+	std::array< CD3DX12_DESCRIPTOR_RANGE, 1> cubemap_convolution_ranges
+	{
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } (),
+	};
+	REGISTER(root_signatures::cubemap_convolution) = RootSignatureRegistry::Get().Register({
+		{
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(cubemap_tasks_ranges.size(), cubemap_tasks_ranges.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
+		},
+		{
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
+		}
+	});
 
 
 	REGISTER(shaders::basic_vs) = ShaderRegistry::Get().Register({
@@ -96,6 +129,24 @@ namespace wr
 		"resources/shaders/generate_mips_cs.hlsl",
 		"main",
 		ShaderType::DIRECT_COMPUTE_SHADER
+	});
+
+	REGISTER(shaders::equirect_to_cubemap_vs) = ShaderRegistry::Get().Register({
+		"resources/shaders/equirect_to_cubemap_conversion.hlsl",
+		"main_vs",
+		ShaderType::VERTEX_SHADER
+	});
+
+	REGISTER(shaders::equirect_to_cubemap_ps) = ShaderRegistry::Get().Register({
+		"resources/shaders/equirect_to_cubemap_conversion.hlsl",
+		"main_ps",
+		ShaderType::PIXEL_SHADER
+	});
+
+	REGISTER(shaders::cubemap_convolution_ps) = ShaderRegistry::Get().Register({
+		"resources/shaders/cubemap_convolution.hlsl",
+		"main_ps",
+		ShaderType::PIXEL_SHADER
 	});
 
 
@@ -131,26 +182,59 @@ namespace wr
 
 	REGISTER(pipelines::mip_mapping) = PipelineRegistry::Get().Register<VertexColor>(
 	{
+			std::nullopt,
+			std::nullopt,
+			shaders::mip_mapping_cs,
+			root_signatures::mip_mapping,
+			Format::UNKNOWN,
+			{ }, //This compute shader doesn't use any render target
+			0,
+			PipelineType::COMPUTE_PIPELINE,
+			CullMode::CULL_BACK,
+			false,
+			true,
+			TopologyType::TRIANGLE
+	});
+
+	REGISTER(pipelines::equirect_to_cubemap) = PipelineRegistry::Get().Register<Vertex>(
+	{
+		shaders::equirect_to_cubemap_vs,
+		shaders::equirect_to_cubemap_ps,
 		std::nullopt,
-		std::nullopt,
-		shaders::mip_mapping_cs,
-		root_signatures::mip_mapping,
+		root_signatures::cubemap_conversion,
 		Format::UNKNOWN,
-		{ }, //This compute shader doesn't use any render target
-		0,
-		PipelineType::COMPUTE_PIPELINE,
-		CullMode::CULL_BACK,
+		{ Format::R32G32B32A32_FLOAT },
+		1,
+		PipelineType::GRAPHICS_PIPELINE,
+		CullMode::CULL_NONE,
 		false,
-		true,
+		false,
 		TopologyType::TRIANGLE
 	});
 
+	REGISTER(pipelines::cubemap_convolution) = PipelineRegistry::Get().Register<Vertex>(
+	{
+		shaders::equirect_to_cubemap_vs,
+		shaders::cubemap_convolution_ps,
+		std::nullopt,
+		root_signatures::cubemap_convolution,
+		Format::UNKNOWN,
+		{ Format::R32G32B32A32_FLOAT },
+		1,
+		PipelineType::GRAPHICS_PIPELINE,
+		CullMode::CULL_NONE,
+		false,
+		false,
+		TopologyType::TRIANGLE
+	});
+
+
 	/* ### Raytracing ### */
-	REGISTER(shaders::accumulation) = ShaderRegistry::Get().Register(
+	REGISTER(shaders::post_processing) = ShaderRegistry::Get().Register(
 		{
-			"resources/shaders/accumulation.hlsl",
+			"resources/shaders/post_processing.hlsl",
 			"main",
-			ShaderType::PIXEL_SHADER
+			ShaderType::DIRECT_COMPUTE_SHADER
 		});
 
 	REGISTER(shaders::rt_lib) = ShaderRegistry::Get().Register({
@@ -160,30 +244,31 @@ namespace wr
 	});
 
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> accum_r = {
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(), // source texture
 	};
 
-	REGISTER(root_signatures::accumulation) = RootSignatureRegistry::Get().Register({
+	REGISTER(root_signatures::post_processing) = RootSignatureRegistry::Get().Register({
 	{
 		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(accum_r.size(), accum_r.data()); return d; }(),
-		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
+		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0); return d; }(),
 	},
 	{
 		{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
 	}
 	});
 
-	REGISTER(pipelines::accumulation) = PipelineRegistry::Get().Register<Vertex2D>(
+	REGISTER(pipelines::post_processing) = PipelineRegistry::Get().Register<Vertex2D>(
 		{
-			shaders::fullscreen_quad_vs,
-			shaders::accumulation,
 			std::nullopt,
-			root_signatures::accumulation,
+			std::nullopt,
+			shaders::post_processing,
+			root_signatures::post_processing,
 			Format::UNKNOWN,
 			{ d3d12::settings::back_buffer_format }, //This compute shader doesn't use any render target
 			1,
-			PipelineType::GRAPHICS_PIPELINE,
-			CullMode::CULL_BACK,
+			PipelineType::COMPUTE_PIPELINE,
+			CullMode::CULL_NONE,
 			false,
 			true,
 			TopologyType::TRIANGLE
