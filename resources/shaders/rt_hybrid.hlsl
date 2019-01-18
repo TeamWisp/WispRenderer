@@ -41,10 +41,11 @@ StructuredBuffer<Light> lights : register(t2);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 
-Texture2D g_textures[20] : register(t5);
+Texture2D g_textures[20] : register(t6);
 Texture2D gbuffer_albedo : register(t26);
 Texture2D gbuffer_normal : register(t27);
 Texture2D gbuffer_depth : register(t28);
+Texture2D skybox : register(t5);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -79,9 +80,6 @@ struct Ray
 static const uint light_type_point = 0;
 static const uint light_type_directional = 1;
 static const uint light_type_spot = 2;
-
-//TODO: Replace sky_color by sampling an envmap
-static const float3 sky_color = float3(0x1E / 255.f, 0x90 / 255.f, 0xFF / 255.f);
 
 uint3 Load3x32BitIndices(uint offsetBytes)
 {
@@ -122,8 +120,11 @@ bool TraceShadowRay(float3 origin, float3 direction, float t_max)
 	return payload.shadow_hit;
 }
 
-float3 TraceReflectionRay(float3 origin, float3 direction)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction)
 {
+	const float epsilon = 5e-3;
+	origin += norm * epsilon;
+
 	ReflectionHitInfo payload = { origin, float3(0, 0, 1) };
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
@@ -196,22 +197,28 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 	return lighting;
 }
 
-float3 ShadePixel(float3 vpos, float3 V, float3 albedo, float3 normal, float roughness, float metal)
+float3 ShadePixel(float3 pos, float3 V, float3 albedo, float3 normal, float roughness, float metal)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
 	float ambient = 0.1f;
-	float3 res = float3(ambient, ambient, ambient) * albedo;
+	float3 res = float3(ambient, ambient, ambient);
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += ShadeLight(vpos, V, albedo, normal, roughness, metal, lights[i]);
+		res += ShadeLight(pos, -V, albedo, normal, roughness, metal, lights[i]);
 	}
 
-	return res;
+	return res * albedo;
 }
 
-float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic, float3 albedo)
+
+float3 ReflectRay(float3 v1, float3 v2)
+{
+	return (v2 * ((2.f * dot(v1, v2))) - v1);
+}
+
+float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic, float3 albedo, float3 lighting)
 {
 
 	// Get direction to camera
@@ -228,19 +235,41 @@ float3 DoReflection(float3 wpos, float3 normal, float roughness, float metallic,
 
 	// Shoot reflection ray
 	
-	const float epsilon = 3e-3;
-	float3 reflection = TraceReflectionRay(wpos + normal * epsilon, reflected);
+	float3 reflection = TraceReflectionRay(wpos, normal, reflected);
 
-	// TODO: Roughness
+	// Calculate reflection combined with fresnel
 
-	// TODO: Calculate reflection combined with fresnel
+	const float3 F = F_SchlickRoughness(max(dot(reflected, cdir), 0.0), metallic, albedo, roughness);
+	const float3 kS = F;
+	float3 kD = 1.0 - kS;
+	kD *= 1.0 - metallic;
 
-	float cosTheta = max(-dot(normal, cdir), 0);
-	float fresnel = pow(1 - cosTheta, 5 / (4.9 * metallic + 0.1));
+	const float3 specular = F * reflection;
 
-	float3 fresnel_reflection = lerp(albedo, reflection, 0.5f);
+	return specular + lighting;
+}
 
-	return fresnel_reflection; // Set to fresnel_reflection for reflections
+#define M_PI 3.14159265358979
+
+float2 VectorToLatLong(float3 dir)
+{
+	float3 p = normalize(dir);
+
+	// atan2_WAR is a work-around due to an apparent compiler bug in atan2
+	float u = (1.f + atan2(p.x, -p.z) / M_PI) * 0.5f;
+	float v = acos(p.y*-1) / M_PI;
+	return float2(u, v);
+}
+
+float3 SampleSkybox(float3 dir)
+{
+	// Load some information about our lightprobe texture
+	float2 dims;
+	skybox.GetDimensions(dims.x, dims.y);
+
+	// Convert our ray direction to a (u,v) coordinate
+	float2 uv = VectorToLatLong(dir);
+	return skybox[uint2(uv * dims)].rgb;
 }
 
 [shader("raygeneration")]
@@ -265,18 +294,18 @@ void RaygenEntry()
 	float3 normal = normal_metallic.xyz;
 	float metallic = normal_metallic.w;
 
+	// Do lighting
+	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(wpos - cpos);
+
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		gOutput[DispatchRaysIndex().xy] = float4(sky_color, 1);
+		gOutput[DispatchRaysIndex().xy] = float4(SampleSkybox(V), 1);
 		return;
 	}
 
-	// Do lighting
-	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
-	float3 V = normalize(cpos - wpos);
-
 	float3 lighting = ShadePixel(wpos, V, albedo, normal, roughness, metallic);
-	float3 reflection = DoReflection(wpos, normal, roughness, metallic, lighting);
+	float3 reflection = DoReflection(wpos, normal, roughness, metallic, albedo, lighting);
 
 	gOutput[DispatchRaysIndex().xy] = float4(reflection, 1);
 
@@ -334,11 +363,9 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const Vertex v1 = g_vertices[indices.y];
 	const Vertex v2 = g_vertices[indices.z];
 
-	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
-
 	//Get data from VBO
-	float3 uvw = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
-	float2 uv = uvw.xy;
+	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
+	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
 	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x;
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
@@ -364,12 +391,16 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
+	//TODO: Reflections
+
 	//Shading
 	payload.color = ShadePixel(hit_pos, V, albedo, normal, roughness, metal);
 }
 
+//Reflection skybox
+
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
-	payload.color = sky_color;
+	payload.color = SampleSkybox(WorldRayDirection());
 }
