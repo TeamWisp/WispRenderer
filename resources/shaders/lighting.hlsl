@@ -70,7 +70,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	float3 diffuse = irradiance * albedo;
 	float3 ambient = (kD * diffuse) * 1.0f; //Replace 1.0f with AO, when we have it.
 
-	res = float3(0.1f, 0.1f, 0.1f);
+	res = float3(0.0f, 0.0f, 0.0f);
 
 	for (uint i = 0; i < light_count; i++)
 	{
