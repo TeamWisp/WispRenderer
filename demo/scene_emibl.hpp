@@ -20,7 +20,7 @@ namespace emibl_scene
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 0, -25, -100 });
-		camera->SetSpeed(50.0f);
+		camera->SetSpeed(60.0f);
 		
 		scene_graph->m_skybox = resources::cubemap_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::cubemap_environment_map);
@@ -28,38 +28,32 @@ namespace emibl_scene
 
 		// Geometry
 		auto platform1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		/*auto platform2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::cube_model);
-		auto platform3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::cube_model);*/
+		auto platform2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto platform3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 
 		platform1->SetPosition({ 0, 0, 0 });
 		platform1->SetScale({ 80, 80, 1 });
 		platform1->SetRotation({ -90_deg, 0, 0 });
 
-		//platform2->SetPosition({ 0, 0, 0 });
-		//platform2->SetScale({ 10, 1, 10 });
+		platform2->SetPosition({ -180, 0, 0 });
+		platform2->SetScale({ 80, 80, 1 });
+		platform2->SetRotation({ -90_deg, 0, 0 });
 
-		//platform3->SetPosition({ 22, 0, 0 });
-		//platform3->SetScale({ 10, 1, 10 });
+		platform3->SetPosition({ +180, 0, 0 });
+		platform3->SetScale({ 80, 80, 1 });
+		platform3->SetRotation({ -90_deg, 0, 0 });
 
-		auto model1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_ball);
-		/*auto model2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
-		auto model3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);*/
+		auto model1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_bamboo);
+		auto model2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_plastic);
+		auto model3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_metal);
 
 		model1->SetPosition({ 0, 0, 0 });
-		/*model2->SetPosition({ 0, 1, 0 });
-		model3->SetPosition({ -22, 1, 0 });*/
+		model2->SetPosition({ -180, 0, 0 });
+		model3->SetPosition({ +180, 0, 0 });
 
 		model1->SetRotation({ 0,0,180_deg });
-		/*model2->SetRotation({ 0,0,180_deg });
-		model3->SetRotation({ 0,0,180_deg });*/
-
-		//model1->SetPosition({ 0, 0, 0 });
-		//model1->SetRotation({ 0,0,180_deg });
-		//model1->SetScale({ 0.1f,0.1f,0.1f });
-
-		//model1->SetScale({ 0.01f,0.01f,0.01f });
-		//model2->SetScale({ 0.01f,0.01f,0.01f });
-		//model3->SetScale({ 0.01f,0.01f,0.01f });
+		model2->SetRotation({ 0,0,180_deg });
+		model3->SetRotation({ 0,0,180_deg });
 
 
 		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 0, 1, 0 });
