@@ -6,10 +6,12 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
-#include "render_tasks/d3d12_accumulation.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
 #include "resources.hpp"
+#include "render_tasks/d3d12_post_processing.hpp"
+#include "render_tasks/d3d12_pixel_data_readback.hpp"
+#include "render_tasks/d3d12_build_acceleration_structures.hpp"
 
 namespace fg_manager
 {
@@ -32,8 +34,12 @@ namespace fg_manager
 
 			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
-			wr::AddAccumulationTask(*fg);
-			wr::AddRenderTargetCopyTask<wr::AccumulationData>(*fg);
+			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
+			
+			// Copy the scene render pixel data to the final render target
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
 			fg->Setup(rs);
@@ -48,7 +54,14 @@ namespace fg_manager
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
-			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
+
+			// Do some post processing
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+
+			// Copy the composition pixel data to the final render target
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
 			fg->Setup(rs);

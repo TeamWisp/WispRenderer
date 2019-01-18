@@ -52,7 +52,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	if(depth_f != 1.0f)
 	{
 		// GBuffer contents
-		const float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
+		float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
@@ -64,12 +64,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{	
 		const float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 		const float3 cdir = normalize(cpos - pos);
-		retval = skybox.SampleLevel(s0, cdir , 0);
+		retval = pow(skybox.SampleLevel(s0, cdir , 0), 2.2);
 	}
-	
-	float gamma = 1;
-	float exposure = 1;
-	retval = linearToneMapping(retval, exposure, gamma);
 
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);

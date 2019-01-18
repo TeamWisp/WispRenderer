@@ -14,7 +14,7 @@ namespace wr
 		static RegistryHandle mip_mapping;
 		static RegistryHandle cubemap_conversion;
 		static RegistryHandle cubemap_convolution;
-		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct shaders
@@ -28,7 +28,7 @@ namespace wr
 		static RegistryHandle equirect_to_cubemap_vs;
 		static RegistryHandle equirect_to_cubemap_ps;
 		static RegistryHandle cubemap_convolution_ps;
-		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct pipelines
@@ -38,7 +38,7 @@ namespace wr
 		static RegistryHandle mip_mapping;
 		static RegistryHandle equirect_to_cubemap;
 		static RegistryHandle cubemap_convolution;
-		static RegistryHandle accumulation;
+		static RegistryHandle post_processing;
 	};
 
 	struct state_objects
