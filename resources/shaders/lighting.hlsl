@@ -76,5 +76,5 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
 	}
 
-	return res * albedo;
+	return ambient + res;
 }

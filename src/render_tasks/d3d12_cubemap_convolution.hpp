@@ -15,6 +15,7 @@
 #include "../platform_independend_structs.hpp"
 #include "d3d12_imgui_render_task.hpp"
 #include "../scene_graph/camera_node.hpp"
+#include "d3d12_equirect_to_cubemap.hpp"
 
 namespace wr
 {
@@ -42,16 +43,18 @@ namespace wr
 			DirectX::XMMATRIX m_view[6];
 		};
 
-		inline void SetupCubemapConvolutionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, TextureHandle in_radiance, TextureHandle out_irradiance)
+		inline void SetupCubemapConvolutionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
+			if (resize)
+			{
+				return;
+			}
+
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<CubemapConvolutionTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::cubemap_convolution);
-
-			data.in_radiance = in_radiance;
-			data.out_irradiance = out_irradiance;
 
 			data.camera_cb_pool = rs.CreateConstantBufferPool(2);
 			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CBuffer)));
@@ -87,6 +90,22 @@ namespace wr
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<CubemapConvolutionTaskData>(handle);
+
+			auto& pred_data = fg.GetPredecessorData<EquirectToCubemapTaskData>();
+
+			auto skybox_node = scene_graph.GetCurrentSkybox();
+
+			//Does it need convolution? And does it have a cubemap already?
+			if (skybox_node->m_irradiance != std::nullopt && skybox_node->m_skybox != std::nullopt)
+			{
+				return;
+			}
+
+			data.in_radiance = pred_data.out_cubemap;
+
+			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 32, 32, 1, wr::Format::R32G32B32A32_FLOAT, true);;
+
+			data.out_irradiance = skybox_node->m_irradiance.value();
 
 			d3d12::TextureResource* radiance = static_cast<d3d12::TextureResource*>(data.in_radiance.m_pool->GetTexture(data.in_radiance.m_id));
 			d3d12::TextureResource* irradiance = static_cast<d3d12::TextureResource*>(data.out_irradiance.m_pool->GetTexture(data.out_irradiance.m_id));
@@ -171,7 +190,7 @@ namespace wr
 
 	} /* internal */
 
-	inline void AddCubemapConvolutionTask(FrameGraph& fg, TextureHandle in_environment_map, TextureHandle out_convoluted_cubemap)
+	inline void AddCubemapConvolutionTask(FrameGraph& fg)
 	{
 		RenderTargetProperties rt_properties
 		{
@@ -189,8 +208,8 @@ namespace wr
 		};
 
 		RenderTaskDesc desc;
-		desc.m_setup_func = [&](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::SetupCubemapConvolutionTask(rs, fg, handle, in_environment_map, out_convoluted_cubemap);
+		desc.m_setup_func = [&](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::SetupCubemapConvolutionTask(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteCubemapConvolutionTask(rs, fg, sg, handle);
@@ -201,7 +220,7 @@ namespace wr
 		desc.m_name = "Cubemap Convolution";
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::DIRECT;
-		desc.m_allow_multithreading = false;
+		desc.m_allow_multithreading = true;
 
 		fg.AddTask<CubemapConvolutionTaskData>(desc);
 	}

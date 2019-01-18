@@ -22,8 +22,8 @@ namespace emibl_scene
 		camera->SetPosition({ 0, -25, -100 });
 		camera->SetSpeed(60.0f);
 		
-		scene_graph->m_skybox = resources::cubemap_environment_map;
-		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::cubemap_environment_map);
+		scene_graph->m_skybox = resources::equirectangular_environment_map;
+		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 
 		// Geometry

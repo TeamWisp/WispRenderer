@@ -44,8 +44,8 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
 			fg = new wr::FrameGraph(6);
 			
-			wr::AddEquirectToCubemapTask(*fg, resources::equirectangular_environment_map, resources::cubemap_environment_map);
-			wr::AddCubemapConvolutionTask(*fg, resources::cubemap_environment_map, resources::convoluted_environment_map);
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 			wr::AddRenderTargetCopyTask<wr::DeferredCompositionTaskData>(*fg);
