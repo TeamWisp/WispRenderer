@@ -6,6 +6,9 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
+#include "render_tasks/d3d12_equirect_to_cubemap.hpp"
+#include "render_tasks/d3d12_cubemap_convolution.hpp"
+#include "resources.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
@@ -24,10 +27,10 @@ namespace fg_manager
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
 	{
-		// Ray tracing
+		// Raytracing
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
-			fg = new wr::FrameGraph(3);
+			fg = new wr::FrameGraph(4);
 
 			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
@@ -39,19 +42,17 @@ namespace fg_manager
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
-			// Finalize the frame graph
 			fg->Setup(rs);
 		}
 
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(4);
-
-			// Construct the G-buffer
+			fg = new wr::FrameGraph(6);
+			
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
-
-			// Merge the G-buffer into one final texture
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
@@ -63,7 +64,6 @@ namespace fg_manager
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
-			// Finalize the frame graph
 			fg->Setup(rs);
 		}
 	}

@@ -92,7 +92,7 @@ namespace wr
 		//Creates an empty material. The user is responsible of filling in the texture handles.
 		//TODO: Give Materials default textures
 		[[nodiscard]] MaterialHandle Create();
-		[[nodiscard]] MaterialHandle Create(TextureHandle& albedo,
+		[[nodiscard]] MaterialHandle* Create(TextureHandle& albedo,
 											TextureHandle& normal,
 											TextureHandle& roughness,
 											TextureHandle& metallic,
