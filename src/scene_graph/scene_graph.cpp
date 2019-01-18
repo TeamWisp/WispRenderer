@@ -185,10 +185,77 @@ namespace wr
 		m_light_nodes.push_back(new_node);
 	}
 
+	void SceneGraph::InsertBatch(std::shared_ptr<MeshNode> mesh_node)
+	{
+		constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
+
+		constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
+
+		ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
+
+		temp::MeshBatch temp_batch = {};
+		std::unordered_multimap<Model*, temp::MeshBatch>::iterator it =
+			m_batches.emplace(std::make_pair(mesh_node->m_model, temp_batch));
+
+		temp::MeshBatch& batch = it->second;
+
+		batch.batch_buffer = object_buffer;
+		batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
+		batch.materials = mesh_node->GetModelMaterials();
+		unsigned int& offset = batch.num_instances;
+		batch.data.objects[offset] = { mesh_node->m_transform };
+		++offset;
+	}
+
+	bool SceneGraph::TryInsertingNode(std::shared_ptr<MeshNode> mesh_node)
+	{
+		constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
+
+		constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
+
+		std::pair<std::unordered_multimap<Model*, temp::MeshBatch>::iterator,
+			std::unordered_multimap<Model*, temp::MeshBatch>::iterator>
+			iterators = m_batches.equal_range(mesh_node->m_model);
+
+		bool found_batch = false;
+
+		for (std::unordered_multimap<Model*, temp::MeshBatch>::iterator it = iterators.first; it != iterators.second; ++it)
+		{
+			if (it->second.num_instances < max_size)
+			{
+				bool materials_equal = true;
+				std::vector<MaterialHandle> model_materials = mesh_node->GetModelMaterials();
+				std::vector<MaterialHandle> batch_materials = it->second.materials;
+				for (int j = 0; j < batch_materials.size(); ++j)
+				{
+					if (model_materials[j] != batch_materials[j])
+					{
+						materials_equal = false;
+						break;
+					}
+				}
+				if (materials_equal == false)
+				{
+					continue;
+				}
+
+				temp::MeshBatch& batch = it->second;
+				unsigned int& offset = batch.num_instances;
+				batch.data.objects[offset] = { mesh_node->m_transform };
+				++offset;
+
+				found_batch = true;
+				break;
+			}
+		}
+
+		return found_batch;
+	}
+
 	void SceneGraph::Optimize() 
 	{
 		//Update batches
-
+		
 		bool should_update = m_batches.size() == 0;
 
 		for (auto& elem : m_batches)
@@ -221,70 +288,16 @@ namespace wr
 				//Insert new if doesn't exist
 				if (std::distance(iterators.first,iterators.second) == 0)
 				{
+					InsertBatch(node);
 
-					ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
-
-					temp::MeshBatch temp_batch = {};
-					std::unordered_multimap<Model*, temp::MeshBatch>::iterator it = 
-						m_batches.emplace(std::make_pair(node->m_model, temp_batch));
-
-					temp::MeshBatch& batch = it->second;
-
-					batch.batch_buffer = object_buffer;
-					batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
-					batch.materials = node->GetModelMaterials();
-					
-					iterators = m_batches.equal_range(node->m_model);
+					continue;
 				}
 
-				bool found_batch = false;
-
-				for (std::unordered_multimap<Model*, temp::MeshBatch>::iterator it = iterators.first; it != iterators.second; ++it)
-				{
-					if (it->second.num_instances < max_size)
-					{
-						bool materials_equal = true;
-						std::vector<MaterialHandle*> model_materials = node->GetModelMaterials();
-						std::vector<MaterialHandle*> batch_materials = it->second.materials;
-						for (int j = 0; j < batch_materials.size(); ++j)
-						{
-							if ((*model_materials[j]) != (*batch_materials[j]))
-							{
-								materials_equal = false;
-								break;
-							}
-						}
-						if (materials_equal == false)
-						{
-							continue;
-						}
-
-						temp::MeshBatch& batch = it->second;
-						unsigned int& offset = batch.num_instances;
-						batch.data.objects[offset] = { node->m_transform };
-						++offset;
-
-						found_batch = true;
-						break;
-					}
-				}
+				bool found_batch = TryInsertingNode(node);				
 
 				if (!found_batch)
 				{
-					ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
-
-					temp::MeshBatch temp_batch = {};
-					std::unordered_multimap<Model*, temp::MeshBatch>::iterator it =
-						m_batches.emplace(std::make_pair(node->m_model, temp_batch));
-
-					temp::MeshBatch& batch = it->second;
-
-					batch.batch_buffer = object_buffer;
-					batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
-					batch.materials = node->GetModelMaterials();
-					unsigned int& offset = batch.num_instances;
-					batch.data.objects[offset] = { node->m_transform };
-					++offset;					
+					InsertBatch(node);
 				}
 
 			}

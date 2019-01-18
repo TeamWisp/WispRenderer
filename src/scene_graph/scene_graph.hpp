@@ -172,6 +172,9 @@ namespace wr
 		void RegisterLight(std::shared_ptr<LightNode>& light_node);
 		void UpdateTransforms(std::shared_ptr<Node>& node);
 
+		void InsertBatch(std::shared_ptr<MeshNode> mesh_node);
+		bool TryInsertingNode(std::shared_ptr<MeshNode> mesh_node);
+
 	private:
 
 		RenderSystem* m_render_system;
