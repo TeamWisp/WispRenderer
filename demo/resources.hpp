@@ -26,9 +26,6 @@ namespace resources
 	static wr::MaterialHandle light_material;
 	static wr::MaterialHandle mirror_material;
 	static wr::TextureHandle equirectangular_environment_map;
-	static wr::TextureHandle cubemap_environment_map;
-	static wr::TextureHandle convoluted_environment_map;
-	//static wr::TextureHandle loaded_skybox2;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{

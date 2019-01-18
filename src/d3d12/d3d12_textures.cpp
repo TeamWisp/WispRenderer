@@ -285,7 +285,7 @@ namespace wr::d3d12
 		}
 	}
 
-	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
 	{
 		d3d12::DescHeapCPUHandle handle = tex->m_srv_allocation.GetDescriptorHandle();
 
