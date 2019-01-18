@@ -55,7 +55,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
-		float shadow_factor = 1.0f;
+
+		const float shadow_factor = 1.0f;
 
 		float3 skyboxReflection = skybox.SampleLevel(s0, reflect(cdir, normal), 0);
 
@@ -68,12 +69,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float3 specular = (skyboxReflection.xyz) * F;
 		float3 diffuse = float3(0, 0, 0);
 		float3 ambient = (kD * diffuse + specular);
-		retval = ambient + (retval * shadow_factor);//shadows
-	
+		retval = ambient + (retval * shadow_factor);
 	}
 	else
 	{	
-		
 		retval = skybox.SampleLevel(s0, cdir , 0);
 	}
 	
