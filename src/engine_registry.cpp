@@ -146,11 +146,11 @@ namespace wr
 	});
 
 	/* ### Raytracing ### */
-	REGISTER(shaders::accumulation) = ShaderRegistry::Get().Register(
+	REGISTER(shaders::post_processing) = ShaderRegistry::Get().Register(
 		{
-			"resources/shaders/accumulation.hlsl",
+			"resources/shaders/post_processing.hlsl",
 			"main",
-			ShaderType::PIXEL_SHADER
+			ShaderType::DIRECT_COMPUTE_SHADER
 		});
 
 	REGISTER(shaders::rt_lib) = ShaderRegistry::Get().Register({
@@ -160,30 +160,31 @@ namespace wr
 	});
 
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> accum_r = {
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(), // source texture
 	};
 
-	REGISTER(root_signatures::accumulation) = RootSignatureRegistry::Get().Register({
+	REGISTER(root_signatures::post_processing) = RootSignatureRegistry::Get().Register({
 	{
 		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(accum_r.size(), accum_r.data()); return d; }(),
-		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
+		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0); return d; }(),
 	},
 	{
 		{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
 	}
 	});
 
-	REGISTER(pipelines::accumulation) = PipelineRegistry::Get().Register<Vertex2D>(
+	REGISTER(pipelines::post_processing) = PipelineRegistry::Get().Register<Vertex2D>(
 		{
-			shaders::fullscreen_quad_vs,
-			shaders::accumulation,
 			std::nullopt,
-			root_signatures::accumulation,
+			std::nullopt,
+			shaders::post_processing,
+			root_signatures::post_processing,
 			Format::UNKNOWN,
 			{ d3d12::settings::back_buffer_format }, //This compute shader doesn't use any render target
 			1,
-			PipelineType::GRAPHICS_PIPELINE,
-			CullMode::CULL_BACK,
+			PipelineType::COMPUTE_PIPELINE,
+			CullMode::CULL_NONE,
 			false,
 			true,
 			TopologyType::TRIANGLE
