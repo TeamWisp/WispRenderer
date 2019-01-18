@@ -87,10 +87,13 @@ public:
 
 	void MouseWheel(int amount)
 	{
-		float percent = (float) GET_WHEEL_DELTA_WPARAM(amount) / WHEEL_DELTA * m_scroll_speed;
+		if (m_rmb_down)
+		{
+			float percent = (float) GET_WHEEL_DELTA_WPARAM(amount) / WHEEL_DELTA * m_scroll_speed;
 
-		if(percent + m_speed > 0)
-			m_speed += percent;
+			if (percent + m_speed > 0)
+				m_speed += percent;
+		}
 
 	}
 
