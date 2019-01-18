@@ -11,7 +11,6 @@ namespace wr
 
 	struct TextureHandle;
 	struct Model;
-	struct CPUTextures;
 
 	class Window;
 	class SceneGraph;
@@ -21,6 +20,7 @@ namespace wr
 	class ConstantBufferPool;
 	class StructuredBufferPool;
 	class FrameGraph;
+	class CPUTexture;
 
 	class RenderSystem
 	{
@@ -61,7 +61,7 @@ namespace wr
 		virtual void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 
 		virtual void Init(std::optional<Window*> window) = 0;
-		virtual CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
+		virtual CPUTexture Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
 		virtual void Resize(std::uint32_t width, std::uint32_t height) = 0;
 		
 		std::optional<Window*> m_window;

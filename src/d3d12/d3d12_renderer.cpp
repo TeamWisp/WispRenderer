@@ -146,7 +146,7 @@ namespace wr
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 	}
 
-	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	CPUTexture D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
 
  		if (m_requested_fullscreen_state.has_value())
@@ -220,9 +220,6 @@ namespace wr
 			n_cmd_lists.push_back(list);
 		}
 
-		// Reset the batches.
-		ResetBatches(*scene_graph.get());
-
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
 		if (m_render_window.has_value())
@@ -233,16 +230,15 @@ namespace wr
 		m_bound_model_pool = nullptr;
 
 		//Signal end of frame to the texture pool so that stale descriptors can be freed.
-		for (auto pool : m_texture_pools)
-		{
-			pool->EndOfFrame();
-		}
-
+		m_texture_pool->EndOfFrame();
 		// Optional CPU-visible copy of the render target pixel data
 		const auto cpu_output_texture = frame_graph.GetOutputTexture();
 
-		// Optional CPU-visible copy of the render target pixel and/or depth data
-		return frame_graph.GetOutputTexture();
+		// If no pixel data is available, return null, else, return GPU pixel data
+		if (cpu_output_texture.has_value())
+			return cpu_output_texture.value();
+		else
+			return CPUTexture();
 	}
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
@@ -258,9 +254,8 @@ namespace wr
 
 	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures)
 	{
-		std::shared_ptr<D3D12TexturePool> pool = std::make_shared<D3D12TexturePool>(*this, size_in_mb, num_of_textures);
-		m_texture_pools.push_back(pool);
-		return pool;
+		m_texture_pool = std::make_shared<D3D12TexturePool>(*this, size_in_mb, num_of_textures);
+		return m_texture_pool;
 	}
 
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
@@ -518,7 +513,7 @@ namespace wr
 			}
 			else
 			{
-				LOGC(std::get<std::string>(shader_error));
+				LOGC("Failed to load shader. compiler error: {}", std::get<std::string>(shader_error));
 			}
 		}
 	}
@@ -769,7 +764,7 @@ namespace wr
 
 			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
 
-			float clear_color[] = { 0, 0, 0, 0 };
+			float clear_color[] = { 0.f,0.f,0.f,0.f };
 
 			m_direct_cmd_list->m_native->ResourceBarrier(1,
 				&CD3DX12_RESOURCE_BARRIER::Transition(
@@ -802,11 +797,7 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
-		
-		for (auto pool : m_texture_pools)
-		{
-			pool->Stage(m_direct_cmd_list);
-		}
+		m_texture_pool->Stage(m_direct_cmd_list);
 
 		d3d12::End(m_direct_cmd_list);
 	}
@@ -1007,6 +998,9 @@ namespace wr
 					}
 				}
 			}
+
+			//Reset instances
+			batch.num_instances = 0;
 		}
 
 		if constexpr (d3d12::settings::use_exec_indirect)
@@ -1046,10 +1040,10 @@ namespace wr
 		auto metallic_handle = material_internal->GetMetallic();
 		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		d3d12::SetShaderSRV(n_cmd_list, 2, 0, albedo_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 1, normal_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 2, roughness_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 3, metallic_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 0, albedo_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 1, normal_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 2, roughness_internal);
+		d3d12::SetShaderTexture(n_cmd_list, 2, 3, metallic_internal);
 	}
 	
 	unsigned int D3D12RenderSystem::GetFrameIdx()
@@ -1088,19 +1082,11 @@ namespace wr
 		return m_simple_shapes[type];
 	}
 
-	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)
-	{
-		for (auto& batch : sg.GetBatches())
-		{
-			batch.second.num_instances = 0;
-		}
-	}
-
 	void D3D12RenderSystem::LoadPrimitiveShapes()
 	{
 		// Load Cube.
 		{
-			wr::MeshData<wr::VertexColor> mesh;
+			wr::MeshData<wr::Vertex> mesh;
 
 			mesh.m_indices = {
 				2, 1, 0, 3, 2, 0, 6, 5,
@@ -1111,56 +1097,56 @@ namespace wr
 			};
 
 			mesh.m_vertices = {
-				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0,	0, 0, 0 },
-				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0 },
+				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
 
-				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
 
-				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
 
-				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
 
-				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
 
-				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
 			};
 
-			m_simple_shapes[SimpleShapes::CUBE] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
+			m_simple_shapes[SimpleShapes::CUBE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
 		}
 
 		{
-			wr::MeshData<wr::VertexColor> mesh;
+			wr::MeshData<wr::Vertex> mesh;
 
 			mesh.m_indices = {
 				2, 1, 0, 3, 2, 0
 			};
 
 			mesh.m_vertices = {
-				//POS				UV			NORMAL				TANGENT			BINORMAL		COLOR
-				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
-				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
-				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
-				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
+				//POS				UV			NORMAL				TANGENT			BINORMAL
+				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
 			};
 
-			m_simple_shapes[SimpleShapes::PLANE] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
+			m_simple_shapes[SimpleShapes::PLANE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
 		}
 	}
 

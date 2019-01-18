@@ -11,7 +11,6 @@
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
-#include "../render_tasks/d3d12_cubemap_convolution.hpp"
 
 namespace wr
 {
@@ -39,7 +38,7 @@ namespace wr
 
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
 			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 1);
-			d3d12::Offset(gpu_handle, 6, data.out_srv_heap->m_increment_size);
+			d3d12::Offset(gpu_handle, 5, data.out_srv_heap->m_increment_size);
 			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 2);
 
 			d3d12::Dispatch(cmd_list, 
@@ -82,8 +81,6 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
-
 			if (n_render_system.m_render_window.has_value())
 			{
 				const auto viewport = n_render_system.m_viewport;
@@ -104,18 +101,10 @@ namespace wr
 				auto skybox = scene_graph.GetCurrentSkybox();
 				if (skybox != nullptr)
 				{
-					//auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox.value().m_pool->GetTexture(skybox->m_skybox.value().m_id));
-					//d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
-					//Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
-
-					auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
+					auto skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(skybox->m_texture.m_pool->GetTexture(skybox->m_texture.m_id));
 					d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
 					Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
 				}
-
-				d3d12::TextureResource* irradiance_map = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
-				d3d12::CreateSRVFromTexture(irradiance_map, cpu_handle);
-				d3d12::Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
 
 				std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
 				d3d12::CreateUAVFromRTV(render_target, cpu_handle, 1, formats.data());

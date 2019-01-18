@@ -27,11 +27,23 @@ namespace wr
 	{
 		m_texture_pool = albedo.m_pool;
 
-		SetAlbedo(albedo);
-		SetNormal(normal);
-		SetRoughness(roughness);
-		SetMetallic(metallic);
-		SetAmbientOcclusion(ao);
+		if (m_texture_pool == normal.m_pool && 
+			m_texture_pool == roughness.m_pool &&
+			m_texture_pool == metallic.m_pool &&
+			m_texture_pool == ao.m_pool)
+		{
+			m_albedo = albedo;
+			m_normal = normal;
+			m_rougness = roughness;
+			m_metallic = metallic;
+			m_ao = ao;
+			m_alpha_masked = alpha_masked;
+			m_double_sided = double_sided;
+		}
+		else
+		{
+			LOGC("Textures in a material need to belong to the same texture pool");
+		}
 	}
 
 	void Material::SetAlbedo(TextureHandle albedo)
@@ -39,13 +51,10 @@ namespace wr
 		if (albedo.m_pool != m_texture_pool
 			&& m_texture_pool)
 		{
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_albedo = m_texture_pool->GetDefaultAlbedo();
+			LOGC("Textures in a material need to belong to the same texture pool");
 		}
-		else
-		{
-			m_albedo = albedo;
-		}
+
+		m_albedo = albedo;
 	}
 
 
@@ -54,13 +63,10 @@ namespace wr
 		if (normal.m_pool != m_texture_pool
 			&& m_texture_pool)
 		{
-			m_normal = m_texture_pool->GetDefaultNormal();
-			LOGW("Textures in a material need to belong to the same texture pool");
+			LOGC("Textures in a material need to belong to the same texture pool");
 		}
-		else
-		{
-			m_normal = normal;
-		}
+
+		m_normal = normal;
 	}
 
 	void Material::SetRoughness(TextureHandle roughness)
@@ -68,13 +74,10 @@ namespace wr
 		if (roughness.m_pool != m_texture_pool
 			&& m_texture_pool)
 		{
-			m_rougness = m_texture_pool->GetDefaultRoughness();
-			LOGW("Textures in a material need to belong to the same texture pool");
+			LOGC("Textures in a material need to belong to the same texture pool");
 		}
-		else
-		{
-			m_rougness = roughness;
-		}
+
+		m_rougness = roughness;
 	}
 
 	void Material::SetMetallic(TextureHandle metallic)
@@ -82,13 +85,10 @@ namespace wr
 		if (metallic.m_pool != m_texture_pool
 			&& m_texture_pool)
 		{
-			m_metallic = m_texture_pool->GetDefaultMetalic();
-			LOGW("Textures in a material need to belong to the same texture pool");
+			LOGC("Textures in a material need to belong to the same texture pool");
 		}
-		else
-		{
-			m_metallic = metallic;
-		}
+
+		m_metallic = metallic;
 	}
 
 	void Material::SetAmbientOcclusion(TextureHandle ao)
@@ -96,13 +96,10 @@ namespace wr
 		if (ao.m_pool != m_texture_pool
 			&& m_texture_pool)
 		{
-			m_ao = m_texture_pool->GetDefaultAO();
-			LOGW("Textures in a material need to belong to the same texture pool");
+			LOGC("Textures in a material need to belong to the same texture pool");
 		}
-		else
-		{
-			m_ao = ao;
-		}
+
+		m_ao = ao;
 	}
 
 
@@ -128,17 +125,17 @@ namespace wr
 		return handle;
 	}
 
-	MaterialHandle* MaterialPool::Create(TextureHandle& albedo, TextureHandle& normal,
+	MaterialHandle MaterialPool::Create(TextureHandle& albedo, TextureHandle& normal,
 										TextureHandle& roughness, TextureHandle& metallic,
 										TextureHandle& ao, bool is_alpha_masked, bool is_double_sided)
 	{
-		MaterialHandle* handle = new MaterialHandle();
-		handle->m_pool = this;
-		handle->m_id = m_id_factory.GetUnusedID();
+		MaterialHandle handle;
+		handle.m_pool = this;
+		handle.m_id = m_id_factory.GetUnusedID();
 
 		Material* mat = new Material(albedo, normal, roughness, metallic, ao, is_alpha_masked, is_double_sided);
 
-		m_materials.insert(std::make_pair(handle->m_id, mat));
+		m_materials.insert(std::make_pair(handle.m_id, mat));
 
 		return handle;
 	}

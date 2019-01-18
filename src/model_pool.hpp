@@ -249,10 +249,6 @@ namespace wr
 
 		ModelData* data = loader->Load(path);
 
-		// Find directory
-		std::string dir = std::string(path);
-		dir.erase(dir.begin() + dir.find_last_of('/') + 1, dir.end());
-
 		Model* model = new Model;
 		std::vector<MaterialHandle*> material_handles;
 
@@ -272,7 +268,7 @@ namespace wr
 				}
 				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
 				{
-					albedo = texture_pool->Load(dir + material->m_albedo_texture, false, false);
+					albedo = texture_pool->Load(material->m_albedo_texture);
 				}
 			}
 			else
@@ -290,7 +286,7 @@ namespace wr
 				}
 				else if (material->m_normal_map_texture_location == TextureLocation::EXTERNAL)
 				{
-					normals = texture_pool->Load(dir + material->m_normal_map_texture, false, false);
+					normals = texture_pool->Load(material->m_normal_map_texture);
 				}
 			}
 			else
@@ -308,7 +304,7 @@ namespace wr
 				}
 				else if (material->m_metallic_texture_location == TextureLocation::EXTERNAL)
 				{
-					metallic = texture_pool->Load(dir + material->m_metallic_texture, false, false);
+					metallic = texture_pool->Load(material->m_metallic_texture);
 				}
 			}
 			else
@@ -326,7 +322,7 @@ namespace wr
 				}
 				else if (material->m_roughness_texture_location == TextureLocation::EXTERNAL)
 				{
-					roughness = texture_pool->Load(dir + material->m_roughness_texture, false, false);
+					roughness = texture_pool->Load(material->m_roughness_texture);
 				}
 			}
 			else
@@ -344,7 +340,7 @@ namespace wr
 				}
 				else if (material->m_ambient_occlusion_texture_location == TextureLocation::EXTERNAL)
 				{
-					ambient_occlusion = texture_pool->Load(dir + material->m_ambient_occlusion_texture, false, false);
+					ambient_occlusion = texture_pool->Load(material->m_ambient_occlusion_texture);
 				}
 			}
 			else
@@ -356,8 +352,8 @@ namespace wr
 
 			float opacity = material->m_base_transparency;
 
-			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, false, true);
-			material_handles.push_back(new_handle);
+			material_pool->Create(albedo, normals, metallic, ambient_occlusion, opacity < 1.f, two_sided);
+			material_handles.push_back();
 		}
 
 		int ret = LoadNodeMeshesWithMaterials<TV, TI>(data, model, material_handles);

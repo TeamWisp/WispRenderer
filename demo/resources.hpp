@@ -1,7 +1,6 @@
 #pragma once
 
 #include "wisp.hpp"
-#include "d3d12/d3d12_structs.hpp"
 
 namespace resources
 {
@@ -15,21 +14,16 @@ namespace resources
 	static wr::Model* light_model;
 	static wr::Model* test_model;
 	static wr::Model* sphere_model;
-	static wr::Model* material_knot_bamboo;
-	static wr::Model* material_knot_plastic;
-	static wr::Model* material_knot_metal;
 	static wr::MaterialHandle rusty_metal_material;
-	static wr::MaterialHandle bamboo_material;
-	static wr::MaterialHandle plastic_material;
-	static wr::MaterialHandle metal_material;
-
-	static wr::MaterialHandle light_material;
+	static wr::MaterialHandle rock_material;
 	static wr::MaterialHandle mirror_material;
-	static wr::TextureHandle equirectangular_environment_map;
+
+	static wr::TextureHandle loaded_skybox;
+	static wr::TextureHandle loaded_skybox2;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(16, 24);
+		texture_pool = render_system->CreateTexturePool(16, 14);
 		material_pool = render_system->CreateMaterialPool(8);
 
 		// Load Texture.
@@ -47,17 +41,9 @@ namespace resources
 		wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 		wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
-		wr::TextureHandle plastic_albedo = texture_pool->Load("resources/materials/scruffed_plastic/albedo.png", true, true);
-		wr::TextureHandle plastic_normal = texture_pool->Load("resources/materials/scruffed_plastic/normal.png", false, true);
-		wr::TextureHandle plastic_roughness = texture_pool->Load("resources/materials/scruffed_plastic/roughness.png", false, true);
-		wr::TextureHandle plastic_metallic = texture_pool->Load("resources/materials/scruffed_plastic/metallic.png", false, true);
 
-		wr::TextureHandle metal_albedo = texture_pool->Load("resources/materials/greasy_pan/albedo.png", true, true);
-		wr::TextureHandle metal_normal = texture_pool->Load("resources/materials/greasy_pan/normal.png", false, true);
-		wr::TextureHandle metal_roughness = texture_pool->Load("resources/materials/greasy_pan/roughness.png", false, true);
-		wr::TextureHandle metal_metallic = texture_pool->Load("resources/materials/greasy_pan/metallic.png", false, true);
-
-		equirectangular_environment_map = texture_pool->Load("resources/materials/UenoShrine.hdr", false, false);
+		loaded_skybox2 = texture_pool->Load("resources/materials/LA_Downtown_Afternoon_Fishing_3k.hdr", false, false);
+		loaded_skybox = texture_pool->Load("resources/materials/skybox.dds", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();
@@ -69,82 +55,108 @@ namespace resources
 		mirror_internal->SetRoughness(black);
 		mirror_internal->SetMetallic(white);
 
-		{
-			// Create Material
-			rusty_metal_material = material_pool->Create();
+		// Create Material
+		rusty_metal_material = material_pool->Create();
 
-			wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material.m_id);
+		wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material.m_id);
 
-			rusty_metal_internal->SetAlbedo(metal_splotchy_albedo);
-			rusty_metal_internal->SetNormal(metal_splotchy_normal);
-			rusty_metal_internal->SetRoughness(metal_splotchy_roughness);
-			rusty_metal_internal->SetMetallic(metal_splotchy_metallic);
+		rusty_metal_internal->SetAlbedo(metal_splotchy_albedo);
+		rusty_metal_internal->SetNormal(metal_splotchy_normal);
+		rusty_metal_internal->SetRoughness(metal_splotchy_roughness);
+		rusty_metal_internal->SetMetallic(metal_splotchy_metallic);
 
-			// Create Material
-			bamboo_material = material_pool->Create();
+		// Create Material
+		rock_material = material_pool->Create();
 
-			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material.m_id);
+		wr::Material* rock_material_internal = material_pool->GetMaterial(rock_material.m_id);
 
-			bamboo_material_internal->SetAlbedo(bamboo_albedo);
-			bamboo_material_internal->SetNormal(bamboo_normal);
-			bamboo_material_internal->SetRoughness(bamboo_roughness);
-			bamboo_material_internal->SetMetallic(bamboo_metallic);
-
-			// Create Material
-			plastic_material = material_pool->Create();
-
-			wr::Material* plastic_material_internal = material_pool->GetMaterial(plastic_material.m_id);
-
-			plastic_material_internal->SetAlbedo(plastic_albedo);
-			plastic_material_internal->SetNormal(plastic_normal);
-			plastic_material_internal->SetRoughness(plastic_roughness);
-			plastic_material_internal->SetMetallic(plastic_metallic);
-
-			// Create Material
-			metal_material = material_pool->Create();
-
-			wr::Material* metal_material_internal = material_pool->GetMaterial(metal_material.m_id);
-
-			metal_material_internal->SetAlbedo(metal_albedo);
-			metal_material_internal->SetNormal(metal_normal);
-			metal_material_internal->SetRoughness(metal_roughness);
-			metal_material_internal->SetMetallic(metal_metallic);
-		
-		}
+		rock_material_internal->SetAlbedo(bamboo_albedo);
+		rock_material_internal->SetNormal(bamboo_normal);
+		rock_material_internal->SetRoughness(bamboo_roughness);
+		rock_material_internal->SetMetallic(bamboo_metallic);
 
 		model_pool = render_system->CreateModelPool(16, 16);
 
+		// Load Cube.
 		{
-			wr::MeshData<wr::VertexColor> mesh;
+			wr::MeshData<wr::Vertex> mesh;
+
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0, 6, 5,
+				4, 7, 6, 4, 10, 9, 8, 11,
+				10, 8, 14, 13, 12, 15, 14, 12,
+				18, 17, 16, 19, 18, 16, 22, 21,
+				20, 23, 22, 20
+			};
+
+			mesh.m_vertices = {
+				{ 1, 1, -1,        1, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0 },
+				{ 1, -1, -1,    0, 1,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,    0, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    1, 0,        0, 0, -1,        0, 0, 0,    0, 0, 0  },
+
+				{ 1, 1, 1,        1, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        0, 1,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        1, 0,        0, 0, 1,        0, 0, 0,    0, 0, 0  },
+
+				{ 1, 1, -1,        1, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, 1,        1, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        0, 1,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, -1,    0, 0,        1, 0, 0,        0, 0, 0,    0, 0, 0  },
+
+				{ 1, -1, -1,    1, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, -1, 1,        1, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 1,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, -1,    0, 0,        0, -1, 0,        0, 0, 0,    0, 0, 0  },
+
+				{ -1, -1, -1,    0, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, -1, 1,    0, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        1, 0,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    1, 1,        -1, 0, 0,        0, 0, 0,    0, 0, 0  },
+
+				{ 1, 1, 1,        1, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ 1, 1, -1,        1, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, -1,    0, 1,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+				{ -1, 1, 1,        0, 0,        0, 1, 0,        0, 0, 0,    0, 0, 0  },
+			};
+
+			cube_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+
+			for (auto& m : cube_model->m_meshes)
+			{
+				m.second = &rock_material;
+			}
+
+			{
+				wr::MeshData<wr::Vertex> mesh;
 
 				mesh.m_indices = {
 					2, 1, 0, 3, 2, 0
 				};
 
 				mesh.m_vertices = {
-					//POS                UV            NORMAL                TANGENT            BINORMAL	COLOR
-					{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+					//POS                UV            NORMAL                TANGENT            BINORMAL
+					{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0},
+					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0},
 				};
 
 				//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-				plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
+				plane_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 
-			plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
-			light_model = plane_model;
+				light_model = plane_model;
 
 				for (auto& m : plane_model->m_meshes)
 				{
-					m.second = &bamboo_material;
+					m.second = &rock_material;
 				}
-		}
+			}
 
-		{
 			{
-				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
+				test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				sphere_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)
 				{
@@ -157,51 +169,7 @@ namespace resources
 				}
 			}
 
-			{
-				material_knot_bamboo = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
-
-				for (auto& m : material_knot_bamboo->m_meshes)
-				{
-					m.second = &bamboo_material;
-				}
-			}
-
-			{
-				material_knot_plastic = new wr::Model();
-
-				for (auto& m : material_knot_bamboo->m_meshes)
-				{
-					material_knot_plastic->m_meshes.push_back(std::make_pair(m.first, &plastic_material));
-					material_knot_plastic->m_box[0] = material_knot_bamboo->m_box[0];
-					material_knot_plastic->m_box[1] = material_knot_bamboo->m_box[1];
-					material_knot_plastic->m_box[2] = material_knot_bamboo->m_box[2];
-					material_knot_plastic->m_box[3] = material_knot_bamboo->m_box[3];
-					material_knot_plastic->m_box[4] = material_knot_bamboo->m_box[4];
-					material_knot_plastic->m_box[5] = material_knot_bamboo->m_box[5];
-					material_knot_plastic->m_model_name = material_knot_bamboo->m_model_name;
-					material_knot_plastic->m_model_pool = material_knot_bamboo->m_model_pool;
-				}
-			}
-
-			{
-				material_knot_metal = new wr::Model();
-
-				for (auto& m : material_knot_bamboo->m_meshes)
-				{
-					material_knot_metal->m_meshes.push_back(std::make_pair(m.first, &metal_material));
-					material_knot_metal->m_box[0] = material_knot_bamboo->m_box[0];
-					material_knot_metal->m_box[1] = material_knot_bamboo->m_box[1];
-					material_knot_metal->m_box[2] = material_knot_bamboo->m_box[2];
-					material_knot_metal->m_box[3] = material_knot_bamboo->m_box[3];
-					material_knot_metal->m_box[4] = material_knot_bamboo->m_box[4];
-					material_knot_metal->m_box[5] = material_knot_bamboo->m_box[5];
-					material_knot_metal->m_model_name = material_knot_bamboo->m_model_name;
-					material_knot_metal->m_model_pool = material_knot_bamboo->m_model_pool;
-				}
-			}
-
 		}
-	}
 
 #pragma region REPLACE_LOADING_WITH_THIS
 		// Once the ray tracing implementation supports multiple model pools
@@ -239,4 +207,5 @@ namespace resources
 		//}
 #pragma endregion
 
+	}
 }

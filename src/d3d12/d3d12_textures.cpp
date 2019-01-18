@@ -161,7 +161,7 @@ namespace wr::d3d12
 		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
-		
+
 		uav_desc.Format = (DXGI_FORMAT)tex->m_format;
 
 		//Calculate dimension
@@ -285,7 +285,7 @@ namespace wr::d3d12
 		}
 	}
 
-	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	void SetShaderTexture(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
 	{
 		d3d12::DescHeapCPUHandle handle = tex->m_srv_allocation.GetDescriptorHandle();
 
@@ -304,6 +304,7 @@ namespace wr::d3d12
 		SAFE_RELEASE(tex->m_resource);
 		delete tex;
 	}
+
 
 
 } /* wr::d3d12 */

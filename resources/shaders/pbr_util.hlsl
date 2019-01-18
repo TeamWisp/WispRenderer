@@ -75,8 +75,8 @@ float3 F_Schlick(float cos_theta, float metallic, float3 material_color)
  
 float3 F_SchlickRoughness(float cos_theta, float metallic, float3 material_color, float roughness)
 {
-	float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), material_color, metallic); // * material.specular
-	float3 F = F0 + (max(float3(1.0f - roughness, 1.0f - roughness, 1.0f - roughness), F0) - F0) * pow(1.0f - cos_theta, 5.0f);
+	float3 F0 = lerp(float3(0.04, 0.04, 0.04), material_color, metallic); // * material.specular
+	float3 F = F0 + (max((1.0 - roughness), F0) - F0) * pow(1.0 - cos_theta, 5.0);
 	return F;
 }
  

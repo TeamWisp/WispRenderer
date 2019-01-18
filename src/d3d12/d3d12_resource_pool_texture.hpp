@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../resource_pool_texture.hpp"
-#include "d3d12_enums.hpp"
 #include "d3d12_texture_resources.hpp"
 #include <DirectXMath.h>
 
@@ -55,17 +54,12 @@ namespace wr
 		D3D12RenderSystem& m_render_system;
 
 		//CPU only visible heaps used for staging of descriptors.
-		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
 		DescriptorAllocator* m_allocators[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
-
 
 		//Descriptor heap used for compute pipeline when doing mipmapping
 		d3d12::DescriptorHeap* m_mipmapping_heap;
 		d3d12::DescHeapCPUHandle m_mipmapping_cpu_handle;
 		d3d12::DescHeapGPUHandle m_mipmapping_gpu_handle;
 	};
-
-
-
 
 }

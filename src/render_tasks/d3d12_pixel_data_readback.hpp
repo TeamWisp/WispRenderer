@@ -7,26 +7,26 @@
 
 namespace wr
 {
-	struct PixelReadbackTaskData
+	struct ReadbackTaskInternalData
 	{
 		// Render target of the previous render task (should be the output from the composition task
 		d3d12::RenderTarget* predecessor_render_target;
 
-		// Read back buffer used to retrieve the depth data on the GPU
+		// Read back buffer used to retrieve the pixel data on the GPU
 		d3d12::ReadbackBufferResource* readback_buffer;
 
 		d3d12::desc::ReadbackDesc readback_buffer_desc;
 
-		// Stores the final depth data
+		// Stores the final pixel data
 		CPUTexture cpu_texture_output;
 	};
 
 	namespace internal
 	{
 		template<typename T>
-		inline void SetupPixelDataReadBackTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
+		inline void SetupReadBackTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
-			auto& data = fg.GetData<PixelReadbackTaskData>(handle);
+			auto& data = fg.GetData<ReadbackTaskInternalData>(handle);
 			auto& dx12_render_system = static_cast<D3D12RenderSystem&>(rs);
 
 			// Save the previous render target for use in the execute function
@@ -57,10 +57,10 @@ namespace wr
 			data.cpu_texture_output.m_bytes_per_pixel = data.readback_buffer_desc.m_bytes_per_pixel;
  		}
 
-		inline void ExecutePixelDataReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle)
+		inline void ExecuteReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& dx12_render_system = static_cast<D3D12RenderSystem&>(render_system);
-			auto& data = frame_graph.GetData<PixelReadbackTaskData>(handle);
+			auto& data = frame_graph.GetData<ReadbackTaskInternalData>(handle);
 			auto command_list = frame_graph.GetCommandList<d3d12::CommandList>(handle);
 
 			D3D12_TEXTURE_COPY_LOCATION destination = {};
@@ -82,13 +82,13 @@ namespace wr
 			command_list->m_native->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
 
 			// Update the frame graph output texture (allows the renderer to access this data)
-			frame_graph.SetOutputTexture(data.cpu_texture_output, CPUTextureType::PIXEL_DATA);
+			frame_graph.SetOutputTexture(data.cpu_texture_output);
 		}
 		
-		inline void DestroyPixelDataReadBackTask(FrameGraph& fg, RenderTaskHandle handle)
+		inline void DestroyReadBackTask(FrameGraph& fg, RenderTaskHandle handle)
 		{
 			// Data used for this render task
-			auto& data = fg.GetData<PixelReadbackTaskData>(handle);
+			auto& data = fg.GetData<ReadbackTaskInternalData>(handle);
 
 			// Clean up the read back buffer
 			UnmapReadbackBuffer(data.readback_buffer);
@@ -98,7 +98,7 @@ namespace wr
 	} /* internal */
 
 	template<typename T>
-	inline void AddPixelDataReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
+	inline void AddRenderTargetReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
@@ -121,26 +121,26 @@ namespace wr
 
 		// Set-up
 		readback_task_description.m_setup_func = [](RenderSystem& render_system, FrameGraph& frame_graph, RenderTaskHandle render_task_handle, bool) {
-			internal::SetupPixelDataReadBackTask<T>(render_system, frame_graph, render_task_handle);
+			internal::SetupReadBackTask<T>(render_system, frame_graph, render_task_handle);
 		};
 
 		// Execution
 		readback_task_description.m_execute_func = [](RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle) {
-			internal::ExecutePixelDataReadBackTask(render_system, frame_graph, scene_graph, handle);
+			internal::ExecuteReadBackTask(render_system, frame_graph, scene_graph, handle);
 		};
 
 		// Destruction and clean-up
 		readback_task_description.m_destroy_func = [](FrameGraph& frame_graph, RenderTaskHandle handle, bool) {
-			internal::DestroyPixelDataReadBackTask(frame_graph, handle);
+			internal::DestroyReadBackTask(frame_graph, handle);
 		};
 
-		readback_task_description.m_name = std::string(std::string("Render target pixel data (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
+		readback_task_description.m_name = std::string(std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
 		readback_task_description.m_properties = rt_properties;
 		readback_task_description.m_type = RenderTaskType::COPY;
 		readback_task_description.m_allow_multithreading = false;
 
 		// Save this task to the frame graph system
-		frame_graph.AddTask<PixelReadbackTaskData>(readback_task_description);
+		frame_graph.AddTask<ReadbackTaskInternalData>(readback_task_description);
 	}
 
 } /* wr */

@@ -80,7 +80,7 @@ namespace wr
 
 	void LightNode::SetSpot(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR rot, float ang, DirectX::XMVECTOR col)
 	{
-		SetType(LightType::SPOT);
+		SetType(LightType::POINT);
 		SetPosition(pos);
 		SetRadius(rad);
 		SetRotation(rot);
