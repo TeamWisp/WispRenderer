@@ -273,27 +273,13 @@ void RaygenEntry()
 	}
 
 	// Do lighting
-
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(cpos - wpos);
 
 	float3 lighting = ShadePixel(wpos, V, albedo, normal, roughness, metallic);
-	float3 reflection = DoReflection(wpos, normal, metallic, roughness, lighting);
 
-	gOutput[DispatchRaysIndex().xy] = float4(reflection, 1);
+	gOutput[DispatchRaysIndex().xy] = float4(lighting, 1);
 
-}
-
-float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
-{
-	float3 vertexAttribute[3];
-	vertexAttribute[0] = a;
-	vertexAttribute[1] = b;
-	vertexAttribute[2] = c;
-
-	return vertexAttribute[0] +
-		attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
-		attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
 
 //Shadows
@@ -303,68 +289,10 @@ void ShadowHit(inout ShadowHitInfo payload, in MyAttributes attr)
 	payload.shadow_hit = true;
 }
 
-//Reflections
-[shader("closesthit")]
-void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
-{
-	const Material material = g_materials[InstanceID()];
-	const float index_offset = material.idx_offset;
-	const float vertex_offset = material.vertex_offset;
-
-	// Find first index location
-	const uint index_size = 4;
-	const uint indices_per_triangle = 3;
-	const uint triangle_idx_stride = indices_per_triangle * index_size;
-
-	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
-	base_idx += index_offset * 4; // offset the start
-
-	uint3 indices = Load3x32BitIndices(base_idx);
-	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
-
-	// Gather triangle vertices
-	const Vertex v0 = g_vertices[indices.x];
-	const Vertex v1 = g_vertices[indices.y];
-	const Vertex v2 = g_vertices[indices.z];
-
-	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
-	
-	//Get data from VBO
-	float3 uvw = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
-	float2 uv = uvw.xy;
-	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x;
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
-
-	albedo = lerp(albedo, color, length(color) != 0);
-
-	//Direction & position
-
-	const float3 hit_pos = HitWorldPosition();
-	float3 V = normalize(payload.origin - hit_pos);
-
-	//Normal mapping
-	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
-	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
-	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
-
-	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
-	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
-	//float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
-	const float3 B = cross(N, T);
-	const float3x3 TBN = float3x3(T, B, N);
-
-	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
-
-	float3 fN = normalize(mul(normal_t, TBN));
-	if (dot(fN, V) <= 0.0f) fN = -fN;
-
-	//Shading
-	payload.color = ShadePixel(hit_pos, V, albedo, normal, roughness, metal);
-}
-
+//Shadows
 [shader("miss")]
-void ReflectionMiss(inout ReflectionHitInfo payload)
+void ShadowMiss(inout ShadowHitInfo payload)
 {
-	payload.color = sky_color;
+	payload.shadow_hit = false;
 }
+
