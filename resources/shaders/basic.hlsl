@@ -9,6 +9,7 @@ struct VS_INPUT
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 bitangent : BITANGENT;
+	float3 color : COLOR;
 };
 
 struct VS_OUTPUT
@@ -18,6 +19,7 @@ struct VS_OUTPUT
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 bitangent : BITANGENT;
+	float3 color : COLOR;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -54,6 +56,7 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
 	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
 	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
+	output.color = input.color;
 
 	return output;
 }
@@ -82,7 +85,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
 	float3 normal = normalize(mul(tex_normal, tbn));
 
-	output.albedo_roughness = float4(albedo.xyz, roughness.r);
+	output.albedo_roughness = float4(lerp(albedo.xyz, input.color, length(input.color) != 0), roughness.r);
 	output.normal_metallic = float4(normal, metallic.r);
 	return output;
 }

@@ -6,6 +6,7 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
+#include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
 #include "resources.hpp"
@@ -20,10 +21,11 @@ namespace fg_manager
 	{
 		RAYTRACING = 0,
 		DEFERRED = 1,
+		RT_HYBRID = 2,
 	};
 
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
-	static std::array<wr::FrameGraph*, 2> frame_graphs = {};
+	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
 	{
@@ -64,6 +66,33 @@ namespace fg_manager
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
 
+			fg->Setup(rs);
+		}
+
+		// Hybrid raytracing
+		{
+			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
+			fg = new wr::FrameGraph(6);
+
+			 // Construct the G-buffer
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+
+			// Build Acceleration Structure
+			wr::AddBuildAccelerationStructuresTask(*fg);
+
+			// Raytracing task
+			wr::AddRTHybridTask(*fg);
+
+			// Do some post processing
+			wr::AddPostProcessingTask<wr::RTHybridData>(*fg);
+
+			// Copy the raytracing pixel data to the final render target
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+			// Display ImGui
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+
+			// Finalize the frame graph
 			fg->Setup(rs);
 		}
 	}

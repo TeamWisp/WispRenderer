@@ -150,7 +150,7 @@ namespace wr
 	});
 
 
-	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<Vertex>({
+	REGISTER(pipelines::basic_deferred) = PipelineRegistry::Get().Register<VertexColor>({
 		shaders::basic_vs,
 		shaders::basic_ps,
 		std::nullopt,
@@ -180,7 +180,7 @@ namespace wr
 		TopologyType::TRIANGLE
 	});
 
-	REGISTER(pipelines::mip_mapping) = PipelineRegistry::Get().Register<Vertex>(
+	REGISTER(pipelines::mip_mapping) = PipelineRegistry::Get().Register<VertexColor>(
 	{
 			std::nullopt,
 			std::nullopt,
@@ -286,7 +286,6 @@ namespace wr
 			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(r.size(), r.data()); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
-			//[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(1); return d; }(), // Indices
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
 		},
 		{
@@ -331,5 +330,71 @@ namespace wr
 		root_signatures::rt_test_global,      // Global root signature
 		std::vector<RegistryHandle>{ root_signatures::rt_test_local },      // Local Root Signatures
 	});
+
+
+	/* ### Hybrid Raytracing ### */
+	REGISTER(shaders::rt_hybrid_lib) = ShaderRegistry::Get().Register({
+		"resources/shaders/rt_hybrid.hlsl",
+		"RaygenEntry",
+		ShaderType::LIBRARY_SHADER
+		});
+
+	std::vector<CD3DX12_DESCRIPTOR_RANGE> rt_hybrid_ranges = {
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1); return r; }(), // indices, light
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1+1+20, 4); return r; }(), // Materials (1) Skybox(1) Textures (+20) 
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 26); return r; }(),
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset); return r; }(),
+	};
+
+	REGISTER(root_signatures::rt_hybrid_global) = RootSignatureRegistry::Get().Register({
+		{
+			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(rt_hybrid_ranges.size(), rt_hybrid_ranges.data()); return d; }(),
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
+			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
+		},
+		{
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+		},
+		true // rtx
+		});
+
+	REGISTER(root_signatures::rt_hybrid_local) = RootSignatureRegistry::Get().Register({
+		{
+		},
+		{
+			// No samplers
+		},
+		true, true // rtx and local
+		});
+
+	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> rt_hybrid_so_desc = []()
+	{
+		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
+
+		StateObjectDescription::Library lib;
+		lib.shader_handle = shaders::rt_hybrid_lib;
+		lib.exports.push_back(L"RaygenEntry");
+		lib.exports.push_back(L"ShadowHit");
+		lib.exports.push_back(L"ShadowMiss");
+		lib.m_hit_groups.push_back({L"ShadowHitGroup", L"ShadowHit"});
+		lib.exports.push_back(L"ReflectionHit");
+		lib.exports.push_back(L"ReflectionMiss");
+		lib.m_hit_groups.push_back({L"ReflectionHitGroup", L"ReflectionHit"});
+
+		return std::make_pair(desc, lib);
+	}();
+
+	REGISTER(state_objects::rt_hybrid_state_object) = RTPipelineRegistry::Get().Register(
+		{
+			rt_hybrid_so_desc.first,     // Description
+			rt_hybrid_so_desc.second,    // Library
+			(sizeof(float) * 6), // Max payload size
+			(sizeof(float) * 2), // Max attributes size
+			4,				   // Max recursion depth
+			root_signatures::rt_hybrid_global,      // Global root signature
+			std::vector<RegistryHandle>{ root_signatures::rt_hybrid_local },      // Local Root Signatures
+		});
 
 } /* wr */
