@@ -132,8 +132,8 @@ namespace resources
 				//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
 				plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 
-			plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
-			light_model = plane_model;
+				//plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
+				light_model = plane_model;
 
 				for (auto& m : plane_model->m_meshes)
 				{
