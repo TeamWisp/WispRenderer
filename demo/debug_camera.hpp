@@ -29,6 +29,11 @@ public:
 		m_target_position = position;
 	}
 
+	virtual void SetSpeed(float speed)
+	{
+		m_speed = speed;
+	}
+
 	virtual void Update(float delta)
 	{
 		POINT cursor_pos;
@@ -80,6 +85,21 @@ public:
 		else if (action == WM_RBUTTONUP)
 		{
 			m_rmb_down = false;
+		}
+	}
+
+	const float m_scroll_speed = 0.25f;
+
+	void MouseWheel(int amount)
+	{
+		if (m_rmb_down)
+		{
+			float percent = (float) GET_WHEEL_DELTA_WPARAM(amount) / WHEEL_DELTA * m_scroll_speed;
+
+			if (percent + m_speed > 0)
+			{
+				m_speed += percent;
+			}
 		}
 	}
 

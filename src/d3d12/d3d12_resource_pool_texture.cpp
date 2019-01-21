@@ -4,6 +4,7 @@
 #include "d3d12_renderer.hpp"
 
 #include "../renderer.hpp"
+#include "../settings.hpp"
 #include "d3d12_renderer.hpp"
 #include "d3d12_structs.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
@@ -19,7 +20,12 @@ namespace wr
 	{
 		auto device = m_render_system.m_device;
 
-		//Staging heaps
+		// Append size and num values for the default textures.
+		num_of_textures += settings::default_textures_count;
+		size_in_mb += settings::default_textures_size_in_mb;
+
+		//Staging heap
+
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
 			m_allocators[i] = new DescriptorAllocator(render_system, static_cast<DescriptorHeapType>(i));
@@ -36,6 +42,12 @@ namespace wr
 		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
 		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);
 
+		// Load the default textures
+		m_default_albedo = Load(settings::default_albedo_path, false, false);
+		m_default_normal = Load(settings::default_normal_path, false, false);
+		m_default_roughness = Load(settings::default_roughness_path, false, false);
+		m_default_metalic = Load(settings::default_metalic_path, false, false);
+		m_default_ao = Load(settings::default_ao_path, false, false);
 	}
 
 	D3D12TexturePool::~D3D12TexturePool()
@@ -74,12 +86,6 @@ namespace wr
 				d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(itr->second);
 
 				unstaged_textures.push_back(texture);
-
-				if (texture->m_width == 1024)
-				{
-					int x = 0;
-				}
-
 
 				decltype(d3d12::Device::m_native) n_device;
 				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
@@ -178,7 +184,7 @@ namespace wr
 		texture->m_allow_render_dest = allow_render_dest;
 		texture->m_is_staged = true;
 		texture->m_need_mips = false;
-
+		
 		std::wstring wide_string(name.begin(), name.end());
 
 		d3d12::SetName(texture, wide_string);
@@ -249,7 +255,7 @@ namespace wr
 		DirectX::ScratchImage image;
 
 		std::wstring wide_string(path.begin(), path.end());
-
+		
 		HRESULT hr = LoadFromWICFile(wide_string.c_str(),
 			DirectX::WIC_FLAGS_NONE, &metadata, image);
 
@@ -484,7 +490,7 @@ namespace wr
 					srcTextureSRVDesc.Texture2D.MipLevels = 1;
 					srcTextureSRVDesc.Texture2D.MostDetailedMip = TopMip;
 					device->m_native->CreateShaderResourceView(texture->m_resource, &srcTextureSRVDesc, m_mipmapping_cpu_handle.m_native);
-
+					
 					d3d12::Offset(m_mipmapping_cpu_handle, 1, m_mipmapping_heap->m_increment_size);
 
 					//Create unordered access view for the destination texture in the descriptor heap
@@ -523,7 +529,7 @@ namespace wr
 					d3d12::BindComputeDescriptorTable(n_cmd_list, m_mipmapping_gpu_handle, 1);
 
 					d3d12::Offset(m_mipmapping_gpu_handle, 2, m_mipmapping_heap->m_increment_size);
-
+					
 					//Dispatch the compute shader with one thread per 8x8 pixels
 					d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
 
@@ -585,7 +591,7 @@ namespace wr
 		case Format::R32G32B32A32_UINT:
 		case Format::R32G32B32A32_SINT:
 		case Format::R16G16B16A16_FLOAT:
-			//case Format::R16G16B16A16_UNORM:
+		//case Format::R16G16B16A16_UNORM:
 		case Format::R16G16B16A16_UINT:
 		case Format::R16G16B16A16_SINT:
 		case Format::R8G8B8A8_UNORM:

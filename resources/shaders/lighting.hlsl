@@ -16,6 +16,7 @@ static uint light_type_point = 0;
 static uint light_type_directional = 1;
 static uint light_type_spot = 2;
 
+//Copied version for testing stuff
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light)
 {
 	uint tid = light.tid & 3;
@@ -33,6 +34,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 
 	//Attenuation & spot intensity (only used with point or spot)
 	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
+	
 	float3 radiance = (light.col * spot_intensity) * attenuation;
 
 	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance, light.col);
@@ -54,4 +56,26 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	}
 
 	return res * albedo;
+}
+
+float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, float3 irradiance)
+{
+	float3 res = float3(0.0f, 0.0f, 0.0f);
+
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+
+	float3 kS = F_SchlickRoughness(max(dot(normal, V), 0.0f), metallic, albedo, roughness);
+	float3 kD = 1.0f - kS;
+	kD *= 1.0f - metallic;
+	float3 diffuse = irradiance * albedo;
+	float3 ambient = (kD * diffuse) * 1.0f; //Replace 1.0f with AO, when we have it.
+
+	res = float3(0.0f, 0.0f, 0.0f);
+
+	for (uint i = 0; i < light_count; i++)
+	{
+		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
+	}
+
+	return ambient + res;
 }

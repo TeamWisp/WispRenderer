@@ -13,7 +13,7 @@ namespace wr
 			: Node(),
 			m_active(true),
 			m_frustum_near(0.1f),
-			m_frustum_far(125.f),
+			m_frustum_far(500.0f),
 			m_fov(fov_deg / 180 * 3.1415926535f),
 			m_aspect_ratio(aspect_ratio)
 		{

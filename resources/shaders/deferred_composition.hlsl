@@ -8,7 +8,9 @@
 Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
+//Consider SRV for light buffer in register t3
 TextureCube skybox : register(t4);
+TextureCube irradiance_map : register(t5);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -37,12 +39,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 uv = float2(dispatch_thread_id.x / screen_size.x, 1.f - (dispatch_thread_id.y / screen_size.y));
 
 	float2 screen_coord = int2(dispatch_thread_id.x, screen_size.y - dispatch_thread_id.y);
-	
+
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
 	// View position and camera position
 	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
-	float3 V = normalize(-pos);
+	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(camera_pos - pos);
 
 	float3 retval;
 	const float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
@@ -51,21 +54,19 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	if(depth_f != 1.0f)
 	{
 		// GBuffer contents
-		const float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
+		float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		const float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
+		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0).xyz;
 
 		const float shadow_factor = 1.0f;
-
 		float3 skyboxReflection = skybox.SampleLevel(s0, reflect(cdir, normal), 0);
-
 		const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
 		float3 kS = F;
 		float3 kD = 1.0 - kS;
 		kD *= 1.0 - metallic;
-
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance);
 		float3 specular = (skyboxReflection.xyz) * F;
 		float3 diffuse = float3(0, 0, 0);
 		float3 ambient = (kD * diffuse + specular);
@@ -75,11 +76,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{	
 		retval = skybox.SampleLevel(s0, cdir , 0);
 	}
-	
-	float gamma = 1;
-	float exposure = 1;
-	retval = linearToneMapping(retval, exposure, gamma);
-	
+
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
 }
