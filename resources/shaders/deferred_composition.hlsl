@@ -48,8 +48,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 V = normalize(camera_pos - pos);
 
 	float3 retval;
-	const float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
-	const float3 cdir = normalize(cpos - pos);
 	
 	if(depth_f != 1.0f)
 	{
@@ -61,20 +59,16 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0).xyz;
 
 		const float shadow_factor = 1.0f;
-		float3 skyboxReflection = skybox.SampleLevel(s0, reflect(cdir, normal), 0);
-		const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
-		float3 kS = F;
-		float3 kD = 1.0 - kS;
-		kD *= 1.0 - metallic;
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance);
-		float3 specular = (skyboxReflection.xyz) * F;
-		float3 diffuse = float3(0, 0, 0);
-		float3 ambient = (kD * diffuse + specular);
-		retval = ambient + (retval * shadow_factor);
+		
+		float3 skybox_reflection = skybox.SampleLevel(s0, reflect(V, normal), 0);
+
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, skybox_reflection);
+
+		retval = retval * shadow_factor;
 	}
 	else
 	{	
-		retval = skybox.SampleLevel(s0, cdir , 0);
+		retval = skybox.SampleLevel(s0, V, 0);
 	}
 
 	//Do shading
