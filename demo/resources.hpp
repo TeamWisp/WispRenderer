@@ -57,7 +57,7 @@ namespace resources
 		wr::TextureHandle metal_roughness = texture_pool->Load("resources/materials/greasy_pan/roughness.png", false, true);
 		wr::TextureHandle metal_metallic = texture_pool->Load("resources/materials/greasy_pan/metallic.png", false, true);
 
-		equirectangular_environment_map = texture_pool->Load("resources/materials/UenoShrine.hdr", false, false);
+		equirectangular_environment_map = texture_pool->Load("resources/materials/Arches_E_PineTree_3k.hdr", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();
