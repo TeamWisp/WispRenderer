@@ -47,6 +47,7 @@ namespace wr
 
 	struct Model
 	{
+		ModelData* m_data;
 		std::vector<std::pair<Mesh*, MaterialHandle*>> m_meshes;
 		ModelPool* m_model_pool;
 		std::string m_model_name;
@@ -225,7 +226,8 @@ namespace wr
 			return nullptr;
 		}
 
-		loader->DeleteModel(data);
+		model->m_data = data;
+		// loader->DeleteModel(data);
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;

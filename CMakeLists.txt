@@ -103,9 +103,21 @@ set( ASSIMP_BUILD_3MF_IMPORTER      OFF )
 set( ASSIMP_BUILD_MMD_IMPORTER      OFF )
 # END IMPORTERS
 
+# Bullet options
+set(BUILD_CPU_DEMOS OFF)
+set(BUILD_ENET OFF)
+set(BUILD_CLSOCKET OFF)
+set(BUILD_BULLET2_DEMOS OFF)
+set(BUILD_EXTRAS OFF)
+set(BUILD_UNIT_TESTS OFF)
+set(USE_GRAPHICAL_BENCHMARK OFF)
+set(BUILD_STATIC_LIB ON)
+set(NO_EXPORT ON)
+
 #set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT CACHE INTERNAL FALSE)
 #set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/assimp ${CMAKE_BINARY_DIR}/assimp)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/bullet3 ${CMAKE_BINARY_DIR}/bullet3)
 
 ## dependencies options ##
 set(FMT_TEST OFF)
@@ -120,6 +132,18 @@ if (MSVC)
 	target_compile_options(fmt PRIVATE /W0)
 	target_compile_options(DirectXTex PRIVATE /W0)
 endif()
+
+set_target_properties(Bullet2FileLoader PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(Bullet3Collision PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(Bullet3Common PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(Bullet3Dynamics PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(Bullet3OpenCL_clew PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(BulletCollision PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(BulletDynamics PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(BulletInverseDynamics PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(Bullet3Geometry PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(BulletSoftBody PROPERTIES FOLDER "Dependencies/Bullet")
+set_target_properties(LinearMath PROPERTIES FOLDER "Dependencies/Bullet")
 
 set_target_properties(assimp PROPERTIES FOLDER ThirdParty)
 set_target_properties(assimp_cmd PROPERTIES FOLDER ThirdParty)
@@ -142,8 +166,9 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/DirectXT
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fmt/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/assimp/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fallback/Include)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/bullet3/src)
 
-target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp)
+target_link_libraries(WispRenderer Bullet3Common Bullet3Geometry Bullet3Collision BulletCollision Bullet3Dynamics BulletDynamics LinearMath DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")

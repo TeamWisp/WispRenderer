@@ -13,6 +13,7 @@
 #include "scene_emibl.hpp"
 
 #include "model_loader_assimp.hpp"
+#include "physics_engine.hpp"
 
 #define SCENE viknell_scene
 
@@ -80,6 +81,8 @@ void SetupShaderDirWatcher()
 
 int WispEntry()
 {
+	phys::PhysicsEngine phys_engine;
+
 	// ImGui Logging
 	util::log_callback::impl = [&](std::string const & str)
 	{
@@ -126,7 +129,9 @@ int WispEntry()
 
 	scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
-	SCENE::CreateScene(scene_graph.get(), window.get());
+	phys_engine.CreatePhysicsWorld();
+
+	SCENE::CreateScene(scene_graph.get(), window.get(), phys_engine);
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
@@ -140,13 +145,17 @@ int WispEntry()
 		fg_manager::Get()->Resize(*render_system.get(), width, height);
 	});
 
-	SetupShaderDirWatcher();
+	// SetupShaderDirWatcher();
 
 	while (window->IsRunning())
 	{
 		window->PollEvents();
 
+		float delta = ImGui::GetIO().DeltaTime;
+
 		SCENE::UpdateScene();
+
+		phys_engine.UpdateSim(delta, *scene_graph.get());
 
 		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
 

@@ -13,7 +13,7 @@ namespace wr
 
 		MeshNode(Model* model) : m_model(model) { }
 
-		void Update(uint32_t frame_idx)
+		virtual void Update(uint32_t frame_idx)
 		{
 			//Reset AABB
 
