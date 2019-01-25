@@ -53,10 +53,10 @@ namespace viknell_scene
 		test_model->SetScale({ 0.01f,0.01f,0.01f });
 
 		// Lights
-		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 5, 5, 5 });
+		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 5, 5, 5 });
 		//point_light_0->SetRadius(3.0f);
-		point_light_0->SetRotation({ 20.950, 0.98, 0 });
-		point_light_0->SetPosition({ 0, -6.527, 17.9 });
+		directional_light_node->SetRotation({ 20.950, 0.98, 0 });
+		directional_light_node->SetPosition({ 0, -6.527, 17.9 });
 
 		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 5, 0, 0 });
 		point_light_1->SetRadius(2.0f);
@@ -73,9 +73,10 @@ namespace viknell_scene
 	{
 		t += 10.f * ImGui::GetIO().DeltaTime;
 
-		//auto pos = test_model->m_position;
-		//pos.m128_f32[0] = sin(t * 0.1) * 0.5;
-		//test_model->SetPosition(pos);
+		auto pos = directional_light_node->m_position;
+		pos.m128_f32[0] = (20.950) + (sin(t * 0.1) * 4);
+		pos.m128_f32[1] = (-6.58) + (cos(t * 0.1) * 2);
+		directional_light_node->SetPosition(pos);
 
 		camera->Update(ImGui::GetIO().DeltaTime);
 	}

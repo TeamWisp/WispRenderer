@@ -10,7 +10,9 @@
 #include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../engine_registry.hpp"
+#include "../render_tasks/d3d12_cubemap_convolution.hpp"
 #include "../util/math.hpp"
+#include "../scene_graph/skybox_node.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../imgui_tools.hpp"
@@ -159,13 +161,20 @@ namespace wr
 					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 				}
 
+				// Get Irradiance
+				{
+					const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+					d3d12::TextureResource* irradiance_map = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance.value().m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance.value().m_id));
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 5); // here
+					d3d12::CreateSRVFromTexture(irradiance_map, cpu_handle);
+				}
+
 				// Get skybox
 				if (scene_graph.m_skybox.has_value()) {
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
 					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 4); // here
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
-
 
 				// Update material data
 				n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*)as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);

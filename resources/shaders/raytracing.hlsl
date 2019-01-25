@@ -31,7 +31,8 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 
 Texture2D skybox : register(t5);
-Texture2D g_textures[20] : register(t6);
+TextureCube irradiance_map : register(t6);
+Texture2D g_textures[20] : register(t7);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -313,8 +314,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	float ambient = 0.1f;
-	float3 res = float3(ambient, ambient, ambient);
+	float3 res = float3(0.1f, 0.1f, 0.1f);
 
 	[unroll]
 	for (uint i = 0; i < light_count; i++)
@@ -362,14 +362,13 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
 	const float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
 
-	float mip_level = 1;
+	float mip_level = 0;
 
 #define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
-	metal = metal * roughness;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #else
 	//const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
@@ -377,7 +376,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #endif
-	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
+	
+	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
 	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
 	//const float3 B = cross(N, T);
@@ -385,6 +385,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
+
+	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, fN, 0).xyz;
 
 	// Direct
 
@@ -410,7 +412,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float3 retval = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.depth);
 	float3 specular = (reflection.xyz) * F;
-	float3 diffuse = float3(0, 0, 0);
+	float3 diffuse = sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 	payload.color = ambient + retval;
 #endif

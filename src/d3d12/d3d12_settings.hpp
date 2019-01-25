@@ -45,6 +45,6 @@ namespace wr::d3d12::settings
 	static const constexpr bool disable_rtx = false;
 	static const constexpr bool enable_object_culling = false;
 	static const constexpr unsigned int num_max_rt_materials = 3000;
-	static const constexpr unsigned int fallback_ptrs_offset = 29;
+	static const constexpr unsigned int fallback_ptrs_offset = 30;
 	
 } /* wr::d3d12::settings */

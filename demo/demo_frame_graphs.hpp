@@ -21,11 +21,11 @@ namespace fg_manager
 	{
 		RAYTRACING = 0,
 		DEFERRED = 1,
-		RT_HYBRID = 2,
+		//RT_HYBRID = 2,
 	};
 
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
-	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
+	static std::array<wr::FrameGraph*, 2> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
 	{
@@ -34,6 +34,8 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
 			fg = new wr::FrameGraph(4);
 
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddRaytracingTask(*fg);
 			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
@@ -70,6 +72,7 @@ namespace fg_manager
 		}
 
 		// Hybrid raytracing
+		/*
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
 			fg = new wr::FrameGraph(6);
@@ -95,6 +98,7 @@ namespace fg_manager
 			// Finalize the frame graph
 			fg->Setup(rs);
 		}
+		*/
 	}
 
 	inline wr::FrameGraph* Get()

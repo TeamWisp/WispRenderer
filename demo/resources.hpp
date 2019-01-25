@@ -57,7 +57,7 @@ namespace resources
 		wr::TextureHandle metal_roughness = texture_pool->Load("resources/materials/greasy_pan/roughness.png", false, true);
 		wr::TextureHandle metal_metallic = texture_pool->Load("resources/materials/greasy_pan/metallic.png", false, true);
 
-		equirectangular_environment_map = texture_pool->Load("resources/materials/Arches_E_PineTree_3k.hdr", false, false);
+		equirectangular_environment_map = texture_pool->Load("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();
@@ -143,12 +143,12 @@ namespace resources
 
 		{
 			{
-				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple.fbx");
 				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)
 				{
-					m.second = &rusty_metal_material;
+					//m.second = &rusty_metal_material;
 				}
 
 				for (auto& m : sphere_model->m_meshes)
