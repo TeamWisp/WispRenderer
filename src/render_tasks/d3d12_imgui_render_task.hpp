@@ -24,6 +24,7 @@ namespace wr
 
 		inline void SetupImGuiTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
+
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<ImGuiTaskData>(handle);
 
@@ -37,6 +38,7 @@ namespace wr
 				ImGui_ImplDX12_CreateDeviceObjects();
 				return;
 			}
+
 
 			if (ImGui_ImplDX12_IsInitialized())
 			{

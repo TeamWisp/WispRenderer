@@ -13,14 +13,38 @@
 namespace viknell_scene
 {
 
+	std::vector<DirectX::XMVECTOR> target_positions =
+	{
+		{ 0, 0.9, 0},
+		{ 2, 0.9, 0},
+		{ 1, 0.9, -2.5},
+		{ -4, 0.9, 0},
+	};
+	int current_target_position = 0;
+
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
 	static std::shared_ptr<wr::MeshNode> test_model;
+	std::shared_ptr<PhysicsMeshNode> target;
 	static float t = 0;
+		std::vector<std::shared_ptr<PhysicsMeshNode>> bullets;
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window, phys::PhysicsEngine& phys_engine)
 	{
-		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
+
+		for (auto i = 0; i < 20; i++)
+		{
+			auto bullet = scene_graph->CreateChild<PhysicsMeshNode>(nullptr, resources::sphere_model);
+			bullet->SetMass(1.f);
+			bullet->SetupSimpleSphereColl(phys_engine, 0.05f);
+			bullet->SetPosition({ 0, 200, 0 });
+			bullet->SetScale({ 0.05f, 0.05f, 0.05f });
+			bullet->SetRestitution(0.7f);
+			bullets.push_back(bullet);
+		}
+
+		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight(), scene_graph, bullets);
+		camera->SetupSimpleSphereColl(phys_engine, 0.1f, 0.2f, 1.f);
 		camera->SetPosition({ 0, 0, -1 });
 		camera->SetSpeed(10);
 
@@ -28,30 +52,6 @@ namespace viknell_scene
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		{
-			// Geometry
-			auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-			auto roof_light = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::light_model);
-			auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-			auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-			auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-			test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
-			auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
-			sphere->SetPosition({ -1, 1, 1 });
-			sphere->SetScale({ 0.6f, 0.6f, 0.6f });
-			roof->SetPosition({ 0, -1, 0 });
-			roof->SetRotation({ 90_deg, 0, 0 });
-			roof_light->SetPosition({ 0, -0.999, 0 });
-			roof_light->SetRotation({ 90_deg, 0, 0 });
-			roof_light->SetScale({ 0.7, 0.7, 0.7 });
-			back_wall->SetPosition({ 0, 0, 1 });
-			left_wall->SetPosition({ -1, 0, 0 });
-			left_wall->SetRotation({ 0, -90_deg, 0 });
-			right_wall->SetPosition({ 1, 0, 0 });
-			right_wall->SetRotation({ 0, 90_deg, 0 });
-			test_model->SetPosition({ 0, 1, 0 });
-			test_model->SetRotation({ 0,0,180_deg });
-			test_model->SetScale({ 0.01f,0.01f,0.01f });
-
 			// Lights
 			directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 5, 5, 5 });
 			//point_light_0->SetRadius(3.0f);
@@ -69,30 +69,56 @@ namespace viknell_scene
 			//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 		}
 
-		auto floor = scene_graph->CreateChild<PhysicsMeshNode>(nullptr, resources::plane_model);
-		//floor->SetupSimpleBoxColl(phys_engine, { 1, 0.01, 1 });
-		floor->SetupConvex(phys_engine, resources::plane_model);
-		floor->SetPosition({ 0, 1, 0 });
-		floor->SetRotation({ -90_deg, 0, 0 });
-
-		auto phys_sphere = scene_graph->CreateChild<PhysicsMeshNode>(nullptr, resources::sphere_model);
-		phys_sphere->SetMass(1.f);
-		phys_sphere->SetupSimpleSphereColl(phys_engine, 0.1f);
-		phys_sphere->SetPosition({ 0, 0, 0 });
-		phys_sphere->SetScale({ 0.1f, 0.1f, 0.1f });
-		phys_sphere->SetRestitution(0.7f);
+		auto floor = scene_graph->CreateChild<PhysicsMeshNode>(nullptr, resources::test_model);
+		floor->SetupConvex(phys_engine, resources::test_model);
+		floor->SetPosition(target_positions[current_target_position]);
+		floor->SetRotation({ -180_deg, 0, 0 });
 		floor->SetRestitution(1.f);
+
+		target = scene_graph->CreateChild<PhysicsMeshNode>(nullptr, resources::human_model);
+		target->SetMass(0.f);
+		target->SetupConvex(phys_engine, resources::human_model);
+		target->SetPosition({ 0, 0.5, 0 });
+		target->SetRotation({ DirectX::XMConvertToRadians(-180.f), 0, 0});
+		target->SetScale({ 0.1f, 0.1f, 0.1f });
+		target->SetRestitution(0.7f);
 	}
 
-	void UpdateScene()
+	float UpdateScene(phys::PhysicsEngine& phys_engine, wr::SceneGraph& sg)
 	{
+		float score = 0;
+
 		t += 10.f * ImGui::GetIO().DeltaTime;
+
+		for (auto& b : bullets)
+		{
+			auto bullet_pos = b->m_rigid_body->getWorldTransform().getOrigin();
+			auto target_pos = target->m_rigid_bodys.value()[0]->getWorldTransform().getOrigin();
+			auto dist = (bullet_pos - target_pos).length();
+
+			if (dist < 0.5)
+			{
+				score += 10;
+				b->SetPosition({0, 200, 0});
+
+				int new_pos_idx = 0;
+				while (new_pos_idx == current_target_position)
+				{
+					new_pos_idx = 0 + (rand() % static_cast<int>((target_positions.size() - 1) - 0 + 1));
+				}
+				current_target_position = new_pos_idx;
+
+				target->SetPosition(target_positions[current_target_position]);
+			}
+		}
 
 		auto pos = directional_light_node->m_position;
 		pos.m128_f32[0] = (20.950) + (sin(t * 0.1) * 4);
 		pos.m128_f32[1] = (-6.58) + (cos(t * 0.1) * 2);
 		directional_light_node->SetPosition(pos);
 
-		camera->Update(ImGui::GetIO().DeltaTime);
+		camera->Update(phys_engine, sg, ImGui::GetIO().DeltaTime);
+
+		return score;
 	}
 } /* cube_scene */

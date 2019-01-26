@@ -15,7 +15,7 @@ namespace engine
 	static bool open1 = true;
 	static bool open2 = true;
 	static bool open_console = false;
-	static bool show_imgui = true;
+	static bool show_imgui = false;
 	static bool fullscreen = false;
 	static char message_buffer[600];
 

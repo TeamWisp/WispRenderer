@@ -231,7 +231,7 @@ namespace wr::d3d12
 
 	void Present(RenderWindow* render_window, Device* device)
 	{
-		render_window->m_swap_chain->Present(1, 0);
+		render_window->m_swap_chain->Present(0, 0);
 		render_window->m_frame_idx = render_window->m_swap_chain->GetCurrentBackBufferIndex();
 	}
 

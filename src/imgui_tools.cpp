@@ -109,10 +109,10 @@ namespace wr::imgui::window
 			{
 				render_system.clear_path = true;
 			}
-			ImGui::DragFloat("Metal", &render_system.temp_metal);
+			/*ImGui::DragFloat("Metal", &render_system.temp_metal);
 			ImGui::DragFloat("Rough", &render_system.temp_rough);
 			ImGui::DragFloat("Radius", &render_system.light_radius);
-			ImGui::DragFloat("Intensity", &render_system.temp_intensity);
+			ImGui::DragFloat("Intensity", &render_system.temp_intensity);*/
 
 			ImGui::Begin("Hardware Info", &open_hardware_info);
 			if (ImGui::CollapsingHeader("System Information", ImGuiTreeNodeFlags_DefaultOpen))

@@ -1,6 +1,7 @@
 #include "physics_engine.hpp"
 
 #include "phys_node.hpp"
+#include "debug_camera.hpp"
 
 namespace phys
 {
@@ -19,7 +20,7 @@ namespace phys
 		constraint_solver = new btSequentialImpulseConstraintSolver();
 
 		phys_world = new btDiscreteDynamicsWorld(coll_dispatcher, broadphase, constraint_solver, collision_config);
-		phys_world->setGravity(btVector3(0, 0, 10));
+		phys_world->setGravity(btVector3(0, 10, 0));
 
 	}
 
@@ -30,26 +31,27 @@ namespace phys
 		return shape;
 	}
 
-	std::vector<btConvexTriangleMeshShape*> PhysicsEngine::CreateConvexShape(wr::Model* model)
+	btCapsuleShape * PhysicsEngine::CreateCapsuleShape(const float width, const float height)
 	{
-		std::vector<btConvexTriangleMeshShape*> hulls;
+		auto shape = new btCapsuleShape(width, height);
+		collision_shapes.push_back(shape);
+		return shape;
+	}
+
+	std::vector<btConvexHullShape*> PhysicsEngine::CreateConvexShape(wr::Model* model)
+	{
+		std::vector<btConvexHullShape*> hulls;
 
 		for (auto& mesh_data : model->m_data->m_meshes)
 		{
-			btTriangleMesh* tri_m = new btTriangleMesh();
-			for (auto i = 0; i < mesh_data->m_indices.size(); i += 3)
+			btConvexHullShape* shape = new btConvexHullShape();
+			for (auto& idx : mesh_data->m_indices)
 			{
-				auto pos_a = mesh_data->m_positions[i];
-				auto pos_b = mesh_data->m_positions[i+1];
-				auto pos_c = mesh_data->m_positions[i+2];
 
-				tri_m->addTriangle(
-					btVector3(pos_a.x, pos_a.y, pos_a.z),
-					btVector3(pos_b.x, pos_b.y, pos_b.z),
-					btVector3(pos_c.x, pos_c.y, pos_c.z)
-				);
+				auto pos = mesh_data->m_positions[idx];
+				shape->addPoint(btVector3(pos.x, pos.y, pos.z));
 			}
-			btConvexTriangleMeshShape* shape = new btConvexTriangleMeshShape(tri_m);
+			shape->recalcLocalAabb();
 
 			collision_shapes.push_back(shape);
 			hulls.push_back(shape);
@@ -110,6 +112,13 @@ namespace phys
 					node->SignalTransformChange();
 				}
 			}
+		}
+
+		auto& player_cam = std::dynamic_pointer_cast<DebugCamera>(sg.GetActiveCamera());
+		{
+			auto world_position = player_cam->m_rigid_body->getWorldTransform().getOrigin();
+			player_cam->m_position = util::DXV3toBV3(world_position);
+			player_cam->SignalTransformChange();
 		}
 	}
 

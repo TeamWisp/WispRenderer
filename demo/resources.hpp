@@ -13,6 +13,7 @@ namespace resources
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
 	static wr::Model* light_model;
+	static wr::Model* human_model;
 	static wr::Model* test_model;
 	static wr::Model* sphere_model;
 	static wr::Model* material_knot_bamboo;
@@ -30,7 +31,7 @@ namespace resources
 	void CreateResources(wr::RenderSystem* render_system)
 	{
 		texture_pool = render_system->CreateTexturePool(16, 24);
-		material_pool = render_system->CreateMaterialPool(8);
+		material_pool = render_system->CreateMaterialPool(20);
 
 		// Load Texture.
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
@@ -143,7 +144,7 @@ namespace resources
 
 		{
 			{
-				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/world.fbx");
 				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)
@@ -158,18 +159,25 @@ namespace resources
 			}
 
 			{
-				material_knot_bamboo = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
+				//material_knot_bamboo = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
 
-				for (auto& m : material_knot_bamboo->m_meshes)
+				human_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/human.fbx");
+
+				for (auto& m : human_model->m_meshes)
 				{
-					m.second = &bamboo_material;
+					m.second = &plastic_material;
+				}
+
+				//for (auto& m : material_knot_bamboo->m_meshes)
+				{
+				//	m.second = &bamboo_material;
 				}
 			}
 
 			{
 				material_knot_plastic = new wr::Model();
 
-				for (auto& m : material_knot_bamboo->m_meshes)
+				/*for (auto& m : material_knot_bamboo->m_meshes)
 				{
 					material_knot_plastic->m_meshes.push_back(std::make_pair(m.first, &plastic_material));
 					material_knot_plastic->m_box[0] = material_knot_bamboo->m_box[0];
@@ -180,13 +188,13 @@ namespace resources
 					material_knot_plastic->m_box[5] = material_knot_bamboo->m_box[5];
 					material_knot_plastic->m_model_name = material_knot_bamboo->m_model_name;
 					material_knot_plastic->m_model_pool = material_knot_bamboo->m_model_pool;
-				}
+				}*/
 			}
 
 			{
 				material_knot_metal = new wr::Model();
 
-				for (auto& m : material_knot_bamboo->m_meshes)
+				/*for (auto& m : material_knot_bamboo->m_meshes)
 				{
 					material_knot_metal->m_meshes.push_back(std::make_pair(m.first, &metal_material));
 					material_knot_metal->m_box[0] = material_knot_bamboo->m_box[0];
@@ -197,7 +205,7 @@ namespace resources
 					material_knot_metal->m_box[5] = material_knot_bamboo->m_box[5];
 					material_knot_metal->m_model_name = material_knot_bamboo->m_model_name;
 					material_knot_metal->m_model_pool = material_knot_bamboo->m_model_pool;
-				}
+				}*/
 			}
 
 		}

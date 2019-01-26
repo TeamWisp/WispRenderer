@@ -32,6 +32,9 @@ struct PhysicsMeshNode : public wr::MeshNode
 	void SetupConvex(phys::PhysicsEngine& phys_engine, wr::Model* model);
 
 	void SetPosition(DirectX::XMVECTOR position) override;
+	void SetRotation(DirectX::XMVECTOR roll_pitch_yaw) override;
+	void SetScale(DirectX::XMVECTOR scale) override;
+
 
 	void Update(uint32_t frame_idx) override;
 };

@@ -13,6 +13,7 @@
 #include "scene_emibl.hpp"
 
 #include "model_loader_assimp.hpp"
+#include "game_interface.hpp"
 #include "physics_engine.hpp"
 
 #define SCENE viknell_scene
@@ -22,8 +23,11 @@ std::shared_ptr<wr::SceneGraph> scene_graph;
 
 std::shared_ptr<wr::TexturePool> texture_pool;
 
+static float score = 0;
+
 void RenderEditor()
 {
+	game_ui::RenderGameUI(render_system.get(), scene_graph.get(), score);
 	engine::RenderEngine(render_system.get(), scene_graph.get());
 }
 
@@ -104,6 +108,14 @@ int WispEntry()
 		if (action == WM_KEYUP && key == VK_F1)
 		{
 			engine::show_imgui = !engine::show_imgui;
+			if (engine::show_imgui)
+			{
+				ShowCursor(true);
+			}
+			else
+			{
+				ShowCursor(false);
+			}
 		}
 		if (action == WM_KEYUP && key == VK_F2)
 		{
@@ -111,9 +123,14 @@ int WispEntry()
 		}
 	});
 
-	window->SetMouseCallback([](int key, int action, int mods)
+	window->SetMouseCallback([](int key, int action, LPARAM mods)
 	{
-		SCENE::camera->MouseAction(key, action);
+		SCENE::camera->MouseAction(key, action, mods);
+	});
+
+	window->SetMouseMoveCallback([](int x, int y) 
+	{
+		SCENE::camera->MouseMove(x, y);
 	});
 
 	window->SetMouseWheelCallback([](int amount, int action, int mods)
@@ -153,7 +170,7 @@ int WispEntry()
 
 		float delta = ImGui::GetIO().DeltaTime;
 
-		SCENE::UpdateScene();
+		score += SCENE::UpdateScene(phys_engine, *scene_graph);
 
 		phys_engine.UpdateSim(delta, *scene_graph.get());
 

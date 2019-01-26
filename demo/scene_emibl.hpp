@@ -11,16 +11,16 @@
 namespace emibl_scene
 {
 
-	static std::shared_ptr<DebugCamera> camera;
+	//static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
 	static std::shared_ptr<wr::MeshNode> test_model;
 	static float t = 0;
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
-		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
-		camera->SetPosition({ 0, -25, -100 });
-		camera->SetSpeed(60.0f);
+		//camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
+		//camera->SetPosition({ 0, -25, -100 });
+		//camera->SetSpeed(60.0f);
 		
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
@@ -64,6 +64,6 @@ namespace emibl_scene
 	{
 		t += 10.f * ImGui::GetIO().DeltaTime;
 
-		camera->Update(ImGui::GetIO().DeltaTime);
+		//camera->Update(ImGui::GetIO().DeltaTime);
 	}
 } /* cube_scene */

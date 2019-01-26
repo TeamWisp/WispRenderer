@@ -314,7 +314,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	float3 res = float3(0.1f, 0.1f, 0.1f);
+	float3 res = float3(0.0f, 0.0f, 0.0f);
 
 	[unroll]
 	for (uint i = 0; i < light_count; i++)
@@ -366,7 +366,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 #define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
-	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
+	const float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
 	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
@@ -412,7 +412,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float3 retval = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.depth);
 	float3 specular = (reflection.xyz) * F;
-	float3 diffuse = sampled_irradiance;
+	float3 diffuse = albedo * sampled_irradiance;
+	//float3 diffuse = float3(0.1f, 0.1f, 0.1f);
 	float3 ambient = (kD * diffuse + specular);
 	payload.color = ambient + retval;
 #endif

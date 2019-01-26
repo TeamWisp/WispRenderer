@@ -5,6 +5,13 @@
 #include "imgui/imgui.hpp"
 #include "imgui/imgui_impl_win32.hpp"
 
+#ifndef HID_USAGE_PAGE_GENERIC
+#define HID_USAGE_PAGE_GENERIC         ((USHORT) 0x01)
+#endif
+#ifndef HID_USAGE_GENERIC_MOUSE
+#define HID_USAGE_GENERIC_MOUSE        ((USHORT) 0x02)
+#endif
+
 namespace wr
 {
 
@@ -67,6 +74,18 @@ namespace wr
 		ShowWindow(m_handle, show_cmd);
 		UpdateWindow(m_handle);
 
+		RAWINPUTDEVICE Rid[1];
+		Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+		Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+		Rid[0].dwFlags = 0;
+		Rid[0].hwndTarget = m_handle;
+
+		if (RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])) == FALSE) {
+			LOG("NO RAW INPUT");
+		}
+
+		ShowCursor(false);
+
 		m_running = true;
 	}
 
@@ -84,7 +103,7 @@ namespace wr
 	void Window::PollEvents()
 	{
 		MSG msg;
-		if (PeekMessage(&msg, m_handle, 0, 0, PM_REMOVE))
+		while (PeekMessage(&msg, m_handle, 0, 0, PM_REMOVE))
 		{
 			if (msg.message == WM_QUIT)
 				m_running = false;
@@ -112,6 +131,11 @@ namespace wr
 	void Window::SetMouseCallback(MouseCallback callback)
 	{
 		m_mouse_callback = callback;
+	}
+
+	void Window::SetMouseMoveCallback(MouseMoveCallback callback)
+	{
+		m_mouse_move_callback = callback;
 	}
 
 	void Window::SetMouseWheelCallback(MouseWheelCallback callback)
@@ -175,6 +199,33 @@ namespace wr
 	{
 		switch (msg)
 		{
+		case WM_INPUT:
+		{
+			UINT dwSize;
+
+			GetRawInputData((HRAWINPUT)l_param, RID_INPUT, NULL, &dwSize,
+				sizeof(RAWINPUTHEADER));
+			LPBYTE lpb = new BYTE[dwSize];
+			if (lpb == NULL)
+			{
+				return 0;
+			}
+
+			if (GetRawInputData((HRAWINPUT)l_param, RID_INPUT, lpb, &dwSize,
+				sizeof(RAWINPUTHEADER)) != dwSize)
+				OutputDebugString(TEXT("GetRawInputData does not return correct size !\n"));
+
+			RAWINPUT* raw = (RAWINPUT*)lpb;
+
+			if (raw->header.dwType == RIM_TYPEMOUSE)
+			{
+				int xPosRelative = raw->data.mouse.lLastX;
+				int yPosRelative = raw->data.mouse.lLastY;
+
+				if (m_mouse_move_callback) m_mouse_move_callback(xPosRelative, yPosRelative);
+			}
+			break;
+		}
 		case WM_DESTROY:
 			m_running = false;
 			PostQuitMessage(0);
@@ -183,6 +234,7 @@ namespace wr
 		case WM_LBUTTONUP:
 		case WM_RBUTTONDOWN:
 		case WM_RBUTTONUP:
+		case WM_MOUSEMOVE:
 			if (m_mouse_callback)
 			{
 				m_mouse_callback((int)w_param, msg, (int)l_param);
