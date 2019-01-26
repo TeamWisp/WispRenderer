@@ -39,7 +39,10 @@ namespace viknell_scene
 			bullet->SetupSimpleSphereColl(phys_engine, 0.05f);
 			bullet->SetPosition({ 0, 200, 0 });
 			bullet->SetScale({ 0.05f, 0.05f, 0.05f });
-			bullet->SetRestitution(0.7f);
+			bullet->SetRestitution(1.0f);
+			bullet->m_rigid_body->setFriction(0);
+			bullet->m_rigid_body->setRollingFriction(0);
+			bullet->m_rigid_body->setSpinningFriction(0);
 			bullets.push_back(bullet);
 		}
 

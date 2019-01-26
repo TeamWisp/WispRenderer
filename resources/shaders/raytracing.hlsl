@@ -364,14 +364,14 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float mip_level = 0;
 
-#define COMPRESSED_PBR
+//#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	const float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
 	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #else
-	//const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
+	const float3 albedo =  pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
 	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
 	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
@@ -391,11 +391,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	// Direct
 
 	float3 reflection = float3(0, 0, 0);
-	//if (roughness < 0.95)
-	{
-		float3 reflect_dir = ReflectRay(V, fN);
-		reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
-	}
+	float3 reflect_dir = ReflectRay(V, fN);
+	reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
 
 #ifdef PATH_TRACING
 	// Indirect lighting

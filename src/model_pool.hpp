@@ -346,7 +346,7 @@ namespace wr
 				}
 				else if (material->m_ambient_occlusion_texture_location == TextureLocation::EXTERNAL)
 				{
-					ambient_occlusion = texture_pool->Load(dir + material->m_ambient_occlusion_texture, false, false);
+					normals = texture_pool->Load(dir + material->m_ambient_occlusion_texture, false, false);
 				}
 			}
 			else
@@ -371,7 +371,8 @@ namespace wr
 			return nullptr;
 		}
 
-		loader->DeleteModel(data);
+		model->m_data = data;
+		//loader->DeleteModel(data);
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;

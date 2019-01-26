@@ -20,7 +20,7 @@ namespace phys
 		constraint_solver = new btSequentialImpulseConstraintSolver();
 
 		phys_world = new btDiscreteDynamicsWorld(coll_dispatcher, broadphase, constraint_solver, collision_config);
-		phys_world->setGravity(btVector3(0, 10, 0));
+		phys_world->setGravity(btVector3(0, 9.8, 0));
 
 	}
 
