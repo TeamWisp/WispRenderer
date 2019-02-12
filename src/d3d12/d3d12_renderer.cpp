@@ -1093,6 +1093,7 @@ namespace wr
 		for (auto& batch : sg.GetBatches())
 		{
 			batch.second.num_instances = 0;
+			batch.second.num_global_instances = 0;
 		}
 	}
 
