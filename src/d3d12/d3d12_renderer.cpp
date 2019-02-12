@@ -872,7 +872,7 @@ namespace wr
 			offset_end = i;
 		}
 
-		if (!should_update)
+		if (!should_update && !(offset_end == offset_start && offset_start == 0))
 			return;
 
 		StructuredBufferHandle* structured_buffer = scene_graph.GetLightBuffer();
