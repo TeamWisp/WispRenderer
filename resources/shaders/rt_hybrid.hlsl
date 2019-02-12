@@ -81,6 +81,9 @@ static const uint light_type_point = 0;
 static const uint light_type_directional = 1;
 static const uint light_type_spot = 2;
 
+//TODO: Find some way to detect this based on scene?
+#define epsilon 5e-1;
+
 uint3 Load3x32BitIndices(uint offsetBytes)
 {
 	// Load first 2 indices
@@ -122,7 +125,6 @@ bool TraceShadowRay(float3 origin, float3 direction, float t_max)
 
 float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction)
 {
-	const float epsilon = 5e-3;
 	origin += norm * epsilon;
 
 	ReflectionHitInfo payload = { origin, float3(0, 0, 1) };
@@ -168,12 +170,9 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 	uint tid = light.tid & 3;
 
 	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - wpos, -light.dir, tid == light_type_directional));
+	float3 L = (lerp(light.pos - wpos, light.dir, tid == light_type_directional));
 	float light_dist = length(L);
 	L /= light_dist;
-
-	float range = light.radius;
-	const float attenuation = calc_attenuation(range, light_dist);
 
 	//Spot intensity (only used with spot; but always calculated)
 	float min_cos = cos(light.angle);
@@ -181,14 +180,15 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 	float cos_angle = dot(light.dir, -L);
 	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
 
-	// Calculate radiance
-	const float3 radiance = (intensity * spot_intensity * light.color) * attenuation;
+	//Attenuation & spot intensity (only used with point or spot)
+	float attenuation = lerp(1.0f - smoothstep(0, light.radius, light_dist), 1, tid == light_type_directional);
+
+	const float3 radiance = intensity * spot_intensity * light.color * attenuation;
 
 	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
 
 	// Check if pixel is shaded
-	float epsilon = 0.005; // Hard-coded; use depth buffer to get depth value in linear space and use that to determine the epsilon (to minimize precision errors)
-	float3 origin = wpos + normal * 0.005;
+	float3 origin = wpos + normal * epsilon;
 	float t_max = lerp(light_dist, 10000.0, tid == light_type_directional);
 	bool is_shadow = TraceShadowRay(origin, L, t_max);
 
@@ -283,7 +283,7 @@ void RaygenEntry()
 	float3 wpos = unpack_position(uv, depth);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
-	float3 normal = normal_metallic.xyz;
+	float3 normal = -normal_metallic.xyz;
 	float metallic = normal_metallic.w;
 
 	// Do lighting
@@ -356,23 +356,13 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const Vertex v2 = g_vertices[indices.z];
 
 	//Get data from VBO
-
-	int mip_level = 2;
+	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
+	float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz, 2.2);
+	float roughness = max(g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x, 0.05);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
 
-	#define COMPRESSED_PBR
-#ifdef COMPRESSED_PBR
-	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
-	metal = metal * roughness;
-#else
-	//const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	const float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
-	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
-	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
-#endif
-
+	albedo = lerp(albedo, color, length(color) != 0);
 
 	//Direction & position
 
