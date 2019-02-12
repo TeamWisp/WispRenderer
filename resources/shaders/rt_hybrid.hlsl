@@ -356,13 +356,23 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const Vertex v2 = g_vertices[indices.z];
 
 	//Get data from VBO
-	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
-	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
-	float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz, 2.2);
-	float roughness = g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x;
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
 
-	albedo = lerp(albedo, color, length(color) != 0);
+	int mip_level = 2;
+	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
+
+	#define COMPRESSED_PBR
+#ifdef COMPRESSED_PBR
+	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
+	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
+	metal = metal * roughness;
+#else
+	//const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
+	const float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
+	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
+	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
+#endif
+
 
 	//Direction & position
 

@@ -24,7 +24,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(ranges_basic.size(), ranges_basic.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
 		},
 		{
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
 		}
 	});
 
@@ -289,7 +289,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
 		},
 		{
-			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
 		},
 		true // rtx
 	});
@@ -355,7 +355,7 @@ namespace wr
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
 		},
 		{
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
 		},
 		true // rtx
 		});
