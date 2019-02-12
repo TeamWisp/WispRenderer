@@ -166,14 +166,14 @@ namespace wr
 			auto& rt_registry = RootSignatureRegistry::Get();
 			for (auto request : rt_registry.m_requested_reload)
 			{
-				// ReloadPipelineRegistryEntry(request);
+				ReloadRootSignatureRegistryEntry(request);
 			}
 
 			// Shaders
 			auto& shader_registry = ShaderRegistry::Get();
 			for (auto request : shader_registry.m_requested_reload)
 			{
-				// ReloadPipelineRegistryEntry(request);
+				ReloadShaderRegistryEntry(request);
 			}
 
 			// Pipelines
@@ -591,6 +591,7 @@ namespace wr
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
+				d3d12::Destroy(pipeline_shader);
 				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
 			}
 			else
@@ -638,6 +639,7 @@ namespace wr
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
+				d3d12::Destroy(pipeline_shader);
 				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
 			}
 			else
@@ -646,7 +648,7 @@ namespace wr
 			}
 		};
 
-		// Vertex Shader
+		// Library Shader
 		{
 			recompile_shader(n_pipeline->m_desc.m_library);
 		}
@@ -660,6 +662,48 @@ namespace wr
 		else
 		{
 			d3d12::RecreateStateObject(n_pipeline);
+		}
+	}
+
+	void D3D12RenderSystem::ReloadShaderRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = ShaderRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto& n_shader = static_cast<D3D12Shader*>(registry.Find(handle))->m_native;
+
+		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
+			n_shader->m_path,
+			n_shader->m_entry);
+
+		if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+		{
+			d3d12::Destroy(n_shader);
+			n_shader = std::get<d3d12::Shader*>(new_shader_variant);
+		}
+		else
+		{
+			LOGW(std::get<std::string>(new_shader_variant));
+		}
+	}
+
+	void D3D12RenderSystem::ReloadRootSignatureRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = RootSignatureRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto& n_root_signature = static_cast<D3D12RootSignature*>(registry.Find(handle))->m_native;
+
+		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
+			n_shader->m_path,
+			n_shader->m_entry);
+
+		if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+		{
+			d3d12::Destroy(n_shader);
+			n_shader = std::get<d3d12::Shader*>(new_shader_variant);
+		}
+		else
+		{
+			LOGW(std::get<std::string>(new_shader_variant));
 		}
 	}
 
