@@ -147,14 +147,13 @@ namespace wr
 					//Render meshes
 					for (auto& mesh : cube_model->m_meshes)
 					{
-						auto n_mesh = static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetMeshData(mesh.first->id);
+						wr::D3D12ModelPool* pool = static_cast<D3D12ModelPool*>(cube_model->m_model_pool);
 
-						d3d12::BindVertexBuffer(cmd_list, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetVertexStagingBuffer(),
-							0, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetVertexStagingBuffer()->m_size,
-							n_mesh->m_vertex_staging_buffer_stride);
+						auto n_mesh = pool->GetMeshData(mesh.first->id);
 
-						d3d12::BindIndexBuffer(cmd_list, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer(),
-							0, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer()->m_size);
+						d3d12::BindVertexBuffer(cmd_list, pool->GetVertexStagingBuffer(), 0, pool->GetVertexStagingBuffer()->m_size, n_mesh->m_vertex_staging_buffer_stride);
+
+						d3d12::BindIndexBuffer(cmd_list, pool->GetIndexStagingBuffer(), 0, pool->GetIndexStagingBuffer()->m_size);
 
 						d3d12::SetShaderSRV(cmd_list, 2, 0, equirect_text);
 						d3d12::BindDescriptorHeaps(cmd_list, frame_idx);

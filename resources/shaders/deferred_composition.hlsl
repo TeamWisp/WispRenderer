@@ -48,23 +48,27 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 V = normalize(camera_pos - pos);
 
 	float3 retval;
-
+	
 	if(depth_f != 1.0f)
 	{
 		// GBuffer contents
 		float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
-		float3 normal = -gbuffer_normal_metallic[screen_coord].xyz;
+		float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0).xyz;
 
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance);
+		const float shadow_factor = 1.0f;
+		
+		float3 skybox_reflection = skybox.SampleLevel(s0, reflect(V, normal), 0);
+
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, skybox_reflection);
+
+		retval = retval * shadow_factor;
 	}
 	else
 	{	
-		const float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
-		const float3 cdir = normalize(cpos - pos);
-		retval = pow(skybox.SampleLevel(s0, cdir , 0), 2.2);
+		retval = skybox.SampleLevel(s0, V, 0);
 	}
 
 	//Do shading

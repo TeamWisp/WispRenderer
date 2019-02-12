@@ -364,7 +364,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float mip_level = 1;
 
-#define COMPRESSED_PBR
+//#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	const float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
 	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
