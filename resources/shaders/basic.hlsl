@@ -79,7 +79,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	PS_OUTPUT output;
 	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
 	float4 albedo = pow(material_albedo.SampleLevel(s0, input.uv, 0), 2.2);
-#define COMPRESSED_PBR
+//#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	float4 roughness = material_metallic.SampleLevel(s0, input.uv, 0).y;
 	float4 metallic = material_metallic.SampleLevel(s0, input.uv, 0).z;
@@ -87,11 +87,11 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float4 roughness = material_roughness.Sample(s0, input.uv);
 	float4 metallic = material_metallic.Sample(s0, input.uv);
 #endif
-#
 	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
 	float3 normal = normalize(mul(tex_normal, tbn));
 
-	output.albedo_roughness = float4(lerp(albedo.xyz, input.color, length(input.color) != 0), roughness.r);
+	//output.albedo_roughness = float4(lerp(albedo.xyz, input.color, length(input.color) != 0.0f), roughness.r);
+	output.albedo_roughness = float4(albedo.xyz, roughness.r);
 	output.normal_metallic = float4(normal, metallic.r);
 	return output;
 }

@@ -58,17 +58,11 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	return res * albedo;
 }
 
-float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, float3 irradiance)
+float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, float3 irradiance, float3 skybox_refl)
 {
 	float3 res = float3(0.0f, 0.0f, 0.0f);
 
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
-
-	float3 kS = F_SchlickRoughness(max(dot(normal, V), 0.0f), metallic, albedo, roughness);
-	float3 kD = 1.0f - kS;
-	kD *= 1.0f - metallic;
-	float3 diffuse = irradiance * albedo;
-	float3 ambient = (kD * diffuse) * 1.0f; //Replace 1.0f with AO, when we have it.
 
 	res = float3(0.0f, 0.0f, 0.0f);
 
@@ -76,6 +70,16 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	{
 		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
 	}
+
+	float3 kS = F_SchlickRoughness(max(dot(normal, V), 0.0f), metallic, albedo, roughness);
+	float3 kD = 1.0f - kS;
+	kD *= 1.0f - metallic;
+
+	float3 diffuse = irradiance * albedo;
+
+	float3 specular = skybox_refl * kS;
+
+	float3 ambient = (kD * diffuse + specular) * 1.0f; //Replace 1.0f with AO, when we have it.
 
 	return ambient + res;
 }
