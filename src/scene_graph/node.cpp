@@ -1,4 +1,4 @@
-#include "scene_graph.hpp"
+#include "node.hpp"
 
 namespace wr
 {
