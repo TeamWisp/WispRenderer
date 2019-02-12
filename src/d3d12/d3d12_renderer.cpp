@@ -163,35 +163,44 @@ namespace wr
 		// Perform reload requests
 		{
 			// Root Signatures
-			auto& rt_registry = RootSignatureRegistry::Get();
-			for (auto request : rt_registry.m_requested_reload)
+			auto& rs_registry = RootSignatureRegistry::Get();
+			rs_registry.Lock();
+			for (auto request : rs_registry.GetReloadRequests())
 			{
 				ReloadRootSignatureRegistryEntry(request);
 			}
+			rs_registry.ClearReloadRequests();
+			rs_registry.Unlock();
 
 			// Shaders
 			auto& shader_registry = ShaderRegistry::Get();
-			for (auto request : shader_registry.m_requested_reload)
+			shader_registry.Lock();
+			for (auto request : shader_registry.GetReloadRequests())
 			{
 				ReloadShaderRegistryEntry(request);
 			}
+			shader_registry.ClearReloadRequests();
+			shader_registry.Unlock();
 
 			// Pipelines
 			auto& pipeline_registry = PipelineRegistry::Get();
-			pipeline_registry.m_reload_request_mutex.lock();
-			for (auto request : pipeline_registry.m_requested_reload)
+			pipeline_registry.Lock();
+			for (auto request : pipeline_registry.GetReloadRequests())
 			{
 				ReloadPipelineRegistryEntry(request);
 			}
-			pipeline_registry.m_requested_reload.clear();
-			pipeline_registry.m_reload_request_mutex.unlock();
+			pipeline_registry.ClearReloadRequests();
+			pipeline_registry.Unlock();
 
 			// RT Pipelines
 			auto& rt_pipeline_registry = RTPipelineRegistry::Get();
-			for (auto request : rt_pipeline_registry.m_requested_reload)
+			rt_pipeline_registry.Lock();
+			for (auto request : rt_pipeline_registry.GetReloadRequests())
 			{
 				ReloadRTPipelineRegistryEntry(request);
 			}
+			rt_pipeline_registry.ClearReloadRequests();
+			rt_pipeline_registry.Unlock();
 		}
 
 
@@ -591,7 +600,6 @@ namespace wr
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
-				d3d12::Destroy(pipeline_shader);
 				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
 			}
 			else
@@ -639,7 +647,6 @@ namespace wr
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
-				d3d12::Destroy(pipeline_shader);
 				pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
 			}
 			else
@@ -692,19 +699,7 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto& n_root_signature = static_cast<D3D12RootSignature*>(registry.Find(handle))->m_native;
 
-		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
-			n_shader->m_path,
-			n_shader->m_entry);
-
-		if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
-		{
-			d3d12::Destroy(n_shader);
-			n_shader = std::get<d3d12::Shader*>(new_shader_variant);
-		}
-		else
-		{
-			LOGW(std::get<std::string>(new_shader_variant));
-		}
+		d3d12::RefinalizeRootSignature(n_root_signature, m_device);
 	}
 
 	void D3D12RenderSystem::PrepareRTPipelineRegistry()

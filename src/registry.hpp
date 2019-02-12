@@ -41,23 +41,41 @@ namespace wr::internal
 		{
 			static C* instance = new C();
 			return *instance;
-			//static C instance;
-			//return instance;
+		}
+
+		void Lock()
+		{
+			m_mutex.lock();
+		}
+
+		void Unlock()
+		{
+			m_mutex.unlock();
+		}
+
+		void ClearReloadRequests()
+		{
+			m_requested_reload.clear();
+		}
+
+		std::vector<RegistryHandle> const & GetReloadRequests()
+		{
+			return m_requested_reload;
 		}
 
 		void RequestReload(RegistryHandle handle)
 		{
-			m_reload_request_mutex.lock();
+			Lock();
 			m_requested_reload.push_back(handle);
-			m_reload_request_mutex.unlock();
+			Unlock();
 		}
 
 		std::map<RegistryHandle, TD> m_descriptions;
 		std::map<RegistryHandle, TO*> m_objects;
-		std::vector<RegistryHandle> m_requested_reload;
-		std::mutex m_reload_request_mutex;
 
 	protected:
+		std::vector<RegistryHandle> m_requested_reload;
+		std::mutex m_mutex;
 		RegistryHandle m_next_handle;
 	};
 
