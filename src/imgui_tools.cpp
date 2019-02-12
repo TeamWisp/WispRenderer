@@ -228,12 +228,21 @@ namespace wr::imgui::window
 					light_node->SignalTransformChange();
 					light_node->SignalChange();
 
+					if (ImGui::Button("Select"))
+					{
+						selected_light = lights[i].get();
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Deselect"))
+					{
+						selected_light = nullptr;
+					}
+
 					if (ImGui::Button("Remove"))
 					{
 						scene_graph->DestroyNode<LightNode>(lights[i]);
+						selected_light = nullptr;
 					}
-
-					ImGui::Checkbox("Selected", &lights[i]->m_imgui_selected);
 
 					ImGui::TreePop();
 				}
@@ -241,24 +250,12 @@ namespace wr::imgui::window
 
 			ImGui::End();
 
-			unsigned int firstLight = -1;
-			int i = 0;
-
-			while (firstLight == -1 && i < lights.size())
-			{
-				if (lights[i]->m_imgui_selected)
-				{
-					firstLight = i;
-				}
-				i++;
-			}
-
-			if (firstLight == -1)
+			if (selected_light == nullptr)
 			{
 				return;
 			}
 
-			auto ml = lights[firstLight];
+			auto ml = selected_light;
 			DirectX::XMFLOAT4X4 rmat;
 			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
 			DirectX::XMStoreFloat4x4(&rmat, mat);
@@ -277,22 +274,8 @@ namespace wr::imgui::window
 
 			ml->m_position = { rmat._41, rmat._42, rmat._43 };
 
-			if (!DirectX::XMVector3Equal(ml->m_position, oldVec))
-			{
-				ml->SignalTransformChange();
-				ml->SignalChange();
-				DirectX::XMVECTOR pos = { rmat._41, rmat._42, rmat._43 };
-				auto diff = DirectX::XMVectorSubtract(pos, oldVec);
-				for (int j = firstLight + 1; j < lights.size(); ++j)
-				{
-					if (lights[j]->m_imgui_selected)
-					{
-						lights[j]->m_position = DirectX::XMVectorAdd(lights[j]->m_position, diff);
-						lights[j]->SignalTransformChange();
-						lights[j]->SignalChange();
-					}
-				}
-			}
+			ml->SignalTransformChange();
+			ml->SignalChange();
 		}
 	}
 
