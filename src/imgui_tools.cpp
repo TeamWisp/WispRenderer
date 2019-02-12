@@ -239,6 +239,9 @@ namespace wr::imgui::window
 
 			ImGui::End();
 
+			if (lights.size() < 1)
+				return;
+
 			auto ml = lights[0];
 			DirectX::XMFLOAT4X4 rmat;
 			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
