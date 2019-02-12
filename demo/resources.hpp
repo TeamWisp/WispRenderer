@@ -135,20 +135,20 @@ namespace resources
 			plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
 			light_model = plane_model;
 
-				for (auto& m : plane_model->m_meshes)
-				{
-					m.second = &bamboo_material;
-				}
+			for (auto& m : plane_model->m_meshes)
+			{
+				m.second = &bamboo_material;
+			}
 		}
 
 		{
 			{
-				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple.fbx");
+				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)
 				{
-					//m.second = &rusty_metal_material;
+					m.second = &rusty_metal_material;
 				}
 
 				for (auto& m : sphere_model->m_meshes)
