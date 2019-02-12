@@ -135,10 +135,10 @@ namespace resources
 			plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
 			light_model = plane_model;
 
-				for (auto& m : plane_model->m_meshes)
-				{
-					m.second = &bamboo_material;
-				}
+			for (auto& m : plane_model->m_meshes)
+			{
+				m.second = &bamboo_material;
+			}
 		}
 
 		{
