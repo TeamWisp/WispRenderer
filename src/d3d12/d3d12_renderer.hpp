@@ -114,9 +114,11 @@ namespace wr
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
-		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void PrepareRTPipelineRegistry() final;
+		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void ReloadRTPipelineRegistryEntry(RegistryHandle handle);
+		void ReloadShaderRegistryEntry(RegistryHandle handle);
+		void ReloadRootSignatureRegistryEntry(RegistryHandle handle);
 
 		void WaitForAllPreviousWork() final;
 

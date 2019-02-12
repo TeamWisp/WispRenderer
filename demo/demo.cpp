@@ -11,7 +11,6 @@
 #include "resources.hpp"
 #include "scene_cubes.hpp"
 #include "scene_emibl.hpp"
-#include "util/file_watcher.hpp"
 
 #include "model_loader_assimp.hpp"
 
@@ -21,7 +20,6 @@ std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 
 std::shared_ptr<wr::TexturePool> texture_pool;
-std::shared_ptr<util::FileWatcher> file_watcher = std::make_shared<util::FileWatcher>("resources/shaders/", std::chrono::milliseconds(100));
 
 void RenderEditor()
 {
@@ -30,25 +28,54 @@ void RenderEditor()
 
 void SetupShaderDirWatcher()
 {
-	file_watcher->StartAsync([](std::string path, util::FileWatcher::FileStatus status) {
-		if (status == util::FileWatcher::FileStatus::MODIFIED)
+	auto handle = FindFirstChangeNotificationA("resources/shaders/", false,
+		FILE_NOTIFY_CHANGE_FILE_NAME |
+		FILE_NOTIFY_CHANGE_DIR_NAME |
+		FILE_NOTIFY_CHANGE_ATTRIBUTES |
+		FILE_NOTIFY_CHANGE_LAST_WRITE |
+		FILE_NOTIFY_CHANGE_SECURITY
+	);
+
+	auto thread = std::thread([handle]()
+	{
+		while (true)
 		{
+			auto wait_status = WaitForSingleObject(handle, INFINITE);
 			auto& registry = wr::PipelineRegistry::Get();
 			auto& rt_registry = wr::RTPipelineRegistry::Get();
 
-			for (auto it : registry.m_objects)
+			switch (wait_status)
 			{
-				registry.RequestReload(it.first);
-			}
+			case WAIT_OBJECT_0:
+				LOG("Change detected in the shader directory. Reloading pipelines and shaders.");
 
-			for (auto it : rt_registry.m_objects)
-			{
-				// rt_registry.RequestReload(it.first);
-			}
+				for (auto it : registry.m_objects)
+				{
+					registry.RequestReload(it.first);
+				}
 
-			LOGW("Reload detected!!!!");
+				for (auto it : rt_registry.m_objects)
+				{
+					rt_registry.RequestReload(it.first);
+				}
+
+				if (FindNextChangeNotification(handle) == FALSE)
+				{
+					LOGW("FindNextChangeNotification function failed.");
+				}
+
+				using namespace std::chrono_literals;
+				std::this_thread::sleep_for(1s);
+
+				break;
+			default:
+				LOGW("Unhandled wait status.");
+				break;
+			}
 		}
 	});
+
+	thread.detach();
 }
 
 int WispEntry()
@@ -60,7 +87,7 @@ int WispEntry()
 	};
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
-	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1920, 1080);
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
 
 	window->SetKeyCallback([](int key, int action, int mods)
 	{
