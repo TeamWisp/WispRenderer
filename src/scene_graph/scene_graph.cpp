@@ -141,7 +141,7 @@ namespace wr
 		return m_batches;
 	}
 
-	std::unordered_map<Model*, std::vector<temp::ObjectData>>& SceneGraph::GetMeshObjects()
+	std::unordered_map<Model*, std::vector<temp::ObjectData>>& SceneGraph::GetGlobalBatches()
 	{
 		return m_objects;
 	}

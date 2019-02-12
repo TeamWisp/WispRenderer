@@ -106,7 +106,7 @@ namespace wr
 
 		void Optimize();
 		temp::MeshBatches& GetBatches();
-		std::unordered_map<Model*, std::vector<temp::ObjectData>>& GetMeshObjects();
+		std::unordered_map<Model*, std::vector<temp::ObjectData>>& GetGlobalBatches();
 
 		StructuredBufferHandle* GetLightBuffer();
 		Light* GetLight(uint32_t offset);			//Returns nullptr when out of bounds
