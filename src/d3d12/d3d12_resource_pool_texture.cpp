@@ -90,8 +90,6 @@ namespace wr
 				decltype(d3d12::Device::m_native) n_device;
 				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
 
-				D3D12_RESOURCE_DESC desc = texture->m_resource->GetDesc();
-
 				std::uint32_t num_subresources = texture->m_array_size * texture->m_mip_levels;
 
 				std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints;
@@ -102,6 +100,7 @@ namespace wr
 				row_sizes.resize(num_subresources);
 				UINT64 total_size;
 
+				D3D12_RESOURCE_DESC desc = texture->m_resource->GetDesc();
 				n_device->GetCopyableFootprints(&desc, 0, num_subresources, 0, &footprints[0], &num_rows[0], &row_sizes[0], &total_size);
 
 				std::vector<D3D12_SUBRESOURCE_DATA> subresource_data;
@@ -113,7 +112,7 @@ namespace wr
 
 					size_t row_pitch, slice_pitch;
 
-					DirectX::ComputePitch(static_cast<DXGI_FORMAT>(footprint.Format), footprint.Width, footprint.Height, row_pitch, slice_pitch);
+					DirectX::ComputePitch(footprint.Format, footprint.Width, footprint.Height, row_pitch, slice_pitch);
 
 					subresource_data[i].pData = texture->m_allocated_memory + footprints[i].Offset;
 					subresource_data[i].RowPitch = row_pitch;
