@@ -183,7 +183,7 @@ namespace wr
 				for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
 				{
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
-					auto& cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
 					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip UAV at positon 0
 					d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, 0, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
 
