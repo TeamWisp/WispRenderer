@@ -163,44 +163,35 @@ namespace wr
 		// Perform reload requests
 		{
 			// Root Signatures
-			auto& rs_registry = RootSignatureRegistry::Get();
-			rs_registry.Lock();
-			for (auto request : rs_registry.GetReloadRequests())
+			auto& rt_registry = RootSignatureRegistry::Get();
+			for (auto request : rt_registry.m_requested_reload)
 			{
-				ReloadRootSignatureRegistryEntry(request);
+				// ReloadPipelineRegistryEntry(request);
 			}
-			rs_registry.ClearReloadRequests();
-			rs_registry.Unlock();
 
 			// Shaders
 			auto& shader_registry = ShaderRegistry::Get();
-			shader_registry.Lock();
-			for (auto request : shader_registry.GetReloadRequests())
+			for (auto request : shader_registry.m_requested_reload)
 			{
-				ReloadShaderRegistryEntry(request);
+				// ReloadPipelineRegistryEntry(request);
 			}
-			shader_registry.ClearReloadRequests();
-			shader_registry.Unlock();
 
 			// Pipelines
 			auto& pipeline_registry = PipelineRegistry::Get();
-			pipeline_registry.Lock();
-			for (auto request : pipeline_registry.GetReloadRequests())
+			pipeline_registry.m_reload_request_mutex.lock();
+			for (auto request : pipeline_registry.m_requested_reload)
 			{
 				ReloadPipelineRegistryEntry(request);
 			}
-			pipeline_registry.ClearReloadRequests();
-			pipeline_registry.Unlock();
+			pipeline_registry.m_requested_reload.clear();
+			pipeline_registry.m_reload_request_mutex.unlock();
 
 			// RT Pipelines
 			auto& rt_pipeline_registry = RTPipelineRegistry::Get();
-			rt_pipeline_registry.Lock();
-			for (auto request : rt_pipeline_registry.GetReloadRequests())
+			for (auto request : rt_pipeline_registry.m_requested_reload)
 			{
 				ReloadRTPipelineRegistryEntry(request);
 			}
-			rt_pipeline_registry.ClearReloadRequests();
-			rt_pipeline_registry.Unlock();
 		}
 
 
@@ -655,7 +646,7 @@ namespace wr
 			}
 		};
 
-		// Library Shader
+		// Vertex Shader
 		{
 			recompile_shader(n_pipeline->m_desc.m_library);
 		}
@@ -670,36 +661,6 @@ namespace wr
 		{
 			d3d12::RecreateStateObject(n_pipeline);
 		}
-	}
-
-	void D3D12RenderSystem::ReloadShaderRegistryEntry(RegistryHandle handle)
-	{
-		auto& registry = ShaderRegistry::Get();
-		std::optional<std::string> error_msg = std::nullopt;
-		auto& n_shader = static_cast<D3D12Shader*>(registry.Find(handle))->m_native;
-
-		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
-			n_shader->m_path,
-			n_shader->m_entry);
-
-		if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
-		{
-			d3d12::Destroy(n_shader);
-			n_shader = std::get<d3d12::Shader*>(new_shader_variant);
-		}
-		else
-		{
-			LOGW(std::get<std::string>(new_shader_variant));
-		}
-	}
-
-	void D3D12RenderSystem::ReloadRootSignatureRegistryEntry(RegistryHandle handle)
-	{
-		auto& registry = RootSignatureRegistry::Get();
-		std::optional<std::string> error_msg = std::nullopt;
-		auto& n_root_signature = static_cast<D3D12RootSignature*>(registry.Find(handle))->m_native;
-
-		d3d12::RefinalizeRootSignature(n_root_signature, m_device);
 	}
 
 	void D3D12RenderSystem::PrepareRTPipelineRegistry()
@@ -911,7 +872,7 @@ namespace wr
 			offset_end = i;
 		}
 
-		if (!should_update)
+		if (!should_update && !(offset_end == offset_start && offset_start == 0))
 			return;
 
 		StructuredBufferHandle* structured_buffer = scene_graph.GetLightBuffer();
@@ -1132,7 +1093,6 @@ namespace wr
 		for (auto& batch : sg.GetBatches())
 		{
 			batch.second.num_instances = 0;
-			batch.second.num_global_instances = 0;
 		}
 	}
 

@@ -150,7 +150,6 @@ namespace wr::d3d12
 	[[nodiscard]] RootSignature* CreateRootSignature(desc::RootSignatureDesc create_info);
 	void SetName(RootSignature* root_signature, std::wstring name);
 	void FinalizeRootSignature(RootSignature* root_signature, Device* device);
-	void RefinalizeRootSignature(RootSignature* root_signature, Device* device);
 	void Destroy(RootSignature* root_signature);
 
 	// Pipeline State

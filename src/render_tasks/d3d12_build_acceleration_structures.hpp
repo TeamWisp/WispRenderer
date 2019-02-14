@@ -65,8 +65,7 @@ namespace wr
 			inline void BuildBLASList(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
 				unsigned int material_id = 0;
-				auto& batches = scene_graph.GetGlobalBatches();
-				const auto& batchInfo = scene_graph.GetBatches();
+				auto batches = scene_graph.GetBatches();
 
 				for (auto& batch : batches)
 				{
@@ -110,14 +109,10 @@ namespace wr
 						data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
 						data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
 
-						auto it = batchInfo.find(batch.first);
-
-						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
-
 						// Push instances into a array for later use.
-						for (uint32_t i = 0U, j = (uint32_t) it->second.num_global_instances; i < j; i++)
+						for (auto i = 0; i < batch.second.num_instances; i++)
 						{
-							auto transform = batch.second[i].m_model;
+							auto transform = batch.second.data.objects[i].m_model;
 
 							data.out_blas_list.push_back({ blas, material_id, transform});
 						}
@@ -129,8 +124,7 @@ namespace wr
 
 			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
-				auto& batches = scene_graph.GetGlobalBatches();
-				const auto& batchInfo = scene_graph.GetBatches();
+				auto& batches = scene_graph.GetBatches();
 
 				auto prev_size = data.out_blas_list.size();
 				data.out_blas_list.clear();
@@ -159,16 +153,16 @@ namespace wr
 						data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
 						data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
 
-						auto it = batchInfo.find(batch.first);
-
-						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
-
 						// Push instances into a array for later use.
-						for (uint32_t i = 0U, j = (uint32_t)it->second.num_global_instances; i < j; i++)
+						for (auto i = 0; i < batch.second.num_instances; i++)
 						{
-							auto transform = batch.second[i].m_model;
+							auto transform = batch.second.data.objects[i].m_model;
 
-							data.out_blas_list.push_back({ blas, material_id, transform });
+							data.out_blas_list.push_back({ 
+								blas,
+								material_id,
+								transform 
+							});
 						}
 
 						material_id++;

@@ -78,7 +78,7 @@ namespace emibl_scene
 		models[6]->SetRotation({ 0,180_deg,180_deg });
 		models[7]->SetRotation({ 0,180_deg,180_deg });
 		models[8]->SetRotation({ 0,180_deg,180_deg });
-		models[9]->SetRotation({ 0,180_deg,180_deg });
+		models[9]->SetPosition({ 0,180_deg,180_deg });
 
 		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 0, 1, 0 });
 		directional_light_node->SetDirectional({ 136._deg, 0, 0 }, { 4, 4, 4});
