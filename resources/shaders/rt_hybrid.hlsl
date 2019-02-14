@@ -52,7 +52,7 @@ typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct ShadowHitInfo
 {
 	float shadow_hit;
-        float duck;
+        float removingthisbreaksfallback;
 };
 
 struct ReflectionHitInfo
