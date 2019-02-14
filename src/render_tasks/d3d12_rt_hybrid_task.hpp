@@ -229,7 +229,7 @@ namespace wr
 
 	} /* internal */
 
-	inline void AddRTHybridTask(FrameGraph& fg)
+	inline void AddRTHybridTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		RenderTargetProperties rt_properties
 		{

@@ -264,13 +264,13 @@ namespace wr
 
 	} /* internal */
 
-	inline void AddBuildAccelerationStructuresTask(FrameGraph& frame_graph)
+	inline void AddBuildAccelerationStructuresTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		RenderTargetProperties rt_properties
 		{
 			false,
-			std::nullopt,
-			std::nullopt,
+			target_width,
+			target_height,
 			ResourceState::UNORDERED_ACCESS,
 			ResourceState::COPY_SOURCE,
 			false,

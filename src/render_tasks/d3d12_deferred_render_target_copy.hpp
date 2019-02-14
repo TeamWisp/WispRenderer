@@ -45,12 +45,12 @@ namespace wr
 	} /* internal */
 
 	template<typename T>
-	inline void AddRenderTargetCopyTask(FrameGraph& frame_graph)
+	inline void AddRenderTargetCopyTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		RenderTargetProperties rt_properties {
 			true,
-			std::nullopt,
-			std::nullopt,
+			target_width,
+			target_height,
 			ResourceState::COPY_DEST,
 			ResourceState::PRESENT,
 			false,

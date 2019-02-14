@@ -174,13 +174,13 @@ namespace wr
 		}
 	} /* internal */
 
-	inline void AddEquirectToCubemapTask(FrameGraph& fg)
+	inline void AddEquirectToCubemapTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		RenderTargetProperties rt_properties
 		{
 			false,
-			std::nullopt,
-			std::nullopt,
+			target_width,
+			target_height,
 			ResourceState::RENDER_TARGET,
 			ResourceState::NON_PIXEL_SHADER_RESOURCE,
 			true,

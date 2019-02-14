@@ -34,15 +34,15 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
 			fg = new wr::FrameGraph(4);
 
-			wr::AddBuildAccelerationStructuresTask(*fg);
-			wr::AddRaytracingTask(*fg);
-			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
+			wr::AddBuildAccelerationStructuresTask(*fg, std::nullopt, std::nullopt);
+			wr::AddRaytracingTask(*fg, std::nullopt, std::nullopt);
+			wr::AddPostProcessingTask<wr::RaytracingData>(*fg, std::nullopt, std::nullopt);
 			
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg, std::nullopt, std::nullopt);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func, std::nullopt, std::nullopt));
 
 			fg->Setup(rs);
 		}
@@ -52,19 +52,19 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
 			fg = new wr::FrameGraph(6);
 			
-			wr::AddEquirectToCubemapTask(*fg);
-			wr::AddCubemapConvolutionTask(*fg);
+			wr::AddEquirectToCubemapTask(*fg, std::nullopt, std::nullopt);
+			wr::AddCubemapConvolutionTask(*fg, std::nullopt, std::nullopt);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg, std::nullopt, std::nullopt);
 
 			// Copy the composition pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg, std::nullopt, std::nullopt);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func, std::nullopt, std::nullopt));
 
 			fg->Setup(rs);
 		}
@@ -78,19 +78,19 @@ namespace fg_manager
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 
 			// Build Acceleration Structure
-			wr::AddBuildAccelerationStructuresTask(*fg);
+			wr::AddBuildAccelerationStructuresTask(*fg, std::nullopt, std::nullopt);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			wr::AddRTHybridTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
-			wr::AddPostProcessingTask<wr::RTHybridData>(*fg);
+			wr::AddPostProcessingTask<wr::RTHybridData>(*fg, std::nullopt, std::nullopt);
 
 			// Copy the raytracing pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg, std::nullopt, std::nullopt);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func, std::nullopt, std::nullopt));
 
 			// Finalize the frame graph
 			fg->Setup(rs);
