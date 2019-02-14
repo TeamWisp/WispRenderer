@@ -254,7 +254,7 @@ namespace wr
 			}
 			else
 			{
-				internal::UpdateTLAS(device, cmd_list, scene_graph, data);
+				//internal::UpdateTLAS(device, cmd_list, scene_graph, data);
 			}
 		}
 

@@ -51,7 +51,8 @@ SamplerState s0 : register(s0);
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct ShadowHitInfo
 {
-	bool shadow_hit;
+	float shadow_hit;
+        float duck;
 };
 
 struct ReflectionHitInfo
@@ -98,7 +99,7 @@ float3 HitWorldPosition()
 
 bool TraceShadowRay(float3 origin, float3 direction, float t_max)
 {
-	ShadowHitInfo payload = { false };
+	ShadowHitInfo payload = { false, 1 };
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -387,7 +388,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//TODO: Reflections
 
 	//Shading
-	payload.color = ShadePixel(hit_pos, V, albedo, fN, roughness, metal);
+	payload.color = albedo;
 }
 
 //Reflection skybox
