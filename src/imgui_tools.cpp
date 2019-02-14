@@ -246,8 +246,8 @@ namespace wr::imgui::window
 
 					if (ImGui::Button("Remove"))
 					{
-						scene_graph->DestroyNode<LightNode>(lights[i]);
 						selected_light = nullptr;
+						scene_graph->DestroyNode<LightNode>(lights[i]);
 					}
 
 					ImGui::TreePop();
@@ -265,7 +265,6 @@ namespace wr::imgui::window
 			DirectX::XMFLOAT4X4 rmat;
 			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
 			DirectX::XMStoreFloat4x4(&rmat, mat);
-			DirectX::XMVECTOR oldVec = { rmat._41, rmat._42, rmat._43 };
 
 			auto cam = scene_graph->GetActiveCamera();
 			DirectX::XMFLOAT4X4 rview;

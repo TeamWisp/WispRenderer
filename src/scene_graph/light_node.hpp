@@ -48,9 +48,6 @@ namespace wr
 		//! Physical data
 		Light m_temp;
 
-		//! Wether the light is selected in the imGUI Light editor
-		bool m_imgui_selected = false;
-
 	};
 
 } /* wr */
