@@ -23,6 +23,7 @@
 #include "../scene_graph/mesh_node.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
+#include "../scene_graph/skybox_node.hpp"
 
 namespace wr
 {
@@ -145,7 +146,7 @@ namespace wr
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 	}
 
-	CPUTexture D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
 
  		if (m_requested_fullscreen_state.has_value())
@@ -162,35 +163,44 @@ namespace wr
 		// Perform reload requests
 		{
 			// Root Signatures
-			auto& rt_registry = RootSignatureRegistry::Get();
-			for (auto request : rt_registry.m_requested_reload)
+			auto& rs_registry = RootSignatureRegistry::Get();
+			rs_registry.Lock();
+			for (auto request : rs_registry.GetReloadRequests())
 			{
-				// ReloadPipelineRegistryEntry(request);
+				ReloadRootSignatureRegistryEntry(request);
 			}
+			rs_registry.ClearReloadRequests();
+			rs_registry.Unlock();
 
 			// Shaders
 			auto& shader_registry = ShaderRegistry::Get();
-			for (auto request : shader_registry.m_requested_reload)
+			shader_registry.Lock();
+			for (auto request : shader_registry.GetReloadRequests())
 			{
-				// ReloadPipelineRegistryEntry(request);
+				ReloadShaderRegistryEntry(request);
 			}
+			shader_registry.ClearReloadRequests();
+			shader_registry.Unlock();
 
 			// Pipelines
 			auto& pipeline_registry = PipelineRegistry::Get();
-			pipeline_registry.m_reload_request_mutex.lock();
-			for (auto request : pipeline_registry.m_requested_reload)
+			pipeline_registry.Lock();
+			for (auto request : pipeline_registry.GetReloadRequests())
 			{
 				ReloadPipelineRegistryEntry(request);
 			}
-			pipeline_registry.m_requested_reload.clear();
-			pipeline_registry.m_reload_request_mutex.unlock();
+			pipeline_registry.ClearReloadRequests();
+			pipeline_registry.Unlock();
 
 			// RT Pipelines
 			auto& rt_pipeline_registry = RTPipelineRegistry::Get();
-			for (auto request : rt_pipeline_registry.m_requested_reload)
+			rt_pipeline_registry.Lock();
+			for (auto request : rt_pipeline_registry.GetReloadRequests())
 			{
 				ReloadRTPipelineRegistryEntry(request);
 			}
+			rt_pipeline_registry.ClearReloadRequests();
+			rt_pipeline_registry.Unlock();
 		}
 
 
@@ -219,6 +229,9 @@ namespace wr
 			n_cmd_lists.push_back(list);
 		}
 
+		// Reset the batches.
+		ResetBatches(*scene_graph.get());
+
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
 		if (m_render_window.has_value())
@@ -229,15 +242,16 @@ namespace wr
 		m_bound_model_pool = nullptr;
 
 		//Signal end of frame to the texture pool so that stale descriptors can be freed.
-		m_texture_pool->EndOfFrame();
+		for (auto pool : m_texture_pools)
+		{
+			pool->EndOfFrame();
+		}
+
 		// Optional CPU-visible copy of the render target pixel data
 		const auto cpu_output_texture = frame_graph.GetOutputTexture();
 
-		// If no pixel data is available, return null, else, return GPU pixel data
-		if (cpu_output_texture.has_value())
-			return cpu_output_texture.value();
-		else
-			return CPUTexture();
+		// Optional CPU-visible copy of the render target pixel and/or depth data
+		return frame_graph.GetOutputTexture();
 	}
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
@@ -253,8 +267,9 @@ namespace wr
 
 	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool(std::size_t size_in_bytes, std::size_t num_of_textures)
 	{
-		m_texture_pool = std::make_shared<D3D12TexturePool>(*this, size_in_bytes, num_of_textures);
-		return m_texture_pool;
+		std::shared_ptr<D3D12TexturePool> pool = std::make_shared<D3D12TexturePool>(*this, size_in_bytes, num_of_textures);
+		m_texture_pools.push_back(pool);
+		return pool;
 	}
 
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_bytes)
@@ -512,7 +527,7 @@ namespace wr
 			}
 			else
 			{
-				LOGC("Failed to load shader. compiler error: {}", std::get<std::string>(shader_error));
+				LOGC(std::get<std::string>(shader_error));
 			}
 		}
 	}
@@ -640,7 +655,7 @@ namespace wr
 			}
 		};
 
-		// Vertex Shader
+		// Library Shader
 		{
 			recompile_shader(n_pipeline->m_desc.m_library);
 		}
@@ -655,6 +670,36 @@ namespace wr
 		{
 			d3d12::RecreateStateObject(n_pipeline);
 		}
+	}
+
+	void D3D12RenderSystem::ReloadShaderRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = ShaderRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto& n_shader = static_cast<D3D12Shader*>(registry.Find(handle))->m_native;
+
+		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
+			n_shader->m_path,
+			n_shader->m_entry);
+
+		if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
+		{
+			d3d12::Destroy(n_shader);
+			n_shader = std::get<d3d12::Shader*>(new_shader_variant);
+		}
+		else
+		{
+			LOGW(std::get<std::string>(new_shader_variant));
+		}
+	}
+
+	void D3D12RenderSystem::ReloadRootSignatureRegistryEntry(RegistryHandle handle)
+	{
+		auto& registry = RootSignatureRegistry::Get();
+		std::optional<std::string> error_msg = std::nullopt;
+		auto& n_root_signature = static_cast<D3D12RootSignature*>(registry.Find(handle))->m_native;
+
+		d3d12::RefinalizeRootSignature(n_root_signature, m_device);
 	}
 
 	void D3D12RenderSystem::PrepareRTPipelineRegistry()
@@ -763,7 +808,7 @@ namespace wr
 
 			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
 
-			float clear_color[] = { 0.f,0.f,0.f,0.f };
+			float clear_color[] = { 0, 0, 0, 0 };
 
 			m_direct_cmd_list->m_native->ResourceBarrier(1,
 				&CD3DX12_RESOURCE_BARRIER::Transition(
@@ -796,9 +841,11 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
-		m_texture_pool->PostStageClear();
-
-		m_texture_pool->Stage(m_direct_cmd_list);
+		
+		for (auto pool : m_texture_pools)
+		{
+			pool->Stage(m_direct_cmd_list);
+		}
 
 		d3d12::End(m_direct_cmd_list);
 	}
@@ -831,6 +878,7 @@ namespace wr
 			data.m_projection = node->m_projection;
 			data.m_inverse_projection = node->m_inverse_projection;
 			data.m_view = node->m_view;
+			data.m_inverse_view = node->m_inverse_view;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &data);
 		}
@@ -998,9 +1046,6 @@ namespace wr
 					}
 				}
 			}
-
-			//Reset instances
-			batch.num_instances = 0;
 		}
 
 		if constexpr (d3d12::settings::use_exec_indirect)
@@ -1040,10 +1085,10 @@ namespace wr
 		auto metallic_handle = material_internal->GetMetallic();
 		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		d3d12::SetShaderTexture(n_cmd_list, 2, 0, albedo_internal);
-		d3d12::SetShaderTexture(n_cmd_list, 2, 1, normal_internal);
-		d3d12::SetShaderTexture(n_cmd_list, 2, 2, roughness_internal);
-		d3d12::SetShaderTexture(n_cmd_list, 2, 3, metallic_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, 0, albedo_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, 1, normal_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, 2, roughness_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, 3, metallic_internal);
 	}
 	
 	unsigned int D3D12RenderSystem::GetFrameIdx()
@@ -1082,11 +1127,20 @@ namespace wr
 		return m_simple_shapes[type];
 	}
 
+	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)
+	{
+		for (auto& batch : sg.GetBatches())
+		{
+			batch.second.num_instances = 0;
+			batch.second.num_global_instances = 0;
+		}
+	}
+
 	void D3D12RenderSystem::LoadPrimitiveShapes()
 	{
 		// Load Cube.
 		{
-			wr::MeshData<wr::Vertex> mesh;
+			wr::MeshData<wr::VertexColor> mesh;
 
 			mesh.m_indices = {
 				2, 1, 0, 3, 2, 0, 6, 5,
@@ -1097,56 +1151,56 @@ namespace wr
 			};
 
 			mesh.m_vertices = {
-				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0 },
-				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0,	0, 0, 0 },
+				{ 1, -1, -1,	0, 1,		0, 0, -1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 0,		0, 0, -1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
 
-				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 1,		0, 0, 1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 0,		0, 0, 1,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
 
-				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		0, 1,		1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,	0, 0,		1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
 
-				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, -1, -1,	1, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, -1, 1,		1, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 1,		0, -1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 0,		0, -1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
 
-				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0  },
+				{ -1, -1, -1,	0, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, -1, 1,	0, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		1, 0,		-1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	1, 1,		-1, 0, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
 
-				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
-				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0  },
+				{ 1, 1, 1,		1, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ 1, 1, -1,		1, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, 1, -1,	0, 1,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
+				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
 			};
 
-			m_simple_shapes[SimpleShapes::CUBE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
+			m_simple_shapes[SimpleShapes::CUBE] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
 		}
 
 		{
-			wr::MeshData<wr::Vertex> mesh;
+			wr::MeshData<wr::VertexColor> mesh;
 
 			mesh.m_indices = {
 				2, 1, 0, 3, 2, 0
 			};
 
 			mesh.m_vertices = {
-				//POS				UV			NORMAL				TANGENT			BINORMAL
-				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0},
-				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0},
+				//POS				UV			NORMAL				TANGENT			BINORMAL		COLOR
+				{  1,  1,  0,		1, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
+				{  1, -1,  0,		1, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
+				{ -1, -1,  0,		0, 0,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
+				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
 			};
 
-			m_simple_shapes[SimpleShapes::PLANE] = m_shapes_pool->LoadCustom<wr::Vertex>({ mesh });
+			m_simple_shapes[SimpleShapes::PLANE] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
 		}
 	}
 

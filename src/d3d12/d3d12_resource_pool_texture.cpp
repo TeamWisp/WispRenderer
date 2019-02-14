@@ -5,6 +5,7 @@
 #include "d3d12_renderer.hpp"
 
 #include "../renderer.hpp"
+#include "../settings.hpp"
 #include "d3d12_renderer.hpp"
 #include "d3d12_structs.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
@@ -20,8 +21,16 @@ namespace wr
 	{
 		auto device = m_render_system.m_device;
 
+		// Append size and num values for the default textures.
+		num_of_textures += settings::default_textures_count;
+		size_in_bytes += settings::default_textures_size_in_bytes;
+
 		//Staging heap
-		m_texture_heap_allocator = new DescriptorAllocator(render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			m_allocators[i] = new DescriptorAllocator(render_system, static_cast<DescriptorHeapType>(i));
+		}
 
 		//Mipmapping heap creation
 		d3d12::desc::DescriptorHeapDesc mipmap_heap_desc;
@@ -34,6 +43,12 @@ namespace wr
 		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
 		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);
 
+		// Load the default textures
+		m_default_albedo = Load(settings::default_albedo_path, false, false);
+		m_default_normal = Load(settings::default_normal_path, false, false);
+		m_default_roughness = Load(settings::default_roughness_path, false, false);
+		m_default_metalic = Load(settings::default_metalic_path, false, false);
+		m_default_ao = Load(settings::default_ao_path, false, false);
 		m_post_stage_clear_textures.resize(d3d12::settings::num_back_buffers);
 
 	}
@@ -42,7 +57,10 @@ namespace wr
 	{
 		d3d12::Destroy(m_mipmapping_heap);
 
-		delete m_texture_heap_allocator;
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			delete m_allocators[i];
+		}
 	}
 
 	void D3D12TexturePool::Evict()
@@ -64,6 +82,7 @@ namespace wr
 			int frame = m_render_system.GetFrameIdx();
 
 			std::vector<d3d12::TextureResource*> unstaged_textures;
+			std::vector<d3d12::TextureResource*> need_mipmapping;
 
 			auto itr = m_unstaged_textures.begin();
 
@@ -74,25 +93,53 @@ namespace wr
 				unstaged_textures.push_back(texture);
 				m_post_stage_clear_textures[frame].push_back(texture);
 
-				size_t row_pitch, slice_pitch;
+				decltype(d3d12::Device::m_native) n_device;
+				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
 
-				DirectX::ComputePitch(static_cast<DXGI_FORMAT>(texture->m_format), texture->m_width, texture->m_height, row_pitch, slice_pitch);
+				std::uint32_t num_subresources = texture->m_array_size * texture->m_mip_levels;
 
-				D3D12_SUBRESOURCE_DATA subresourceData = {};
-				subresourceData.pData = texture->m_allocated_memory;
-				subresourceData.RowPitch = row_pitch;
-				subresourceData.SlicePitch = slice_pitch;
+				std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints;
+				footprints.resize(num_subresources);
+				std::vector<UINT> num_rows;
+				num_rows.resize(num_subresources);
+				std::vector<UINT64> row_sizes;
+				row_sizes.resize(num_subresources);
+				UINT64 total_size;
 
-				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, 0, 1, &subresourceData);
+				D3D12_RESOURCE_DESC desc = texture->m_resource->GetDesc();
+				n_device->GetCopyableFootprints(&desc, 0, num_subresources, 0, &footprints[0], &num_rows[0], &row_sizes[0], &total_size);
+
+				std::vector<D3D12_SUBRESOURCE_DATA> subresource_data;
+				subresource_data.resize(num_subresources);
+
+				for (uint32_t i = 0; i < num_subresources; ++i)
+				{
+					D3D12_SUBRESOURCE_FOOTPRINT& footprint = footprints[i].Footprint;
+
+					size_t row_pitch, slice_pitch;
+
+					DirectX::ComputePitch(footprint.Format, footprint.Width, footprint.Height, row_pitch, slice_pitch);
+
+					subresource_data[i].pData = texture->m_allocated_memory + footprints[i].Offset;
+					subresource_data[i].RowPitch = row_pitch;
+					subresource_data[i].SlicePitch = slice_pitch;
+				}
+
+				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
 
 				free(texture->m_allocated_memory);
 
 				texture->m_is_staged = true;
+
+				if (texture->m_need_mips)
+				{
+					need_mipmapping.push_back(texture);
+				}
 			}
 
 			d3d12::Transition(cmdlist, unstaged_textures, wr::ResourceState::COPY_DEST, wr::ResourceState::PIXEL_SHADER_RESOURCE);
 
-			GenerateMips(unstaged_textures, cmd_list);
+			GenerateMips(need_mipmapping, cmd_list);
 
 			MoveStagedTextures();
 		}
@@ -111,12 +158,98 @@ namespace wr
 
 	void D3D12TexturePool::EndOfFrame()
 	{
-		m_texture_heap_allocator->ReleaseStaleDescriptors();
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			m_allocators[i]->ReleaseStaleDescriptors();
+		}
 	}
 
 	d3d12::TextureResource* D3D12TexturePool::GetTexture(uint64_t texture_id)
 	{
 		return static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));
+	}
+
+	TextureHandle D3D12TexturePool::CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest)
+	{
+		auto device = m_render_system.m_device;
+
+		d3d12::desc::TextureDesc desc;
+
+		uint32_t mip_lvl_final = mip_levels;
+
+		// 0 means generate max number of mip levels
+		if (mip_lvl_final == 0)
+		{
+			mip_lvl_final = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+		}
+
+		desc.m_width = width;
+		desc.m_height = height;
+		desc.m_is_cubemap = true;
+		desc.m_depth = 1;
+		desc.m_array_size = 6;
+		desc.m_mip_levels = mip_lvl_final;
+		desc.m_texture_format = format;
+		desc.m_initial_state = allow_render_dest ? ResourceState::RENDER_TARGET : ResourceState::COPY_DEST;
+
+		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, true);
+
+		texture->m_allocated_memory = nullptr;
+		texture->m_allow_render_dest = allow_render_dest;
+		texture->m_is_staged = true;
+		texture->m_need_mips = false;
+		
+		std::wstring wide_string(name.begin(), name.end());
+
+		d3d12::SetName(texture, wide_string);
+
+		DescriptorAllocation srv_alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+		DescriptorAllocation uav_alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+
+		if (srv_alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+		if (uav_alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+
+		texture->m_srv_allocation = std::move(srv_alloc);
+		texture->m_uav_allocation = std::move(uav_alloc);
+
+		d3d12::CreateSRVFromTexture(texture);
+
+		if (allow_render_dest)
+		{
+			DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]->Allocate(6);
+
+			if (alloc.IsNull())
+			{
+				LOGC("Couldn't allocate descriptor for the texture resource");
+			}
+
+			texture->m_rtv_allocation = std::move(alloc);
+
+			d3d12::CreateRTVFromCubemap(texture);
+		}
+
+		m_loaded_textures++;
+
+		uint64_t texture_id = m_id_factory.GetUnusedID();
+
+		TextureHandle texture_handle;
+		texture_handle.m_pool = this;
+		texture_handle.m_id = texture_id;
+
+		m_staged_textures.insert(std::make_pair(texture_id, texture));
+
+		return texture_handle;
+	}
+
+	DescriptorAllocator * D3D12TexturePool::GetAllocator(DescriptorHeapType type)
+	{
+		return m_allocators[static_cast<size_t>(type)];
 	}
 
 	void D3D12TexturePool::Unload(uint64_t texture_id)
@@ -169,11 +302,11 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		DescriptorAllocation alloc = m_texture_heap_allocator->Allocate();
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
 		if (alloc.IsNull())
 		{
@@ -181,7 +314,7 @@ namespace wr
 		}
 
 		texture->m_need_mips = generate_mips;
-		texture->m_desc_allocation = std::move(alloc);
+		texture->m_srv_allocation = std::move(alloc);
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture);
@@ -232,11 +365,11 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		DescriptorAllocation alloc = m_texture_heap_allocator->Allocate();
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
 		if (alloc.IsNull())
 		{
@@ -244,7 +377,7 @@ namespace wr
 		}
 
 		texture->m_need_mips = generate_mips;
-		texture->m_desc_allocation = std::move(alloc);
+		texture->m_srv_allocation = std::move(alloc);
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture);
@@ -294,11 +427,11 @@ namespace wr
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
 
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(image.GetPixelsSize()));
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
 		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
 
-		DescriptorAllocation alloc = m_texture_heap_allocator->Allocate();
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
 		if (alloc.IsNull())
 		{
@@ -306,7 +439,7 @@ namespace wr
 		}
 
 		texture->m_need_mips = generate_mips;
-		texture->m_desc_allocation = std::move(alloc);
+		texture->m_srv_allocation = std::move(alloc);
 		texture->m_resource->SetName(wide_string.c_str());
 
 		d3d12::CreateSRVFromTexture(texture);

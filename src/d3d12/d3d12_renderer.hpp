@@ -50,6 +50,18 @@ namespace wr
 			DirectX::XMMATRIX m_view;
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
+			DirectX::XMMATRIX m_inverse_view;
+		};
+
+		struct RTHybridCamera_CBData
+		{
+			DirectX::XMMATRIX m_inverse_view;
+			DirectX::XMMATRIX m_inverse_projection;
+			DirectX::XMMATRIX m_inv_vp;
+
+			uint32_t m_padding[2];
+			float m_roughness;
+			float m_intensity;
 		};
 
 		struct RayTracingCamera_CBData
@@ -90,7 +102,7 @@ namespace wr
 		~D3D12RenderSystem() final;
 
 		void Init(std::optional<Window*> window) final;
-		CPUTexture Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
+		CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
 		void Resize(std::uint32_t width, std::uint32_t height) final;
 
 		std::shared_ptr<TexturePool> CreateTexturePool(std::size_t size_in_bytes, std::size_t num_of_textures) final;
@@ -102,9 +114,11 @@ namespace wr
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
-		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void PrepareRTPipelineRegistry() final;
+		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void ReloadRTPipelineRegistryEntry(RegistryHandle handle);
+		void ReloadShaderRegistryEntry(RegistryHandle handle);
+		void ReloadRootSignatureRegistryEntry(RegistryHandle handle);
 
 		void WaitForAllPreviousWork() final;
 
@@ -159,7 +173,7 @@ namespace wr
 
 		std::vector<std::uint64_t> m_buffer_frame_graph_uids;
 
-		std::shared_ptr<TexturePool> m_texture_pool;
+		std::vector <std::shared_ptr<TexturePool>> m_texture_pools;
 
 		d3d12::HeapResource* m_light_buffer;
 		std::shared_ptr<ConstantBufferPool> m_camera_pool; // TODO: Should be part of the scene graph
@@ -180,6 +194,7 @@ namespace wr
 
 	private:
 
+		void ResetBatches(SceneGraph& sg);
 		void LoadPrimitiveShapes();
 
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;

@@ -10,6 +10,7 @@
 #include "scene_viknell.hpp"
 #include "resources.hpp"
 #include "scene_cubes.hpp"
+#include "scene_emibl.hpp"
 
 #include "model_loader_assimp.hpp"
 
@@ -55,7 +56,7 @@ void SetupShaderDirWatcher()
 
 				for (auto it : rt_registry.m_objects)
 				{
-					// rt_registry.RequestReload(it.first);
+					rt_registry.RequestReload(it.first);
 				}
 
 				if (FindNextChangeNotification(handle) == FALSE)
@@ -112,6 +113,11 @@ int WispEntry()
 		SCENE::camera->MouseAction(key, action);
 	});
 
+	window->SetMouseWheelCallback([](int amount, int action, int mods)
+	{
+		SCENE::camera->MouseWheel(amount);
+	});
+
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
 
 	render_system->Init(window.get());	
@@ -130,7 +136,7 @@ int WispEntry()
 	{
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
-		viknell_scene::camera->SetAspectRatio((float)width / (float)height);
+		SCENE::camera->SetAspectRatio((float)width / (float)height);
 		fg_manager::Get()->Resize(*render_system.get(), width, height);
 	});
 
@@ -143,6 +149,17 @@ int WispEntry()
 		SCENE::UpdateScene();
 
 		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
+
+		// Example usage of the render function output:
+		if (texture.pixel_data != std::nullopt)
+		{
+			// Use pixel data here
+		}
+
+		if (texture.depth_data != std::nullopt)
+		{
+			// Use depth data here
+		}
 	}
 
 	delete assimp_model_loader;

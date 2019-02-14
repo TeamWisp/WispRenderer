@@ -225,6 +225,12 @@ namespace wr::imgui::window
 						light.ang = light.ang / 180.f * 3.1415926535f;
 					}
 
+					if (ImGui::Button("Take Camera Transform"))
+					{
+						lights[i]->SetPosition(scene_graph->GetActiveCamera()->m_position);
+						lights[i]->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+					}
+
 					light_node->SignalTransformChange();
 					light_node->SignalChange();
 
@@ -238,6 +244,9 @@ namespace wr::imgui::window
 			}
 
 			ImGui::End();
+
+			if (lights.size() < 1)
+				return;
 
 			auto ml = lights[0];
 			DirectX::XMFLOAT4X4 rmat;

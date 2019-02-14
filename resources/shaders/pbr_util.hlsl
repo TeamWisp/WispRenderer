@@ -75,8 +75,8 @@ float3 F_Schlick(float cos_theta, float metallic, float3 material_color)
  
 float3 F_SchlickRoughness(float cos_theta, float metallic, float3 material_color, float roughness)
 {
-	float3 F0 = lerp(float3(0.04, 0.04, 0.04), material_color, metallic); // * material.specular
-	float3 F = F0 + (max((1.0 - roughness), F0) - F0) * pow(1.0 - cos_theta, 5.0);
+	float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), material_color, metallic); // * material.specular
+	float3 F = F0 + (max(float3(1.0f - roughness, 1.0f - roughness, 1.0f - roughness), F0) - F0) * pow(1.0f - cos_theta, 5.0f);
 	return F;
 }
  
@@ -102,7 +102,7 @@ float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness, float
 		// F = Fresnel factor (Reflectance depending on angle of incidence)
 		float3 F = F_Schlick(dotNV, metallic, albedo);
  
-		float3 spec = D * F * G / (4.0 * dotNL * dotNV);
+		float3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.0001f);
  
 		float3 kS = F;
 		float3 kD = float3(1, 1, 1) - kS;

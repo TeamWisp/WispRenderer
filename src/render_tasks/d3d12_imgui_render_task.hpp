@@ -139,7 +139,7 @@ namespace wr
 			std::nullopt,
 			false,
 			Format::UNKNOWN,
-			{ Format::R8G8B8A8_UNORM },
+			{ Format::R16G16B16A16_UNORM },
 			1,
 			false,
 			false

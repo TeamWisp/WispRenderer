@@ -32,6 +32,7 @@ namespace wr
 		TexturePool& operator=(TexturePool&&) = delete;
 
 		[[nodiscard]] TextureHandle Load(std::string_view path, bool srgb, bool generate_mips);
+		[[nodiscard]] virtual TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) = 0;
 		virtual void Unload(uint64_t texture_id) = 0;
 
 		virtual void Evict() = 0;
@@ -39,6 +40,12 @@ namespace wr
 		virtual void Stage(CommandList* cmd_list) = 0;
 		virtual void PostStageClear() = 0;
 		virtual void EndOfFrame() = 0;
+
+		TextureHandle GetDefaultAlbedo();
+		TextureHandle GetDefaultNormal();
+		TextureHandle GetDefaultRoughness();
+		TextureHandle GetDefaultMetalic();
+		TextureHandle GetDefaultAO();
 
 		virtual Texture* GetTexture(uint64_t texture_id) = 0;
 
@@ -53,6 +60,12 @@ namespace wr
 
 		std::size_t m_size_in_bytes;
 		std::size_t m_loaded_textures = 0;
+
+		TextureHandle m_default_albedo;
+		TextureHandle m_default_normal;
+		TextureHandle m_default_roughness;
+		TextureHandle m_default_metalic;
+		TextureHandle m_default_ao;
 
 		IDFactory m_id_factory;
 	};

@@ -1,0 +1,20 @@
+#pragma once
+#include "scene_graph.hpp"
+
+namespace wr {
+
+	struct SkyboxNode : Node
+	{
+		SkyboxNode(wr::TextureHandle hdr_texture, std::optional<wr::TextureHandle> cubemap = std::nullopt, std::optional<wr::TextureHandle> irradiance = std::nullopt)
+			: Node::Node()
+			, m_hdr(hdr_texture) 
+			, m_skybox(cubemap)
+			, m_irradiance(irradiance)
+		{}
+
+		wr::TextureHandle m_hdr;
+		std::optional<wr::TextureHandle> m_skybox;
+		std::optional<wr::TextureHandle> m_irradiance;
+	};
+
+};// namespace wr 

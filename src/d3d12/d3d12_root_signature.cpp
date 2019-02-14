@@ -39,19 +39,19 @@ namespace wr::d3d12
 		{
 			auto sampler_info = create_info.m_samplers[i];
 
-			samplers[0].Filter = (D3D12_FILTER)sampler_info.m_filter;
-			samplers[0].AddressU = (D3D12_TEXTURE_ADDRESS_MODE)sampler_info.m_address_mode;
-			samplers[0].AddressV = (D3D12_TEXTURE_ADDRESS_MODE)sampler_info.m_address_mode;
-			samplers[0].AddressW = (D3D12_TEXTURE_ADDRESS_MODE)sampler_info.m_address_mode;
-			samplers[0].MipLODBias = 0;
-			samplers[0].MaxAnisotropy = 0;
-			samplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplers[0].BorderColor = (D3D12_STATIC_BORDER_COLOR)sampler_info.m_border_color;
-			samplers[0].MinLOD = 0.0f;
-			samplers[0].MaxLOD = D3D12_FLOAT32_MAX;
-			samplers[0].ShaderRegister = i;
-			samplers[0].RegisterSpace = 0;
-			samplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: very inneficient. plz fix
+			samplers[i].Filter = (D3D12_FILTER)sampler_info.m_filter;
+			samplers[i].AddressU = (D3D12_TEXTURE_ADDRESS_MODE)sampler_info.m_address_mode;
+			samplers[i].AddressV = (D3D12_TEXTURE_ADDRESS_MODE)sampler_info.m_address_mode;
+			samplers[i].AddressW = (D3D12_TEXTURE_ADDRESS_MODE)sampler_info.m_address_mode;
+			samplers[i].MipLODBias = 0;
+			samplers[i].MaxAnisotropy = 0;
+			samplers[i].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+			samplers[i].BorderColor = (D3D12_STATIC_BORDER_COLOR)sampler_info.m_border_color;
+			samplers[i].MinLOD = 0.0f;
+			samplers[i].MaxLOD = D3D12_FLOAT32_MAX;
+			samplers[i].ShaderRegister = i;
+			samplers[i].RegisterSpace = 0;
+			samplers[i].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: very inneficient. plz fix
 		}
 
 		D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -122,13 +122,20 @@ namespace wr::d3d12
 			HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error); //TODO: FIX error parameter
 			if (FAILED(hr))
 			{
-				LOGC("Failed to serialize root signature. Error: \n {}", (char*)error->GetBufferPointer());
+				char * err = (char*)error->GetBufferPointer();
+				LOGC("Failed to serialize root signature. Error: \n {}", err);
 			}
 
 			TRY_M(n_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature->m_native)),
 				"Failed to create root signature");
 		}
 		NAME_D3D12RESOURCE(root_signature->m_native);
+	}
+
+	void RefinalizeRootSignature(RootSignature* root_signature, Device* device)
+	{
+		SAFE_RELEASE(root_signature->m_native)
+		FinalizeRootSignature(root_signature, device);
 	}
 
 	void Destroy(RootSignature* root_signature)

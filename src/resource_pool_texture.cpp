@@ -53,4 +53,29 @@ namespace wr
 			LOGC("Invalid path used as argument. Path: {}", path);
 		}
 	}
+
+	TextureHandle TexturePool::GetDefaultAlbedo()
+	{
+		return m_default_albedo;
+	}
+
+	TextureHandle TexturePool::GetDefaultNormal()
+	{
+		return m_default_normal;
+	}
+
+	TextureHandle TexturePool::GetDefaultRoughness()
+	{
+		return m_default_roughness;
+	}
+
+	TextureHandle TexturePool::GetDefaultMetalic()
+	{
+		return m_default_metalic;
+	}
+
+	TextureHandle TexturePool::GetDefaultAO()
+	{
+		return m_default_ao;
+	}
 }

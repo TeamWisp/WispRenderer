@@ -28,6 +28,7 @@ namespace wr
 		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
 		m_view_projection = DirectX::XMMatrixMultiply(m_view, m_projection);
 		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
+		m_inverse_view = DirectX::XMMatrixInverse(nullptr, m_view);
 
 		CalculatePlanes();
 
