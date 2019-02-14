@@ -48,10 +48,6 @@ namespace wr
 		void GenerateMips_BGR(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
 		void GenerateMips_SRGB(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
 
-		bool CheckUAVCompatibility(Format format);
-		bool CheckBGRFormat(Format format);
-		bool CheckSRGBFormat(Format format);
-
 		D3D12RenderSystem& m_render_system;
 
 		//CPU only visible heaps used for staging of descriptors.

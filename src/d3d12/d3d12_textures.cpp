@@ -11,7 +11,16 @@ namespace wr::d3d12
 	{
 		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-		if (allow_uav) { flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; }
+		if (allow_uav) 
+		{ 
+			//if (!d3d12::CheckUAVCompatibility(description->m_texture_format))
+			//{
+			//	LOGC("[ERROR] CreateTexture: Specified format doesn't support UAV");
+			//}
+
+			flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; 
+		}
+
 		if (description->m_initial_state == ResourceState::RENDER_TARGET) { flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; }
 
 		D3D12_RESOURCE_DESC desc = {};
@@ -305,5 +314,59 @@ namespace wr::d3d12
 		delete tex;
 	}
 
+	bool CheckUAVCompatibility(Format format)
+	{
+		switch (format)
+		{
+		case Format::R32G32B32A32_FLOAT:
+		case Format::R32G32B32A32_UINT:
+		case Format::R32G32B32A32_SINT:
+		case Format::R16G16B16A16_FLOAT:
+		case Format::R16G16B16A16_UINT:
+		case Format::R16G16B16A16_SINT:
+		case Format::R8G8B8A8_UNORM:
+		case Format::R8G8B8A8_UINT:
+		case Format::R8G8B8A8_SINT:
+		case Format::R32_FLOAT:
+		case Format::R32_UINT:
+		case Format::R32_SINT:
+		case Format::R16_FLOAT:
+		case Format::R16_UINT:
+		case Format::R16_SINT:
+		case Format::R8_UNORM:
+		case Format::R8_UINT:
+		case Format::R8_SINT:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool CheckBGRFormat(Format format)
+	{
+		switch (format)
+		{
+		case Format::B8G8R8A8_UNORM:
+		case Format::B8G8R8X8_UNORM:
+		case Format::B8G8R8A8_UNORM_SRGB:
+		case Format::B8G8R8X8_UNORM_SRGB:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool CheckSRGBFormat(Format format)
+	{
+		switch (format)
+		{
+		case Format::R8G8B8A8_UNORM_SRGB:
+		case Format::B8G8R8A8_UNORM_SRGB:
+		case Format::B8G8R8X8_UNORM_SRGB:
+			return true;
+		default:
+			return false;
+		}
+	}
 
 } /* wr::d3d12 */

@@ -328,7 +328,9 @@ namespace wr
 
 		uint32_t mip_lvls;
 
-		if (generate_mips)
+		bool mip_generation = (metadata.mipLevels > 1) ? false : generate_mips;
+
+		if (mip_generation)
 		{
 			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
 		}
@@ -348,7 +350,7 @@ namespace wr
 		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
+		auto texture = d3d12::CreateTexture(device, &desc, mip_generation);
 
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
@@ -361,7 +363,7 @@ namespace wr
 			LOGC("Couldn't allocate descriptor for the texture resource");
 		}
 
-		texture->m_need_mips = generate_mips;
+		texture->m_need_mips = mip_generation;
 		texture->m_srv_allocation = std::move(alloc);
 		texture->m_resource->SetName(wide_string.c_str());
 
@@ -575,66 +577,9 @@ namespace wr
 
 	void D3D12TexturePool::GenerateMips_BGR(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)
 	{
-
 	}
 
 	void D3D12TexturePool::GenerateMips_SRGB(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)
 	{
-	}
-
-	bool D3D12TexturePool::CheckUAVCompatibility(Format format)
-	{
-		switch (format)
-		{
-		case Format::R32G32B32A32_FLOAT:
-		case Format::R32G32B32A32_UINT:
-		case Format::R32G32B32A32_SINT:
-		case Format::R16G16B16A16_FLOAT:
-		//case Format::R16G16B16A16_UNORM:
-		case Format::R16G16B16A16_UINT:
-		case Format::R16G16B16A16_SINT:
-		case Format::R8G8B8A8_UNORM:
-		case Format::R8G8B8A8_UINT:
-		case Format::R8G8B8A8_SINT:
-		case Format::R32_FLOAT:
-		case Format::R32_UINT:
-		case Format::R32_SINT:
-		case Format::R16_FLOAT:
-		case Format::R16_UINT:
-		case Format::R16_SINT:
-		case Format::R8_UNORM:
-		case Format::R8_UINT:
-		case Format::R8_SINT:
-			return true;
-		default:
-			return false;
-		}
-	}
-
-	bool D3D12TexturePool::CheckBGRFormat(Format format)
-	{
-		switch (format)
-		{
-		case Format::B8G8R8A8_UNORM:
-		case Format::B8G8R8X8_UNORM:
-		case Format::B8G8R8A8_UNORM_SRGB:
-		case Format::B8G8R8X8_UNORM_SRGB:
-			return true;
-		default:
-			return false;
-		}
-	}
-
-	bool D3D12TexturePool::CheckSRGBFormat(Format format)
-	{
-		switch (format)
-		{
-		case Format::R8G8B8A8_UNORM_SRGB:
-		case Format::B8G8R8A8_UNORM_SRGB:
-		case Format::B8G8R8X8_UNORM_SRGB:
-			return true;
-		default:
-			return false;
-		}
 	}
 }
