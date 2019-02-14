@@ -51,8 +51,8 @@ SamplerState s0 : register(s0);
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct ShadowHitInfo
 {
-	float shadow_hit;
-        float removingthisbreaksfallback;
+    float shadow_hit;
+    float removingthisbreaksfallback;
 };
 
 struct ReflectionHitInfo
