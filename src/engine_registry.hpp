@@ -10,10 +10,8 @@ namespace wr
 		static RegistryHandle basic;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle rt_test_global;
-		static RegistryHandle rt_test_local;
 		static RegistryHandle mip_mapping;
 		static RegistryHandle rt_hybrid_global;
-		static RegistryHandle rt_hybrid_local;
 		static RegistryHandle cubemap_conversion;
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle post_processing;
