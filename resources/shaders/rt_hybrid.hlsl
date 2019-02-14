@@ -261,6 +261,7 @@ float3 SampleSkybox(float3 dir)
 
 	// Convert our ray direction to a (u,v) coordinate
 	float2 uv = VectorToLatLong(dir);
+	uv.y = uv.y * -1;
 	return skybox[uint2(uv * dims)].rgb;
 }
 
@@ -272,7 +273,6 @@ void RaygenEntry()
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
-	screen_co.y = (DispatchRaysDimensions().y - screen_co.y - 1);
 
 	// Get g-buffer information
 	float4 albedo_roughness = gbuffer_albedo[screen_co];

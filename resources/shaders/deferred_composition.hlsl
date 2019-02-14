@@ -36,9 +36,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
-	float2 uv = float2(dispatch_thread_id.x / screen_size.x, 1.f - (dispatch_thread_id.y / screen_size.y));
+	float2 uv = float2(dispatch_thread_id.x / screen_size.x, dispatch_thread_id.y / screen_size.y);
 
-	float2 screen_coord = int2(dispatch_thread_id.x, screen_size.y - dispatch_thread_id.y - 1);
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 
 	const float depth_f = gbuffer_depth[screen_coord].r;
 
@@ -59,15 +59,18 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0).xyz;
 
 		const float shadow_factor = 1.0f;
-		
-		float3 skybox_reflection = skybox.SampleLevel(s0, reflect(V, normal), 0);
+
+		float3 skyboxUV = reflect(V, normal);
+		skyboxUV.y = skyboxUV.y * -1;
+		float3 skybox_reflection = skybox.SampleLevel(s0, skyboxUV, 0);
 
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, skybox_reflection);
 
 		retval = retval * shadow_factor;
 	}
 	else
-	{	
+	{
+		V.y = V.y * -1;
 		retval = skybox.SampleLevel(s0, V, 0);
 	}
 

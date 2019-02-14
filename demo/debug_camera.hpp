@@ -11,7 +11,7 @@ public:
 		: wr::CameraNode(fov, aspect_ratio), m_forward_axis(0), m_right_axis(0), m_up_axis(0), m_rmb_down(false), m_speed(1), m_sensitivity(0.01), m_position_lerp_speed(10.f), m_rotation_lerp_speed(5.f)
 	{
 		GetCursorPos(&m_last_cursor_pos);
-		m_target_rotation_euler = m_rotation_radians;
+		m_target_rotation_radians = m_rotation_radians;
 		m_target_position = m_position;
 	}
 
@@ -19,7 +19,7 @@ public:
 	virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw) override
 	{
 		m_rotation_radians = roll_pitch_yaw;
-		m_target_rotation_euler = roll_pitch_yaw;
+		m_target_rotation_radians = roll_pitch_yaw;
 	}
 
 	//Sets position
@@ -60,7 +60,7 @@ public:
 
 			// Rotation
 			DirectX::XMVECTOR new_rot{ cursor_pos.y - m_last_cursor_pos.y, cursor_pos.x - m_last_cursor_pos.x };
-			m_target_rotation_euler = DirectX::XMVectorSubtract(m_target_rotation_euler, DirectX::XMVectorScale(new_rot, m_sensitivity));
+			m_target_rotation_radians = DirectX::XMVectorSubtract(m_target_rotation_radians, DirectX::XMVectorScale(new_rot, m_sensitivity));
 		}
 		else
 		{
@@ -70,7 +70,7 @@ public:
 		}
 
 		m_position = DirectX::XMVectorLerp(m_position, m_target_position, delta * m_position_lerp_speed);
-		m_rotation_radians = DirectX::XMVectorLerp(m_rotation_radians, m_target_rotation_euler, delta * m_rotation_lerp_speed);
+		m_rotation_radians = DirectX::XMVectorLerp(m_rotation_radians, m_target_rotation_radians, delta * m_rotation_lerp_speed);
 		SignalTransformChange();
 
 		m_last_cursor_pos = cursor_pos;
@@ -110,27 +110,27 @@ public:
 		{
 			if (key == 0x57) // W
 			{
-				m_forward_axis += 1;
+				m_forward_axis += -1;
 			}
 			if (key == 0x53) // S
 			{
-				m_forward_axis += -1;
+				m_forward_axis += 1;
 			}
 			if (key == 0x44) // A
 			{
-				m_right_axis += -1;
+				m_right_axis += 1;
 			}
 			if (key == 0x41) // S
 			{
-				m_right_axis += 1;
+				m_right_axis += -1;
 			}
 			if (key == VK_SPACE)
 			{
-				m_up_axis += -1;
+				m_up_axis += 1;
 			}
 			if (key == VK_CONTROL)
 			{
-				m_up_axis += 1;
+				m_up_axis += -1;
 			}
 		}
 		
@@ -138,27 +138,27 @@ public:
 		{
 			if (key == 0x57) // W
 			{
-				m_forward_axis -= 1;
+				m_forward_axis -= -1;
 			}
 			if (key == 0x53) // S
 			{
-				m_forward_axis -= -1;
+				m_forward_axis -= 1;
 			}
 			if (key == 0x44) // A
 			{
-				m_right_axis -= -1;
+				m_right_axis -= 1;
 			}
 			if (key == 0x41) // S
 			{
-				m_right_axis -= 1;
+				m_right_axis -= -1;
 			}
 			if (key == VK_SPACE)
 			{
-				m_up_axis -= -1;
+				m_up_axis -= 1;
 			}
 			if (key == VK_CONTROL)
 			{
-				m_up_axis -= 1;
+				m_up_axis -= -1;
 			}
 		}
 	}
@@ -166,7 +166,7 @@ public:
 private:
 	float m_position_lerp_speed;
 	float m_rotation_lerp_speed;
-	DirectX::XMVECTOR m_target_rotation_euler;
+	DirectX::XMVECTOR m_target_rotation_radians;
 	DirectX::XMVECTOR m_target_position;
 	POINT m_last_cursor_pos;
 	bool m_rmb_down;
