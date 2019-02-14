@@ -100,12 +100,15 @@ namespace wr::d3d12
 	void SetName(TextureResource* tex, std::wstring name);
 	void CreateSRVFromTexture(TextureResource* tex);
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle);
+	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_levels, unsigned int most_detailed_mip);
 	void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice);
 	void CreateRTVFromTexture2D(TextureResource* tex);
 	void CreateRTVFromCubemap(TextureResource* tex);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void Destroy(TextureResource* tex);
 
 	bool CheckUAVCompatibility(Format format);

@@ -66,7 +66,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		retval = retval * shadow_factor;
 
-		retval = normal;
+		retval = albedo;
 	}
 	else
 	{	

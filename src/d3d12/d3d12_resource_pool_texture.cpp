@@ -31,16 +31,7 @@ namespace wr
 			m_allocators[i] = new DescriptorAllocator(render_system, static_cast<DescriptorHeapType>(i));
 		}
 
-		//Mipmapping heap creation
-		d3d12::desc::DescriptorHeapDesc mipmap_heap_desc;
-		mipmap_heap_desc.m_num_descriptors = num_of_textures * 12 * 2;
-		mipmap_heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-		mipmap_heap_desc.m_shader_visible = true;
-
-		m_mipmapping_heap = d3d12::CreateDescriptorHeap(device, mipmap_heap_desc);
-		SetName(m_mipmapping_heap, L"MipMapping Descriptor Heap");
-		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
-		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);
+		m_mipmapping_allocator = new DescriptorAllocator(render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
 		// Load the default textures
 		m_default_albedo = Load(settings::default_albedo_path, false, false);
@@ -52,7 +43,7 @@ namespace wr
 
 	D3D12TexturePool::~D3D12TexturePool()
 	{
-		d3d12::Destroy(m_mipmapping_heap);
+		delete m_mipmapping_allocator;
 
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
@@ -143,6 +134,8 @@ namespace wr
 
 	void D3D12TexturePool::EndOfFrame()
 	{
+		m_mipmapping_allocator->ReleaseStaleDescriptors();
+
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
 			m_allocators[i]->ReleaseStaleDescriptors();
@@ -454,20 +447,7 @@ namespace wr
 
 		auto device = m_render_system.m_device;
 
-		//Prepare the shader resource view description for the source texture
-		D3D12_SHADER_RESOURCE_VIEW_DESC srcTextureSRVDesc = {};
-		srcTextureSRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srcTextureSRVDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-
-		//Prepare the unordered access view description for the destination texture
-		D3D12_UNORDERED_ACCESS_VIEW_DESC destTextureUAVDesc = {};
-		destTextureUAVDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-
-		d3d12::BindDescriptorHeap(d3d12_cmd_list, m_mipmapping_heap, m_mipmapping_heap->m_create_info.m_type, 0);
 		d3d12::BindComputePipeline(d3d12_cmd_list, pipeline->m_native);
-
-		m_mipmapping_cpu_handle = d3d12::GetCPUHandle(m_mipmapping_heap, 0);
-		m_mipmapping_gpu_handle = d3d12::GetGPUHandle(m_mipmapping_heap, 0);
 
 		d3d12::Transition(d3d12_cmd_list, textures, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
 
@@ -487,19 +467,16 @@ namespace wr
 					uint32_t dstHeight = srcHeight >> 1;
 
 					//Create shader resource view for the source texture in the descriptor heap
-					srcTextureSRVDesc.Format = texture_format;
-					srcTextureSRVDesc.Texture2D.MipLevels = 1;
-					srcTextureSRVDesc.Texture2D.MostDetailedMip = TopMip;
-					device->m_native->CreateShaderResourceView(texture->m_resource, &srcTextureSRVDesc, m_mipmapping_cpu_handle.m_native);
-					
-					d3d12::Offset(m_mipmapping_cpu_handle, 1, m_mipmapping_heap->m_increment_size);
+					DescriptorAllocation srv_alloc = m_mipmapping_allocator->Allocate();
+					d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
+
+					d3d12::CreateSRVFromTexture(texture, srv_handle, 1, TopMip);
 
 					//Create unordered access view for the destination texture in the descriptor heap
-					destTextureUAVDesc.Format = texture_format;
-					destTextureUAVDesc.Texture2D.MipSlice = TopMip + 1;
-					device->m_native->CreateUnorderedAccessView(texture->m_resource, nullptr, &destTextureUAVDesc, m_mipmapping_cpu_handle.m_native);
-
-					d3d12::Offset(m_mipmapping_cpu_handle, 1, m_mipmapping_heap->m_increment_size);
+					DescriptorAllocation uav_alloc = m_mipmapping_allocator->Allocate();
+					d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
+	
+					d3d12::CreateUAVFromTexture(texture, uav_handle, TopMip + 1);
 
 					auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 
@@ -526,11 +503,10 @@ namespace wr
 
 					d3d12::BindCompute32BitConstants(n_cmd_list, srcData, _countof(srcData), 0, 0);
 
-					//Pass the source and destination texture views to the shader via descriptor tables
-					d3d12::BindComputeDescriptorTable(n_cmd_list, m_mipmapping_gpu_handle, 1);
+					//Pass the source and destination texture views to the shader
+					d3d12::SetShaderSRV(d3d12_cmd_list, 1, 0, srv_handle);
+					d3d12::SetShaderUAV(d3d12_cmd_list, 1, 1, uav_handle);
 
-					d3d12::Offset(m_mipmapping_gpu_handle, 2, m_mipmapping_heap->m_increment_size);
-					
 					//Dispatch the compute shader with one thread per 8x8 pixels
 					d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
 
@@ -543,32 +519,6 @@ namespace wr
 		}
 
 		d3d12::Transition(d3d12_cmd_list, textures, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
-
-		//if (texture->m_need_mips)
-		//{
-		//	if (texture->m_depth > 1)
-		//	{
-		//		LOGC("GenerateMips only supports 2D textures.");
-		//	}
-
-		//	if (CheckUAVCompatibility(texture->m_format))
-		//	{
-		//		GenerateMips_UAV(texture, cmd_list);
-		//	}
-		//	else if (CheckBGRFormat(texture->m_format))
-		//	{
-		//		GenerateMips_BGR(texture, cmd_list);
-		//	}
-		//	else if (CheckSRGBFormat(texture->m_format))
-		//	{
-		//		GenerateMips_SRGB(texture, cmd_list);
-		//	}
-		//	else
-		//	{
-		//		LOGC("Texture format is not supported by GenerateMips.");
-		//	}
-		//}
-
 	}
 
 	void D3D12TexturePool::GenerateMips_UAV(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)

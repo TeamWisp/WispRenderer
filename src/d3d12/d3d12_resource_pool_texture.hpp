@@ -54,11 +54,7 @@ namespace wr
 		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
 		DescriptorAllocator* m_allocators[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 
-
-		//Descriptor heap used for compute pipeline when doing mipmapping
-		d3d12::DescriptorHeap* m_mipmapping_heap;
-		d3d12::DescHeapCPUHandle m_mipmapping_cpu_handle;
-		d3d12::DescHeapGPUHandle m_mipmapping_gpu_handle;
+		DescriptorAllocator* m_mipmapping_allocator;
 	};
 
 
