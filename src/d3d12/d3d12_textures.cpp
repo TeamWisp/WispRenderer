@@ -437,6 +437,41 @@ namespace wr::d3d12
 		}
 	}
 
+	bool CheckOptionalUAVFormat(Format format)
+	{
+		switch (format)
+		{
+		case Format::R16G16B16A16_UNORM:
+		case Format::R16G16B16A16_SNORM:
+		case Format::R32G32_FLOAT:
+		case Format::R32G32_UINT:
+		case Format::R32G32_SINT:
+		case Format::R10G10B10A2_UNORM:
+		case Format::R10G10B10A2_UINT:
+		case Format::R11G11B10_FLOAT:
+		case Format::R8G8B8A8_SNORM:
+		case Format::R16G16_FLOAT:
+		case Format::R16G16_UNORM:
+		case Format::R16G16_UINT:
+		case Format::R16G16_SNORM:
+		case Format::R16G16_SINT:
+		case Format::R8G8_UNORM:
+		case Format::R8G8_UINT:
+		case Format::R8G8_SNORM:
+		case Format::R8G8_SINT:
+		case Format::R16_UNORM:
+		case Format::R16_SNORM:
+		case Format::R8_SNORM:
+		case Format::A8_UNORM:
+		case Format::B5G6R5_UNORM:
+		case Format::B5G5R5A1_UNORM:
+		case Format::B4G4R4A4_UNORM:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	bool CheckBGRFormat(Format format)
 	{
 		switch (format)
@@ -462,6 +497,11 @@ namespace wr::d3d12
 		default:
 			return false;
 		}
+	}
+
+	bool IsOptionalFormatSupported(Device* device, Format format)
+	{
+		return true;
 	}
 
 } /* wr::d3d12 */

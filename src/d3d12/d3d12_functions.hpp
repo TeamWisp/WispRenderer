@@ -111,10 +111,12 @@ namespace wr::d3d12
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void Destroy(TextureResource* tex);
 
+	// Format test and support functions
 	bool CheckUAVCompatibility(Format format);
+	bool CheckOptionalUAVFormat(Format format);
 	bool CheckBGRFormat(Format format);
 	bool CheckSRGBFormat(Format format);
-
+	bool IsOptionalFormatSupported(Device* device, Format format);
 
 	// Read-back buffer
 	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);

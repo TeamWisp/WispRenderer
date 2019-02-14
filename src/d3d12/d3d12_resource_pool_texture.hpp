@@ -43,10 +43,12 @@ namespace wr
 		d3d12::TextureResource* LoadHDR(std::string_view path, bool srgb, bool generate_mips) final;
 
 		void MoveStagedTextures();
+		void GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list);
 		void GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
-		void GenerateMips_UAV(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
-		void GenerateMips_BGR(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
-		void GenerateMips_SRGB(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
+
+		void GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list);
+		void GenerateMips_BGR(d3d12::TextureResource* texture, CommandList* cmd_list);
+		void GenerateMips_SRGB(d3d12::TextureResource* texture, CommandList* cmd_list);
 
 		D3D12RenderSystem& m_render_system;
 

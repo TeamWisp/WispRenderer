@@ -176,7 +176,7 @@ namespace wr
 		texture->m_allow_render_dest = allow_render_dest;
 		texture->m_is_staged = true;
 		texture->m_need_mips = false;
-		
+
 		std::wstring wide_string(name.begin(), name.end());
 
 		d3d12::SetName(texture, wide_string);
@@ -247,7 +247,7 @@ namespace wr
 		DirectX::ScratchImage image;
 
 		std::wstring wide_string(path.begin(), path.end());
-		
+
 		HRESULT hr = LoadFromWICFile(wide_string.c_str(),
 			DirectX::WIC_FLAGS_NONE, &metadata, image);
 
@@ -439,7 +439,38 @@ namespace wr
 		m_unstaged_textures.clear();
 	}
 
-	void D3D12TexturePool::GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList * cmd_list)
+	void D3D12TexturePool::GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list)
+	{
+		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
+		D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
+		auto device = m_render_system.m_device;
+
+		d3d12::BindComputePipeline(d3d12_cmd_list, pipeline->m_native);
+
+		if (texture->m_need_mips)
+		{
+			if (d3d12::CheckUAVCompatibility(texture->m_format))
+			{
+				GenerateMips_UAV(texture, cmd_list);
+			}
+			else if (d3d12::CheckBGRFormat(texture->m_format))
+			{
+				GenerateMips_UAV(texture, cmd_list);
+			}
+			else if (d3d12::CheckSRGBFormat(texture->m_format))
+			{
+				GenerateMips_UAV(texture, cmd_list);
+			}
+			else
+			{
+				int x = 0;
+
+				LOGC("[ERROR]: GenerateMips-> I don't know how we ended up here!");
+			}
+		}
+	}
+
+	void D3D12TexturePool::GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)
 	{
 		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
 
@@ -457,79 +488,187 @@ namespace wr
 
 			if (texture->m_need_mips)
 			{
-				DXGI_FORMAT texture_format = static_cast<DXGI_FORMAT>(texture->m_format);
-
-				for (uint32_t TopMip = 0; TopMip < texture->m_mip_levels - 1; TopMip++)
+				if (d3d12::CheckUAVCompatibility(texture->m_format))
 				{
-					uint32_t srcWidth = texture->m_width >> TopMip;
-					uint32_t srcHeight = texture->m_height >> TopMip;
-					uint32_t dstWidth = srcWidth >> 1;
-					uint32_t dstHeight = srcHeight >> 1;
-
-					//Create shader resource view for the source texture in the descriptor heap
-					DescriptorAllocation srv_alloc = m_mipmapping_allocator->Allocate();
-					d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
-
-					d3d12::CreateSRVFromTexture(texture, srv_handle, 1, TopMip);
-
-					//Create unordered access view for the destination texture in the descriptor heap
-					DescriptorAllocation uav_alloc = m_mipmapping_allocator->Allocate();
-					d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
-	
-					d3d12::CreateUAVFromTexture(texture, uav_handle, TopMip + 1);
-
-					auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-
-					struct DWParam
-					{
-						DWParam(FLOAT f) : Float(f) {}
-						DWParam(UINT u) : Uint(u) {}
-
-						void operator= (FLOAT f) { Float = f; }
-						void operator= (UINT u) { Uint = u; }
-
-						union
-						{
-							FLOAT Float;
-							UINT Uint;
-						};
-					};
-
-					UINT srcData[] =
-					{
-						DWParam(1.0f / dstWidth).Uint,
-						DWParam(1.0f / dstHeight).Uint
-					};
-
-					d3d12::BindCompute32BitConstants(n_cmd_list, srcData, _countof(srcData), 0, 0);
-
-					//Pass the source and destination texture views to the shader
-					d3d12::SetShaderSRV(d3d12_cmd_list, 1, 0, srv_handle);
-					d3d12::SetShaderUAV(d3d12_cmd_list, 1, 1, uav_handle);
-
-					//Dispatch the compute shader with one thread per 8x8 pixels
-					d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
-
-					//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-					d3d12::UAVBarrier(n_cmd_list, texture, 1);
+					GenerateMips_UAV(texture, cmd_list);
 				}
-
-				texture->m_need_mips = false;
+				else if (d3d12::CheckOptionalUAVFormat(texture->m_format))
+				{
+					GenerateMips_UAV(texture, cmd_list);
+				}
+				else if (d3d12::CheckBGRFormat(texture->m_format))
+				{
+					GenerateMips_UAV(texture, cmd_list);
+				}
+				else if (d3d12::CheckSRGBFormat(texture->m_format))
+				{
+					GenerateMips_UAV(texture, cmd_list);
+				}
+				else
+				{
+					LOGC("[ERROR]: GenerateMips-> I don't know how we ended up here!");
+				}
 			}
 		}
 
 		d3d12::Transition(d3d12_cmd_list, textures, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
 	}
 
-	void D3D12TexturePool::GenerateMips_UAV(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)
+	//void D3D12TexturePool::GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)
+	//{
+	//	wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
+
+	//	D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
+
+	//	auto device = m_render_system.m_device;
+
+	//	d3d12::BindComputePipeline(d3d12_cmd_list, pipeline->m_native);
+
+	//	d3d12::Transition(d3d12_cmd_list, textures, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+
+	//	for (size_t i = 0; i < textures.size(); ++i)
+	//	{
+	//		d3d12::TextureResource* texture = textures[i];
+
+	//		if (texture->m_need_mips)
+	//		{
+	//			DXGI_FORMAT texture_format = static_cast<DXGI_FORMAT>(texture->m_format);
+
+	//			for (uint32_t TopMip = 0; TopMip < texture->m_mip_levels - 1; TopMip++)
+	//			{
+	//				uint32_t srcWidth = texture->m_width >> TopMip;
+	//				uint32_t srcHeight = texture->m_height >> TopMip;
+	//				uint32_t dstWidth = srcWidth >> 1;
+	//				uint32_t dstHeight = srcHeight >> 1;
+
+	//				//Create shader resource view for the source texture in the descriptor heap
+	//				DescriptorAllocation srv_alloc = m_mipmapping_allocator->Allocate();
+	//				d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
+
+	//				d3d12::CreateSRVFromTexture(texture, srv_handle, 1, TopMip);
+
+	//				//Create unordered access view for the destination texture in the descriptor heap
+	//				DescriptorAllocation uav_alloc = m_mipmapping_allocator->Allocate();
+	//				d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
+
+	//				d3d12::CreateUAVFromTexture(texture, uav_handle, TopMip + 1);
+
+	//				auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+
+	//				struct DWParam
+	//				{
+	//					DWParam(FLOAT f) : Float(f) {}
+	//					DWParam(UINT u) : Uint(u) {}
+
+	//					void operator= (FLOAT f) { Float = f; }
+	//					void operator= (UINT u) { Uint = u; }
+
+	//					union
+	//					{
+	//						FLOAT Float;
+	//						UINT Uint;
+	//					};
+	//				};
+
+	//				UINT srcData[] =
+	//				{
+	//					DWParam(1.0f / dstWidth).Uint,
+	//					DWParam(1.0f / dstHeight).Uint
+	//				};
+
+	//				d3d12::BindCompute32BitConstants(n_cmd_list, srcData, _countof(srcData), 0, 0);
+
+	//				//Pass the source and destination texture views to the shader
+	//				d3d12::SetShaderSRV(d3d12_cmd_list, 1, 0, srv_handle);
+	//				d3d12::SetShaderUAV(d3d12_cmd_list, 1, 1, uav_handle);
+
+	//				//Dispatch the compute shader with one thread per 8x8 pixels
+	//				d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
+
+	//				//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
+	//				d3d12::UAVBarrier(n_cmd_list, texture, 1);
+	//			}
+
+	//			texture->m_need_mips = false;
+	//		}
+	//	}
+
+	//	d3d12::Transition(d3d12_cmd_list, textures, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
+	//}
+
+	void D3D12TexturePool::GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list)
+	{
+		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
+
+		d3d12::Transition(d3d12_cmd_list, texture, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+
+		DXGI_FORMAT texture_format = static_cast<DXGI_FORMAT>(texture->m_format);
+
+		for (uint32_t TopMip = 0; TopMip < texture->m_mip_levels - 1; TopMip++)
+		{
+			uint32_t srcWidth = texture->m_width >> TopMip;
+			uint32_t srcHeight = texture->m_height >> TopMip;
+			uint32_t dstWidth = srcWidth >> 1;
+			uint32_t dstHeight = srcHeight >> 1;
+
+			//Create shader resource view for the source texture in the descriptor heap
+			DescriptorAllocation srv_alloc = m_mipmapping_allocator->Allocate();
+			d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
+
+			d3d12::CreateSRVFromTexture(texture, srv_handle, 1, TopMip);
+
+			//Create unordered access view for the destination texture in the descriptor heap
+			DescriptorAllocation uav_alloc = m_mipmapping_allocator->Allocate();
+			d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
+
+			d3d12::CreateUAVFromTexture(texture, uav_handle, TopMip + 1);
+
+			auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+
+			struct DWParam
+			{
+				DWParam(FLOAT f) : Float(f) {}
+				DWParam(UINT u) : Uint(u) {}
+
+				void operator= (FLOAT f) { Float = f; }
+				void operator= (UINT u) { Uint = u; }
+
+				union
+				{
+					FLOAT Float;
+					UINT Uint;
+				};
+			};
+
+			UINT srcData[] =
+			{
+				DWParam(1.0f / dstWidth).Uint,
+				DWParam(1.0f / dstHeight).Uint
+			};
+
+			d3d12::BindCompute32BitConstants(n_cmd_list, srcData, _countof(srcData), 0, 0);
+
+			//Pass the source and destination texture views to the shader
+			d3d12::SetShaderSRV(d3d12_cmd_list, 1, 0, srv_handle);
+			d3d12::SetShaderUAV(d3d12_cmd_list, 1, 1, uav_handle);
+
+			//Dispatch the compute shader with one thread per 8x8 pixels
+			d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
+
+			//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
+			d3d12::UAVBarrier(n_cmd_list, texture, 1);
+		}
+
+		texture->m_need_mips = false;
+
+		d3d12::Transition(d3d12_cmd_list, texture, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
+	}
+
+	void D3D12TexturePool::GenerateMips_BGR(d3d12::TextureResource* texture, CommandList* cmd_list)
 	{
 	}
 
-	void D3D12TexturePool::GenerateMips_BGR(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)
-	{
-	}
-
-	void D3D12TexturePool::GenerateMips_SRGB(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)
+	void D3D12TexturePool::GenerateMips_SRGB(d3d12::TextureResource* texture, CommandList* cmd_list)
 	{
 	}
 }
