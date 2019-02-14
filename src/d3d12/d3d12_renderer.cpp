@@ -106,6 +106,10 @@ namespace wr
 		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
 		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1*1024*1024);
 
+		// Offset raytracing sb pool
+		size_t rt_offset_align_size = (sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
+		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(1*1024*1024);
+
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
