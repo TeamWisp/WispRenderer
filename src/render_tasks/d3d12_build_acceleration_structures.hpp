@@ -65,7 +65,8 @@ namespace wr
 			inline void BuildBLASList(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
 				unsigned int material_id = 0;
-				auto batches = scene_graph.GetBatches();
+				auto& batches = scene_graph.GetGlobalBatches();
+				const auto& batchInfo = scene_graph.GetBatches();
 
 				for (auto& batch : batches)
 				{
@@ -109,10 +110,14 @@ namespace wr
 						data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
 						data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
 
+						auto it = batchInfo.find(batch.first);
+
+						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
+
 						// Push instances into a array for later use.
-						for (auto i = 0; i < batch.second.num_instances; i++)
+						for (uint32_t i = 0U, j = (uint32_t) it->second.num_global_instances; i < j; i++)
 						{
-							auto transform = batch.second.data.objects[i].m_model;
+							auto transform = batch.second[i].m_model;
 
 							data.out_blas_list.push_back({ blas, material_id, transform});
 						}
@@ -124,7 +129,8 @@ namespace wr
 
 			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
-				auto& batches = scene_graph.GetBatches();
+				auto& batches = scene_graph.GetGlobalBatches();
+				const auto& batchInfo = scene_graph.GetBatches();
 
 				auto prev_size = data.out_blas_list.size();
 				data.out_blas_list.clear();
@@ -153,16 +159,16 @@ namespace wr
 						data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
 						data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
 
-						// Push instances into a array for later use.
-						for (auto i = 0; i < batch.second.num_instances; i++)
-						{
-							auto transform = batch.second.data.objects[i].m_model;
+						auto it = batchInfo.find(batch.first);
 
-							data.out_blas_list.push_back({ 
-								blas,
-								material_id,
-								transform 
-							});
+						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
+
+						// Push instances into a array for later use.
+						for (uint32_t i = 0U, j = (uint32_t)it->second.num_global_instances; i < j; i++)
+						{
+							auto transform = batch.second[i].m_model;
+
+							data.out_blas_list.push_back({ blas, material_id, transform });
 						}
 
 						material_id++;
@@ -177,7 +183,7 @@ namespace wr
 				for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
 				{
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
-					auto& cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
 					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip UAV at positon 0
 					d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, 0, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
 

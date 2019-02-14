@@ -132,6 +132,12 @@ namespace wr::d3d12
 		NAME_D3D12RESOURCE(root_signature->m_native);
 	}
 
+	void RefinalizeRootSignature(RootSignature* root_signature, Device* device)
+	{
+		SAFE_RELEASE(root_signature->m_native)
+		FinalizeRootSignature(root_signature, device);
+	}
+
 	void Destroy(RootSignature* root_signature)
 	{
 		SAFE_RELEASE(root_signature->m_native);
