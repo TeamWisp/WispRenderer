@@ -388,7 +388,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//TODO: Reflections
 
 	//Shading
-	payload.color = albedo;
+	payload.color = ShadePixel(hit_pos, V, albedo, fN, roughness, metal);
 }
 
 //Reflection skybox
