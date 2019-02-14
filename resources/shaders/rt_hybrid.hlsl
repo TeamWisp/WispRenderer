@@ -243,27 +243,6 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float
 
 #define M_PI 3.14159265358979
 
-float2 VectorToLatLong(float3 dir)
-{
-	float3 p = normalize(dir);
-
-	// atan2_WAR is a work-around due to an apparent compiler bug in atan2
-	float u = (1.f + atan2(p.x, -p.z) / M_PI) * 0.5f;
-	float v = acos(p.y*-1) / M_PI;
-	return float2(u, v);
-}
-
-float3 SampleSkybox(float3 dir)
-{
-	// Load some information about our lightprobe texture
-	float2 dims;
-	skybox.GetDimensions(dims.x, dims.y);
-
-	// Convert our ray direction to a (u,v) coordinate
-	float2 uv = VectorToLatLong(dir);
-	return skybox[uint2(uv * dims)].rgb;
-}
-
 [shader("raygeneration")]
 void RaygenEntry()
 {
@@ -292,7 +271,7 @@ void RaygenEntry()
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		gOutput[DispatchRaysIndex().xy] = float4(SampleSkybox(-V), 1);
+		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(V), 0));//, 1);
 		return;
 	}
 
@@ -395,5 +374,5 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
-	payload.color = SampleSkybox(WorldRayDirection());
+	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(-WorldRayDirection()), 0);
 }
