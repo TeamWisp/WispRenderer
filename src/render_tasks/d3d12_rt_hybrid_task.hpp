@@ -116,14 +116,14 @@ namespace wr
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 			// Versioning
-			for (int frame_idx = 0; frame_idx < d3d12::settings::num_back_buffers; ++frame_idx)
+			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
 				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx);
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
 				// Bind g-buffers (albedo, normal, depth)
-				cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, 25);
+				cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, 26);
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
@@ -171,8 +171,14 @@ namespace wr
 				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 2);
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 
+				// Update offset data
+				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
+
 				// Update material data
-				n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*) as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
+				if (as_build_data.out_materials_require_update)
+				{
+					n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*)as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * as_build_data.out_materials.size(), 0);
+				}
 
 				// Update camera constant buffer
 				auto camera = scene_graph.GetActiveCamera();
@@ -180,7 +186,6 @@ namespace wr
 				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view );
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
-				cam_data.m_roughness = fc;
 				cam_data.m_intensity = n_render_system.temp_intensity;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
@@ -188,7 +193,7 @@ namespace wr
 				if (scene_graph.m_skybox.has_value())
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 4); // here
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 5); // here
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
 
@@ -214,10 +219,6 @@ namespace wr
 				}
 
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
-
-#ifdef _DEBUG 
-				CreateShaderTables(device, data, frame_idx);
-#endif
 
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1);

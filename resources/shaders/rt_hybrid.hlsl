@@ -26,12 +26,17 @@ struct Vertex
 
 struct Material
 {
-	float idx_offset;
-	float vertex_offset;
 	float albedo_id;
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
+};
+
+struct Offset
+{
+    float material_idx;
+    float idx_offset;
+    float vertex_offset;
 };
 
 RWTexture2D<float4> gOutput : register(u0);
@@ -40,12 +45,13 @@ ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Light> lights : register(t2);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
+StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[20] : register(t6);
-Texture2D gbuffer_albedo : register(t26);
-Texture2D gbuffer_normal : register(t27);
-Texture2D gbuffer_depth : register(t28);
-Texture2D skybox : register(t5);
+Texture2D g_textures[20] : register(t7);
+Texture2D gbuffer_albedo : register(t27);
+Texture2D gbuffer_normal : register(t28);
+Texture2D gbuffer_depth : register(t29);
+Texture2D skybox : register(t6);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -335,9 +341,11 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 [shader("closesthit")]
 void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 {
-	const Material material = g_materials[InstanceID()];
-	const float index_offset = material.idx_offset;
-	const float vertex_offset = material.vertex_offset;
+	// Calculate the essentials
+	const Offset offset = g_offsets[InstanceID()];
+	const Material material = g_materials[g_offsets[InstanceID()].material_idx];
+	const float index_offset = offset.idx_offset;
+	const float vertex_offset = offset.vertex_offset;
 	const float3x4 model_matrix = ObjectToWorld3x4();
 
 	// Find first index location
