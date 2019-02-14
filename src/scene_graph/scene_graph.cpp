@@ -141,6 +141,11 @@ namespace wr
 		return m_batches;
 	}
 
+	std::unordered_map<Model*, std::vector<temp::ObjectData>>& SceneGraph::GetGlobalBatches()
+	{
+		return m_objects;
+	}
+
 	StructuredBufferHandle* SceneGraph::GetLightBuffer()
 	{
 		return m_light_buffer;
@@ -211,10 +216,12 @@ namespace wr
 				auto node = m_mesh_nodes[i];
 				auto it = m_batches.find(node->m_model);
 
-				if (node->m_model == nullptr || (!GetActiveCamera()->InView(node) && d3d12::settings::enable_object_culling))
+				if (node->m_model == nullptr)
 				{
 					continue;
 				}
+
+				auto obj = m_objects.find(node->m_model);
 
 				//Insert new if doesn't exist
 				if (it == m_batches.end())
@@ -225,15 +232,28 @@ namespace wr
 					auto& batch = m_batches[node->m_model];
 					batch.batch_buffer = object_buffer;
 					batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
+					
+					if (obj == m_objects.end()) {
+						m_objects[node->m_model] = std::vector<temp::ObjectData>(d3d12::settings::num_instances_per_batch);
+						obj = m_objects.find(node->m_model);
+					}
 
 					it = m_batches.find(node->m_model);
 				}
 
 				//Replace data in buffer
 				temp::MeshBatch& batch = it->second;
-				unsigned int& offset = batch.num_instances;
-				batch.data.objects[offset] = { node->m_transform };
-				++offset;
+
+				if (GetActiveCamera()->InView(node) || !d3d12::settings::enable_object_culling) 
+				{
+					unsigned int& offset = batch.num_instances;
+					batch.data.objects[offset] = { node->m_transform };
+					++offset;
+				}
+
+				unsigned int& globalOffset = batch.num_global_instances;
+				obj->second[globalOffset] = { node->m_transform };
+				++globalOffset;
 
 			}
 

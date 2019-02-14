@@ -56,7 +56,7 @@ namespace wr
 
 		struct MeshBatch
 		{
-			unsigned int num_instances = 0;
+			unsigned int num_instances = 0, num_global_instances = 0;
 			ConstantBufferHandle* batch_buffer;
 			MeshBatch_CBData data;
 		};
@@ -106,6 +106,7 @@ namespace wr
 
 		void Optimize();
 		temp::MeshBatches& GetBatches();
+		std::unordered_map<Model*, std::vector<temp::ObjectData>>& GetGlobalBatches();
 
 		StructuredBufferHandle* GetLightBuffer();
 		Light* GetLight(uint32_t offset);			//Returns nullptr when out of bounds
@@ -127,6 +128,8 @@ namespace wr
 		std::shared_ptr<Node> m_root;
 
 		temp::MeshBatches m_batches;
+		std::unordered_map<Model*, std::vector<temp::ObjectData>> m_objects;
+
 		std::vector<Light> m_lights;
 
 		std::shared_ptr<StructuredBufferPool> m_structured_buffer;
