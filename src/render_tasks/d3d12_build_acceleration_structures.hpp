@@ -18,8 +18,11 @@ namespace wr
 		d3d12::DescriptorHeap* out_rt_heap;
 		d3d12::AccelerationStructure out_tlas;
 		D3D12StructuredBufferHandle* out_sb_material_handle;
+		D3D12StructuredBufferHandle* out_sb_offset_handle;
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> out_blas_list;
 		std::vector<temp::RayTracingMaterial_CBData> out_materials;
+		std::vector<temp::RayTracingOffset_CBData> out_offsets;
+		std::unordered_map<unsigned int, unsigned int> out_parsed_materials;
 		std::vector<MaterialHandle*> out_material_handles;
 		d3d12::StagingBuffer* out_scene_ib;
 		d3d12::StagingBuffer* out_scene_vb;
@@ -27,6 +30,7 @@ namespace wr
 		std::unordered_map<std::uint64_t, d3d12::AccelerationStructure> blasses;
 
 		bool out_init;
+		bool out_materials_require_update;
 	};
 
 	namespace internal
@@ -43,6 +47,7 @@ namespace wr
 			d3d12::SetName(n_render_target, L"Raytracing Target");
 
 			data.out_init = true;
+			data.out_materials_require_update = true;
 
 			// top level, bottom level and output buffer. (even though I don't use bottom level.)
 			d3d12::desc::DescriptorHeapDesc heap_desc;
@@ -56,17 +61,67 @@ namespace wr
 			// Structured buffer for the materials.
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 		
+			// Structured buffer for the materials.
+			data.out_sb_offset_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_offset_sb_pool->Create(sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingOffset_CBData), false));
+
 			// Resize the materials
-			data.out_materials.resize(d3d12::settings::num_max_rt_materials);
+			data.out_materials.reserve(d3d12::settings::num_max_rt_materials);
+			data.out_offsets.reserve(d3d12::settings::num_max_rt_materials);
+			data.out_parsed_materials.reserve(d3d12::settings::num_max_rt_materials);
 		}
 
 		namespace internal
 		{
-			inline void BuildBLASList(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+
+			//! Get a material id from a mesh.
+			inline unsigned int ExtractMaterialFromMesh(ASBuildData& data, MaterialHandle* material_handle)
 			{
 				unsigned int material_id = 0;
+				if (data.out_parsed_materials.find(material_handle->m_id) == data.out_parsed_materials.end())
+				{
+					material_id = data.out_materials.size();
+
+					auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+
+					// Build material
+					wr::temp::RayTracingMaterial_CBData material;
+					material.albedo_id = material_internal->GetAlbedo().m_id;
+					material.normal_id = material_internal->GetNormal().m_id;
+					material.roughness_id = material_internal->GetRoughness().m_id;
+					material.metallicness_id = material_internal->GetMetallic().m_id;
+					data.out_materials.push_back(material);
+					data.out_parsed_materials[material_handle->m_id] = material_id;
+
+					data.out_materials_require_update = true;
+				}
+				else
+				{
+					material_id = data.out_parsed_materials[material_handle->m_id];
+				}
+
+				return material_id;
+			}
+
+			//! Add a data struct describing the mesh data offset and the material idx to `out_offsets`
+			inline void AppendOffset(ASBuildData& data, wr::internal::D3D12MeshInternal* mesh, unsigned int material_id)
+			{
+				wr::temp::RayTracingOffset_CBData offset;
+				offset.material_idx = material_id;
+				offset.idx_offset = mesh->m_index_staging_buffer_offset;
+				offset.vertex_offset = mesh->m_vertex_staging_buffer_offset;
+				data.out_offsets.push_back(offset);
+			}
+
+			inline void BuildBLASList(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			{
+				data.out_materials.clear();
+				data.out_offsets.clear();
+				data.out_parsed_materials.clear();
+
 				auto& batches = scene_graph.GetGlobalBatches();
 				const auto& batchInfo = scene_graph.GetBatches();
+
+				unsigned int offset_id = 0;
 
 				for (auto& batch : batches)
 				{
@@ -101,14 +156,9 @@ namespace wr
 
 						data.out_material_handles.push_back(mesh.second); // Used to st eal the textures from the texture pool.
 
-						// Build material
-						auto* material_internal = mesh.second->m_pool->GetMaterial(mesh.second->m_id);
-						data.out_materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
-						data.out_materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
-						data.out_materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
-						data.out_materials[material_id].normal_id = material_internal->GetNormal().m_id;
-						data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
-						data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
+						auto material_id = ExtractMaterialFromMesh(data, mesh.second);
+
+						AppendOffset(data, n_mesh, material_id);
 
 						auto it = batchInfo.find(batch.first);
 
@@ -119,23 +169,38 @@ namespace wr
 						{
 							auto transform = batch.second[i].m_model;
 
-							data.out_blas_list.push_back({ blas, material_id, transform});
+							data.out_blas_list.push_back({ blas, offset_id, transform});
 						}
 
-						material_id++;
+						offset_id++;
 					}
+				}
+
+				// Make sure our gathered data isn't out of bounds.
+				if (data.out_offsets.size() > d3d12::settings::num_max_rt_materials)
+				{
+					LOGE("There are to many offsets stored for ray tracing!");
+				}
+				if (data.out_materials.size() > d3d12::settings::num_max_rt_materials)
+				{
+					LOGE("There are to many materials stored for ray tracing!");
 				}
 			}
 
 			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
+				data.out_materials.clear();
+				data.out_offsets.clear();
+				data.out_parsed_materials.clear();
+
 				auto& batches = scene_graph.GetGlobalBatches();
 				const auto& batchInfo = scene_graph.GetBatches();
 
 				auto prev_size = data.out_blas_list.size();
 				data.out_blas_list.clear();
 				data.out_blas_list.reserve(prev_size);
-				unsigned int material_id = 0;
+
+				unsigned int offset_id = 0;
 
 				// Update transformations
 				for (auto& batch : batches)
@@ -149,15 +214,9 @@ namespace wr
 
 						auto blas = (*data.blasses.find(mesh.first->id)).second;
 
+						auto material_id = ExtractMaterialFromMesh(data, mesh.second);
 
-						// Build material
-						auto* material_internal = mesh.second->m_pool->GetMaterial(mesh.second->m_id);
-						data.out_materials[material_id].idx_offset = n_mesh->m_index_staging_buffer_offset;
-						data.out_materials[material_id].vertex_offset = n_mesh->m_vertex_staging_buffer_offset;
-						data.out_materials[material_id].albedo_id = material_internal->GetAlbedo().m_id;
-						data.out_materials[material_id].normal_id = material_internal->GetNormal().m_id;
-						data.out_materials[material_id].roughness_id = material_internal->GetRoughness().m_id;
-						data.out_materials[material_id].metallicness_id = material_internal->GetMetallic().m_id;
+						AppendOffset(data, n_mesh, material_id);
 
 						auto it = batchInfo.find(batch.first);
 
@@ -168,10 +227,10 @@ namespace wr
 						{
 							auto transform = batch.second[i].m_model;
 
-							data.out_blas_list.push_back({ blas, material_id, transform });
+							data.out_blas_list.push_back({ blas, offset_id, transform });
 						}
 
-						material_id++;
+						offset_id++;
 					}
 				}
 
@@ -192,6 +251,9 @@ namespace wr
 					// Create material structured buffer view
 					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
 
+					// Create offset structured buffer view
+					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_offset_handle->m_native, cpu_handle, 0);
+
 					// Fill descriptor heap with textures used by the scene
 					for (auto handle : data.out_material_handles)
 					{
@@ -202,7 +264,7 @@ namespace wr
 							auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
 							auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
-							d3d12::Offset(cpu_handle, 5 + texture_handle.m_id, data.out_rt_heap->m_increment_size);
+							d3d12::Offset(cpu_handle, 6 + texture_handle.m_id, data.out_rt_heap->m_increment_size);
 							d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
 						};
 
@@ -223,6 +285,8 @@ namespace wr
 			auto device = n_render_system.m_device;
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<ASBuildData>(handle);
+
+			data.out_materials_require_update = false;
 
 			// Initialize requirements
 			if (data.out_init)

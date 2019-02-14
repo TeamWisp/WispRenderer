@@ -133,7 +133,6 @@ namespace wr
 			CreateShaderTables(device, data, 2);
 		}
 
-		int fc = -10;
 		inline void ExecuteRaytracingTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -162,30 +161,24 @@ namespace wr
 				// Get skybox
 				if (scene_graph.m_skybox.has_value()) {
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 4); // here
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 5); // here
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
 
+				// Update offset data
+				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
 
 				// Update material data
-				n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*)as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, 0);
-
-				// Update camera cb
-				if (n_render_system.clear_path)
+				if (as_build_data.out_materials_require_update)
 				{
-					fc = -1;
-					n_render_system.clear_path = false;
+					n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*)as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * as_build_data.out_materials.size(), 0);
 				}
-
-				n_render_system.temp_rough = fc;
-				fc++;
 
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RayTracingCamera_CBData cam_data;
 				cam_data.m_view = camera->m_view;
 				cam_data.m_camera_position = camera->m_position;
 				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
-				cam_data.roughness = fc;
 				cam_data.metal = n_render_system.temp_metal;
 				cam_data.light_radius = n_render_system.light_radius;
 				cam_data.intensity = n_render_system.temp_intensity;

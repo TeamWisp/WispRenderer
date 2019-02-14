@@ -17,21 +17,27 @@ struct Vertex
 
 struct Material
 {
-	float idx_offset;
-	float vertex_offset;
 	float albedo_id;
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
 };
 
+struct Offset
+{
+    float material_idx;
+    float idx_offset;
+    float vertex_offset;
+};
+
 RWTexture2D<float4> gOutput : register(u0);
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
+StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D skybox : register(t5);
-Texture2D g_textures[20] : register(t6);
+Texture2D skybox : register(t6);
+Texture2D g_textures[20] : register(t7);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -315,10 +321,11 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float gamma = 2.2;
 	
 	// Calculate the essentials
-	const Material material = g_materials[InstanceID()];
+	const Offset offset = g_offsets[InstanceID()];
+	const Material material = g_materials[g_offsets[InstanceID()].material_idx];
 	const float3 hit_pos = HitWorldPosition();
-	const float index_offset = material.idx_offset;
-	const float vertex_offset = material.vertex_offset;
+	const float index_offset = offset.idx_offset;
+	const float vertex_offset = offset.vertex_offset;
 	
 	// Find first index location
 	const uint index_size = 4;
