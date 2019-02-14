@@ -137,7 +137,7 @@ int WispEntry()
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
 		SCENE::camera->SetAspectRatio((float)width / (float)height);
-		fg_manager::Get()->Resize(*render_system.get(), width, height);
+		fg_manager::Resize(*render_system.get(), width, height);
 	});
 
 	SetupShaderDirWatcher();
