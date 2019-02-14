@@ -24,7 +24,7 @@ namespace fg_manager
 		RT_HYBRID = 2,
 	};
 
-	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
+	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::RAYTRACING;
 	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)

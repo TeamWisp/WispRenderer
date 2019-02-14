@@ -21,7 +21,7 @@ namespace wr
 		DirectX::XMVECTOR pos = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };
 
 		DirectX::XMVECTOR up = DirectX::XMVector3Normalize(m_transform.r[1]);
-		DirectX::XMVECTOR forward = DirectX::XMVectorNegate(DirectX::XMVector3Normalize(m_transform.r[2]));
+		DirectX::XMVECTOR forward =DirectX::XMVector3Normalize(m_transform.r[2]);
 		DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
 		m_view = DirectX::XMMatrixLookAtRH(pos, DirectX::XMVectorAdd(pos, forward), up);
