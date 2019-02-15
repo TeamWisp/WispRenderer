@@ -164,6 +164,13 @@ namespace wr
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
 		
+		//Signal to the texture pool that we waited for the previous frame 
+		//so that stale descriptors and temporary textures can be freed.
+		for (auto pool : m_texture_pools)
+		{
+			pool->ReleaseTemporaryResources();
+		}
+
 		// Perform reload requests
 		{
 			// Root Signatures
@@ -244,12 +251,6 @@ namespace wr
 		}
 
 		m_bound_model_pool = nullptr;
-
-		//Signal end of frame to the texture pool so that stale descriptors can be freed.
-		for (auto pool : m_texture_pools)
-		{
-			pool->EndOfFrame();
-		}
 
 		// Optional CPU-visible copy of the render target pixel data
 		const auto cpu_output_texture = frame_graph.GetOutputTexture();
@@ -915,8 +916,15 @@ namespace wr
 			offset_end = i;
 		}
 
-		if (!should_update)
+		if (!should_update && !(offset_end == offset_start && offset_start == 0))
 			return;
+
+		//Update light count
+
+		scene_graph.GetLight(0)->tid &= 3;
+		scene_graph.GetLight(0)->tid |= scene_graph.GetCurrentLightSize() << 2;
+
+		//Update structured buffer
 
 		StructuredBufferHandle* structured_buffer = scene_graph.GetLightBuffer();
 

@@ -89,7 +89,7 @@ static const uint light_type_directional = 1;
 static const uint light_type_spot = 2;
 
 //TODO: Find some way to detect this based on scene?
-#define epsilon 5e-1;
+#define epsilon 5e-3;
 
 uint3 Load3x32BitIndices(uint offsetBytes)
 {
@@ -134,7 +134,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction)
 {
 	origin += norm * epsilon;
 
-	ReflectionHitInfo payload = { origin, float3(0, 0, 1) };
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1)};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -195,9 +195,9 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
 
 	// Check if pixel is shaded
-	float3 origin = wpos + normal * epsilon;
-	float t_max = lerp(light_dist, 10000.0, tid == light_type_directional);
-	bool is_shadow = TraceShadowRay(origin, L, t_max);
+	//float3 origin = wpos + normal * epsilon;
+	//float t_max = lerp(light_dist, 10000.0, tid == light_type_directional);
+	bool is_shadow = false;//TraceShadowRay(origin, L, t_max);
 
 	lighting = lerp(lighting, float3(0, 0, 0), is_shadow);
 
@@ -233,7 +233,7 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float
 	float3 reflected = ReflectRay(V, normal);
 
 	// Shoot reflection ray
-	
+
 	float3 reflection = TraceReflectionRay(wpos, normal, reflected);
 
 	// Calculate reflection combined with fresnel
@@ -258,7 +258,6 @@ void RaygenEntry()
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
-	screen_co.y = (DispatchRaysDimensions().y - screen_co.y - 1);
 
 	// Get g-buffer information
 	float4 albedo_roughness = gbuffer_albedo[screen_co];
@@ -266,10 +265,10 @@ void RaygenEntry()
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(uv, depth);
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
-	float3 normal = -normal_metallic.xyz;
+	float3 normal = normal_metallic.xyz;
 	float metallic = normal_metallic.w;
 
 	// Do lighting
@@ -278,7 +277,7 @@ void RaygenEntry()
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(V), 0));
+		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
 		return;
 	}
 
@@ -383,5 +382,5 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(-WorldRayDirection()), 0);
+	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
 }

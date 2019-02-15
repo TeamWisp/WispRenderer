@@ -234,8 +234,19 @@ namespace wr::imgui::window
 					light_node->SignalTransformChange();
 					light_node->SignalChange();
 
+					if (ImGui::Button("Select"))
+					{
+						selected_light = lights[i].get();
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Deselect"))
+					{
+						selected_light = nullptr;
+					}
+
 					if (ImGui::Button("Remove"))
 					{
+						selected_light = nullptr;
 						scene_graph->DestroyNode<LightNode>(lights[i]);
 					}
 
@@ -245,10 +256,12 @@ namespace wr::imgui::window
 
 			ImGui::End();
 
-			if (lights.size() < 1)
+			if (selected_light == nullptr)
+			{
 				return;
+			}
 
-			auto ml = lights[0];
+			auto ml = selected_light;
 			DirectX::XMFLOAT4X4 rmat;
 			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
 			DirectX::XMStoreFloat4x4(&rmat, mat);
