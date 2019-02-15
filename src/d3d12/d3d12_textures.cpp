@@ -403,6 +403,20 @@ namespace wr::d3d12
 		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
 	}
 
+	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture)
+	{
+		ResourceState src_original_state = src_texture->m_current_state;
+		ResourceState dst_original_state = dst_texture->m_current_state;
+
+		d3d12::Transition(cmd_list, src_texture, src_original_state, ResourceState::COPY_SOURCE);
+		d3d12::Transition(cmd_list, dst_texture, dst_original_state, ResourceState::COPY_DEST);
+
+		cmd_list->m_native->CopyResource(dst_texture->m_resource, src_texture->m_resource);
+
+		d3d12::Transition(cmd_list, src_texture, ResourceState::COPY_SOURCE, src_original_state);
+		d3d12::Transition(cmd_list, dst_texture, ResourceState::COPY_DEST, dst_original_state);
+	}
+
 	void Destroy(TextureResource* tex)
 	{
 		SAFE_RELEASE(tex->m_resource);
@@ -502,6 +516,28 @@ namespace wr::d3d12
 	bool IsOptionalFormatSupported(Device* device, Format format)
 	{
 		return true;
+	}
+
+	Format RemoveSRGB(Format format)
+	{
+		Format out_format = Format::UNKNOWN;
+
+		switch (format)
+		{
+		case wr::Format::R8G8B8A8_UNORM_SRGB:
+			out_format = Format::R8G8B8A8_UNORM;
+			break;		
+		case wr::Format::B8G8R8A8_UNORM_SRGB:
+			out_format = Format::B8G8R8A8_UNORM;
+			break;
+		case wr::Format::B8G8R8X8_UNORM_SRGB:
+			out_format = Format::B8G8R8X8_UNORM;
+			break;
+		default:
+			break;
+		}
+
+		return out_format;
 	}
 
 } /* wr::d3d12 */

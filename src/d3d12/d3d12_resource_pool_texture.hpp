@@ -57,6 +57,9 @@ namespace wr
 		DescriptorAllocator* m_allocators[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 
 		DescriptorAllocator* m_mipmapping_allocator;
+
+		//Track resources that are created in one frame and destroyed after
+		std::vector<d3d12::TextureResource*> m_temporary_textures;
 	};
 
 

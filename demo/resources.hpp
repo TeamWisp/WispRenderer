@@ -82,10 +82,10 @@ namespace resources
 		wr::TextureHandle copper_roughness =	texture_pool->Load("resources/materials/copper_scuffed/roughness.png",	false, true);
 		wr::TextureHandle copper_metallic =		texture_pool->Load("resources/materials/copper_scuffed/metallic.png",	false, true);
 
-		wr::TextureHandle rusted_iron_albedo =		texture_pool->Load("resources/materials/rusted_iron_alt/albedo.dds", true, true);
-		wr::TextureHandle rusted_iron_normal =		texture_pool->Load("resources/materials/rusted_iron_alt/normal.dds", false, true);
-		wr::TextureHandle rusted_iron_roughness =	texture_pool->Load("resources/materials/rusted_iron_alt/roughness.dds", false, true);
-		wr::TextureHandle rusted_iron_metallic =	texture_pool->Load("resources/materials/rusted_iron_alt/metallic.dds", false, true);
+		wr::TextureHandle rusted_iron_albedo =		texture_pool->Load("resources/materials/rusted_iron_alt/albedo.png", true, true);
+		wr::TextureHandle rusted_iron_normal =		texture_pool->Load("resources/materials/rusted_iron_alt/normal.png", false, true);
+		wr::TextureHandle rusted_iron_roughness =	texture_pool->Load("resources/materials/rusted_iron_alt/roughness.png", false, true);
+		wr::TextureHandle rusted_iron_metallic =	texture_pool->Load("resources/materials/rusted_iron_alt/metallic.png", false, true);
 
 		wr::TextureHandle gold_albedo =		texture_pool->Load("resources/materials/gold_scuffed/albedo_boosted.png", true, true);
 		wr::TextureHandle gold_normal =		texture_pool->Load("resources/materials/gold_scuffed/normal.png", false, true);

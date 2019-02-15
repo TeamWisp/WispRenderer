@@ -140,6 +140,14 @@ namespace wr
 		{
 			m_allocators[i]->ReleaseStaleDescriptors();
 		}
+
+		//Release temporary textures
+		for (auto* t : m_temporary_textures)
+		{
+			d3d12::Destroy(t);
+		}
+
+		m_temporary_textures.clear();
 	}
 
 	d3d12::TextureResource* D3D12TexturePool::GetTexture(uint64_t texture_id)
@@ -275,7 +283,7 @@ namespace wr
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
 		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
+		desc.m_texture_format = (srgb) ? static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format)) : static_cast<wr::Format>(metadata.format);
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
@@ -463,8 +471,6 @@ namespace wr
 			}
 			else
 			{
-				int x = 0;
-
 				LOGC("[ERROR]: GenerateMips-> I don't know how we ended up here!");
 			}
 		}
@@ -498,11 +504,18 @@ namespace wr
 				}
 				else if (d3d12::CheckBGRFormat(texture->m_format))
 				{
-					GenerateMips_UAV(texture, cmd_list);
+					if (d3d12::CheckSRGBFormat(texture->m_format))
+					{
+						GenerateMips_SRGB(texture, cmd_list);
+					}
+					else
+					{
+						GenerateMips_UAV(texture, cmd_list);
+					}
 				}
 				else if (d3d12::CheckSRGBFormat(texture->m_format))
 				{
-					GenerateMips_UAV(texture, cmd_list);
+					GenerateMips_SRGB(texture, cmd_list);
 				}
 				else
 				{
@@ -514,95 +527,9 @@ namespace wr
 		d3d12::Transition(d3d12_cmd_list, textures, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
 	}
 
-	//void D3D12TexturePool::GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list)
-	//{
-	//	wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
-
-	//	D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
-
-	//	auto device = m_render_system.m_device;
-
-	//	d3d12::BindComputePipeline(d3d12_cmd_list, pipeline->m_native);
-
-	//	d3d12::Transition(d3d12_cmd_list, textures, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
-
-	//	for (size_t i = 0; i < textures.size(); ++i)
-	//	{
-	//		d3d12::TextureResource* texture = textures[i];
-
-	//		if (texture->m_need_mips)
-	//		{
-	//			DXGI_FORMAT texture_format = static_cast<DXGI_FORMAT>(texture->m_format);
-
-	//			for (uint32_t TopMip = 0; TopMip < texture->m_mip_levels - 1; TopMip++)
-	//			{
-	//				uint32_t srcWidth = texture->m_width >> TopMip;
-	//				uint32_t srcHeight = texture->m_height >> TopMip;
-	//				uint32_t dstWidth = srcWidth >> 1;
-	//				uint32_t dstHeight = srcHeight >> 1;
-
-	//				//Create shader resource view for the source texture in the descriptor heap
-	//				DescriptorAllocation srv_alloc = m_mipmapping_allocator->Allocate();
-	//				d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
-
-	//				d3d12::CreateSRVFromTexture(texture, srv_handle, 1, TopMip);
-
-	//				//Create unordered access view for the destination texture in the descriptor heap
-	//				DescriptorAllocation uav_alloc = m_mipmapping_allocator->Allocate();
-	//				d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
-
-	//				d3d12::CreateUAVFromTexture(texture, uav_handle, TopMip + 1);
-
-	//				auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-
-	//				struct DWParam
-	//				{
-	//					DWParam(FLOAT f) : Float(f) {}
-	//					DWParam(UINT u) : Uint(u) {}
-
-	//					void operator= (FLOAT f) { Float = f; }
-	//					void operator= (UINT u) { Uint = u; }
-
-	//					union
-	//					{
-	//						FLOAT Float;
-	//						UINT Uint;
-	//					};
-	//				};
-
-	//				UINT srcData[] =
-	//				{
-	//					DWParam(1.0f / dstWidth).Uint,
-	//					DWParam(1.0f / dstHeight).Uint
-	//				};
-
-	//				d3d12::BindCompute32BitConstants(n_cmd_list, srcData, _countof(srcData), 0, 0);
-
-	//				//Pass the source and destination texture views to the shader
-	//				d3d12::SetShaderSRV(d3d12_cmd_list, 1, 0, srv_handle);
-	//				d3d12::SetShaderUAV(d3d12_cmd_list, 1, 1, uav_handle);
-
-	//				//Dispatch the compute shader with one thread per 8x8 pixels
-	//				d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
-
-	//				//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-	//				d3d12::UAVBarrier(n_cmd_list, texture, 1);
-	//			}
-
-	//			texture->m_need_mips = false;
-	//		}
-	//	}
-
-	//	d3d12::Transition(d3d12_cmd_list, textures, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
-	//}
-
 	void D3D12TexturePool::GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list)
 	{
 		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
-
-		d3d12::Transition(d3d12_cmd_list, texture, ResourceState::PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
-
-		DXGI_FORMAT texture_format = static_cast<DXGI_FORMAT>(texture->m_format);
 
 		for (uint32_t TopMip = 0; TopMip < texture->m_mip_levels - 1; TopMip++)
 		{
@@ -660,8 +587,6 @@ namespace wr
 		}
 
 		texture->m_need_mips = false;
-
-		d3d12::Transition(d3d12_cmd_list, texture, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
 	}
 
 	void D3D12TexturePool::GenerateMips_BGR(d3d12::TextureResource* texture, CommandList* cmd_list)
@@ -670,5 +595,29 @@ namespace wr
 
 	void D3D12TexturePool::GenerateMips_SRGB(d3d12::TextureResource* texture, CommandList* cmd_list)
 	{
+		auto device = m_render_system.m_device;
+		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
+
+		//Create copy of the texture and store it for later deletion.
+		d3d12::desc::TextureDesc copy_desc;
+
+		copy_desc.m_width = texture->m_width;
+		copy_desc.m_height = texture->m_height;
+		copy_desc.m_is_cubemap = texture->m_is_cubemap;
+		copy_desc.m_depth = texture->m_depth;
+		copy_desc.m_array_size = texture->m_array_size;
+		copy_desc.m_mip_levels = texture->m_mip_levels;
+		copy_desc.m_texture_format = d3d12::RemoveSRGB(texture->m_format);
+		copy_desc.m_initial_state = ResourceState::COPY_DEST;
+
+		auto texture_copy = d3d12::CreateTexture(device, &copy_desc, true);
+
+		m_temporary_textures.push_back(texture_copy);
+
+		d3d12::CopyResource(d3d12_cmd_list, texture, texture_copy);
+		
+		GenerateMips_UAV(texture_copy, cmd_list);
+
+		d3d12::CopyResource(d3d12_cmd_list, texture_copy, texture);
 	}
 }

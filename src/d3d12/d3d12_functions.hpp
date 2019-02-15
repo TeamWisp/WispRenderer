@@ -109,6 +109,7 @@ namespace wr::d3d12
 	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture);
 	void Destroy(TextureResource* tex);
 
 	// Format test and support functions
@@ -117,6 +118,7 @@ namespace wr::d3d12
 	bool CheckBGRFormat(Format format);
 	bool CheckSRGBFormat(Format format);
 	bool IsOptionalFormatSupported(Device* device, Format format);
+	Format RemoveSRGB(Format format);
 
 	// Read-back buffer
 	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);
