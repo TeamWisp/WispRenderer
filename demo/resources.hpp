@@ -12,7 +12,6 @@ namespace resources
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
-	static wr::Model* plane_mirror_model;
 	static wr::Model* light_model;
 	static wr::Model* test_model;
 	static wr::Model* sphere_model;
@@ -230,36 +229,28 @@ namespace resources
 		{
 			wr::MeshData<wr::VertexColor> mesh;
 
-				mesh.m_indices = {
-					2, 1, 0, 3, 2, 0
-				};
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0
+			};
 
-				mesh.m_vertices = {
-					//POS                UV            NORMAL                TANGENT            BINORMAL	COLOR
-					{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-				};
+			mesh.m_vertices = {
+				//POS                UV            NORMAL                TANGENT            BINORMAL	COLOR
+				{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+				{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+				{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+				{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+			};
 
-				//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-				plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
+			//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 
-				//plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
-				light_model = plane_model;
+			//plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
+			light_model = plane_model;
 
-				for (auto& m : plane_model->m_meshes)
-				{
-					m.second = &bamboo_material;
-				}
-
-
-				//plane_mirror_model = plane_model;
-
-				//for (auto& m : plane_mirror_model->m_meshes)
-				{
-					//m.second = &mirror_material;
-				}
+			for (auto& m : plane_model->m_meshes)
+			{
+				m.second = &bamboo_material;
+			}
 		}
 
 		{
