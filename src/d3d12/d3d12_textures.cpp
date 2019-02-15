@@ -515,7 +515,7 @@ namespace wr::d3d12
 
 	bool IsOptionalFormatSupported(Device* device, Format format)
 	{
-		return true;
+		return device->m_optional_formats.test(static_cast<DXGI_FORMAT>(format));
 	}
 
 	Format RemoveSRGB(Format format)
