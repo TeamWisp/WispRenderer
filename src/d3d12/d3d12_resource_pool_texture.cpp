@@ -141,13 +141,15 @@ namespace wr
 			m_allocators[i]->ReleaseStaleDescriptors();
 		}
 
+		unsigned int frame_idx = m_render_system.GetFrameIdx();
+
 		//Release temporary textures
-		for (auto* t : m_temporary_textures)
+		for (auto* t : m_temporary_textures[frame_idx])
 		{
 			d3d12::Destroy(t);
 		}
 
-		m_temporary_textures.clear();
+		m_temporary_textures[frame_idx].clear();
 	}
 
 	d3d12::TextureResource* D3D12TexturePool::GetTexture(uint64_t texture_id)
@@ -612,7 +614,9 @@ namespace wr
 
 		auto texture_copy = d3d12::CreateTexture(device, &copy_desc, true);
 
-		m_temporary_textures.push_back(texture_copy);
+		unsigned int frame_idx = m_render_system.GetFrameIdx();
+
+		m_temporary_textures[frame_idx].push_back(texture_copy);
 
 		d3d12::CopyResource(d3d12_cmd_list, texture, texture_copy);
 		
