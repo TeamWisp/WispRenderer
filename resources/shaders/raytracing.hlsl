@@ -309,7 +309,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	float ambient = 0.1f;
+	float ambient = 0.0f;
 	float3 res = float3(ambient, ambient, ambient);
 
 	[unroll]
