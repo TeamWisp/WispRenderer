@@ -12,21 +12,21 @@
 
 namespace wr
 {
-	using namespace rs_layout;
+	using namespace layout_util;
 
 	//Basic Deferred Pass Root Signature
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 4> ranges_basic
 	{
-		[] { return GetRange(srv::basic, Type::SRV_RANGE, srv::BasicE::ALBEDO); }(),
-		[] { return GetRange(srv::basic, Type::SRV_RANGE, srv::BasicE::NORMAL); }(),
-		[] { return GetRange(srv::basic, Type::SRV_RANGE, srv::BasicE::ROUGHNESS); }(),
-		[] { return GetRange(srv::basic, Type::SRV_RANGE, srv::BasicE::METALLIC); }(),
+		[] { return GetRange(params::basic, Type::SRV_RANGE, params::BasicE::ALBEDO); }(),
+		[] { return GetRange(params::basic, Type::SRV_RANGE, params::BasicE::NORMAL); }(),
+		[] { return GetRange(params::basic, Type::SRV_RANGE, params::BasicE::ROUGHNESS); }(),
+		[] { return GetRange(params::basic, Type::SRV_RANGE, params::BasicE::METALLIC); }(),
 	};
 
 	REGISTER(root_signatures::basic) = RootSignatureRegistry::Get().Register({
 		{
-			[] { return GetCBV(srv::basic, srv::BasicE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX); }(),
-			[] { return GetCBV(srv::basic, srv::BasicE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX); }(),
+			[] { return GetCBV(params::basic, params::BasicE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX); }(),
+			[] { return GetCBV(params::basic, params::BasicE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX); }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(ranges_basic.size(), ranges_basic.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
 		},
 		{
@@ -37,18 +37,18 @@ namespace wr
 	//Deferred Composition Root Signature
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 7> srv_ranges
 	{
-		[] { return GetRange(srv::deferred_composition, Type::SRV_RANGE, srv::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS); }(),
-		[] { return GetRange(srv::deferred_composition, Type::SRV_RANGE, srv::DeferredCompositionE::GBUFFER_NORMAL_METALLIC); }(),
-		[] { return GetRange(srv::deferred_composition, Type::SRV_RANGE, srv::DeferredCompositionE::GBUFFER_DEPTH); }(),
-		[] { return GetRange(srv::deferred_composition, Type::SRV_RANGE, srv::DeferredCompositionE::LIGHT_BUFFER); }(),
-		[] { return GetRange(srv::deferred_composition, Type::SRV_RANGE, srv::DeferredCompositionE::SKY_BOX); }(),
-		[] { return GetRange(srv::deferred_composition, Type::SRV_RANGE, srv::DeferredCompositionE::IRRADIANCE_MAP); }(),
-		[] { return GetRange(srv::deferred_composition, Type::UAV_RANGE, srv::DeferredCompositionE::OUTPUT); }(),
+		[] { return GetRange(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS); }(),
+		[] { return GetRange(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_NORMAL_METALLIC); }(),
+		[] { return GetRange(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_DEPTH); }(),
+		[] { return GetRange(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::LIGHT_BUFFER); }(),
+		[] { return GetRange(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::SKY_BOX); }(),
+		[] { return GetRange(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::IRRADIANCE_MAP); }(),
+		[] { return GetRange(params::deferred_composition, Type::UAV_RANGE, params::DeferredCompositionE::OUTPUT); }(),
 	};
 
 	REGISTER(root_signatures::deferred_composition) = RootSignatureRegistry::Get().Register({
 		{
-			[] { return GetCBV(srv::deferred_composition, srv::DeferredCompositionE::CAMERA_PROPERTIES); }(),
+			[] { return GetCBV(params::deferred_composition, params::DeferredCompositionE::CAMERA_PROPERTIES); }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(srv_ranges.size(), srv_ranges.data(), D3D12_SHADER_VISIBILITY_ALL); return d; }(),
 		},
 		{
@@ -60,12 +60,12 @@ namespace wr
 	//MipMapping Root Signature
 	std::array< CD3DX12_DESCRIPTOR_RANGE, 2> mip_in_out_ranges
 	{
-		[] { return GetRange(srv::mip_mapping, Type::SRV_RANGE, srv::MipMappingE::SOURCE); }(),
-		[] { return GetRange(srv::mip_mapping, Type::UAV_RANGE, srv::MipMappingE::DEST); }(),
+		[] { return GetRange(params::mip_mapping, Type::SRV_RANGE, params::MipMappingE::SOURCE); }(),
+		[] { return GetRange(params::mip_mapping, Type::UAV_RANGE, params::MipMappingE::DEST); }(),
 	};
 	REGISTER(root_signatures::mip_mapping) = RootSignatureRegistry::Get().Register({
 		{
-			[] { return GetConstants(srv::mip_mapping, srv::MipMappingE::TEXEL_SIZE); }(),
+			[] { return GetConstants(params::mip_mapping, params::MipMappingE::TEXEL_SIZE); }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(mip_in_out_ranges.size(), mip_in_out_ranges.data()); return d; }()
 		},
 		{
@@ -77,12 +77,12 @@ namespace wr
 	//Cubemap conversion root signature
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> cubemap_tasks_ranges
 	{
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(),
+		[] { return GetRange(params::cubemap_conversion, Type::SRV_RANGE, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE); }(),
 	};
 	REGISTER(root_signatures::cubemap_conversion) = RootSignatureRegistry::Get().Register({
 		{
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { return GetConstants(params::cubemap_conversion, params::CubemapConversionE::IDX); }(),
+			[] { return GetCBV(params::cubemap_conversion, params::CubemapConversionE::CAMERA_PROPERTIES); }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(cubemap_tasks_ranges.size(), cubemap_tasks_ranges.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
 		},
 		{
@@ -93,12 +93,12 @@ namespace wr
 	//Cubemap convolution root signature
 	std::array< CD3DX12_DESCRIPTOR_RANGE, 1> cubemap_convolution_ranges
 	{
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } (),
+		[] { return GetRange(params::cubemap_conversion, Type::SRV_RANGE, params::CubemapConvolutionE::ENVIRONMENT_CUBEMAP); }(),
 	};
 	REGISTER(root_signatures::cubemap_convolution) = RootSignatureRegistry::Get().Register({
 		{
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { return GetConstants(params::cubemap_convolution, params::CubemapConvolutionE::IDX); }(),
+			[] { return GetCBV(params::cubemap_convolution, params::CubemapConvolutionE::CAMERA_PROPERTIES); }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(cubemap_tasks_ranges.size(), cubemap_tasks_ranges.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
 		},
 		{
@@ -251,14 +251,14 @@ namespace wr
 	});
 
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> accum_r = {
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); return r; }(), // source texture
+		[] { return GetRange(params::post_processing, Type::SRV_RANGE, params::PostProcessingE::SOURCE); }(),
+		[] { return GetRange(params::post_processing, Type::UAV_RANGE, params::PostProcessingE::DEST); }(),
 	};
 
 	REGISTER(root_signatures::post_processing) = RootSignatureRegistry::Get().Register({
 	{
 		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(accum_r.size(), accum_r.data()); return d; }(),
-		[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstants(1, 0); return d; }(),
+		[] { return GetConstants(params::post_processing, params::PostProcessingE::HDR_SUPPORT); }(),
 	},
 	{
 		{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
@@ -266,34 +266,38 @@ namespace wr
 	});
 
 	REGISTER(pipelines::post_processing) = PipelineRegistry::Get().Register<Vertex2D>(
-		{
-			std::nullopt,
-			std::nullopt,
-			shaders::post_processing,
-			root_signatures::post_processing,
-			Format::UNKNOWN,
-			{ d3d12::settings::back_buffer_format }, //This compute shader doesn't use any render target
-			1,
-			PipelineType::COMPUTE_PIPELINE,
-			CullMode::CULL_NONE,
-			false,
-			true,
-			TopologyType::TRIANGLE
-		});
+	{
+		std::nullopt,
+		std::nullopt,
+		shaders::post_processing,
+		root_signatures::post_processing,
+		Format::UNKNOWN,
+		{ d3d12::settings::back_buffer_format }, //This compute shader doesn't use any render target
+		1,
+		PipelineType::COMPUTE_PIPELINE,
+		CullMode::CULL_NONE,
+		false,
+		true,
+		TopologyType::TRIANGLE
+	});
 
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> r = {
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1); return r; }(), // indices and lights
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1 + 1 + 1 + 20, 4); return r; }(), // Materials(1) Offsets(1) Skybox(1) Textures (+20) 
+		[] { return GetRange(params::full_raytracing, Type::UAV_RANGE, params::FullRaytracingE::OUTPUT); }(),
+		[] { return GetRange(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::INDICES); }(),
+		[] { return GetRange(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::LIGHTS); }(),
+		[] { return GetRange(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::MATERIALS); }(),
+		[] { return GetRange(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::OFFSETS); }(),
+		[] { return GetRange(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::SKYBOX); }(),
+		[] { return GetRange(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::TEXTURES); }(),
 		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset); return r; }(), // fallback pointers
 	};
 
 	REGISTER(root_signatures::rt_test_global) = RootSignatureRegistry::Get().Register({
 		{
 			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(r.size(), r.data()); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
+			[] { return GetSRV(params::full_raytracing, params::FullRaytracingE::ACCELERATION_STRUCTURE); }(),
+			[] { return GetCBV(params::full_raytracing, params::FullRaytracingE::CAMERA_PROPERTIES); }(),
+			[] { return GetSRV(params::full_raytracing, params::FullRaytracingE::VERTICES); }(),
 		},
 		{
 			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
@@ -335,28 +339,32 @@ namespace wr
 		"resources/shaders/rt_hybrid.hlsl",
 		"RaygenEntry",
 		ShaderType::LIBRARY_SHADER
-		});
+	});
 
 	std::vector<CD3DX12_DESCRIPTOR_RANGE> rt_hybrid_ranges = {
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(), // output texture
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1); return r; }(), // indices, light
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1+1+1+20, 4); return r; }(), // Materials (1) Offsets(1) Skybox(1) Textures (+20) 
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 27); return r; }(),
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset); return r; }(),
+		[] { return GetRange(params::rt_hybrid, Type::UAV_RANGE, params::RTHybridE::OUTPUT); }(),
+		[] { return GetRange(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::INDICES); }(),
+		[] { return GetRange(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::LIGHTS); }(),
+		[] { return GetRange(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::MATERIALS); }(),
+		[] { return GetRange(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::OFFSETS); }(),
+		[] { return GetRange(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::SKYBOX); }(),
+		[] { return GetRange(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::TEXTURES); }(),
+		[] { return GetRange(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::GBUFFERS); }(),
+		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset); return r; }(), // fallback pointers
 	};
 
 	REGISTER(root_signatures::rt_hybrid_global) = RootSignatureRegistry::Get().Register({
 		{
 			[&] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(rt_hybrid_ranges.size(), rt_hybrid_ranges.data()); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(0); return d; }(), // Acceleration Structure
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0); return d; }(), // RT Camera
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsShaderResourceView(3); return d; }(), // Vertices
+			[] { return GetSRV(params::rt_hybrid, params::RTHybridE::ACCELERATION_STRUCTURE); }(),
+			[] { return GetCBV(params::rt_hybrid, params::RTHybridE::CAMERA_PROPERTIES); }(),
+			[] { return GetSRV(params::rt_hybrid, params::RTHybridE::VERTICES); }(),
 		},
 		{
 			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
 		},
 		true // rtx
-		});
+	});
 
 	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> rt_hybrid_so_desc = []()
 	{
@@ -376,14 +384,14 @@ namespace wr
 	}();
 
 	REGISTER(state_objects::rt_hybrid_state_object) = RTPipelineRegistry::Get().Register(
-		{
-			rt_hybrid_so_desc.first,     // Description
-			rt_hybrid_so_desc.second,    // Library
-			(sizeof(float) * 6), // Max payload size
-			(sizeof(float) * 2), // Max attributes size
-			2,				   // Max recursion depth
-			root_signatures::rt_hybrid_global,      // Global root signature
-			std::nullopt,      // Local Root Signatures
-		});
+	{
+		rt_hybrid_so_desc.first,     // Description
+		rt_hybrid_so_desc.second,    // Library
+		(sizeof(float) * 6), // Max payload size
+		(sizeof(float) * 2), // Max attributes size
+		2,				   // Max recursion depth
+		root_signatures::rt_hybrid_global,      // Global root signature
+		std::nullopt,      // Local Root Signatures
+	});
 
 } /* wr */

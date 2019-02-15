@@ -5,11 +5,14 @@
 #include "registry.hpp"
 #include "d3d12/d3dx12.hpp"
 
+#define COMPILATION_EVAL(e) (std::integral_constant<decltype(e), e>::value)
+
 namespace wr
 {
 
-	namespace rs_layout
+	namespace layout_util
 	{
+
 		enum class Type
 		{
 			SRV,
@@ -103,6 +106,30 @@ namespace wr
 			unsigned int start = 0;
 			unsigned int size = 0;
 
+			// Find its range equivelant or visa versa
+			Type other_type = Type::SRV;
+			switch (type)
+			{
+			case Type::SRV:
+				other_type = Type::SRV_RANGE;
+				break;
+			case Type::SRV_RANGE:
+				other_type = Type::SRV;
+				break;
+			case Type::CBV_OR_CONST:
+				other_type = Type::CBV_RANGE;
+				break;
+			case Type::CBV_RANGE:
+				other_type = Type::CBV_OR_CONST;
+				break;
+			case Type::UAV:
+				other_type = Type::UAV_RANGE;
+				break;
+			case Type::UAV_RANGE:
+				other_type = Type::UAV;
+				break;
+			}
+
 			// Find Start & Size
 			for (std::size_t i = 0; i < data.size(); i++)
 			{
@@ -112,7 +139,7 @@ namespace wr
 					size = entry.size;
 					break;
 				}
-				else if (entry.type == type)
+				else if (entry.type == type || entry.type == other_type)
 				{
 					start += entry.size;
 				}
@@ -156,7 +183,7 @@ namespace wr
 					size = entry.size;
 					break;
 				}
-				else if (entry.type == type)
+				else if (entry.type == Type::CBV_OR_CONST || entry.type == Type::CBV_RANGE)
 				{
 					start += entry.size;
 				}
@@ -169,9 +196,35 @@ namespace wr
 		}
 
 		template<typename T, typename E>
+		constexpr CD3DX12_ROOT_PARAMETER GetSRV(const T data, const E name, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
+		{
+			unsigned int start = 0;
+			unsigned int size = 0;
+
+			// Find Start & Size
+			for (std::size_t i = 0; i < data.size(); i++)
+			{
+				auto entry = data[i];
+				if (static_cast<E>(entry.name) == name)
+				{
+					size = entry.size;
+					break;
+				}
+				else if (entry.type == Type::SRV || entry.type == Type::SRV_RANGE)
+				{
+					start += entry.size;
+				}
+			}
+
+			CD3DX12_ROOT_PARAMETER retval;
+			retval.InitAsShaderResourceView(start, 0, visibility);
+
+			return retval;
+		}
+
+		template<typename T, typename E>
 		constexpr CD3DX12_ROOT_PARAMETER GetConstants(const T data, const E name, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
 		{
-			const Type type = Type::CBV_OR_CONST;
 			unsigned int start = 0;
 			unsigned int size = 0;
 
@@ -184,7 +237,7 @@ namespace wr
 					size = entry.size;
 					break;
 				}
-				else if (entry.type == type)
+				else if (entry.type == Type::CBV_OR_CONST || entry.type == Type::CBV_RANGE)
 				{
 					start += entry.size;
 				}
@@ -198,7 +251,7 @@ namespace wr
 
 	} /* rs_layout */
 
-	namespace srv
+	namespace params
 	{
 
 		enum class BasicE
@@ -250,10 +303,109 @@ namespace wr
 			TEXEL_SIZE,
 		};
 
-		constexpr std::array<rs_layout::Entry, 7> mip_mapping = {
+		constexpr std::array<rs_layout::Entry, 3> mip_mapping = {
 			rs_layout::Entry{(int)MipMappingE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)MipMappingE::DEST, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)MipMappingE::TEXEL_SIZE, 2, rs_layout::Type::CBV_OR_CONST},
+		};
+
+		enum class CubemapConversionE
+		{
+			EQUIRECTANGULAR_TEXTURE,
+			IDX,
+			CAMERA_PROPERTIES,
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> cubemap_conversion = {
+			rs_layout::Entry{(int)CubemapConversionE::EQUIRECTANGULAR_TEXTURE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)CubemapConversionE::IDX, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)CubemapConversionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
+		enum class CubemapConvolutionE
+		{
+			ENVIRONMENT_CUBEMAP,
+			IDX,
+			CAMERA_PROPERTIES,
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> cubemap_convolution = {
+			rs_layout::Entry{(int)CubemapConvolutionE::ENVIRONMENT_CUBEMAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)CubemapConvolutionE::IDX, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)CubemapConvolutionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
+		enum class PostProcessingE
+		{
+			SOURCE,
+			DEST,
+			HDR_SUPPORT,
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> post_processing = {
+			rs_layout::Entry{(int)PostProcessingE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PostProcessingE::DEST, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)PostProcessingE::HDR_SUPPORT, 2, rs_layout::Type::CBV_OR_CONST},
+		};
+
+		enum class FullRaytracingE
+		{
+			CAMERA_PROPERTIES,
+			ACCELERATION_STRUCTURE,
+			OUTPUT,
+			INDICES,
+			VERTICES,
+			LIGHTS,
+			MATERIALS,
+			OFFSETS,
+			SKYBOX,
+			TEXTURES,
+			FALLBACK_PTRS
+		};
+
+		constexpr std::array<rs_layout::Entry, 20> full_raytracing = {
+			rs_layout::Entry{(int)FullRaytracingE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)FullRaytracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)FullRaytracingE::INDICES, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::VERTICES, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)FullRaytracingE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::TEXTURES, 20, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
+		};
+
+		enum class RTHybridE
+		{
+			CAMERA_PROPERTIES,
+			ACCELERATION_STRUCTURE,
+			OUTPUT,
+			INDICES,
+			VERTICES,
+			LIGHTS,
+			MATERIALS,
+			OFFSETS,
+			SKYBOX,
+			TEXTURES,
+			GBUFFERS,
+			FALLBACK_PTRS
+		};
+
+		constexpr std::array<rs_layout::Entry, 20> rt_hybrid = {
+			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::VERTICES, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)RTHybridE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::TEXTURES, 20, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 		};
 
 	} /* srv */

@@ -163,6 +163,12 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
+
+		//Signal end of frame to the texture pool so that stale descriptors can be freed.
+		for (auto pool : m_texture_pools)
+		{
+			pool->EndOfFrame();
+		}
 		
 		// Perform reload requests
 		{
@@ -244,12 +250,6 @@ namespace wr
 		}
 
 		m_bound_model_pool = nullptr;
-
-		//Signal end of frame to the texture pool so that stale descriptors can be freed.
-		for (auto pool : m_texture_pools)
-		{
-			pool->EndOfFrame();
-		}
 
 		// Optional CPU-visible copy of the render target pixel data
 		const auto cpu_output_texture = frame_graph.GetOutputTexture();
@@ -1005,7 +1005,7 @@ namespace wr
 				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batch_buffer);
 				if constexpr (!d3d12::settings::use_exec_indirect)
 				{
-					d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, rs_layout::GetStart(srv::basic, srv::BasicE::OBJECT_PROPERTIES), GetFrameIdx());
+					d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
 				}
 
 				//Render meshes
@@ -1089,10 +1089,10 @@ namespace wr
 		auto metallic_handle = material_internal->GetMetallic();
 		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		d3d12::SetShaderSRV(n_cmd_list, 2, rs_layout::GetHeapLoc(srv::basic, srv::BasicE::ALBEDO), albedo_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, rs_layout::GetHeapLoc(srv::basic, srv::BasicE::NORMAL), normal_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, rs_layout::GetHeapLoc(srv::basic, srv::BasicE::ROUGHNESS), roughness_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, rs_layout::GetHeapLoc(srv::basic, srv::BasicE::METALLIC), metallic_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::basic, srv::BasicE::ALBEDO)), albedo_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::basic, srv::BasicE::NORMAL)), normal_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::basic, srv::BasicE::ROUGHNESS)), roughness_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::basic, srv::BasicE::METALLIC)), metallic_internal);
 	}
 	
 	unsigned int D3D12RenderSystem::GetFrameIdx()
