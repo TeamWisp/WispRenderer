@@ -163,12 +163,6 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-
-		//Signal end of frame to the texture pool so that stale descriptors can be freed.
-		for (auto pool : m_texture_pools)
-		{
-			pool->EndOfFrame();
-		}
 		
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
