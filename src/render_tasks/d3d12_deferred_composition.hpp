@@ -95,7 +95,7 @@ namespace wr
 
 				//Get light buffer
 				{
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::deferred_composition, srv::DeferredCompositionE::LIGHT_BUFFER)));
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::LIGHT_BUFFER)));
 					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 				}
 				
@@ -103,21 +103,21 @@ namespace wr
 				auto skybox = scene_graph.GetCurrentSkybox();
 				if (skybox != nullptr)
 				{
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::deferred_composition, srv::DeferredCompositionE::SKY_BOX)));
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX)));
 					auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(skybox->m_hdr.m_id));
 					d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
 				}
 
 				// Get the irradiance map
 				{
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::deferred_composition, srv::DeferredCompositionE::IRRADIANCE_MAP)));
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP)));
 					d3d12::TextureResource* irradiance_map = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
 					d3d12::CreateSRVFromTexture(irradiance_map, cpu_handle);
 				}
 
 				// Output UAV
 				{
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::deferred_composition, srv::DeferredCompositionE::OUTPUT)));
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
 					std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
 					d3d12::CreateUAVFromRTV(render_target, cpu_handle, 1, formats.data());
 				}

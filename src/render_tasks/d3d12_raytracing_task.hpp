@@ -154,14 +154,14 @@ namespace wr
 					{
 						static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 					}
-					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::full_raytracing, srv::FullRaytracingE::LIGHTS)));
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::LIGHTS)));
 					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 				}
 
 				// Get skybox
 				if (scene_graph.m_skybox.has_value()) {
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::full_raytracing, srv::FullRaytracingE::SKYBOX))); // here
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX))); // here
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
 

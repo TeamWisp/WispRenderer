@@ -578,8 +578,8 @@ namespace wr
 			d3d12::BindCompute32BitConstants(n_cmd_list, srcData, _countof(srcData), 0, 0);
 
 			//Pass the source and destination texture views to the shader
-			d3d12::SetShaderSRV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::mip_mapping, srv::MipMappingE::SOURCE)), srv_handle);
-			d3d12::SetShaderUAV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(srv::mip_mapping, srv::MipMappingE::DEST)), uav_handle);
+			d3d12::SetShaderSRV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::SOURCE)), srv_handle);
+			d3d12::SetShaderUAV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::DEST)), uav_handle);
 
 			//Dispatch the compute shader with one thread per 8x8 pixels
 			d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);

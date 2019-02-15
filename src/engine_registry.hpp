@@ -10,7 +10,7 @@
 namespace wr
 {
 
-	namespace layout_util
+	namespace rs_layout
 	{
 
 		enum class Type

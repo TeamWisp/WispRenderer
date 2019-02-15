@@ -12,7 +12,7 @@
 
 namespace wr
 {
-	using namespace layout_util;
+	using namespace rs_layout;
 
 	//Basic Deferred Pass Root Signature
 	std::array<CD3DX12_DESCRIPTOR_RANGE, 4> ranges_basic
