@@ -145,10 +145,6 @@ namespace wr
 
 						cmd_list->m_native->OMSetRenderTargets(1, &rtv_handle.m_native, false, nullptr);
 
-						const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-						cmd_list->m_native->ClearRenderTargetView(rtv_handle.m_native, clear_color, 0, nullptr);
-
 						d3d12::Bind32BitConstants(cmd_list, &i, 1, 0, 0);
 
 						//bind cube and render
