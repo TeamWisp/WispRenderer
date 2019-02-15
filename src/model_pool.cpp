@@ -6,7 +6,7 @@ namespace wr
 
 	void Model::Expand(float(&pos)[3], Mesh *mesh)
 	{
-		mesh->m_box.Expand(pos);
+		//mesh->m_box.Expand(pos);
 		m_box.Expand(pos);
 	}
 

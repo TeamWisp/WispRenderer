@@ -11,7 +11,7 @@ namespace wr
 		Model* m_model;
 
 		AABB m_aabb;
-		std::vector<AABB> m_mesh_aabbs;
+		//std::vector<AABB> m_mesh_aabbs;
 
 		MeshNode(Model* model);
 

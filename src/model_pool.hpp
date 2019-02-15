@@ -37,7 +37,7 @@ namespace wr
 	struct Mesh
 	{
 		std::uint64_t id;
-		Box m_box;
+		//Box m_box;
 	};
 
 	template<typename TV, typename TI = std::uint32_t>
