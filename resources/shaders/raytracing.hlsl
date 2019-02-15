@@ -113,16 +113,6 @@ uint3 Load3x32BitIndices(uint offsetBytes)
  	return g_indices.Load3(offsetBytes);
 }
 
-float2 VectorToLatLong(float3 dir)
-{
-	float3 p = normalize(dir);
-
-	// atan2_WAR is a work-around due to an apparent compiler bug in atan2
-	float u = (1.f + atan2(p.x, -p.z) / M_PI) * 0.5f;
-	float v = acos(p.y*-1) / M_PI;
-	return float2(u, v);
-}
-
 inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset, unsigned int seed)
 {
 #ifdef DEPTH_OF_FIELD
@@ -252,13 +242,7 @@ void RaygenEntry()
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	// Load some information about our lightprobe texture
-	float2 dims;
-	skybox.GetDimensions(dims.x, dims.y);
-
-	// Convert our ray direction to a (u,v) coordinate
-	float2 uv = VectorToLatLong(WorldRayDirection());
-	payload.color = skybox[uint2(uv * dims)].rgb;
+	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(-WorldRayDirection()), 0);
 }
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)

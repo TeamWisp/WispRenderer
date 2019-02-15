@@ -294,15 +294,6 @@ namespace wr
 		true // rtx
 	});
 
-	REGISTER(root_signatures::rt_test_local) = RootSignatureRegistry::Get().Register({
-		{
-		},
-		{
-			// No samplers
-		},
-		true, true // rtx and local
-	});
-
 	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> so_desc = []()
 	{
 		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
@@ -328,7 +319,7 @@ namespace wr
 		(sizeof(float)* 4), // Max attributes size
 		3,				   // Max recursion depth
 		root_signatures::rt_test_global,      // Global root signature
-		std::vector<RegistryHandle>{ root_signatures::rt_test_local },      // Local Root Signatures
+		std::nullopt,      // Local Root Signatures
 	});
 
 
@@ -360,15 +351,6 @@ namespace wr
 		true // rtx
 		});
 
-	REGISTER(root_signatures::rt_hybrid_local) = RootSignatureRegistry::Get().Register({
-		{
-		},
-		{
-			// No samplers
-		},
-		true, true // rtx and local
-		});
-
 	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> rt_hybrid_so_desc = []()
 	{
 		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
@@ -378,9 +360,9 @@ namespace wr
 		lib.exports.push_back(L"RaygenEntry");
 		lib.exports.push_back(L"ShadowHit");
 		lib.exports.push_back(L"ShadowMiss");
-		lib.m_hit_groups.push_back({L"ShadowHitGroup", L"ShadowHit"});
 		lib.exports.push_back(L"ReflectionHit");
 		lib.exports.push_back(L"ReflectionMiss");
+		lib.m_hit_groups.push_back({L"ShadowHitGroup", L"ShadowHit"});
 		lib.m_hit_groups.push_back({L"ReflectionHitGroup", L"ReflectionHit"});
 
 		return std::make_pair(desc, lib);
@@ -392,9 +374,9 @@ namespace wr
 			rt_hybrid_so_desc.second,    // Library
 			(sizeof(float) * 6), // Max payload size
 			(sizeof(float) * 2), // Max attributes size
-			3,				   // Max recursion depth
+			2,				   // Max recursion depth
 			root_signatures::rt_hybrid_global,      // Global root signature
-			std::vector<RegistryHandle>{ root_signatures::rt_hybrid_local },      // Local Root Signatures
+			std::nullopt,      // Local Root Signatures
 		});
 
 } /* wr */

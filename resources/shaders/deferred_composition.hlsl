@@ -9,7 +9,7 @@ Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
-TextureCube skybox : register(t4);
+Texture2D skybox : register(t4);
 TextureCube irradiance_map : register(t5);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
@@ -59,19 +59,16 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0).xyz;
 
 		const float shadow_factor = 1.0f;
-
-		float3 skyboxUV = reflect(V, normal);
-		skyboxUV.y = skyboxUV.y * -1;
-		float3 skybox_reflection = skybox.SampleLevel(s0, skyboxUV, 0);
+		
+		float3 skybox_reflection = skybox.SampleLevel(s0, SampleSphericalMap(reflect(V, normal)), 0);
 
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, skybox_reflection);
 
 		retval = retval * shadow_factor;
 	}
 	else
-	{
-		V.y = V.y * -1;
-		retval = skybox.SampleLevel(s0, V, 0);
+	{	
+		retval = skybox.SampleLevel(s0, SampleSphericalMap(V), 0);
 	}
 
 	//Do shading
