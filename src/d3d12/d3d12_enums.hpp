@@ -165,7 +165,8 @@ namespace wr
 	enum class Format
 	{
 		UNKNOWN = (int)DXGI_FORMAT_UNKNOWN,
-		R10G10B10A2 = (int)DXGI_FORMAT_R10G10B10A2_UNORM,
+		R10G10B10A2_UNORM = (int)DXGI_FORMAT_R10G10B10A2_UNORM,
+		R10G10B10A2_UINT = (int)DXGI_FORMAT_R10G10B10A2_UINT,
 		R32G32B32A32_FLOAT = (int)DXGI_FORMAT_R32G32B32A32_FLOAT,
 		R32G32B32A32_UINT = (int)DXGI_FORMAT_R32G32B32A32_UINT,
 		R32G32B32A32_SINT = (int)DXGI_FORMAT_R32G32B32A32_SINT,
@@ -182,6 +183,7 @@ namespace wr
 		R32G32_SINT = (int)DXGI_FORMAT_R32G32_SINT,
 		//R10G10B10_UNORM = (int)DXGI_FORMAT_R10G10B10_UNORM,
 		//R10G10B10_UINT = (int)vk::Format::eA2R10G10B10UintPack32, //FIXME: Their are more vulcan variants?
+		R11G11B10_FLOAT = (int)DXGI_FORMAT_R11G11B10_FLOAT,
 		R8G8B8A8_UNORM = (int)DXGI_FORMAT_R8G8B8A8_UNORM,
 		R8G8B8A8_UNORM_SRGB = (int)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
 		R8G8B8A8_SNORM = (int)DXGI_FORMAT_R8G8B8A8_SNORM,
@@ -189,6 +191,7 @@ namespace wr
 		R8G8B8A8_SINT = (int)DXGI_FORMAT_R8G8B8A8_SINT,
 		R16G16_FLOAT = (int)DXGI_FORMAT_R16G16_FLOAT,
 		R16G16_UINT = (int)DXGI_FORMAT_R16G16_UINT,
+		R16G16_UNORM = (int)DXGI_FORMAT_R16G16_UNORM,
 		R16G16_SNORM = (int)DXGI_FORMAT_R16G16_SNORM,
 		R16G16_SINT = (int)DXGI_FORMAT_R16G16_SINT,
 		D32_FLOAT = (int)DXGI_FORMAT_D32_FLOAT,
@@ -198,20 +201,21 @@ namespace wr
 		R32_FLOAT = (int)DXGI_FORMAT_R32_FLOAT,
 		R16_UNORM = (int)DXGI_FORMAT_R16_UNORM,
 		D24_UNFORM_S8_UINT = (int)DXGI_FORMAT_D24_UNORM_S8_UINT,
-		//R8G8_UNORM = (int)vk::Format::eR8G8Unorm,
-		//R8G8_UINT = (int)vk::Format::eR8G8Uint,
-		//R8G8_SNORM = (int)vk::Format::eR8G8Snorm,
-		//R8G8_SINT = (int)vk::Format::eR8G8Sint,
+		R8G8_UNORM = (int)DXGI_FORMAT_R8G8_UNORM,
+		R8G8_UINT = (int)DXGI_FORMAT_R8G8_UINT,
+		R8G8_SNORM = (int)DXGI_FORMAT_R8G8_SNORM,
+		R8G8_SINT = (int)DXGI_FORMAT_R8G8_SINT,
 		R16_FLOAT = (int)DXGI_FORMAT_R16_FLOAT,
 		//D16_UNORM = (int)vk::Format::eD16Unorm,
 		//R16_UNORM = (int)vk::Format::eR16Unorm,
 		R16_UINT = (int)DXGI_FORMAT_R16_UINT,
-		//R16_SNORM = (int)vk::Format::eR16Snorm,
+		R16_SNORM = (int)DXGI_FORMAT_R16_SNORM,
 		R16_SINT = (int)DXGI_FORMAT_R16_SINT,
 		R8_UNORM = (int)DXGI_FORMAT_R8_UNORM,
 		R8_UINT = (int)DXGI_FORMAT_R8_UINT,
 		R8_SNORM = (int)DXGI_FORMAT_R8_SNORM,
 		R8_SINT = (int)DXGI_FORMAT_R8_SINT,
+		A8_UNORM = (int)DXGI_FORMAT_A8_UNORM,
 		//BC1_UNORM = (int)vk::Format::eBc1RgbUnormBlock, //FIXME: is this correct?
 		//BC1_UNORM_SRGB = (int)vk::Format::eBc1RgbSrgbBlock, //FIXME: is this correct?
 		//BC2_UNORM = (int)vk::Format::eBc2UnormBlock,
@@ -222,8 +226,8 @@ namespace wr
 		//BC4_SNORM = (int)vk::Format::eBc4SnormBlock,
 		//BC5_UNORM = (int)vk::Format::eBc5UnormBlock,
 		//BC5_SNORM = (int)vk::Format::eBc5SnormBlock,
-		//B5G6R5_UNORM = (int)vk::Format::eB5G6R5UnormPack16,
-		//B5G5R5A1_UNORM = (int)vk::Format::eB5G5R5A1UnormPack16,
+		B5G6R5_UNORM = (int)DXGI_FORMAT_B5G6R5_UNORM,
+		B5G5R5A1_UNORM = (int)DXGI_FORMAT_B5G5R5A1_UNORM,
 		B8G8R8A8_UNORM = (int)DXGI_FORMAT_B8G8R8A8_UNORM,
 		B8G8R8A8_UNORM_SRGB = (int)DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
 		//B8G8R8A8_SNORM = (int)vk::Format::eB8G8R8A8Snorm,
@@ -235,7 +239,7 @@ namespace wr
 		//BC6H_SF16 = (int)vk::Format::eBc6HSfloatBlock,
 		//BC7_UNORM = (int)vk::Format::eBc7UnormBlock,
 		//BC7_UNORM_SRGB = (int)vk::Format::eBc7SrgbBlock,
-		//B4G4R4A4_UNORM = (int)vk::Format::eB4G4R4A4UnormPack16,
+		B4G4R4A4_UNORM = (int)DXGI_FORMAT_B4G4R4A4_UNORM,
 		D32_FLOAT_S8X24_UINT = (int)DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
 	};
 
@@ -269,6 +273,26 @@ namespace wr
 		case Format::R32_FLOAT: return "R32_FLOAT";
 		case Format::D24_UNFORM_S8_UINT: return "D24_UNFORM_S8_UINT";
 		case Format::R8_UNORM: return "R8_UNORM";
+		case Format::R10G10B10A2_UNORM: return "R10G10B10A2_UNORM";
+		case Format::R10G10B10A2_UINT: return "R10G10B10A2_UINT";
+		case Format::R11G11B10_FLOAT: return "R11G11B10_FLOAT";
+		case Format::R16G16_FLOAT: return "R16G16_FLOAT";
+		case Format::R16G16_UNORM: return "R16G16_UNORM";
+		case Format::R16G16_UINT: return "R16G16_UINT";
+		case Format::R16G16_SNORM: return "R16G16_SNORM";
+		case Format::R16G16_SINT: return "R16G16_SINT";
+		case Format::R8G8_UNORM: return "R8G8_UNORM";
+		case Format::R8G8_UINT: return "R8G8_UINT";
+		case Format::R8G8_SNORM: return "R8G8_SNORM";
+		case Format::R8G8_SINT: return "R8G8_SINT";
+		case Format::R16_UNORM: return "R16_UNORM";
+		case Format::R16_SNORM: return "R16_SNORM";
+		case Format::R8_SNORM: return "R8_SNORM";
+		case Format::A8_UNORM: return "A8_UNORM";
+		case Format::B5G6R5_UNORM: return "B5G6R5_UNORM";
+		case Format::B5G5R5A1_UNORM: return "B5G5R5A1_UNORM";
+		case Format::B4G4R4A4_UNORM: return "B4G4R4A4_UNORM";
+
 		default: return "UNKNOWN (DEFAULT SWITCH STATEMENT)";
 		}
 	}
@@ -310,9 +334,9 @@ namespace wr
 			return 64;
 
 		//case Format::R10G10B10A2_TYPELESS:
-		//case Format::R10G10B10A2_UNORM:
-		//case Format::R10G10B10A2_UINT:
-		//case Format::R11G11B10_FLOAT:
+		case Format::R10G10B10A2_UNORM:
+		case Format::R10G10B10A2_UINT:
+		case Format::R11G11B10_FLOAT:
 		//case Format::R8G8B8A8_TYPELESS:
 		case Format::R8G8B8A8_UNORM:
 		case Format::R8G8B8A8_UNORM_SRGB:
@@ -321,7 +345,7 @@ namespace wr
 		case Format::R8G8B8A8_SINT:
 		//case Format::R16G16_TYPELESS:
 		case Format::R16G16_FLOAT:
-		//case Format::R16G16_UNORM:
+		case Format::R16G16_UNORM:
 		case Format::R16G16_UINT:
 		case Format::R16G16_SNORM:
 		case Format::R16G16_SINT:
@@ -354,21 +378,21 @@ namespace wr
 		//	return 24;
 
 		//case Format::R8G8_TYPELESS:
-		//case Format::R8G8_UNORM:
-		//case Format::R8G8_UINT:
-		//case Format::R8G8_SNORM:
-		//case Format::R8G8_SINT:
+		case Format::R8G8_UNORM:
+		case Format::R8G8_UINT:
+		case Format::R8G8_SNORM:
+		case Format::R8G8_SINT:
 		//case Format::R16_TYPELESS:
 		case Format::R16_FLOAT:
 		//case Format::D16_UNORM:
 		case Format::R16_UNORM:
 		case Format::R16_UINT:
-		//case Format::R16_SNORM:
+		case Format::R16_SNORM:
 		case Format::R16_SINT:
-		//case Format::B5G6R5_UNORM:
-		//case Format::B5G5R5A1_UNORM:
+		case Format::B5G6R5_UNORM:
+		case Format::B5G5R5A1_UNORM:
 		//case Format::A8P8:
-		//case Format::B4G4R4A4_UNORM:
+		case Format::B4G4R4A4_UNORM:
 			return 16;
 
 		//case Format::NV12:
@@ -381,7 +405,7 @@ namespace wr
 		case Format::R8_UINT:
 		case Format::R8_SNORM:
 		case Format::R8_SINT:
-		//case Format::A8_UNORM:
+		case Format::A8_UNORM:
 		//case Format::AI44:
 		//case Format::IA44:
 		//case Format::P8:

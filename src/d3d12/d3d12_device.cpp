@@ -125,6 +125,59 @@ namespace wr::d3d12
 			device->m_adapter = (IDXGIAdapter4*)adapter;
 		}
 
+		void QueryForOptionalFormats(Device* device)
+		{
+			D3D12_FEATURE_DATA_D3D12_OPTIONS feature_data;
+			ZeroMemory(&feature_data, sizeof(feature_data));
+			HRESULT hr = device->m_native->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &feature_data, sizeof(feature_data));
+
+			if (SUCCEEDED(hr))
+			{
+				// TypedUAVLoadAdditionalFormats contains a Boolean that tells you whether the feature is supported or not
+				if (feature_data.TypedUAVLoadAdditionalFormats)
+				{
+					// Can assume “all-or-nothing” subset is supported (e.g. R32G32B32A32_FLOAT)
+					// Cannot assume other formats are supported, so we check:
+
+					auto CheckAndSetFormat = [](Device* device, DXGI_FORMAT format)
+					{
+						D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = { format, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE };
+						HRESULT hr = device->m_native->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &format_support, sizeof(format_support));
+						if (SUCCEEDED(hr) && (format_support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0)
+						{
+							device->m_optional_formats.set(format);
+						}
+					};
+
+					CheckAndSetFormat(device, DXGI_FORMAT_R16G16B16A16_UNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R16G16B16A16_SNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R32G32_FLOAT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R32G32_UINT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R32G32_SINT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R10G10B10A2_UNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R10G10B10A2_UINT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R11G11B10_FLOAT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R8G8B8A8_SNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R16G16_FLOAT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R16G16_UNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R16G16_UINT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R16G16_SNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R16G16_SINT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R8G8_UNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R8G8_UINT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R8G8_SNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R8G8_SINT);
+					CheckAndSetFormat(device, DXGI_FORMAT_R16_UNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R16_SNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_R8_SNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_A8_UNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_B5G6R5_UNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_B5G5R5A1_UNORM);
+					CheckAndSetFormat(device, DXGI_FORMAT_B4G4R4A4_UNORM);
+				}
+			}
+		}
+
 		// Returns bool whether the device supports DirectX Raytracing tier.
 		inline bool IsDXRSupported(IDXGIAdapter1* adapter)
 		{
@@ -221,7 +274,7 @@ namespace wr::d3d12
 
 		TRY_M(D3D12CreateDevice(device->m_adapter, device->m_feature_level, IID_PPV_ARGS(&device->m_native)),
 			"Failed to create D3D12Device.");
-		
+
 		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			auto fallback_device_flags = d3d12::settings::force_dxr_fallback ? CreateRaytracingFallbackDeviceFlags::ForceComputeFallback : CreateRaytracingFallbackDeviceFlags::None;
@@ -239,6 +292,8 @@ namespace wr::d3d12
 
 		std::wstring g = device->m_adapter_info.Description;
 		LOG("{}", std::string(g.begin(), g.end()));
+
+		internal::QueryForOptionalFormats(device);
 
 		return device;
 	}
