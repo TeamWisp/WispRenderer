@@ -213,7 +213,9 @@ namespace wr
 
 					for (size_t k = i + 1; k < j; ++k)
 					{
+						memcpy(m_light_nodes[k - 1]->m_light, m_light_nodes[k]->m_light, sizeof(Light));
 						--m_light_nodes[k]->m_light;
+						m_light_nodes[k]->SignalChange();
 					}
 
 					//Update light count
@@ -231,6 +233,8 @@ namespace wr
 				}
 			}
 		}
+
+		m_next_light_id = (uint32_t) m_light_nodes.size();
 
 		node.reset();
 

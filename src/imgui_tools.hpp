@@ -4,6 +4,7 @@
 #include <functional>
 
 #include "imgui/imgui.hpp"
+#include "scene_graph/light_node.hpp"
 
 namespace wr
 {
@@ -38,6 +39,7 @@ namespace wr::imgui
 		static bool open_root_signature_registry = true;
 		static bool open_light_editor = true;
 		static bool open_model_editor = true;
+		static wr::LightNode* selected_light = nullptr;
 	}
 
 	namespace special

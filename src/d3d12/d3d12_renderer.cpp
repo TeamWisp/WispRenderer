@@ -916,8 +916,15 @@ namespace wr
 			offset_end = i;
 		}
 
-		if (!should_update)
+		if (!should_update && !(offset_end == offset_start && offset_start == 0))
 			return;
+
+		//Update light count
+
+		scene_graph.GetLight(0)->tid &= 3;
+		scene_graph.GetLight(0)->tid |= scene_graph.GetCurrentLightSize() << 2;
+
+		//Update structured buffer
 
 		StructuredBufferHandle* structured_buffer = scene_graph.GetLightBuffer();
 
