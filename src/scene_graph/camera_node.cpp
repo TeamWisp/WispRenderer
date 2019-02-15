@@ -21,13 +21,13 @@ namespace wr
 		DirectX::XMVECTOR pos = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };
 
 		DirectX::XMVECTOR up = DirectX::XMVector3Normalize(m_transform.r[1]);
-		DirectX::XMVECTOR forward =DirectX::XMVector3Normalize(m_transform.r[2]);
+		DirectX::XMVECTOR forward = DirectX::XMVectorNegate(DirectX::XMVector3Normalize(m_transform.r[2]));
 		DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
-		m_view = DirectX::XMMatrixLookAtRH(pos, DirectX::XMVectorAdd(pos, forward), up);
+		m_view = DirectX::XMMatrixLookToRH(pos, forward, up);
 
 		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
-		m_view_projection = DirectX::XMMatrixMultiply(m_view, m_projection);
+		m_view_projection = m_view * m_projection;
 		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 		m_inverse_view = DirectX::XMMatrixInverse(nullptr, m_view);
 

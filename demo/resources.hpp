@@ -12,6 +12,7 @@ namespace resources
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
+	static wr::Model* plane_mirror_model;
 	static wr::Model* light_model;
 	static wr::Model* test_model;
 	static wr::Model* sphere_model;
@@ -250,6 +251,14 @@ namespace resources
 				for (auto& m : plane_model->m_meshes)
 				{
 					m.second = &bamboo_material;
+				}
+
+
+				//plane_mirror_model = plane_model;
+
+				//for (auto& m : plane_mirror_model->m_meshes)
+				{
+					//m.second = &mirror_material;
 				}
 		}
 

@@ -252,7 +252,6 @@ void RaygenEntry()
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
-	screen_co.y = (DispatchRaysDimensions().y - screen_co.y - 1);
 
 	// Get g-buffer information
 	float4 albedo_roughness = gbuffer_albedo[screen_co];
@@ -260,10 +259,10 @@ void RaygenEntry()
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(uv, depth);
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
-	float3 normal = -normal_metallic.xyz;
+	float3 normal = normal_metallic.xyz;
 	float metallic = normal_metallic.w;
 
 	// Do lighting

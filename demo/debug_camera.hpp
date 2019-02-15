@@ -50,9 +50,9 @@ public:
 			m_up_axis = std::min(m_up_axis, 1.f);
 			m_up_axis = std::max(m_up_axis, -1.f);
 
-			DirectX::XMVECTOR forward = DirectX::XMVectorNegate(DirectX::XMVector3Normalize(m_transform.r[2]));
-			DirectX::XMVECTOR up = DirectX::XMVectorNegate(DirectX::XMVector3Normalize(m_transform.r[1]));
-			DirectX::XMVECTOR right = DirectX::XMVectorNegate(DirectX::XMVector3Normalize(m_transform.r[0]));
+			DirectX::XMVECTOR forward = DirectX::XMVector3Normalize(m_transform.r[2]);
+			DirectX::XMVECTOR up = DirectX::XMVector3Normalize(m_transform.r[1]);
+			DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
 			m_target_position = DirectX::XMVectorAdd(m_target_position, DirectX::XMVectorScale(forward, delta * m_speed * m_forward_axis));
 			m_target_position = DirectX::XMVectorAdd(m_target_position, DirectX::XMVectorScale(up, delta * m_speed * m_up_axis));

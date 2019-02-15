@@ -19,7 +19,7 @@ namespace viknell_scene
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
-		camera->SetPosition({ 0, 0, 9 });
+		camera->SetPosition({ 0, 0, 2.5 });
 		camera->SetSpeed(10);
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
@@ -34,12 +34,12 @@ namespace viknell_scene
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
-		floor->SetPosition({ 0, 1, 0 });
+		floor->SetPosition({ 0, -1, 0 });
+		floor->SetRotation({90_deg, 0, 0});
 		sphere->SetPosition({ 1, -1, -1 });
 		sphere->SetScale({ 0.6f, 0.6f, 0.6f });
-		floor->SetRotation({ -90_deg, 0, 0 });
-		roof->SetPosition({ 0, -1, 0 });
-		roof->SetRotation({ 90_deg, 0, 0 });
+		roof->SetPosition({ 0, 1, 0 });
+		roof->SetRotation({ -90_deg, 0, 0 });
 		roof_light->SetPosition({ 0, 0.999, 0 });
 		roof_light->SetRotation({ -90_deg, 0, 0 });
 		roof_light->SetScale({ 0.7, 0.7, 0.7 });
