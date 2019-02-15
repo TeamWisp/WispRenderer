@@ -99,7 +99,7 @@ namespace fg_manager
 
 	void Resize(wr::RenderSystem& render_system, std::uint32_t width, std::uint32_t height)
 	{
-		for (int i = 0; i < 3; ++i) 
+		for (int i = 0; i < frame_graphs.size(); ++i)
 		{
 			frame_graphs[i]->Resize(render_system, width, height);
 		}
