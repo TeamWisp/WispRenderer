@@ -16,6 +16,7 @@
 #include "model_loader_assimp.hpp"
 
 #include "util/log.hpp"
+#include "util/aabb.hpp"
 #include "vertex.hpp"
 
 struct aiScene;
@@ -36,6 +37,7 @@ namespace wr
 	struct Mesh
 	{
 		std::uint64_t id;
+		Box m_box;
 	};
 
 	template<typename TV, typename TI = std::uint32_t>
@@ -51,41 +53,9 @@ namespace wr
 		ModelPool* m_model_pool;
 		std::string m_model_name;
 
-		//AABB data; -X, X, -Y, Y, -Z, Z
-		DirectX::XMVECTOR m_box[6] = {
-			{
-				std::numeric_limits<float>::max(),
-				std::numeric_limits<float>::max(),
-				std::numeric_limits<float>::max()
-			},
-			{
-				-std::numeric_limits<float>::max(),
-				-std::numeric_limits<float>::max(),
-				-std::numeric_limits<float>::max()
-			},
-			{
-				std::numeric_limits<float>::max(),
-				std::numeric_limits<float>::max(),
-				std::numeric_limits<float>::max()
-			},
-			{
-				-std::numeric_limits<float>::max(),
-				-std::numeric_limits<float>::max(),
-				-std::numeric_limits<float>::max()
-			},
-			{
-				std::numeric_limits<float>::max(),
-				std::numeric_limits<float>::max(),
-				std::numeric_limits<float>::max()
-			},
-			{
-				-std::numeric_limits<float>::max(),
-				-std::numeric_limits<float>::max(),
-				-std::numeric_limits<float>::max()
-			}
-		};
+		Box m_box;
 
-		void CalculateAABB(float (&pos)[3]);
+		void Expand(float (&pos)[3], Mesh *mesh);
 
 	};
 
@@ -181,7 +151,7 @@ namespace wr
 			{
 				for (uint32_t j = 0, k = (uint32_t) meshes[i].m_vertices.size(); j < k; ++j)
 				{
-					model->CalculateAABB(meshes[i].m_vertices[j].m_pos);
+					model->Expand(meshes[i].m_vertices[j].m_pos, mesh);
 				}
 			}
 
