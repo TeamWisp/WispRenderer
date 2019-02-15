@@ -132,7 +132,7 @@ namespace wr
 	{
 	}
 
-	void D3D12TexturePool::EndOfFrame()
+	void D3D12TexturePool::ReleaseTemporaryResources()
 	{
 		m_mipmapping_allocator->ReleaseStaleDescriptors();
 
