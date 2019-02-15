@@ -14,7 +14,7 @@ namespace wr
 		{
 			SRV,
 			SRV_RANGE,
-			CBV,
+			CBV_OR_CONST,
 			CBV_RANGE,
 			UAV,
 			UAV_RANGE,
@@ -30,7 +30,7 @@ namespace wr
 		template<typename T, typename E>
 		constexpr unsigned int GetStart(const T data, const E name)
 		{
-			Type type = Type::CBV;
+			Type type = Type::CBV_OR_CONST;
 			unsigned int start = 0;
 
 			// Find Type
@@ -98,27 +98,12 @@ namespace wr
 		}
 
 		template<typename T, typename E>
-		constexpr CD3DX12_DESCRIPTOR_RANGE GetSRVRange(const T data, const E name)
+		constexpr CD3DX12_DESCRIPTOR_RANGE GetRange(const T data, const Type type, const E name)
 		{
-			const Type type = Type::SRV_RANGE;
 			unsigned int start = 0;
-
-			// Find Start
-			for (std::size_t i = 0; i < data.size(); i++)
-			{
-				auto entry = data[i];
-				if (static_cast<E>(entry.name) == name)
-				{
-					break;
-				}
-				else if (entry.type == type)
-				{
-					start += entry.size;
-				}
-			}
-
-			// Find Size
 			unsigned int size = 0;
+
+			// Find Start & Size
 			for (std::size_t i = 0; i < data.size(); i++)
 			{
 				auto entry = data[i];
@@ -127,62 +112,48 @@ namespace wr
 					size = entry.size;
 					break;
 				}
-			}
-
-			CD3DX12_DESCRIPTOR_RANGE retval;
-			retval.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, size, start);
-			return retval;
-		}
-
-		template<typename T, typename E>
-		constexpr CD3DX12_DESCRIPTOR_RANGE GetUAVRange(const T data, const E name)
-		{
-			const Type type = Type::UAV_RANGE;
-			unsigned int start = 0;
-
-			// Find Start
-			for (std::size_t i = 0; i < data.size(); i++)
-			{
-				auto entry = data[i];
-				if (static_cast<E>(entry.name) == name)
-				{
-					break;
-				}
 				else if (entry.type == type)
 				{
 					start += entry.size;
 				}
 			}
 
-			// Find Size
-			unsigned int size = 0;
-			for (std::size_t i = 0; i < data.size(); i++)
+			D3D12_DESCRIPTOR_RANGE_TYPE d3d12_range_type = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+			switch (type)
 			{
-				auto entry = data[i];
-				if (static_cast<E>(entry.name) == name)
-				{
-					size = entry.size;
-					break;
-				}
+			case Type::SRV_RANGE:
+				d3d12_range_type = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+				break;
+			case Type::UAV_RANGE:
+				d3d12_range_type = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+				break;
+			case Type::CBV_RANGE:
+				d3d12_range_type = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+				break;
+			default:
+				LOGW("Unknown range type");
+				break;
 			}
 
 			CD3DX12_DESCRIPTOR_RANGE retval;
-			retval.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, size, start);
+			retval.Init(d3d12_range_type, size, start);
 			return retval;
 		}
 
 		template<typename T, typename E>
 		constexpr CD3DX12_ROOT_PARAMETER GetCBV(const T data, const E name, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
 		{
-			const Type type = Type::CBV;
+			const Type type = Type::CBV_OR_CONST;
 			unsigned int start = 0;
+			unsigned int size = 0;
 
-			// Find Start
+			// Find Start & Size
 			for (std::size_t i = 0; i < data.size(); i++)
 			{
 				auto entry = data[i];
 				if (static_cast<E>(entry.name) == name)
 				{
+					size = entry.size;
 					break;
 				}
 				else if (entry.type == type)
@@ -193,6 +164,34 @@ namespace wr
 
 			CD3DX12_ROOT_PARAMETER retval;
 			retval.InitAsConstantBufferView(start, 0, visibility);
+
+			return retval;
+		}
+
+		template<typename T, typename E>
+		constexpr CD3DX12_ROOT_PARAMETER GetConstants(const T data, const E name, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
+		{
+			const Type type = Type::CBV_OR_CONST;
+			unsigned int start = 0;
+			unsigned int size = 0;
+
+			// Find Start
+			for (std::size_t i = 0; i < data.size(); i++)
+			{
+				auto entry = data[i];
+				if (static_cast<E>(entry.name) == name)
+				{
+					size = entry.size;
+					break;
+				}
+				else if (entry.type == type)
+				{
+					start += entry.size;
+				}
+			}
+
+			CD3DX12_ROOT_PARAMETER retval;
+			retval.InitAsConstants(size, start, 0, visibility);
 
 			return retval;
 		}
@@ -213,8 +212,8 @@ namespace wr
 		};
 
 		constexpr std::array<rs_layout::Entry, 6> basic = {
-			rs_layout::Entry{(int)BasicE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV},
-			rs_layout::Entry{(int)BasicE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV},
+			rs_layout::Entry{(int)BasicE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)BasicE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)BasicE::ALBEDO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
@@ -223,6 +222,7 @@ namespace wr
 
 		enum class DeferredCompositionE
 		{
+			CAMERA_PROPERTIES,
 			GBUFFER_ALBEDO_ROUGHNESS,
 			GBUFFER_NORMAL_METALLIC,
 			GBUFFER_DEPTH,
@@ -232,7 +232,8 @@ namespace wr
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 7> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 8> deferred_composition = {
+			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_DEPTH, 1, rs_layout::Type::SRV_RANGE},
@@ -246,11 +247,13 @@ namespace wr
 		{
 			SOURCE,
 			DEST,
+			TEXEL_SIZE,
 		};
 
 		constexpr std::array<rs_layout::Entry, 7> mip_mapping = {
 			rs_layout::Entry{(int)MipMappingE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)MipMappingE::DEST, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)MipMappingE::TEXEL_SIZE, 2, rs_layout::Type::CBV_OR_CONST},
 		};
 
 	} /* srv */
