@@ -108,19 +108,19 @@ public:
 	{
 		if (action == WM_KEYDOWN)
 		{
-			if (key == 0x57) // W
+			if (key == 'W')
 			{
 				m_forward_axis += -1;
 			}
-			if (key == 0x53) // S
+			if (key == 'S')
 			{
 				m_forward_axis += 1;
 			}
-			if (key == 0x41) // A
+			if (key == 'A')
 			{
 				m_right_axis += -1;
 			}
-			if (key == 0x44) // D
+			if (key == 'D')
 			{
 				m_right_axis += 1;
 			}
@@ -136,19 +136,19 @@ public:
 		
 		else if (action == WM_KEYUP)
 		{
-			if (key == 0x57) // W
+			if (key == 'W')
 			{
 				m_forward_axis -= -1;
 			}
-			if (key == 0x53) // S
+			if (key == 'S')
 			{
 				m_forward_axis -= 1;
 			}
-			if (key == 0x41) // A
+			if (key == 'A')
 			{
 				m_right_axis -= -1;
 			}
-			if (key == 0x44) // D
+			if (key == 'D')
 			{
 				m_right_axis -= 1;
 			}
