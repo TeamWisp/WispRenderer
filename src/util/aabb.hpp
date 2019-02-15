@@ -9,8 +9,17 @@ namespace wr
 	struct Box
 	{
 
-		//-X, X, -Y, Y, -Z, Z
-		DirectX::XMVECTOR m_corners[6];
+		union
+		{
+
+			struct
+			{
+				DirectX::XMVECTOR m_xmin, m_xmax, m_ymin, m_ymax, m_zmin, m_zmax;
+			};
+
+			DirectX::XMVECTOR m_corners[6];
+
+		};
 
 		//Max bounds on each corner
 		Box();
@@ -29,9 +38,11 @@ namespace wr
 	struct AABB
 	{
 		
-		union {
+		union
+		{
 
-			struct {
+			struct
+			{
 				DirectX::XMVECTOR m_min, m_max;
 			};
 

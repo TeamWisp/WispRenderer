@@ -116,40 +116,35 @@ namespace wr
 
 	void Box::ExpandFromVector(DirectX::XMVECTOR pos)
 	{
-		//-X
-		if (pos.m128_f32[0] < m_corners[0].m128_f32[0])
+
+		if (pos.m128_f32[0] < m_xmin.m128_f32[0])
 		{
-			m_corners[0] = pos;
+			m_xmin = pos;
 		}
 
-		//X
-		if (pos.m128_f32[0] > m_corners[1].m128_f32[0])
+		if (pos.m128_f32[0] > m_xmax.m128_f32[0])
 		{
-			m_corners[1] = pos;
+			m_xmax = pos;
 		}
 
-		//-Y
-		if (pos.m128_f32[1] < m_corners[2].m128_f32[1])
+		if (pos.m128_f32[1] < m_ymin.m128_f32[1])
 		{
-			m_corners[2] = pos;
+			m_ymin = pos;
 		}
 
-		//Y
-		if (pos.m128_f32[1] > m_corners[3].m128_f32[1])
+		if (pos.m128_f32[1] > m_ymax.m128_f32[1])
 		{
-			m_corners[3] = pos;
+			m_ymax = pos;
 		}
 
-		//-Z
-		if (pos.m128_f32[2] < m_corners[4].m128_f32[2])
+		if (pos.m128_f32[2] < m_zmin.m128_f32[2])
 		{
-			m_corners[4] = pos;
+			m_zmin = pos;
 		}
 
-		//Z
-		if (pos.m128_f32[2] > m_corners[5].m128_f32[2])
+		if (pos.m128_f32[2] > m_zmax.m128_f32[2])
 		{
-			m_corners[5] = pos;
+			m_zmax = pos;
 		}
 	}
 
