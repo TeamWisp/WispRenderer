@@ -26,12 +26,17 @@ struct Vertex
 
 struct Material
 {
-	float idx_offset;
-	float vertex_offset;
 	float albedo_id;
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
+};
+
+struct Offset
+{
+    float material_idx;
+    float idx_offset;
+    float vertex_offset;
 };
 
 RWTexture2D<float4> gOutput : register(u0);
@@ -40,12 +45,13 @@ ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Light> lights : register(t2);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
+StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[20] : register(t6);
-Texture2D gbuffer_albedo : register(t26);
-Texture2D gbuffer_normal : register(t27);
-Texture2D gbuffer_depth : register(t28);
-Texture2D skybox : register(t5);
+Texture2D g_textures[20] : register(t7);
+Texture2D gbuffer_albedo : register(t27);
+Texture2D gbuffer_normal : register(t28);
+Texture2D gbuffer_depth : register(t29);
+Texture2D skybox : register(t6);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -244,27 +250,6 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float
 
 #define M_PI 3.14159265358979
 
-float2 VectorToLatLong(float3 dir)
-{
-	float3 p = normalize(dir);
-
-	// atan2_WAR is a work-around due to an apparent compiler bug in atan2
-	float u = (1.f + atan2(p.x, -p.z) / M_PI) * 0.5f;
-	float v = acos(p.y*-1) / M_PI;
-	return float2(u, v);
-}
-
-float3 SampleSkybox(float3 dir)
-{
-	// Load some information about our lightprobe texture
-	float2 dims;
-	skybox.GetDimensions(dims.x, dims.y);
-
-	// Convert our ray direction to a (u,v) coordinate
-	float2 uv = VectorToLatLong(dir);
-	return skybox[uint2(uv * dims)].rgb;
-}
-
 [shader("raygeneration")]
 void RaygenEntry()
 {
@@ -293,7 +278,7 @@ void RaygenEntry()
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		gOutput[DispatchRaysIndex().xy] = float4(SampleSkybox(-V), 1);
+		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(V), 0));
 		return;
 	}
 
@@ -335,9 +320,11 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 [shader("closesthit")]
 void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 {
-	const Material material = g_materials[InstanceID()];
-	const float index_offset = material.idx_offset;
-	const float vertex_offset = material.vertex_offset;
+	// Calculate the essentials
+	const Offset offset = g_offsets[InstanceID()];
+	const Material material = g_materials[g_offsets[InstanceID()].material_idx];
+	const float index_offset = offset.idx_offset;
+	const float vertex_offset = offset.vertex_offset;
 	const float3x4 model_matrix = ObjectToWorld3x4();
 
 	// Find first index location
@@ -396,5 +383,5 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
-	payload.color = SampleSkybox(WorldRayDirection());
+	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(-WorldRayDirection()), 0);
 }

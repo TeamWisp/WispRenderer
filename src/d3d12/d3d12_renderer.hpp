@@ -78,12 +78,17 @@ namespace wr
 
 		struct RayTracingMaterial_CBData
 		{
-			float idx_offset;
-			float vertex_offset;
 			float albedo_id;
 			float normal_id;
 			float roughness_id;
 			float metallicness_id;
+		};
+
+		struct RayTracingOffset_CBData
+		{
+			float material_idx;
+			float idx_offset;
+			float vertex_offset;
 		};
 
 		static const constexpr float size = 1.0f;
@@ -180,6 +185,7 @@ namespace wr
 
 		std::shared_ptr<ConstantBufferPool> m_raytracing_cb_pool;
 		std::shared_ptr<StructuredBufferPool> m_raytracing_material_sb_pool;
+		std::shared_ptr<StructuredBufferPool> m_raytracing_offset_sb_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;

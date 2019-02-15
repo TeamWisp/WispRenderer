@@ -108,7 +108,7 @@ namespace wr
 					//d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
 					//Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
 
-					auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
+					auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(skybox->m_hdr.m_id));
 					d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
 					Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
 				}
