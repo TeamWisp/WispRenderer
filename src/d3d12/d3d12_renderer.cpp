@@ -1005,7 +1005,7 @@ namespace wr
 				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(batch.batch_buffer);
 				if constexpr (!d3d12::settings::use_exec_indirect)
 				{
-					d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, 1, GetFrameIdx());
+					d3d12::BindConstantBuffer(n_cmd_list, d3d12_cb_handle->m_native, rs_layout::GetStart(srv::basic, srv::BasicE::OBJECT_PROPERTIES), GetFrameIdx());
 				}
 
 				//Render meshes
@@ -1089,10 +1089,10 @@ namespace wr
 		auto metallic_handle = material_internal->GetMetallic();
 		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		d3d12::SetShaderSRV(n_cmd_list, 2, 0, albedo_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 1, normal_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 2, roughness_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 3, metallic_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, rs_layout::GetHeapLoc(srv::basic, srv::BasicE::ALBEDO), albedo_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, rs_layout::GetHeapLoc(srv::basic, srv::BasicE::NORMAL), normal_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, rs_layout::GetHeapLoc(srv::basic, srv::BasicE::ROUGHNESS), roughness_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, rs_layout::GetHeapLoc(srv::basic, srv::BasicE::METALLIC), metallic_internal);
 	}
 	
 	unsigned int D3D12RenderSystem::GetFrameIdx()

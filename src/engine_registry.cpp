@@ -13,14 +13,18 @@
 namespace wr
 {
 	//Basic Deferred Pass Root Signature
-	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> ranges_basic
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 4> ranges_basic
 	{
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); return r; }(),
+		[] { return rs_layout::GetSRVRange(srv::basic, srv::BasicE::ALBEDO); }(),
+		[] { return rs_layout::GetSRVRange(srv::basic, srv::BasicE::NORMAL); }(),
+		[] { return rs_layout::GetSRVRange(srv::basic, srv::BasicE::ROUGHNESS); }(),
+		[] { return rs_layout::GetSRVRange(srv::basic, srv::BasicE::METALLIC); }(),
 	};
+
 	REGISTER(root_signatures::basic) = RootSignatureRegistry::Get().Register({
 		{
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX); return d; }(),
+			[] { return GetCBV(srv::basic, srv::BasicE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX); }(),
+			[] { return GetCBV(srv::basic, srv::BasicE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX); }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(ranges_basic.size(), ranges_basic.data(), D3D12_SHADER_VISIBILITY_PIXEL); return d; }()
 		},
 		{
@@ -29,20 +33,21 @@ namespace wr
 	});
 
 	//Deferred Composition Root Signature
-	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> srv_ranges
+	std::array<CD3DX12_DESCRIPTOR_RANGE, 7> srv_ranges
 	{ 
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0); return r; }(),
-		
+		[] { return rs_layout::GetSRVRange(srv::deferred_composition, srv::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS); }(),
+		[] { return rs_layout::GetSRVRange(srv::deferred_composition, srv::DeferredCompositionE::GBUFFER_NORMAL_METALLIC); }(),
+		[] { return rs_layout::GetSRVRange(srv::deferred_composition, srv::DeferredCompositionE::GBUFFER_DEPTH); }(),
+		[] { return rs_layout::GetSRVRange(srv::deferred_composition, srv::DeferredCompositionE::LIGHT_BUFFER); }(),
+		[] { return rs_layout::GetSRVRange(srv::deferred_composition, srv::DeferredCompositionE::SKY_BOX); }(),
+		[] { return rs_layout::GetSRVRange(srv::deferred_composition, srv::DeferredCompositionE::IRRADIANCE_MAP); }(),
+		[] { return rs_layout::GetUAVRange(srv::deferred_composition, srv::DeferredCompositionE::OUTPUT); }(),
 	};
-	std::array<CD3DX12_DESCRIPTOR_RANGE, 1> uav_ranges
-	{
-		[] {CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); return r; }(),
-	};
+
 	REGISTER(root_signatures::deferred_composition) = RootSignatureRegistry::Get().Register({
 		{
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL); return d; }(),
 			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(srv_ranges.size(), srv_ranges.data(), D3D12_SHADER_VISIBILITY_ALL); return d; }(),
-			[] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(uav_ranges.size(), uav_ranges.data(), D3D12_SHADER_VISIBILITY_ALL); return d; }(),
 		},
 		{
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP }
@@ -53,8 +58,8 @@ namespace wr
 	//MipMapping Root Signature
 	std::array< CD3DX12_DESCRIPTOR_RANGE, 2> mip_in_out_ranges
 	{
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0); return r; } (),
-		[] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0); return r; } ()
+		[] { return rs_layout::GetSRVRange(srv::mip_mapping, srv::MipMappingE::SOURCE); }(),
+		[] { return rs_layout::GetSRVRange(srv::mip_mapping, srv::MipMappingE::DEST); }(),
 	};
 	REGISTER(root_signatures::mip_mapping) = RootSignatureRegistry::Get().Register({
 		{
