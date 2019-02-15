@@ -11,7 +11,16 @@ namespace wr::d3d12
 	{
 		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-		if (allow_uav) { flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; }
+		if (allow_uav) 
+		{ 
+			//if (!d3d12::CheckUAVCompatibility(description->m_texture_format))
+			//{
+			//	LOGC("[ERROR] CreateTexture: Specified format doesn't support UAV");
+			//}
+
+			flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; 
+		}
+
 		if (description->m_initial_state == ResourceState::RENDER_TARGET) { flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; }
 
 		D3D12_RESOURCE_DESC desc = {};
@@ -102,7 +111,6 @@ namespace wr::d3d12
 		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
 		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srv_desc.Format = (DXGI_FORMAT)tex->m_format;
-		srv_desc.Texture2D.MipLevels = tex->m_mip_levels;
 
 		//Calculate dimension
 		D3D12_SRV_DIMENSION dimension;
@@ -110,6 +118,7 @@ namespace wr::d3d12
 		if (tex->m_is_cubemap)
 		{
 			dimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			srv_desc.TextureCube.MipLevels = tex->m_mip_levels;
 		}
 		else
 		{
@@ -117,6 +126,7 @@ namespace wr::d3d12
 			{
 				//Then it's a 3D texture
 				dimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+				srv_desc.Texture3D.MipLevels = tex->m_mip_levels;
 			}
 			else
 			{
@@ -125,10 +135,13 @@ namespace wr::d3d12
 					if (tex->m_array_size > 1)
 					{
 						dimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+						srv_desc.Texture2DArray.MipLevels = tex->m_mip_levels;
+						srv_desc.Texture2DArray.ArraySize = tex->m_array_size;
 					}
 					else
 					{
 						dimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+						srv_desc.Texture2D.MipLevels = tex->m_mip_levels;
 					}
 				}
 				else
@@ -137,10 +150,91 @@ namespace wr::d3d12
 					if (tex->m_array_size > 1)
 					{
 						dimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+
+						srv_desc.Texture1DArray.MipLevels = tex->m_mip_levels;
+						srv_desc.Texture1DArray.ArraySize = tex->m_array_size;
 					}
 					else
 					{
 						dimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+
+						srv_desc.Texture1D.MipLevels = tex->m_mip_levels;
+					}
+				}
+			}
+
+		}
+
+		srv_desc.ViewDimension = dimension;
+
+		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
+	}
+
+	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_levels, unsigned int most_detailed_mip)
+	{
+		decltype(Device::m_native) n_device;
+
+		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
+
+		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srv_desc.Format = (DXGI_FORMAT)tex->m_format;
+
+		//Calculate dimension
+		D3D12_SRV_DIMENSION dimension;
+
+		if (tex->m_is_cubemap)
+		{
+			dimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			srv_desc.TextureCube.MipLevels = mip_levels;
+			srv_desc.TextureCube.MostDetailedMip = most_detailed_mip;
+		}
+		else
+		{
+			if (tex->m_depth > 1)
+			{
+				//Then it's a 3D texture
+				dimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+				srv_desc.Texture3D.MipLevels = mip_levels;
+				srv_desc.Texture3D.MostDetailedMip = most_detailed_mip;
+			}
+			else
+			{
+				if (tex->m_height > 1)
+				{
+					if (tex->m_array_size > 1)
+					{
+						dimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+						srv_desc.Texture2DArray.MipLevels = mip_levels;
+						srv_desc.Texture2DArray.MostDetailedMip = most_detailed_mip;
+						srv_desc.Texture2DArray.ArraySize = tex->m_array_size;
+					}
+					else
+					{
+						dimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+						srv_desc.Texture2D.MipLevels = mip_levels;
+						srv_desc.Texture2D.MostDetailedMip = most_detailed_mip;
+					}
+				}
+				else
+				{
+					//Then it's a 1D texture
+					if (tex->m_array_size > 1)
+					{
+						dimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+
+						srv_desc.Texture1DArray.MipLevels = mip_levels;
+						srv_desc.Texture1DArray.MostDetailedMip = most_detailed_mip;
+						srv_desc.Texture1DArray.ArraySize = tex->m_array_size;
+					}
+					else
+					{
+						dimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+
+						srv_desc.Texture1D.MipLevels = mip_levels;
+						srv_desc.Texture1D.MostDetailedMip = most_detailed_mip;
 					}
 				}
 			}
@@ -292,11 +386,35 @@ namespace wr::d3d12
 		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
 	}
 
+	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle)
+	{
+		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
 	{
 		d3d12::DescHeapCPUHandle handle = tex->m_uav_allocation.GetDescriptorHandle();
 
 		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle)
+	{
+		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture)
+	{
+		ResourceState src_original_state = src_texture->m_current_state;
+		ResourceState dst_original_state = dst_texture->m_current_state;
+
+		d3d12::Transition(cmd_list, src_texture, src_original_state, ResourceState::COPY_SOURCE);
+		d3d12::Transition(cmd_list, dst_texture, dst_original_state, ResourceState::COPY_DEST);
+
+		cmd_list->m_native->CopyResource(dst_texture->m_resource, src_texture->m_resource);
+
+		d3d12::Transition(cmd_list, src_texture, ResourceState::COPY_SOURCE, src_original_state);
+		d3d12::Transition(cmd_list, dst_texture, ResourceState::COPY_DEST, dst_original_state);
 	}
 
 	void Destroy(TextureResource* tex)
@@ -305,5 +423,121 @@ namespace wr::d3d12
 		delete tex;
 	}
 
+	bool CheckUAVCompatibility(Format format)
+	{
+		switch (format)
+		{
+		case Format::R32G32B32A32_FLOAT:
+		case Format::R32G32B32A32_UINT:
+		case Format::R32G32B32A32_SINT:
+		case Format::R16G16B16A16_FLOAT:
+		case Format::R16G16B16A16_UINT:
+		case Format::R16G16B16A16_SINT:
+		case Format::R8G8B8A8_UNORM:
+		case Format::R8G8B8A8_UINT:
+		case Format::R8G8B8A8_SINT:
+		case Format::R32_FLOAT:
+		case Format::R32_UINT:
+		case Format::R32_SINT:
+		case Format::R16_FLOAT:
+		case Format::R16_UINT:
+		case Format::R16_SINT:
+		case Format::R8_UNORM:
+		case Format::R8_UINT:
+		case Format::R8_SINT:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool CheckOptionalUAVFormat(Format format)
+	{
+		switch (format)
+		{
+		case Format::R16G16B16A16_UNORM:
+		case Format::R16G16B16A16_SNORM:
+		case Format::R32G32_FLOAT:
+		case Format::R32G32_UINT:
+		case Format::R32G32_SINT:
+		case Format::R10G10B10A2_UNORM:
+		case Format::R10G10B10A2_UINT:
+		case Format::R11G11B10_FLOAT:
+		case Format::R8G8B8A8_SNORM:
+		case Format::R16G16_FLOAT:
+		case Format::R16G16_UNORM:
+		case Format::R16G16_UINT:
+		case Format::R16G16_SNORM:
+		case Format::R16G16_SINT:
+		case Format::R8G8_UNORM:
+		case Format::R8G8_UINT:
+		case Format::R8G8_SNORM:
+		case Format::R8G8_SINT:
+		case Format::R16_UNORM:
+		case Format::R16_SNORM:
+		case Format::R8_SNORM:
+		case Format::A8_UNORM:
+		case Format::B5G6R5_UNORM:
+		case Format::B5G5R5A1_UNORM:
+		case Format::B4G4R4A4_UNORM:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool CheckBGRFormat(Format format)
+	{
+		switch (format)
+		{
+		case Format::B8G8R8A8_UNORM:
+		case Format::B8G8R8X8_UNORM:
+		case Format::B8G8R8A8_UNORM_SRGB:
+		case Format::B8G8R8X8_UNORM_SRGB:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool CheckSRGBFormat(Format format)
+	{
+		switch (format)
+		{
+		case Format::R8G8B8A8_UNORM_SRGB:
+		case Format::B8G8R8A8_UNORM_SRGB:
+		case Format::B8G8R8X8_UNORM_SRGB:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool IsOptionalFormatSupported(Device* device, Format format)
+	{
+		return device->m_optional_formats.test(static_cast<DXGI_FORMAT>(format));
+	}
+
+	Format RemoveSRGB(Format format)
+	{
+		Format out_format = Format::UNKNOWN;
+
+		switch (format)
+		{
+		case wr::Format::R8G8B8A8_UNORM_SRGB:
+			out_format = Format::R8G8B8A8_UNORM;
+			break;		
+		case wr::Format::B8G8R8A8_UNORM_SRGB:
+			out_format = Format::B8G8R8A8_UNORM;
+			break;
+		case wr::Format::B8G8R8X8_UNORM_SRGB:
+			out_format = Format::B8G8R8X8_UNORM;
+			break;
+		default:
+			break;
+		}
+
+		return out_format;
+	}
 
 } /* wr::d3d12 */

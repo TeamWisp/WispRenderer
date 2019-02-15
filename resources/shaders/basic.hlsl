@@ -78,7 +78,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
 	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
-	float4 albedo = pow(material_albedo.SampleLevel(s0, input.uv, 0), 2.2);
+	float4 albedo = material_albedo.Sample(s0, input.uv);
 //#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	float4 roughness = material_metallic.SampleLevel(s0, input.uv, 0).y;
