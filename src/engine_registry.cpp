@@ -29,6 +29,7 @@ namespace wr
 
 	//Basic Deferred Pass Root Signature
 	DESC_RANGE_ARRAY(ranges_basic,
+		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ALBEDO),
 		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::NORMAL),
 		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ROUGHNESS),
 		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::METALLIC),
@@ -346,13 +347,13 @@ namespace wr
 	});
 
 	DESC_RANGE_ARRAY(rt_hybrid_ranges,
-		DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::FullRaytracingE::OUTPUT),
-		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::FullRaytracingE::INDICES),
-		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::FullRaytracingE::LIGHTS),
-		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::FullRaytracingE::MATERIALS),
-		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::FullRaytracingE::OFFSETS),
-		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::FullRaytracingE::SKYBOX),
-		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::FullRaytracingE::TEXTURES),
+		DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::RTHybridE::OUTPUT),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::INDICES),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::LIGHTS),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::MATERIALS),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::OFFSETS),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::SKYBOX),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::TEXTURES),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::GBUFFERS),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset),
 	);
