@@ -40,6 +40,7 @@ namespace wr::imgui
 		static bool open_light_editor = true;
 		static bool open_model_editor = true;
 		static wr::LightNode* selected_light = nullptr;
+		static bool light_selected = false;
 	}
 
 	namespace special

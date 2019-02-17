@@ -187,78 +187,31 @@ namespace wr::imgui::window
 			for (auto i = 0; i < lights.size(); i++)
 			{
 				auto window_size = ImGui::GetWindowSize();
-				ImGui::Columns(3);
+				ImGui::Columns(2);
 				float column_width = 25;
-				ImGui::SetColumnWidth(0, window_size.x - (column_width * 2));
+				ImGui::SetColumnWidth(0, window_size.x - column_width);
 				ImGui::SetColumnWidth(1, column_width);
-				ImGui::SetColumnWidth(2, column_width);
 
-				std::string tree_name("Light " + std::to_string(i));
-				if (ImGui::TreeNode(tree_name.c_str()))
-				{
-					auto& light_node = lights[i];
-					auto& light = *light_node->m_light;
+				std::string light_name("Light " + std::to_string(i));
 
-					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
-					int type = (int)light.tid & 3;
-					ImGui::Combo("Type", &type, listbox_items, 3);
-					light.tid = type;
-					
-					if (i == 0)
-						light.tid |= (uint32_t) lights.size() << 2;
-
-					ImGui::DragFloat3("Color", &light.col.x, 0.25f);
-					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
-
-					if (type != (uint32_t)LightType::POINT)
-					{		
-						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
-						ImGui::DragFloat3("Rotation", rot, 0.01f);
-						light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
-
-					}
-
-					if (type != (uint32_t) LightType::DIRECTIONAL)
-					{
-						ImGui::DragFloat("Radius", &light.rad, 0.25f);
-					}
-
-					if (type == (uint32_t)LightType::SPOT)
-					{
-						light.ang = light.ang * 180.f / 3.1415926535f;
-						ImGui::DragFloat("Angle", &light.ang);
-						light.ang = light.ang / 180.f * 3.1415926535f;
-					}
-
-					if (ImGui::Button("Take Camera Transform"))
-					{
-						lights[i]->SetPosition(scene_graph->GetActiveCamera()->m_position);
-						lights[i]->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
-					}
-
-					light_node->SignalTransformChange();
-					light_node->SignalChange();
-
-					ImGui::TreePop();
-				}
-
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0));
-
-				ImGui::NextColumn();
-
-				if (ImGui::Button(("!##" + std::to_string(i)).c_str()))
+				if (ImGui::Button(light_name.c_str(),ImVec2(window_size.x - column_width, 0)))
 				{
 					if (selected_light != lights[i].get())
 					{
 						selected_light = lights[i].get();
+						light_selected = true;
 					}
 					else
 					{
+						light_selected = false;
 						selected_light = nullptr;
 					}
 				}
+				
+				if (i == 0)
+					lights[i]->m_light->tid |= (uint32_t)lights.size() << 2;
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0));
 
 				ImGui::NextColumn();
 
@@ -282,6 +235,55 @@ namespace wr::imgui::window
 			{
 				return;
 			}
+
+			ImGui::Begin("Light Editor", &light_selected);
+
+			ImGui::Separator();
+
+			auto& light_node = selected_light;
+			auto& light = *light_node->m_light;
+
+			const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
+			int type = (int)light.tid & 3;
+			ImGui::Combo("Type", &type, listbox_items, 3);
+			light.tid = type;
+
+
+
+			ImGui::DragFloat3("Color", &light.col.x, 0.25f);
+			ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
+
+			if (type != (uint32_t)LightType::POINT)
+			{
+				float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
+				DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
+				DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
+				ImGui::DragFloat3("Rotation", rot, 0.01f);
+				light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
+			}
+
+			if (type != (uint32_t)LightType::DIRECTIONAL)
+			{
+				ImGui::DragFloat("Radius", &light.rad, 0.25f);
+			}
+
+			if (type == (uint32_t)LightType::SPOT)
+			{
+				light.ang = light.ang * 180.f / 3.1415926535f;
+				ImGui::DragFloat("Angle", &light.ang);
+				light.ang = light.ang / 180.f * 3.1415926535f;
+			}
+
+			if (ImGui::Button("Take Camera Transform"))
+			{
+				light_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
+				light_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+			}
+
+			light_node->SignalTransformChange();
+			light_node->SignalChange();
+			ImGui::End();
 
 			auto ml = selected_light;
 			DirectX::XMFLOAT4X4 rmat;
