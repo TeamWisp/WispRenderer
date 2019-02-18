@@ -31,49 +31,32 @@ namespace wr
 	template<>
 	int ModelPool::LoadNodeMeshes<Vertex, std::uint32_t>(ModelData* data, Model* model, MaterialHandle* default_material)
 	{
+		model->m_meshes.reserve(data->m_meshes.size());
+
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
 			ModelMeshData* mesh = data->m_meshes[i];
 
-			std::vector<Vertex> vertices;
-
-			vertices.resize(mesh->m_positions.size());
-
-			std::vector<std::uint32_t> indices;
-
-			indices.resize(mesh->m_indices.size());
+			std::vector<Vertex> vertices(mesh->m_positions.size());
+			std::vector<std::uint32_t> indices(mesh->m_indices.size());
 
 			Mesh* mesh_handle = new Mesh();
 
 			for (unsigned int j = 0; j < mesh->m_positions.size(); ++j)
 			{
-				Vertex vertex = {};
+				Vertex &vertex = vertices[j];
 
-				vertex.m_pos[0] = mesh->m_positions[j].x;
-				vertex.m_pos[1] = mesh->m_positions[j].y;
-				vertex.m_pos[2] = mesh->m_positions[j].z;
+				memcpy(vertex.m_pos, &mesh->m_positions[j], sizeof(vertex.m_pos));
+				memcpy(vertex.m_normal, &mesh->m_normals[j], sizeof(vertex.m_normal));
+				memcpy(vertex.m_tangent, &mesh->m_tangents[j], sizeof(vertex.m_tangent));
+				memcpy(vertex.m_bitangent, &mesh->m_bitangents[j], sizeof(vertex.m_bitangent));
+				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 
 				model->Expand(vertex.m_pos, mesh_handle);
 
-				vertex.m_normal[0] = mesh->m_normals[j].x;
-				vertex.m_normal[1] = mesh->m_normals[j].y;
-				vertex.m_normal[2] = mesh->m_normals[j].z;
-
-				vertex.m_uv[0] = mesh->m_uvw[j].x;
-				vertex.m_uv[1] = mesh->m_uvw[j].y;
-
-				vertex.m_tangent[0] = mesh->m_tangents[j].x;
-				vertex.m_tangent[1] = mesh->m_tangents[j].y;
-				vertex.m_tangent[2] = mesh->m_tangents[j].z;
-
-				vertex.m_bitangent[0] = mesh->m_bitangents[j].x;
-				vertex.m_bitangent[1] = mesh->m_bitangents[j].y;
-				vertex.m_bitangent[2] = mesh->m_bitangents[j].z;
-				
-				vertices[j] = vertex;
 			}
 
-			memcpy(indices.data(), mesh->m_indices.data(), sizeof(std::uint32_t)*mesh->m_indices.size());
+			memcpy(indices.data(), mesh->m_indices.data(), mesh->m_indices.size() * 4);
 
 			internal::MeshInternal* mesh_data = LoadCustom_VerticesAndIndices(
 				vertices.data(),
@@ -113,50 +96,30 @@ namespace wr
 	template<>
 	int ModelPool::LoadNodeMeshes<VertexColor, std::uint32_t>(ModelData* data, Model* model, MaterialHandle* default_material)
 	{
+		model->m_meshes.reserve(data->m_meshes.size());
+
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
 			ModelMeshData* mesh = data->m_meshes[i];
 
-			std::vector<VertexColor> vertices;
-
-			vertices.resize(mesh->m_positions.size());
-
-			std::vector<std::uint32_t> indices;
-
-			indices.resize(mesh->m_indices.size());
+			std::vector<VertexColor> vertices(mesh->m_positions.size());
+			std::vector<std::uint32_t> indices(mesh->m_indices.size());
 
 			Mesh* mesh_handle = new Mesh();
 
 			for (unsigned int j = 0; j < mesh->m_positions.size(); ++j)
 			{
-				VertexColor vertex = {};
+				VertexColor &vertex = vertices[j];
 
-				vertex.m_pos[0] = mesh->m_positions[j].x;
-				vertex.m_pos[1] = mesh->m_positions[j].y;
-				vertex.m_pos[2] = mesh->m_positions[j].z;
+				memcpy(vertex.m_pos, &mesh->m_positions[j], sizeof(vertex.m_pos));
+				memcpy(vertex.m_normal, &mesh->m_normals[j], sizeof(vertex.m_normal));
+				memcpy(vertex.m_tangent, &mesh->m_tangents[j], sizeof(vertex.m_tangent));
+				memcpy(vertex.m_bitangent, &mesh->m_bitangents[j], sizeof(vertex.m_bitangent));
+				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
+				memcpy(vertex.m_color, &mesh->m_colors[j], sizeof(vertex.m_color));
 
 				model->Expand(vertex.m_pos, mesh_handle);
 
-				vertex.m_normal[0] = mesh->m_normals[j].x;
-				vertex.m_normal[1] = mesh->m_normals[j].y;
-				vertex.m_normal[2] = mesh->m_normals[j].z;
-
-				vertex.m_uv[0] = mesh->m_uvw[j].x;
-				vertex.m_uv[1] = mesh->m_uvw[j].y;
-
-				vertex.m_tangent[0] = mesh->m_tangents[j].x;
-				vertex.m_tangent[1] = mesh->m_tangents[j].y;
-				vertex.m_tangent[2] = mesh->m_tangents[j].z;
-
-				vertex.m_bitangent[0] = mesh->m_bitangents[j].x;
-				vertex.m_bitangent[1] = mesh->m_bitangents[j].y;
-				vertex.m_bitangent[2] = mesh->m_bitangents[j].z;
-
-				vertex.m_color[0] = mesh->m_colors[j].x;
-				vertex.m_color[1] = mesh->m_colors[j].y;
-				vertex.m_color[2] = mesh->m_colors[j].z;
-				
-				vertices[j] = vertex;
 			}
 
 			memcpy(indices.data(), mesh->m_indices.data(), sizeof(std::uint32_t)*mesh->m_indices.size());
@@ -192,44 +155,34 @@ namespace wr
 
 			model->m_meshes.push_back(n_mesh);
 		}
+
 		return 0;
 	}
 
 	template<>
 	int ModelPool::LoadNodeMeshes<VertexNoTangent, std::uint32_t>(ModelData* data, Model* model, MaterialHandle* default_material)
 	{
+		model->m_meshes.reserve(data->m_meshes.size());
+
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
 			ModelMeshData* mesh = data->m_meshes[i];
 
-			std::vector<VertexNoTangent> vertices;
-
-			vertices.resize(mesh->m_positions.size());
-
-			std::vector<std::uint32_t> indices;
-
-			indices.resize(mesh->m_indices.size());
+			std::vector<VertexNoTangent> vertices(mesh->m_positions.size());
+			std::vector<std::uint32_t> indices(mesh->m_indices.size());
 
 			Mesh* mesh_handle = new Mesh();
 
 			for (unsigned int j = 0; j < mesh->m_positions.size(); ++j)
 			{
-				VertexNoTangent vertex = {};
+				VertexNoTangent &vertex = vertices[j];
 
-				vertex.m_pos[0] = mesh->m_positions[j].x;
-				vertex.m_pos[1] = mesh->m_positions[j].y;
-				vertex.m_pos[2] = mesh->m_positions[j].z;
+				memcpy(vertex.m_pos, &mesh->m_positions[j], sizeof(vertex.m_pos));
+				memcpy(vertex.m_normal, &mesh->m_normals[j], sizeof(vertex.m_normal));
+				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 
 				model->Expand(vertex.m_pos, mesh_handle);
 
-				vertex.m_normal[0] = mesh->m_normals[j].x;
-				vertex.m_normal[1] = mesh->m_normals[j].y;
-				vertex.m_normal[2] = mesh->m_normals[j].z;
-
-				vertex.m_uv[0] = mesh->m_uvw[j].x;
-				vertex.m_uv[1] = mesh->m_uvw[j].y;
-
-				vertices[j] = vertex;
 			}
 
 			memcpy(indices.data(), mesh->m_indices.data(), sizeof(std::uint32_t)*mesh->m_indices.size());
@@ -264,52 +217,36 @@ namespace wr
 
 			model->m_meshes.push_back(n_mesh);
 		}
+
 		return 0;
 	}
 
 	template<>
 	int ModelPool::LoadNodeMeshesWithMaterials<Vertex, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle*> materials)
 	{
+		model->m_meshes.reserve(data->m_meshes.size());
+
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
 			ModelMeshData* mesh = data->m_meshes[i];
 
-			std::vector<Vertex> vertices;
-
-			vertices.resize(mesh->m_positions.size());
-
-			std::vector<std::uint32_t> indices;
-
-			indices.resize(mesh->m_indices.size());
+			std::vector<Vertex> vertices(mesh->m_positions.size());
+			std::vector<std::uint32_t> indices(mesh->m_indices.size());
 
 			Mesh* mesh_handle = new Mesh();
 
 			for (unsigned int j = 0; j < mesh->m_positions.size(); ++j)
 			{
-				Vertex vertex = {};
+				Vertex &vertex = vertices[j];
 
-				vertex.m_pos[0] = mesh->m_positions[j].x;
-				vertex.m_pos[1] = mesh->m_positions[j].y;
-				vertex.m_pos[2] = mesh->m_positions[j].z;
+				memcpy(vertex.m_pos, &mesh->m_positions[j], sizeof(vertex.m_pos));
+				memcpy(vertex.m_normal, &mesh->m_normals[j], sizeof(vertex.m_normal));
+				memcpy(vertex.m_tangent, &mesh->m_tangents[j], sizeof(vertex.m_tangent));
+				memcpy(vertex.m_bitangent, &mesh->m_bitangents[j], sizeof(vertex.m_bitangent));
+				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 
 				model->Expand(vertex.m_pos, mesh_handle);
 
-				vertex.m_normal[0] = mesh->m_normals[j].x;
-				vertex.m_normal[1] = mesh->m_normals[j].y;
-				vertex.m_normal[2] = mesh->m_normals[j].z;
-
-				vertex.m_uv[0] = mesh->m_uvw[j].x;
-				vertex.m_uv[1] = mesh->m_uvw[j].y;
-
-				vertex.m_tangent[0] = mesh->m_tangents[j].x;
-				vertex.m_tangent[1] = mesh->m_tangents[j].y;
-				vertex.m_tangent[2] = mesh->m_tangents[j].z;
-
-				vertex.m_bitangent[0] = mesh->m_bitangents[j].x;
-				vertex.m_bitangent[1] = mesh->m_bitangents[j].y;
-				vertex.m_bitangent[2] = mesh->m_bitangents[j].z;
-
-				vertices[j] = vertex;
 			}
 
 			memcpy(indices.data(), mesh->m_indices.data(), sizeof(std::uint32_t)*mesh->m_indices.size());
@@ -344,56 +281,37 @@ namespace wr
 			
 			model->m_meshes.push_back(n_mesh);
 		}
+
 		return 0;
 	}
 	
 	template<>
 	int ModelPool::LoadNodeMeshesWithMaterials<VertexColor, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle*> materials)
 	{
+		model->m_meshes.reserve(data->m_meshes.size());
+
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
 			ModelMeshData* mesh = data->m_meshes[i];
 
-			std::vector<VertexColor> vertices;
-
-			vertices.resize(mesh->m_positions.size());
-
-			std::vector<std::uint32_t> indices;
-
-			indices.resize(mesh->m_indices.size());
+			std::vector<VertexColor> vertices(mesh->m_positions.size());
+			std::vector<std::uint32_t> indices(mesh->m_indices.size());
 
 			Mesh* mesh_handle = new Mesh();
 
 			for (unsigned int j = 0; j < mesh->m_positions.size(); ++j)
 			{
-				VertexColor vertex = {};
+				VertexColor &vertex = vertices[j];
 
-				vertex.m_pos[0] = mesh->m_positions[j].x;
-				vertex.m_pos[1] = mesh->m_positions[j].y;
-				vertex.m_pos[2] = mesh->m_positions[j].z;
+				memcpy(vertex.m_pos, &mesh->m_positions[j], sizeof(vertex.m_pos));
+				memcpy(vertex.m_normal, &mesh->m_normals[j], sizeof(vertex.m_normal));
+				memcpy(vertex.m_tangent, &mesh->m_tangents[j], sizeof(vertex.m_tangent));
+				memcpy(vertex.m_bitangent, &mesh->m_bitangents[j], sizeof(vertex.m_bitangent));
+				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
+				memcpy(vertex.m_color, &mesh->m_colors[j], sizeof(vertex.m_color));
 
 				model->Expand(vertex.m_pos, mesh_handle);
 
-				vertex.m_normal[0] = mesh->m_normals[j].x;
-				vertex.m_normal[1] = mesh->m_normals[j].y;
-				vertex.m_normal[2] = mesh->m_normals[j].z;
-
-				vertex.m_uv[0] = mesh->m_uvw[j].x;
-				vertex.m_uv[1] = mesh->m_uvw[j].y;
-
-				vertex.m_tangent[0] = mesh->m_tangents[j].x;
-				vertex.m_tangent[1] = mesh->m_tangents[j].y;
-				vertex.m_tangent[2] = mesh->m_tangents[j].z;
-
-				vertex.m_bitangent[0] = mesh->m_bitangents[j].x;
-				vertex.m_bitangent[1] = mesh->m_bitangents[j].y;
-				vertex.m_bitangent[2] = mesh->m_bitangents[j].z;
-
-				vertex.m_color[0] = mesh->m_colors[j].x;
-				vertex.m_color[1] = mesh->m_colors[j].y;
-				vertex.m_color[2] = mesh->m_colors[j].z;
-
-				vertices[j] = vertex;
 			}
 
 			memcpy(indices.data(), mesh->m_indices.data(), sizeof(std::uint32_t)*mesh->m_indices.size());
@@ -428,44 +346,34 @@ namespace wr
 			
 			model->m_meshes.push_back(n_mesh);
 		}
+
 		return 0;
 	}
 
 	template<>
 	int ModelPool::LoadNodeMeshesWithMaterials<VertexNoTangent, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle*> materials)
 	{
+		model->m_meshes.reserve(data->m_meshes.size());
+
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
 			ModelMeshData* mesh = data->m_meshes[i];
 
-			std::vector<VertexNoTangent> vertices;
-
-			vertices.resize(mesh->m_positions.size());
-
-			std::vector<std::uint32_t> indices;
-
-			indices.resize(mesh->m_indices.size());
+			std::vector<VertexNoTangent> vertices(mesh->m_positions.size());
+			std::vector<std::uint32_t> indices(mesh->m_indices.size());
 
 			Mesh* mesh_handle = new Mesh();
 
 			for (unsigned int j = 0; j < mesh->m_positions.size(); ++j)
 			{
-				VertexNoTangent vertex = {};
+				VertexNoTangent &vertex = vertices[j];
 
-				vertex.m_pos[0] = mesh->m_positions[j].x;
-				vertex.m_pos[1] = mesh->m_positions[j].y;
-				vertex.m_pos[2] = mesh->m_positions[j].z;
+				memcpy(vertex.m_pos, &mesh->m_positions[j], sizeof(vertex.m_pos));
+				memcpy(vertex.m_normal, &mesh->m_normals[j], sizeof(vertex.m_normal));
+				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 
 				model->Expand(vertex.m_pos, mesh_handle);
 
-				vertex.m_normal[0] = mesh->m_normals[j].x;
-				vertex.m_normal[1] = mesh->m_normals[j].y;
-				vertex.m_normal[2] = mesh->m_normals[j].z;
-
-				vertex.m_uv[0] = mesh->m_uvw[j].x;
-				vertex.m_uv[1] = mesh->m_uvw[j].y;
-
-				vertices[j] = vertex;
 			}
 
 			memcpy(indices.data(), mesh->m_indices.data(), sizeof(std::uint32_t)*mesh->m_indices.size());
@@ -500,6 +408,7 @@ namespace wr
 
 			model->m_meshes.push_back(n_mesh);
 		}
+
 		return 0;
 	}
 
