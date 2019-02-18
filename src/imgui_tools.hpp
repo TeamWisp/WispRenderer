@@ -19,6 +19,11 @@ namespace wr::imgui
 	{
 		void Registries();
 	}
+	enum InspectItem
+	{
+		NONE,
+		LIGHT
+	};
 
 	namespace window
 	{
@@ -29,6 +34,7 @@ namespace wr::imgui
 		void D3D12Settings();
 		void LightEditor(SceneGraph* scene_graph);
 		void ModelEditor(SceneGraph* scene_graph);
+		void Inspect(SceneGraph* scene_graph);
 
 		static bool open_hardware_info = true;
 		static bool open_d3d12_settings = true;
@@ -39,8 +45,10 @@ namespace wr::imgui
 		static bool open_root_signature_registry = true;
 		static bool open_light_editor = true;
 		static bool open_model_editor = true;
+		static bool open_inspect_editor = true;
 		static wr::LightNode* selected_light = nullptr;
 		static bool light_selected = false;
+		static InspectItem inspect_item = NONE;
 	}
 
 	namespace special
