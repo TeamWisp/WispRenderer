@@ -194,6 +194,11 @@ namespace wr::imgui::window
 
 				std::string light_name("Light " + std::to_string(i));
 
+				bool button_selected = false;
+				if (light_selected && lights[i].get() == selected_light) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.95f, 0.26f, 0.26f, 1.0f));
+					button_selected = true;
+				}
 				if (ImGui::Button(light_name.c_str(),ImVec2(window_size.x - column_width, 0)))
 				{
 					if (selected_light != lights[i].get())
@@ -207,7 +212,11 @@ namespace wr::imgui::window
 						selected_light = nullptr;
 					}
 				}
-				
+				if (button_selected)
+				{
+					ImGui::PopStyleColor();
+				}
+
 				if (i == 0)
 					lights[i]->m_light->tid |= (uint32_t)lights.size() << 2;
 
