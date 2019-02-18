@@ -37,7 +37,8 @@ StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
 Texture2D skybox : register(t6);
-Texture2D g_textures[20] : register(t7);
+TextureCube irradiance_map : register(t7);
+Texture2D g_textures[20] : register(t8);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -372,11 +373,11 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #else
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
-	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
+	float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #endif
-	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
+	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
 	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
 	//const float3 B = cross(N, T);
@@ -385,14 +386,14 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
-	// Direct
+	// Irradiance
+	float3 flipped_N = fN;
+	flipped_N.y *= -1;
+	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
-	float3 reflection = float3(0, 0, 0);
-	//if (roughness < 0.95)
-	{
-		float3 reflect_dir = ReflectRay(V, fN);
-		reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
-	}
+	// Direct
+	float3 reflect_dir = ReflectRay(V, fN);
+	float3 reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
 
 #ifdef PATH_TRACING
 	// Indirect lighting
@@ -409,7 +410,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float3 retval = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.depth);
 	float3 specular = (reflection.xyz) * F;
-	float3 diffuse = float3(0, 0, 0);
+	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 	payload.color = ambient + retval;
 #endif
