@@ -951,6 +951,9 @@ namespace wr
 			Model* model = elem.first;
 			temp::MeshBatch& batch = elem.second;
 
+			if (batch.num_instances == 0)
+				continue;
+
 			// Execute Indirect Pipeline
 			if constexpr (d3d12::settings::use_exec_indirect)
 			{
@@ -1097,10 +1100,10 @@ namespace wr
 		auto metallic_handle = material_internal->GetMetallic();
 		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
 
-		d3d12::SetShaderSRV(n_cmd_list, 2, 0, albedo_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 1, normal_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 2, roughness_internal);
-		d3d12::SetShaderSRV(n_cmd_list, 2, 3, metallic_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ALBEDO)), albedo_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::NORMAL)), normal_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ROUGHNESS)), roughness_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::METALLIC)), metallic_internal);
 	}
 	
 	unsigned int D3D12RenderSystem::GetFrameIdx()
