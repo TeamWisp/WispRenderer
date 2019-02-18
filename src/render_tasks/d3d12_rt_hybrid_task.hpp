@@ -238,17 +238,17 @@ namespace wr
 	{
 		RenderTargetProperties rt_properties
 		{
-			false,
-			std::nullopt,
-			std::nullopt,
-			ResourceState::UNORDERED_ACCESS,
-			ResourceState::COPY_SOURCE,
-			false,
-			Format::UNKNOWN,
-			{ Format::R8G8B8A8_UNORM },
-			1,
-			true,
-			true
+			RenderTargetProperties::IsRenderWindow(false),
+			RenderTargetProperties::Width(std::nullopt),
+			RenderTargetProperties::Height(std::nullopt),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
+			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
+			RenderTargetProperties::CreateDSVBuffer(false),
+			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
+			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
+			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		RenderTaskDesc desc;
