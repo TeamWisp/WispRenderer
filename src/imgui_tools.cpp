@@ -236,7 +236,7 @@ namespace wr::imgui::window
 				return;
 			}
 
-			ImGui::Begin("Light Editor", &light_selected);
+			ImGui::Begin("Light Details", &light_selected);
 
 			ImGui::Separator();
 
