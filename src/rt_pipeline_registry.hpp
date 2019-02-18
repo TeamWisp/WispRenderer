@@ -8,6 +8,7 @@
 #include "vertex.hpp"
 #include "d3d12/d3dx12.hpp"
 #include "d3d12/d3d12_enums.hpp"
+#include "util/named_type.hpp"
 
 namespace wr
 {
@@ -16,22 +17,30 @@ namespace wr
 
 	struct StateObjectDescription
 	{
-		struct Library
+		struct LibraryDesc
 		{
 			RegistryHandle shader_handle;
 			std::vector<std::wstring> exports;
 			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
 		};
 
-		CD3DX12_STATE_OBJECT_DESC desc;
+		using Library = util::NamedType<LibraryDesc>;
+		using D3D12StateObjectDesc = util::NamedType<CD3DX12_STATE_OBJECT_DESC>;
+		using MaxPayloadSize = util::NamedType<std::uint64_t>;
+		using MaxAttributeSize = util::NamedType<std::uint64_t>;
+		using MaxRecursionDepth = util::NamedType<std::uint64_t>;
+		using GlobalRootSignature = util::NamedType<std::optional<RegistryHandle>>;
+		using LocalRootSignatures = util::NamedType<std::optional<std::vector<RegistryHandle>>>;
+
+		D3D12StateObjectDesc desc;
 		Library library_desc;
 
-		std::uint64_t max_payload_size;
-		std::uint64_t max_attributes_size;
-		std::uint64_t max_recursion_depth;
+		MaxPayloadSize max_payload_size;
+		MaxAttributeSize max_attributes_size;
+		MaxRecursionDepth max_recursion_depth;
 
-		std::optional<RegistryHandle> global_root_signature;
-		std::optional<std::vector<RegistryHandle>> local_root_signatures;
+		GlobalRootSignature global_root_signature;
+		LocalRootSignatures local_root_signatures;
 	};
 
 	class RTPipelineRegistry : public internal::Registry<RTPipelineRegistry, StateObject, StateObjectDescription>
