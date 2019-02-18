@@ -217,9 +217,11 @@ namespace wr::imgui::window
 					ImGui::PopStyleColor();
 				}
 
-				if (i == 0)
+				if (i == 0) 
+				{
+					lights[i]->m_light->tid &= 3;
 					lights[i]->m_light->tid |= (uint32_t)lights.size() << 2;
-
+				}
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0));
 
 				ImGui::NextColumn();
