@@ -17,7 +17,8 @@ namespace wr
 	{
 		PNG,
 		DDS,
-		HDR
+		HDR,
+		RAW
 	};
 
 	class TexturePool
@@ -32,6 +33,8 @@ namespace wr
 		TexturePool& operator=(TexturePool&&) = delete;
 
 		[[nodiscard]] TextureHandle Load(std::string_view path, bool srgb, bool generate_mips);
+		[[nodiscard]] TextureHandle LoadFromMemory(char* data, int width, int height, TextureType type, bool srgb, bool generate_mips);
+		[[nodiscard]] TextureHandle LoadFromMemory(char* data, int width, int height, std::string texture_extension, bool srgb, bool generate_mips);
 		[[nodiscard]] virtual TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) = 0;
 		virtual void Unload(uint64_t texture_id) = 0;
 
@@ -54,6 +57,10 @@ namespace wr
 		virtual Texture* LoadPNG(std::string_view path, bool srgb, bool generate_mips) = 0;
 		virtual Texture* LoadDDS(std::string_view path, bool srgb, bool generate_mips) = 0;
 		virtual Texture* LoadHDR(std::string_view path, bool srgb, bool generate_mips) = 0;
+		virtual Texture* LoadPNGFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
+		virtual Texture* LoadDDSFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
+		virtual Texture* LoadHDRFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
+		virtual Texture* LoadRawFromMemory(char* data, int width, int height, bool srgb, bool generate_mips) = 0;
 
 		std::unordered_map<uint64_t, Texture*> m_unstaged_textures;
 		std::unordered_map<uint64_t, Texture*> m_staged_textures;

@@ -54,6 +54,67 @@ namespace wr
 		}
 	}
 
+	TextureHandle TexturePool::LoadFromMemory(char * data, int width, int height, TextureType type, bool srgb, bool generate_mips)
+	{
+		Texture* texture;
+		switch (type) {
+		case TextureType::DDS:
+			texture = LoadDDSFromMemory(data, width, srgb, generate_mips);
+			break;
+		case TextureType::PNG:
+			texture = LoadPNGFromMemory(data, width, srgb, generate_mips);
+			break;
+		case TextureType::HDR:
+			texture = LoadHDRFromMemory(data, width, srgb, generate_mips);
+			break;
+		case TextureType::RAW:
+			texture = LoadRawFromMemory(data, width, height, srgb, generate_mips);
+		default:
+			LOGC("Texture {} not loaded. Format not supported.");
+		}
+
+		uint64_t texture_id = m_id_factory.GetUnusedID();
+
+		TextureHandle texture_handle;
+		texture_handle.m_pool = this;
+		texture_handle.m_id = texture_id;
+
+		m_unstaged_textures.insert(std::make_pair(texture_id, texture));
+
+		return texture_handle;
+	}
+
+	TextureHandle TexturePool::LoadFromMemory(char * data, int width, int height, std::string texture_extension, bool srgb, bool generate_mips)
+	{
+		std::for_each(texture_extension.begin(), texture_extension.end(), [](char & c) {
+			c = ::tolower(c);
+		});
+
+		TextureType type;
+		if (texture_extension.size() == 0 || height > 1)
+		{
+			type = TextureType::RAW;
+		}
+		else if (texture_extension.compare("png") == 0)
+		{
+			type = TextureType::PNG;
+		}
+		else if (texture_extension.compare("dds") == 0)
+		{
+			type = TextureType::DDS;
+		}
+		else if (texture_extension.compare("hdr") == 0)
+		{
+			type = TextureType::HDR;
+		}
+		else
+		{
+			type = TextureType::PNG;
+		}
+
+		return LoadFromMemory(data, width, height, type, srgb, generate_mips);
+	}
+
 	TextureHandle TexturePool::GetDefaultAlbedo()
 	{
 		return m_default_albedo;

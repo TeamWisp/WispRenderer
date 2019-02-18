@@ -268,7 +268,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_albedo_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						albedo = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						albedo = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
 				{
@@ -277,7 +284,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				albedo = texture_pool->GetDefaultAlbedo();
 			}
 
 			if (material->m_normal_map_texture_location != TextureLocation::NON_EXISTENT)
@@ -286,7 +293,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_normal_map_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						normals = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						normals = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if (material->m_normal_map_texture_location == TextureLocation::EXTERNAL)
 				{
@@ -295,7 +309,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				normals = texture_pool->GetDefaultNormal();
 			}
 
 			if (material->m_metallic_texture_location != TextureLocation::NON_EXISTENT)
@@ -304,7 +318,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_metallic_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						metallic = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						metallic = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if (material->m_metallic_texture_location == TextureLocation::EXTERNAL)
 				{
@@ -313,7 +334,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				metallic = texture_pool->GetDefaultMetalic();
 			}
 
 			if (material->m_roughness_texture_location != TextureLocation::NON_EXISTENT)
@@ -322,7 +343,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_roughness_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						roughness = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						roughness = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if (material->m_roughness_texture_location == TextureLocation::EXTERNAL)
 				{
@@ -331,7 +359,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				roughness = texture_pool->GetDefaultRoughness();
 			}
 
 			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
@@ -340,7 +368,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_ambient_occlusion_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						ambient_occlusion = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						ambient_occlusion = texture_pool->LoadFromMemory(texture->m_data, texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if (material->m_ambient_occlusion_texture_location == TextureLocation::EXTERNAL)
 				{
@@ -349,7 +384,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				ambient_occlusion = texture_pool->GetDefaultAO();
 			}
 
 			bool two_sided = material->m_two_sided;
