@@ -1,6 +1,7 @@
 #include "pbr_util.hlsl"
 
 #define MAX_RECURSION 1
+#define MAX_SHADOW_SAMPLES 2
 
 struct Light
 {
@@ -65,6 +66,7 @@ struct ReflectionHitInfo
 {
 	float3 origin;
 	float3 color;
+	unsigned int seed;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -74,7 +76,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_vp;
 
 	float2 padding;
-	float pbr_roughness;
+	float frame_idx;
 	float intensity;
 };
 
@@ -95,6 +97,27 @@ uint3 Load3x32BitIndices(uint offsetBytes)
 {
 	// Load first 2 indices
 	return g_indices.Load3(offsetBytes);
+}
+
+// Initialize random
+uint initRand(uint val0, uint val1, uint backoff = 16)
+{
+	uint v0 = val0, v1 = val1, s0 = 0;
+
+	[unroll]
+	for (uint n = 0; n < backoff; n++)
+	{
+		s0 += 0x9e3779b9;
+		v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
+		v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
+	}
+	return v0;
+}
+
+float nextRand(inout uint s)
+{
+	s = (1664525u * s + 1013904223u);
+	return float(s & 0x00FFFFFF) / float(0x01000000);
 }
 
 // Retrieve hit world position.
@@ -130,11 +153,11 @@ bool TraceShadowRay(float3 origin, float3 direction, float t_max)
 	return payload.shadow_hit;
 }
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed)
 {
 	origin += norm * epsilon;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1)};
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed };
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -172,7 +195,7 @@ float calc_attenuation(float r, float d)
 	return 1.0f - smoothstep(r * 0, r, d);
 }
 
-float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light)
+float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light, inout uint rand_seed)
 {
 	uint tid = light.tid & 3;
 
@@ -195,16 +218,32 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
 
 	// Check if pixel is shaded
-	//float3 origin = wpos + normal * epsilon;
-	//float t_max = lerp(light_dist, 10000.0, tid == light_type_directional);
-	bool is_shadow = false;//TraceShadowRay(origin, L, t_max);
+	float3 origin = wpos + normal * epsilon;
+	float t_max = lerp(light_dist, 10000.0, tid == light_type_directional);
 
-	lighting = lerp(lighting, float3(0, 0, 0), is_shadow);
+	// Offset shadow ray direction to get soft-shadows
+	float shadow_factor = 0.0;
+	[unroll]
+	for (uint n = 0; n < MAX_SHADOW_SAMPLES; n++)
+	{
+		float3 offset = float3(nextRand(rand_seed), nextRand(rand_seed), nextRand(rand_seed)) - 0.5;
+		offset *= 0.05;
+		float3 shadow_direction = normalize(L + offset);
+
+		bool is_shadow = TraceShadowRay(origin, shadow_direction, t_max);
+
+		shadow_factor += lerp(1.0, 0.0, is_shadow);
+	}
+
+	shadow_factor /= float(MAX_SHADOW_SAMPLES);
+
+	lighting *= shadow_factor;
+
 
 	return lighting;
 }
 
-float3 ShadePixel(float3 pos, float3 V, float3 albedo, float3 normal, float roughness, float metal)
+float3 ShadePixel(float3 pos, float3 V, float3 albedo, float3 normal, float roughness, float metal, inout uint rand_seed)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
@@ -213,7 +252,7 @@ float3 ShadePixel(float3 pos, float3 V, float3 albedo, float3 normal, float roug
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += ShadeLight(pos, V, albedo, normal, roughness, metal, lights[i]);
+		res += ShadeLight(pos, V, albedo, normal, roughness, metal, lights[i], rand_seed);
 	}
 
 	return res * albedo;
@@ -225,7 +264,7 @@ float3 ReflectRay(float3 v1, float3 v2)
 	return (v2 * ((2.f * dot(v1, v2))) - v1);
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float metallic, float3 albedo, float3 lighting)
+float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float metallic, float3 albedo, float3 lighting, uint rand_seed)
 {
 
 	// Calculate ray info
@@ -234,7 +273,7 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float
 
 	// Shoot reflection ray
 
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected);
+	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed);
 
 	// Calculate reflection combined with fresnel
 
@@ -253,6 +292,8 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float
 [shader("raygeneration")]
 void RaygenEntry()
 {
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
@@ -281,8 +322,9 @@ void RaygenEntry()
 		return;
 	}
 
-	float3 lighting = ShadePixel(wpos, V, albedo, normal, roughness, metallic);
-	float3 reflection = DoReflection(wpos, V, normal, roughness, metallic, albedo, lighting);
+	float3 lighting = ShadePixel(wpos, V, albedo, normal, roughness, metallic, rand_seed);
+	nextRand(rand_seed);
+	float3 reflection = DoReflection(wpos, V, normal, roughness, metallic, albedo, lighting, rand_seed);
 
 	gOutput[DispatchRaysIndex().xy] = float4(reflection, 1);
 
@@ -374,7 +416,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//TODO: Reflections
 
 	//Shading
-	payload.color = ShadePixel(hit_pos, V, albedo, fN, roughness, metal);
+	payload.color = ShadePixel(hit_pos, V, albedo, fN, roughness, metal, payload.seed);
 }
 
 //Reflection skybox

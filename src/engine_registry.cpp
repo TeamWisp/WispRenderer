@@ -372,7 +372,7 @@ namespace wr
 		{
 			rt_hybrid_so_desc.first,     // Description
 			rt_hybrid_so_desc.second,    // Library
-			(sizeof(float) * 6), // Max payload size
+			(sizeof(float) * 6) + (sizeof(unsigned int) * 1), // Max payload size
 			(sizeof(float) * 2), // Max attributes size
 			2,				   // Max recursion depth
 			root_signatures::rt_hybrid_global,      // Global root signature

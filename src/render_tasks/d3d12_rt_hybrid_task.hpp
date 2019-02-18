@@ -31,6 +31,8 @@ namespace wr
 		// Structures and buffers
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
 		d3d12::RenderTarget* out_deferred_main_rt;
+
+		unsigned int frame_idx;
 	};
 
 	namespace internal
@@ -144,6 +146,9 @@ namespace wr
 			CreateShaderTables(device, data, 0);
 			CreateShaderTables(device, data, 1);
 			CreateShaderTables(device, data, 2);
+
+			// Setup frame index
+			data.frame_idx = 0;
 		}
 
 		inline void ExecuteRTHybridTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
@@ -187,6 +192,7 @@ namespace wr
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cam_data.m_intensity = n_render_system.temp_intensity;
+				cam_data.m_frame_idx = ++data.frame_idx;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				// Get skybox

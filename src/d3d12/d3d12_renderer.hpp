@@ -60,7 +60,7 @@ namespace wr
 			DirectX::XMMATRIX m_inv_vp;
 
 			uint32_t m_padding[2];
-			float m_roughness;
+			float m_frame_idx;
 			float m_intensity;
 		};
 
