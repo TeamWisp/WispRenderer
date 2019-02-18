@@ -318,7 +318,7 @@ namespace wr
 			EmbeddedTexture* texture = new EmbeddedTexture;
 
 			texture->m_compressed = scene->mTextures[i]->mHeight == 0 ? true : false;
-			texture->format = std::string(scene->mTextures[i]->achFormatHint);
+			texture->m_format = std::string(scene->mTextures[i]->achFormatHint);
 
 			texture->m_width = scene->mTextures[i]->mWidth;
 			texture->m_height = scene->mTextures[i]->mHeight;
