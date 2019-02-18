@@ -357,7 +357,9 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
 	const float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
 	const float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
-	const float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
+
+	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
+	uv.y = 1.0f - uv.y;
 
 	float mip_level = 1;
 

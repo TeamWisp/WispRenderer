@@ -52,7 +52,7 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float4x4 mvp = mul(projection, vm);
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
-	output.uv = input.uv;
+	output.uv = float2(input.uv.x, 1.0f - input.uv.y);
 	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
 	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
 	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
