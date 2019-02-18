@@ -42,7 +42,7 @@ namespace wr
 		virtual void MakeResident() = 0;
 		virtual void Stage(CommandList* cmd_list) = 0;
 		virtual void PostStageClear() = 0;
-		virtual void EndOfFrame() = 0;
+		virtual void ReleaseTemporaryResources() = 0;
 
 		TextureHandle GetDefaultAlbedo();
 		TextureHandle GetDefaultNormal();

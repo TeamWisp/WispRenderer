@@ -39,8 +39,6 @@ namespace wr
 
 			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
 			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 1);
-			d3d12::Offset(gpu_handle, 6, data.out_srv_heap->m_increment_size);
-			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 2);
 
 			d3d12::Dispatch(cmd_list, 
 				static_cast<int>(std::ceil( render_system.m_viewport.m_viewport.Width / 16.f)),
@@ -71,7 +69,6 @@ namespace wr
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
-
 			}
 		}
 
@@ -97,28 +94,33 @@ namespace wr
 				}
 
 				//Get light buffer
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, 3);
-				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
+				{
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::LIGHT_BUFFER)));
+					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
+				}
 				
 				//GetSkybox //TODO: Use Texture pool system
 				auto skybox = scene_graph.GetCurrentSkybox();
 				if (skybox != nullptr)
 				{
-					//auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox.value().m_pool->GetTexture(skybox->m_skybox.value().m_id));
-					//d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
-					//Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
-
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX)));
 					auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(skybox->m_hdr.m_id));
 					d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
-					Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
 				}
 
-				d3d12::TextureResource* irradiance_map = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
-				d3d12::CreateSRVFromTexture(irradiance_map, cpu_handle);
-				d3d12::Offset(cpu_handle, 1, data.out_srv_heap->m_increment_size);
+				// Get the irradiance map
+				{
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP)));
+					d3d12::TextureResource* irradiance_map = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
+					d3d12::CreateSRVFromTexture(irradiance_map, cpu_handle);
+				}
 
-				std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
-				d3d12::CreateUAVFromRTV(render_target, cpu_handle, 1, formats.data());
+				// Output UAV
+				{
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
+					std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
+					d3d12::CreateUAVFromRTV(render_target, cpu_handle, 1, formats.data());
+				}
 
 				if constexpr (d3d12::settings::use_bundles)
 				{

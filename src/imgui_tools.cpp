@@ -186,6 +186,13 @@ namespace wr::imgui::window
 
 			for (auto i = 0; i < lights.size(); i++)
 			{
+				auto window_size = ImGui::GetWindowSize();
+				ImGui::Columns(3);
+				float column_width = 25;
+				ImGui::SetColumnWidth(0, window_size.x - (column_width * 2));
+				ImGui::SetColumnWidth(1, column_width);
+				ImGui::SetColumnWidth(2, column_width);
+
 				std::string tree_name("Light " + std::to_string(i));
 				if (ImGui::TreeNode(tree_name.c_str()))
 				{
@@ -234,21 +241,49 @@ namespace wr::imgui::window
 					light_node->SignalTransformChange();
 					light_node->SignalChange();
 
-					if (ImGui::Button("Remove"))
-					{
-						scene_graph->DestroyNode<LightNode>(lights[i]);
-					}
-
 					ImGui::TreePop();
 				}
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0));
+
+				ImGui::NextColumn();
+
+				if (ImGui::Button(("!##" + std::to_string(i)).c_str()))
+				{
+					if (selected_light != lights[i].get())
+					{
+						selected_light = lights[i].get();
+					}
+					else
+					{
+						selected_light = nullptr;
+					}
+				}
+
+				ImGui::NextColumn();
+
+				if (ImGui::Button(("X##" + std::to_string(i)).c_str()))
+				{
+					if (selected_light == lights[i].get())
+					{
+						selected_light = nullptr;
+					}
+					scene_graph->DestroyNode<LightNode>(lights[i]);
+				}
+
+				ImGui::Columns();
+
+				ImGui::PopStyleVar();
 			}
 
 			ImGui::End();
 
-			if (lights.size() < 1)
+			if (selected_light == nullptr)
+			{
 				return;
+			}
 
-			auto ml = lights[0];
+			auto ml = selected_light;
 			DirectX::XMFLOAT4X4 rmat;
 			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
 			DirectX::XMStoreFloat4x4(&rmat, mat);
@@ -256,7 +291,7 @@ namespace wr::imgui::window
 			auto cam = scene_graph->GetActiveCamera();
 			DirectX::XMFLOAT4X4 rview;
 			DirectX::XMFLOAT4X4 rproj;
-			auto view = DirectX::XMMatrixMultiply(cam->m_view, DirectX::XMMatrixScaling(1, -1, 1));
+			auto view = cam->m_view;
 			DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
 			DirectX::XMStoreFloat4x4(&rview, view);
 

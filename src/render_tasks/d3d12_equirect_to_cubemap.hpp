@@ -135,10 +135,6 @@ namespace wr
 
 					cmd_list->m_native->OMSetRenderTargets(1, &rtv_handle.m_native, false, nullptr);
 
-					const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-					cmd_list->m_native->ClearRenderTargetView(rtv_handle.m_native, clear_color, 0, nullptr);
-
 					d3d12::Bind32BitConstants(cmd_list, &i, 1, 0, 0);
 
 					//bind cube and render
@@ -155,7 +151,7 @@ namespace wr
 
 						d3d12::BindIndexBuffer(cmd_list, pool->GetIndexStagingBuffer(), 0, pool->GetIndexStagingBuffer()->m_size);
 
-						d3d12::SetShaderSRV(cmd_list, 2, 0, equirect_text);
+						d3d12::SetShaderSRV(cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::cubemap_conversion, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE)), equirect_text);
 						d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
 
 						if (n_mesh->m_index_count != 0)

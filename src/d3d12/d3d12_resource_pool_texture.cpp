@@ -132,7 +132,7 @@ namespace wr
 	{
 	}
 
-	void D3D12TexturePool::EndOfFrame()
+	void D3D12TexturePool::ReleaseTemporaryResources()
 	{
 		m_mipmapping_allocator->ReleaseStaleDescriptors();
 
@@ -141,13 +141,15 @@ namespace wr
 			m_allocators[i]->ReleaseStaleDescriptors();
 		}
 
+		unsigned int frame_idx = m_render_system.GetFrameIdx();
+
 		//Release temporary textures
-		for (auto* t : m_temporary_textures)
+		for (auto* t : m_temporary_textures[frame_idx])
 		{
 			d3d12::Destroy(t);
 		}
 
-		m_temporary_textures.clear();
+		m_temporary_textures[frame_idx].clear();
 	}
 
 	d3d12::TextureResource* D3D12TexturePool::GetTexture(uint64_t texture_id)
@@ -805,8 +807,8 @@ namespace wr
 			d3d12::BindCompute32BitConstants(n_cmd_list, srcData, _countof(srcData), 0, 0);
 
 			//Pass the source and destination texture views to the shader
-			d3d12::SetShaderSRV(d3d12_cmd_list, 1, 0, srv_handle);
-			d3d12::SetShaderUAV(d3d12_cmd_list, 1, 1, uav_handle);
+			d3d12::SetShaderSRV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::SOURCE)), srv_handle);
+			d3d12::SetShaderUAV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::DEST)), uav_handle);
 
 			//Dispatch the compute shader with one thread per 8x8 pixels
 			d3d12::Dispatch(n_cmd_list, std::max(dstWidth / 8, 1u), std::max(dstHeight / 8, 1u), 1);
@@ -841,7 +843,9 @@ namespace wr
 
 		auto texture_copy = d3d12::CreateTexture(device, &copy_desc, true);
 
-		m_temporary_textures.push_back(texture_copy);
+		unsigned int frame_idx = m_render_system.GetFrameIdx();
+
+		m_temporary_textures[frame_idx].push_back(texture_copy);
 
 		d3d12::CopyResource(d3d12_cmd_list, texture, texture_copy);
 		

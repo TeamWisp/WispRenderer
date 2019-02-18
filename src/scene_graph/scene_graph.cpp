@@ -158,7 +158,7 @@ namespace wr
 
 	Light* SceneGraph::GetLight(uint32_t offset)
 	{
-		return offset >= m_next_light_id ? nullptr : m_lights.data() + offset;
+		return offset >= m_next_light_id ? m_lights.data() : m_lights.data() + offset;
 	}
 
 	void SceneGraph::RegisterLight(std::shared_ptr<LightNode>& new_node)

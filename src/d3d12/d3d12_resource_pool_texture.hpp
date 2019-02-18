@@ -26,7 +26,7 @@ namespace wr
 		void MakeResident() final;
 		void Stage(CommandList* cmd_list) final;
 		void PostStageClear() final;
-		void EndOfFrame() final;
+		void ReleaseTemporaryResources() final;
 
 		d3d12::TextureResource* GetTexture(uint64_t texture_id) final;
 
@@ -63,7 +63,7 @@ namespace wr
 		DescriptorAllocator* m_mipmapping_allocator;
 
 		//Track resources that are created in one frame and destroyed after
-		std::vector<d3d12::TextureResource*> m_temporary_textures;
+		std::array<std::vector<d3d12::TextureResource*>, d3d12::settings::num_back_buffers> m_temporary_textures;
 	};
 
 

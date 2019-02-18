@@ -242,17 +242,23 @@ namespace wr
 				for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
 				{
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
-					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip UAV at positon 0
-					d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, 0, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
-
-					d3d12::Offset(cpu_handle, 1, data.out_rt_heap->m_increment_size); // Skip position 2 since that is for the light buffer.
+					{
+						auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::INDICES)));
+						d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, 0, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
+					}
 
 					// Create material structured buffer view
-					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
+					{
+						auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::MATERIALS)));
+						d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
+					}
 
 					// Create offset structured buffer view
-					d3d12::CreateSRVFromStructuredBuffer(data.out_sb_offset_handle->m_native, cpu_handle, 0);
+					{
+						auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)));
+						d3d12::CreateSRVFromStructuredBuffer(data.out_sb_offset_handle->m_native, cpu_handle, 0);
+					}
+
 
 					// Fill descriptor heap with textures used by the scene
 					for (auto handle : data.out_material_handles)
@@ -264,7 +270,7 @@ namespace wr
 							auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
 							auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
-							d3d12::Offset(cpu_handle, 6 + texture_handle.m_id, data.out_rt_heap->m_increment_size);
+							d3d12::Offset(cpu_handle, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES)) + texture_handle.m_id, data.out_rt_heap->m_increment_size);
 							d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
 						};
 

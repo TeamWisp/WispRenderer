@@ -128,13 +128,16 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 	float3 cameraV = float3(0, 1, 0);
 	float3 cameraW = float3(0, 0, 1);
 
-    float2 xy = (index + offset + pixelOff) + 0.5f; // center in the middle of the pixel.
-    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+	float2 xy = (index + offset + pixelOff) + 0.5f; // center in the middle of the pixel.
+	float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
-    // Unproject the pixel coordinate into a world positon.
-    float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
+	// Invert Y for DirectX-style coordinates.
+	screenPos.y = -screenPos.y;
+
+	// Unproject the pixel coordinate into a world positon.
+	float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
 	world.xyz = world.x * cameraU + world.y * cameraV + cameraW;
-    world.xyz /= 1;
+	world.xyz /= 1;
 
 	float2 pixelCenter = (index + offset) / DispatchRaysDimensions().xy;            // Pixel ID -> [0..1] over screen
 	float2 ndc = float2(2, -2) * pixelCenter + float2(-1, 1);             // Convert to [-1..1]
@@ -143,19 +146,22 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 
 	float focallen = focal_len;
 	float lensrad = focal_len / (2.0f * 16);
-	float3 focalPt = cameraPosition + focallen * world;  
+	float3 focalPt = cameraPosition + focallen * world;
 
 	float2 rngLens = float2(6.2831853f * nextRand(seed), lensrad*nextRand(seed));
 	float2 lensPos = float2(cos(rngLens.x) * rngLens.y, sin(rngLens.x) * rngLens.y);
 
 	//lensPos = mul(float4(lensPos, 0, 0), projectionToWorld);
 
-    Ray ray;
-    ray.origin = cameraPosition + float3(lensPos, 0);
+	Ray ray;
+	ray.origin = cameraPosition + float3(lensPos, 0);
 	ray.direction = normalize(focalPt.xyz - ray.origin);
 #else
     float2 xy = (index + offset) + 0.5f; // center in the middle of the pixel.
     float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+
+	// Invert Y for DirectX-style coordinates.
+	screenPos.y = -screenPos.y;
 
     // Unproject the pixel coordinate into a world positon.
     float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
@@ -164,9 +170,9 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
     Ray ray;
     ray.origin = cameraPosition;
     ray.direction = normalize(world.xyz - ray.origin);
-#endif
 
     return ray;
+#endif
 }
 
 // Retrieve hit world position.
@@ -248,7 +254,7 @@ void RaygenEntry()
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(-WorldRayDirection()), 0);
+	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
 }
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
@@ -303,7 +309,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	float ambient = 0.1f;
+	float ambient = 0.0f;
 	float3 res = float3(ambient, ambient, ambient);
 
 	[unroll]
@@ -357,13 +363,13 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 //#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
-	const float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
+	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
 	metal = metal * roughness;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #else
-	const float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz, 2.2);
+	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
 	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
