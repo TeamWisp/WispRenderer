@@ -180,17 +180,17 @@ namespace wr
 	{
 		RenderTargetProperties rt_properties
 		{
-			false,
-			target_width,
-			target_height,
-			ResourceState::UNORDERED_ACCESS,
-			ResourceState::COPY_SOURCE,
-			false,
-			Format::UNKNOWN,
-			{ Format::R8G8B8A8_UNORM },
-			1,
-			true,
-			true
+			RenderTargetProperties::IsRenderWindow(false),
+			RenderTargetProperties::Width(target_width),
+			RenderTargetProperties::Height(target_height),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
+			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
+			RenderTargetProperties::CreateDSVBuffer(false),
+			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
+			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
+			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		RenderTaskDesc desc;

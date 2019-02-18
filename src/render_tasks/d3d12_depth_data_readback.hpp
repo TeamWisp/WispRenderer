@@ -109,17 +109,17 @@ namespace wr
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
 		RenderTargetProperties rt_properties{
-			false,							// This pass does not use the render window
-			target_width,					// Width of the frame
-			target_height,					// Height of the frame
-			ResourceState::COPY_SOURCE,		// Execution state
-			ResourceState::RENDER_TARGET,	// Finished state
-			false,							// Do not create a depth-stencil-view
-			Format::UNKNOWN,				// Depth-stencil-view format
-			{ Format::R8G8B8A8_UNORM },		// Render target array containing all formats for this render target
-			1,								// Number of render target formats
-			true,							// Clear flag
-			true							// Clear depth flag
+			RenderTargetProperties::IsRenderWindow(false),
+			RenderTargetProperties::Width(target_width),
+			RenderTargetProperties::Height(target_height),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::COPY_SOURCE),
+			RenderTargetProperties::FinishedResourceState(ResourceState::RENDER_TARGET),
+			RenderTargetProperties::CreateDSVBuffer(false),
+			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
+			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
+			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		// Render task information

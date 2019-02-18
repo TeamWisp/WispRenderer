@@ -48,17 +48,17 @@ namespace wr
 	inline void AddRenderTargetCopyTask(FrameGraph& frame_graph)
 	{
 		RenderTargetProperties rt_properties {
-			true,
-			std::nullopt,
-			std::nullopt,
-			ResourceState::COPY_DEST,
-			ResourceState::PRESENT,
-			false,
-			Format::UNKNOWN,
-			{ Format::R8G8B8A8_UNORM },
-			1,
-			true,
-			true
+			RenderTargetProperties::IsRenderWindow(true),
+			RenderTargetProperties::Width(std::nullopt),
+			RenderTargetProperties::Height(std::nullopt),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::COPY_DEST),
+			RenderTargetProperties::FinishedResourceState(ResourceState::PRESENT),
+			RenderTargetProperties::CreateDSVBuffer(false),
+			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
+			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
+			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		RenderTaskDesc desc;
