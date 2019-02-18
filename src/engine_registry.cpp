@@ -36,14 +36,14 @@ namespace wr
 	);
 
 	REGISTER(root_signatures::basic, RootSignatureRegistry)({
-		{
+		RootSignatureDescription::Parameters({
 			ROOT_PARAM(GetCBV(params::basic, params::BasicE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
 			ROOT_PARAM(GetCBV(params::basic, params::BasicE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
 			ROOT_PARAM_DESC_TABLE(ranges_basic, D3D12_SHADER_VISIBILITY_PIXEL),
-		},
-		{
+		}),
+		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
-		}
+		})
 	});
 
 	//Deferred Composition Root Signature
@@ -58,13 +58,13 @@ namespace wr
 	);
 
 	REGISTER(root_signatures::deferred_composition, RootSignatureRegistry)({
-		{
+		RootSignatureDescription::Parameters({
 			ROOT_PARAM(GetCBV(params::deferred_composition, params::DeferredCompositionE::CAMERA_PROPERTIES)),
 			ROOT_PARAM_DESC_TABLE(srv_ranges, D3D12_SHADER_VISIBILITY_ALL),
-		},
-		{
+		}),
+		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP }
-		}
+		})
 	});
 
 
@@ -74,13 +74,13 @@ namespace wr
 		DESC_RANGE(params::mip_mapping, Type::UAV_RANGE, params::MipMappingE::DEST),
 	);
 	REGISTER(root_signatures::mip_mapping, RootSignatureRegistry)({
-		{
+		RootSignatureDescription::Parameters({
 			ROOT_PARAM(GetConstants(params::mip_mapping, params::MipMappingE::TEXEL_SIZE)),
 			ROOT_PARAM_DESC_TABLE(mip_in_out_ranges, D3D12_SHADER_VISIBILITY_ALL)
-		},
-		{
+		}),
+		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
-		}
+		})
 	});
 
 
@@ -89,14 +89,14 @@ namespace wr
 		DESC_RANGE(params::cubemap_conversion, Type::SRV_RANGE, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE),
 	);
 	REGISTER(root_signatures::cubemap_conversion, RootSignatureRegistry)({
-		{
+		RootSignatureDescription::Parameters({
 			ROOT_PARAM(GetConstants(params::cubemap_conversion, params::CubemapConversionE::IDX)),
 			ROOT_PARAM(GetCBV(params::cubemap_conversion, params::CubemapConversionE::CAMERA_PROPERTIES)),
 			ROOT_PARAM_DESC_TABLE(cubemap_tasks_ranges, D3D12_SHADER_VISIBILITY_PIXEL),
-		},
-		{
+		}),
+		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
-		}
+		})
 	});
 	
 	//Cubemap convolution root signature
@@ -104,156 +104,154 @@ namespace wr
 		DESC_RANGE(params::cubemap_conversion, Type::SRV_RANGE, params::CubemapConvolutionE::ENVIRONMENT_CUBEMAP),
 	);
 	REGISTER(root_signatures::cubemap_convolution, RootSignatureRegistry)({
-		{
+		RootSignatureDescription::Parameters({
 			ROOT_PARAM(GetConstants(params::cubemap_convolution, params::CubemapConvolutionE::IDX)),
 			ROOT_PARAM(GetCBV(params::cubemap_convolution, params::CubemapConvolutionE::CAMERA_PROPERTIES)),
 			ROOT_PARAM_DESC_TABLE(cubemap_tasks_ranges, D3D12_SHADER_VISIBILITY_PIXEL),
-		},
-		{
+		}),
+		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
-		}
+		})
 	});
 
 
 	REGISTER(shaders::basic_vs, ShaderRegistry)({
-		"resources/shaders/basic.hlsl",
-		"main_vs",
-		ShaderType::VERTEX_SHADER
+		ShaderDescription::Path("resources/shaders/basic.hlsl"),
+		ShaderDescription::Entry("main_vs"),
+		ShaderDescription::Type(ShaderType::VERTEX_SHADER)
 	});
 
 	REGISTER(shaders::basic_ps, ShaderRegistry)({
-		"resources/shaders/basic.hlsl",
-		"main_ps",
-		ShaderType::PIXEL_SHADER
+		ShaderDescription::Path("resources/shaders/basic.hlsl"),
+		ShaderDescription::Entry("main_ps"),
+		ShaderDescription::Type(ShaderType::PIXEL_SHADER)
 	});
 
 	REGISTER(shaders::fullscreen_quad_vs, ShaderRegistry)({
-		"resources/shaders/fullscreen_quad.hlsl",
-		"main_vs",
-		ShaderType::VERTEX_SHADER
+		ShaderDescription::Path("resources/shaders/fullscreen_quad.hlsl"),
+		ShaderDescription::Entry("main_vs"),
+		ShaderDescription::Type(ShaderType::VERTEX_SHADER)
 	});
 
 	REGISTER(shaders::deferred_composition_cs, ShaderRegistry)({
-		"resources/shaders/deferred_composition.hlsl",
-		"main_cs",
-		ShaderType::DIRECT_COMPUTE_SHADER
+		ShaderDescription::Path("resources/shaders/deferred_composition.hlsl"),
+		ShaderDescription::Entry("main_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
 	});
 
 	REGISTER(shaders::mip_mapping_cs, ShaderRegistry)({
-		"resources/shaders/generate_mips_cs.hlsl",
-		"main",
-		ShaderType::DIRECT_COMPUTE_SHADER
+		ShaderDescription::Path("resources/shaders/generate_mips_cs.hlsl"),
+		ShaderDescription::Entry("main"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
 	});
 
 	REGISTER(shaders::equirect_to_cubemap_vs, ShaderRegistry)({
-		"resources/shaders/equirect_to_cubemap_conversion.hlsl",
-		"main_vs",
-		ShaderType::VERTEX_SHADER
+		ShaderDescription::Path("resources/shaders/equirect_to_cubemap_conversion.hlsl"),
+		ShaderDescription::Entry("main_vs"),
+		ShaderDescription::Type(ShaderType::VERTEX_SHADER)
 	});
 
 	REGISTER(shaders::equirect_to_cubemap_ps, ShaderRegistry)({
-		"resources/shaders/equirect_to_cubemap_conversion.hlsl",
-		"main_ps",
-		ShaderType::PIXEL_SHADER
+		ShaderDescription::Path("resources/shaders/equirect_to_cubemap_conversion.hlsl"),
+		ShaderDescription::Entry("main_ps"),
+		ShaderDescription::Type(ShaderType::PIXEL_SHADER)
 	});
 
 	REGISTER(shaders::cubemap_convolution_ps, ShaderRegistry)({
-		"resources/shaders/cubemap_convolution.hlsl",
-		"main_ps",
-		ShaderType::PIXEL_SHADER
+		ShaderDescription::Path("resources/shaders/cubemap_convolution.hlsl"),
+		ShaderDescription::Entry("main_ps"),
+		ShaderDescription::Type(ShaderType::PIXEL_SHADER)
 	});
 
-
 	REGISTER(pipelines::basic_deferred, PipelineRegistry)<VertexColor>({
-		shaders::basic_vs,
-		shaders::basic_ps,
-		std::nullopt,
-		root_signatures::basic,
-		Format::D32_FLOAT,
-		{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },
-		3,
-		PipelineType::GRAPHICS_PIPELINE,
-		CullMode::CULL_BACK,
-		true,
-		false,
-		TopologyType::TRIANGLE
+		PipelineDescription::VertexShader(shaders::basic_vs),
+		PipelineDescription::PixelShader(shaders::basic_ps),
+		PipelineDescription::ComputeShader(std::nullopt),
+		PipelineDescription::RootSignature(root_signatures::basic),
+		PipelineDescription::DSVFormat(Format::D32_FLOAT),
+		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
+		PipelineDescription::NumRTVFormats(3),
+		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(true),
+		PipelineDescription::CounterClockwise(false),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 	});
 
 	REGISTER(pipelines::deferred_composition, PipelineRegistry)<Vertex2D>({
-		std::nullopt,
-		std::nullopt,
-		shaders::deferred_composition_cs,
-		root_signatures::deferred_composition,
-		Format::UNKNOWN,
-		{ Format::R8G8B8A8_UNORM },
-		1,
-		PipelineType::COMPUTE_PIPELINE,
-		CullMode::CULL_BACK,
-		false,
-		true,
-		TopologyType::TRIANGLE
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::deferred_composition_cs),
+		PipelineDescription::RootSignature(root_signatures::deferred_composition),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 	});
 
-	REGISTER(pipelines::mip_mapping, PipelineRegistry)<VertexColor>(
-	{
-			std::nullopt,
-			std::nullopt,
-			shaders::mip_mapping_cs,
-			root_signatures::mip_mapping,
-			Format::UNKNOWN,
-			{ }, //This compute shader doesn't use any render target
-			0,
-			PipelineType::COMPUTE_PIPELINE,
-			CullMode::CULL_BACK,
-			false,
-			true,
-			TopologyType::TRIANGLE
+	REGISTER(pipelines::mip_mapping, PipelineRegistry)<VertexColor>({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::mip_mapping_cs),
+		PipelineDescription::RootSignature(root_signatures::mip_mapping),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ }),
+		PipelineDescription::NumRTVFormats(0),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 	});
 
 	REGISTER(pipelines::equirect_to_cubemap, PipelineRegistry)<Vertex>(
 	{
-		shaders::equirect_to_cubemap_vs,
-		shaders::equirect_to_cubemap_ps,
-		std::nullopt,
-		root_signatures::cubemap_conversion,
-		Format::UNKNOWN,
-		{ Format::R32G32B32A32_FLOAT },
-		1,
-		PipelineType::GRAPHICS_PIPELINE,
-		CullMode::CULL_NONE,
-		false,
-		false,
-		TopologyType::TRIANGLE
+		PipelineDescription::VertexShader(shaders::equirect_to_cubemap_vs),
+		PipelineDescription::PixelShader(shaders::equirect_to_cubemap_ps),
+		PipelineDescription::ComputeShader(std::nullopt),
+		PipelineDescription::RootSignature(root_signatures::cubemap_conversion),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(false),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 	});
 
 	REGISTER(pipelines::cubemap_convolution, PipelineRegistry)<Vertex>(
 	{
-		shaders::equirect_to_cubemap_vs,
-		shaders::cubemap_convolution_ps,
-		std::nullopt,
-		root_signatures::cubemap_convolution,
-		Format::UNKNOWN,
-		{ Format::R32G32B32A32_FLOAT },
-		1,
-		PipelineType::GRAPHICS_PIPELINE,
-		CullMode::CULL_NONE,
-		false,
-		false,
-		TopologyType::TRIANGLE
+		PipelineDescription::VertexShader(shaders::equirect_to_cubemap_vs),
+		PipelineDescription::PixelShader(shaders::cubemap_convolution_ps),
+		PipelineDescription::ComputeShader(std::nullopt),
+		PipelineDescription::RootSignature(root_signatures::cubemap_convolution),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(false),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 	});
 
 
 	/* ### Raytracing ### */
 	REGISTER(shaders::post_processing, ShaderRegistry)({
-		"resources/shaders/post_processing.hlsl",
-		"main",
-		ShaderType::DIRECT_COMPUTE_SHADER
+		ShaderDescription::Path("resources/shaders/post_processing.hlsl"),
+		ShaderDescription::Entry("main"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
 	});
 
 	REGISTER(shaders::rt_lib, ShaderRegistry)({
-		"resources/shaders/raytracing.hlsl",
-		"RaygenEntry",
-		ShaderType::LIBRARY_SHADER
+		ShaderDescription::Path("resources/shaders/raytracing.hlsl"),
+		ShaderDescription::Entry("RaygenEntry"),
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 	});
 
 	DESC_RANGE_ARRAY(accum_r,
@@ -262,29 +260,29 @@ namespace wr
 	);
 
 	REGISTER(root_signatures::post_processing, RootSignatureRegistry)({
-		{
+		RootSignatureDescription::Parameters({
 			ROOT_PARAM_DESC_TABLE(accum_r, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetConstants(params::post_processing, params::PostProcessingE::HDR_SUPPORT)),
-		},
-		{
+		}),
+		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
-		}
+		})
 	});
 
 	REGISTER(pipelines::post_processing, PipelineRegistry)<Vertex2D>(
 	{
-		std::nullopt,
-		std::nullopt,
-		shaders::post_processing,
-		root_signatures::post_processing,
-		Format::UNKNOWN,
-		{ d3d12::settings::back_buffer_format }, //This compute shader doesn't use any render target
-		1,
-		PipelineType::COMPUTE_PIPELINE,
-		CullMode::CULL_NONE,
-		false,
-		true,
-		TopologyType::TRIANGLE
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::post_processing),
+		PipelineDescription::RootSignature(root_signatures::post_processing),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ d3d12::settings::back_buffer_format }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 	});
 
 	DESC_RANGE_ARRAY(r,
@@ -299,23 +297,21 @@ namespace wr
 	);
 
 	REGISTER(root_signatures::rt_test_global, RootSignatureRegistry)({
-		{
+		RootSignatureDescription::Parameters({
 			ROOT_PARAM_DESC_TABLE(r, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetSRV(params::full_raytracing, params::FullRaytracingE::ACCELERATION_STRUCTURE)),
 			ROOT_PARAM(GetCBV(params::full_raytracing, params::FullRaytracingE::CAMERA_PROPERTIES)),
 			ROOT_PARAM(GetSRV(params::full_raytracing, params::FullRaytracingE::VERTICES)),
-		},
-		{
+		}),
+		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
-		},
-		true // rtx
+		}),
+		RootSignatureDescription::ForRTX(true)
 	});
 
-	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> so_desc = []()
+	StateObjectDescription::LibraryDesc rt_full_lib = []()
 	{
-		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
-
-		StateObjectDescription::Library lib;
+		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_lib;
 		lib.exports.push_back(L"RaygenEntry");
 		lib.exports.push_back(L"ClosestHitEntry");
@@ -325,25 +321,25 @@ namespace wr
 		lib.m_hit_groups.push_back({ L"MyHitGroup", L"ClosestHitEntry" });
 		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
 
-		return std::make_pair(desc, lib);
+		return lib;
 	}();
 	
 	REGISTER(state_objects::state_object, RTPipelineRegistry)(
 	{
-		so_desc.first,     // Description
-		so_desc.second,    // Library
-		(sizeof(float)* 7) + sizeof(unsigned int), // Max payload size
-		(sizeof(float)* 4), // Max attributes size
-		3,				   // Max recursion depth
-		root_signatures::rt_test_global,      // Global root signature
-		std::nullopt,      // Local Root Signatures
+		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
+		StateObjectDescription::Library(rt_full_lib),
+		StateObjectDescription::MaxPayloadSize((sizeof(float)* 7) + sizeof(unsigned int)),
+		StateObjectDescription::MaxAttributeSize(sizeof(float)* 4),
+		StateObjectDescription::MaxRecursionDepth(3),
+		StateObjectDescription::GlobalRootSignature(root_signatures::rt_test_global),
+		StateObjectDescription::LocalRootSignatures(std::nullopt),
 	});
 
 	/* ### Hybrid Raytracing ### */
 	REGISTER(shaders::rt_hybrid_lib, ShaderRegistry)({
-		"resources/shaders/rt_hybrid.hlsl",
-		"RaygenEntry",
-		ShaderType::LIBRARY_SHADER
+		ShaderDescription::Path("resources/shaders/rt_hybrid.hlsl"),
+		ShaderDescription::Entry("RaygenEntry"),
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 	});
 
 	DESC_RANGE_ARRAY(rt_hybrid_ranges,
@@ -359,23 +355,21 @@ namespace wr
 	);
 
 	REGISTER(root_signatures::rt_hybrid_global, RootSignatureRegistry)({
-		{
+		RootSignatureDescription::Parameters({
 			ROOT_PARAM_DESC_TABLE(rt_hybrid_ranges, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::ACCELERATION_STRUCTURE)),
 			ROOT_PARAM(GetCBV(params::rt_hybrid, params::RTHybridE::CAMERA_PROPERTIES)),
 			ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::VERTICES)),
-		},
-		{
+		}),
+		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
-		},
-		true // rtx
+		}),
+		RootSignatureDescription::RTXLocal(true)
 	});
 
-	std::pair<CD3DX12_STATE_OBJECT_DESC, StateObjectDescription::Library> rt_hybrid_so_desc = []()
+	StateObjectDescription::LibraryDesc rt_hybrid_so_library = []()
 	{
-		CD3DX12_STATE_OBJECT_DESC desc = { D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
-
-		StateObjectDescription::Library lib;
+		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_hybrid_lib;
 		lib.exports.push_back(L"RaygenEntry");
 		lib.exports.push_back(L"ShadowHit");
@@ -385,18 +379,18 @@ namespace wr
 		lib.m_hit_groups.push_back({L"ShadowHitGroup", L"ShadowHit"});
 		lib.m_hit_groups.push_back({L"ReflectionHitGroup", L"ReflectionHit"});
 
-		return std::make_pair(desc, lib);
+		return lib;
 	}();
 
 	REGISTER(state_objects::rt_hybrid_state_object, RTPipelineRegistry)(
 	{
-		rt_hybrid_so_desc.first,     // Description
-		rt_hybrid_so_desc.second,    // Library
-		(sizeof(float) * 6), // Max payload size
-		(sizeof(float) * 2), // Max attributes size
-		2,				   // Max recursion depth
-		root_signatures::rt_hybrid_global,      // Global root signature
-		std::nullopt,      // Local Root Signatures
+		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
+		StateObjectDescription::Library(rt_hybrid_so_library),
+		StateObjectDescription::MaxPayloadSize(sizeof(float) * 6),
+		StateObjectDescription::MaxAttributeSize(sizeof(float) * 2),
+		StateObjectDescription::MaxRecursionDepth(2),
+		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
+		StateObjectDescription::LocalRootSignatures(std::nullopt),
 	});
 
 } /* wr */

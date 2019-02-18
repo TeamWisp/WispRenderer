@@ -492,7 +492,6 @@ namespace wr
 		d3d12::End(n_cmd_list);
 	}
 
-
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()
 	{
 		auto& registry = RootSignatureRegistry::Get();
@@ -509,7 +508,7 @@ namespace wr
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
 			d3d12::FinalizeRootSignature(n_rs, m_device);
 			rs->m_native = n_rs;
-			SetName(n_rs, (L"Root Signature " + desc.second.name));
+			SetName(n_rs, (L"Root Signature " + desc.second.name.Get()));
 
 			registry.m_objects.insert({ desc.first, rs });
 		}
@@ -556,21 +555,21 @@ namespace wr
 
 			auto n_pipeline = d3d12::CreatePipelineState();
 
-			if (desc.second.m_vertex_shader_handle.has_value())
+			if (desc.second.m_vertex_shader_handle.Get().has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.Get().value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
 				d3d12::SetVertexShader(n_pipeline, shader);
 			}
-			if (desc.second.m_pixel_shader_handle.has_value())
+			if (desc.second.m_pixel_shader_handle.Get().has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.Get().value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
 				d3d12::SetFragmentShader(n_pipeline, shader);
 			}
-			if (desc.second.m_compute_shader_handle.has_value())
+			if (desc.second.m_compute_shader_handle.Get().has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.Get().value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
 				d3d12::SetComputeShader(n_pipeline, shader);
 			}
@@ -716,26 +715,26 @@ namespace wr
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
 
-			auto library = static_cast<D3D12Shader*>(ShaderRegistry::Get().Find(desc.library_desc.shader_handle));
+			auto library = static_cast<D3D12Shader*>(ShaderRegistry::Get().Find(desc.library_desc.Get().shader_handle));
 
 			d3d12::desc::StateObjectDesc n_desc;
 			n_desc.m_library = library->m_native;
-			n_desc.m_library_exports = desc.library_desc.exports;
-			n_desc.max_attributes_size = desc.max_attributes_size;
-			n_desc.max_payload_size = desc.max_payload_size;
-			n_desc.max_recursion_depth = desc.max_recursion_depth;
-			n_desc.m_hit_groups = desc.library_desc.m_hit_groups;
+			n_desc.m_library_exports = desc.library_desc.Get().exports;
+			n_desc.max_attributes_size = desc.max_attributes_size.Get();
+			n_desc.max_payload_size = desc.max_payload_size.Get();
+			n_desc.max_recursion_depth = desc.max_recursion_depth.Get();
+			n_desc.m_hit_groups = desc.library_desc.Get().m_hit_groups;
 
-			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
+			if (auto rt_handle = desc.global_root_signature.Get().value(); desc.global_root_signature.Get().has_value())
 			{
 				auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
 				n_desc.global_root_signature = library->m_native;
 			}
 
-			if (desc.local_root_signatures.has_value())
+			if (desc.local_root_signatures.Get().has_value())
 			{
 				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
-				for (auto rt_handle : desc.local_root_signatures.value())
+				for (auto rt_handle : desc.local_root_signatures.Get().value())
 				{
 					auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
 					n_desc.local_root_signatures.value().push_back(library->m_native);
