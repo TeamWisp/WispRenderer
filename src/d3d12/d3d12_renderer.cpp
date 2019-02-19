@@ -148,6 +148,9 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
+		
+		//Rendering engine creates a texture pool that will be used by the render tasks.
+		m_texture_pools.push_back(CreateTexturePool());
 	}
 
 	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
