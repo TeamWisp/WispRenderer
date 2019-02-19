@@ -258,11 +258,6 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
         attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
 
-float3 ReflectRay(float3 v1, float3 v2)
-{
-	return (v2 * ((2.f * dot(v1, v2))) - v1);
-}
-
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
@@ -329,7 +324,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 	// Direct
-	float3 reflect_dir = ReflectRay(V, fN);
+	float3 reflect_dir = reflect(-V, fN);
 	float3 reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
 
 	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);

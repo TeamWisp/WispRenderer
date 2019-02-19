@@ -6,10 +6,7 @@ struct ShadowHitInfo
   float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
-struct Attributes
-{
-	float2 uv;
-};
+struct Attributes { };
 
 bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
