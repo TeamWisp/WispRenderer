@@ -24,6 +24,7 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
 #include "../scene_graph/skybox_node.hpp"
+#include <iostream>
 
 namespace wr
 {
@@ -531,6 +532,7 @@ namespace wr
 			}
 			else
 			{
+				std::cout << std::get<std::string>(shader_error) << std::endl;
 				LOGC(std::get<std::string>(shader_error));
 			}
 		}

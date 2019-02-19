@@ -56,7 +56,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
-		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, normal, 0).xyz;
+
+		float3 flipped_N = normal;
+		flipped_N.y *= -1;
+		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 		const float shadow_factor = 1.0f;
 		
