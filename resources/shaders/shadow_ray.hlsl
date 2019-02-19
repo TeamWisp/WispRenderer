@@ -3,7 +3,7 @@
 struct ShadowHitInfo
 {
   float is_hit;
-  float killme;
+  float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
 struct Attributes
