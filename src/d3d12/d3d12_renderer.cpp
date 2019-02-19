@@ -950,9 +950,6 @@ namespace wr
 			Model* model = elem.first;
 			temp::MeshBatch& batch = elem.second;
 
-			if (batch.num_instances == 0)
-				continue;
-
 			// Execute Indirect Pipeline
 			if constexpr (d3d12::settings::use_exec_indirect)
 			{
