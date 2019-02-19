@@ -87,13 +87,13 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
 	
 	float t_max = lerp(light_dist, light_dist, tid == light_type_directional);
-	bool shadow = TraceShadowRay(1, pos + (normal * EPSILON), L, t_max, depth + 1);
 
 	float3 radiance = (light.col * spot_intensity) * attenuation;
 	
-	radiance *= !shadow;
-
 	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance);
+
+	bool shadow = TraceShadowRay(1, pos + (normal * EPSILON), L, t_max, depth + 1);
+	lighting *= !shadow;
 
 	return lighting;
 }

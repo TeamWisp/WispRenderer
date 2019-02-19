@@ -2,7 +2,8 @@
 
 struct ShadowHitInfo
 {
-  bool is_hit;
+  float is_hit;
+  float killme;
 };
 
 struct Attributes
@@ -24,16 +25,16 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 	ray.TMin = 0;
 	ray.TMax = far;
 
-	ShadowHitInfo payload = { false };
+	ShadowHitInfo payload = { 0, 0 };
 
 	// Trace the ray
 	TraceRay(
 		Scene,
 		RAY_FLAG_NONE,
 		~0, // InstanceInclusionMask
-		idx, // RayContributionToHitGroupIndex
+		1, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
-		idx, // miss shader index is set to idx but can probably be anything.
+		1, // miss shader index is set to idx but can probably be anything.
 		ray,
 		payload);
 
@@ -43,5 +44,11 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 [shader("closesthit")]
 void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
 {
-    hit.is_hit = true;
+    hit.is_hit = 0;
+}
+
+[shader("miss")]
+void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
+{
+    hit.is_hit = 0;
 }

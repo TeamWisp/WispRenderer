@@ -79,7 +79,7 @@ namespace wr
 				                                                                 shader_identifier_size);
 
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shader_record);
-				//d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_shader_record);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_shader_record);
 			}
 
 			// Hit Group Shader Table

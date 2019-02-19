@@ -115,11 +115,6 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float calc_attenuation(float r, float d)
-{
-	return 1.0f - smoothstep(r * 0, r, d);
-}
-
 float3 ReflectRay(float3 v1, float3 v2)
 {
 	return (v2 * ((2.f * dot(v1, v2))) - v1);

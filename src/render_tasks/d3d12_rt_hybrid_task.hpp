@@ -80,8 +80,8 @@ namespace wr
 
 				// Create Table(s)
 				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				//d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], reflection_miss_record);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
 			}
 
 			// Set up Hit Group Shader Table
