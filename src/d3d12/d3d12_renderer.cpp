@@ -24,6 +24,7 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
 #include "../scene_graph/skybox_node.hpp"
+#include <iostream>
 
 namespace wr
 {
@@ -270,9 +271,9 @@ namespace wr
 		}
 	}
 
-	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures)
+	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool()
 	{
-		std::shared_ptr<D3D12TexturePool> pool = std::make_shared<D3D12TexturePool>(*this, size_in_mb, num_of_textures);
+		std::shared_ptr<D3D12TexturePool> pool = std::make_shared<D3D12TexturePool>(*this);
 		m_texture_pools.push_back(pool);
 		return pool;
 	}
@@ -344,15 +345,15 @@ namespace wr
 		else
 		{
 			d3d12::desc::RenderTargetDesc desc;
-			desc.m_initial_state = properties.m_state_finished.value_or(ResourceState::RENDER_TARGET);
+			desc.m_initial_state = properties.m_state_finished.Get().value_or(ResourceState::RENDER_TARGET);
 			desc.m_create_dsv_buffer = properties.m_create_dsv_buffer;
 			desc.m_num_rtv_formats = properties.m_num_rtv_formats;
 			desc.m_rtv_formats = properties.m_rtv_formats;
 			desc.m_dsv_format = properties.m_dsv_format;
 
-			if (properties.m_width.has_value() || properties.m_height.has_value())
+			if (properties.m_width.Get().has_value() || properties.m_height.Get().has_value())
 			{
-				auto retval = d3d12::CreateRenderTarget(m_device, properties.m_width.value(), properties.m_height.value(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, properties.m_width.Get().value(), properties.m_height.Get().value(), desc);
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
 					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
 				return retval;
@@ -397,9 +398,9 @@ namespace wr
 		{
 			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
 		}
-		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
+		else if (render_target.second.m_state_finished.Get().has_value() && render_target.second.m_state_execute.Get().has_value())
 		{
-			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_finished.value(), render_target.second.m_state_execute.value());
+			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_finished.Get().value(), render_target.second.m_state_execute.Get().value());
 		}
 		else
 		{
@@ -426,9 +427,9 @@ namespace wr
 		{
 			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
 		}
-		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
+		else if (render_target.second.m_state_finished.Get().has_value() && render_target.second.m_state_execute.Get().has_value())
 		{
-			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.value(), render_target.second.m_state_finished.value());
+			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.Get().value(), render_target.second.m_state_finished.Get().value());
 		}
 		else
 		{
@@ -466,11 +467,11 @@ namespace wr
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
 		{
-			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, render_target.second.m_state_execute.value());
+			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, ResourceState::PRESENT, render_target.second.m_state_execute.Get().value());
 		}
-		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
+		else if (render_target.second.m_state_finished.Get().has_value() && render_target.second.m_state_execute.Get().has_value())
 		{
-			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_finished.value(), render_target.second.m_state_execute.value());
+			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_finished.Get().value(), render_target.second.m_state_execute.Get().value());
 		}
 	}
 
@@ -482,16 +483,15 @@ namespace wr
 
 		if (render_target.second.m_is_render_window)
 		{
-			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, render_target.second.m_state_execute.value(), ResourceState::PRESENT);
+			d3d12::Transition(n_cmd_list, n_render_target, frame_idx, render_target.second.m_state_execute.Get().value(), ResourceState::PRESENT);
 		}
-		else if (render_target.second.m_state_finished.has_value() && render_target.second.m_state_execute.has_value())
+		else if (render_target.second.m_state_finished.Get().has_value() && render_target.second.m_state_execute.Get().has_value())
 		{
-			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.value(), render_target.second.m_state_finished.value());
+			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.Get().value(), render_target.second.m_state_finished.Get().value());
 		}
 
 		d3d12::End(n_cmd_list);
 	}
-
 
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()
 	{
@@ -509,7 +509,7 @@ namespace wr
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
 			d3d12::FinalizeRootSignature(n_rs, m_device);
 			rs->m_native = n_rs;
-			SetName(n_rs, (L"Root Signature " + desc.second.name));
+			SetName(n_rs, (L"Root Signature " + desc.second.name.Get()));
 
 			registry.m_objects.insert({ desc.first, rs });
 		}
@@ -532,6 +532,7 @@ namespace wr
 			}
 			else
 			{
+				std::cout << std::get<std::string>(shader_error) << std::endl;
 				LOGC(std::get<std::string>(shader_error));
 			}
 		}
@@ -556,21 +557,21 @@ namespace wr
 
 			auto n_pipeline = d3d12::CreatePipelineState();
 
-			if (desc.second.m_vertex_shader_handle.has_value())
+			if (desc.second.m_vertex_shader_handle.Get().has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.Get().value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
 				d3d12::SetVertexShader(n_pipeline, shader);
 			}
-			if (desc.second.m_pixel_shader_handle.has_value())
+			if (desc.second.m_pixel_shader_handle.Get().has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.Get().value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
 				d3d12::SetFragmentShader(n_pipeline, shader);
 			}
-			if (desc.second.m_compute_shader_handle.has_value())
+			if (desc.second.m_compute_shader_handle.Get().has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.Get().value());
 				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
 				d3d12::SetComputeShader(n_pipeline, shader);
 			}
@@ -716,26 +717,26 @@ namespace wr
 			auto desc = it.second;
 			auto obj = new D3D12StateObject();
 
-			auto library = static_cast<D3D12Shader*>(ShaderRegistry::Get().Find(desc.library_desc.shader_handle));
+			auto library = static_cast<D3D12Shader*>(ShaderRegistry::Get().Find(desc.library_desc.Get().shader_handle));
 
 			d3d12::desc::StateObjectDesc n_desc;
 			n_desc.m_library = library->m_native;
-			n_desc.m_library_exports = desc.library_desc.exports;
-			n_desc.max_attributes_size = desc.max_attributes_size;
-			n_desc.max_payload_size = desc.max_payload_size;
-			n_desc.max_recursion_depth = desc.max_recursion_depth;
-			n_desc.m_hit_groups = desc.library_desc.m_hit_groups;
+			n_desc.m_library_exports = desc.library_desc.Get().exports;
+			n_desc.max_attributes_size = desc.max_attributes_size.Get();
+			n_desc.max_payload_size = desc.max_payload_size.Get();
+			n_desc.max_recursion_depth = desc.max_recursion_depth.Get();
+			n_desc.m_hit_groups = desc.library_desc.Get().m_hit_groups;
 
-			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
+			if (auto rt_handle = desc.global_root_signature.Get().value(); desc.global_root_signature.Get().has_value())
 			{
 				auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
 				n_desc.global_root_signature = library->m_native;
 			}
 
-			if (desc.local_root_signatures.has_value())
+			if (desc.local_root_signatures.Get().has_value())
 			{
 				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
-				for (auto rt_handle : desc.local_root_signatures.value())
+				for (auto rt_handle : desc.local_root_signatures.Get().value())
 				{
 					auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
 					n_desc.local_root_signatures.value().push_back(library->m_native);
@@ -950,9 +951,6 @@ namespace wr
 		{
 			Model* model = elem.first;
 			temp::MeshBatch& batch = elem.second;
-
-			if (batch.num_instances == 0)
-				continue;
 
 			// Execute Indirect Pipeline
 			if constexpr (d3d12::settings::use_exec_indirect)

@@ -35,6 +35,8 @@ namespace fg_manager
 			fg = new wr::FrameGraph(4);
 
 			wr::AddBuildAccelerationStructuresTask(*fg);
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddRaytracingTask(*fg);
 			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
 			

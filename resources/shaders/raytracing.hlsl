@@ -1,6 +1,5 @@
 #define LIGHTS_REGISTER register(t2)
 #include "pbr_util.hlsl"
-#include "shadow_ray.hlsl"
 #include "lighting.hlsl"
 
 static const float M_PI = 3.14159265f;
@@ -37,7 +36,8 @@ StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
 Texture2D skybox : register(t6);
-Texture2D g_textures[20] : register(t7);
+TextureCube irradiance_map : register(t7);
+Texture2D g_textures[20] : register(t8);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -200,7 +200,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_NONE,
+		RAY_FLAG_CULL_FRONT_FACING_TRIANGLES,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -237,18 +237,7 @@ void RaygenEntry()
 	float3 result = TraceColorRay(ray.origin, ray.direction, 0, rand_seed);
 #endif
 	
-#ifdef PATH_TRACING
-	if (frame_idx > 0 && !any(isnan(result)))
-	{
-		gOutput[DispatchRaysIndex().xy] += float4(result, 1);
-	}
-	else
-	{
-		gOutput[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
-	}
-#else
 	gOutput[DispatchRaysIndex().xy] = float4(result, 1);
-#endif
 }
 
 [shader("miss")]
@@ -274,65 +263,16 @@ float3 ReflectRay(float3 v1, float3 v2)
 	return (v2 * ((2.f * dot(v1, v2))) - v1);
 }
 
-float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, uint depth)
-{
-	uint tid = light.tid & 3;
-
-	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - pos, light.pos - pos, tid == light_type_directional));
-	float light_dist = length(L);
-	L /= light_dist;
-
-	//Spot intensity (only used with spot; but always calculated)
-	float min_cos = cos(light.ang);
-	float max_cos = lerp(min_cos, 1, 0.5f);
-	float cos_angle = dot(light.dir, -L);
-	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
-
-	//Attenuation & spot intensity (only used with point or spot)
-	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
-	
-	float t_max = lerp(light_dist, light_dist, tid == light_type_directional);
-	bool shadow = TraceShadowRay(pos + (normal * EPSILON), L, t_max, depth + 1, 0);
-
-	float3 radiance = (light.col * spot_intensity) * attenuation;
-	
-	radiance = lerp(radiance, float3(0, 0, 0), shadow);
-
-	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance, light.col);
-
-	return lighting;
-
-}
-
-float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, uint depth)
-{
-	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
-
-	float ambient = 0.0f;
-	float3 res = float3(ambient, ambient, ambient);
-
-	[unroll]
-	for (uint i = 0; i < light_count; i++)
-	{
-		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i], depth);
-	}
-
-	return res * albedo;
-}
-
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
-	float gamma = 2.2;
-	
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
-	const Material material = g_materials[g_offsets[InstanceID()].material_idx];
+	const Material material = g_materials[offset.material_idx];
 	const float3 hit_pos = HitWorldPosition();
 	const float index_offset = offset.idx_offset;
 	const float vertex_offset = offset.vertex_offset;
-	
+
 	// Find first index location
 	const uint index_size = 4;
     const uint indices_per_triangle = 3;
@@ -357,58 +297,49 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
 	const float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
 	const float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
-	const float3 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr);
+
+	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
+	uv.y = 1.0f - uv.y;
 
 	float mip_level = 1;
 
-//#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
-	metal = metal * roughness;
+	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #else
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
 	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
-	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz * 2.0) - float3(1.0, 1.0, 1.0);
 #endif
+	
 	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
-	//const float3 B = cross(N, T);
 	const float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
+	// Irradiance
+	float3 flipped_N = fN;
+	flipped_N.y *= -1;
+	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+
 	// Direct
+	float3 reflect_dir = ReflectRay(V, fN);
+	float3 reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
 
-	float3 reflection = float3(0, 0, 0);
-	//if (roughness < 0.95)
-	{
-		float3 reflect_dir = ReflectRay(V, fN);
-		reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
-	}
-
-#ifdef PATH_TRACING
-	// Indirect lighting
-	const float3 rand_dir = getCosHemisphereSample(payload.seed, fN);
-	const float cos_theta = cos(dot(rand_dir, fN));
-	float3 irradiance = (TraceColorRay(hit_pos + (fN * EPSILON), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
-
-	payload.color = (irradiance + (reflection.xyz * (metal * roughness)));
-#else
 	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
 	float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
-	float3 retval = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.depth);
-	float3 specular = (reflection.xyz) * F;
-	float3 diffuse = float3(0, 0, 0);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.depth);
+	float3 specular = (reflection) * F;
+	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
-	payload.color = ambient + retval;
-#endif
+	payload.color = ambient + lighting;
 }

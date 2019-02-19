@@ -52,7 +52,7 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float4x4 mvp = mul(projection, vm);
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
-	output.uv = input.uv;
+	output.uv = float2(input.uv.x, 1.0f - input.uv.y);
 	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
 	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
 	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
@@ -84,7 +84,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float4 roughness = material_metallic.SampleLevel(s0, input.uv, 0).y;
 	float4 metallic = material_metallic.SampleLevel(s0, input.uv, 0).z;
 #else
-	float4 roughness = material_roughness.Sample(s0, input.uv);
+	float4 roughness = max(0.05f, material_roughness.Sample(s0, input.uv));
 	float4 metallic = material_metallic.Sample(s0, input.uv);
 #endif
 	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);

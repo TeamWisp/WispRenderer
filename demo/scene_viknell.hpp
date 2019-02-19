@@ -60,8 +60,6 @@ namespace viknell_scene
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 5, 5, 5 });
 		//point_light_0->SetRadius(3.0f);
 		point_light_0->SetPosition({ -1.1, 0.75, 1.5 });
-
-		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	}
 
 	void UpdateScene()
