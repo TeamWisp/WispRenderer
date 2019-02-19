@@ -24,6 +24,7 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
 #include "../scene_graph/skybox_node.hpp"
+#include <iostream>
 
 namespace wr
 {
@@ -274,9 +275,9 @@ namespace wr
 		}
 	}
 
-	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool(std::size_t size_in_mb, std::size_t num_of_textures)
+	std::shared_ptr<TexturePool> D3D12RenderSystem::CreateTexturePool()
 	{
-		std::shared_ptr<D3D12TexturePool> pool = std::make_shared<D3D12TexturePool>(*this, size_in_mb, num_of_textures);
+		std::shared_ptr<D3D12TexturePool> pool = std::make_shared<D3D12TexturePool>(*this);
 		m_texture_pools.push_back(pool);
 		return pool;
 	}
@@ -535,6 +536,7 @@ namespace wr
 			}
 			else
 			{
+				std::cout << std::get<std::string>(shader_error) << std::endl;
 				LOGC(std::get<std::string>(shader_error));
 			}
 		}
@@ -953,9 +955,6 @@ namespace wr
 		{
 			Model* model = elem.first;
 			temp::MeshBatch& batch = elem.second;
-
-			if (batch.num_instances == 0)
-				continue;
 
 			// Execute Indirect Pipeline
 			if constexpr (d3d12::settings::use_exec_indirect)
