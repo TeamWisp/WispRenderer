@@ -200,7 +200,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_NONE,
+		RAY_FLAG_CULL_FRONT_FACING_TRIANGLES,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
