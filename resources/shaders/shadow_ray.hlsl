@@ -25,7 +25,7 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 	ray.TMin = 0;
 	ray.TMax = far;
 
-	ShadowHitInfo payload = { 0, 0 };
+	ShadowHitInfo payload = { false, 0 };
 
 	// Trace the ray
 	TraceRay(
@@ -44,11 +44,11 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 [shader("closesthit")]
 void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
 {
-    hit.is_hit = 0;
+    hit.is_hit = true;
 }
 
 [shader("miss")]
 void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
 {
-    hit.is_hit = 0;
+    hit.is_hit = false;
 }
