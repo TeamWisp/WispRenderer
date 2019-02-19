@@ -47,7 +47,6 @@ struct ReflectionHitInfo
 {
 	float3 origin;
 	float3 color;
-	unsigned int seed;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -73,70 +72,17 @@ uint3 Load3x32BitIndices(uint offsetBytes)
 	return g_indices.Load3(offsetBytes);
 }
 
-// Initialize random
-uint initRand(uint val0, uint val1, uint backoff = 16)
-{
-	uint v0 = val0, v1 = val1, s0 = 0;
-
-	[unroll]
-	for (uint n = 0; n < backoff; n++)
-	{
-		s0 += 0x9e3779b9;
-		v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
-		v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
-	}
-	return v0;
-}
-
-// Get new random float [0, 1]
-float nextRand(inout uint s)
-{
-	s = (1664525u * s + 1013904223u);
-	return float(s & 0x00FFFFFF) / float(0x01000000);
-}
-
 // Retrieve hit world position.
 float3 HitWorldPosition()
 {
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-<<<<<<< HEAD
-bool TraceShadowRay(float3 origin, float3 direction, float t_max)
-{
-	ShadowHitInfo payload = { false, 1 };
-
-	// Define a ray, consisting of origin, direction, and the min-max distance values
-	RayDesc ray;
-	ray.Origin = origin;
-	ray.Direction = direction;
-	ray.TMin = 0.0000;
-	ray.TMax = t_max;
-
-	// Trace the ray
-	TraceRay(
-		Scene,
-		// TODO: Change flags if transparency is added
-		RAY_FLAG_FORCE_OPAQUE // Treat all geometry as opaque.
-		| RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, // Accept first hit
-		~0, // InstanceInclusionMask
-		0, // RayContributionToHitGroupIndex
-		1, // MultiplierForGeometryContributionToHitGroupIndex
-		0, // miss shader index
-		ray,
-		payload);
-
-	return payload.shadow_hit;
-}
-
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed)
-=======
 float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction)
->>>>>>> master
 {
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed };
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1) };
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -169,85 +115,12 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-<<<<<<< HEAD
-float calc_attenuation(float r, float d)
-{
-	return 1.0f - smoothstep(r * 0, r, d);
-}
-
-float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float roughness, float metal, Light light, inout uint rand_seed)
-{
-	uint tid = light.tid & 3;
-
-	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - wpos, light.dir, tid == light_type_directional));
-	float light_dist = length(L);
-	L /= light_dist;
-
-	//Spot intensity (only used with spot; but always calculated)
-	float min_cos = cos(light.angle);
-	float max_cos = lerp(min_cos, 1, 0.5f);
-	float cos_angle = dot(light.dir, -L);
-	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
-
-	//Attenuation & spot intensity (only used with point or spot)
-	float attenuation = lerp(1.0f - smoothstep(0, light.radius, light_dist), 1, tid == light_type_directional);
-
-	const float3 radiance = intensity * spot_intensity * light.color * attenuation;
-
-	float3 lighting = BRDF(L, V, normal, metal, roughness, albedo, radiance, light.color);
-
-	// Check if pixel is shaded
-	float3 origin = wpos + normal * epsilon;
-	float t_max = lerp(light_dist, 10000.0, tid == light_type_directional);
-	//bool is_shadow = TraceShadowRay(origin, L, t_max);
-
-	// Offset shadow ray direction to get soft-shadows
-	float shadow_factor = 0.0;
-	[unroll]
-	for (uint n = 0; n < MAX_SHADOW_SAMPLES; n++)
-	{
-		float3 offset = float3(nextRand(rand_seed), nextRand(rand_seed), nextRand(rand_seed)) - 0.5;
-		offset *= 0.05;
-		float3 shadow_direction = normalize(L + offset);
-
-		bool is_shadow = TraceShadowRay(origin, shadow_direction, t_max);
-
-		shadow_factor += lerp(1.0, 0.0, is_shadow);
-	}
-
-	shadow_factor /= float(MAX_SHADOW_SAMPLES);
-
-	lighting *= shadow_factor;
-
-	return lighting;
-	//return lerp(lighting, float3(0, 0, 0), is_shadow);
-}
-
-float3 ShadePixel(float3 pos, float3 V, float3 albedo, float3 normal, float roughness, float metal, inout uint rand_seed)
-{
-	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
-
-	float ambient = 0.1f;
-	float3 res = float3(ambient, ambient, ambient);
-
-	for (uint i = 0; i < light_count; i++)
-	{
-		res += ShadeLight(pos, V, albedo, normal, roughness, metal, lights[i], rand_seed);
-	}
-
-	return res * albedo;
-}
-
-
-=======
->>>>>>> master
 float3 ReflectRay(float3 v1, float3 v2)
 {
 	return (v2 * ((2.f * dot(v1, v2))) - v1);
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float metallic, float3 albedo, float3 lighting, uint rand_seed)
+float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float metallic, float3 albedo, float3 lighting)
 {
 
 	// Calculate ray info
@@ -255,24 +128,8 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float
 	float3 reflected = ReflectRay(V, normal);
 
 	// Shoot reflection ray
-<<<<<<< HEAD
-
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed);
-
-	// Calculate reflection combined with fresnel
-
-	const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
-	const float3 kS = F;
-	float3 kD = 1.0 - kS;
-	kD *= 1.0 - metallic;
-
-	const float3 specular = F * reflection;
-
-	return specular + lighting;
-=======
 	float3 reflection = TraceReflectionRay(wpos, normal, reflected);
 	return reflection;
->>>>>>> master
 }
 
 #define M_PI 3.14159265358979
@@ -280,8 +137,6 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float
 [shader("raygeneration")]
 void RaygenEntry()
 {
-	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
-
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
@@ -310,14 +165,8 @@ void RaygenEntry()
 		return;
 	}
 
-<<<<<<< HEAD
-	float3 lighting = ShadePixel(wpos, V, albedo, normal, roughness, metallic, rand_seed);
-	nextRand(rand_seed);
-	float3 reflection = DoReflection(wpos, V, normal, roughness, metallic, albedo, lighting, rand_seed);
-=======
 	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, 0);
 	float3 reflection = DoReflection(wpos, V, normal, roughness, metallic, albedo, lighting);
->>>>>>> master
 
 	float3 flipped_N = normal;
 	flipped_N.y *= -1;
@@ -406,9 +255,6 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//TODO: Reflections
 
 	//Shading
-<<<<<<< HEAD
-	payload.color = ShadePixel(hit_pos, V, albedo, fN, roughness, metal, payload.seed);
-=======
 	float3 flipped_N = fN;
 	flipped_N.y *= -1;
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
@@ -425,7 +271,6 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, 1);
 
 	payload.color = ambient + lighting;
->>>>>>> master
 }
 
 //Reflection skybox
