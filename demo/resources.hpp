@@ -44,7 +44,7 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(256, 55);
+		texture_pool = render_system->CreateTexturePool();
 		material_pool = render_system->CreateMaterialPool(256);
 
 		// Load Texture.
