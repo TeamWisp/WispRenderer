@@ -1,7 +1,7 @@
 #include "pbr_util.hlsl"
 
 #define MAX_RECURSION 1
-#define MAX_SHADOW_SAMPLES 2
+#define MAX_SHADOW_SAMPLES 1
 
 struct Light
 {
@@ -114,6 +114,7 @@ uint initRand(uint val0, uint val1, uint backoff = 16)
 	return v0;
 }
 
+// Get new random float [0, 1]
 float nextRand(inout uint s)
 {
 	s = (1664525u * s + 1013904223u);
@@ -220,6 +221,7 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 	// Check if pixel is shaded
 	float3 origin = wpos + normal * epsilon;
 	float t_max = lerp(light_dist, 10000.0, tid == light_type_directional);
+	//bool is_shadow = TraceShadowRay(origin, L, t_max);
 
 	// Offset shadow ray direction to get soft-shadows
 	float shadow_factor = 0.0;
@@ -239,8 +241,8 @@ float3 ShadeLight(float3 wpos, float3 V, float3 albedo, float3 normal, float rou
 
 	lighting *= shadow_factor;
 
-
 	return lighting;
+	//return lerp(lighting, float3(0, 0, 0), is_shadow);
 }
 
 float3 ShadePixel(float3 pos, float3 V, float3 albedo, float3 normal, float roughness, float metal, inout uint rand_seed)

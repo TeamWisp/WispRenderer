@@ -8,6 +8,8 @@
 #include "imgui/imgui.hpp"
 #include "debug_camera.hpp"
 
+#include "util/log.hpp"
+
 namespace viknell_scene
 {
 
@@ -19,7 +21,8 @@ namespace viknell_scene
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
-		camera->SetPosition({ 0, 0, 2.5 });
+		camera->SetPosition({ 0.35, -0.1, 1.3 });
+		camera->SetRotation({0.0, 13.5_deg, 0});
 		camera->SetSpeed(10);
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
@@ -56,7 +59,7 @@ namespace viknell_scene
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 5, 5, 5 });
 		//point_light_0->SetRadius(3.0f);
-		point_light_0->SetPosition({ 0, 0.75, 2.0 });
+		point_light_0->SetPosition({ -1.1, 0.75, 1.5 });
 
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	}
@@ -70,5 +73,6 @@ namespace viknell_scene
 		//test_model->SetPosition(pos);
 
 		camera->Update(ImGui::GetIO().DeltaTime);
+		LOG("FPS " + std::string(std::to_string(ImGui::GetIO().DeltaTime)))
 	}
 } /* cube_scene */
