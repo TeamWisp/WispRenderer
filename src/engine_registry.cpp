@@ -292,6 +292,7 @@ namespace wr
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::MATERIALS),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::OFFSETS),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::SKYBOX),
+		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::IRRADIANCE_MAP),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::TEXTURES),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset),
 	);
@@ -349,6 +350,7 @@ namespace wr
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::MATERIALS),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::OFFSETS),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::SKYBOX),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::IRRADIANCE_MAP),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::TEXTURES),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::GBUFFERS),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset),
@@ -372,12 +374,12 @@ namespace wr
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_hybrid_lib;
 		lib.exports.push_back(L"RaygenEntry");
-		lib.exports.push_back(L"ShadowHit");
-		lib.exports.push_back(L"ShadowMiss");
 		lib.exports.push_back(L"ReflectionHit");
 		lib.exports.push_back(L"ReflectionMiss");
-		lib.m_hit_groups.push_back({L"ShadowHitGroup", L"ShadowHit"});
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
 		lib.m_hit_groups.push_back({L"ReflectionHitGroup", L"ReflectionHit"});
+		lib.m_hit_groups.push_back({L"ShadowHitGroup", L"ShadowClosestHitEntry"});
 
 		return lib;
 	}();
@@ -388,7 +390,7 @@ namespace wr
 		StateObjectDescription::Library(rt_hybrid_so_library),
 		StateObjectDescription::MaxPayloadSize(sizeof(float) * 6),
 		StateObjectDescription::MaxAttributeSize(sizeof(float) * 2),
-		StateObjectDescription::MaxRecursionDepth(2),
+		StateObjectDescription::MaxRecursionDepth(3),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
 		StateObjectDescription::LocalRootSignatures(std::nullopt),
 	});
