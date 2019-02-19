@@ -187,21 +187,41 @@ namespace wr::imgui::window
 			for (auto i = 0; i < lights.size(); i++)
 			{
 				auto window_size = ImGui::GetWindowSize();
-				ImGui::Columns(2);
-				float column_width = 25;
-				ImGui::SetColumnWidth(0, window_size.x - column_width);
-				ImGui::SetColumnWidth(1, column_width);
 
 				std::string light_name("Light " + std::to_string(i));
 
 				bool button_selected = false;
 				if (light_selected && lights[i].get() == selected_light) {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.95f, 0.26f, 0.26f, 1.0f));
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(152.f / 255.f, 43.f / 255.f, 91.f / 255.f, 1.0f));
 					button_selected = true;
 					inspect_item = LIGHT;
 				}
-				if (ImGui::Button(light_name.c_str(),ImVec2(window_size.x - column_width, 0)))
+
+				bool pressed_light = ImGui::Button(light_name.c_str(), ImVec2(ImGui::GetWindowSize().x, 20));
+
+				if (ImGui::BeginPopupContextItem())
 				{
+					if (ImGui::Button(("Remove##" + std::to_string(i)).c_str()))
+					{
+						if (selected_light == lights[i].get())
+						{
+							light_selected = false;
+							selected_light = nullptr;
+							inspect_item = NONE;
+							ImGui::PopStyleColor();
+						}
+						scene_graph->DestroyNode<LightNode>(lights[i]);
+						ImGui::CloseCurrentPopup();
+						ImGui::EndPopup();
+						continue;
+					}
+
+					ImGui::EndPopup();
+				}
+
+				if (pressed_light)
+				{
+
 					if (selected_light != lights[i].get())
 					{
 						selected_light = lights[i].get();
@@ -225,22 +245,6 @@ namespace wr::imgui::window
 					lights[i]->m_light->tid &= 3;
 					lights[i]->m_light->tid |= (uint32_t)lights.size() << 2;
 				}
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0));
-
-				ImGui::NextColumn();
-
-				if (ImGui::Button(("X##" + std::to_string(i)).c_str()))
-				{
-					if (selected_light == lights[i].get())
-					{
-						selected_light = nullptr;
-					}
-					scene_graph->DestroyNode<LightNode>(lights[i]);
-				}
-
-				ImGui::Columns();
-
-				ImGui::PopStyleVar();
 			}
 
 			ImGui::End();
@@ -412,7 +416,7 @@ namespace wr::imgui::window
 					ImGui::Combo("Type", &type, listbox_items, 3);
 					light.tid = type;
 
-					ImGui::DragFloat3("Color", &light.col.x, 0.25f);
+					ImGui::ColorEdit3("Color", &light.col.x, 0.25f);
 					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
 
 					if (type != (uint32_t)LightType::POINT)
