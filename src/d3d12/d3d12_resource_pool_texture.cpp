@@ -2,6 +2,7 @@
 
 #include "d3d12_functions.hpp"
 #include "d3d12_renderer.hpp"
+#include "d3d12_defines.hpp"
 
 #include "../renderer.hpp"
 #include "../settings.hpp"
@@ -48,6 +49,16 @@ namespace wr
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
 			delete m_allocators[i];
+		}
+
+		while (m_unstaged_textures.size() > 0)
+		{
+			D3D12TexturePool::Unload(m_unstaged_textures.begin()->first);
+		}
+		
+		while(m_staged_textures.size() > 0)
+		{
+			D3D12TexturePool::Unload(m_staged_textures.begin()->first);
 		}
 	}
 
@@ -245,6 +256,8 @@ namespace wr
 		d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));
 		m_staged_textures.erase(texture_id);
 
+		SAFE_RELEASE(texture->m_resource);
+		SAFE_RELEASE(texture->m_intermediate);
 		delete[] texture->m_allocated_memory;
 		delete texture;
 	}

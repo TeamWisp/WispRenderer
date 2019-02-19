@@ -433,40 +433,11 @@ namespace resources
 		}
 	}
 
-#pragma region REPLACE_LOADING_WITH_THIS
-		// Once the ray tracing implementation supports multiple model pools
-		// Replace the loading code above with this one.
-
-		//// Load Cube.
-		//{
-		//	cube_model = render_system->GetSimpleShape(wr::RenderSystem::SimpleShapes::CUBE);
-
-		//	for (auto& m : cube_model->m_meshes)
-		//	{
-		//		m.second = &rock_material;
-		//	}
-		//}
-
-		//{
-		//	plane_model = render_system->GetSimpleShape(wr::RenderSystem::SimpleShapes::PLANE);
-
-		//	light_model = plane_model;
-
-		//	for (auto& m : plane_model->m_meshes)
-		//	{
-		//		m.second = &rock_material;
-		//	}
-		//}
-
-
-		//{
-		//	test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-
-		//	for (auto& m : test_model->m_meshes)
-		//	{
-		//		m.second = &rusty_metal_material;
-		//	}
-		//}
-#pragma endregion
+	void ReleaseResources()
+	{
+		model_pool.reset();
+		texture_pool.reset();
+		material_pool.reset();
+	};
 
 }

@@ -47,6 +47,10 @@ namespace wr
 		{
 			m_model_pools[i].reset();
 		}
+		for (int i = 0; i < m_texture_pools.size(); ++i)
+		{
+			m_texture_pools[i].reset();
+		}
 
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
