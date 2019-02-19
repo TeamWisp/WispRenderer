@@ -92,8 +92,8 @@ namespace wr
 	class ModelPool
 	{
 	public:
-		explicit ModelPool(std::size_t vertex_buffer_pool_size_in_mb,
-			std::size_t index_buffer_pool_size_in_mb);
+		explicit ModelPool(std::size_t vertex_buffer_pool_size_in_bytes,
+			std::size_t index_buffer_pool_size_in_bytes);
 		virtual ~ModelPool() = default;
 
 		ModelPool(ModelPool const &) = delete;
@@ -126,8 +126,8 @@ namespace wr
 		template<typename TV, typename TI = std::uint32_t>
 		int LoadNodeMeshesWithMaterials(ModelData* data, Model* model, std::vector<MaterialHandle*> materials);
 
-		std::size_t m_vertex_buffer_pool_size_in_mb;
-		std::size_t m_index_buffer_pool_size_in_mb;
+		std::size_t m_vertex_buffer_pool_size_in_bytes;
+		std::size_t m_index_buffer_pool_size_in_bytes;
 
 		std::map<std::uint64_t, internal::MeshInternal*> m_loaded_meshes;
 		std::stack<std::uint64_t> m_freed_ids;

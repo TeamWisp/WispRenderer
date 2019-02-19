@@ -1,6 +1,7 @@
 #include "d3d12_resource_pool_texture.hpp"
 
 #include "d3d12_functions.hpp"
+#include "d3d12_defines.hpp"
 #include "d3d12_renderer.hpp"
 
 #include "../renderer.hpp"
@@ -14,15 +15,15 @@
 
 namespace wr
 {
-	D3D12TexturePool::D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_mb, std::size_t num_of_textures)
-		: TexturePool(size_in_mb)
+	D3D12TexturePool::D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_bytes, std::size_t num_of_textures)
+		: TexturePool(SizeAlign(size_in_bytes, 65536))
 		, m_render_system(render_system)
 	{
 		auto device = m_render_system.m_device;
 
 		// Append size and num values for the default textures.
 		num_of_textures += settings::default_textures_count;
-		size_in_mb += settings::default_textures_size_in_mb;
+		size_in_bytes += settings::default_textures_size_in_bytes;
 
 		//Staging heap
 
@@ -39,6 +40,8 @@ namespace wr
 		m_default_roughness = Load(settings::default_roughness_path, false, false);
 		m_default_metalic = Load(settings::default_metalic_path, false, false);
 		m_default_ao = Load(settings::default_ao_path, false, false);
+		m_post_stage_clear_textures.resize(d3d12::settings::num_back_buffers);
+
 	}
 
 	D3D12TexturePool::~D3D12TexturePool()
@@ -67,6 +70,8 @@ namespace wr
 		{
 			d3d12::CommandList* cmdlist = static_cast<d3d12::CommandList*>(cmd_list);
 
+			int frame = m_render_system.GetFrameIdx();
+
 			std::vector<d3d12::TextureResource*> unstaged_textures;
 			std::vector<d3d12::TextureResource*> need_mipmapping;
 
@@ -77,6 +82,7 @@ namespace wr
 				d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(itr->second);
 
 				unstaged_textures.push_back(texture);
+				m_post_stage_clear_textures[frame].push_back(texture);
 
 				decltype(d3d12::Device::m_native) n_device;
 				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
@@ -112,6 +118,8 @@ namespace wr
 
 				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
 
+				free(texture->m_allocated_memory);
+
 				texture->m_is_staged = true;
 
 				if (texture->m_need_mips)
@@ -130,6 +138,13 @@ namespace wr
 
 	void D3D12TexturePool::PostStageClear()
 	{
+		int frame = m_render_system.GetFrameIdx();
+		for (int i = 0; i < m_post_stage_clear_textures[frame].size(); ++i)
+		{
+			m_post_stage_clear_textures[frame][i]->m_intermediate->Release();
+		}
+
+		m_post_stage_clear_textures[frame].clear();
 	}
 
 	void D3D12TexturePool::ReleaseTemporaryResources()

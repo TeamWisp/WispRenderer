@@ -44,8 +44,8 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(256, 55);
-		material_pool = render_system->CreateMaterialPool(256);
+		texture_pool = render_system->CreateTexturePool(16*1024*1024, 55);
+		material_pool = render_system->CreateMaterialPool(8*1024*1024);
 
 		// Load Texture.
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
@@ -224,7 +224,7 @@ namespace resources
 			scorched_wood_material_internal->SetMetallic	(scorched_wood_metallic);
 		}
 
-		model_pool = render_system->CreateModelPool(320, 320);
+		model_pool = render_system->CreateModelPool(320*1024*1024, 320*1024*1024);
 
 		{
 			wr::MeshData<wr::VertexColor> mesh;
