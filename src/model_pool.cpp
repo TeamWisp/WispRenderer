@@ -57,7 +57,7 @@ namespace wr
 
 
 	template<>
-	int ModelPool::LoadNodeMeshes<Vertex, std::uint32_t>(ModelData* data, Model* model, MaterialHandle* default_material)
+	int ModelPool::LoadNodeMeshes<Vertex, std::uint32_t>(ModelData* data, Model* model, MaterialHandle default_material)
 	{
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
@@ -120,9 +120,9 @@ namespace wr
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
 
-			MaterialHandle* material_handle = default_material;
+			MaterialHandle material_handle = default_material;
 
-			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+			std::pair<Mesh*, MaterialHandle> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
 
@@ -133,7 +133,7 @@ namespace wr
 	}
 	
 	template<>
-	int ModelPool::LoadNodeMeshes<VertexColor, std::uint32_t>(ModelData* data, Model* model, MaterialHandle* default_material)
+	int ModelPool::LoadNodeMeshes<VertexColor, std::uint32_t>(ModelData* data, Model* model, MaterialHandle default_material)
 	{
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
@@ -200,9 +200,9 @@ namespace wr
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
 
-			MaterialHandle* material_handle = default_material;
+			MaterialHandle material_handle = default_material;
 
-			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+			std::pair<Mesh*, MaterialHandle> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
 
@@ -213,7 +213,7 @@ namespace wr
 	}
 
 	template<>
-	int ModelPool::LoadNodeMeshes<VertexNoTangent, std::uint32_t>(ModelData* data, Model* model, MaterialHandle* default_material)
+	int ModelPool::LoadNodeMeshes<VertexNoTangent, std::uint32_t>(ModelData* data, Model* model, MaterialHandle default_material)
 	{
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
@@ -268,9 +268,9 @@ namespace wr
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
 
-			MaterialHandle* material_handle = default_material;
+			MaterialHandle material_handle = default_material;
 
-			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+			std::pair<Mesh*, MaterialHandle> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
 
@@ -280,7 +280,7 @@ namespace wr
 	}
 
 	template<>
-	int ModelPool::LoadNodeMeshesWithMaterials<Vertex, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle*> materials)
+	int ModelPool::LoadNodeMeshesWithMaterials<Vertex, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle> materials)
 	{
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
@@ -343,9 +343,9 @@ namespace wr
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
 
-			MaterialHandle* material_handle = materials[mesh->m_material_id];
+			MaterialHandle material_handle = materials[mesh->m_material_id];
 
-			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+			std::pair<Mesh*, MaterialHandle> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
 			
@@ -355,7 +355,7 @@ namespace wr
 	}
 	
 	template<>
-	int ModelPool::LoadNodeMeshesWithMaterials<VertexColor, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle*> materials)
+	int ModelPool::LoadNodeMeshesWithMaterials<VertexColor, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle> materials)
 	{
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
@@ -422,9 +422,9 @@ namespace wr
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
 
-			MaterialHandle* material_handle = materials[mesh->m_material_id];
+			MaterialHandle material_handle = materials[mesh->m_material_id];
 
-			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+			std::pair<Mesh*, MaterialHandle> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
 			
@@ -434,7 +434,7 @@ namespace wr
 	}
 
 	template<>
-	int ModelPool::LoadNodeMeshesWithMaterials<VertexNoTangent, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle*> materials)
+	int ModelPool::LoadNodeMeshesWithMaterials<VertexNoTangent, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle> materials)
 	{
 		for (unsigned int i = 0; i < data->m_meshes.size(); ++i)
 		{
@@ -489,9 +489,9 @@ namespace wr
 			m_loaded_meshes[id] = mesh_data;
 			mesh_handle->id = id;
 
-			MaterialHandle* material_handle = materials[mesh->m_material_id];
+			MaterialHandle material_handle = materials[mesh->m_material_id];
 
-			std::pair<Mesh*, MaterialHandle*> n_mesh = std::make_pair(
+			std::pair<Mesh*, MaterialHandle> n_mesh = std::make_pair(
 				mesh_handle,
 				material_handle);
 

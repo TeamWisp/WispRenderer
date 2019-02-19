@@ -2,6 +2,8 @@
 //48 * 1024 / (4 * 4 * 4) = 48 * 1024 / 64 = 48 * 16 = 768
 #define MAX_INSTANCES 768
 
+#include "material_util.hlsl"
+
 struct VS_INPUT
 {
 	float3 pos : POSITION;
@@ -74,20 +76,44 @@ Texture2D material_metallic : register(t3);
 
 SamplerState s0 : register(s0);
 
+struct MaterialData
+{
+	float4 albedo_alpha;
+	float4 metallic_roughness;
+	uint flags;
+	uint3 padding;
+};
+
+cbuffer MaterialProperties : register(b2)
+{
+	MaterialData data;
+}
+
+
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
 	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
-	float4 albedo = material_albedo.Sample(s0, input.uv);
+
+	uint use_albedo_constant = data.flags & MATERIAL_USE_ALBEDO_CONSTANT;
+	uint has_albedo_texture = data.flags & MATERIAL_HAS_ALBEDO_TEXTURE;
+	uint use_roughness_constant = data.flags & MATERIAL_USE_ROUGHNESS_CONSTANT;
+	uint has_roughness_texture = data.flags & MATERIAL_HAS_ROUGHNESS_TEXTURE;
+	uint use_metallic_constant = data.flags & MATERIAL_USE_METALLIC_CONSTANT;
+	uint has_metallic_texture = data.flags & MATERIAL_HAS_METALLIC_TEXTURE;
+	uint use_normal_texture = data.flags & MATERIAL_HAS_NORMAL_TEXTURE;
+
+	float4 albedo = lerp(material_albedo.Sample(s0, input.uv), float4(data.albedo_alpha.xyz, 1.0f), use_albedo_constant!=0 || has_albedo_texture==0);
+
 //#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
-	float4 roughness = material_metallic.SampleLevel(s0, input.uv, 0).y;
-	float4 metallic = material_metallic.SampleLevel(s0, input.uv, 0).z;
+	float4 roughness = lerp(material_metallic.SampleLevel(s0, input.uv, 0).y, data.metallic_roughness.w, use_roughness_constant!=0 || has_roughness_texture == 0);
+	float4 metallic = lerp(material_metallic.SampleLevel(s0, input.uv, 0).z, length(data.metallic_roughness.xyz), use_metallic_constant != 0 || has_metallic_texture == 0);
 #else
-	float4 roughness = material_roughness.Sample(s0, input.uv);
-	float4 metallic = material_metallic.Sample(s0, input.uv);
+	float4 roughness = lerp(material_roughness.Sample(s0, input.uv), data.metallic_roughness.wwww, use_roughness_constant != 0 || has_roughness_texture == 0);
+	float4 metallic = lerp(material_metallic.Sample(s0, input.uv), data.metallic_roughness.xyzx, use_metallic_constant != 0 || has_metallic_texture == 0);
 #endif
-	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
+	float3 tex_normal = lerp(material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 1.0), use_normal_texture == 0);
 	float3 normal = normalize(mul(tex_normal, tbn));
 
 	output.albedo_roughness = float4(albedo.xyz, roughness.r);

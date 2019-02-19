@@ -1,4 +1,5 @@
 #include "pbr_util.hlsl"
+#include "material_util.hlsl"
 
 #define MAX_RECURSION 1
 
@@ -24,12 +25,22 @@ struct Vertex
 	float3 color;
 };
 
+struct MaterialData
+{
+	float4 albedo_alpha;
+	float4 metallic_roughness;
+	uint flags;
+	uint3 padding;
+};
+
 struct Material
 {
 	float albedo_id;
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
+
+	MaterialData data;
 };
 
 struct Offset
@@ -342,12 +353,26 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const Vertex v1 = g_vertices[indices.y];
 	const Vertex v2 = g_vertices[indices.z];
 
+	uint use_albedo_constant = material.data.flags & MATERIAL_USE_ALBEDO_CONSTANT;
+	uint has_albedo_texture = material.data.flags & MATERIAL_HAS_ALBEDO_TEXTURE;
+	uint use_roughness_constant = material.data.flags & MATERIAL_USE_ROUGHNESS_CONSTANT;
+	uint has_roughness_texture = material.data.flags & MATERIAL_HAS_ROUGHNESS_TEXTURE;
+	uint use_metallic_constant = material.data.flags & MATERIAL_USE_METALLIC_CONSTANT;
+	uint has_metallic_texture = material.data.flags & MATERIAL_HAS_METALLIC_TEXTURE;
+	uint use_normal_texture = material.data.flags & MATERIAL_HAS_NORMAL_TEXTURE;
+
 	//Get data from VBO
 	float3 color = HitAttribute(v0.color, v1.color, v2.color, attr);
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
-	float3 albedo = pow(g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz, 2.2);
-	float roughness = max(g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x, 0.05);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
+	float3 albedo = pow(lerp(g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz,
+		material.data.albedo_alpha.xyz,
+		use_albedo_constant != 0 || has_albedo_texture == 0), 2.2);
+	float roughness = max(lerp(g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x,
+		material.data.metallic_roughness.w,
+		use_roughness_constant != 0 || has_roughness_texture == 0), 0.05);
+	float metal = lerp(g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x,
+		length(material.data.metallic_roughness.xyz),
+		use_metallic_constant != 0 || has_metallic_texture == 0);
 
 	albedo = lerp(albedo, color, length(color) != 0);
 
@@ -366,7 +391,9 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
 	float3x3 TBN = float3x3(T, B, N);
 
-	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	float3 normal_t = lerp((g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0),
+		float3(0.0, 0.0, 1.0),
+		use_normal_texture == 0);
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;

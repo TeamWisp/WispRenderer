@@ -2,6 +2,7 @@
 #include "pbr_util.hlsl"
 #include "shadow_ray.hlsl"
 #include "lighting.hlsl"
+#include "material_util.hlsl"
 
 static const float M_PI = 3.14159265f;
 
@@ -15,12 +16,22 @@ struct Vertex
 	float3 color;
 };
 
+struct MaterialData
+{
+	float4 albedo_alpha;
+	float4 metallic_roughness;
+	uint flags;
+	uint3 padding;
+};
+
 struct Material
 {
 	float albedo_id;
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
+
+	MaterialData data;
 };
 
 struct Offset
@@ -361,18 +372,42 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float mip_level = 1;
 
+	uint use_albedo_constant = material.data.flags & MATERIAL_USE_ALBEDO_CONSTANT;
+	uint has_albedo_texture = material.data.flags & MATERIAL_HAS_ALBEDO_TEXTURE;
+	uint use_roughness_constant = material.data.flags & MATERIAL_USE_ROUGHNESS_CONSTANT;
+	uint has_roughness_texture = material.data.flags & MATERIAL_HAS_ROUGHNESS_TEXTURE;
+	uint use_metallic_constant = material.data.flags & MATERIAL_USE_METALLIC_CONSTANT;
+	uint has_metallic_texture = material.data.flags & MATERIAL_HAS_METALLIC_TEXTURE;
+	uint use_normal_texture = material.data.flags & MATERIAL_HAS_NORMAL_TEXTURE;
+
 //#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
-	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
+	const float3 albedo = lerp(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz,
+		material.data.albedo_alpha.xyz,
+		use_albedo_constant != 0 || has_albedo_texture == 0);
+	const float roughness = lerp(max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y),
+		material.data.metallic_roughness.w,
+		use_roughness_constant != 0 || has_roughness_texture == 0);
+	float metal = lerp(g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z,
+		length(material.data.metallic_roughness.xyz),
+		use_metallic_constant != 0 || has_metallic_texture == 0);
 	metal = metal * roughness;
-	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	const float3 normal_t = lerp((g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0),
+		float3(0.0, 0.0, 1.0),
+		use_normal_texture == 0);
 #else
-	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
-	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
-	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	const float3 albedo = lerp(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz,
+		material.data.albedo_alpha.xyz,
+		use_albedo_constant != 0 || has_albedo_texture == 0);
+	const float roughness = lerp(max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r),
+		material.data.metallic_roughness.w,
+		use_roughness_constant != 0 || has_roughness_texture == 0);
+	const float metal = lerp(g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r,
+		length(material.data.metallic_roughness.xyz),
+		use_metallic_constant != 0 || has_metallic_texture == 0);
+	const float3 normal_t = lerp((g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0),
+		float3(0.0, 0.0, 1.0),
+		use_normal_texture == 0);
 #endif
 	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));

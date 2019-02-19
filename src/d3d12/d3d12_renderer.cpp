@@ -7,7 +7,7 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "../material_pool.hpp"
+#include "d3d12_material_pool.hpp"
 #include "d3d12_resource_pool_texture.hpp"
 #include "d3d12_model_pool.hpp"
 #include "d3d12_constant_buffer_pool.hpp"
@@ -104,7 +104,7 @@ namespace wr
 
 		// Material raytracing sb pool
 		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
-		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1*1024*1024);
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(rt_mat_align_size);
 
 		// Offset raytracing sb pool
 		size_t rt_offset_align_size = (sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
@@ -279,7 +279,7 @@ namespace wr
 
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_bytes)
 	{
-		return std::make_shared<MaterialPool>();
+		return std::make_shared<D3D12MaterialPool>(*this);
 	}
 
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes)
@@ -1079,11 +1079,15 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
+	void D3D12RenderSystem::BindMaterial(MaterialHandle material_handle, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 
-		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+		auto* material_internal = material_handle.m_pool->GetMaterial(material_handle.m_id);
+
+		material_internal->UpdateConstantBuffer();
+
+		D3D12ConstantBufferHandle* handle = static_cast<D3D12ConstantBufferHandle*>(material_internal->GetConstantBufferHandle());
 
 		auto albedo_handle = material_internal->GetAlbedo();
 		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
@@ -1101,6 +1105,7 @@ namespace wr
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::NORMAL)), normal_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ROUGHNESS)), roughness_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::METALLIC)), metallic_internal);
+		d3d12::BindConstantBuffer(n_cmd_list, handle->m_native, 3, GetFrameIdx());
 	}
 	
 	unsigned int D3D12RenderSystem::GetFrameIdx()
