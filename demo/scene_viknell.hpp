@@ -54,18 +54,18 @@ namespace viknell_scene
 		test_model->SetScale({ 0.01f,0.01f,0.01f });
 
 		// Lights
-		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 5, 5, 5 });
+		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 		//point_light_0->SetRadius(3.0f);
 		point_light_0->SetRotation({ 20.950, 0.98, 0 });
 		point_light_0->SetPosition({ -0.002, 0.080, 1.404 });
 
-		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 5, 0, 0 });
-		point_light_1->SetRadius(2.0f);
+		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 0, 0 });
+		point_light_1->SetRadius(5.0f);
 		point_light_1->SetPosition({ 0.5, 0, -0.3 });
 
-		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 0, 0, 5});
-		point_light_2->SetRadius(3.0f);
-		point_light_2->SetPosition({ -0.7, 0.5, -0.3 });
+		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 0, 0, 1});
+		point_light_2->SetRadius(5.0f);
+		point_light_2->SetPosition({ -0.5, 0.5, -0.3 });
 
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	}

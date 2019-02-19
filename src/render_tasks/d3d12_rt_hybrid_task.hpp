@@ -72,7 +72,7 @@ namespace wr
 				UINT shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
 
-				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMiss");
+				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMissEntry");
 				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
 
 				auto reflection_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ReflectionMiss");
@@ -80,7 +80,7 @@ namespace wr
 
 				// Create Table(s)
 				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
+				//d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], reflection_miss_record);
 			}
 
@@ -98,8 +98,8 @@ namespace wr
 
 				// Create Table(s)
 				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shadow_hit_record);
 				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], reflection_hit_record);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shadow_hit_record);
 			}
 		}
 
@@ -195,6 +195,13 @@ namespace wr
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
 					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX))); // here
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
+				}
+
+				// Get Environment Map
+				if (scene_graph.m_skybox.has_value()) {
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::RTHybridE::IRRADIANCE_MAP))); // here
+					d3d12::CreateSRVFromTexture(irradiance_t, cpu_handle);
 				}
 
 				// Transition depth to NON_PIXEL_RESOURCE

@@ -79,7 +79,7 @@ namespace wr
 				                                                                 shader_identifier_size);
 
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shader_record);
-				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_shader_record);
+				//d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_shader_record);
 			}
 
 			// Hit Group Shader Table
@@ -166,7 +166,6 @@ namespace wr
 					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX))); // here
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
-
 
 				// Get Environment Map
 				if (scene_graph.m_skybox.has_value()) {

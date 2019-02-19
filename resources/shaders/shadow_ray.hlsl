@@ -10,7 +10,7 @@ struct Attributes
 	float2 uv;
 };
 
-bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int depth, unsigned int seed)
+bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
 	if (depth >= MAX_RECURSION)
 	{
@@ -31,9 +31,9 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int dep
 		Scene,
 		RAY_FLAG_NONE,
 		~0, // InstanceInclusionMask
-		1, // RayContributionToHitGroupIndex
+		idx, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
-		1, // miss shader index
+		idx, // miss shader index is set to idx but can probably be anything.
 		ray,
 		payload);
 
@@ -44,10 +44,4 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int dep
 void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
 {
     hit.is_hit = true;
-}
-
-[shader("miss")]
-void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
-{
-    hit.is_hit = false;
 }
