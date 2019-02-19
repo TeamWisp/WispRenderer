@@ -11,13 +11,11 @@ namespace wr::d3d12
 	{
 		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-		if (allow_uav) 
-		{ 
-			//if (!d3d12::CheckUAVCompatibility(description->m_texture_format))
-			//{
-			//	LOGC("[ERROR] CreateTexture: Specified format doesn't support UAV");
-			//}
+		bool is_uav_compatible_format = (d3d12::CheckUAVCompatibility(description->m_texture_format) 
+									     || d3d12::CheckOptionalUAVFormat(description->m_texture_format));
 
+		if (allow_uav && is_uav_compatible_format)
+		{ 
 			flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; 
 		}
 
@@ -84,6 +82,68 @@ namespace wr::d3d12
 		texture->m_is_cubemap = description->m_is_cubemap;
 		texture->m_is_staged = false;
 		texture->m_needed_memory = textureUploadBufferSize;
+
+		return texture;
+	}
+
+	TextureResource* CreatePlacedTexture(Device* device, desc::TextureDesc* description, bool allow_uav, Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap)
+	{
+		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+
+		bool is_uav_compatible_format = (d3d12::CheckUAVCompatibility(description->m_texture_format)
+			|| d3d12::CheckOptionalUAVFormat(description->m_texture_format));
+
+		if (allow_uav && is_uav_compatible_format)
+		{
+			flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+		}
+
+		if (description->m_initial_state == ResourceState::RENDER_TARGET) { flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; }
+
+		D3D12_RESOURCE_DESC desc = {};
+		desc.Width = description->m_width;
+		desc.Height = description->m_height;
+		desc.MipLevels = static_cast<UINT16>(description->m_mip_levels);
+		desc.DepthOrArraySize = (description->m_depth > 1) ? description->m_depth : description->m_array_size;
+		desc.Format = static_cast<DXGI_FORMAT>(description->m_texture_format);
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+		desc.Flags = flags;
+		desc.Dimension = (description->m_depth > 1) ? D3D12_RESOURCE_DIMENSION_TEXTURE3D : D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+
+		auto native_device = device->m_native;
+
+		ID3D12Resource* resource;
+
+		HRESULT res = native_device->CreatePlacedResource(
+			heap->m_native, 
+			0,
+			&desc,
+			static_cast<D3D12_RESOURCE_STATES>(description->m_initial_state),
+			nullptr,
+			IID_PPV_ARGS(&resource));
+
+		if (FAILED(res))
+		{
+			LOGC("Error: Couldn't create texture");
+		}
+
+		TextureResource* texture = new TextureResource();
+
+		texture->m_width = description->m_width;
+		texture->m_height = description->m_height;
+		texture->m_depth = description->m_depth;
+		texture->m_array_size = description->m_array_size;
+		texture->m_mip_levels = description->m_mip_levels;
+		texture->m_format = description->m_texture_format;
+		texture->m_current_state = description->m_initial_state;
+		texture->m_resource = resource;
+		texture->m_intermediate = nullptr;
+		texture->m_need_mips = (texture->m_mip_levels > 1);
+		texture->m_is_cubemap = description->m_is_cubemap;
+		texture->m_is_staged = false;
+		texture->m_needed_memory = 0;
 
 		return texture;
 	}
@@ -532,6 +592,31 @@ namespace wr::d3d12
 			break;
 		case wr::Format::B8G8R8X8_UNORM_SRGB:
 			out_format = Format::B8G8R8X8_UNORM;
+			break;
+		default:
+			break;
+		}
+
+		return out_format;
+	}
+
+	Format BGRtoRGB(Format format)
+	{
+		Format out_format = Format::UNKNOWN;
+
+		switch (format)
+		{
+		case Format::B8G8R8A8_UNORM:
+			out_format = Format::R8G8B8A8_UNORM;
+			break;
+		case Format::B8G8R8X8_UNORM:
+			out_format = Format::R8G8B8A8_UNORM;
+			break;
+		case Format::B8G8R8A8_UNORM_SRGB:
+			out_format = Format::R8G8B8A8_UNORM_SRGB;
+			break;
+		case Format::B8G8R8X8_UNORM_SRGB:
+			out_format = Format::R8G8B8A8_UNORM_SRGB;
 			break;
 		default:
 			break;

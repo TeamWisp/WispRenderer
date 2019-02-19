@@ -410,6 +410,26 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
 	}
 
+	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx)
+	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			buffer->m_native[frame_idx],
+			(D3D12_RESOURCE_STATES)from,
+			(D3D12_RESOURCE_STATES)to
+		);
+		cmd_list->m_native->ResourceBarrier(1, &barrier);
+	}
+
+	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to)
+	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			buffer->m_buffer,
+			(D3D12_RESOURCE_STATES)from,
+			(D3D12_RESOURCE_STATES)to
+		);
+		cmd_list->m_native->ResourceBarrier(1, &barrier);
+	}
+
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -425,23 +445,13 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(number_of_barriers, &CD3DX12_RESOURCE_BARRIER::UAV(resource->m_resource));
 	}
 
-	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx)
+	void Alias(CommandList* cmd_list, TextureResource* resource_before, TextureResource* resource_after)
 	{
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			buffer->m_native[frame_idx],
-			(D3D12_RESOURCE_STATES)from,
-			(D3D12_RESOURCE_STATES)to
-		);
-		cmd_list->m_native->ResourceBarrier(1, &barrier);
-	}
-	
-	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to)
-	{
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			buffer->m_buffer,
-			(D3D12_RESOURCE_STATES)from,
-			(D3D12_RESOURCE_STATES)to
-		);
+		auto before = (resource_before) ? resource_before->m_resource : nullptr;
+		auto after = (resource_after) ? resource_after->m_resource : nullptr;
+
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Aliasing(before, after);
+
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
 

@@ -2,7 +2,8 @@
 
 struct ShadowHitInfo
 {
-  bool is_hit;
+  float is_hit;
+  float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
 struct Attributes
@@ -10,7 +11,7 @@ struct Attributes
 	float2 uv;
 };
 
-bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int depth, unsigned int seed)
+bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
 	if (depth >= MAX_RECURSION)
 	{
@@ -24,7 +25,7 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int dep
 	ray.TMin = 0;
 	ray.TMax = far;
 
-	ShadowHitInfo payload = { false };
+	ShadowHitInfo payload = { 0, 0 };
 
 	// Trace the ray
 	TraceRay(
@@ -33,7 +34,7 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int dep
 		~0, // InstanceInclusionMask
 		1, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
-		1, // miss shader index
+		1, // miss shader index is set to idx but can probably be anything.
 		ray,
 		payload);
 
@@ -43,11 +44,11 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int dep
 [shader("closesthit")]
 void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
 {
-    hit.is_hit = true;
+    hit.is_hit = 0;
 }
 
 [shader("miss")]
 void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
 {
-    hit.is_hit = false;
+    hit.is_hit = 0;
 }
