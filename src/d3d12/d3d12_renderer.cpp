@@ -55,7 +55,12 @@ namespace wr
 		{
 			m_texture_pools[i].reset();
 		}
-		//TODO: Fences
+		
+		for (auto iter : m_fences)
+		{
+			SAFE_RELEASE(iter->m_native);
+		}
+
 		d3d12::Destroy(m_fullscreen_quad_vb);
 		d3d12::Destroy(m_direct_cmd_list);
 
