@@ -26,6 +26,9 @@
 #include "../scene_graph/skybox_node.hpp"
 #include <iostream>
 
+
+#include <Dxgidebug.h>
+
 namespace wr
 {
 	LINK_SG_RENDER_MESHES(D3D12RenderSystem, Render_MeshNodes)
@@ -52,12 +55,19 @@ namespace wr
 		{
 			m_texture_pools[i].reset();
 		}
+		//TODO: Fences
+		d3d12::Destroy(m_fullscreen_quad_vb);
+		d3d12::Destroy(m_direct_cmd_list);
 
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
 		d3d12::Destroy(m_compute_queue);
 		if (m_render_window.has_value()) d3d12::Destroy(m_render_window.value());
+		IDXGIDebug1* debugInterface;
+		DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debugInterface));
+		debugInterface->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
+		debugInterface->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_DETAIL);
 	}
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
