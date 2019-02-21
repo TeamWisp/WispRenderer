@@ -21,12 +21,8 @@ namespace viknell_scene
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
-<<<<<<< HEAD
 		camera->SetPosition({ 0.35, -0.1, 1.3 });
 		camera->SetRotation({0.0, 13.5_deg, 0});
-=======
-		camera->SetPosition({ 0, 0, 2 });
->>>>>>> master
 		camera->SetSpeed(10);
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;

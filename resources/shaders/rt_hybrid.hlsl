@@ -1,4 +1,5 @@
 #define LIGHTS_REGISTER register(t2)
+#include "util.hlsl"
 #include "pbr_util.hlsl"
 #include "lighting.hlsl"
 
@@ -47,6 +48,7 @@ struct ReflectionHitInfo
 {
 	float3 origin;
 	float3 color;
+	uint seed;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -78,11 +80,11 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed)
 {
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1) };
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -115,13 +117,13 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal)
+float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
 {
 	// Calculate ray info
 	float3 reflected = reflect(-V, normal);
 
 	// Shoot reflection ray
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected);
+	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed);
 	return reflection;
 }
 
@@ -130,6 +132,8 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal)
 [shader("raygeneration")]
 void RaygenEntry()
 {
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
@@ -158,8 +162,8 @@ void RaygenEntry()
 		return;
 	}
 
-	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, 0);
-	float3 reflection = DoReflection(wpos, V, normal);
+	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
+	float3 reflection = DoReflection(wpos, V, normal, rand_seed);
 
 	float3 flipped_N = normal;
 	flipped_N.y *= -1;
@@ -261,7 +265,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, 1);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
 
 	payload.color = ambient + lighting;
 }

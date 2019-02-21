@@ -1,5 +1,7 @@
 #include "rt_global.hlsl"
 
+#define MAX_SHADOW_SAMPLES 4
+
 struct ShadowHitInfo
 {
   float is_hit;
