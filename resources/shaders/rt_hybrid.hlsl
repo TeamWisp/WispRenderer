@@ -115,17 +115,10 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float3 ReflectRay(float3 v1, float3 v2)
+float3 DoReflection(float3 wpos, float3 V, float3 normal)
 {
-	return (v2 * ((2.f * dot(v1, v2))) - v1);
-}
-
-float3 DoReflection(float3 wpos, float3 V, float3 normal, float roughness, float metallic, float3 albedo, float3 lighting)
-{
-
 	// Calculate ray info
-
-	float3 reflected = ReflectRay(V, normal);
+	float3 reflected = reflect(-V, normal);
 
 	// Shoot reflection ray
 	float3 reflection = TraceReflectionRay(wpos, normal, reflected);
@@ -165,8 +158,8 @@ void RaygenEntry()
 		return;
 	}
 
-	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, 69);
-	float3 reflection = DoReflection(wpos, V, normal, roughness, metallic, albedo, lighting);
+	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, 0);
+	float3 reflection = DoReflection(wpos, V, normal);
 
 	float3 flipped_N = normal;
 	flipped_N.y *= -1;
@@ -268,7 +261,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, 69);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, 1);
 
 	payload.color = ambient + lighting;
 }

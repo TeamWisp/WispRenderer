@@ -187,96 +187,68 @@ namespace wr::imgui::window
 			for (auto i = 0; i < lights.size(); i++)
 			{
 				auto window_size = ImGui::GetWindowSize();
-				ImGui::Columns(3);
-				float column_width = 25;
-				ImGui::SetColumnWidth(0, window_size.x - (column_width * 2));
-				ImGui::SetColumnWidth(1, column_width);
-				ImGui::SetColumnWidth(2, column_width);
 
-				std::string tree_name("Light " + std::to_string(i));
-				if (ImGui::TreeNode(tree_name.c_str()))
-				{
-					auto& light_node = lights[i];
-					auto& light = *light_node->m_light;
+				std::string light_name("Light " + std::to_string(i));
 
-					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
-					int type = (int)light.tid & 3;
-					ImGui::Combo("Type", &type, listbox_items, 3);
-					light.tid = type;
-					
-					if (i == 0)
-						light.tid |= (uint32_t) lights.size() << 2;
-
-					ImGui::DragFloat3("Color", &light.col.x, 0.25f);
-					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
-
-					if (type != (uint32_t)LightType::POINT)
-					{		
-						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
-						ImGui::DragFloat3("Rotation", rot, 0.01f);
-						light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
-
-					}
-
-					if (type != (uint32_t) LightType::DIRECTIONAL)
-					{
-						ImGui::DragFloat("Radius", &light.rad, 0.25f);
-					}
-
-					if (type == (uint32_t)LightType::SPOT)
-					{
-						light.ang = light.ang * 180.f / 3.1415926535f;
-						ImGui::DragFloat("Angle", &light.ang);
-						light.ang = light.ang / 180.f * 3.1415926535f;
-					}
-
-					if (ImGui::Button("Take Camera Transform"))
-					{
-						lights[i]->SetPosition(scene_graph->GetActiveCamera()->m_position);
-						lights[i]->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
-					}
-
-					light_node->SignalTransformChange();
-					light_node->SignalChange();
-
-					ImGui::TreePop();
+				bool button_selected = false;
+				if (light_selected && lights[i].get() == selected_light) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(152.f / 255.f, 43.f / 255.f, 91.f / 255.f, 1.0f));
+					button_selected = true;
+					inspect_item = LIGHT;
 				}
 
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0));
+				bool pressed_light = ImGui::Button(light_name.c_str(), ImVec2(ImGui::GetWindowSize().x, 20));
 
-				ImGui::NextColumn();
-
-				if (ImGui::Button(("!##" + std::to_string(i)).c_str()))
+				if (ImGui::BeginPopupContextItem())
 				{
+					if (ImGui::Button(("Remove##" + std::to_string(i)).c_str()))
+					{
+						if (selected_light == lights[i].get())
+						{
+							light_selected = false;
+							selected_light = nullptr;
+							inspect_item = NONE;
+							ImGui::PopStyleColor();
+						}
+						scene_graph->DestroyNode<LightNode>(lights[i]);
+						ImGui::CloseCurrentPopup();
+						ImGui::EndPopup();
+						continue;
+					}
+
+					ImGui::EndPopup();
+				}
+
+				if (pressed_light)
+				{
+
 					if (selected_light != lights[i].get())
 					{
 						selected_light = lights[i].get();
+						light_selected = true;
+						inspect_item = LIGHT;
 					}
 					else
 					{
+						light_selected = false;
 						selected_light = nullptr;
+						inspect_item = NONE;
 					}
 				}
-
-				ImGui::NextColumn();
-
-				if (ImGui::Button(("X##" + std::to_string(i)).c_str()))
+				if (button_selected)
 				{
-					if (selected_light == lights[i].get())
-					{
-						selected_light = nullptr;
-					}
-					scene_graph->DestroyNode<LightNode>(lights[i]);
+					ImGui::PopStyleColor();
 				}
 
-				ImGui::Columns();
-
-				ImGui::PopStyleVar();
+				if (i == 0) 
+				{
+					lights[i]->m_light->tid &= 3;
+					lights[i]->m_light->tid |= (uint32_t)lights.size() << 2;
+				}
 			}
 
 			ImGui::End();
+
 
 			if (selected_light == nullptr)
 			{
@@ -421,6 +393,70 @@ namespace wr::imgui::window
 			ImGui::End();
 
 		}*/
+	}
+
+	void Inspect(SceneGraph * scene_graph)
+	{
+		if (open_inspect_editor)
+		{
+			ImGui::Begin("Inspect", &open_inspect_editor);
+
+			switch (inspect_item)
+			{
+			case LIGHT:
+				if (selected_light != nullptr)
+				{
+					ImGui::Separator();
+
+					auto& light_node = selected_light;
+					auto& light = *light_node->m_light;
+
+					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
+					int type = (int)light.tid & 3;
+					ImGui::Combo("Type", &type, listbox_items, 3);
+					light.tid = type;
+
+					ImGui::ColorEdit3("Color", &light.col.x, 0.25f);
+					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
+
+					if (type != (uint32_t)LightType::POINT)
+					{
+						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
+						ImGui::DragFloat3("Rotation", rot, 0.01f);
+						light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
+					}
+
+					if (type != (uint32_t)LightType::DIRECTIONAL)
+					{
+						ImGui::DragFloat("Radius", &light.rad, 0.25f);
+					}
+
+					if (type == (uint32_t)LightType::SPOT)
+					{
+						light.ang = light.ang * 180.f / 3.1415926535f;
+						ImGui::DragFloat("Angle", &light.ang);
+						light.ang = light.ang / 180.f * 3.1415926535f;
+					}
+
+					if (ImGui::Button("Take Camera Transform"))
+					{
+						light_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
+						light_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+					}
+
+					light_node->SignalTransformChange();
+					light_node->SignalChange();
+				}
+				break;
+
+			default:
+				break;
+			}
+			ImGui::End();
+		}
 	}
 
 	void ShaderRegistry()

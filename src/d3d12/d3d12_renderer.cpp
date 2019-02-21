@@ -29,21 +29,21 @@
 namespace wr
 {
 	LINK_SG_RENDER_MESHES(D3D12RenderSystem, Render_MeshNodes)
-	LINK_SG_INIT_MESHES(D3D12RenderSystem, Init_MeshNodes)
-	LINK_SG_INIT_CAMERAS(D3D12RenderSystem, Init_CameraNodes)
-	LINK_SG_INIT_LIGHTS(D3D12RenderSystem, Init_LightNodes)
-	LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
-	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
-	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
-	LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
+		LINK_SG_INIT_MESHES(D3D12RenderSystem, Init_MeshNodes)
+		LINK_SG_INIT_CAMERAS(D3D12RenderSystem, Init_CameraNodes)
+		LINK_SG_INIT_LIGHTS(D3D12RenderSystem, Init_LightNodes)
+		LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
+		LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
+		LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
+		LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
 
-	D3D12RenderSystem::~D3D12RenderSystem()
+		D3D12RenderSystem::~D3D12RenderSystem()
 	{
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
 		{
 			m_structured_buffer_pools[i].reset();
 		}
-		
+
 		for (int i = 0; i < m_model_pools.size(); ++i)
 		{
 			m_model_pools[i].reset();
@@ -97,19 +97,19 @@ namespace wr
 		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
 		// Raytracing cb pool
-		m_raytracing_cb_pool = CreateConstantBufferPool(1);
+		m_raytracing_cb_pool = CreateConstantBufferPool(1_mb);
 
 		// Simple Shapes Model Pool
-		m_shapes_pool = CreateModelPool(8, 8);
+		m_shapes_pool = CreateModelPool(8_mb, 8_mb);
 		LoadPrimitiveShapes();
 
 		// Material raytracing sb pool
-		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
-		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
+		size_t rt_mat_align_size = SizeAlign((sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(rt_mat_align_size);
 
 		// Offset raytracing sb pool
-		size_t rt_offset_align_size = (sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
-		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(1);
+		size_t rt_offset_align_size = SizeAlign((sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
+		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(rt_offset_align_size);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -149,7 +149,7 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
-		
+
 		//Rendering engine creates a texture pool that will be used by the render tasks.
 		m_texture_pools.push_back(CreateTexturePool());
 	}
@@ -157,7 +157,7 @@ namespace wr
 	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
 
- 		if (m_requested_fullscreen_state.has_value())
+		if (m_requested_fullscreen_state.has_value())
 		{
 			WaitForAllPreviousWork();
 			m_render_window.value()->m_swap_chain->SetFullscreenState(m_requested_fullscreen_state.value(), nullptr);
@@ -167,7 +167,7 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-		
+
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -267,7 +267,7 @@ namespace wr
 	{
 
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
-		
+
 		if (m_render_window.has_value())
 		{
 			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
@@ -281,26 +281,26 @@ namespace wr
 		return pool;
 	}
 
-	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
+	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_bytes)
 	{
 		return std::make_shared<MaterialPool>();
 	}
 
-	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)
+	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes)
 	{
-		std::shared_ptr<D3D12ModelPool> pool = std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
+		std::shared_ptr<D3D12ModelPool> pool = std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_bytes, index_buffer_pool_size_in_bytes);
 		m_model_pools.push_back(pool);
 		return pool;
 	}
 
-	std::shared_ptr<ConstantBufferPool> D3D12RenderSystem::CreateConstantBufferPool(std::size_t size_in_mb)
+	std::shared_ptr<ConstantBufferPool> D3D12RenderSystem::CreateConstantBufferPool(std::size_t size_in_bytes)
 	{
-		return std::make_shared<D3D12ConstantBufferPool>(*this, size_in_mb);
+		return std::make_shared<D3D12ConstantBufferPool>(*this, size_in_bytes);
 	}
 
-	std::shared_ptr<StructuredBufferPool> D3D12RenderSystem::CreateStructuredBufferPool(std::size_t size_in_mb)
+	std::shared_ptr<StructuredBufferPool> D3D12RenderSystem::CreateStructuredBufferPool(std::size_t size_in_bytes)
 	{
-		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_mb); 
+		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_bytes);
 		m_structured_buffer_pools.push_back(pool);
 		return pool;
 	}
@@ -394,7 +394,7 @@ namespace wr
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-	
+
 		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
@@ -546,7 +546,7 @@ namespace wr
 		auto& registry = PipelineRegistry::Get();
 
 		for (auto desc : registry.m_descriptions)
-		{		
+		{
 			d3d12::desc::PipelineStateDesc n_desc;
 			n_desc.m_counter_clockwise = desc.second.m_counter_clockwise;
 			n_desc.m_cull_mode = desc.second.m_cull_mode;
@@ -775,7 +775,7 @@ namespace wr
 		if (nodes.empty()) return;
 
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
+		m_camera_pool = CreateConstantBufferPool((size_t)std::ceil(cam_align_size));
 
 		for (auto& node : nodes)
 		{
@@ -850,7 +850,7 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
-		
+
 		for (auto pool : m_texture_pools)
 		{
 			pool->Stage(m_direct_cmd_list);
@@ -889,7 +889,7 @@ namespace wr
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
 
-			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &data);
+			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);
 		}
 	}
 
@@ -900,7 +900,7 @@ namespace wr
 
 		std::vector<std::shared_ptr<LightNode>>& light_nodes = scene_graph.GetLightNodes();
 
-		for (uint32_t i = 0, j = (uint32_t) light_nodes.size(); i < j; ++i)
+		for (uint32_t i = 0, j = (uint32_t)light_nodes.size(); i < j; ++i)
 		{
 			std::shared_ptr<LightNode>& node = light_nodes[i];
 
@@ -1024,7 +1024,7 @@ namespace wr
 				for (auto& mesh : model->m_meshes)
 				{
 					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
-					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) 
+					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride)
 					{
 						d3d12::BindVertexBuffer(n_cmd_list,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
@@ -1040,11 +1040,11 @@ namespace wr
 						m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
-					
+
 					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
 					auto material_handle = mesh.second;
-					
+
 					if (material_handle != m_last_material)
 					{
 						m_last_material = material_handle;
@@ -1106,7 +1106,7 @@ namespace wr
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ROUGHNESS)), roughness_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::METALLIC)), metallic_internal);
 	}
-	
+
 	unsigned int D3D12RenderSystem::GetFrameIdx()
 	{
 		if (m_render_window.has_value())
