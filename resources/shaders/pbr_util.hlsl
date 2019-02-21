@@ -114,7 +114,7 @@ float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness, float
 static const float2 inv_atan = float2(0.1591f, 0.3183f);
 float2 SampleSphericalMap(float3 v)
 {
-	float2 uv = float2(atan2(v.x, v.z), asin(v.y * -1.f));
+	float2 uv = float2(atan2(v.z, v.x), asin(v.y * -1.f));
 	uv *= inv_atan;
 	uv += 0.5f;
 	return uv;

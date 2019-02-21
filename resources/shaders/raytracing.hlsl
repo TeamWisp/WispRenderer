@@ -285,6 +285,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	const float3 ao = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
 #else
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
@@ -308,7 +309,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	// Irradiance
 	float3 flipped_N = fN;
-	flipped_N.xyz *= -1;
+	flipped_N.y *= -1;
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 	// Direct
@@ -324,5 +325,5 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 specular = (reflection) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
-	payload.color = ambient + lighting;
+	payload.color = ambient + diffuse;
 }
