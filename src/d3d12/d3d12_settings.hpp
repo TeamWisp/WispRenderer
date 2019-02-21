@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <dxgi1_5.h>
 
+#include "d3d12_enums.hpp"
+
 namespace wr::d3d12::settings
 {
 
@@ -45,6 +47,7 @@ namespace wr::d3d12::settings
 	static const constexpr bool disable_rtx = false;
 	static const constexpr bool enable_object_culling = true;
 	static const constexpr unsigned int num_max_rt_materials = 3000;
-	static const constexpr unsigned int fallback_ptrs_offset = 31;
+	static const constexpr unsigned int num_max_rt_textures = 90;
+	static const constexpr unsigned int fallback_ptrs_offset = 101;
 	
 } /* wr::d3d12::settings */
