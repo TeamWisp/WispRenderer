@@ -12,8 +12,10 @@
 #include "../engine_registry.hpp"
 #include "../util/math.hpp"
 
+#include "../scene_graph/skybox_node.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../imgui_tools.hpp"
+#include "../render_tasks/d3d12_cubemap_convolution.hpp"
 
 namespace wr
 {
@@ -154,15 +156,22 @@ namespace wr
 					{
 						static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 					}
-					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 2); // here
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::LIGHTS)));
 					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 				}
 
 				// Get skybox
 				if (scene_graph.m_skybox.has_value()) {
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, 5); // here
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX))); // here
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
+				}
+
+				// Get Environment Map
+				if (scene_graph.m_skybox.has_value()) {
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::IRRADIANCE_MAP))); // here
+					d3d12::CreateSRVFromTexture(irradiance_t, cpu_handle);
 				}
 
 				// Update offset data
@@ -221,17 +230,17 @@ namespace wr
 	{
 		RenderTargetProperties rt_properties
 		{
-			false,
-			std::nullopt,
-			std::nullopt,
-			ResourceState::UNORDERED_ACCESS,
-			ResourceState::COPY_SOURCE,
-			false,
-			Format::UNKNOWN,
-			{ Format::R32G32B32A32_FLOAT },
-			1,
-			true,
-			true
+			RenderTargetProperties::IsRenderWindow(false),
+			RenderTargetProperties::Width(std::nullopt),
+			RenderTargetProperties::Height(std::nullopt),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
+			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
+			RenderTargetProperties::CreateDSVBuffer(false),
+			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
+			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		RenderTaskDesc desc;

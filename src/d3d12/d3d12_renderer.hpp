@@ -110,7 +110,7 @@ namespace wr
 		CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
 		void Resize(std::uint32_t width, std::uint32_t height) final;
 
-		std::shared_ptr<TexturePool> CreateTexturePool(std::size_t size_in_bytes, std::size_t num_of_textures) final;
+		std::shared_ptr<TexturePool> CreateTexturePool() final;
 		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_bytes) final;
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes) final;
 		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes) final;

@@ -44,8 +44,8 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(16*1024*1024, 55);
-		material_pool = render_system->CreateMaterialPool(8*1024*1024);
+		texture_pool = render_system->CreateTexturePool();
+		material_pool = render_system->CreateMaterialPool(256);
 
 		// Load Texture.
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
@@ -107,7 +107,7 @@ namespace resources
 		wr::TextureHandle rubber_roughness = texture_pool->Load("resources/materials/rubber/roughness.png", false, true);
 		wr::TextureHandle rubber_metallic = texture_pool->Load("resources/materials/rubber/metallic.png", false, true);
 
-		equirectangular_environment_map = texture_pool->Load("resources/materials/Ice_Lake_ref.hdr", false, false);
+		equirectangular_environment_map = texture_pool->Load("resources/materials/Barce_Rooftop_C_3k.hdr", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();
@@ -229,28 +229,28 @@ namespace resources
 		{
 			wr::MeshData<wr::VertexColor> mesh;
 
-				mesh.m_indices = {
-					2, 1, 0, 3, 2, 0
-				};
+			mesh.m_indices = {
+				2, 1, 0, 3, 2, 0
+			};
 
-				mesh.m_vertices = {
-					//POS                UV            NORMAL                TANGENT            BINORMAL	COLOR
-					{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-					{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-				};
+			mesh.m_vertices = {
+				//POS                UV            NORMAL                TANGENT            BINORMAL	COLOR
+				{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+				{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+				{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+				{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+			};
 
-				//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
-				plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
+			//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
+			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 
-				//plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
-				light_model = plane_model;
+			//plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
+			light_model = plane_model;
 
-				for (auto& m : plane_model->m_meshes)
-				{
-					m.second = &bamboo_material;
-				}
+			for (auto& m : plane_model->m_meshes)
+			{
+				m.second = &bamboo_material;
+			}
 		}
 
 		{

@@ -2,15 +2,13 @@
 
 struct ShadowHitInfo
 {
-  bool is_hit;
+  float is_hit;
+  float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
-struct Attributes
-{
-	float2 uv;
-};
+struct Attributes { };
 
-bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int depth, unsigned int seed)
+bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
 	if (depth >= MAX_RECURSION)
 	{
@@ -24,7 +22,7 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int dep
 	ray.TMin = 0;
 	ray.TMax = far;
 
-	ShadowHitInfo payload = { false };
+	ShadowHitInfo payload = { false, 0 };
 
 	// Trace the ray
 	TraceRay(
@@ -33,7 +31,7 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, unsigned int dep
 		~0, // InstanceInclusionMask
 		1, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
-		1, // miss shader index
+		1, // miss shader index is set to idx but can probably be anything.
 		ray,
 		payload);
 

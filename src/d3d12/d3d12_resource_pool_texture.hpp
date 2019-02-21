@@ -19,14 +19,14 @@ namespace wr
 	class D3D12TexturePool : public TexturePool
 	{
 	public:
-		explicit D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_bytes, std::size_t num_of_textures);
+		explicit D3D12TexturePool(D3D12RenderSystem& render_system);
 		~D3D12TexturePool() final;
 
 		void Evict() final;
 		void MakeResident() final;
 		void Stage(CommandList* cmd_list) final;
 		void PostStageClear() final;
-		void EndOfFrame() final;
+		void ReleaseTemporaryResources() final;
 
 		d3d12::TextureResource* GetTexture(uint64_t texture_id) final;
 
@@ -43,14 +43,11 @@ namespace wr
 		d3d12::TextureResource* LoadHDR(std::string_view path, bool srgb, bool generate_mips) final;
 
 		void MoveStagedTextures();
-		void GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
-		void GenerateMips_UAV(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
-		void GenerateMips_BGR(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
-		void GenerateMips_SRGB(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
+		void GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list);
 
-		bool CheckUAVCompatibility(Format format);
-		bool CheckBGRFormat(Format format);
-		bool CheckSRGBFormat(Format format);
+		void GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list);
+		void GenerateMips_BGR(d3d12::TextureResource* texture, CommandList* cmd_list);
+		void GenerateMips_SRGB(d3d12::TextureResource* texture, CommandList* cmd_list);
 
 		D3D12RenderSystem& m_render_system;
 
@@ -58,13 +55,11 @@ namespace wr
 		//Renderer will copy the descriptor it needs to the GPU visible heap used for rendering.
 		DescriptorAllocator* m_allocators[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 
+		DescriptorAllocator* m_mipmapping_allocator;
 
-		//Descriptor heap used for compute pipeline when doing mipmapping
-		d3d12::DescriptorHeap* m_mipmapping_heap;
-		d3d12::DescHeapCPUHandle m_mipmapping_cpu_handle;
-		d3d12::DescHeapGPUHandle m_mipmapping_gpu_handle;
-
-		std::vector<std::vector<d3d12::TextureResource*>> m_post_stage_clear_textures;
+		//Track resources that are created in one frame and destroyed after
+		std::array<std::vector<d3d12::TextureResource*>, d3d12::settings::num_back_buffers> m_temporary_textures;
+		std::array< std::vector<d3d12::Heap<wr::HeapOptimization::BIG_STATIC_BUFFERS>*>, d3d12::settings::num_back_buffers> m_temporary_heaps;
 	};
 
 

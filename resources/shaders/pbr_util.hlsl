@@ -80,13 +80,12 @@ float3 F_SchlickRoughness(float cos_theta, float metallic, float3 material_color
 	return F;
 }
  
-float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness, float3 albedo, float3 radiance, float3 light_color)
+float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness, float3 albedo, float3 radiance)
 {
 	// Precalculate vectors and dot products	
 	float3 H = normalize(V + L);
 	float dotNV = clamp(dot(N, V), 0.0, 1.0);
 	float dotNL = clamp(dot(N, L), 0.0, 1.0);
-	float dotLH = clamp(dot(L, H), 0.0, 1.0);
 	float dotNH = clamp(dot(N, H), 0.0, 1.0);
  
 	// Light color fixed
@@ -102,20 +101,11 @@ float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness, float
 		// F = Fresnel factor (Reflectance depending on angle of incidence)
 		float3 F = F_Schlick(dotNV, metallic, albedo);
  
-		float3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.0001f);
+		float3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001f);
  
-		float3 kS = F;
-		float3 kD = float3(1, 1, 1) - kS;
-		kD *= 1.0 - metallic;
+		float3 kD = (float3(1, 1, 1) - F) * (1.0 - metallic);
  
-		float3 nominator = D * G * F;
-		float denominator = 4.0 * dotNV * dotNL;
-		float3 specular = nominator / max(denominator, 0.001);
- 
-		float NdotL = max(dot(N, L), 0.0);
-		color += (kD * albedo / PI + specular) * radiance * dotNL;
- 
-		//color += spec * dotNL * lightColor;
+		color += (kD * albedo / PI + spec) * radiance * dotNL;
 	}
  
 	return color;

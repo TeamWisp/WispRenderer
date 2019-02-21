@@ -145,10 +145,6 @@ namespace wr
 
 						cmd_list->m_native->OMSetRenderTargets(1, &rtv_handle.m_native, false, nullptr);
 
-						const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-						cmd_list->m_native->ClearRenderTargetView(rtv_handle.m_native, clear_color, 0, nullptr);
-
 						d3d12::Bind32BitConstants(cmd_list, &i, 1, 0, 0);
 
 						//bind cube and render
@@ -166,7 +162,7 @@ namespace wr
 							d3d12::BindIndexBuffer(cmd_list, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer(),
 								0, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer()->m_size);
 
-							d3d12::SetShaderSRV(cmd_list, 2, 0, radiance);
+							d3d12::SetShaderSRV(cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::cubemap_convolution, params::CubemapConvolutionE::ENVIRONMENT_CUBEMAP)), radiance);
 							d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
 
 							if (n_mesh->m_index_count != 0)
@@ -194,17 +190,17 @@ namespace wr
 	{
 		RenderTargetProperties rt_properties
 		{
-			false,
-			std::nullopt,
-			std::nullopt,
-			ResourceState::RENDER_TARGET,
-			ResourceState::NON_PIXEL_SHADER_RESOURCE,
-			true,
-			Format::D32_FLOAT,
-			{ Format::R32G32B32A32_FLOAT },
-			1,
-			true,
-			true
+			RenderTargetProperties::IsRenderWindow(false),
+			RenderTargetProperties::Width(std::nullopt),
+			RenderTargetProperties::Height(std::nullopt),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::RENDER_TARGET),
+			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
+			RenderTargetProperties::CreateDSVBuffer(true),
+			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
+			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		RenderTaskDesc desc;

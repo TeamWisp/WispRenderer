@@ -5,8 +5,7 @@
 namespace wr
 {
 
-	TexturePool::TexturePool(std::size_t size_in_bytes)
-		: m_size_in_bytes(size_in_bytes)
+	TexturePool::TexturePool()
 	{
 	}
 

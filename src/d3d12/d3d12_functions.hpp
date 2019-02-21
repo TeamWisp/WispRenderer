@@ -65,6 +65,7 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx);
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
+	void Alias(CommandList* cmd_list, TextureResource* resource_before, TextureResource* resource_after);
 	void UAVBarrier(CommandList* cmd_list, TextureResource* resource, unsigned int number_of_barriers);
 	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
@@ -97,16 +98,30 @@ namespace wr::d3d12
 
 	// Texture
 	[[nodiscard]] TextureResource* CreateTexture(Device* device, desc::TextureDesc* description, bool allow_uav);
+	[[nodiscard]] TextureResource* CreatePlacedTexture(Device* device, desc::TextureDesc* description, bool allow_uav, Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap);
 	void SetName(TextureResource* tex, std::wstring name);
 	void CreateSRVFromTexture(TextureResource* tex);
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle);
+	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_levels, unsigned int most_detailed_mip);
 	void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice);
 	void CreateRTVFromTexture2D(TextureResource* tex);
 	void CreateRTVFromCubemap(TextureResource* tex);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture);
 	void Destroy(TextureResource* tex);
+
+	// Format test and support functions
+	bool CheckUAVCompatibility(Format format);
+	bool CheckOptionalUAVFormat(Format format);
+	bool CheckBGRFormat(Format format);
+	bool CheckSRGBFormat(Format format);
+	bool IsOptionalFormatSupported(Device* device, Format format);
+	Format RemoveSRGB(Format format);
+	Format BGRtoRGB(Format format);
 
 	// Read-back buffer
 	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);

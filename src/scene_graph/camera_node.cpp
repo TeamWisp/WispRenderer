@@ -21,12 +21,13 @@ namespace wr
 		DirectX::XMVECTOR pos = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };
 
 		DirectX::XMVECTOR up = DirectX::XMVector3Normalize(m_transform.r[1]);
-		DirectX::XMVECTOR forward = DirectX::XMVector3Normalize(m_transform.r[2]);
+		DirectX::XMVECTOR forward = DirectX::XMVectorNegate(DirectX::XMVector3Normalize(m_transform.r[2]));
 		DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
-		m_view = DirectX::XMMatrixLookAtRH(pos, DirectX::XMVectorAdd(pos, forward), up);
+		m_view = DirectX::XMMatrixLookToRH(pos, forward, up);
+
 		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
-		m_view_projection = DirectX::XMMatrixMultiply(m_view, m_projection);
+		m_view_projection = m_view * m_projection;
 		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 		m_inverse_view = DirectX::XMMatrixInverse(nullptr, m_view);
 
@@ -99,27 +100,8 @@ namespace wr
 
 	bool CameraNode::InView(std::shared_ptr<MeshNode>& node)
 	{
-		DirectX::XMVECTOR (&aabb)[2] = node->m_aabb;
-
-		for (DirectX::XMVECTOR& plane : m_planes)
-		{
-			/* Get point of AABB that's into the plane the most */
-
-			DirectX::XMVECTOR axis_vert = {
-				*aabb[*plane.m128_f32 >= 0].m128_f32,
-				aabb[plane.m128_f32[1] >= 0].m128_f32[1],
-				aabb[plane.m128_f32[2] >= 0].m128_f32[2]
-			};
-
-			/* Check if it's outside */
-
-			if (*DirectX::XMVector3Dot(plane, axis_vert).m128_f32 + plane.m128_f32[3] < 0)
-				return false;
-
-		}
-
-		return true;
-
+		AABB aabb = node->m_aabb;
+		return aabb.InFrustum(m_planes);
 	}
 
 } /* wr */

@@ -35,6 +35,8 @@ namespace fg_manager
 			fg = new wr::FrameGraph(4);
 
 			wr::AddBuildAccelerationStructuresTask(*fg);
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddRaytracingTask(*fg);
 			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
 			
@@ -94,6 +96,14 @@ namespace fg_manager
 
 			// Finalize the frame graph
 			fg->Setup(rs);
+		}
+	}
+
+	void Resize(wr::RenderSystem& render_system, std::uint32_t width, std::uint32_t height)
+	{
+		for (int i = 0; i < frame_graphs.size(); ++i)
+		{
+			frame_graphs[i]->Resize(render_system, width, height);
 		}
 	}
 

@@ -186,69 +186,76 @@ namespace wr::imgui::window
 
 			for (auto i = 0; i < lights.size(); i++)
 			{
-				std::string tree_name("Light " + std::to_string(i));
-				if (ImGui::TreeNode(tree_name.c_str()))
+				auto window_size = ImGui::GetWindowSize();
+
+				std::string light_name("Light " + std::to_string(i));
+
+				bool button_selected = false;
+				if (light_selected && lights[i].get() == selected_light) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(152.f / 255.f, 43.f / 255.f, 91.f / 255.f, 1.0f));
+					button_selected = true;
+					inspect_item = LIGHT;
+				}
+
+				bool pressed_light = ImGui::Button(light_name.c_str(), ImVec2(ImGui::GetWindowSize().x, 20));
+
+				if (ImGui::BeginPopupContextItem())
 				{
-					auto& light_node = lights[i];
-					auto& light = *light_node->m_light;
-
-					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
-					int type = (int)light.tid & 3;
-					ImGui::Combo("Type", &type, listbox_items, 3);
-					light.tid = type;
-					
-					if (i == 0)
-						light.tid |= (uint32_t) lights.size() << 2;
-
-					ImGui::DragFloat3("Color", &light.col.x, 0.25f);
-					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
-
-					if (type != (uint32_t)LightType::POINT)
-					{		
-						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
-						ImGui::DragFloat3("Rotation", rot, 0.01f);
-						light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
-
-					}
-
-					if (type != (uint32_t) LightType::DIRECTIONAL)
+					if (ImGui::Button(("Remove##" + std::to_string(i)).c_str()))
 					{
-						ImGui::DragFloat("Radius", &light.rad, 0.25f);
-					}
-
-					if (type == (uint32_t)LightType::SPOT)
-					{
-						light.ang = light.ang * 180.f / 3.1415926535f;
-						ImGui::DragFloat("Angle", &light.ang);
-						light.ang = light.ang / 180.f * 3.1415926535f;
-					}
-
-					if (ImGui::Button("Take Camera Transform"))
-					{
-						lights[i]->SetPosition(scene_graph->GetActiveCamera()->m_position);
-						lights[i]->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
-					}
-
-					light_node->SignalTransformChange();
-					light_node->SignalChange();
-
-					if (ImGui::Button("Remove"))
-					{
+						if (selected_light == lights[i].get())
+						{
+							light_selected = false;
+							selected_light = nullptr;
+							inspect_item = NONE;
+							ImGui::PopStyleColor();
+						}
 						scene_graph->DestroyNode<LightNode>(lights[i]);
+						ImGui::CloseCurrentPopup();
+						ImGui::EndPopup();
+						continue;
 					}
 
-					ImGui::TreePop();
+					ImGui::EndPopup();
+				}
+
+				if (pressed_light)
+				{
+
+					if (selected_light != lights[i].get())
+					{
+						selected_light = lights[i].get();
+						light_selected = true;
+						inspect_item = LIGHT;
+					}
+					else
+					{
+						light_selected = false;
+						selected_light = nullptr;
+						inspect_item = NONE;
+					}
+				}
+				if (button_selected)
+				{
+					ImGui::PopStyleColor();
+				}
+
+				if (i == 0) 
+				{
+					lights[i]->m_light->tid &= 3;
+					lights[i]->m_light->tid |= (uint32_t)lights.size() << 2;
 				}
 			}
 
 			ImGui::End();
 
-			if (lights.size() < 1)
-				return;
 
-			auto ml = lights[0];
+			if (selected_light == nullptr)
+			{
+				return;
+			}
+
+			auto ml = selected_light;
 			DirectX::XMFLOAT4X4 rmat;
 			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
 			DirectX::XMStoreFloat4x4(&rmat, mat);
@@ -256,7 +263,7 @@ namespace wr::imgui::window
 			auto cam = scene_graph->GetActiveCamera();
 			DirectX::XMFLOAT4X4 rview;
 			DirectX::XMFLOAT4X4 rproj;
-			auto view = DirectX::XMMatrixMultiply(cam->m_view, DirectX::XMMatrixScaling(1, -1, 1));
+			auto view = cam->m_view;
 			DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
 			DirectX::XMStoreFloat4x4(&rview, view);
 
@@ -388,6 +395,70 @@ namespace wr::imgui::window
 		}*/
 	}
 
+	void Inspect(SceneGraph * scene_graph)
+	{
+		if (open_inspect_editor)
+		{
+			ImGui::Begin("Inspect", &open_inspect_editor);
+
+			switch (inspect_item)
+			{
+			case LIGHT:
+				if (selected_light != nullptr)
+				{
+					ImGui::Separator();
+
+					auto& light_node = selected_light;
+					auto& light = *light_node->m_light;
+
+					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
+					int type = (int)light.tid & 3;
+					ImGui::Combo("Type", &type, listbox_items, 3);
+					light.tid = type;
+
+					ImGui::ColorEdit3("Color", &light.col.x, 0.25f);
+					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
+
+					if (type != (uint32_t)LightType::POINT)
+					{
+						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
+						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
+						ImGui::DragFloat3("Rotation", rot, 0.01f);
+						light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
+					}
+
+					if (type != (uint32_t)LightType::DIRECTIONAL)
+					{
+						ImGui::DragFloat("Radius", &light.rad, 0.25f);
+					}
+
+					if (type == (uint32_t)LightType::SPOT)
+					{
+						light.ang = light.ang * 180.f / 3.1415926535f;
+						ImGui::DragFloat("Angle", &light.ang);
+						light.ang = light.ang / 180.f * 3.1415926535f;
+					}
+
+					if (ImGui::Button("Take Camera Transform"))
+					{
+						light_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
+						light_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+					}
+
+					light_node->SignalTransformChange();
+					light_node->SignalChange();
+				}
+				break;
+
+			default:
+				break;
+			}
+			ImGui::End();
+		}
+	}
+
 	void ShaderRegistry()
 	{
 		if (open_shader_registry)
@@ -409,15 +480,15 @@ namespace wr::imgui::window
 					obj = obj_it->second;
 				}
 
-				std::string tree_name = internal::ShaderTypeToStr(desc.second.type) + "[" + std::to_string(desc.first) + "]: " + desc.second.path;
+				std::string tree_name = internal::ShaderTypeToStr(desc.second.type) + "[" + std::to_string(desc.first) + "]: " + desc.second.path.Get();
 				if (ImGui::TreeNode(tree_name.c_str()))
 				{
 					if (ImGui::TreeNode("Description"))
 					{
 						ImGui::Text("ID: %d", desc.first);
-						ImGui::Text("Path: %s", desc.second.path.c_str());
-						ImGui::Text("Entry: %s", desc.second.entry.c_str());
-						ImGui::Text("Type: %s", internal::ShaderTypeToStr(desc.second.type).c_str());
+						ImGui::Text("Path: %s", desc.second.path.Get().c_str());
+						ImGui::Text("Entry: %s", desc.second.entry.Get().c_str());
+						ImGui::Text("Type: %s", internal::ShaderTypeToStr(desc.second.type.Get()).c_str());
 
 						ImGui::TreePop();
 					}
@@ -470,10 +541,10 @@ namespace wr::imgui::window
 							}
 						};
 
-						text_handle("Vertex Shader", desc.second.m_vertex_shader_handle);
-						text_handle("Pixel Shader", desc.second.m_pixel_shader_handle);
-						text_handle("Compute Shader", desc.second.m_compute_shader_handle);
-						text_handle("RootSignature", desc.second.m_root_signature_handle);
+						text_handle("Vertex Shader", desc.second.m_vertex_shader_handle.Get());
+						text_handle("Pixel Shader", desc.second.m_pixel_shader_handle.Get());
+						text_handle("Compute Shader", desc.second.m_compute_shader_handle.Get());
+						text_handle("RootSignature", desc.second.m_root_signature_handle.Get());
 						
 						ImGui::Text("Depth Enabled: %s", internal::BooltoStr(desc.second.m_depth_enabled).c_str());
 						ImGui::Text("Counter Clockwise Winding Order: %s", internal::BooltoStr(desc.second.m_counter_clockwise).c_str());
@@ -481,7 +552,7 @@ namespace wr::imgui::window
 						for (auto i = 0; i < desc.second.m_num_rtv_formats; i++)
 						{
 							std::string text = "Format[" + std::to_string(i) + "]: %s";
-							ImGui::Text(text.c_str(), FormatToStr(desc.second.m_rtv_formats[i]).c_str());
+							ImGui::Text(text.c_str(), FormatToStr(desc.second.m_rtv_formats.Get()[i]).c_str());
 						}
 
 						ImGui::TreePop();
@@ -567,14 +638,14 @@ namespace wr::imgui::window
 							}
 						};
 
-						text_handle("Library Shader", desc.second.library_desc.shader_handle);
-						text_handle("Global RootSignature", desc.second.global_root_signature.value_or(-1));
+						text_handle("Library Shader", desc.second.library_desc.Get().shader_handle);
+						text_handle("Global RootSignature", desc.second.global_root_signature.Get().value_or(-1));
 
-						if (desc.second.local_root_signatures.has_value())
+						if (desc.second.local_root_signatures.Get().has_value())
 						{
-							for (auto i = 0; i < desc.second.local_root_signatures.value().size(); i++)
+							for (auto i = 0; i < desc.second.local_root_signatures.Get().value().size(); i++)
 							{
-								ImGui::Text("Local Root Signature [%d] = %d", i, desc.second.local_root_signatures.value()[i]);
+								ImGui::Text("Local Root Signature [%d] = %d", i, desc.second.local_root_signatures.Get().value()[i]);
 							}
 						}
 
@@ -690,8 +761,8 @@ namespace wr::imgui::window
 							}
 						};
 
-						ImGui::Text("Num samplers: %d", desc.second.m_samplers.size());
-						ImGui::Text("Num parameters: %d", desc.second.m_parameters.size());
+						ImGui::Text("Num samplers: %d", desc.second.m_samplers.Get().size());
+						ImGui::Text("Num parameters: %d", desc.second.m_parameters.Get().size());
 
 						ImGui::TreePop();
 					}

@@ -7,6 +7,7 @@
 #include <utility>
 #include <dxcapi.h>
 #include <array>
+#include <bitset>
 #include <D3D12RaytracingFallback.h>
 
 #include "../structs.hpp"
@@ -39,7 +40,7 @@ namespace wr::d3d12
 			Format m_dsv_format;
 			std::array<Format, 8> m_rtv_formats;
 			unsigned int m_num_rtv_formats;
-			float m_clear_color[4] = { 0, 0, 0, 0 };
+			float m_clear_color[4] = { 0.f, 0.f, 0.f, 0.f };
 		};
 
 		struct TextureDesc
@@ -143,6 +144,9 @@ namespace wr::d3d12
 		ID3D12InfoQueue* m_info_queue;
 		
 		static IDxcCompiler2* m_compiler;
+
+		// Optional supported formats
+		std::bitset<DXGI_FORMAT_V408> m_optional_formats;
 
 		// Fallback
 		bool m_dxr_fallback_support;

@@ -23,7 +23,7 @@ namespace wr
 	class TexturePool
 	{
 	public:
-		explicit TexturePool(std::size_t size_in_bytes);
+		explicit TexturePool();
 		virtual ~TexturePool() = default;
 
 		TexturePool(TexturePool const &) = delete;
@@ -39,7 +39,7 @@ namespace wr
 		virtual void MakeResident() = 0;
 		virtual void Stage(CommandList* cmd_list) = 0;
 		virtual void PostStageClear() = 0;
-		virtual void EndOfFrame() = 0;
+		virtual void ReleaseTemporaryResources() = 0;
 
 		TextureHandle GetDefaultAlbedo();
 		TextureHandle GetDefaultNormal();
@@ -58,7 +58,6 @@ namespace wr
 		std::unordered_map<uint64_t, Texture*> m_unstaged_textures;
 		std::unordered_map<uint64_t, Texture*> m_staged_textures;
 
-		std::size_t m_size_in_bytes;
 		std::size_t m_loaded_textures = 0;
 
 		TextureHandle m_default_albedo;
