@@ -4,6 +4,7 @@
 
 #include "registry.hpp"
 #include "d3d12/d3dx12.hpp"
+#include "d3d12/d3d12_settings.hpp"
 
 #define COMPILATION_EVAL(e) (std::integral_constant<decltype(e), e>::value)
 
@@ -375,7 +376,7 @@ namespace wr
 			rs_layout::Entry{(int)FullRaytracingE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)FullRaytracingE::TEXTURES, 20, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
 		};
 
@@ -407,7 +408,7 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::TEXTURES, 20, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::TEXTURES, 90, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
 		};
