@@ -15,7 +15,7 @@ namespace wr
 	class D3D12ConstantBufferPool : public ConstantBufferPool 
 	{
 	public:
-		explicit D3D12ConstantBufferPool(D3D12RenderSystem& render_system, std::size_t size_in_mb);
+		explicit D3D12ConstantBufferPool(D3D12RenderSystem& render_system, std::size_t size_in_bytes);
 		~D3D12ConstantBufferPool() final;
 
 		void Evict() final;

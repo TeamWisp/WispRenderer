@@ -10,10 +10,10 @@ namespace wr
 		m_box.Expand(pos);
 	}
 
-	ModelPool::ModelPool(std::size_t vertex_buffer_pool_size_in_mb,
-		std::size_t index_buffer_pool_size_in_mb) : 
-		m_vertex_buffer_pool_size_in_mb(vertex_buffer_pool_size_in_mb),
-		m_index_buffer_pool_size_in_mb(index_buffer_pool_size_in_mb),
+	ModelPool::ModelPool(std::size_t vertex_buffer_pool_size_in_bytes,
+		std::size_t index_buffer_pool_size_in_bytes) : 
+		m_vertex_buffer_pool_size_in_bytes(vertex_buffer_pool_size_in_bytes),
+		m_index_buffer_pool_size_in_bytes(index_buffer_pool_size_in_bytes),
 		m_current_id(0)
 	{
 	}

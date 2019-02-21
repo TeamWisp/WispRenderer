@@ -18,3 +18,13 @@ constexpr float operator"" _rad(unsigned long long int rad)
 {
 	return DirectX::XMConvertToDegrees(static_cast<float>(rad));
 }
+
+constexpr int operator"" _kb(unsigned long long int kilobytes)
+{
+	return kilobytes * 1024;
+}
+
+constexpr int operator"" _mb(unsigned long long int megabytes)
+{
+	return megabytes * 1024 * 1024;
+}

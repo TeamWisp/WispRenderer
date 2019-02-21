@@ -224,7 +224,7 @@ namespace resources
 			scorched_wood_material_internal->SetMetallic	(scorched_wood_metallic);
 		}
 
-		model_pool = render_system->CreateModelPool(320, 320);
+		model_pool = render_system->CreateModelPool(64_mb, 64_mb);
 
 		{
 			wr::MeshData<wr::VertexColor> mesh;

@@ -32,16 +32,14 @@ namespace wr::d3d12
 			IID_PPV_ARGS(&buffer->m_staging));
 		NAME_D3D12RESOURCE(buffer->m_staging);
 
-		buffer->m_data = malloc(size);
-
-		if (data != nullptr) 
-		{
-			memcpy(buffer->m_data, data, size);
-		}
-
 		CD3DX12_RANGE read_range(0, 0);
 
 		buffer->m_staging->Map(0, &read_range, reinterpret_cast<void**>(&(buffer->m_cpu_address)));
+
+		if (data != nullptr)
+		{
+			memcpy(buffer->m_cpu_address, data, size);
+		}
 
 		return buffer;
 	}
@@ -54,7 +52,7 @@ namespace wr::d3d12
 
 	void UpdateStagingBuffer(StagingBuffer* buffer, void * data, std::uint64_t size, std::uint64_t offset)
 	{
-		memcpy(static_cast<std::uint8_t*>(buffer->m_data) + offset, data, size);
+		memcpy(static_cast<std::uint8_t*>(buffer->m_cpu_address) + offset, data, size);
 	}
 
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list)
@@ -62,13 +60,7 @@ namespace wr::d3d12
 
 		if (buffer->m_is_staged) return;
 
-		// store vertex buffer in upload heap
-		D3D12_SUBRESOURCE_DATA vertex_data = {};
-		vertex_data.pData = buffer->m_data;
-		vertex_data.RowPitch = buffer->m_size;
-		vertex_data.SlicePitch = buffer->m_size;
-
-		UpdateSubresources(cmd_list->m_native, buffer->m_buffer, buffer->m_staging, 0, 0, 1, &vertex_data);
+		cmd_list->m_native->CopyBufferRegion(buffer->m_buffer, 0, buffer->m_staging, 0, buffer->m_size);
 
 		// transition the vertex buffer data from copy destination state to vertex buffer state
 		cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, D3D12_RESOURCE_STATE_COPY_DEST, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state));
@@ -83,8 +75,6 @@ namespace wr::d3d12
 		{
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state, D3D12_RESOURCE_STATE_COPY_DEST));
 		}
-
-		memcpy(buffer->m_cpu_address + offset, static_cast<std::uint8_t*>(buffer->m_data) + offset, size);
 
 		cmd_list->m_native->CopyBufferRegion(buffer->m_buffer, offset, buffer->m_staging, offset, size);
 

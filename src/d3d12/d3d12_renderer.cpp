@@ -97,19 +97,19 @@ namespace wr
 		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
 		// Raytracing cb pool
-		m_raytracing_cb_pool = CreateConstantBufferPool(1);
+		m_raytracing_cb_pool = CreateConstantBufferPool(1_mb);
 
 		// Simple Shapes Model Pool
-		m_shapes_pool = CreateModelPool(8, 8);
+		m_shapes_pool = CreateModelPool(8_mb, 8_mb);
 		LoadPrimitiveShapes();
 
 		// Material raytracing sb pool
-		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
-		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1);
+		size_t rt_mat_align_size = SizeAlign((sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(rt_mat_align_size);
 
 		// Offset raytracing sb pool
-		size_t rt_offset_align_size = (sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
-		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(1);
+		size_t rt_offset_align_size = SizeAlign((sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
+		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(rt_offset_align_size);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
@@ -278,26 +278,26 @@ namespace wr
 		return pool;
 	}
 
-	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_mb)
+	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_bytes)
 	{
 		return std::make_shared<MaterialPool>();
 	}
 
-	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb)
+	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes)
 	{
-		std::shared_ptr<D3D12ModelPool> pool = std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_mb, index_buffer_pool_size_in_mb);
+		std::shared_ptr<D3D12ModelPool> pool = std::make_shared<D3D12ModelPool>(*this, vertex_buffer_pool_size_in_bytes, index_buffer_pool_size_in_bytes);
 		m_model_pools.push_back(pool);
 		return pool;
 	}
 
-	std::shared_ptr<ConstantBufferPool> D3D12RenderSystem::CreateConstantBufferPool(std::size_t size_in_mb)
+	std::shared_ptr<ConstantBufferPool> D3D12RenderSystem::CreateConstantBufferPool(std::size_t size_in_bytes)
 	{
-		return std::make_shared<D3D12ConstantBufferPool>(*this, size_in_mb);
+		return std::make_shared<D3D12ConstantBufferPool>(*this, size_in_bytes);
 	}
 
-	std::shared_ptr<StructuredBufferPool> D3D12RenderSystem::CreateStructuredBufferPool(std::size_t size_in_mb)
+	std::shared_ptr<StructuredBufferPool> D3D12RenderSystem::CreateStructuredBufferPool(std::size_t size_in_bytes)
 	{
-		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_mb); 
+		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_bytes);
 		m_structured_buffer_pools.push_back(pool);
 		return pool;
 	}
@@ -772,7 +772,7 @@ namespace wr
 		if (nodes.empty()) return;
 
 		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
-		m_camera_pool = CreateConstantBufferPool((size_t) std::ceil(cam_align_size));
+		m_camera_pool = CreateConstantBufferPool((size_t)std::ceil(cam_align_size));
 
 		for (auto& node : nodes)
 		{

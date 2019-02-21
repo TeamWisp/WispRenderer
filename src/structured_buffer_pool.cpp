@@ -2,8 +2,8 @@
 
 namespace wr
 {
-	StructuredBufferPool::StructuredBufferPool(std::size_t size_in_mb) :
-		m_size_in_mb(size_in_mb)
+	StructuredBufferPool::StructuredBufferPool(std::size_t size_in_bytes) :
+		m_size_in_bytes(size_in_bytes)
 	{
 	}
 

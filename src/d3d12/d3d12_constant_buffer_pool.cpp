@@ -2,14 +2,15 @@
 #include "d3d12_functions.hpp"
 #include "d3d12_settings.hpp"
 #include "d3d12_renderer.hpp"
+#include "d3d12_defines.hpp"
 
 namespace wr 
 {
-	D3D12ConstantBufferPool::D3D12ConstantBufferPool(D3D12RenderSystem& render_system, std::size_t size_in_mb) : 
-	ConstantBufferPool(size_in_mb),
+	D3D12ConstantBufferPool::D3D12ConstantBufferPool(D3D12RenderSystem& render_system, std::size_t size_in_bytes) :
+	ConstantBufferPool(SizeAlign(size_in_bytes, 65536)),
 	m_render_system(render_system)
 	{
-		m_heap = d3d12::CreateHeap_SBO(render_system.m_device, size_in_mb * 1024 * 1024, ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+		m_heap = d3d12::CreateHeap_SBO(render_system.m_device, SizeAlign(size_in_bytes, 65536), ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 		SetName(m_heap, L"Default SBO Heap");
 		d3d12::MapHeap(m_heap);
 	}

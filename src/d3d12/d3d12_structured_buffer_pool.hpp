@@ -28,7 +28,7 @@ namespace wr
 	{
 	public:
 		explicit D3D12StructuredBufferPool(D3D12RenderSystem& render_system,
-			std::size_t size_in_mb);
+			std::size_t size_in_bytes);
 
 		~D3D12StructuredBufferPool() final;
 
