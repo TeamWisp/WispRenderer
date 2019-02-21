@@ -40,9 +40,6 @@ TextureCube irradiance_map : register(t7);
 Texture2D g_textures[90] : register(t8);
 SamplerState s0 : register(s0);
 
-#define SKYBOX_MUL 2
-#define IRR_MUL 2
-
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct HitInfo
 {
@@ -330,7 +327,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	// Irradiance
 	float3 flipped_N = fN;
 	flipped_N.y *= -1;
-	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz * IRR_MUL;
+	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 	// Direct
 	float3 reflect_dir = reflect(-V, fN);
