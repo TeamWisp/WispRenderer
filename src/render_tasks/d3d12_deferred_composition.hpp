@@ -44,16 +44,20 @@ namespace wr
 			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
 			constexpr unsigned int albedo = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS);
-			d3d12::SetShaderSRV(cmd_list, 1, albedo, data.out_rtv_srv_allocation.GetDescriptorHandle(albedo));
+			d3d12::DescHeapCPUHandle albedo_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(albedo);
+			d3d12::SetShaderSRV(cmd_list, 1, albedo, albedo_handle);
 
 			constexpr unsigned int normal = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_NORMAL_METALLIC);
-			d3d12::SetShaderSRV(cmd_list, 1, normal, data.out_rtv_srv_allocation.GetDescriptorHandle(normal));
+			d3d12::DescHeapCPUHandle normal_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(normal);
+			d3d12::SetShaderSRV(cmd_list, 1, normal, normal_handle);
 
 			constexpr unsigned int depth = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH);
-			d3d12::SetShaderSRV(cmd_list, 1, depth, data.out_srv_uav_allocation.GetDescriptorHandle(depth));
+			d3d12::DescHeapCPUHandle depth_handle = data.out_srv_uav_allocation.GetDescriptorHandle(depth);
+			d3d12::SetShaderSRV(cmd_list, 1, depth, depth_handle);
 
 			constexpr unsigned int lights = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::LIGHT_BUFFER);
-			d3d12::SetShaderSRV(cmd_list, 1, lights, data.out_srv_uav_allocation.GetDescriptorHandle(lights));
+			d3d12::DescHeapCPUHandle lights_handle = data.out_srv_uav_allocation.GetDescriptorHandle(lights);
+			d3d12::SetShaderSRV(cmd_list, 1, lights, lights_handle);
 
 			constexpr unsigned int skybox = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX);
 			d3d12::SetShaderSRV(cmd_list, 1, skybox, data.out_skybox);
@@ -62,7 +66,8 @@ namespace wr
 			d3d12::SetShaderSRV(cmd_list, 1, irradiance, data.out_irradiance);
 
 			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
-			d3d12::SetShaderUAV(cmd_list, 1, output, data.out_srv_uav_allocation.GetDescriptorHandle(output));
+			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
+			d3d12::SetShaderUAV(cmd_list, 1, output, output_handle);
 
 			d3d12::Dispatch(cmd_list,
 				static_cast<int>(std::ceil(render_system.m_viewport.m_viewport.Width / 16.f)),

@@ -73,10 +73,12 @@ namespace wr
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
 			constexpr unsigned int uav_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
-			d3d12::SetShaderUAV(cmd_list, 0, uav_idx, data.out_allocation.GetDescriptorHandle(uav_idx));
+			d3d12::DescHeapCPUHandle uav_handle = data.out_allocation.GetDescriptorHandle(uav_idx);
+			d3d12::SetShaderUAV(cmd_list, 0, uav_idx, uav_handle);
 
 			constexpr unsigned int srv_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
-			d3d12::SetShaderSRV(cmd_list, 0, srv_idx, data.out_allocation.GetDescriptorHandle(srv_idx));
+			d3d12::DescHeapCPUHandle srv_handle = data.out_allocation.GetDescriptorHandle(srv_idx);
+			d3d12::SetShaderSRV(cmd_list, 0, srv_idx, srv_handle);
 
 			bool is_fallback = d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK;
 			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);

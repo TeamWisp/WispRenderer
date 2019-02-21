@@ -162,7 +162,8 @@ namespace wr
 							d3d12::BindIndexBuffer(cmd_list, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer(),
 								0, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer()->m_size);
 
-							d3d12::SetShaderSRV(cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::cubemap_convolution, params::CubemapConvolutionE::ENVIRONMENT_CUBEMAP)), radiance);
+							constexpr unsigned int env_idx = rs_layout::GetHeapLoc(params::cubemap_convolution, params::CubemapConvolutionE::ENVIRONMENT_CUBEMAP);
+							d3d12::SetShaderSRV(cmd_list, 2, env_idx, radiance);
 							d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
 
 							if (n_mesh->m_index_count != 0)
