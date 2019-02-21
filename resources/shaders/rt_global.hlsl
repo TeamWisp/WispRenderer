@@ -1,4 +1,4 @@
-#define MAX_RECURSION 2
+#define MAX_RECURSION 3
 //#define FOUR_X_AA
 //#define PATH_TRACING
 //#define DEPTH_OF_FIELD

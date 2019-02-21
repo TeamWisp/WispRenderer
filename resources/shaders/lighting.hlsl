@@ -92,8 +92,11 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	
 	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance);
 
+if (tid == 1)
+{
 	bool shadow = TraceShadowRay(1, pos + (normal * EPSILON), L, t_max, depth + 1);
 	lighting *= !shadow;
+}
 
 	return lighting;
 }
