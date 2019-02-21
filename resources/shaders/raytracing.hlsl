@@ -48,7 +48,7 @@ StructuredBuffer<Offset> g_offsets : register(t5);
 
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
-Texture2D g_textures[20] : register(t8);
+Texture2D g_textures[90] : register(t8);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -196,7 +196,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 {
 	if (depth >= MAX_RECURSION)
 	{
-		return float4(0, 0, 0, 0);
+		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
 	}
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
@@ -307,7 +307,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float mip_level = 1;
+	float mip_level = payload.depth+1;
 
 	uint use_albedo_constant = material.data.flags & MATERIAL_USE_ALBEDO_CONSTANT;
 	uint has_albedo_texture = material.data.flags & MATERIAL_HAS_ALBEDO_TEXTURE;
@@ -347,9 +347,15 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		use_normal_texture == 0);
 #endif
 	
-	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
-	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
+	float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
+	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
+#define CALC_B
+#ifndef CALC_B
 	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
+#else
+	T = normalize(T - dot(T, N) * N);
+	float3 B = cross(N, T);
+#endif
 	const float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
@@ -362,7 +368,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	// Direct
 	float3 reflect_dir = reflect(-V, fN);
-	float3 reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
+	float3 reflection = TraceColorRay(hit_pos + fN * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
 
 	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
 	float3 kS = F;

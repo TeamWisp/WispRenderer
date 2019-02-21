@@ -270,7 +270,7 @@ namespace resources
 			}
 
 			{
-				material_knot_bamboo = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
+				material_knot_bamboo = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
