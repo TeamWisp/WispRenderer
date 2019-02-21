@@ -97,7 +97,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 
 	// Offset shadow ray direction to get soft-shadows
 	float shadow_factor = 0.0;
-	[unroll]
+	[unroll(MAX_SHADOW_SAMPLES)]
 	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
 	{
 		// Perhaps change randomness to not be purely random, but algorithm-random?
