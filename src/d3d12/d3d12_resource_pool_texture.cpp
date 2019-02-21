@@ -35,7 +35,6 @@ namespace wr
 		m_default_roughness = Load(settings::default_roughness_path, false, false);
 		m_default_metalic = Load(settings::default_metalic_path, false, false);
 		m_default_ao = Load(settings::default_ao_path, false, false);
-		m_post_stage_clear_textures.resize(d3d12::settings::num_back_buffers);
 
 	}
 
@@ -77,7 +76,6 @@ namespace wr
 				d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(itr->second);
 
 				unstaged_textures.push_back(texture);
-				m_post_stage_clear_textures[frame].push_back(texture);
 
 				decltype(d3d12::Device::m_native) n_device;
 				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
@@ -137,13 +135,7 @@ namespace wr
 
 	void D3D12TexturePool::PostStageClear()
 	{
-		int frame = m_render_system.GetFrameIdx();
-		for (int i = 0; i < m_post_stage_clear_textures[frame].size(); ++i)
-		{
-			m_post_stage_clear_textures[frame][i]->m_intermediate->Release();
-		}
-
-		m_post_stage_clear_textures[frame].clear();
+		
 	}
 
 	void D3D12TexturePool::ReleaseTemporaryResources()

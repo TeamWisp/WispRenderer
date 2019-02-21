@@ -50,7 +50,7 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::equirect_to_cubemap);
 
-			data.camera_cb_pool = rs.CreateConstantBufferPool(2*1024*1024);
+			data.camera_cb_pool = rs.CreateConstantBufferPool(2_mb);
 			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CB)));
 
 			data.proj_mat = DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(90.0f), 1.0f, 0.1f, 10.0f);

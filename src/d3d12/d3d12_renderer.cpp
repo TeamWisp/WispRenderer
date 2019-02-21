@@ -97,19 +97,19 @@ namespace wr
 		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
 		// Raytracing cb pool
-		m_raytracing_cb_pool = CreateConstantBufferPool(1*1024*1024);
+		m_raytracing_cb_pool = CreateConstantBufferPool(1_mb);
 
 		// Simple Shapes Model Pool
-		m_shapes_pool = CreateModelPool(8*1024*1024, 8*1024*1024);
+		m_shapes_pool = CreateModelPool(8_mb, 8_mb);
 		LoadPrimitiveShapes();
 
 		// Material raytracing sb pool
-		size_t rt_mat_align_size = (sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
-		m_raytracing_material_sb_pool = CreateStructuredBufferPool(1*1024*1024);
+		size_t rt_mat_align_size = SizeAlign((sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
+		m_raytracing_material_sb_pool = CreateStructuredBufferPool(rt_mat_align_size);
 
 		// Offset raytracing sb pool
-		size_t rt_offset_align_size = (sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials) * d3d12::settings::num_back_buffers;
-		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(1*1024*1024);
+		size_t rt_offset_align_size = SizeAlign((sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
+		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(rt_offset_align_size);
 
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
