@@ -7,7 +7,7 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "../material_pool.hpp"
+#include "d3d12_material_pool.hpp"
 #include "d3d12_resource_pool_texture.hpp"
 #include "d3d12_model_pool.hpp"
 #include "d3d12_constant_buffer_pool.hpp"
