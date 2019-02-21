@@ -335,7 +335,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	// Direct
 	float3 reflect_dir = reflect(-V, fN);
-	float3 reflection = TraceColorRay(hit_pos - fN * 0.1f, reflect_dir, payload.depth + 1, payload.seed);
+	float3 reflection = TraceColorRay(hit_pos + fN * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
 
 	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
 	float3 kS = F;
