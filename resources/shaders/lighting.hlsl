@@ -96,6 +96,8 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float3 wpos = pos + (normal * EPSILON);
 
 	// Offset shadow ray direction to get soft-shadows
+#ifdef SOFT_SHADOWS
+
 	float shadow_factor = 0.0;
 	[unroll(MAX_SHADOW_SAMPLES)]
 	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
@@ -115,6 +117,13 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	shadow_factor /= float(MAX_SHADOW_SAMPLES);
 
 	lighting *= shadow_factor;
+
+#else /* ifdef SOFT_SHADOWS */
+
+	bool shadow = TraceShadowRay(1, wpos, L, t_max, depth + 1);
+	lighting *= !shadow;
+
+#endif
 
 	return lighting;
 }
