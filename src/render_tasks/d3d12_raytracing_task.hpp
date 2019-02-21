@@ -12,8 +12,10 @@
 #include "../engine_registry.hpp"
 #include "../util/math.hpp"
 
+#include "../scene_graph/skybox_node.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../imgui_tools.hpp"
+#include "../render_tasks/d3d12_cubemap_convolution.hpp"
 
 namespace wr
 {
@@ -165,6 +167,13 @@ namespace wr
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
 
+				// Get Environment Map
+				if (scene_graph.m_skybox.has_value()) {
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::IRRADIANCE_MAP))); // here
+					d3d12::CreateSRVFromTexture(irradiance_t, cpu_handle);
+				}
+
 				// Update offset data
 				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
 
@@ -221,17 +230,17 @@ namespace wr
 	{
 		RenderTargetProperties rt_properties
 		{
-			false,
-			std::nullopt,
-			std::nullopt,
-			ResourceState::UNORDERED_ACCESS,
-			ResourceState::COPY_SOURCE,
-			false,
-			Format::UNKNOWN,
-			{ Format::R32G32B32A32_FLOAT },
-			1,
-			true,
-			true
+			RenderTargetProperties::IsRenderWindow(false),
+			RenderTargetProperties::Width(std::nullopt),
+			RenderTargetProperties::Height(std::nullopt),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
+			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
+			RenderTargetProperties::CreateDSVBuffer(false),
+			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
+			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		RenderTaskDesc desc;

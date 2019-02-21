@@ -64,17 +64,17 @@ namespace wr
 	{
 		RenderTargetProperties rt_properties
 		{
-			false,
-			target_width,
-			target_height,
-			ResourceState::RENDER_TARGET,
-			ResourceState::NON_PIXEL_SHADER_RESOURCE,
-			true,
-			Format::D32_FLOAT,
-			{ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT },
-			2,
-			true,
-			true
+			RenderTargetProperties::IsRenderWindow(false),
+			RenderTargetProperties::Width(target_width),
+			RenderTargetProperties::Height(target_height),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::RENDER_TARGET),
+			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
+			RenderTargetProperties::CreateDSVBuffer(true),
+			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
+			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::NumRTVFormats(2),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		RenderTaskDesc desc;

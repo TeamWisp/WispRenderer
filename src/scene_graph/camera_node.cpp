@@ -100,27 +100,8 @@ namespace wr
 
 	bool CameraNode::InView(std::shared_ptr<MeshNode>& node)
 	{
-		DirectX::XMVECTOR (&aabb)[2] = node->m_aabb;
-
-		for (DirectX::XMVECTOR& plane : m_planes)
-		{
-			/* Get point of AABB that's into the plane the most */
-
-			DirectX::XMVECTOR axis_vert = {
-				*aabb[*plane.m128_f32 >= 0].m128_f32,
-				aabb[plane.m128_f32[1] >= 0].m128_f32[1],
-				aabb[plane.m128_f32[2] >= 0].m128_f32[2]
-			};
-
-			/* Check if it's outside */
-
-			if (*DirectX::XMVector3Dot(plane, axis_vert).m128_f32 + plane.m128_f32[3] < 0)
-				return false;
-
-		}
-
-		return true;
-
+		AABB aabb = node->m_aabb;
+		return aabb.InFrustum(m_planes);
 	}
 
 } /* wr */

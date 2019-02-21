@@ -44,8 +44,8 @@ namespace resources
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
-		texture_pool = render_system->CreateTexturePool(16*1024*1024, 55);
-		material_pool = render_system->CreateMaterialPool(8*1024*1024);
+		texture_pool = render_system->CreateTexturePool();
+		material_pool = render_system->CreateMaterialPool(256);
 
 		// Load Texture.
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
@@ -107,7 +107,7 @@ namespace resources
 		wr::TextureHandle rubber_roughness = texture_pool->Load("resources/materials/rubber/roughness.png", false, true);
 		wr::TextureHandle rubber_metallic = texture_pool->Load("resources/materials/rubber/metallic.png", false, true);
 
-		equirectangular_environment_map = texture_pool->Load("resources/materials/Ice_Lake_ref.hdr", false, false);
+		equirectangular_environment_map = texture_pool->Load("resources/materials/Barce_Rooftop_C_3k.hdr", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();

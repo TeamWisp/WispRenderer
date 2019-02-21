@@ -54,7 +54,7 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float4x4 mvp = mul(projection, vm);
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
-	output.uv = input.uv;
+	output.uv = float2(input.uv.x, 1.0f - input.uv.y);
 	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
 	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
 	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
@@ -110,7 +110,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float4 roughness = lerp(material_metallic.SampleLevel(s0, input.uv, 0).y, data.metallic_roughness.w, use_roughness_constant!=0 || has_roughness_texture == 0);
 	float4 metallic = lerp(material_metallic.SampleLevel(s0, input.uv, 0).z, length(data.metallic_roughness.xyz), use_metallic_constant != 0 || has_metallic_texture == 0);
 #else
-	float4 roughness = lerp(material_roughness.Sample(s0, input.uv), data.metallic_roughness.wwww, use_roughness_constant != 0 || has_roughness_texture == 0);
+	float4 roughness = lerp(max(0.05f, material_roughness.Sample(s0, input.uv)), data.metallic_roughness.wwww, use_roughness_constant != 0 || has_roughness_texture == 0);
 	float4 metallic = lerp(material_metallic.Sample(s0, input.uv), data.metallic_roughness.xyzx, use_metallic_constant != 0 || has_metallic_texture == 0);
 #endif
 	float3 tex_normal = lerp(material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 1.0), use_normal_texture == 0);

@@ -92,6 +92,8 @@ namespace wr
 			ModelMeshData* mesh_data = new ModelMeshData();
 			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 
+			//Copy data
+
 			mesh_data->m_positions.resize(mesh->mNumVertices);
 			mesh_data->m_normals.resize(mesh->mNumVertices);
 			mesh_data->m_uvw.resize(mesh->mNumVertices);
@@ -101,54 +103,56 @@ namespace wr
 			mesh_data->m_bone_weights.resize(mesh->mNumVertices);
 			mesh_data->m_bone_ids.resize(mesh->mNumVertices);
 
-			for (int j = 0; j < mesh->mNumVertices; ++j)
+			#ifdef ASSIMP_DOUBLE_PRECISION
+			static_assert(false, "Assimp should use single precision, since model_loader_assimp.cpp requires floats");
+			#endif
+
+			const size_t float3 = sizeof(float) * 3, float3s = mesh->mNumVertices * float3;
+
+			memcpy(mesh_data->m_positions.data(), mesh->mVertices, float3s);
+
+			if (mesh->HasNormals())
 			{
-				mesh_data->m_positions[j].x = mesh->mVertices[j].x;
-				mesh_data->m_positions[j].y = mesh->mVertices[j].y;
-				mesh_data->m_positions[j].z = mesh->mVertices[j].z;
+				memcpy(mesh_data->m_normals.data(), mesh->mNormals, float3s);
+			}
 
-				if (mesh->HasNormals())
+			if (mesh->HasTangentsAndBitangents())
+			{
+				memcpy(mesh_data->m_tangents.data(), mesh->mTangents, float3s);
+				memcpy(mesh_data->m_bitangents.data(), mesh->mBitangents, float3s);
+			}
+
+			if (mesh->HasTextureCoords(0))
+			{
+				memcpy(mesh_data->m_uvw.data(), mesh->mTextureCoords[0], float3s);
+			}
+
+			if (mesh->HasVertexColors(0))
+			{
+				for (int j = 0; j < mesh->mNumVertices; ++j)
 				{
-					mesh_data->m_normals[j].x = mesh->mNormals[j].x;
-					mesh_data->m_normals[j].y = mesh->mNormals[j].y;
-					mesh_data->m_normals[j].z = mesh->mNormals[j].z;
-				}
-
-				if (mesh->mTextureCoords[0] > 0)
-				{
-					mesh_data->m_uvw[j].x = mesh->mTextureCoords[0][j].x;
-					mesh_data->m_uvw[j].y = 1.f - mesh->mTextureCoords[0][j].y;
-					mesh_data->m_uvw[j].z = mesh->mTextureCoords[0][j].z;
-				}
-
-				if (mesh->HasVertexColors(0))
-				{
-					mesh_data->m_colors[j].x = mesh->mColors[0][j].r;
-					mesh_data->m_colors[j].y = mesh->mColors[0][j].g;
-					mesh_data->m_colors[j].z = mesh->mColors[0][j].b;
-				}
-
-				if (mesh->HasTangentsAndBitangents())
-				{
-					mesh_data->m_tangents[j].x = mesh->mTangents[j].x;
-					mesh_data->m_tangents[j].y = mesh->mTangents[j].y;
-					mesh_data->m_tangents[j].z = mesh->mTangents[j].z;
-
-					mesh_data->m_bitangents[j].x = mesh->mBitangents[j].x;
-					mesh_data->m_bitangents[j].y = mesh->mBitangents[j].y;
-					mesh_data->m_bitangents[j].z = mesh->mBitangents[j].z;
+					memcpy(&mesh_data->m_colors[j], &mesh->mColors[0][j], float3);
 				}
 			}
+
+			//Copy indices
+
+			size_t count = 0;
 
 			for (size_t j = 0; j < mesh->mNumFaces; ++j)
 			{
 				aiFace *face = &mesh->mFaces[j];
+				count += face->mNumIndices;
+			}
 
-				// retrieve all indices of the face and store them in the indices vector
-				for (size_t k = 0; k < face->mNumIndices; k++)
-				{
-					mesh_data->m_indices.push_back(static_cast<unsigned>(face->mIndices[k]));
-				}
+			mesh_data->m_indices.resize(count);
+			count = 0;
+
+			for (size_t j = 0; j < mesh->mNumFaces; ++j)
+			{
+				aiFace *face = &mesh->mFaces[j];
+				memcpy(mesh_data->m_indices.data() + count, face->mIndices, face->mNumIndices * 4);
+				count += face->mNumIndices;
 			}
 
 			mesh_data->m_material_id = mesh->mMaterialIndex;
@@ -284,15 +288,11 @@ namespace wr
 			aiColor3D color;
 			material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
 
-			material_data->m_base_color.x = color.r;
-			material_data->m_base_color.y = color.g;
-			material_data->m_base_color.z = color.b;
+			memcpy(&material_data->m_base_color, &color, sizeof(color));
 
 			material->Get(AI_MATKEY_COLOR_SPECULAR, color);
 
-			material_data->m_base_metallic.x = color.r;
-			material_data->m_base_metallic.y = color.g;
-			material_data->m_base_metallic.z = color.b;
+			memcpy(&material_data->m_base_metallic, &color, sizeof(color));
 
 			float roughness;
 			material->Get(AI_MATKEY_SHININESS, roughness);

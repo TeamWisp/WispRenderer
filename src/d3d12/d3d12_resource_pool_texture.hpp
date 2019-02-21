@@ -19,7 +19,7 @@ namespace wr
 	class D3D12TexturePool : public TexturePool
 	{
 	public:
-		explicit D3D12TexturePool(D3D12RenderSystem& render_system, std::size_t size_in_bytes, std::size_t num_of_textures);
+		explicit D3D12TexturePool(D3D12RenderSystem& render_system);
 		~D3D12TexturePool() final;
 
 		void Evict() final;
@@ -48,7 +48,6 @@ namespace wr
 
 		void MoveStagedTextures();
 		void GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list);
-		void GenerateMips(std::vector<d3d12::TextureResource*>& const textures, CommandList* cmd_list);
 
 		void GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list);
 		void GenerateMips_BGR(d3d12::TextureResource* texture, CommandList* cmd_list);
@@ -64,6 +63,7 @@ namespace wr
 
 		//Track resources that are created in one frame and destroyed after
 		std::array<std::vector<d3d12::TextureResource*>, d3d12::settings::num_back_buffers> m_temporary_textures;
+		std::array< std::vector<d3d12::Heap<wr::HeapOptimization::BIG_STATIC_BUFFERS>*>, d3d12::settings::num_back_buffers> m_temporary_heaps;
 	};
 
 

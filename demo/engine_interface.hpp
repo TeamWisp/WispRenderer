@@ -103,6 +103,7 @@ namespace engine
 		wr::imgui::window::RootSignatureRegistry();
 		wr::imgui::window::D3D12HardwareInfo(*render_system);
 		wr::imgui::window::D3D12Settings();
+		wr::imgui::window::Inspect(sg);
 	}
 	
 }
