@@ -279,6 +279,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float mip_level = payload.depth+1;
 
+#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
@@ -307,7 +308,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	// Irradiance
 	float3 flipped_N = fN;
-	flipped_N.y *= -1;
+	flipped_N.xyz *= -1;
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 	// Direct

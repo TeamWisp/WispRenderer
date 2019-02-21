@@ -73,7 +73,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	uint tid = light.tid & 3;
 
 	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - pos, -light.dir, tid == light_type_directional));
+	float3 L = (lerp(light.pos - pos, light.pos - pos, tid == light_type_directional));
 	float light_dist = length(L);
 	L /= light_dist;
 
@@ -87,7 +87,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
 
 	// Maybe change hard-coded 100000 to be dynamic according to the scene size?
-	float t_max = lerp(light_dist, 100000, tid == light_type_directional);
+	float t_max = lerp(light_dist, light_dist, tid == light_type_directional);
 
 	float3 radiance = (light.col * spot_intensity) * attenuation;
 
