@@ -350,6 +350,11 @@ namespace wr
 		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
+	void D3D12RenderSystem::DestroyCommandList(CommandList* cmd_list)
+	{
+		Destroy(static_cast<wr::d3d12::CommandList*>(cmd_list));
+	}
+
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
 	{
 		if (properties.m_is_render_window)
