@@ -166,7 +166,7 @@ namespace wr::d3d12
 		}
 	}
 
-	void CreateUAVFromRTV(RenderTarget * render_target, DescHeapCPUHandle & handle, unsigned int num, Format formats[8])
+	void CreateUAVFromRTV(RenderTarget* render_target, DescHeapCPUHandle & handle, unsigned int num, Format formats[8])
 	{
 		decltype(Device::m_native) n_device;
 		render_target->m_render_targets[0]->GetDevice(IID_PPV_ARGS(&n_device));

@@ -414,7 +414,7 @@ namespace wr::d3d12
 		return cb;
 	}
 
-	HeapResource * AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride, bool used_as_uav)
+	HeapResource* AllocStructuredBuffer(Heap<HeapOptimization::BIG_STATIC_BUFFERS>* heap, std::uint64_t size_in_bytes, std::uint64_t stride, bool used_as_uav)
 	{
 		auto cb = new HeapResource();
 		decltype(Device::m_native) n_device;
