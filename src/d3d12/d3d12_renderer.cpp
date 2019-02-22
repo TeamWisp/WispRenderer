@@ -43,7 +43,7 @@ namespace wr
 		{
 			m_structured_buffer_pools[i].reset();
 		}
-		
+
 		for (int i = 0; i < m_model_pools.size(); ++i)
 		{
 			m_model_pools[i].reset();
@@ -149,12 +149,15 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
+
+		//Rendering engine creates a texture pool that will be used by the render tasks.
+		m_texture_pools.push_back(CreateTexturePool());
 	}
 
 	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
 
- 		if (m_requested_fullscreen_state.has_value())
+		if (m_requested_fullscreen_state.has_value())
 		{
 			WaitForAllPreviousWork();
 			m_render_window.value()->m_swap_chain->SetFullscreenState(m_requested_fullscreen_state.value(), nullptr);
@@ -164,7 +167,7 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-		
+
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -264,7 +267,7 @@ namespace wr
 	{
 
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
-		
+
 		if (m_render_window.has_value())
 		{
 			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
@@ -391,7 +394,7 @@ namespace wr
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-	
+
 		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
@@ -543,7 +546,7 @@ namespace wr
 		auto& registry = PipelineRegistry::Get();
 
 		for (auto desc : registry.m_descriptions)
-		{		
+		{
 			d3d12::desc::PipelineStateDesc n_desc;
 			n_desc.m_counter_clockwise = desc.second.m_counter_clockwise;
 			n_desc.m_cull_mode = desc.second.m_cull_mode;
@@ -847,7 +850,7 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
-		
+
 		for (auto pool : m_texture_pools)
 		{
 			pool->Stage(m_direct_cmd_list);
@@ -886,7 +889,7 @@ namespace wr
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
 
-			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &data);
+			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);
 		}
 	}
 
@@ -897,7 +900,7 @@ namespace wr
 
 		std::vector<std::shared_ptr<LightNode>>& light_nodes = scene_graph.GetLightNodes();
 
-		for (uint32_t i = 0, j = (uint32_t) light_nodes.size(); i < j; ++i)
+		for (uint32_t i = 0, j = (uint32_t)light_nodes.size(); i < j; ++i)
 		{
 			std::shared_ptr<LightNode>& node = light_nodes[i];
 
@@ -1021,7 +1024,7 @@ namespace wr
 				for (auto& mesh : model->m_meshes)
 				{
 					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
-					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) 
+					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride)
 					{
 						d3d12::BindVertexBuffer(n_cmd_list,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
@@ -1037,11 +1040,11 @@ namespace wr
 						m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
-					
+
 					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
 					auto material_handle = mesh.second;
-					
+
 					if (material_handle != m_last_material)
 					{
 						m_last_material = material_handle;
@@ -1108,7 +1111,7 @@ namespace wr
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::METALLIC)), metallic_internal);
 		d3d12::BindConstantBuffer(n_cmd_list, handle->m_native, 3, GetFrameIdx());
 	}
-	
+
 	unsigned int D3D12RenderSystem::GetFrameIdx()
 	{
 		if (m_render_window.has_value())
