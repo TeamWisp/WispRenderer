@@ -29,15 +29,15 @@
 namespace wr
 {
 	LINK_SG_RENDER_MESHES(D3D12RenderSystem, Render_MeshNodes)
-		LINK_SG_INIT_MESHES(D3D12RenderSystem, Init_MeshNodes)
-		LINK_SG_INIT_CAMERAS(D3D12RenderSystem, Init_CameraNodes)
-		LINK_SG_INIT_LIGHTS(D3D12RenderSystem, Init_LightNodes)
-		LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
-		LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
-		LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
-		LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
+	LINK_SG_INIT_MESHES(D3D12RenderSystem, Init_MeshNodes)
+	LINK_SG_INIT_CAMERAS(D3D12RenderSystem, Init_CameraNodes)
+	LINK_SG_INIT_LIGHTS(D3D12RenderSystem, Init_LightNodes)
+	LINK_SG_UPDATE_MESHES(D3D12RenderSystem, Update_MeshNodes)
+	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
+	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
+	LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
 
-		D3D12RenderSystem::~D3D12RenderSystem()
+	D3D12RenderSystem::~D3D12RenderSystem()
 	{
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
 		{
