@@ -162,6 +162,19 @@ void RaygenEntry()
 		return;
 	}
 
+	// Offset shadow ray direction to get soft-shadows
+	float3 L = normalize(float3(0.0, 1.0, 1.0));
+	float3 shadow_pos = wpos + (normal * EPSILON);
+	float shadow_factor = DoShadowRay(shadow_pos, L, 10000, rand_seed, 0);
+
+	gOutput[DispatchRaysIndex().xy] = float4(shadow_factor, shadow_factor, shadow_factor, 1);
+
+	/*if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
+	{
+		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
+		return;
+	}
+
 	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
 	float3 reflection = DoReflection(wpos, V, normal, rand_seed);
 
@@ -178,7 +191,8 @@ void RaygenEntry()
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
+	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);*/
+
 
 }
 
