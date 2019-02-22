@@ -123,6 +123,7 @@ namespace wr
 				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
 
 				free(texture->m_allocated_memory);
+				texture->m_allocated_memory = nullptr;
 
 				texture->m_is_staged = true;
 
@@ -272,7 +273,7 @@ namespace wr
 
 		SAFE_RELEASE(texture->m_resource);
 		SAFE_RELEASE(texture->m_intermediate);
-		delete[] texture->m_allocated_memory;
+		if(texture->m_allocated_memory != nullptr) free( texture->m_allocated_memory);
 		delete texture;
 	}
 
