@@ -146,7 +146,6 @@ namespace wr
 		}
 	}
 
-
 	void D3D12TexturePool::PostStageClear()
 	{
 		
@@ -566,7 +565,7 @@ namespace wr
 
 		MipMapping_CB generate_mips_cb;
 
-		for (uint32_t src_mip = 0; src_mip < texture->m_mip_levels - 1u; src_mip++)
+		for (uint32_t src_mip = 0; src_mip < texture->m_mip_levels - 1u;)
 		{
 			uint32_t src_width = texture->m_width >> src_mip;
 			uint32_t src_height = texture->m_height >> src_mip;
