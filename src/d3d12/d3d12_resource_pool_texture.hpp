@@ -10,7 +10,11 @@ namespace wr
 {
 	struct MipMapping_CB
 	{
-		DirectX::XMFLOAT2 TexelSize;	// 1.0 / OutMip1.Dimensions
+		uint32_t src_mip_level;			// Texture level of source mip
+		uint32_t num_mip_levels;		// Number of OutMips to write: [1-4]
+		uint32_t src_dimension;			// Width and height of the source texture are even or odd.
+		uint32_t padding;				// Pad to 16 byte alignment.
+		DirectX::XMFLOAT2 texel_size;	// 1.0 / OutMip1.Dimensions
 	};
 
 	class D3D12RenderSystem;
@@ -60,6 +64,9 @@ namespace wr
 		//Track resources that are created in one frame and destroyed after
 		std::array<std::vector<d3d12::TextureResource*>, d3d12::settings::num_back_buffers> m_temporary_textures;
 		std::array< std::vector<d3d12::Heap<wr::HeapOptimization::BIG_STATIC_BUFFERS>*>, d3d12::settings::num_back_buffers> m_temporary_heaps;
+
+		//Default UAV used for padding
+		DescriptorAllocation m_default_uav;
 	};
 
 
