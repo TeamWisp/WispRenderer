@@ -81,6 +81,30 @@ namespace wr
 		void Destroy(Model* model);
 		void Destroy(internal::MeshInternal* mesh);
 
+		// Shrinks down both buffers to the minimum size required. 
+		// Does not rearrange the contents of the buffers, meaning that it doesn't shrink to the absolute minimum size.
+		// To do that, call Defragment first.
+		virtual void ShrinkToFit() = 0;
+		virtual void ShrinkVertexBufferToFit() = 0;
+		virtual void ShrinkIndexBufferToFit() = 0;
+
+		// Removes any holes in the memory, stitching all allocations back together to maximize the amount of contiguous free space.
+		// These functions are called automatically if the allocator has enough free space but no large enough free blocks.
+		virtual void Defragment() = 0;
+		virtual void DefragmentVertexBuffer() = 0;
+		virtual void DefragmentIndexBuffer() = 0;
+
+		virtual size_t GetVertexBufferOccupiedSpace() = 0;
+		virtual size_t GetIndexBufferOccupiedSpace() = 0;
+
+		virtual size_t GetVertexBufferFreeSpace() = 0;
+		virtual size_t GetIndexBufferFreeSpace() = 0;
+
+		// Resizes both buffers to the supplied sizes. 
+		// If the supplied size is smaller than the required size the buffers will resize to the required size instead.
+		virtual void Resize(size_t vertex_buffer_new_size, size_t index_buffer_new_size) = 0;
+
+
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
 
