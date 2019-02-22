@@ -85,21 +85,33 @@ namespace wr
 
 	void D3D12ModelPool::StageMeshes(d3d12::CommandList * cmd_list)
 	{
-		while (!m_mesh_stage_queue.empty())
+		while (!m_command_queue.empty())
 		{
-			internal::D3D12MeshInternal* d3d12_mesh = static_cast<internal::D3D12MeshInternal*>(m_mesh_stage_queue.front());
-			d3d12::StageBufferRegion(m_vertex_buffer,
-				d3d12_mesh->m_vertex_staging_buffer_size,
-				d3d12_mesh->m_vertex_staging_buffer_offset * d3d12_mesh->m_vertex_staging_buffer_stride,
-				cmd_list);
-			if (d3d12_mesh->m_index_staging_buffer_size != 0)
+			internal::Command* command = static_cast<internal::Command*>(m_command_queue.front());
+
+			switch (command->m_type)
 			{
-				d3d12::StageBufferRegion(m_index_buffer,
-					d3d12_mesh->m_index_staging_buffer_size,
-					d3d12_mesh->m_index_staging_buffer_offset * sizeof(std::uint32_t),
+			case internal::CommandType::STAGE:
+			{
+				internal::StageCommand* stage_command = static_cast<internal::StageCommand*>(command);
+				d3d12::StageBufferRegion(stage_command->m_buffer,
+					stage_command->m_size,
+					stage_command->m_offset,
 					cmd_list);
+
+				delete stage_command;
+
+				m_command_queue.pop();
+				break;
 			}
-			m_mesh_stage_queue.pop();
+
+			default:
+			{
+				delete command;
+				m_command_queue.pop();
+				break;
+			}
+			}
 		}
 	}
 
@@ -117,7 +129,304 @@ namespace wr
 	{
 		return static_cast<internal::D3D12MeshInternal*>(m_loaded_meshes[mesh_handle]);
 	}
+
+	void D3D12ModelPool::ShrinkToFit()
+	{
+		ShrinkVertexHeapToFit();
+		ShrinkIndexHeapToFit();
+	}
+
+	void D3D12ModelPool::ShrinkVertexHeapToFit()
+	{
+		MemoryBlock* last_occupied_block;
+		for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+		{
+			if (mem_block->m_free == false)
+			{
+				last_occupied_block = mem_block;
+			}
+		}
+
+		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
+		new_size = SizeAlign(new_size, 65536);
+
+		ID3D12Resource* new_buffer;
+		ID3D12Resource* new_staging;
+
+		uint8_t* cpu_address;
+
+		m_render_system.m_device->m_native->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&new_staging));
+		NAME_D3D12RESOURCE(new_staging);
+
+		CD3DX12_RANGE read_range(0, 0);
+
+		new_staging->Map(0, &read_range, reinterpret_cast<void**>(&(cpu_address)));
+
+		memcpy(cpu_address, m_vertex_buffer->m_cpu_address, new_size);
+
+		m_vertex_buffer->m_size = new_size;
+		m_vertex_buffer->m_is_staged = false;
+		m_vertex_buffer->m_is_staged = false;
+		SAFE_RELEASE(m_vertex_buffer->m_buffer);
+		SAFE_RELEASE(m_vertex_buffer->m_staging);
+
+		m_render_system.m_device->m_native->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			nullptr,
+			IID_PPV_ARGS(&new_buffer));
+		NAME_D3D12RESOURCE(new_buffer);
+
+		m_vertex_buffer->m_buffer = new_buffer;
+		m_vertex_buffer->m_staging = new_staging;
+
+		internal::StageCommand* stageCommand = new internal::StageCommand;
+
+		stageCommand->m_type = internal::STAGE;
+		stageCommand->m_buffer = m_vertex_buffer;
+		stageCommand->m_offset = 0;
+		stageCommand->m_size = new_size;
+
+		m_command_queue.push(stageCommand);
+
+	}
+
+	void D3D12ModelPool::ShrinkIndexHeapToFit()
+	{
+		MemoryBlock* last_occupied_block;
+		for (MemoryBlock* mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+		{
+			if (mem_block->m_free == false)
+			{
+				last_occupied_block = mem_block;
+			}
+		}
+
+		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
+		new_size = SizeAlign(new_size, 65536);
+
+		ID3D12Resource* new_buffer;
+		ID3D12Resource* new_staging;
+
+		uint8_t* cpu_address;
+
+		m_render_system.m_device->m_native->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&new_staging));
+		NAME_D3D12RESOURCE(new_staging);
+
+		CD3DX12_RANGE read_range(0, 0);
+
+		new_staging->Map(0, &read_range, reinterpret_cast<void**>(&(cpu_address)));
+
+		memcpy(cpu_address, m_index_buffer->m_cpu_address, new_size);
+
+		m_index_buffer->m_size = new_size;
+		m_index_buffer->m_is_staged = false;
+		m_index_buffer->m_is_staged = false;
+		SAFE_RELEASE(m_index_buffer->m_buffer);
+		SAFE_RELEASE(m_index_buffer->m_staging);
+
+		m_render_system.m_device->m_native->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			nullptr,
+			IID_PPV_ARGS(&new_buffer));
+		NAME_D3D12RESOURCE(new_buffer);
+
+		m_index_buffer->m_buffer = new_buffer;
+		m_index_buffer->m_staging = new_staging;
+
+		internal::StageCommand* stageCommand = new internal::StageCommand;
+
+		stageCommand->m_type = internal::STAGE;
+		stageCommand->m_buffer = m_index_buffer;
+		stageCommand->m_offset = 0;
+		stageCommand->m_size = new_size;
+
+		m_command_queue.push(stageCommand);
+	}
+
+	void D3D12ModelPool::Defragment()
+	{
+		DefragmentVertexHeap();
+		DefragmentIndexHeap();
+	}
+
+	void D3D12ModelPool::DefragmentVertexHeap()
+	{
+		MemoryBlock* mem_block = m_vertex_heap_start_block;
+		while (mem_block->m_next_block != nullptr)
+		{
+			if (mem_block->m_free)
+			{
+				if (mem_block->m_next_block->m_free)
+				{
+					mem_block->m_size += mem_block->m_next_block->m_size;
+				}
+			}
+		}
+	}
 	
+	void D3D12ModelPool::Resize(size_t vertex_heap_new_size, size_t index_heap_new_size)
+	{
+		// resize vertex heap
+		{
+			MemoryBlock* last_occupied_block;
+			for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+			{
+				if (mem_block->m_free == false)
+				{
+					last_occupied_block = mem_block;
+				}
+			}
+
+			size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
+			new_size = SizeAlign(new_size, 65536);
+
+			if (new_size >= vertex_heap_new_size)
+			{
+				ShrinkVertexHeapToFit();
+			}
+			else
+			{
+				new_size = SizeAlign(vertex_heap_new_size, 65536);
+
+				ID3D12Resource* new_buffer;
+				ID3D12Resource* new_staging;
+
+				uint8_t* cpu_address;
+
+				m_render_system.m_device->m_native->CreateCommittedResource(
+					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+					D3D12_HEAP_FLAG_NONE,
+					&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+					D3D12_RESOURCE_STATE_GENERIC_READ,
+					nullptr,
+					IID_PPV_ARGS(&new_staging));
+				NAME_D3D12RESOURCE(new_staging);
+
+				CD3DX12_RANGE read_range(0, 0);
+
+				new_staging->Map(0, &read_range, reinterpret_cast<void**>(&(cpu_address)));
+
+				memcpy(cpu_address, m_vertex_buffer->m_cpu_address, new_size);
+
+				m_vertex_buffer->m_size = new_size;
+				m_vertex_buffer->m_is_staged = false;
+				m_vertex_buffer->m_is_staged = false;
+				SAFE_RELEASE(m_vertex_buffer->m_buffer);
+				SAFE_RELEASE(m_vertex_buffer->m_staging);
+
+				m_render_system.m_device->m_native->CreateCommittedResource(
+					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+					D3D12_HEAP_FLAG_NONE,
+					&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					nullptr,
+					IID_PPV_ARGS(&new_buffer));
+				NAME_D3D12RESOURCE(new_buffer);
+
+				m_vertex_buffer->m_buffer = new_buffer;
+				m_vertex_buffer->m_staging = new_staging;
+
+				internal::StageCommand* stageCommand = new internal::StageCommand;
+
+				stageCommand->m_type = internal::STAGE;
+				stageCommand->m_buffer = m_vertex_buffer;
+				stageCommand->m_offset = 0;
+				stageCommand->m_size = new_size;
+
+				m_command_queue.push(stageCommand);
+			}
+		}
+
+		// resize index heap
+		{
+			MemoryBlock* last_occupied_block;
+			for (MemoryBlock* mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+			{
+				if (mem_block->m_free == false)
+				{
+					last_occupied_block = mem_block;
+				}
+			}
+
+			size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
+			new_size = SizeAlign(new_size, 65536);
+
+			if (new_size >= index_heap_new_size)
+			{
+				ShrinkIndexHeapToFit();
+			}
+			else
+			{
+				new_size = SizeAlign(index_heap_new_size, 65536);
+
+				ID3D12Resource* new_buffer;
+				ID3D12Resource* new_staging;
+
+				uint8_t* cpu_address;
+
+				m_render_system.m_device->m_native->CreateCommittedResource(
+					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+					D3D12_HEAP_FLAG_NONE,
+					&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+					D3D12_RESOURCE_STATE_GENERIC_READ,
+					nullptr,
+					IID_PPV_ARGS(&new_staging));
+				NAME_D3D12RESOURCE(new_staging);
+
+				CD3DX12_RANGE read_range(0, 0);
+
+				new_staging->Map(0, &read_range, reinterpret_cast<void**>(&(cpu_address)));
+
+				memcpy(cpu_address, m_index_buffer->m_cpu_address, new_size);
+
+				m_index_buffer->m_size = new_size;
+				m_index_buffer->m_is_staged = false;
+				m_index_buffer->m_is_staged = false;
+				SAFE_RELEASE(m_index_buffer->m_buffer);
+				SAFE_RELEASE(m_index_buffer->m_staging);
+
+				m_render_system.m_device->m_native->CreateCommittedResource(
+					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+					D3D12_HEAP_FLAG_NONE,
+					&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					nullptr,
+					IID_PPV_ARGS(&new_buffer));
+				NAME_D3D12RESOURCE(new_buffer);
+
+				m_index_buffer->m_buffer = new_buffer;
+				m_index_buffer->m_staging = new_staging;
+
+				internal::StageCommand* stageCommand = new internal::StageCommand;
+
+				stageCommand->m_type = internal::STAGE;
+				stageCommand->m_buffer = m_index_buffer;
+				stageCommand->m_offset = 0;
+				stageCommand->m_size = new_size;
+
+				m_command_queue.push(stageCommand);
+			}
+		}
+	}
+
 	internal::MeshInternal* D3D12ModelPool::LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size)
 	{
 		internal::D3D12MeshInternal* mesh = new internal::D3D12MeshInternal();
@@ -173,7 +482,21 @@ namespace wr
 		//Send the index data to the index staging buffer
 		d3d12::UpdateStagingBuffer(m_index_buffer, indices_data, num_indices*index_size, mesh->m_index_staging_buffer_offset * index_size);
 		
-		m_mesh_stage_queue.push(mesh);
+		internal::StageCommand* vertex_command = new internal::StageCommand;
+		vertex_command->m_type = internal::CommandType::STAGE;
+		vertex_command->m_buffer = m_vertex_buffer;
+		vertex_command->m_offset = mesh->m_vertex_staging_buffer_offset * mesh->m_vertex_staging_buffer_stride;
+		vertex_command->m_size = mesh->m_vertex_staging_buffer_size;
+
+		m_command_queue.push(vertex_command);
+		
+		internal::StageCommand* index_command = new internal::StageCommand;
+		index_command->m_type = internal::CommandType::STAGE;
+		index_command->m_buffer = m_index_buffer;
+		index_command->m_offset = mesh->m_index_staging_buffer_offset * index_size;
+		index_command->m_size = mesh->m_index_staging_buffer_size;
+
+		m_command_queue.push(index_command);
 
 		return mesh;
 	}
@@ -207,8 +530,14 @@ namespace wr
 
 		//Send the vertex data to the vertex staging buffer
 		d3d12::UpdateStagingBuffer(m_vertex_buffer, vertices_data, num_vertices*vertex_size, mesh->m_vertex_staging_buffer_offset);
-		
-		m_mesh_stage_queue.push(mesh);
+
+		internal::StageCommand* vertex_command = new internal::StageCommand;
+		vertex_command->m_type = internal::CommandType::STAGE;
+		vertex_command->m_buffer = m_vertex_buffer;
+		vertex_command->m_offset = mesh->m_vertex_staging_buffer_offset * mesh->m_vertex_staging_buffer_stride;
+		vertex_command->m_size = mesh->m_vertex_staging_buffer_size;
+
+		m_command_queue.push(vertex_command);
 
 		return mesh;
 	}
@@ -410,6 +739,90 @@ namespace wr
 				heap_block = heap_block->m_next_block;
 			}
 		}
+	}
+
+	size_t D3D12ModelPool::GetVertexHeapOccupiedSpace()
+	{
+		MemoryBlock* mem_block = m_vertex_heap_start_block;
+		size_t size = 0;
+		while (mem_block != nullptr)
+		{
+			if (!mem_block->m_free)
+			{
+				size += mem_block->m_size;
+			}
+			mem_block = mem_block->m_next_block;
+		}
+		return size;
+	}
+
+	size_t D3D12ModelPool::GetIndexHeapOccupiedSpace()
+	{
+		MemoryBlock* mem_block = m_index_heap_start_block;
+		size_t size = 0;
+		while (mem_block != nullptr)
+		{
+			if (!mem_block->m_free)
+			{
+				size += mem_block->m_size;
+			}
+			mem_block = mem_block->m_next_block;
+		}
+		return size;
+	}
+
+	size_t D3D12ModelPool::GetVertexHeapFreeSpace()
+	{
+		MemoryBlock* mem_block = m_vertex_heap_start_block;
+		size_t size = 0;
+		while (mem_block != nullptr)
+		{
+			if (mem_block->m_free)
+			{
+				size += mem_block->m_size;
+			}
+			mem_block = mem_block->m_next_block;
+		}
+		return size;
+	}
+
+	size_t D3D12ModelPool::GetIndexHeapFreeSpace()
+	{
+		MemoryBlock* mem_block = m_index_heap_start_block;
+		size_t size = 0;
+		while (mem_block != nullptr)
+		{
+			if (mem_block->m_free)
+			{
+				size += mem_block->m_size;
+			}
+			mem_block = mem_block->m_next_block;
+		}
+		return size;
+	}
+
+	size_t D3D12ModelPool::GetVertexHeapSize()
+	{
+		MemoryBlock* mem_block = m_vertex_heap_start_block;
+		size_t size = 0;
+		while (mem_block != nullptr)
+		{
+			size += mem_block->m_size;
+			mem_block = mem_block->m_next_block;
+		}
+		return size;
+	}
+
+	size_t D3D12ModelPool::GetIndexHeapSize()
+	{
+		MemoryBlock* mem_block = m_index_heap_start_block;
+		size_t size = 0;
+		while (mem_block != nullptr)
+		{
+			size += mem_block->m_size;
+			mem_block = mem_block->m_next_block;
+		}
+		return size;
 	}
 
 } /* wr */

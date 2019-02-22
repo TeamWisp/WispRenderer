@@ -81,28 +81,33 @@ namespace wr
 		void Destroy(Model* model);
 		void Destroy(internal::MeshInternal* mesh);
 
-		// Shrinks down both buffers to the minimum size required. 
-		// Does not rearrange the contents of the buffers, meaning that it doesn't shrink to the absolute minimum size.
+		// Shrinks down both heaps to the minimum size required. 
+		// Does not rearrange the contents of the heaps, meaning that it doesn't shrink to the absolute minimum size.
 		// To do that, call Defragment first.
 		virtual void ShrinkToFit() = 0;
-		virtual void ShrinkVertexBufferToFit() = 0;
-		virtual void ShrinkIndexBufferToFit() = 0;
+		virtual void ShrinkVertexHeapToFit() = 0;
+		virtual void ShrinkIndexHeapToFit() = 0;
 
 		// Removes any holes in the memory, stitching all allocations back together to maximize the amount of contiguous free space.
 		// These functions are called automatically if the allocator has enough free space but no large enough free blocks.
 		virtual void Defragment() = 0;
-		virtual void DefragmentVertexBuffer() = 0;
-		virtual void DefragmentIndexBuffer() = 0;
+		virtual void DefragmentVertexHeap() = 0;
+		virtual void DefragmentIndexHeap() = 0;
 
-		virtual size_t GetVertexBufferOccupiedSpace() = 0;
-		virtual size_t GetIndexBufferOccupiedSpace() = 0;
+		virtual size_t GetVertexHeapOccupiedSpace() = 0;
+		virtual size_t GetIndexHeapOccupiedSpace() = 0;
 
-		virtual size_t GetVertexBufferFreeSpace() = 0;
-		virtual size_t GetIndexBufferFreeSpace() = 0;
+		virtual size_t GetVertexHeapFreeSpace() = 0;
+		virtual size_t GetIndexHeapFreeSpace() = 0;
 
-		// Resizes both buffers to the supplied sizes. 
-		// If the supplied size is smaller than the required size the buffers will resize to the required size instead.
-		virtual void Resize(size_t vertex_buffer_new_size, size_t index_buffer_new_size) = 0;
+		virtual size_t GetVertexHeapSize() = 0;
+		virtual size_t GetIndexHeapSize() = 0;
+
+		// Resizes both heaps to the supplied sizes. 
+		// If the supplied size is smaller than the required size the heaps will resize to the required size instead.
+		virtual void Resize(size_t vertex_heap_new_size, size_t index_heap_new_size) = 0;
+
+		template<typename TV, typename TI> void EditMesh(Mesh* mesh, std::vector<TV> vertices, std::vector<TI> indices);
 
 
 		virtual void Evict() = 0;
@@ -111,6 +116,8 @@ namespace wr
 	protected:
 		virtual internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
 		virtual internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) = 0;
+
+		virtual void UpdateMeshData(Mesh* mesh, void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
 
 		virtual void DestroyModel(Model* model) = 0;
 		virtual void DestroyMesh(internal::MeshInternal* mesh) = 0;
@@ -371,5 +378,16 @@ namespace wr
 		return model;
 	}
 
+	template<typename TV, typename TI>
+	void ModelPool::EditMesh(Mesh* mesh, std::vector<TV> vertices, std::vector<TI> indices)
+	{
+		UpdateMeshData(mesh,
+			vertices.data(),
+			vertices.size(),
+			sizeof(TV),
+			indices.data(),
+			indices.size(),
+			sizeof(TI));
+	}
 	
 } /* wr */
