@@ -849,7 +849,7 @@ namespace wr::d3d12
 			delete resource.first;
 			for (auto& n_resource : resource.second)
 			{
-				delete n_resource;
+				SAFE_RELEASE(n_resource);
 			}
 		}
 		delete heap;
