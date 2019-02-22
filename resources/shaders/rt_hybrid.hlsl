@@ -34,10 +34,10 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[90] : register(t8);
-Texture2D gbuffer_albedo : register(t98);
-Texture2D gbuffer_normal : register(t99);
-Texture2D gbuffer_depth : register(t100);
+Texture2D g_textures[200] : register(t8);
+Texture2D gbuffer_albedo : register(t208);
+Texture2D gbuffer_normal : register(t209);
+Texture2D gbuffer_depth : register(t210);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
 SamplerState s0 : register(s0);
@@ -226,9 +226,16 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
+#define COMPRESSED_PBR
+#ifdef COMPRESSED_PBR
+	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
+	float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).y);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).z;
+#else
 	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
 	float roughness = max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x);
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
+#endif
 
 	//Direction & position
 	const float3 hit_pos = HitWorldPosition();
@@ -239,7 +246,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
 	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
 
-	float3 N = normalize(mul(model_matrix, float4(normal, 0)));
+	float3 N = normalize(mul(model_matrix, float4(-normal, 0)));
 	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
 	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
 	float3x3 TBN = float3x3(T, B, N);

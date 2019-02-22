@@ -1,6 +1,7 @@
 #define LIGHTS_REGISTER register(t2)
 #include "util.hlsl"
 #include "pbr_util.hlsl"
+#include "rt_texture_lod.hlsl"
 #include "lighting.hlsl"
 
 static const float M_PI = 3.14159265f;
@@ -38,7 +39,7 @@ StructuredBuffer<Offset> g_offsets : register(t5);
 
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
-Texture2D g_textures[90] : register(t8);
+Texture2D g_textures[200] : register(t8);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -277,7 +278,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float mip_level = payload.depth+1;
+	float mip_level = 0;
 
 #define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
@@ -285,7 +286,6 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
 	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
-	const float3 ao = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
 #else
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
 	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
@@ -295,7 +295,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
-#define CALC_B
+//#define CALC_B
 #ifndef CALC_B
 	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
 #else
@@ -325,5 +325,9 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 specular = (reflection) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
+
+	float2 xx = WorldToScreen(frag_pos, inv_projection_view);
+
 	payload.color = ambient + lighting;
+	payload.color = float3(xx, 0);
 }

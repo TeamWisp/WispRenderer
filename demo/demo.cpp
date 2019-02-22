@@ -80,6 +80,13 @@ void SetupShaderDirWatcher()
 
 int WispEntry()
 {
+	DirectX::XMVECTOR P0 = { -2, -2, 0};
+	DirectX::XMVECTOR P1 = { 0, 2, 0};
+	DirectX::XMVECTOR P2 = { 2, -2, 0};
+
+	auto result = DirectX::XMVector3Length(DirectX::XMVectorMultiply(DirectX::XMVectorSubtract(P1, P0), DirectX::XMVectorSubtract(P2, P0)));
+
+
 	// ImGui Logging
 	util::log_callback::impl = [&](std::string const & str)
 	{
