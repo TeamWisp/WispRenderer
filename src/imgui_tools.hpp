@@ -22,7 +22,8 @@ namespace wr::imgui
 	enum InspectItem
 	{
 		NONE,
-		LIGHT
+		LIGHT,
+		MODEL
 	};
 
 	namespace window
@@ -47,7 +48,9 @@ namespace wr::imgui
 		static bool open_model_editor = true;
 		static bool open_inspect_editor = true;
 		static wr::LightNode* selected_light = nullptr;
+		static wr::MeshNode* selected_model = nullptr;
 		static bool light_selected = false;
+		static bool model_selected = false;
 		static InspectItem inspect_item = NONE;
 	}
 
