@@ -1,4 +1,5 @@
 #define LIGHTS_REGISTER register(t2)
+#include "util.hlsl"
 #include "pbr_util.hlsl"
 #include "lighting.hlsl"
 
@@ -37,7 +38,7 @@ StructuredBuffer<Offset> g_offsets : register(t5);
 
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
-Texture2D g_textures[20] : register(t8);
+Texture2D g_textures[90] : register(t8);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -67,26 +68,6 @@ struct Ray
 	float3 origin;
 	float3 direction;
 };
-
-uint initRand(uint val0, uint val1, uint backoff = 16)
-{
-	uint v0 = val0, v1 = val1, s0 = 0;
-
-	[unroll]
-	for (uint n = 0; n < backoff; n++)
-	{
-		s0 += 0x9e3779b9;
-		v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
-		v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
-	}
-	return v0;
-}
-
-float nextRand(inout uint s)
-{
-	s = (1664525u * s + 1013904223u);
-	return float(s & 0x00FFFFFF) / float(0x01000000);
-}
 
 float3 getPerpendicularVector(float3 u)
 {
@@ -185,7 +166,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 {
 	if (depth >= MAX_RECURSION)
 	{
-		return float4(0, 0, 0, 0);
+		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
 	}
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
@@ -258,11 +239,6 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
         attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
 
-float3 ReflectRay(float3 v1, float3 v2)
-{
-	return (v2 * ((2.f * dot(v1, v2))) - v1);
-}
-
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
@@ -301,12 +277,12 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float mip_level = 1;
+	float mip_level = payload.depth+1;
 
 #ifdef COMPRESSED_PBR
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	const float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
-	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
+	float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 #else
 	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
@@ -315,9 +291,15 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz * 2.0) - float3(1.0, 1.0, 1.0);
 #endif
 	
-	const float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
-	const float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
+	float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
+	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
+#define CALC_B
+#ifndef CALC_B
 	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
+#else
+	T = normalize(T - dot(T, N) * N);
+	float3 B = cross(N, T);
+#endif
 	const float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(normal_t, TBN));
@@ -329,15 +311,15 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 	// Direct
-	float3 reflect_dir = ReflectRay(V, fN);
-	float3 reflection = TraceColorRay(hit_pos + (fN * EPSILON), reflect_dir, payload.depth + 1, payload.seed);
+	float3 reflect_dir = reflect(-V, fN);
+	float3 reflection = TraceColorRay(hit_pos + fN * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
 
 	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
 	float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.depth);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
 	float3 specular = (reflection) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);

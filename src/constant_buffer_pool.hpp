@@ -20,7 +20,7 @@ namespace wr
 	class ConstantBufferPool
 	{
 	public:
-		explicit ConstantBufferPool(std::size_t size_in_mb);
+		explicit ConstantBufferPool(std::size_t size_in_bytes);
 		virtual ~ConstantBufferPool() = default;
 
 		ConstantBufferPool(ConstantBufferPool const &) = delete;
@@ -44,7 +44,7 @@ namespace wr
 		virtual void WriteConstantBufferData(ConstantBufferHandle* handle, size_t size, size_t offset, size_t frame_idx, std::uint8_t* data) = 0;
 		virtual void DeallocateConstantBuffer(ConstantBufferHandle* handle) = 0;
 
-		std::size_t m_size_in_mb;
+		std::size_t m_size_in_bytes;
 	};
 
 } /* wr */

@@ -60,7 +60,7 @@ namespace wr
 			DirectX::XMMATRIX m_inv_vp;
 
 			uint32_t m_padding[2];
-			float m_roughness;
+			float m_frame_idx;
 			float m_intensity;
 		};
 
@@ -111,10 +111,10 @@ namespace wr
 		void Resize(std::uint32_t width, std::uint32_t height) final;
 
 		std::shared_ptr<TexturePool> CreateTexturePool() final;
-		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_mb) final;
-		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_mb, std::size_t index_buffer_pool_size_in_mb) final;
-		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_mb) final;
-		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_mb) final;
+		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_bytes) final;
+		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes) final;
+		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes) final;
+		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes) final;
 
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;

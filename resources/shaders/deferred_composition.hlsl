@@ -1,6 +1,7 @@
 #define LIGHTS_REGISTER register(t3)
 
 #include "fullscreen_quad.hlsl"
+#include "util.hlsl"
 #include "pbr_util.hlsl"
 #include "hdr_util.hlsl"
 #include "lighting.hlsl"
