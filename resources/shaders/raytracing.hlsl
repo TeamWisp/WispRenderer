@@ -325,5 +325,5 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 specular = (reflection) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
-	payload.color = ambient + diffuse;
+	payload.color = ambient + lighting;
 }
