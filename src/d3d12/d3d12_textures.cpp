@@ -75,13 +75,17 @@ namespace wr::d3d12
 		texture->m_array_size = description->m_array_size;
 		texture->m_mip_levels = description->m_mip_levels;
 		texture->m_format = description->m_texture_format;
-		texture->m_current_state = description->m_initial_state;
 		texture->m_resource = resource;
 		texture->m_intermediate = intermediate;
 		texture->m_need_mips = (texture->m_mip_levels > 1);
 		texture->m_is_cubemap = description->m_is_cubemap;
 		texture->m_is_staged = false;
 		texture->m_needed_memory = textureUploadBufferSize;
+
+		for (uint32_t i = 0; i < description->m_mip_levels; ++i)
+		{
+			texture->m_subresource_states.push_back(description->m_initial_state);
+		}
 
 		return texture;
 	}
@@ -137,13 +141,17 @@ namespace wr::d3d12
 		texture->m_array_size = description->m_array_size;
 		texture->m_mip_levels = description->m_mip_levels;
 		texture->m_format = description->m_texture_format;
-		texture->m_current_state = description->m_initial_state;
 		texture->m_resource = resource;
 		texture->m_intermediate = nullptr;
 		texture->m_need_mips = (texture->m_mip_levels > 1);
 		texture->m_is_cubemap = description->m_is_cubemap;
 		texture->m_is_staged = false;
 		texture->m_needed_memory = 0;
+
+		for (uint32_t i = 0; i < description->m_mip_levels; ++i)
+		{
+			texture->m_subresource_states.push_back(description->m_initial_state);
+		}
 
 		return texture;
 	}
@@ -465,8 +473,8 @@ namespace wr::d3d12
 
 	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture)
 	{
-		ResourceState src_original_state = src_texture->m_current_state;
-		ResourceState dst_original_state = dst_texture->m_current_state;
+		ResourceState src_original_state = src_texture->m_subresource_states[0];
+		ResourceState dst_original_state = dst_texture->m_subresource_states[0];
 
 		d3d12::Transition(cmd_list, src_texture, src_original_state, ResourceState::COPY_SOURCE);
 		d3d12::Transition(cmd_list, dst_texture, dst_original_state, ResourceState::COPY_DEST);
