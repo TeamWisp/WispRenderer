@@ -104,13 +104,39 @@ namespace wr
 				m_command_queue.pop();
 				break;
 			}
+			case internal::CommandType::COPY:
+			{
+				internal::CopyCommand* copy_command = static_cast<internal::CopyCommand*>(command);
 
+				cmd_list->m_native->CopyBufferRegion(copy_command->m_dest,
+					copy_command->m_dest_offset,
+					copy_command->m_source,
+					copy_command->m_source_offset,
+					copy_command->m_size);
+
+				delete copy_command;
+				m_command_queue.pop();
+			}
+			break;
+			case internal::CommandType::TRANSITION:
+			{
+				internal::TransitionCommand* transition_command = static_cast<internal::TransitionCommand*>(command);
+
+				cmd_list->m_native->ResourceBarrier(1, 
+					&CD3DX12_RESOURCE_BARRIER::Transition(transition_command->m_buffer, 
+						static_cast<D3D12_RESOURCE_STATES>(transition_command->m_old_state), 
+						static_cast<D3D12_RESOURCE_STATES>(transition_command->m_new_state)));
+
+				delete transition_command;
+				m_command_queue.pop();
+			}
+			break;
 			default:
 			{
 				delete command;
 				m_command_queue.pop();
-				break;
 			}
+			break;
 			}
 		}
 	}
@@ -269,6 +295,23 @@ namespace wr
 
 	void D3D12ModelPool::DefragmentVertexHeap()
 	{
+		{
+			internal::TransitionCommand* transition_command = new internal::TransitionCommand;
+			transition_command->m_type = internal::CommandType::TRANSITION;
+			transition_command->m_buffer = m_vertex_buffer->m_buffer;
+			if (m_vertex_buffer->m_is_staged)
+			{
+				transition_command->m_old_state = m_vertex_buffer->m_target_resource_state;
+			}
+			else
+			{
+				transition_command->m_old_state = ResourceState::COPY_DEST;
+			}
+			transition_command->m_new_state = ResourceState::COMMON;
+
+			m_command_queue.push(transition_command);
+		}
+
 		MemoryBlock* mem_block = m_vertex_heap_start_block;
 		while (mem_block->m_next_block != nullptr)
 		{
@@ -277,8 +320,216 @@ namespace wr
 				if (mem_block->m_next_block->m_free)
 				{
 					mem_block->m_size += mem_block->m_next_block->m_size;
+					
+					mem_block->m_next_block = mem_block->m_next_block->m_next_block;
+					delete mem_block->m_next_block->m_prev_block;
+					mem_block->m_next_block->m_prev_block = mem_block;
+				}
+				else
+				{
+					MemoryBlock* next_block = mem_block->m_next_block;
+
+					size_t original_offset = next_block->m_offset;
+
+					if (mem_block->m_prev_block != nullptr)
+					{
+						mem_block->m_prev_block->m_next_block = mem_block->m_next_block;
+						next_block->m_prev_block = mem_block->m_prev_block;
+					}
+					else
+					{
+						m_vertex_heap_start_block = next_block;
+						next_block->m_prev_block = nullptr;
+					}
+
+					if (next_block->m_next_block != nullptr)
+					{
+						next_block->m_next_block->m_prev_block = mem_block;
+						mem_block->m_next_block = next_block->m_next_block;
+					}
+					else
+					{
+						mem_block->m_next_block = nullptr;
+					}
+
+					next_block->m_next_block = mem_block;
+					mem_block->m_prev_block = next_block;
+
+					next_block->m_offset = SizeAlign(mem_block->m_offset, next_block->m_alignment);
+					if (next_block->m_prev_block != nullptr)
+					{
+						next_block->m_size += next_block->m_offset - mem_block->m_offset;
+					}
+					mem_block->m_offset = next_block->m_offset + next_block->m_size;
+					mem_block->m_size -= next_block->m_offset - mem_block->m_offset;
+
+					std::map<std::uint64_t, internal::MeshInternal*>::iterator it = m_loaded_meshes.begin();
+
+					for (; it != m_loaded_meshes.end(); ++it)
+					{
+						internal::D3D12MeshInternal* mesh = static_cast<internal::D3D12MeshInternal*>((*it).second);
+						if (mesh->m_vertex_memory_block == next_block)
+						{
+							mesh->m_vertex_staging_buffer_offset = SizeAlign(next_block->m_offset, mesh->m_vertex_staging_buffer_stride)
+								/ mesh->m_vertex_staging_buffer_stride;
+						}
+					}
+
+					internal::CopyCommand* command = new internal::CopyCommand;
+
+					command->m_type = internal::CommandType::COPY;
+					command->m_source = m_vertex_buffer->m_buffer;
+					command->m_dest = m_vertex_buffer->m_buffer;
+					command->m_source_offset = original_offset;
+					command->m_dest_offset = next_block->m_offset;
+					command->m_size = next_block->m_size;
+
+					m_command_queue.push(command);
+
+					memcpy(m_vertex_buffer->m_cpu_address + next_block->m_offset, m_vertex_buffer->m_cpu_address + original_offset, next_block->m_size);
 				}
 			}
+			else
+			{
+				mem_block = mem_block->m_next_block;
+			}
+		}
+
+		{
+			internal::TransitionCommand* transition_command = new internal::TransitionCommand;
+			transition_command->m_type = internal::CommandType::TRANSITION;
+			transition_command->m_buffer = m_vertex_buffer->m_buffer;
+			if (m_vertex_buffer->m_is_staged)
+			{
+				transition_command->m_new_state = m_vertex_buffer->m_target_resource_state;
+			}
+			else
+			{
+				transition_command->m_new_state = ResourceState::COPY_DEST;
+			}
+			transition_command->m_old_state = ResourceState::COMMON;
+
+			m_command_queue.push(transition_command);
+		}
+	}
+
+	void D3D12ModelPool::DefragmentIndexHeap()
+	{
+		{
+			internal::TransitionCommand* transition_command = new internal::TransitionCommand;
+			transition_command->m_type = internal::CommandType::TRANSITION;
+			transition_command->m_buffer = m_index_buffer->m_buffer;
+			if (m_index_buffer->m_is_staged)
+			{
+				transition_command->m_old_state = m_index_buffer->m_target_resource_state;
+			}
+			else
+			{
+				transition_command->m_old_state = ResourceState::COPY_DEST;
+			}
+			transition_command->m_new_state = ResourceState::COMMON;
+
+			m_command_queue.push(transition_command);
+		}
+
+		MemoryBlock* mem_block = m_index_heap_start_block;
+		while (mem_block->m_next_block != nullptr)
+		{
+			if (mem_block->m_free)
+			{
+				if (mem_block->m_next_block->m_free)
+				{
+					mem_block->m_size += mem_block->m_next_block->m_size;
+
+					mem_block->m_next_block = mem_block->m_next_block->m_next_block;
+					delete mem_block->m_next_block->m_prev_block;
+					mem_block->m_next_block->m_prev_block = mem_block;
+				}
+				else
+				{
+					MemoryBlock* next_block = mem_block->m_next_block;
+
+					size_t original_offset = next_block->m_offset;
+
+					if (mem_block->m_prev_block != nullptr)
+					{
+						mem_block->m_prev_block->m_next_block = mem_block->m_next_block;
+						next_block->m_prev_block = mem_block->m_prev_block;
+					}
+					else
+					{
+						m_index_heap_start_block = next_block;
+						next_block->m_prev_block = nullptr;
+					}
+
+					if (next_block->m_next_block != nullptr)
+					{
+						next_block->m_next_block->m_prev_block = mem_block;
+						mem_block->m_next_block = next_block->m_next_block;
+					}
+					else
+					{
+						mem_block->m_next_block = nullptr;
+					}
+
+					next_block->m_next_block = mem_block;
+					mem_block->m_prev_block = next_block;
+
+					next_block->m_offset = SizeAlign(mem_block->m_offset, next_block->m_alignment);
+					if (next_block->m_prev_block != nullptr)
+					{
+						next_block->m_size += next_block->m_offset - mem_block->m_offset;
+					}
+					mem_block->m_offset = next_block->m_offset + next_block->m_size;
+					mem_block->m_size -= next_block->m_offset - mem_block->m_offset;
+
+					std::map<std::uint64_t, internal::MeshInternal*>::iterator it = m_loaded_meshes.begin();
+
+					for (; it != m_loaded_meshes.end(); ++it)
+					{
+						internal::D3D12MeshInternal* mesh = static_cast<internal::D3D12MeshInternal*>((*it).second);
+						if (mesh->m_index_memory_block == next_block)
+						{
+							mesh->m_index_staging_buffer_offset = SizeAlign(next_block->m_offset, next_block->m_alignment)
+								/ next_block->m_alignment;
+						}
+					}
+
+					internal::CopyCommand* command = new internal::CopyCommand;
+
+					command->m_type = internal::CommandType::COPY;
+					command->m_source = m_index_buffer->m_buffer;
+					command->m_dest = m_index_buffer->m_buffer;
+					command->m_source_offset = original_offset;
+					command->m_dest_offset = next_block->m_offset;
+					command->m_size = next_block->m_size;
+
+					m_command_queue.push(command);
+
+					memcpy(m_vertex_buffer->m_cpu_address + next_block->m_offset, m_vertex_buffer->m_cpu_address + original_offset, next_block->m_size);
+				}
+			}
+			else
+			{
+				mem_block = mem_block->m_next_block;
+			}
+		}
+
+		{
+			internal::TransitionCommand* transition_command = new internal::TransitionCommand;
+			transition_command->m_type = internal::CommandType::TRANSITION;
+			transition_command->m_buffer = m_index_buffer->m_buffer;
+			if (m_index_buffer->m_is_staged)
+			{
+				transition_command->m_new_state = m_index_buffer->m_target_resource_state;
+			}
+			else
+			{
+				transition_command->m_new_state = ResourceState::COPY_DEST;
+			}
+			transition_command->m_old_state = ResourceState::COMMON;
+
+			m_command_queue.push(transition_command);
 		}
 	}
 	
@@ -542,6 +793,10 @@ namespace wr
 		return mesh;
 	}
 
+	void D3D12ModelPool::UpdateMeshData(Mesh * mesh, void * vertices_data, std::size_t num_vertices, std::size_t vertex_size, void * indices_data, std::size_t num_indices, std::size_t index_size)
+	{
+	}
+
 	void D3D12ModelPool::DestroyModel(Model * model)
 	{
 		for (auto& mesh : model->m_meshes)
@@ -603,6 +858,7 @@ namespace wr
 				if (start_block->m_size == needed_size)
 				{
 					start_block->m_free = false;
+					start_block->m_alignment = alignment;
 					return start_block;
 				}
 				else
@@ -622,6 +878,7 @@ namespace wr
 
 					start_block->m_free = false;
 					start_block->m_size = needed_size;
+					start_block->m_alignment = alignment;
 					return start_block;
 				}
 			}

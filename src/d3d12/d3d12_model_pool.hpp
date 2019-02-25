@@ -140,6 +140,7 @@ namespace wr
 			MemoryBlock* m_next_block;
 			std::size_t m_size;
 			std::size_t m_offset;
+			std::size_t m_alignment;
 			bool m_free;
 		};
 
