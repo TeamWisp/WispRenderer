@@ -118,10 +118,10 @@ namespace wr
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 			// Versioning
-			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
+			for (int frame_idx = 0; frame_idx < d3d12::settings::num_back_buffers; ++frame_idx)
 			{
 				// Bind output texture
-				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx);
+				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)));
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
 				// Bind g-buffers (albedo, normal, depth)

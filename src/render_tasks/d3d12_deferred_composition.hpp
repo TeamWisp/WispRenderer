@@ -64,7 +64,7 @@ namespace wr
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, i);
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS)));
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
