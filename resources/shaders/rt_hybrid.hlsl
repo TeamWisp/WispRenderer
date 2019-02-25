@@ -14,14 +14,6 @@ struct Vertex
 	float3 color;
 };
 
-struct MaterialData
-{
-	float4 albedo_alpha;
-	float4 metallic_roughness;
-	uint flags;
-	uint3 padding;
-};
-
 struct Material
 {
 	float albedo_id;
@@ -233,27 +225,23 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const Vertex v1 = g_vertices[indices.y];
 	const Vertex v2 = g_vertices[indices.z];
 
-	uint use_albedo_constant = material.data.flags & MATERIAL_USE_ALBEDO_CONSTANT;
-	uint has_albedo_texture = material.data.flags & MATERIAL_HAS_ALBEDO_TEXTURE;
-	uint use_roughness_constant = material.data.flags & MATERIAL_USE_ROUGHNESS_CONSTANT;
-	uint has_roughness_texture = material.data.flags & MATERIAL_HAS_ROUGHNESS_TEXTURE;
-	uint use_metallic_constant = material.data.flags & MATERIAL_USE_METALLIC_CONSTANT;
-	uint has_metallic_texture = material.data.flags & MATERIAL_HAS_METALLIC_TEXTURE;
-	uint use_normal_texture = material.data.flags & MATERIAL_HAS_NORMAL_TEXTURE;
-
 	//Get data from VBO
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float3 albedo = lerp(g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz,
-		material.data.albedo_alpha.xyz,
-		use_albedo_constant != 0 || has_albedo_texture == 0);
-	float roughness = lerp(max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x),
-		material.data.metallic_roughness.w,
-		use_roughness_constant != 0 || has_roughness_texture == 0);
-	float metal = lerp(g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x,
-		length(material.data.metallic_roughness.xyz),
-		use_metallic_constant != 0 || has_metallic_texture == 0);
+	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
+		g_textures[material.albedo_id],
+		g_textures[material.normal_id],
+		g_textures[material.roughness_id],
+		g_textures[material.metalicness_id],
+		0,
+		s0,
+		uv);
+
+	float3 albedo = output_data.albedo_roughness.xyz;
+	float roughness = output_data.albedo_roughness.w;
+	float metal = output_data.normal_metallic.w;
+
 
 	//Direction & position
 	const float3 hit_pos = HitWorldPosition();
@@ -269,9 +257,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
 	float3x3 TBN = float3x3(T, B, N);
 
-	float3 normal_t = lerp((g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0),
-		float3(0.0, 0.0, 1.0),
-		use_normal_texture == 0);
+	float3 normal_t = output_data.normal_metallic.xyz;
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;

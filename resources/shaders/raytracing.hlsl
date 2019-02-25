@@ -16,14 +16,6 @@ struct Vertex
 	float3 color;
 };
 
-struct MaterialData
-{
-	float4 albedo_alpha;
-	float4 metallic_roughness;
-	uint flags;
-	uint3 padding;
-};
-
 struct Material
 {
 	float albedo_id;
@@ -290,43 +282,18 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float mip_level = payload.depth+1;
 
-	uint use_albedo_constant = material.data.flags & MATERIAL_USE_ALBEDO_CONSTANT;
-	uint has_albedo_texture = material.data.flags & MATERIAL_HAS_ALBEDO_TEXTURE;
-	uint use_roughness_constant = material.data.flags & MATERIAL_USE_ROUGHNESS_CONSTANT;
-	uint has_roughness_texture = material.data.flags & MATERIAL_HAS_ROUGHNESS_TEXTURE;
-	uint use_metallic_constant = material.data.flags & MATERIAL_USE_METALLIC_CONSTANT;
-	uint has_metallic_texture = material.data.flags & MATERIAL_HAS_METALLIC_TEXTURE;
-	uint use_normal_texture = material.data.flags & MATERIAL_HAS_NORMAL_TEXTURE;
+	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
+		g_textures[material.albedo_id],
+		g_textures[material.normal_id],
+		g_textures[material.roughness_id],
+		g_textures[material.metalicness_id],
+		mip_level,
+		s0,
+		uv);
 
-//#define COMPRESSED_PBR
-#ifdef COMPRESSED_PBR
-	const float3 albedo = lerp(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz,
-		material.data.albedo_alpha.xyz,
-		use_albedo_constant != 0 || has_albedo_texture == 0);
-	const float roughness = lerp(max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y),
-		material.data.metallic_roughness.w,
-		use_roughness_constant != 0 || has_roughness_texture == 0);
-	float metal = lerp(g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z,
-		length(material.data.metallic_roughness.xyz),
-		use_metallic_constant != 0 || has_metallic_texture == 0);
-	metal = metal * roughness;
-	const float3 normal_t = lerp((g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0),
-		float3(0.0, 0.0, 1.0),
-		use_normal_texture == 0);
-#else
-	const float3 albedo = lerp(g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz,
-		material.data.albedo_alpha.xyz,
-		use_albedo_constant != 0 || has_albedo_texture == 0);
-	const float roughness = lerp(max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r),
-		material.data.metallic_roughness.w,
-		use_roughness_constant != 0 || has_roughness_texture == 0);
-	const float metal = lerp(g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r,
-		length(material.data.metallic_roughness.xyz),
-		use_metallic_constant != 0 || has_metallic_texture == 0);
-	const float3 normal_t = lerp((g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz * 2.0) - float3(1.0, 1.0, 1.0),
-		float3(0.0, 0.0, 1.0),
-		use_normal_texture == 0);
-#endif
+	float3 albedo = output_data.albedo_roughness.xyz;
+	float roughness = output_data.albedo_roughness.w;
+	float metal = output_data.normal_metallic.w;
 	
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
@@ -339,7 +306,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 #endif
 	const float3x3 TBN = float3x3(T, B, N);
 
-	float3 fN = normalize(mul(normal_t, TBN));
+	float3 fN = normalize(mul(output_data.normal_metallic.xyz, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Irradiance
@@ -351,12 +318,21 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 reflect_dir = reflect(-V, fN);
 	float3 reflection = TraceColorRay(hit_pos + fN * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
 
-	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
+	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), 
+		metal, 
+		albedo, 
+		roughness);
 	float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
+	float3 lighting = shade_pixel(hit_pos, V, 
+		albedo, 
+		metal, 
+		roughness, 
+		fN, 
+		payload.seed, 
+		payload.depth);
 	float3 specular = (reflection) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
