@@ -101,7 +101,7 @@ namespace wr
 
 		bool m_compressed;
 
-		std::string format;
+		std::string m_format;
 	};
 
 	class ModelLoader

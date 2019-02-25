@@ -542,6 +542,304 @@ namespace wr
 		return texture;
 	}
 
+	d3d12::TextureResource * D3D12TexturePool::LoadPNGFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
+	{
+		auto device = m_render_system.m_device;
+
+		DirectX::TexMetadata metadata;
+		DirectX::ScratchImage image;
+
+		HRESULT hr = LoadFromWICMemory(data, size,
+			DirectX::WIC_FLAGS_NONE, &metadata, image);
+
+		if (FAILED(hr))
+		{
+			LOGC("ERROR: Texture not loaded correctly.");
+		}
+
+		uint32_t mip_lvls;
+
+		if (generate_mips)
+		{
+			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
+		}
+		else
+		{
+			mip_lvls = metadata.mipLevels;
+		}
+
+		Format adjusted_format;
+
+		if (srgb)
+		{
+			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		}
+		else
+		{
+			adjusted_format = static_cast<wr::Format>(metadata.format);
+
+			if (d3d12::CheckSRGBFormat(adjusted_format))
+			{
+				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+			}
+		}
+
+		d3d12::desc::TextureDesc desc;
+
+		desc.m_width = metadata.width;
+		desc.m_height = metadata.height;
+		desc.m_is_cubemap = metadata.IsCubemap();
+		desc.m_depth = metadata.depth;
+		desc.m_array_size = metadata.arraySize;
+		desc.m_mip_levels = mip_lvls;
+		desc.m_texture_format = adjusted_format;
+		desc.m_initial_state = ResourceState::COPY_DEST;
+
+		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
+
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
+
+		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+
+		if (alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+
+		texture->m_need_mips = generate_mips;
+		texture->m_srv_allocation = std::move(alloc);
+		NAME_D3D12RESOURCE(texture->m_resource);
+
+		d3d12::CreateSRVFromTexture(texture);
+
+		m_loaded_textures++;
+
+		return texture;
+	}
+
+	d3d12::TextureResource * D3D12TexturePool::LoadDDSFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
+	{
+		auto device = m_render_system.m_device;
+
+		DirectX::TexMetadata metadata;
+		DirectX::ScratchImage image;
+
+		HRESULT hr = LoadFromDDSMemory(data, size,
+			DirectX::DDS_FLAGS_NONE, &metadata, image);
+
+		if (FAILED(hr))
+		{
+			LOGC("ERROR: Texture not loaded correctly.");
+		}
+
+		uint32_t mip_lvls;
+
+		bool mip_generation = (metadata.mipLevels > 1) ? false : generate_mips;
+
+		if (mip_generation)
+		{
+			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
+		}
+		else
+		{
+			mip_lvls = metadata.mipLevels;
+		}
+
+		Format adjusted_format;
+
+		if (srgb)
+		{
+			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		}
+		else
+		{
+			adjusted_format = static_cast<wr::Format>(metadata.format);
+
+			if (d3d12::CheckSRGBFormat(adjusted_format))
+			{
+				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+			}
+		}
+
+		d3d12::desc::TextureDesc desc;
+
+		desc.m_width = metadata.width;
+		desc.m_height = metadata.height;
+		desc.m_is_cubemap = metadata.IsCubemap();
+		desc.m_depth = metadata.depth;
+		desc.m_array_size = metadata.arraySize;
+		desc.m_mip_levels = mip_lvls;
+		desc.m_texture_format = adjusted_format;
+		desc.m_initial_state = ResourceState::COPY_DEST;
+
+		auto texture = d3d12::CreateTexture(device, &desc, mip_generation);
+
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
+
+		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+
+		if (alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+
+		texture->m_need_mips = mip_generation;
+		texture->m_srv_allocation = std::move(alloc);
+		NAME_D3D12RESOURCE(texture->m_resource);
+
+		d3d12::CreateSRVFromTexture(texture);
+
+		m_loaded_textures++;
+
+		return texture;
+	}
+
+	d3d12::TextureResource * D3D12TexturePool::LoadHDRFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
+	{
+		auto device = m_render_system.m_device;
+
+		DirectX::TexMetadata metadata;
+		DirectX::ScratchImage image;
+
+		HRESULT hr = LoadFromHDRMemory(data, size, &metadata, image);
+
+		if (FAILED(hr))
+		{
+			LOGC("ERROR: Texture not loaded correctly.");
+		}
+
+		uint32_t mip_lvls;
+
+		if (generate_mips)
+		{
+			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
+		}
+		else
+		{
+			mip_lvls = metadata.mipLevels;
+		}
+
+		Format adjusted_format;
+
+		if (srgb)
+		{
+			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		}
+		else
+		{
+			adjusted_format = static_cast<wr::Format>(metadata.format);
+
+			if (d3d12::CheckSRGBFormat(adjusted_format))
+			{
+				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+			}
+		}
+
+		d3d12::desc::TextureDesc desc;
+
+		desc.m_width = metadata.width;
+		desc.m_height = metadata.height;
+		desc.m_is_cubemap = metadata.IsCubemap();
+		desc.m_depth = metadata.depth;
+		desc.m_array_size = metadata.arraySize;
+		desc.m_mip_levels = mip_lvls;
+		desc.m_texture_format = adjusted_format;
+		desc.m_initial_state = ResourceState::COPY_DEST;
+
+		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
+
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
+
+		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+
+		if (alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+
+		texture->m_need_mips = generate_mips;
+		texture->m_srv_allocation = std::move(alloc);
+		NAME_D3D12RESOURCE(texture->m_resource);
+
+		d3d12::CreateSRVFromTexture(texture);
+
+		m_loaded_textures++;
+
+		return texture;
+	}
+
+	d3d12::TextureResource * D3D12TexturePool::LoadRawFromMemory(char * data, int width, int height, bool srgb, bool generate_mips)
+	{
+		auto device = m_render_system.m_device;
+
+		uint32_t mip_lvls;
+
+		if (generate_mips)
+		{
+			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+		}
+		else
+		{
+			mip_lvls = 1;
+		}
+
+		Format adjusted_format;
+
+		if (srgb)
+		{
+			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(DXGI_FORMAT_R8G8B8A8_UNORM));
+		}
+		else
+		{
+			adjusted_format = static_cast<wr::Format>(DXGI_FORMAT_R8G8B8A8_UNORM);
+
+			if (d3d12::CheckSRGBFormat(adjusted_format))
+			{
+				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+			}
+		}
+
+		d3d12::desc::TextureDesc desc;
+
+		desc.m_width = width;
+		desc.m_height = height;
+		desc.m_is_cubemap = false;
+		desc.m_depth = 1;
+		desc.m_array_size = 1;
+		desc.m_mip_levels = mip_lvls;
+		desc.m_texture_format = adjusted_format;
+		desc.m_initial_state = ResourceState::COPY_DEST;
+
+		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
+
+		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
+
+		memcpy(texture->m_allocated_memory, data, width*height * 4);
+
+		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+
+		if (alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+
+		texture->m_need_mips = generate_mips;
+		texture->m_srv_allocation = std::move(alloc);
+		NAME_D3D12RESOURCE(texture->m_resource);
+
+		d3d12::CreateSRVFromTexture(texture);
+
+		m_loaded_textures++;
+
+		return texture;
+	}
+
 	void D3D12TexturePool::MoveStagedTextures()
 	{
 		for (auto itr = m_unstaged_textures.begin(); itr != m_unstaged_textures.end(); ++itr)
