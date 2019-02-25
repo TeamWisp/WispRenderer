@@ -46,6 +46,8 @@ namespace wr::d3d12
 			cmd_list->m_descriptor_heaps[i] = nullptr;
 		}
 
+		cmd_list->m_rt_descriptor_heap = std::make_unique<DynamicDescriptorHeap>(device, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+
 		return cmd_list;
 	}
 
@@ -227,10 +229,10 @@ namespace wr::d3d12
 			cmd_list->m_native->SetPipelineState1(state_object->m_native);
 		}
 
-		//for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
-		//{
-		//	cmd_list->m_dynamic_descriptor_heaps[i]->ParseRootSignature(*state_object->m_global_root_signature);
-		//}
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			cmd_list->m_dynamic_descriptor_heaps[i]->ParseRootSignature(*state_object->m_global_root_signature);
+		}
 	}
 
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport)

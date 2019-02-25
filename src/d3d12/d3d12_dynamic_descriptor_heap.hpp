@@ -72,11 +72,12 @@ namespace wr
 		 */
 		void Reset();
 
+		// Request a descriptor heap if one is available.
+		d3d12::DescriptorHeap* RequestDescriptorHeap();
+
 	protected:
 
 	private:
-		// Request a descriptor heap if one is available.
-		d3d12::DescriptorHeap* RequestDescriptorHeap();
 		// Create a new descriptor heap of no descriptor heap is available.
 		d3d12::DescriptorHeap* CreateDescriptorHeap();
 

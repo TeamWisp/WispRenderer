@@ -15,7 +15,11 @@ namespace wr
 {
 	struct ASBuildData
 	{
-		d3d12::DescriptorHeap* out_rt_heap;
+		DescriptorAllocator* out_allocator;
+		DescriptorAllocation out_scene_ib_alloc;
+		DescriptorAllocation out_scene_mat_alloc;
+		DescriptorAllocation out_scene_offset_alloc;
+
 		d3d12::AccelerationStructure out_tlas;
 		D3D12StructuredBufferHandle* out_sb_material_handle;
 		D3D12StructuredBufferHandle* out_sb_offset_handle;
@@ -48,15 +52,6 @@ namespace wr
 
 			data.out_init = true;
 			data.out_materials_require_update = true;
-
-			// top level, bottom level and output buffer. (even though I don't use bottom level.)
-			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_num_descriptors = 100 + d3d12::settings::num_max_rt_materials; // FIXME: size
-			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-			heap_desc.m_shader_visible = true;
-			heap_desc.m_versions = d3d12::settings::num_back_buffers;
-			data.out_rt_heap = d3d12::CreateDescriptorHeap(device, heap_desc);
-			SetName(data.out_rt_heap, L"Raytracing Task Descriptor Heap");
 
 			// Structured buffer for the materials.
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
@@ -148,7 +143,10 @@ namespace wr
 						obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
 
 						// Build Bottom level BVH
-						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, { obj });
+						DynamicDescriptorHeap* gpu_visible_heap = cmd_list->m_rt_descriptor_heap.get();
+						d3d12::DescriptorHeap* native_heap = gpu_visible_heap->RequestDescriptorHeap();
+
+						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, native_heap, { obj });
 						cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
 						blas.m_native->SetName(L"Bottomlevelaccel");
 
@@ -239,23 +237,30 @@ namespace wr
 
 			inline void CreateTextureSRVs(ASBuildData& data)
 			{
+				data.out_scene_ib_alloc = std::move(data.out_allocator->Allocate());
+				data.out_scene_mat_alloc = std::move(data.out_allocator->Allocate());
+				data.out_scene_offset_alloc = std::move(data.out_allocator->Allocate());
+
 				for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
 				{
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
 					{
-						auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::INDICES)));
+						auto cpu_handle = data.out_scene_ib_alloc.GetDescriptorHandle();
+						//auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::INDICES)));
 						d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, 0, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
 					}
 
 					// Create material structured buffer view
 					{
-						auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::MATERIALS)));
+						auto cpu_handle = data.out_scene_mat_alloc.GetDescriptorHandle();
+						//auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::MATERIALS)));
 						d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
 					}
 
 					// Create offset structured buffer view
 					{
-						auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)));
+						auto cpu_handle = data.out_scene_offset_alloc.GetDescriptorHandle();
+						//auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)));
 						d3d12::CreateSRVFromStructuredBuffer(data.out_sb_offset_handle->m_native, cpu_handle, 0);
 					}
 
@@ -293,7 +298,7 @@ namespace wr
 			auto& data = fg.GetData<ASBuildData>(handle);
 
 			data.out_materials_require_update = false;
-
+			
 			// Initialize requirements
 			if (data.out_init)
 			{
@@ -308,7 +313,10 @@ namespace wr
 				// List all materials used by meshes
 				internal::BuildBLASList(device, cmd_list, scene_graph, data);
 
-				data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, data.out_rt_heap, data.out_blas_list);
+				DynamicDescriptorHeap* gpu_visible_heap = cmd_list->m_rt_descriptor_heap.get();
+				d3d12::DescriptorHeap* native_heap = gpu_visible_heap->RequestDescriptorHeap();
+
+				data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, native_heap, data.out_blas_list);
 				data.out_tlas.m_native->SetName(L"Highlevelaccel");
 
 				// Transition all model pools back to whatever they were.
