@@ -8,6 +8,7 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/skybox_node.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
+#include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
@@ -46,6 +47,7 @@ namespace wr
 				1);
 		}
 
+		template<typename T>
 		inline void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -56,12 +58,13 @@ namespace wr
 
 			d3d12::desc::DescriptorHeapDesc heap_desc;
 			heap_desc.m_shader_visible = true;
-			heap_desc.m_num_descriptors = 7;
+			heap_desc.m_num_descriptors = 8;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_versions = d3d12::settings::num_back_buffers;
 			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
 			SetName(data.out_srv_heap, L"Deferred Render Task SRV");
-
+			
+			auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, 0);
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, i);
@@ -69,6 +72,19 @@ namespace wr
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
+
+				// If T and DeferredMainTaskData are not the same, 
+				// assume that the current frame graph is hybrid
+				if (!std::is_same<T, DeferredMainTaskData>::value)
+				{
+					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+					d3d12::CreateSRVFromRTV(hybrid_rt, cpu_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
+				} 
+				else
+				{
+					// TODO: Use skybox?
+					int x = 0;
+				}
 			}
 		}
 
@@ -103,16 +119,16 @@ namespace wr
 				auto skybox = scene_graph.GetCurrentSkybox();
 				if (skybox != nullptr)
 				{
+					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
 					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX)));
-					auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(skybox->m_hdr.m_id));
-					d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
+					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
 
 				// Get the irradiance map
 				{
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
 					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP)));
-					d3d12::TextureResource* irradiance_map = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
-					d3d12::CreateSRVFromTexture(irradiance_map, cpu_handle);
+					d3d12::CreateSRVFromTexture(irradiance_t, cpu_handle);
 				}
 
 				// Output UAV
@@ -176,6 +192,8 @@ namespace wr
 
 	} /* internal */
 
+	// Use DeferredMainTaskData as default template to make sure all static executions still work
+	template<typename T = DeferredMainTaskData>
 	inline void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		RenderTargetProperties rt_properties
@@ -195,7 +213,7 @@ namespace wr
 
 		RenderTaskDesc desc;
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::SetupDeferredCompositionTask(rs, fg, handle);
+			internal::SetupDeferredCompositionTask<T>(rs, fg, handle);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteDeferredCompositionTask(rs, fg, sg, handle);
