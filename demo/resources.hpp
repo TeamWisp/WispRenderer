@@ -255,12 +255,12 @@ namespace resources
 
 		{
 			{
-				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/materials/SunTemple.fbx");
+				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)
 				{
-					//m.second = &rusty_metal_material;
+					m.second = &rusty_metal_material;
 				}
 
 				for (auto& m : sphere_model->m_meshes)

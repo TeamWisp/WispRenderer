@@ -84,7 +84,7 @@ int WispEntry()
 	DirectX::XMVECTOR P1 = { 0, 2, 0};
 	DirectX::XMVECTOR P2 = { 2, -2, 0};
 
-	auto result = DirectX::XMVector3Length(DirectX::XMVectorMultiply(DirectX::XMVectorSubtract(P1, P0), DirectX::XMVectorSubtract(P2, P0)));
+	auto result = DirectX::XMVector3Dot({ 0.4, 0.7, 0.2}, { 0.4, 0.7, 0.2 });
 
 
 	// ImGui Logging

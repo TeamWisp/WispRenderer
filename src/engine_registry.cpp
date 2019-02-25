@@ -387,7 +387,7 @@ namespace wr
 	{
 		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
 		StateObjectDescription::Library(rt_hybrid_so_library),
-		StateObjectDescription::MaxPayloadSize(sizeof(float) * 6 + sizeof(unsigned int) * 1),
+		StateObjectDescription::MaxPayloadSize(sizeof(float) * 8 + sizeof(unsigned int) * 1),
 		StateObjectDescription::MaxAttributeSize(sizeof(float) * 2),
 		StateObjectDescription::MaxRecursionDepth(3),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),

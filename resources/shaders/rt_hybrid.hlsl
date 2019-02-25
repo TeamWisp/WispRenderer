@@ -50,6 +50,7 @@ struct ReflectionHitInfo
 	float3 origin;
 	float3 color;
 	uint seed;
+	RayCone cone;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -81,11 +82,11 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, RayCone cone)
 {
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed};
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, cone};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -118,13 +119,13 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
+float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, RayCone cone)
 {
 	// Calculate ray info
 	float3 reflected = reflect(-V, normal);
 
 	// Shoot reflection ray
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed);
+	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, cone);
 	return reflection;
 }
 
@@ -163,8 +164,19 @@ void RaygenEntry()
 		return;
 	}
 
+	// Setup the ray cone.
+	SurfaceHit sfhit;
+	sfhit.pos = wpos;
+	sfhit.normal = normal;
+	sfhit.dist = length(cpos - wpos);
+	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
+	//sfhit.surface_spread_angle = PixelSpreadAngle(1.5708, 720);
+
+	RayCone cone = ComputeRayConeFromGBuffer(sfhit);
+	RayCone copy = cone;
+
 	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
-	float3 reflection = DoReflection(wpos, V, normal, rand_seed);
+	float3 reflection = DoReflection(wpos, V, normal, rand_seed, cone);
 
 	float3 flipped_N = normal;
 	flipped_N.y *= -1;
@@ -179,10 +191,8 @@ void RaygenEntry()
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	float2 debug = WorldToScreen(wpos, inv_view, inv_projection);
-
 	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
-	gOutput[DispatchRaysIndex().xy] = float4(debug, 0, 1);
+	//gOutput[DispatchRaysIndex().xy] = float4(cone.spread_angle, 0, 0, 1);
 }
 
 //Reflections
@@ -228,26 +238,29 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//Get data from VBO
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
-
-#define COMPRESSED_PBR
-#ifdef COMPRESSED_PBR
-	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).y);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).z;
-#else
-	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	float roughness = max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
-#endif
-
-	//Direction & position
-	const float3 hit_pos = HitWorldPosition();
-	float3 V = normalize(payload.origin - hit_pos);
-
-	//Normal mapping
 	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
 	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
 	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
+
+	const float3 hit_pos = HitWorldPosition();
+	float3 V = normalize(payload.origin - hit_pos);
+
+	payload.cone = Propagate(payload.cone, 0, length(hit_pos - payload.origin));
+	float mip = ComputeTextureLOD(payload.cone, V, normal, v0.pos, v1.pos, v2.pos, v0.uv, v1.uv, v2.uv, g_textures[material.albedo_id]);
+	mip = 0;
+
+//#define COMPRESSED_PBR
+#ifdef COMPRESSED_PBR
+	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip).xyz;
+	float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip).y);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip).z;
+#else
+	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip).xyz;
+	float roughness = max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip).x);
+	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip).x;
+#endif
+
+	//Direction & position
 
 	float3 N = normalize(mul(model_matrix, float4(-normal, 0)));
 	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
@@ -278,6 +291,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
 
 	payload.color = ambient + lighting;
+
+	//payload.color = float3(mip / 20, 0, 0);
 }
 
 //Reflection skybox
