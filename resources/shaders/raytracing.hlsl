@@ -291,9 +291,9 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		s0,
 		uv);
 
-	float3 albedo = output_data.albedo_roughness.xyz;
-	float roughness = output_data.albedo_roughness.w;
-	float metal = output_data.normal_metallic.w;
+	float3 albedo = output_data.albedo;
+	float roughness = output_data.roughness;
+	float metal = output_data.metallic;
 	
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
@@ -306,7 +306,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 #endif
 	const float3x3 TBN = float3x3(T, B, N);
 
-	float3 fN = normalize(mul(output_data.normal_metallic.xyz, TBN));
+	float3 fN = normalize(mul(output_data.normal, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Irradiance

@@ -238,9 +238,9 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 		s0,
 		uv);
 
-	float3 albedo = output_data.albedo_roughness.xyz;
-	float roughness = output_data.albedo_roughness.w;
-	float metal = output_data.normal_metallic.w;
+	float3 albedo = output_data.albedo;
+	float roughness = output_data.roughness;
+	float metal = output_data.metallic;
 
 
 	//Direction & position
@@ -257,7 +257,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
 	float3x3 TBN = float3x3(T, B, N);
 
-	float3 normal_t = output_data.normal_metallic.xyz;
+	float3 normal_t = output_data.normal;
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;

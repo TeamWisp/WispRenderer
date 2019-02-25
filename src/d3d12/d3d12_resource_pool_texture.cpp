@@ -549,7 +549,8 @@ namespace wr
 		DirectX::TexMetadata metadata;
 		DirectX::ScratchImage image;
 
-		HRESULT hr = DirectX::LoadFromWICMemory(data, size, DirectX::WIC_FLAGS_NONE, &metadata, image);
+		HRESULT hr = LoadFromWICMemory(data, size,
+			DirectX::WIC_FLAGS_NONE, &metadata, image);
 
 		if (FAILED(hr))
 		{
@@ -567,6 +568,22 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
+		Format adjusted_format;
+
+		if (srgb)
+		{
+			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		}
+		else
+		{
+			adjusted_format = static_cast<wr::Format>(metadata.format);
+
+			if (d3d12::CheckSRGBFormat(adjusted_format))
+			{
+				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+			}
+		}
+
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = metadata.width;
@@ -575,7 +592,7 @@ namespace wr
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
 		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = (srgb) ? static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format)) : static_cast<wr::Format>(metadata.format);
+		desc.m_texture_format = adjusted_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
@@ -593,6 +610,7 @@ namespace wr
 
 		texture->m_need_mips = generate_mips;
 		texture->m_srv_allocation = std::move(alloc);
+		NAME_D3D12RESOURCE(texture->m_resource);
 
 		d3d12::CreateSRVFromTexture(texture);
 
@@ -607,8 +625,8 @@ namespace wr
 
 		DirectX::TexMetadata metadata;
 		DirectX::ScratchImage image;
-		
-		HRESULT hr = DirectX::LoadFromDDSMemory(data, size,
+
+		HRESULT hr = LoadFromDDSMemory(data, size,
 			DirectX::DDS_FLAGS_NONE, &metadata, image);
 
 		if (FAILED(hr))
@@ -629,6 +647,22 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
+		Format adjusted_format;
+
+		if (srgb)
+		{
+			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		}
+		else
+		{
+			adjusted_format = static_cast<wr::Format>(metadata.format);
+
+			if (d3d12::CheckSRGBFormat(adjusted_format))
+			{
+				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+			}
+		}
+
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = metadata.width;
@@ -637,7 +671,7 @@ namespace wr
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
 		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
+		desc.m_texture_format = adjusted_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
 		auto texture = d3d12::CreateTexture(device, &desc, mip_generation);
@@ -655,6 +689,7 @@ namespace wr
 
 		texture->m_need_mips = mip_generation;
 		texture->m_srv_allocation = std::move(alloc);
+		NAME_D3D12RESOURCE(texture->m_resource);
 
 		d3d12::CreateSRVFromTexture(texture);
 
@@ -670,7 +705,7 @@ namespace wr
 		DirectX::TexMetadata metadata;
 		DirectX::ScratchImage image;
 
-		HRESULT hr = DirectX::LoadFromHDRMemory(data, size, &metadata, image);
+		HRESULT hr = LoadFromHDRMemory(data, size, &metadata, image);
 
 		if (FAILED(hr))
 		{
@@ -688,6 +723,22 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
+		Format adjusted_format;
+
+		if (srgb)
+		{
+			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		}
+		else
+		{
+			adjusted_format = static_cast<wr::Format>(metadata.format);
+
+			if (d3d12::CheckSRGBFormat(adjusted_format))
+			{
+				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+			}
+		}
+
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = metadata.width;
@@ -696,7 +747,7 @@ namespace wr
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
 		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = static_cast<wr::Format>(metadata.format);
+		desc.m_texture_format = adjusted_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
@@ -714,6 +765,7 @@ namespace wr
 
 		texture->m_need_mips = generate_mips;
 		texture->m_srv_allocation = std::move(alloc);
+		NAME_D3D12RESOURCE(texture->m_resource);
 
 		d3d12::CreateSRVFromTexture(texture);
 
@@ -737,6 +789,22 @@ namespace wr
 			mip_lvls = 1;
 		}
 
+		Format adjusted_format;
+
+		if (srgb)
+		{
+			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(DXGI_FORMAT_R8G8B8A8_UNORM));
+		}
+		else
+		{
+			adjusted_format = static_cast<wr::Format>(DXGI_FORMAT_R8G8B8A8_UNORM);
+
+			if (d3d12::CheckSRGBFormat(adjusted_format))
+			{
+				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+			}
+		}
+
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = width;
@@ -745,7 +813,7 @@ namespace wr
 		desc.m_depth = 1;
 		desc.m_array_size = 1;
 		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = srgb ? wr::Format::R8G8B8A8_UNORM_SRGB : wr::Format::R8G8B8A8_UNORM;
+		desc.m_texture_format = adjusted_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
 		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
@@ -763,6 +831,7 @@ namespace wr
 
 		texture->m_need_mips = generate_mips;
 		texture->m_srv_allocation = std::move(alloc);
+		NAME_D3D12RESOURCE(texture->m_resource);
 
 		d3d12::CreateSRVFromTexture(texture);
 

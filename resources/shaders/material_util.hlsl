@@ -24,8 +24,10 @@ struct MaterialData
 
 struct OutputMaterialData
 {
-	float4 albedo_roughness;
-	float4 normal_metallic;
+	float3 albedo;
+	float roughness;
+	float3 normal;
+	float metallic;
 };
 OutputMaterialData InterpretMaterialData(MaterialData data, 
 	Texture2D material_albedo,
@@ -33,7 +35,6 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	Texture2D material_roughness,
 	Texture2D material_metallic,
 	SamplerState s0,
-	float3x3 tbn,
 	float2 uv
 	) 
 {
@@ -58,10 +59,12 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	float4 metallic = lerp(material_metallic.Sample(s0, uv), data.metallic_roughness.xyzx, use_metallic_constant != 0 || has_metallic_texture == 0);
 #endif
 	float3 tex_normal = lerp(material_normal.Sample(s0, uv).rgb * 2.0 - float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 1.0), use_normal_texture == 0);
-	float3 normal = normalize(mul(tex_normal, tbn));
 
-	output.albedo_roughness = float4(albedo.xyz, roughness.r);
-	output.normal_metallic = float4(normal, metallic.r);
+	output.albedo = albedo.xyz;
+	output.roughness = roughness.x;
+	output.normal = tex_normal;
+	output.metallic = metallic.x;
+
 	return output;
 }
 
@@ -114,7 +117,9 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 		use_normal_texture == 0);
 #endif
 
-	output.albedo_roughness = float4(albedo, roughness);
-	output.normal_metallic = float4(normal_t, metal);
+	output.albedo = albedo;
+	output.roughness = roughness;
+	output.normal = normal_t;
+	output.metallic = metal;
 	return output;
 }
