@@ -13,6 +13,7 @@ namespace wr
 		d3d12::RenderTarget* out_source_rt;
 		d3d12::PipelineState* out_pipeline;
 		ID3D12Resource* out_previous;
+
 		DescriptorAllocator* out_allocator;
 		DescriptorAllocation out_allocation;
 	};
@@ -29,7 +30,14 @@ namespace wr
 			auto& data = fg.GetData<PostProcessingData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
+			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
+			if (!texture_pool)
+			{
+				LOGC("Texture pool is nullptr. This shouldn't happen as the render system should always create the first texture pool");
+			}
+
+			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_allocation = data.out_allocator->Allocate(2);
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -41,12 +49,14 @@ namespace wr
 			{
 				// Destination
 				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST)));
+					constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(dest_idx);
 					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 				}
 				// Source
 				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE)));
+					constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(source_idx);
 					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, frame_idx, source_rt->m_create_info.m_rtv_formats[frame_idx]);
 				}
 			}
@@ -64,7 +74,18 @@ namespace wr
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+			constexpr unsigned int uav_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
+			d3d12::DescHeapCPUHandle uav_handle = data.out_allocation.GetDescriptorHandle(uav_idx);
+			d3d12::SetShaderUAV(cmd_list, 0, uav_idx, uav_handle);
+
+			constexpr unsigned int srv_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
+			d3d12::DescHeapCPUHandle srv_handle = data.out_allocation.GetDescriptorHandle(srv_idx);
+			d3d12::SetShaderSRV(cmd_list, 0, srv_idx, srv_handle);
+
+			bool is_fallback = d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK;
+			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+
+			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
@@ -81,7 +102,8 @@ namespace wr
 		{
 			auto& data = fg.GetData<PostProcessingData>(handle);
 
-			// d3d12::Destroy(data.out_srv_heap);
+			// Small hack to force the allocations to go out of scope, which will tell the texture pool to free them
+			DescriptorAllocation temp = std::move(data.out_allocation);
 		}
 
 	} /* internal */
