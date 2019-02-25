@@ -74,7 +74,10 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(6);
+			fg = new wr::FrameGraph(8);
+
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 
 			 // Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
@@ -84,6 +87,9 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
+
+			// Composition to compose the hybrid result with the g-buffers
+			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
 			wr::AddPostProcessingTask<wr::RTHybridData>(*fg);

@@ -100,19 +100,19 @@ namespace wr
 				}
 				
 				//GetSkybox //TODO: Use Texture pool system
-				auto skybox = scene_graph.GetCurrentSkybox();
-				if (skybox != nullptr)
+				if (scene_graph.m_skybox.has_value())
 				{
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX)));
-					auto* skybox_texture_resource = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(skybox->m_hdr.m_id));
-					d3d12::CreateSRVFromTexture(skybox_texture_resource, cpu_handle);
+					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX))); // here
+					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
 
-				// Get the irradiance map
+				// Get Environment Map
+				if (scene_graph.m_skybox.has_value())
 				{
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP)));
-					d3d12::TextureResource* irradiance_map = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
-					d3d12::CreateSRVFromTexture(irradiance_map, cpu_handle);
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP))); // here
+					d3d12::CreateSRVFromTexture(irradiance_t, cpu_handle);
 				}
 
 				// Output UAV
