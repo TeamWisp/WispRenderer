@@ -326,8 +326,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	float2 xx = WorldToScreen(frag_pos, inv_projection_view);
+	//float2 xx = WorldToScreen(frag_pos, inv_projection_view);
 
 	payload.color = ambient + lighting;
-	payload.color = float3(xx, 0);
+	//payload.color = float3(xx, 0);
 }

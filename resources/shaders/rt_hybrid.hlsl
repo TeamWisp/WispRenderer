@@ -2,6 +2,7 @@
 #include "util.hlsl"
 #include "pbr_util.hlsl"
 #include "lighting.hlsl"
+#include "rt_texture_lod.hlsl"
 
 struct Vertex
 {
@@ -178,8 +179,10 @@ void RaygenEntry()
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
+	float2 debug = WorldToScreen(wpos, inv_view, inv_projection);
 
+	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
+	gOutput[DispatchRaysIndex().xy] = float4(debug, 0, 1);
 }
 
 //Reflections

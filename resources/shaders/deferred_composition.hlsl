@@ -76,5 +76,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	}
 
 	//Do shading
-	output[int2(dispatch_thread_id.xy)] = float4(pos.xy / pos.z, 0, 1.f);
+	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
 }
