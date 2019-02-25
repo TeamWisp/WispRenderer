@@ -1,4 +1,4 @@
-#define LIGHTS_REGISTER register(t4)
+#define LIGHTS_REGISTER register(t3)
 
 #include "fullscreen_quad.hlsl"
 #include "util.hlsl"
@@ -9,10 +9,9 @@
 Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
-Texture2D refl_shadow : register(t3);
-//Consider SRV for light buffer in register t4
-Texture2D skybox : register(t5);
-TextureCube irradiance_map : register(t6);
+//Consider SRV for light buffer in register t3
+Texture2D skybox : register(t4);
+TextureCube irradiance_map : register(t5);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -75,8 +74,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{	
 		retval = skybox.SampleLevel(s0, SampleSphericalMap(-V), 0);
 	}
-	float shadow = refl_shadow[screen_coord].r;
 
 	//Do shading
-	output[int2(dispatch_thread_id.xy)] = float4(retval.xy, shadow, 1.f);
+	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
 }

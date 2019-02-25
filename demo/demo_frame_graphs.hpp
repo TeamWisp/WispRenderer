@@ -24,7 +24,7 @@ namespace fg_manager
 		RT_HYBRID = 2,
 	};
 
-	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::RT_HYBRID;
+	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
@@ -74,12 +74,9 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(9);
+			fg = new wr::FrameGraph(6);
 
-
-			wr::AddEquirectToCubemapTask(*fg);
-			wr::AddCubemapConvolutionTask(*fg);
-
+			 // Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 
 			// Build Acceleration Structure
@@ -88,12 +85,10 @@ namespace fg_manager
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
 
-			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
-
 			// Do some post processing
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddPostProcessingTask<wr::RTHybridData>(*fg);
 
-			// Copy the composition pixel data to the final render target
+			// Copy the raytracing pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
