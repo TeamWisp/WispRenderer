@@ -63,6 +63,12 @@ namespace wr
 			data.out_materials.reserve(d3d12::settings::num_max_rt_materials);
 			data.out_offsets.reserve(d3d12::settings::num_max_rt_materials);
 			data.out_parsed_materials.reserve(d3d12::settings::num_max_rt_materials);
+
+
+			data.out_allocator = new DescriptorAllocator(n_render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+			data.out_scene_ib_alloc = std::move(data.out_allocator->Allocate());
+			data.out_scene_mat_alloc = std::move(data.out_allocator->Allocate());
+			data.out_scene_offset_alloc = std::move(data.out_allocator->Allocate());
 		}
 
 		namespace internal
@@ -236,15 +242,14 @@ namespace wr
 					}
 				}
 
-				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, data.out_rt_heap, data.out_blas_list);
+				DynamicDescriptorHeap* gpu_visible_heap = cmd_list->m_rt_descriptor_heap.get();
+				d3d12::DescriptorHeap* native_heap = gpu_visible_heap->RequestDescriptorHeap();
+
+				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, native_heap, data.out_blas_list);
 			}
 
 			inline void CreateTextureSRVs(ASBuildData& data)
 			{
-				data.out_scene_ib_alloc = std::move(data.out_allocator->Allocate());
-				data.out_scene_mat_alloc = std::move(data.out_allocator->Allocate());
-				data.out_scene_offset_alloc = std::move(data.out_allocator->Allocate());
-
 				for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
 				{
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
@@ -269,25 +274,25 @@ namespace wr
 					}
 
 
-					// Fill descriptor heap with textures used by the scene
-					for (auto handle : data.out_material_handles)
-					{
-						auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+					//// Fill descriptor heap with textures used by the scene
+					//for (auto handle : data.out_material_handles)
+					//{
+					//	auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
 
-						auto create_srv = [data, material_internal, i](auto texture_handle)
-						{
-							auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
-							auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
+					//	auto create_srv = [data, material_internal, i](auto texture_handle)
+					//	{
+					//		auto cpu_handle = d3d12::GetCPUHandle(data.out_rt_heap, i);
+					//		auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
-							d3d12::Offset(cpu_handle, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES)) + texture_handle.m_id, data.out_rt_heap->m_increment_size);
-							d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
-						};
+					//		d3d12::Offset(cpu_handle, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES)) + texture_handle.m_id, data.out_rt_heap->m_increment_size);
+					//		d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
+					//	};
 
-						create_srv(material_internal->GetAlbedo());
-						create_srv(material_internal->GetMetallic());
-						create_srv(material_internal->GetNormal());
-						create_srv(material_internal->GetRoughness());
-					}
+					//	create_srv(material_internal->GetAlbedo());
+					//	create_srv(material_internal->GetMetallic());
+					//	create_srv(material_internal->GetNormal());
+					//	create_srv(material_internal->GetRoughness());
+					//}
 				}
 			}
 
