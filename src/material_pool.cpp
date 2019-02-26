@@ -15,6 +15,12 @@ namespace wr
 	Material::Material()
 	{
 		memset(&m_material_data, 0, sizeof(m_material_data));
+
+		m_albedo = { nullptr,0 };
+		m_normal = { nullptr,0 };
+		m_rougness = { nullptr,0 };
+		m_metallic = { nullptr,0 };
+		m_ao = { nullptr,0 };
 	}
 
 	Material::Material(TextureHandle albedo,
@@ -54,6 +60,10 @@ namespace wr
 		}
 		else
 		{
+			if (!m_texture_pool)
+			{
+				m_texture_pool = albedo.m_pool;
+			}
 			m_albedo = albedo;
 			m_material_data.m_material_flags.m_has_albedo_texture = true;
 			
@@ -77,6 +87,10 @@ namespace wr
 		}
 		else
 		{
+			if (!m_texture_pool)
+			{
+				m_texture_pool = normal.m_pool;
+			}
 			m_normal = normal;
 			m_material_data.m_material_flags.m_has_normal_texture = true;
 			
@@ -99,6 +113,10 @@ namespace wr
 		}
 		else
 		{
+			if (!m_texture_pool)
+			{
+				m_texture_pool = roughness.m_pool;
+			}
 			m_rougness = roughness;
 			m_material_data.m_material_flags.m_has_roughness_texture = true;
 		}
@@ -120,6 +138,10 @@ namespace wr
 		}
 		else
 		{
+			if (!m_texture_pool)
+			{
+				m_texture_pool = metallic.m_pool;
+			}
 			m_metallic = metallic;
 			m_material_data.m_material_flags.m_has_metallic_texture = true;
 		}
@@ -141,6 +163,10 @@ namespace wr
 		}
 		else
 		{
+			if (!m_texture_pool)
+			{
+				m_texture_pool = ao.m_pool;
+			}
 			m_ao = ao;
 			m_material_data.m_material_flags.m_has_ao_texture = true;
 		}
