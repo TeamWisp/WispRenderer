@@ -12,24 +12,25 @@ namespace wr
 	D3D12ModelPool::D3D12ModelPool(D3D12RenderSystem& render_system,
 		std::size_t vertex_buffer_size_in_bytes,
 		std::size_t index_buffer_size_in_bytes) :
-		ModelPool(SizeAlign(vertex_buffer_size_in_bytes, 65536), SizeAlign(index_buffer_size_in_bytes, 65536)),
-		m_render_system(render_system)
+		ModelPool(SizeAlignProper(vertex_buffer_size_in_bytes, 65536), SizeAlignProper(index_buffer_size_in_bytes, 65536)),
+		m_render_system(render_system),
+		m_intermediate_size(0)
 	{
 		m_vertex_buffer = d3d12::CreateStagingBuffer(render_system.m_device,
 			nullptr,
-			SizeAlign(vertex_buffer_size_in_bytes, 65536),
+			SizeAlignProper(vertex_buffer_size_in_bytes, 65536),
 			sizeof(VertexColor),
 			ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 		SetName(m_vertex_buffer, L"Model Pool Vertex Buffer");
-		m_vertex_buffer_size = SizeAlign(vertex_buffer_size_in_bytes, 65536);
+		m_vertex_buffer_size = SizeAlignProper(vertex_buffer_size_in_bytes, 65536);
 
 		m_index_buffer = d3d12::CreateStagingBuffer(render_system.m_device,
 			nullptr,
-			SizeAlign(index_buffer_size_in_bytes, 65536),
+			SizeAlignProper(index_buffer_size_in_bytes, 65536),
 			sizeof(std::uint32_t),
 			ResourceState::INDEX_BUFFER);
 		SetName(m_index_buffer, L"Model Pool Index Buffer");
-		m_index_buffer_size = SizeAlign(index_buffer_size_in_bytes, 65536);
+		m_index_buffer_size = SizeAlignProper(index_buffer_size_in_bytes, 65536);
 
 		m_vertex_heap_start_block = new MemoryBlock;
 		m_vertex_heap_start_block->m_free = true;
@@ -44,6 +45,8 @@ namespace wr
 		m_index_heap_start_block->m_prev_block = nullptr;
 		m_index_heap_start_block->m_offset = 0;
 		m_index_heap_start_block->m_size = m_index_buffer_size;
+
+		m_intermediate_buffer = NULL;
 	}
 
 	D3D12ModelPool::~D3D12ModelPool()
@@ -131,6 +134,20 @@ namespace wr
 				m_command_queue.pop();
 			}
 			break;
+			case internal::CommandType::READ:
+			{
+				internal::ReadCommand* read_command = static_cast<internal::ReadCommand*>(command);
+
+				cmd_list->m_native->CopyBufferRegion(read_command->m_buffer->m_staging,
+					read_command->m_offset,
+					read_command->m_buffer->m_buffer,
+					read_command->m_offset,
+					read_command->m_size);
+
+				delete read_command;
+				m_command_queue.pop();
+			}
+			break;
 			default:
 			{
 				delete command;
@@ -174,7 +191,7 @@ namespace wr
 		}
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
-		new_size = SizeAlign(new_size, 65536);
+		new_size = SizeAlignProper(new_size, 65536);
 
 		ID3D12Resource* new_buffer;
 		ID3D12Resource* new_staging;
@@ -237,7 +254,7 @@ namespace wr
 		}
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
-		new_size = SizeAlign(new_size, 65536);
+		new_size = SizeAlignProper(new_size, 65536);
 
 		ID3D12Resource* new_buffer;
 		ID3D12Resource* new_staging;
@@ -307,9 +324,76 @@ namespace wr
 			{
 				transition_command->m_old_state = ResourceState::COPY_DEST;
 			}
-			transition_command->m_new_state = ResourceState::COMMON;
+			transition_command->m_new_state = ResourceState::COPY_SOURCE;
 
 			m_command_queue.push(transition_command);
+		}
+
+		MemoryBlock* largest_block = m_vertex_heap_start_block;
+		for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+		{
+			if (!mem_block->m_free)
+			{
+				if (largest_block->m_free || mem_block->m_size > largest_block->m_size)
+				{
+					largest_block = mem_block;
+				}
+			}
+		}
+
+		if (!largest_block->m_free)
+		{
+			if (largest_block->m_size > m_intermediate_size)
+			{
+				ID3D12Resource* buffer;
+				m_render_system.m_device->m_native->CreateCommittedResource(
+					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+					D3D12_HEAP_FLAG_NONE,
+					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignProper(largest_block->m_size, 65536)),
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					nullptr,
+					IID_PPV_ARGS(&buffer));
+				buffer->SetName(L"Memory pool intermediate buffer");
+
+				m_render_system.WaitForAllPreviousWork();
+
+				for (int i = 0; i < m_command_queue.size(); ++i)
+				{
+					internal::Command* command = m_command_queue.front();
+					m_command_queue.pop();
+					m_command_queue.push(command);
+
+					switch (command->m_type)
+					{
+					case internal::CommandType::COPY:
+					{
+						internal::CopyCommand* copy_command = static_cast<internal::CopyCommand*>(command);
+						if (copy_command->m_dest == m_intermediate_buffer)
+						{
+							copy_command->m_dest = buffer;
+						}
+						if (copy_command->m_source == m_intermediate_buffer)
+						{
+							copy_command->m_source = buffer;
+						}
+					}
+					break;
+					case internal::CommandType::TRANSITION:
+					{
+						internal::TransitionCommand* transition_command = static_cast<internal::TransitionCommand*>(command);
+						if (transition_command->m_buffer == m_intermediate_buffer)
+						{
+							transition_command->m_buffer = buffer;
+						}
+					}
+					break;
+					}
+				}
+
+				SAFE_RELEASE(m_intermediate_buffer);
+				m_intermediate_buffer = buffer;
+				m_intermediate_size = SizeAlignProper(largest_block->m_size, 65536);
+			}
 		}
 
 		MemoryBlock* mem_block = m_vertex_heap_start_block;
@@ -320,10 +404,18 @@ namespace wr
 				if (mem_block->m_next_block->m_free)
 				{
 					mem_block->m_size += mem_block->m_next_block->m_size;
-					
-					mem_block->m_next_block = mem_block->m_next_block->m_next_block;
-					delete mem_block->m_next_block->m_prev_block;
-					mem_block->m_next_block->m_prev_block = mem_block;
+
+					if (mem_block->m_next_block->m_next_block != nullptr)
+					{
+						mem_block->m_next_block = mem_block->m_next_block->m_next_block;
+						delete mem_block->m_next_block->m_prev_block;
+						mem_block->m_next_block->m_prev_block = mem_block;
+					}
+					else
+					{
+						delete mem_block->m_next_block;
+						mem_block->m_next_block = nullptr;
+					}
 				}
 				else
 				{
@@ -355,13 +447,13 @@ namespace wr
 					next_block->m_next_block = mem_block;
 					mem_block->m_prev_block = next_block;
 
-					next_block->m_offset = SizeAlign(mem_block->m_offset, next_block->m_alignment);
+					next_block->m_offset = SizeAlignProper(mem_block->m_offset, next_block->m_alignment);
 					if (next_block->m_prev_block != nullptr)
 					{
-						next_block->m_size += next_block->m_offset - mem_block->m_offset;
+						next_block->m_size += SizeAlignProper(next_block->m_offset - mem_block->m_offset, next_block->m_alignment);
 					}
+					mem_block->m_size -= SizeAlignProper(next_block->m_offset - mem_block->m_offset, next_block->m_alignment);
 					mem_block->m_offset = next_block->m_offset + next_block->m_size;
-					mem_block->m_size -= next_block->m_offset - mem_block->m_offset;
 
 					std::map<std::uint64_t, internal::MeshInternal*>::iterator it = m_loaded_meshes.begin();
 
@@ -370,21 +462,71 @@ namespace wr
 						internal::D3D12MeshInternal* mesh = static_cast<internal::D3D12MeshInternal*>((*it).second);
 						if (mesh->m_vertex_memory_block == next_block)
 						{
-							mesh->m_vertex_staging_buffer_offset = SizeAlign(next_block->m_offset, mesh->m_vertex_staging_buffer_stride)
-								/ mesh->m_vertex_staging_buffer_stride;
+							mesh->m_vertex_staging_buffer_offset = next_block->m_offset / next_block->m_alignment;
+							if (next_block->m_offset%next_block->m_alignment != 0)
+							{
+								LOGW("Wrong alignment");
+							}
 						}
 					}
 
-					internal::CopyCommand* command = new internal::CopyCommand;
+					internal::CopyCommand* copy_to_intermediate_command = new internal::CopyCommand;
 
-					command->m_type = internal::CommandType::COPY;
-					command->m_source = m_vertex_buffer->m_buffer;
-					command->m_dest = m_vertex_buffer->m_buffer;
-					command->m_source_offset = original_offset;
-					command->m_dest_offset = next_block->m_offset;
-					command->m_size = next_block->m_size;
+					copy_to_intermediate_command->m_type = internal::CommandType::COPY;
+					copy_to_intermediate_command->m_source = m_vertex_buffer->m_buffer;
+					copy_to_intermediate_command->m_dest = m_intermediate_buffer;
+					copy_to_intermediate_command->m_source_offset = original_offset;
+					copy_to_intermediate_command->m_dest_offset = 0;
+					copy_to_intermediate_command->m_size = next_block->m_size;
 
-					m_command_queue.push(command);
+					m_command_queue.push(copy_to_intermediate_command);
+
+					internal::TransitionCommand* transition_intermediate_read_command = new internal::TransitionCommand;
+
+					transition_intermediate_read_command->m_type = internal::TRANSITION;
+					transition_intermediate_read_command->m_buffer = m_intermediate_buffer;
+					transition_intermediate_read_command->m_old_state = ResourceState::COPY_DEST;
+					transition_intermediate_read_command->m_new_state = ResourceState::COPY_SOURCE;
+
+					m_command_queue.push(transition_intermediate_read_command);
+
+					internal::TransitionCommand* transition_buffer_write_command = new internal::TransitionCommand;
+
+					transition_buffer_write_command->m_type = internal::TRANSITION;
+					transition_buffer_write_command->m_buffer = m_vertex_buffer->m_buffer;
+					transition_buffer_write_command->m_old_state = ResourceState::COPY_SOURCE;
+					transition_buffer_write_command->m_new_state = ResourceState::COPY_DEST;
+
+					m_command_queue.push(transition_buffer_write_command);
+
+					internal::CopyCommand* copy_to_buffer_command = new internal::CopyCommand;
+
+					copy_to_buffer_command->m_type = internal::COPY;
+					copy_to_buffer_command->m_source = m_intermediate_buffer;
+					copy_to_buffer_command->m_source_offset = 0;
+					copy_to_buffer_command->m_dest = m_vertex_buffer->m_buffer;
+					copy_to_buffer_command->m_dest_offset = next_block->m_offset;
+					copy_to_buffer_command->m_size = next_block->m_size;
+
+					m_command_queue.push(copy_to_buffer_command);
+
+					internal::TransitionCommand* transition_intermediate_write_command = new internal::TransitionCommand;
+
+					transition_intermediate_write_command->m_type = internal::TRANSITION;
+					transition_intermediate_write_command->m_buffer = m_intermediate_buffer;
+					transition_intermediate_write_command->m_old_state = ResourceState::COPY_SOURCE;
+					transition_intermediate_write_command->m_new_state = ResourceState::COPY_DEST;
+
+					m_command_queue.push(transition_intermediate_write_command);
+
+					internal::TransitionCommand* transition_buffer_read_command = new internal::TransitionCommand;
+
+					transition_buffer_read_command->m_type = internal::TRANSITION;
+					transition_buffer_read_command->m_buffer = m_vertex_buffer->m_buffer;
+					transition_buffer_read_command->m_old_state = ResourceState::COPY_DEST;
+					transition_buffer_read_command->m_new_state = ResourceState::COPY_SOURCE;
+
+					m_command_queue.push(transition_buffer_read_command);
 
 					memcpy(m_vertex_buffer->m_cpu_address + next_block->m_offset, m_vertex_buffer->m_cpu_address + original_offset, next_block->m_size);
 				}
@@ -407,7 +549,7 @@ namespace wr
 			{
 				transition_command->m_new_state = ResourceState::COPY_DEST;
 			}
-			transition_command->m_old_state = ResourceState::COMMON;
+			transition_command->m_old_state = ResourceState::COPY_SOURCE;
 
 			m_command_queue.push(transition_command);
 		}
@@ -427,9 +569,76 @@ namespace wr
 			{
 				transition_command->m_old_state = ResourceState::COPY_DEST;
 			}
-			transition_command->m_new_state = ResourceState::COMMON;
+			transition_command->m_new_state = ResourceState::COPY_SOURCE;
 
 			m_command_queue.push(transition_command);
+		}
+
+		MemoryBlock* largest_block = m_index_heap_start_block;
+		for (MemoryBlock* mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+		{
+			if (!mem_block->m_free)
+			{
+				if (largest_block->m_free || mem_block->m_size > largest_block->m_size)
+				{
+					largest_block = mem_block;
+				}
+			}
+		}
+
+		if (!largest_block->m_free)
+		{
+			if (largest_block->m_size > m_intermediate_size)
+			{
+				ID3D12Resource* buffer;
+				m_render_system.m_device->m_native->CreateCommittedResource(
+					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+					D3D12_HEAP_FLAG_NONE,
+					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignProper(largest_block->m_size, 65536)),
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					nullptr,
+					IID_PPV_ARGS(&buffer));
+				buffer->SetName(L"Memory pool intermediate buffer");
+
+				m_render_system.WaitForAllPreviousWork();
+
+				for (int i = 0; i < m_command_queue.size(); ++i)
+				{
+					internal::Command* command = m_command_queue.front();
+					m_command_queue.pop();
+					m_command_queue.push(command);
+
+					switch (command->m_type)
+					{
+					case internal::CommandType::COPY:
+					{
+						internal::CopyCommand* copy_command = static_cast<internal::CopyCommand*>(command);
+						if (copy_command->m_dest == m_intermediate_buffer)
+						{
+							copy_command->m_dest = buffer;
+						}
+						if (copy_command->m_source == m_intermediate_buffer)
+						{
+							copy_command->m_source = buffer;
+						}
+					}
+					break;
+					case internal::CommandType::TRANSITION:
+					{
+						internal::TransitionCommand* transition_command = static_cast<internal::TransitionCommand*>(command);
+						if (transition_command->m_buffer == m_intermediate_buffer)
+						{
+							transition_command->m_buffer = buffer;
+						}
+					}
+					break;
+					}
+				}
+
+				SAFE_RELEASE(m_intermediate_buffer);
+				m_intermediate_buffer = buffer;
+				m_intermediate_size = SizeAlignProper(largest_block->m_size, 65536);
+			}
 		}
 
 		MemoryBlock* mem_block = m_index_heap_start_block;
@@ -441,9 +650,17 @@ namespace wr
 				{
 					mem_block->m_size += mem_block->m_next_block->m_size;
 
-					mem_block->m_next_block = mem_block->m_next_block->m_next_block;
-					delete mem_block->m_next_block->m_prev_block;
-					mem_block->m_next_block->m_prev_block = mem_block;
+					if (mem_block->m_next_block->m_next_block != nullptr)
+					{
+						mem_block->m_next_block = mem_block->m_next_block->m_next_block;
+						delete mem_block->m_next_block->m_prev_block;
+						mem_block->m_next_block->m_prev_block = mem_block;
+					}
+					else
+					{
+						delete mem_block->m_next_block;
+						mem_block->m_next_block = nullptr;
+					}
 				}
 				else
 				{
@@ -475,13 +692,13 @@ namespace wr
 					next_block->m_next_block = mem_block;
 					mem_block->m_prev_block = next_block;
 
-					next_block->m_offset = SizeAlign(mem_block->m_offset, next_block->m_alignment);
+					next_block->m_offset = SizeAlignProper(mem_block->m_offset, next_block->m_alignment);
 					if (next_block->m_prev_block != nullptr)
 					{
 						next_block->m_size += next_block->m_offset - mem_block->m_offset;
 					}
-					mem_block->m_offset = next_block->m_offset + next_block->m_size;
 					mem_block->m_size -= next_block->m_offset - mem_block->m_offset;
+					mem_block->m_offset = next_block->m_offset + next_block->m_size;
 
 					std::map<std::uint64_t, internal::MeshInternal*>::iterator it = m_loaded_meshes.begin();
 
@@ -490,23 +707,66 @@ namespace wr
 						internal::D3D12MeshInternal* mesh = static_cast<internal::D3D12MeshInternal*>((*it).second);
 						if (mesh->m_index_memory_block == next_block)
 						{
-							mesh->m_index_staging_buffer_offset = SizeAlign(next_block->m_offset, next_block->m_alignment)
+							mesh->m_index_staging_buffer_offset = SizeAlignProper(next_block->m_offset, next_block->m_alignment)
 								/ next_block->m_alignment;
 						}
 					}
 
-					internal::CopyCommand* command = new internal::CopyCommand;
+					internal::CopyCommand* copy_to_intermediate_command = new internal::CopyCommand;
 
-					command->m_type = internal::CommandType::COPY;
-					command->m_source = m_index_buffer->m_buffer;
-					command->m_dest = m_index_buffer->m_buffer;
-					command->m_source_offset = original_offset;
-					command->m_dest_offset = next_block->m_offset;
-					command->m_size = next_block->m_size;
+					copy_to_intermediate_command->m_type = internal::CommandType::COPY;
+					copy_to_intermediate_command->m_source = m_index_buffer->m_buffer;
+					copy_to_intermediate_command->m_dest = m_intermediate_buffer;
+					copy_to_intermediate_command->m_source_offset = original_offset;
+					copy_to_intermediate_command->m_dest_offset = 0;
+					copy_to_intermediate_command->m_size = next_block->m_size;
 
-					m_command_queue.push(command);
+					m_command_queue.push(copy_to_intermediate_command);
 
-					memcpy(m_vertex_buffer->m_cpu_address + next_block->m_offset, m_vertex_buffer->m_cpu_address + original_offset, next_block->m_size);
+					internal::TransitionCommand* transition_intermediate_read_command = new internal::TransitionCommand;
+					transition_intermediate_read_command->m_type = internal::TRANSITION;
+					transition_intermediate_read_command->m_buffer = m_intermediate_buffer;
+					transition_intermediate_read_command->m_old_state = ResourceState::COPY_DEST;
+					transition_intermediate_read_command->m_new_state = ResourceState::COPY_SOURCE;
+
+					m_command_queue.push(transition_intermediate_read_command);
+
+					internal::TransitionCommand* transition_buffer_write_command = new internal::TransitionCommand;
+					transition_buffer_write_command->m_type = internal::TRANSITION;
+					transition_buffer_write_command->m_buffer = m_index_buffer->m_buffer;
+					transition_buffer_write_command->m_old_state = ResourceState::COPY_SOURCE;
+					transition_buffer_write_command->m_new_state = ResourceState::COPY_DEST;
+
+					m_command_queue.push(transition_buffer_write_command);
+
+					internal::CopyCommand* copy_to_buffer_command = new internal::CopyCommand;
+
+					copy_to_buffer_command->m_type = internal::COPY;
+					copy_to_buffer_command->m_source = m_intermediate_buffer;
+					copy_to_buffer_command->m_source_offset = 0;
+					copy_to_buffer_command->m_dest = m_index_buffer->m_buffer;
+					copy_to_buffer_command->m_dest_offset = next_block->m_offset;
+					copy_to_buffer_command->m_size = next_block->m_size;
+
+					m_command_queue.push(copy_to_buffer_command);
+
+					internal::TransitionCommand* transition_intermediate_write_command = new internal::TransitionCommand;
+					transition_intermediate_write_command->m_type = internal::TRANSITION;
+					transition_intermediate_write_command->m_buffer = m_intermediate_buffer;
+					transition_intermediate_write_command->m_old_state = ResourceState::COPY_SOURCE;
+					transition_intermediate_write_command->m_new_state = ResourceState::COPY_DEST;
+
+					m_command_queue.push(transition_intermediate_write_command);
+
+					internal::TransitionCommand* transition_buffer_read_command = new internal::TransitionCommand;
+					transition_buffer_read_command->m_type = internal::TRANSITION;
+					transition_buffer_read_command->m_buffer = m_index_buffer->m_buffer;
+					transition_buffer_read_command->m_old_state = ResourceState::COPY_DEST;
+					transition_buffer_read_command->m_new_state = ResourceState::COPY_SOURCE;
+
+					m_command_queue.push(transition_buffer_read_command);
+
+					memcpy(m_index_buffer->m_cpu_address + next_block->m_offset, m_index_buffer->m_cpu_address + original_offset, next_block->m_size);
 				}
 			}
 			else
@@ -527,7 +787,7 @@ namespace wr
 			{
 				transition_command->m_new_state = ResourceState::COPY_DEST;
 			}
-			transition_command->m_old_state = ResourceState::COMMON;
+			transition_command->m_old_state = ResourceState::COPY_SOURCE;
 
 			m_command_queue.push(transition_command);
 		}
@@ -547,7 +807,7 @@ namespace wr
 			}
 
 			size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
-			new_size = SizeAlign(new_size, 65536);
+			new_size = SizeAlignProper(new_size, 65536);
 
 			if (new_size >= vertex_heap_new_size)
 			{
@@ -555,7 +815,7 @@ namespace wr
 			}
 			else
 			{
-				new_size = SizeAlign(vertex_heap_new_size, 65536);
+				new_size = SizeAlignProper(vertex_heap_new_size, 65536);
 
 				ID3D12Resource* new_buffer;
 				ID3D12Resource* new_staging;
@@ -618,7 +878,7 @@ namespace wr
 			}
 
 			size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
-			new_size = SizeAlign(new_size, 65536);
+			new_size = SizeAlignProper(new_size, 65536);
 
 			if (new_size >= index_heap_new_size)
 			{
@@ -626,7 +886,7 @@ namespace wr
 			}
 			else
 			{
-				new_size = SizeAlign(index_heap_new_size, 65536);
+				new_size = SizeAlignProper(index_heap_new_size, 65536);
 
 				ID3D12Resource* new_buffer;
 				ID3D12Resource* new_staging;
@@ -711,7 +971,7 @@ namespace wr
 		}
 
 		//Store the offset of the allocated memory from the start of the staging buffer
-		mesh->m_vertex_staging_buffer_offset = SizeAlign(vertex_memory_block->m_offset, vertex_size) / vertex_size;
+		mesh->m_vertex_staging_buffer_offset = SizeAlignProper(vertex_memory_block->m_offset, vertex_size) / vertex_size;
 		mesh->m_vertex_staging_buffer_size = num_vertices * vertex_size;
 		mesh->m_vertex_staging_buffer_stride = vertex_size;
 		mesh->m_vertex_count = num_vertices;
@@ -723,7 +983,7 @@ namespace wr
 		d3d12::UpdateStagingBuffer(m_vertex_buffer, vertices_data, num_vertices*vertex_size, mesh->m_vertex_staging_buffer_offset * vertex_size);
 
 		//Store the offset of the allocated memory from the start of the staging buffer
-		mesh->m_index_staging_buffer_offset = SizeAlign(index_memory_block->m_offset, index_size) / index_size;
+		mesh->m_index_staging_buffer_offset = SizeAlignProper(index_memory_block->m_offset, index_size) / index_size;
 		mesh->m_index_staging_buffer_size = num_indices * index_size;
 		mesh->m_index_count = num_indices;
 		mesh->m_index_memory_block = index_memory_block;
@@ -771,7 +1031,7 @@ namespace wr
 		}
 
 		//Store the offset of the allocated memory from the start of the staging buffer
-		mesh->m_vertex_staging_buffer_offset = SizeAlign(vertex_memory_block->m_offset, vertex_size) / vertex_size;
+		mesh->m_vertex_staging_buffer_offset = SizeAlignProper(vertex_memory_block->m_offset, vertex_size) / vertex_size;
 		mesh->m_vertex_staging_buffer_size = num_vertices * vertex_size;
 		mesh->m_vertex_staging_buffer_stride = vertex_size;
 		mesh->m_vertex_count = num_vertices;

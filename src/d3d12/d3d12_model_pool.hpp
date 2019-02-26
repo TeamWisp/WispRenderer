@@ -152,6 +152,9 @@ namespace wr
 		
 		std::queue<internal::Command*> m_command_queue;
 
+		ID3D12Resource* m_intermediate_buffer;
+		std::size_t m_intermediate_size;
+
 		std::uint64_t m_vertex_buffer_size;
 		std::uint64_t m_index_buffer_size;
 

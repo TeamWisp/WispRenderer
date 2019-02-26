@@ -26,3 +26,9 @@ constexpr inline T SizeAlign(T size, A alignment)
 {
 	return (size + (alignment - 1U)) & ~(alignment - 1U);
 }
+
+template<typename T, typename A>
+constexpr inline T SizeAlignProper(T size, A alignment)
+{
+	return (1 + (size - 1) / alignment)*alignment;
+}
