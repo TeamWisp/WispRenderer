@@ -89,6 +89,10 @@ namespace wr
 					material.normal_id = material_internal->GetNormal().m_id;
 					material.roughness_id = material_internal->GetRoughness().m_id;
 					material.metallicness_id = material_internal->GetMetallic().m_id;
+					material.material_data = material_internal->GetMaterialData();
+					int x = sizeof(wr::temp::RayTracingMaterial_CBData);
+					int y = sizeof(DirectX::XMVECTOR);
+					int z = sizeof(Material::MaterialData);
 					data.out_materials.push_back(material);
 					data.out_parsed_materials[material_handle->m_id] = material_id;
 
@@ -154,9 +158,9 @@ namespace wr
 
 						data.blasses.insert({mesh.first->id, blas});
 
-						data.out_material_handles.push_back(mesh.second); // Used to st eal the textures from the texture pool.
+						data.out_material_handles.push_back(&mesh.second); // Used to st eal the textures from the texture pool.
 
-						auto material_id = ExtractMaterialFromMesh(data, mesh.second);
+						auto material_id = ExtractMaterialFromMesh(data, &mesh.second);
 
 						AppendOffset(data, n_mesh, material_id);
 
@@ -214,7 +218,7 @@ namespace wr
 
 						auto blas = (*data.blasses.find(mesh.first->id)).second;
 
-						auto material_id = ExtractMaterialFromMesh(data, mesh.second);
+						auto material_id = ExtractMaterialFromMesh(data, &mesh.second);
 
 						AppendOffset(data, n_mesh, material_id);
 

@@ -1,6 +1,7 @@
 #define LIGHTS_REGISTER register(t2)
 #include "util.hlsl"
 #include "pbr_util.hlsl"
+#include "material_util.hlsl"
 #include "lighting.hlsl"
 
 struct Vertex
@@ -19,6 +20,8 @@ struct Material
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
+
+	MaterialData data;
 };
 
 struct Offset
@@ -226,9 +229,19 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, 0).xyz;
-	float roughness = max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, 0).x);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, 0).x;
+	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
+		g_textures[material.albedo_id],
+		g_textures[material.normal_id],
+		g_textures[material.roughness_id],
+		g_textures[material.metalicness_id],
+		0,
+		s0,
+		uv);
+
+	float3 albedo = output_data.albedo;
+	float roughness = output_data.roughness;
+	float metal = output_data.metallic;
+
 
 	//Direction & position
 	const float3 hit_pos = HitWorldPosition();
@@ -244,7 +257,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
 	float3x3 TBN = float3x3(T, B, N);
 
-	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	float3 normal_t = output_data.normal;
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;

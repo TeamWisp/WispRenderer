@@ -2,6 +2,7 @@
 #include "util.hlsl"
 #include "pbr_util.hlsl"
 #include "lighting.hlsl"
+#include "material_util.hlsl"
 
 static const float M_PI = 3.14159265f;
 
@@ -21,6 +22,8 @@ struct Material
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
+
+	MaterialData data;
 };
 
 struct Offset
@@ -279,17 +282,18 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	float mip_level = payload.depth+1;
 
-#ifdef COMPRESSED_PBR
-	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	float roughness =  max(0.05, g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).y);
-	float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).z;
-	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
-#else
-	const float3 albedo = g_textures[material.albedo_id].SampleLevel(s0, uv, mip_level).xyz;
-	const float roughness =  max(0.05, g_textures[material.roughness_id].SampleLevel(s0, uv, mip_level).r);
-	const float metal = g_textures[material.metalicness_id].SampleLevel(s0, uv, mip_level).r;
-	const float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip_level).xyz * 2.0) - float3(1.0, 1.0, 1.0);
-#endif
+	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
+		g_textures[material.albedo_id],
+		g_textures[material.normal_id],
+		g_textures[material.roughness_id],
+		g_textures[material.metalicness_id],
+		mip_level,
+		s0,
+		uv);
+
+	float3 albedo = output_data.albedo;
+	float roughness = output_data.roughness;
+	float metal = output_data.metallic;
 	
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
@@ -302,7 +306,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 #endif
 	const float3x3 TBN = float3x3(T, B, N);
 
-	float3 fN = normalize(mul(normal_t, TBN));
+	float3 fN = normalize(mul(output_data.normal, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Irradiance
@@ -314,12 +318,21 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 reflect_dir = reflect(-V, fN);
 	float3 reflection = TraceColorRay(hit_pos + fN * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
 
-	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
+	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), 
+		metal, 
+		albedo, 
+		roughness);
 	float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
+	float3 lighting = shade_pixel(hit_pos, V, 
+		albedo, 
+		metal, 
+		roughness, 
+		fN, 
+		payload.seed, 
+		payload.depth);
 	float3 specular = (reflection) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);

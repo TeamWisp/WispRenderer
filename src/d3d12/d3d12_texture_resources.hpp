@@ -21,7 +21,7 @@ namespace wr::d3d12
 
 		ID3D12Resource* m_resource;
 		ID3D12Resource* m_intermediate;
-		ResourceState m_current_state;
+		std::vector<ResourceState> m_subresource_states;
 		DescriptorAllocation m_srv_allocation;
 		DescriptorAllocation m_uav_allocation;
 
