@@ -130,9 +130,6 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
 	return reflection;
 }
 
-#define M_PI 3.14159265358979
-
-
 float3 getPerpendicularVector(float3 u)
 {
 	float3 a = abs(u);
@@ -156,6 +153,7 @@ float3 getCosHemisphereSample(inout uint randSeed, float3 hitNorm)
 	// Get our cosine-weighted hemisphere lobe sample direction
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(max(0.0, 1.0f - randVal.x));
 }
+#define M_PI 3.14159265358979
 
 [shader("raygeneration")]
 void RaygenEntry()
@@ -190,28 +188,30 @@ void RaygenEntry()
 		return;
 	}
 
-	// float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
-	// float3 reflection = DoReflection(wpos, V, normal, rand_seed);
+	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
+	float3 reflection = DoReflection(wpos, V, normal, rand_seed);
 
-	// float3 flipped_N = normal;
-	// flipped_N.y *= -1;
-	// const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+	float3 flipped_N = normal;
+	flipped_N.y *= -1;
+	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
-	// const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
-	// float3 kS = F;
-    // float3 kD = 1.0 - kS;
-    // kD *= 1.0 - metallic;
+	const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
+	float3 kS = F;
+    float3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
 
-	// float3 specular = (reflection.xyz) * F;
-	// float3 diffuse = albedo * sampled_irradiance;
-	// float3 ambient = (kD * diffuse + specular);~
-
+	float3 specular = (reflection.xyz) * F;
+	float3 diffuse = albedo * sampled_irradiance;
+	float3 ambient = (kD * diffuse + specular);
 	float aoValue = 1.0f;
+    const uint spp = 64;
+    for(uint i = 0; i< spp; i++)
+    {
+        aoValue -= (1.0f/float(spp)) * TraceShadowRay(0, wpos + normal * EPSILON, getCosHemisphereSample(rand_seed, normal), 5.f, 1);
+    }
+    gOutput[DispatchRaysIndex().xy] = float4((aoValue) *(ambient + lighting), 1) ;
+	//gOutput[DispatchRaysIndex().xy] = float4(aoValue, aoValue, aoValue , 1);
 
-	for(uint i = 0; i< 64; i++)
-		aoValue -= (1.0f/64.f) * TraceShadowRay(0, wpos + normal * EPSILON, getCosHemisphereSample(rand_seed, normal), 5.f, 1);
-	// gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
-	gOutput[DispatchRaysIndex().xy] = float4(aoValue, aoValue, aoValue, 1.0f);
 }
 
 //Reflections

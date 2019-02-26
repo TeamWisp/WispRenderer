@@ -25,6 +25,7 @@ namespace resources
 	static wr::Model* material_knot_marble;
 	static wr::Model* material_knot_rubber;
 	static wr::Model* material_knot_scorched_wood;
+	static wr::Model* pica_model;
 
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle bamboo_material;
@@ -276,6 +277,14 @@ namespace resources
 				{
 					m.second = bamboo_material;
 				}
+			}
+
+			{
+				pica_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/pica_scene.fbx");
+					for (auto& m : pica_model->m_meshes)
+					{
+						m.second = bamboo_material;
+					}
 			}
 
 			{
