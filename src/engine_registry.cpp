@@ -364,7 +364,7 @@ namespace wr
 			ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::VERTICES)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
 		}),
 		RootSignatureDescription::RTXLocal(true)
 	});

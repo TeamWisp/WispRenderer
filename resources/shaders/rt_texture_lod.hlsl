@@ -47,50 +47,33 @@ struct SurfaceHit
 {
 	float3 pos;
 	float3 normal;
-	float3 surface_spread_angle;
+	float surface_spread_angle;
 	float dist;
 };
 
-float2 WorldToScreen(float3 pos, float4x4 view, float4x4 proj)
-{
-	float width = 1280;
-	float height = 720;
-
-	float4x4 iv = inverse(view);
-	float4x4 ip = inverse(proj);
-
-	float4 p = mul(ip, mul(iv, float4(pos, 1)));
-
-	float2 retval = p.xy / p.w;
-	retval.x = (retval.x + 1) * (width / 2);
-	retval.y = (retval.y + 1) * (height / 2);
-
-	return retval;
-}
-
 //pa
-float ComputeTriangleArea(float2 P0, float2 P1, float2 P2)
+float ComputeTriangleArea(float3 P0, float3 P1, float3 P2)
 {
-	return length((P1.x - P0.x) * (P2.y - P0.y) - (P2.x - P0.x) * (P1.y - P0.y));
-	return sqrt(length((P1 - P0) * (P2 - P0)));
+	return length(cross((P1 - P0), (P2 - P0)));
 }
 
 //ta
-float ComputeTextureCoordsArea(float2 P0, float2 P1, float2 P2, float2 UV0, float2 UV1, float2 UV2, Texture2D T)
+float ComputeTextureCoordsArea(float2 UV0, float2 UV1, float2 UV2, Texture2D T)
 {
 	float w, h;
 	T.GetDimensions(w, h);
-	return w * h * length((UV1.x - UV0.x) * (UV2.y - UV0.y) - (UV2.x - UV0.x) * (UV1.y - UV0.y));
+
+	return w * h * abs((UV1.x - UV0.x) * (UV2.y - UV0.y) - (UV2.x - UV0.x) * (UV1.y - UV0.y));
 }
 
-float GetTriangleLODConstant(float2 P0, float2 P1, float2 P2, float2 UV0, float2 UV1, float2 UV2, Texture2D T)
+float GetTriangleLODConstant(float3 P0, float3 P1, float3 P2, float2 UV0, float2 UV1, float2 UV2, Texture2D T)
 {
 	float P_a = ComputeTriangleArea(P0, P1, P2);
-	float T_a = ComputeTextureCoordsArea(P0, P1, P2, UV0, UV1, UV2, T);
+	float T_a = ComputeTextureCoordsArea(UV0, UV1, UV2, T);
 	return 0.5 * log2(T_a / P_a);
 }
 
-float ComputeTextureLOD(RayCone cone, float3 V, float3 N, float2 P0, float2 P1, float2 P2, float2 UV0, float2 UV1, float2 UV2, Texture2D T)
+float ComputeTextureLOD(RayCone cone, float3 V, float3 N, float3 P0, float3 P1, float3 P2, float2 UV0, float2 UV1, float2 UV2, Texture2D T)
 {
 	float w, h;
 	T.GetDimensions(w, h);
@@ -98,31 +81,45 @@ float ComputeTextureLOD(RayCone cone, float3 V, float3 N, float2 P0, float2 P1, 
 	float lambda = GetTriangleLODConstant(P0, P1, P2, UV0, UV1, UV2, T);
 	lambda += log2(abs(cone.width));
 	lambda += 0.5 * log2(w * h);
-	lambda -= log2(abs(dot(V, N)));
+	lambda -= log2(abs(dot(N, V)));
 	return lambda;
 }
 
 float PixelSpreadAngle(float vertical_fov, float output_height)
 {
-	return atan((tan(vertical_fov / 2) * 2) / output_height);
+	return atan((2.f * tan(vertical_fov / 2.f)) / 720.f);
 }
 
 float3 dumb_ddx(Texture2D t, float3 v)
 {
 	float2 pixel = DispatchRaysIndex().xy;
-	float3 left = t[float2(max(0, pixel.x-1), pixel.y)].xyz;
-	float3 right = t[float2(min(1280, pixel.x+1), pixel.y)].xyz;
 
-	return right - left;
+	float3 top_left = t[float2(pixel.x, pixel.y)].xyz;
+	float3 top_right = t[float2(pixel.x+1, pixel.y)].xyz;
+	float3 bottom_left = t[float2(pixel.x, pixel.y+1)].xyz;
+	float3 bottom_right = t[float2(pixel.x+1, pixel.y+1)].xyz;
+
+	float3 v1 = top_right - top_left;
+	float3 v2 = bottom_left - top_left;
+	
+	return v1;
+	return cross(v1, v2);
 }
 
 float3 dumb_ddy(Texture2D t, float3 v)
 {
 	float2 pixel = DispatchRaysIndex().xy;
-	float3 top = t[float2(pixel.x, max(0, pixel.y-1))].xyz;
-	float3 bottom = t[float2(pixel.x, min(720, pixel.y+1))].xyz;
 
-	return top - bottom;
+	float3 top_left = t[float2(pixel.x, pixel.y)].xyz;
+	float3 top_right = t[float2(pixel.x+1, pixel.y)].xyz;
+	float3 bottom_left = t[float2(pixel.x, pixel.y+1)].xyz;
+	float3 bottom_right = t[float2(pixel.x+1, pixel.y+1)].xyz;
+
+	float3 v1 = top_right - top_left;
+	float3 v2 = bottom_left - top_left;
+	
+	return v2;
+	return cross(v1, v2);
 }
 
 float3 dumb_ddx_depth(Texture2D t, float4x4 inv_vp, float3 v)
@@ -130,13 +127,33 @@ float3 dumb_ddx_depth(Texture2D t, float4x4 inv_vp, float3 v)
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
 	float2 pixel = DispatchRaysIndex().xy;
-	float left = t[float2(max(0, pixel.x-1), pixel.y)].x;
-	float right = t[float2(min(1280, pixel.x+1), pixel.y)].x;
+
+	float3 top_left = t[float2(pixel.x, pixel.y)].xyz;
+	float3 top_right = t[float2(pixel.x+1, pixel.y)].xyz;
+	float3 bottom_left = t[float2(pixel.x, pixel.y+1)].xyz;
+	float3 bottom_right = t[float2(pixel.x+1, pixel.y+1)].xyz;
+
+	float3 v1 = top_right - top_left;
+	float3 v2 = bottom_left - top_left;
 
 	// Get world space position
-	const float4 ndc = float4(uv * 2.0 - 1.0, right - left, 1.0);
-	float4 wpos = mul(inv_vp, ndc);
-	return (wpos.xyz / wpos.w).xyz;
+	const float4 ndc = float4(uv * 2.0 - 1.0, top_left.x, 1.0);
+	float4 wpos = ndc;
+	float3 retval = (wpos.xyz / wpos.w).xyz;
+
+	const float4 _ndc = float4(uv * 2.0 - 1.0, top_right.x, 1.0);
+	float4 _wpos = _ndc;
+	float3 _retval = (_wpos.xyz / _wpos.w).xyz;
+
+	const float4 __ndc = float4(uv * 2.0 - 1.0, bottom_left.x, 1.0);
+	float4 __wpos = __ndc;
+	float3 __retval = (__wpos.xyz / __wpos.w).xyz;
+
+	const float4 ___ndc = float4(uv * 2.0 - 1.0, bottom_right.x, 1.0);
+	float4 ___wpos = ___ndc;
+	float3 ___retval = (___wpos.xyz / ___wpos.w).xyz;
+
+	return _retval - retval;
 }
 
 float3 dumb_ddy_depth(Texture2D t, float4x4 inv_vp, float3 v)
@@ -144,13 +161,33 @@ float3 dumb_ddy_depth(Texture2D t, float4x4 inv_vp, float3 v)
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
 	float2 pixel = DispatchRaysIndex().xy;
-	float top = t[float2(pixel.x, max(0, pixel.y-1))].x;
-	float bottom = t[float2(pixel.x, min(720, pixel.y+1))].x;
+
+	float3 top_left = t[float2(pixel.x, pixel.y)].xyz;
+	float3 top_right = t[float2(pixel.x+1, pixel.y)].xyz;
+	float3 bottom_left = t[float2(pixel.x, pixel.y+1)].xyz;
+	float3 bottom_right = t[float2(pixel.x+1, pixel.y+1)].xyz;
+
+	float3 v1 = top_right - top_left;
+	float3 v2 = bottom_left - top_left;
 
 	// Get world space position
-	const float4 ndc = float4(uv * 2.0 - 1.0, top - bottom, 1.0);
-	float4 wpos = mul(inv_vp, ndc);
-	return (wpos.xyz / wpos.w).xyz;
+	const float4 ndc = float4(uv * 2.0 - 1.0, top_left.x, 1.0);
+	float4 wpos = ndc;
+	float3 retval = (wpos.xyz / wpos.w).xyz;
+
+	const float4 _ndc = float4(uv * 2.0 - 1.0, top_right.x, 1.0);
+	float4 _wpos = _ndc;
+	float3 _retval = (_wpos.xyz / _wpos.w).xyz;
+
+	const float4 __ndc = float4(uv * 2.0 - 1.0, bottom_left.x, 1.0);
+	float4 __wpos = __ndc;
+	float3 __retval = (__wpos.xyz / __wpos.w).xyz;
+
+	const float4 ___ndc = float4(uv * 2.0 - 1.0, bottom_right.x, 1.0);
+	float4 ___wpos = ___ndc;
+	float3 ___retval = (___wpos.xyz / ___wpos.w).xyz;
+
+	return __retval - ___retval;
 }
 
 float ComputeSurfaceSpreadAngle(Texture2D g_P, Texture2D g_N, float4x4 inv_vp, float3 P, float3 N)
@@ -159,14 +196,15 @@ float ComputeSurfaceSpreadAngle(Texture2D g_P, Texture2D g_N, float4x4 inv_vp, f
 	float3 aPy = dumb_ddy_depth(g_P, inv_vp, P);
 
 	float3 aNx = dumb_ddx(g_N, N);
-	float3 aNy = dumb_ddx(g_N, N);
+	float3 aNy = dumb_ddy(g_N, N);
 
 	float k1 = 1;
-	float k2 = 1;
+	float k2 = 0;
 	
 	float s = sign(dot(aPx, aNx) + dot(aPy, aNy));
 
-	return 2 * k1 * s * sqrt(dot(aNx, aNx) + dot(aNy, aNy)) + k2;
+	return 2.f * k1 * s * sqrt(dot(aNx, aNx) + dot(aNy, aNy)) + k2;
+
 }
 
 RayCone Propagate(RayCone cone, float surface_spread_angle, float hit_dist)

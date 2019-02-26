@@ -170,7 +170,6 @@ void RaygenEntry()
 	sfhit.normal = normal;
 	sfhit.dist = length(cpos - wpos);
 	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
-	//sfhit.surface_spread_angle = PixelSpreadAngle(1.5708, 720);
 
 	RayCone cone = ComputeRayConeFromGBuffer(sfhit);
 	RayCone copy = cone;
@@ -191,8 +190,8 @@ void RaygenEntry()
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
+	gOutput[DispatchRaysIndex().xy] = sfhit.surface_spread_angle;
 	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
-	//gOutput[DispatchRaysIndex().xy] = float4(cone.spread_angle, 0, 0, 1);
 }
 
 //Reflections
@@ -231,9 +230,9 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
 
 	// Gather triangle vertices
-	const Vertex v0 = g_vertices[indices.x];
-	const Vertex v1 = g_vertices[indices.y];
-	const Vertex v2 = g_vertices[indices.z];
+	 Vertex v0 = g_vertices[indices.x];
+	 Vertex v1 = g_vertices[indices.y];
+	 Vertex v2 = g_vertices[indices.z];
 
 	//Get data from VBO
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
@@ -245,9 +244,39 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const float3 hit_pos = HitWorldPosition();
 	float3 V = normalize(payload.origin - hit_pos);
 
-	payload.cone = Propagate(payload.cone, 0, length(hit_pos - payload.origin));
-	float mip = ComputeTextureLOD(payload.cone, V, normal, v0.pos, v1.pos, v2.pos, v0.uv, v1.uv, v2.uv, g_textures[material.albedo_id]);
-	mip = 0;
+	v0.uv.y = 1.0f - v0.uv.y;
+	v1.uv.y = 1.0f - v1.uv.y;
+	v2.uv.y = 1.0f - v2.uv.y;
+
+	payload.cone = Propagate(payload.cone, 0, length(payload.origin - hit_pos));
+
+	float mip = ComputeTextureLOD(
+		payload.cone,
+		V,
+		normal,
+		mul(model_matrix, float4(v0.pos, 1)),
+		mul(model_matrix, float4(v1.pos, 1)),
+		mul(model_matrix, float4(v2.pos, 1)),
+		v0.uv,
+		v1.uv,
+		v2.uv,
+		g_textures[material.albedo_id]
+	);
+
+	/*mip = ComputeTriangleArea(
+		mul(model_matrix, float4(v0.pos, 1)),
+		mul(model_matrix, float4(v1.pos, 1)),
+		mul(model_matrix, float4(v2.pos, 1))
+	);*/
+
+
+	mip = ComputeTextureCoordsArea(
+		v0.uv,
+		v1.uv,
+		v2.uv,
+		g_textures[material.albedo_id]
+	);
+
 
 //#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
@@ -262,12 +291,12 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 
 	//Direction & position
 
-	float3 N = normalize(mul(model_matrix, float4(-normal, 0)));
+	float3 N = normalize(mul(model_matrix, float4(normal, 0)));
 	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
 	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
 	float3x3 TBN = float3x3(T, B, N);
 
-	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, 0).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
+	float3 normal_t = (g_textures[material.normal_id].SampleLevel(s0, uv, mip).xyz) * 2.0 - float3(1.0, 1.0, 1.0);
 
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
@@ -291,8 +320,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
 
 	payload.color = ambient + lighting;
-
-	//payload.color = float3(mip / 20, 0, 0);
+	payload.color = mip;
 }
 
 //Reflection skybox
