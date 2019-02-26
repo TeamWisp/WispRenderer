@@ -31,7 +31,8 @@ struct Offset
     float vertex_offset;
 };
 
-RWTexture2D<float4> gOutput : register(u0);
+RWTexture2D<float4> output_reflection : register(u0);
+RWTexture2D<float4> output_shadow : register(u1);
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -130,6 +131,35 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
 	return reflection;
 }
 
+float3 DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
+{
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+
+	float3 res = float3(0, 0, 0);
+
+	[unroll]
+	for (uint i = 0; i < light_count; i++)
+	{
+		// Get light and light type
+		Light light = lights[i];
+		uint tid = light.tid & 3;
+
+		//Light direction (constant with directional, position dependent with other)
+		float3 L = (lerp(light.pos - wpos, -light.dir, tid == light_type_directional));
+		float light_dist = length(L);
+		L /= light_dist;
+
+		// Get maxium ray length (depending on type)
+		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
+
+		// Add shadow factor to final result
+		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed);
+	}
+
+	// return final res
+	return res / float(light_count);
+}
+
 #define M_PI 3.14159265358979
 
 [shader("raygeneration")]
@@ -161,27 +191,16 @@ void RaygenEntry()
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
+		output_reflection[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
 		return;
 	}
 
-	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
-	float3 reflection = DoReflection(wpos, V, normal, rand_seed);
+	wpos += normal * EPSILON;
+	float3 shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	float4 reflection_result = float4(albedo, 1);
 
-	float3 flipped_N = normal;
-	flipped_N.y *= -1;
-	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
-
-	const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
-	float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metallic;
-
-	float3 specular = (reflection.xyz) * F;
-	float3 diffuse = albedo * sampled_irradiance;
-	float3 ambient = (kD * diffuse + specular);
-
-	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
+	output_reflection[DispatchRaysIndex().xy] = float4(reflection_result);
+	output_shadow[DispatchRaysIndex().xy] = float4(shadow_result, 1);
 
 }
 

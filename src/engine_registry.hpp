@@ -401,7 +401,7 @@ namespace wr
 
 		constexpr std::array<rs_layout::Entry, 20> rt_hybrid = {
 			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::OUTPUT, 2, rs_layout::Type::UAV_RANGE},				// Reflection + shadow buffer
 			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
