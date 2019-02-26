@@ -18,8 +18,14 @@ namespace wr
 	struct DeferredCompositionTaskData
 	{
 		D3D12Pipeline* in_pipeline;
-		d3d12::DescriptorHeap* out_srv_heap;
 		d3d12::RenderTarget* out_deferred_main_rt;
+
+		DescriptorAllocator* out_allocator;
+		DescriptorAllocation out_rtv_srv_allocation;
+		DescriptorAllocation out_srv_uav_allocation;
+
+		d3d12::TextureResource* out_skybox;
+		d3d12::TextureResource* out_irradiance;
 
 		std::array<d3d12::CommandList*, d3d12::settings::num_back_buffers> out_bundle_cmd_lists;
 		bool out_requires_bundle_recording;
@@ -31,17 +37,40 @@ namespace wr
 		inline void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, DeferredCompositionTaskData const & data, unsigned int frame_idx)
 		{
 			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
-			
 
-			d3d12::BindDescriptorHeap(cmd_list, data.out_srv_heap, data.out_srv_heap->m_create_info.m_type, frame_idx);
+			bool is_fallback = d3d12::GetRaytracingType(render_system.m_device) == RaytracingType::FALLBACK;
+			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
-			auto gpu_handle = d3d12::GetGPUHandle(data.out_srv_heap, frame_idx);
-			d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 1);
+			constexpr unsigned int albedo = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS);
+			d3d12::DescHeapCPUHandle albedo_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(albedo);
+			d3d12::SetShaderSRV(cmd_list, 1, albedo, albedo_handle);
 
-			d3d12::Dispatch(cmd_list, 
-				static_cast<int>(std::ceil( render_system.m_viewport.m_viewport.Width / 16.f)),
+			constexpr unsigned int normal = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_NORMAL_METALLIC);
+			d3d12::DescHeapCPUHandle normal_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(normal);
+			d3d12::SetShaderSRV(cmd_list, 1, normal, normal_handle);
+
+			constexpr unsigned int depth = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH);
+			d3d12::DescHeapCPUHandle depth_handle = data.out_srv_uav_allocation.GetDescriptorHandle(depth);
+			d3d12::SetShaderSRV(cmd_list, 1, depth, depth_handle);
+
+			constexpr unsigned int lights = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::LIGHT_BUFFER);
+			d3d12::DescHeapCPUHandle lights_handle = data.out_srv_uav_allocation.GetDescriptorHandle(lights);
+			d3d12::SetShaderSRV(cmd_list, 1, lights, lights_handle);
+
+			constexpr unsigned int skybox = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX);
+			d3d12::SetShaderSRV(cmd_list, 1, skybox, data.out_skybox);
+
+			constexpr unsigned int irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP);
+			d3d12::SetShaderSRV(cmd_list, 1, irradiance, data.out_irradiance);
+
+			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
+			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
+			d3d12::SetShaderUAV(cmd_list, 1, output, output_handle);
+
+			d3d12::Dispatch(cmd_list,
+				static_cast<int>(std::ceil(render_system.m_viewport.m_viewport.Width / 16.f)),
 				static_cast<int>(std::ceil(render_system.m_viewport.m_viewport.Height / 16.f)),
 				1);
 		}
@@ -54,21 +83,27 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::deferred_composition);
 
-			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_shader_visible = true;
-			heap_desc.m_num_descriptors = 7;
-			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-			heap_desc.m_versions = d3d12::settings::num_back_buffers;
-			data.out_srv_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
-			SetName(data.out_srv_heap, L"Deferred Render Task SRV");
+			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
+			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
+			if (!texture_pool)
+			{
+				LOGC("Texture pool is nullptr. This shouldn't happen as the render system should always create the first texture pool");
+			}
+
+			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(6));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(7));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
-				auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS)));
+				constexpr auto rtv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS);
+				auto rtv_srv_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rtv_id + (2 * i));
+
+				auto dsv_srv_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH)));
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-				d3d12::CreateSRVFromRTV(deferred_main_rt, cpu_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
-				d3d12::CreateSRVFromDSV(deferred_main_rt, cpu_handle);
+				d3d12::CreateSRVFromRTV(deferred_main_rt, rtv_srv_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
+				d3d12::CreateSRVFromDSV(deferred_main_rt, dsv_srv_handle);
 			}
 		}
 
@@ -87,7 +122,7 @@ namespace wr
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
 
-				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE) 
+				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
 				{
 					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 					return;
@@ -95,31 +130,30 @@ namespace wr
 
 				//Get light buffer
 				{
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::LIGHT_BUFFER)));
-					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
+					auto srv_struct_buffer_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::LIGHT_BUFFER)));
+					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, srv_struct_buffer_handle, frame_idx);
 				}
-				
-				//GetSkybox //TODO: Use Texture pool system
-				if (scene_graph.m_skybox.has_value())
+
+				//GetSkybox
+				auto skybox = scene_graph.GetCurrentSkybox();
+				if (skybox != nullptr)
 				{
-					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX))); // here
-					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
+					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
+					d3d12::CreateSRVFromTexture(data.out_skybox);
 				}
 
 				// Get Environment Map
 				if (scene_graph.m_skybox.has_value())
 				{
-					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP))); // here
-					d3d12::CreateSRVFromTexture(irradiance_t, cpu_handle);
+					data.out_irradiance = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					d3d12::CreateSRVFromTexture(data.out_irradiance);
 				}
 
 				// Output UAV
 				{
-					auto cpu_handle = d3d12::GetCPUHandle(data.out_srv_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
+					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
 					std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
-					d3d12::CreateUAVFromRTV(render_target, cpu_handle, 1, formats.data());
+					d3d12::CreateUAVFromRTV(render_target, rtv_out_uav_handle, 1, formats.data());
 				}
 
 				if constexpr (d3d12::settings::use_bundles)
@@ -136,7 +170,7 @@ namespace wr
 						data.out_requires_bundle_recording = false;
 					}
 				}
-				
+
 				//Render deferred
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
@@ -150,12 +184,13 @@ namespace wr
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
-					d3d12::BindDescriptorHeap(cmd_list, data.out_srv_heap, data.out_srv_heap->m_create_info.m_type, frame_idx);
+					bool is_fallback = d3d12::GetRaytracingType(n_render_system.m_device) == RaytracingType::FALLBACK;
+					d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
-				{						
-					RecordDrawCommands(n_render_system, cmd_list, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, frame_idx);	
+				{
+					RecordDrawCommands(n_render_system, cmd_list, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, frame_idx);
 				}
 
 				d3d12::Transition(cmd_list,
@@ -171,10 +206,12 @@ namespace wr
 		{
 			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
 
-			d3d12::Destroy(data.out_srv_heap);
+			// Small hack to force the allocations to go out of scope, which will tell the texture pool to free them
+			DescriptorAllocation temp1 = std::move(data.out_rtv_srv_allocation);
+			DescriptorAllocation temp2 = std::move(data.out_srv_uav_allocation);
 		}
 
-	} /* internal */
+	}
 
 	inline void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
@@ -211,4 +248,4 @@ namespace wr
 		fg.AddTask<DeferredCompositionTaskData>(desc);
 	}
 
-} /* wr */
+}

@@ -61,6 +61,8 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to, unsigned int first_subresource, unsigned int num_subresources);
+	void TransitionSubresource(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to, unsigned int subresource);
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx);
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
