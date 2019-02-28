@@ -49,6 +49,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(camera_pos - pos);
 
+	const float ambient = float(0.1);
 	float3 retval;
 	
 	if(depth_f != 1.0f)
@@ -63,7 +64,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		flipped_N.y *= -1;
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
-		const float shadow_factor = 1.0f;
+		float shadow_factor = buffer_shadow[screen_coord].x;
+		// Invert shadow_factor as it is saved as 1 is fully shadowed
+		shadow_factor = abs(shadow_factor - 1.0);
+		shadow_factor = clamp(shadow_factor, ambient, 1.0);
 		
 		float3 skybox_reflection = skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0);
 
@@ -75,8 +79,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{	
 		retval = skybox.SampleLevel(s0, SampleSphericalMap(-V), 0);
 	}
-
-	retval = buffer_shadow[screen_coord].xyz;
 
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
