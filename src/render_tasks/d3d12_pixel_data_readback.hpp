@@ -1,9 +1,10 @@
 #pragma once
 
-#include "../d3d12/d3d12_structs.hpp"
-#include "../d3d12/d3d12_renderer.hpp"
-#include "../d3d12/d3d12_functions.hpp"
-#include "../frame_graph/frame_graph.hpp"
+#include "d3d12/d3d12_functions.hpp"
+#include "d3d12/d3d12_renderer.hpp"
+#include "d3d12/d3d12_structs.hpp"
+#include "frame_graph/frame_graph.hpp"
+#include "util/math.hpp"
 
 namespace wr
 {
@@ -71,7 +72,11 @@ namespace wr
 			destination.PlacedFootprint.Footprint.Width = dx12_render_system.m_viewport.m_viewport.Width;
 			destination.PlacedFootprint.Footprint.Height = dx12_render_system.m_viewport.m_viewport.Height;
 			destination.PlacedFootprint.Footprint.Depth = 1;
-			destination.PlacedFootprint.Footprint.RowPitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
+
+			std::uint32_t row_pitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
+			std::uint32_t aligned_row_pitch = util::RoundUpToNearestMultiple(row_pitch, 256);	// 256 byte aligned
+
+			destination.PlacedFootprint.Footprint.RowPitch = aligned_row_pitch;
 
 			D3D12_TEXTURE_COPY_LOCATION source = {};
 			source.pResource = data.predecessor_render_target->m_render_targets[0];
