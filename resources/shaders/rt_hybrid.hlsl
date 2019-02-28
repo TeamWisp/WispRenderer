@@ -35,10 +35,10 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[200] : register(t8);
-Texture2D gbuffer_albedo : register(t208);
-Texture2D gbuffer_normal : register(t209);
-Texture2D gbuffer_depth : register(t210);
+Texture2D g_textures[1000] : register(t8);
+Texture2D gbuffer_albedo : register(t1008);
+Texture2D gbuffer_normal : register(t1009);
+Texture2D gbuffer_depth : register(t1010);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
 SamplerState s0 : register(s0);
@@ -172,7 +172,6 @@ void RaygenEntry()
 	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
 
 	RayCone cone = ComputeRayConeFromGBuffer(sfhit);
-	RayCone copy = cone;
 
 	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
 	float3 reflection = DoReflection(wpos, V, normal, rand_seed, cone);
@@ -230,9 +229,9 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
 
 	// Gather triangle vertices
-	 Vertex v0 = g_vertices[indices.x];
-	 Vertex v1 = g_vertices[indices.y];
-	 Vertex v2 = g_vertices[indices.z];
+	Vertex v0 = g_vertices[indices.x];
+	Vertex v1 = g_vertices[indices.y];
+	Vertex v2 = g_vertices[indices.z];
 
 	//Get data from VBO
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
@@ -244,16 +243,16 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const float3 hit_pos = HitWorldPosition();
 	float3 V = normalize(payload.origin - hit_pos);
 
-	v0.uv.y = 1.0f - v0.uv.y;
+	/*v0.uv.y = 1.0f - v0.uv.y;
 	v1.uv.y = 1.0f - v1.uv.y;
-	v2.uv.y = 1.0f - v2.uv.y;
+	v2.uv.y = 1.0f - v2.uv.y;*/
 
 	payload.cone = Propagate(payload.cone, 0, length(payload.origin - hit_pos));
 
 	float mip = ComputeTextureLOD(
 		payload.cone,
 		V,
-		normal,
+		normalize(mul(model_matrix, float4(normal, 0))),
 		mul(model_matrix, float4(v0.pos, 1)),
 		mul(model_matrix, float4(v1.pos, 1)),
 		mul(model_matrix, float4(v2.pos, 1)),
@@ -262,21 +261,6 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 		v2.uv,
 		g_textures[material.albedo_id]
 	);
-
-	/*mip = ComputeTriangleArea(
-		mul(model_matrix, float4(v0.pos, 1)),
-		mul(model_matrix, float4(v1.pos, 1)),
-		mul(model_matrix, float4(v2.pos, 1))
-	);*/
-
-
-	mip = ComputeTextureCoordsArea(
-		v0.uv,
-		v1.uv,
-		v2.uv,
-		g_textures[material.albedo_id]
-	);
-
 
 //#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
@@ -313,14 +297,15 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
-	float3 specular = (float3(0, 0, 0)) * F;
+	float3 reflected = reflect(-V, fN);
+	float3 specular = skybox.SampleLevel(s0, SampleSphericalMap(reflected), 0).xyz * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
 
+	payload.color = payload.cone.width; // Debug code
 	payload.color = ambient + lighting;
-	payload.color = mip;
 }
 
 //Reflection skybox

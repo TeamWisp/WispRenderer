@@ -7,7 +7,7 @@ namespace wr
 
 	AssimpModelLoader::AssimpModelLoader()
 	{
-		m_supported_model_formats = { "obj","fbx","raw","sib","smd","gltf" };
+		m_supported_model_formats = { "obj","fbx","raw","sib","smd","gltf", "dae" };
 	}
 
 	AssimpModelLoader::~AssimpModelLoader()

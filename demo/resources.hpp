@@ -12,6 +12,7 @@ namespace resources
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
+	static wr::Model* mirror_plane_model;
 	static wr::Model* light_model;
 	static wr::Model* test_model;
 	static wr::Model* sphere_model;
@@ -40,12 +41,13 @@ namespace resources
 
 	static wr::MaterialHandle light_material;
 	static wr::MaterialHandle mirror_material;
+	static wr::MaterialHandle cb_material;
 	static wr::TextureHandle equirectangular_environment_map;
 
 	void CreateResources(wr::RenderSystem* render_system)
 	{
 		texture_pool = render_system->CreateTexturePool();
-		material_pool = render_system->CreateMaterialPool(256);
+		material_pool = render_system->CreateMaterialPool(556);
 
 		// Load Texture.
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
@@ -107,17 +109,26 @@ namespace resources
 		wr::TextureHandle rubber_roughness = texture_pool->Load("resources/materials/rubber/roughness.png", false, true);
 		wr::TextureHandle rubber_metallic = texture_pool->Load("resources/materials/rubber/metallic.png", false, true);
 
-		equirectangular_environment_map = texture_pool->Load("resources/materials/SunTemple_Skybox.hdr", false, false);
+		wr::TextureHandle checkerboard = texture_pool->Load("resources/materials/checkerboard.png", false, true);
+
+		equirectangular_environment_map = texture_pool->Load("resources/materials/Arches_E_PineTree_3k.hdr", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();
+		cb_material = material_pool->Create();
 
 		wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material.m_id);
+		wr::Material* cb_internal = material_pool->GetMaterial(cb_material.m_id);
 
 		mirror_internal->SetAlbedo(white);
 		mirror_internal->SetNormal(flat_normal);
 		mirror_internal->SetRoughness(black);
 		mirror_internal->SetMetallic(white);
+
+		cb_internal->SetAlbedo(checkerboard);
+		cb_internal->SetNormal(flat_normal);
+		cb_internal->SetRoughness(white);
+		cb_internal->SetMetallic(black);
 
 		{
 			// Create Material
@@ -224,7 +235,7 @@ namespace resources
 			scorched_wood_material_internal->SetMetallic	(scorched_wood_metallic);
 		}
 
-		model_pool = render_system->CreateModelPool(164_mb, 164_mb);
+		model_pool = render_system->CreateModelPool(464_mb, 464_mb);
 
 		{
 			wr::MeshData<wr::VertexColor> mesh;
@@ -243,6 +254,7 @@ namespace resources
 
 			//plane_model = model_pool->LoadCustom<wr::Vertex>({ mesh });
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
+			mirror_plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 
 			//plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
 			light_model = plane_model;
@@ -251,17 +263,27 @@ namespace resources
 			{
 				m.second = &bamboo_material;
 			}
+			for (auto& m : mirror_plane_model->m_meshes)
+			{
+				m.second = &mirror_material;
+			}
 		}
 
 		{
 			{
-				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/mip_playground.fbx");
 				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)
 				{
-					m.second = &rusty_metal_material;
+					m.second = &mirror_material;
 				}
+				test_model->m_meshes[0].second = &cb_material;
+				test_model->m_meshes[1].second = &cb_material;
+				test_model->m_meshes[2].second = &cb_material;
+				test_model->m_meshes[3].second = &cb_material;
+				test_model->m_meshes[4].second = &cb_material;
+				test_model->m_meshes[5].second = &cb_material;
 
 				for (auto& m : sphere_model->m_meshes)
 				{
