@@ -263,15 +263,17 @@ namespace wr
 			NORMAL,
 			ROUGHNESS,
 			METALLIC,
+			MATERIAL_PROPERTIES,
 		};
 
-		constexpr std::array<rs_layout::Entry, 6> basic = {
+		constexpr std::array<rs_layout::Entry, 7> basic = {
 			rs_layout::Entry{(int)BasicE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)BasicE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)BasicE::ALBEDO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::METALLIC, 1, rs_layout::Type::SRV_RANGE}
+			rs_layout::Entry{(int)BasicE::METALLIC, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BasicE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
 		enum class DeferredCompositionE
@@ -301,13 +303,13 @@ namespace wr
 		{
 			SOURCE,
 			DEST,
-			TEXEL_SIZE,
+			CBUFFER,
 		};
 
 		constexpr std::array<rs_layout::Entry, 3> mip_mapping = {
 			rs_layout::Entry{(int)MipMappingE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)MipMappingE::DEST, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)MipMappingE::TEXEL_SIZE, 2, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)MipMappingE::DEST, 4, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)MipMappingE::CBUFFER, 6, rs_layout::Type::CBV_OR_CONST},
 		};
 
 		enum class CubemapConversionE
