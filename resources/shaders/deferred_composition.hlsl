@@ -12,7 +12,7 @@ Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
 Texture2D skybox : register(t4);
 TextureCube irradiance_map : register(t5);
-Texture2D buffer_shadow : register(t6);
+Texture2D buffer_refl_shadow : register(t6);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -64,7 +64,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		flipped_N.y *= -1;
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
-		float shadow_factor = buffer_shadow[screen_coord].x;
+		float shadow_factor = buffer_refl_shadow[screen_coord].a;
 		// Invert shadow_factor as it is saved as 1 is fully shadowed
 		shadow_factor = abs(shadow_factor - 1.0);
 		shadow_factor = clamp(shadow_factor, ambient, 1.0);

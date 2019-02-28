@@ -31,8 +31,7 @@ struct Offset
     float vertex_offset;
 };
 
-RWTexture2D<float4> output_shadow : register(u0);
-RWTexture2D<float4> output_reflection : register(u1);
+RWTexture2D<float4> output_refl_shadow : register(u0);
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -193,21 +192,20 @@ void RaygenEntry()
 	{
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
-		output_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 1);
-		output_reflection[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
+		output_refl_shadow[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
+		output_refl_shadow[DispatchRaysIndex().xy].a = 0;
 		return;
 	}
 
 	wpos += normal * EPSILON;
 	// Get shadow factor
-	float3 shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed).x;
 	shadow_result = abs(shadow_result - 1.0);
 
 	// Get reflection result
 	float4 reflection_result = float4(albedo, 1);
 
-	output_shadow[DispatchRaysIndex().xy] = float4(shadow_result, 1);
-	output_reflection[DispatchRaysIndex().xy] = float4(reflection_result);
+	output_refl_shadow[DispatchRaysIndex().xy] = float4(albedo, shadow_result);
 
 }
 
