@@ -31,7 +31,7 @@ struct Offset
     float vertex_offset;
 };
 
-RWTexture2D<float4> output_refl_shadow : register(u0);
+RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -205,6 +205,7 @@ void RaygenEntry()
 	// Get reflection result
 	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
 
+	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
 
 }
@@ -302,6 +303,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
+	// Output the final reflections here
 	payload.color = float3(albedo.xyz);
 }
 

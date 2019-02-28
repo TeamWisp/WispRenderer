@@ -90,6 +90,8 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::deferred_composition);
 
+			// Since including the hybrid render task causes include loops, we assume that the composition task
+			// is the hybrid framegraph by checking if T is not set to the default value (specified in 'AddDeferredCompositionTask')
 			data.is_in_hybrid = !std::is_same<T, wr::DeferredCompositionTaskData>::value;
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
@@ -114,6 +116,7 @@ namespace wr
 				d3d12::CreateSRVFromRTV(deferred_main_rt, rtv_srv_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, dsv_srv_handle);
 
+				// Bind output(s) from hybrid render task, if the composition task is executed in the hybrid frame graph
 				if (data.is_in_hybrid)
 				{
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
@@ -167,9 +170,10 @@ namespace wr
 					d3d12::CreateSRVFromTexture(data.out_irradiance);
 				}
 
+				// We need a fallback texture when the composition task is not executed in the hybrid
 				if(scene_graph.m_skybox.has_value() && !data.is_in_hybrid)
 				{
-					// Set skybox as hybrid output buffer?
+					// Set skybox as hybrid fallback?
 				}
 
 				// Output UAV
