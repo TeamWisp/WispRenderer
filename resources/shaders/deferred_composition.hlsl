@@ -65,13 +65,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 		float shadow_factor = buffer_refl_shadow[screen_coord].a;
-		// Invert shadow_factor as it is saved as 1 is fully shadowed
+		// Invert shadow_factor as it is saved as 1 == fully shadowed
 		shadow_factor = abs(shadow_factor - 1.0);
 		shadow_factor = clamp(shadow_factor, ambient, 1.0);
 		
-		float3 skybox_reflection = skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0);
+		float3 reflection = buffer_refl_shadow[screen_coord].xyz;
 
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, skybox_reflection);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection);
 
 		retval = retval * shadow_factor;
 	}

@@ -203,9 +203,9 @@ void RaygenEntry()
 	shadow_result = abs(shadow_result - 1.0);
 
 	// Get reflection result
-	float4 reflection_result = float4(albedo, 1);
+	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
 
-	output_refl_shadow[DispatchRaysIndex().xy] = float4(albedo, shadow_result);
+	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
 
 }
 
@@ -302,9 +302,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
-
-	payload.color = ambient + lighting;
+	payload.color = float3(albedo.xyz);
 }
 
 //Reflection skybox
