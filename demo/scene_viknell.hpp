@@ -13,6 +13,7 @@ namespace viknell_scene
 
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
+	static std::shared_ptr<wr::LightNode> point_light_node;
 	static std::shared_ptr<wr::MeshNode> test_model;
 	static float t = 0;
 
@@ -55,13 +56,13 @@ namespace viknell_scene
 		point_light_0->SetRotation({20.950, 0.98, 0});
 		point_light_0->SetPosition({-0.002, 0.080, 1.404});
 
-		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{1, 0, 0});
-		point_light_1->SetRadius(5.0f);
-		point_light_1->SetPosition({0.5, 0, -0.3});
+		point_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{5, 5, 5});
+		point_light_node->SetRadius(5.0f);
+		point_light_node->SetPosition({0.5, 0, -0.3});
 
-		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{0, 0, 1});
-		point_light_2->SetRadius(5.0f);
-		point_light_2->SetPosition({-0.5, 0.5, -0.3});
+		//auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{0, 0, 1});
+		//point_light_2->SetRadius(5.0f);
+		//point_light_2->SetPosition({-0.5, 0.5, -0.3});
 
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	}
@@ -73,6 +74,8 @@ namespace viknell_scene
 		//auto pos = test_model->m_position;
 		//pos.m128_f32[0] = sin(t * 0.1) * 0.5;
 		//test_model->SetPosition(pos);
+
+		point_light_node->SetPosition({float(sin(t * 0.1f)) * 0.9f, 0.f, 1.2f});
 
 		camera->Update(ImGui::GetIO().DeltaTime);
 	}
