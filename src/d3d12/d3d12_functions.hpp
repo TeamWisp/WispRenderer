@@ -69,7 +69,7 @@ namespace wr::d3d12
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void Alias(CommandList* cmd_list, TextureResource* resource_before, TextureResource* resource_after);
 	void UAVBarrier(CommandList* cmd_list, TextureResource* resource, unsigned int number_of_barriers);
-	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth);
+	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth, unsigned int frame_idx);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
 
@@ -113,6 +113,10 @@ namespace wr::d3d12
 	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture);
 	void Destroy(TextureResource* tex);
 

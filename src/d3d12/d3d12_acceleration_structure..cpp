@@ -69,8 +69,7 @@ namespace wr::d3d12
 			DescriptorHeap* heap,
 			std::uint32_t index,
 			ID3D12Resource* resource,
-			UINT buffer_num_elements,
-			d3d12::DescHeapCPUHandle& uav_handle)
+			UINT buffer_num_elements)
 		{
 
 			if (GetRaytracingType(device) != RaytracingType::FALLBACK)
@@ -84,13 +83,20 @@ namespace wr::d3d12
 			rawBufferUavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 			rawBufferUavDesc.Buffer.NumElements = buffer_num_elements;
 
+			d3d12::DescHeapCPUHandle bottom_level_descriptor;
+
 			// Only compute fallback requires a valid descriptor index when creating a wrapped pointer.
 			UINT desc_heap_idx = index; // TODO don't hardcode this.
 			if (!device->m_fallback_native->UsingRaytracingDriver())
 			{
-				device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, uav_handle.m_native);
+				for (auto frame_idx = 0; frame_idx < 3; frame_idx++)
+				{
+					// desc_heap_idx = AllocateDescriptor(heap, increment_size, &bottomLevelDescriptor, index);
+					bottom_level_descriptor = d3d12::GetCPUHandle(heap, frame_idx, 0); // TODO: Don't harcode this.
+					d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
+					device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
+				}
 			}
-
 			return device->m_fallback_native->GetWrappedPointerSimple(desc_heap_idx, resource->GetGPUVirtualAddress());
 		}
 
@@ -310,7 +316,7 @@ namespace wr::d3d12
 				d3d12::DescHeapCPUHandle handle = out_blas_allocations.GetDescriptorHandle(i);
 
 				UINT num_buffer_elements = static_cast<UINT>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements, handle);
+				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements);
 
 				instance_descs.push_back(instance_desc);
 
@@ -329,7 +335,7 @@ namespace wr::d3d12
 			d3d12::DescHeapCPUHandle handle = out_tlas_allocation.GetDescriptorHandle();
 
 			UINT num_buffer_elements = static_cast<UINT>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements, handle);
+			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements);
 		}
 
 		// Top Level Acceleration Structure desc
@@ -445,7 +451,7 @@ namespace wr::d3d12
 				d3d12::DescHeapCPUHandle handle = out_blas_allocations.GetDescriptorHandle(i);
 
 				UINT num_buffer_elements = static_cast<UINT>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements, handle);
+				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements);
 
 				instance_descs.push_back(instance_desc);
 
@@ -463,7 +469,7 @@ namespace wr::d3d12
 			d3d12::DescHeapCPUHandle handle = out_tlas_allocation.GetDescriptorHandle();
 
 			UINT num_buffer_elements = static_cast<UINT>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements, handle);
+			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements);
 		}
 
 		// Top Level Acceleration Structure desc

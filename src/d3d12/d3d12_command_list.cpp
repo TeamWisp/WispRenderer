@@ -1,5 +1,6 @@
 #include "d3d12_functions.hpp"
 #include "d3d12_dynamic_descriptor_heap.hpp"
+#include "d3d12_rt_descriptor_heap.hpp"
 #include "d3d12_texture_resources.hpp"
 
 #include "../util/log.hpp"
@@ -44,13 +45,9 @@ namespace wr::d3d12
 		{
 			cmd_list->m_dynamic_descriptor_heaps[i] = std::make_unique<DynamicDescriptorHeap>(device, static_cast<DescriptorHeapType>(i));
 			cmd_list->m_descriptor_heaps[i] = nullptr;
-
-			if (i == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
-			{
-				cmd_list->m_dynamic_descriptor_heaps[i]->RequestDescriptorHeap();
-				cmd_list->m_dynamic_descriptor_heaps[i]->Reset();
-			}
 		}
+
+		cmd_list->m_rt_descriptor_heap = std::make_unique<RTDescriptorHeap>(device, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
 		return cmd_list;
 	}
@@ -86,6 +83,8 @@ namespace wr::d3d12
 			cmd_list->m_dynamic_descriptor_heaps[i]->Reset();
 			cmd_list->m_descriptor_heaps[i] = nullptr;
 		}
+
+		cmd_list->m_rt_descriptor_heap->Reset(frame_idx);
 	}
 
 	void End(CommandList* cmd_list)
@@ -233,10 +232,7 @@ namespace wr::d3d12
 			cmd_list->m_native->SetPipelineState1(state_object->m_native);
 		}
 
-		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
-		{
-			cmd_list->m_dynamic_descriptor_heaps[i]->ParseRootSignature(*state_object->m_global_root_signature);
-		}
+		cmd_list->m_rt_descriptor_heap->ParseRootSignature(*state_object->m_global_root_signature);
 	}
 
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport)
@@ -516,7 +512,7 @@ namespace wr::d3d12
 		return cmd_sig;
 	}
 
-	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth)
+	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth, unsigned int frame_idx)
 	{
 		D3D12_DISPATCH_RAYS_DESC desc = {};
 		desc.HitGroupTable.StartAddress = hitgroup_table->m_resource->GetGPUVirtualAddress();
@@ -534,10 +530,7 @@ namespace wr::d3d12
 		desc.Height = height;
 		desc.Depth = depth;
 
-		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
-		{
-			cmd_list->m_dynamic_descriptor_heaps[i]->CommitStagedDescriptorsForDispatch(*cmd_list);
-		}
+		cmd_list->m_rt_descriptor_heap->CommitStagedDescriptorsForDispatch(*cmd_list, frame_idx);
 
 		if (cmd_list->m_native_fallback)
 		{

@@ -12,6 +12,7 @@
 #include "../imgui_tools.hpp"
 
 #include "../d3d12/d3d12_descriptors_allocations.hpp"
+#include "../d3d12/d3d12_rt_descriptor_heap.hpp"
 
 namespace wr
 {
@@ -291,8 +292,7 @@ namespace wr
 			data.out_materials_require_update = false;
 			
 			// Build Bottom level BVH
-			DynamicDescriptorHeap* heap = cmd_list->m_dynamic_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV)].get();
-			d3d12::DescriptorHeap* native_heap = heap->RequestHeapNoPopping();
+			d3d12::DescriptorHeap* rt_heap = cmd_list->m_rt_descriptor_heap.get()->GetHeap();
 
 			// Initialize requirements
 			if (data.out_init)
@@ -308,7 +308,7 @@ namespace wr
 				// List all materials used by meshes
 				internal::BuildBLASList(device, cmd_list, scene_graph, data);
 
-				data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, native_heap, data.out_allocator, data.out_blas_allocations, data.out_tlas_allocation, data.out_num_allocations, data.out_blas_list);
+				data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, rt_heap, data.out_allocator, data.out_blas_allocations, data.out_tlas_allocation, data.out_num_allocations, data.out_blas_list);
 				data.out_tlas.m_native->SetName(L"Highlevelaccel");
 
 				// Transition all model pools back to whatever they were.
