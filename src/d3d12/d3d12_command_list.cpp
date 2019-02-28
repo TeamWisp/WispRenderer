@@ -44,6 +44,12 @@ namespace wr::d3d12
 		{
 			cmd_list->m_dynamic_descriptor_heaps[i] = std::make_unique<DynamicDescriptorHeap>(device, static_cast<DescriptorHeapType>(i));
 			cmd_list->m_descriptor_heaps[i] = nullptr;
+
+			if (i == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
+			{
+				cmd_list->m_dynamic_descriptor_heaps[i]->RequestDescriptorHeap();
+				cmd_list->m_dynamic_descriptor_heaps[i]->Reset();
+			}
 		}
 
 		return cmd_list;

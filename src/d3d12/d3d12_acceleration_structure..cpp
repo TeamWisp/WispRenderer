@@ -70,7 +70,7 @@ namespace wr::d3d12
 			std::uint32_t index,
 			ID3D12Resource* resource,
 			UINT buffer_num_elements,
-			DescriptorAllocation& uav_allocation_versioned)
+			d3d12::DescHeapCPUHandle& uav_handle)
 		{
 
 			if (GetRaytracingType(device) != RaytracingType::FALLBACK)
@@ -84,18 +84,13 @@ namespace wr::d3d12
 			rawBufferUavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 			rawBufferUavDesc.Buffer.NumElements = buffer_num_elements;
 
-			d3d12::DescHeapCPUHandle bottom_level_descriptor;
-
 			// Only compute fallback requires a valid descriptor index when creating a wrapped pointer.
 			UINT desc_heap_idx = index; // TODO don't hardcode this.
 			if (!device->m_fallback_native->UsingRaytracingDriver())
 			{
-				for (auto frame_idx = 0; frame_idx < 3; frame_idx++)
-				{
-					bottom_level_descriptor = uav_allocation_versioned.GetDescriptorHandle(frame_idx);
-					device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
-				}
+				device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, uav_handle.m_native);
 			}
+
 			return device->m_fallback_native->GetWrappedPointerSimple(desc_heap_idx, resource->GetGPUVirtualAddress());
 		}
 
@@ -220,6 +215,10 @@ namespace wr::d3d12
 	AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
+		DescriptorAllocator* desc_allocator,
+		DescriptorAllocation& out_blas_allocations,
+		DescriptorAllocation& out_tlas_allocation,
+		std::size_t& out_num_allocations,
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
 	{
 		AccelerationStructure tlas;
@@ -288,12 +287,18 @@ namespace wr::d3d12
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
+			out_num_allocations = blas_list.size();
+			out_blas_allocations = std::move(desc_allocator->Allocate(out_num_allocations));
+
 			std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
-			for (auto it : blas_list)
+			//for (auto it : blas_list)
+			for (std::size_t i = 0; i < out_num_allocations; ++i)
 			{
-				auto blas = std::get<AccelerationStructure>(it);
-				auto material = std::get<unsigned int>(it);
-				auto transform = std::get<DirectX::XMMATRIX>(it);
+				auto& tuple = blas_list[i];
+
+				auto blas = std::get<AccelerationStructure>(tuple);
+				auto material = std::get<unsigned int>(tuple);
+				auto transform = std::get<DirectX::XMMATRIX>(tuple);
 
 				D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
 
@@ -301,8 +306,11 @@ namespace wr::d3d12
 
 				instance_desc.InstanceMask = 1;
 				instance_desc.InstanceID = material;
+
+				d3d12::DescHeapCPUHandle handle = out_blas_allocations.GetDescriptorHandle(i);
+
 				UINT num_buffer_elements = static_cast<UINT>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements);
+				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements, handle);
 
 				instance_descs.push_back(instance_desc);
 
@@ -316,8 +324,12 @@ namespace wr::d3d12
 		// Create a wrapped pointer to the acceleration structure.
 		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
+			out_tlas_allocation = std::move(desc_allocator->Allocate(1));
+
+			d3d12::DescHeapCPUHandle handle = out_tlas_allocation.GetDescriptorHandle();
+
 			UINT num_buffer_elements = static_cast<UINT>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements);
+			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements, handle);
 		}
 
 		// Top Level Acceleration Structure desc
@@ -352,6 +364,10 @@ namespace wr::d3d12
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
+		DescriptorAllocator* desc_allocator,
+		DescriptorAllocation& out_blas_allocations,
+		DescriptorAllocation& out_tlas_allocation,
+		std::size_t& out_num_allocations,
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
 	{
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
@@ -406,12 +422,18 @@ namespace wr::d3d12
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
+			out_num_allocations = blas_list.size();
+			out_blas_allocations = std::move(desc_allocator->Allocate(out_num_allocations));
+
 			std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
-			for (auto it : blas_list)
+			//for (auto it : blas_list)
+			for (std::size_t i = 0; i < out_num_allocations; ++i)
 			{
-				auto blas = std::get<AccelerationStructure>(it);
-				auto material = std::get<unsigned int>(it);
-				auto transform = std::get<DirectX::XMMATRIX>(it);
+				auto& tuple = blas_list[i];
+
+				auto blas = std::get<AccelerationStructure>(tuple);
+				auto material = std::get<unsigned int>(tuple);
+				auto transform = std::get<DirectX::XMMATRIX>(tuple);
 
 				D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
 
@@ -419,8 +441,11 @@ namespace wr::d3d12
 
 				instance_desc.InstanceMask = 1;
 				instance_desc.InstanceID = material;
+
+				d3d12::DescHeapCPUHandle handle = out_blas_allocations.GetDescriptorHandle(i);
+
 				UINT num_buffer_elements = static_cast<UINT>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements);
+				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements, handle);
 
 				instance_descs.push_back(instance_desc);
 
@@ -433,8 +458,12 @@ namespace wr::d3d12
 		// Create a wrapped pointer to the acceleration structure.
 		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
+			out_tlas_allocation = std::move(desc_allocator->Allocate(1));
+
+			d3d12::DescHeapCPUHandle handle = out_tlas_allocation.GetDescriptorHandle();
+
 			UINT num_buffer_elements = static_cast<UINT>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements);
+			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements, handle);
 		}
 
 		// Top Level Acceleration Structure desc

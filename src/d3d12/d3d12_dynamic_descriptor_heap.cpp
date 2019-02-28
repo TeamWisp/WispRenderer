@@ -137,6 +137,23 @@ namespace wr
 		return descriptor_heap;
 	}
 
+	d3d12::DescriptorHeap * DynamicDescriptorHeap::RequestHeapNoPopping()
+	{
+		d3d12::DescriptorHeap* descriptor_heap;
+
+		if (!m_available_descriptor_heaps.empty())
+		{
+			descriptor_heap = m_available_descriptor_heaps.front();
+		}
+		else
+		{
+			descriptor_heap = CreateDescriptorHeap();
+			m_descriptor_heap_pool.push(descriptor_heap);
+		}
+
+		return descriptor_heap;
+	}
+
 	d3d12::DescriptorHeap* DynamicDescriptorHeap::CreateDescriptorHeap()
 	{
 		d3d12::desc::DescriptorHeapDesc desc;
@@ -221,7 +238,7 @@ namespace wr
 				m_current_gpu_desc_handle = d3d12::GetGPUHandle(m_current_descriptor_heap, 0);
 				m_num_free_handles = m_num_descr_per_heap;
 
-				d3d12::BindDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
+				d3d12::BindDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0, d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK);
 
 				// When updating the descriptor heap on the command list, all descriptor
 				// tables must be (re)recopied to the new descriptor heap (not just

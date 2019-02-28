@@ -182,6 +182,25 @@ namespace wr
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
+				// Bind output, indices and materials, offsets, etc
+				d3d12::SetShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), data.out_uav_from_rtv.GetDescriptorHandle());
+				d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), as_build_data.out_scene_ib_alloc.GetDescriptorHandle());
+				d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::MATERIALS)), as_build_data.out_scene_mat_alloc.GetDescriptorHandle());
+				d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OFFSETS)), as_build_data.out_scene_offset_alloc.GetDescriptorHandle());
+				d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 0, data.out_gbuffers.GetDescriptorHandle(0));
+				d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, data.out_gbuffers.GetDescriptorHandle(1));
+				d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, data.out_depthbuffer.GetDescriptorHandle());
+
+				//Test, bind all textures
+				auto hndl = as_build_data.out_material_handles[0];
+				auto mat_int = hndl->m_pool->GetMaterial(hndl->m_id);
+				auto* txture = static_cast<wr::d3d12::TextureResource*>(mat_int->GetAlbedo().m_pool->GetTexture(mat_int->GetAlbedo().m_id));
+
+				for (size_t i = 0; i < 90; ++i)
+				{
+					d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + i, txture);
+				}
+
 				// Fill descriptor heap with textures used by the scene
 				for (auto handle : as_build_data.out_material_handles)
 				{
@@ -200,6 +219,20 @@ namespace wr
 					create_srv(material_internal->GetRoughness());
 				}
 
+				//Bind fallback pointers
+				size_t fallback_ptr = d3d12::settings::fallback_ptrs_offset - 1;
+				size_t num_alloc = as_build_data.out_num_allocations;
+				size_t alloc_amount = 0;
+
+				for (size_t i = fallback_ptr; i < fallback_ptr + num_alloc; ++i)
+				{
+					d3d12::SetShaderUAV(cmd_list, 0, i, as_build_data.out_blas_allocations.GetDescriptorHandle(alloc_amount));
+					alloc_amount++;
+				}
+
+				d3d12::SetShaderUAV(cmd_list, 0, fallback_ptr + num_alloc, as_build_data.out_tlas_allocation.GetDescriptorHandle());
+
+
 
 				// Get light buffer
 				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
@@ -211,7 +244,8 @@ namespace wr
 				d3d12::DescHeapCPUHandle light_handle = light_alloc.GetDescriptorHandle();
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, light_handle, frame_idx);
 
-				d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::LIGHTS)), light_handle);
+				d3d12::DescHeapCPUHandle light_handle2 = light_alloc.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::LIGHTS)), light_handle2);
 
 
 				// Update offset data

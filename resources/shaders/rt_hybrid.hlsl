@@ -165,7 +165,7 @@ void RaygenEntry()
 		return;
 	}
 
-	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
+	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 99);
 	float3 reflection = DoReflection(wpos, V, normal, rand_seed);
 
 	float3 flipped_N = normal;
@@ -278,7 +278,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 99);
 
 	payload.color = ambient + lighting;
 }
