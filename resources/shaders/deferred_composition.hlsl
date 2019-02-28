@@ -12,6 +12,7 @@ Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
 Texture2D skybox : register(t4);
 TextureCube irradiance_map : register(t5);
+Texture2D buffer_shadow : register(t6);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -74,6 +75,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{	
 		retval = skybox.SampleLevel(s0, SampleSphericalMap(-V), 0);
 	}
+
+	retval = buffer_shadow[screen_coord].xyz;
 
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);

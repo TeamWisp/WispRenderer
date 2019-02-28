@@ -285,6 +285,7 @@ namespace wr
 			LIGHT_BUFFER,
 			SKY_BOX,
 			IRRADIANCE_MAP,
+			BUFFER_SHADOW,
 			OUTPUT,
 		};
 
@@ -296,6 +297,7 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::LIGHT_BUFFER, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::SKY_BOX, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SHADOW, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 

@@ -65,6 +65,10 @@ namespace wr
 			constexpr unsigned int irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP);
 			d3d12::SetShaderSRV(cmd_list, 1, irradiance, data.out_irradiance);
 
+			constexpr unsigned int shadow = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SHADOW);
+			d3d12::DescHeapCPUHandle shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow);
+			d3d12::SetShaderSRV(cmd_list, 1, shadow, shadow_handle);
+
 			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
 			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
 			d3d12::SetShaderUAV(cmd_list, 1, output, output_handle);
@@ -75,6 +79,7 @@ namespace wr
 				1);
 		}
 
+		template<typename T>
 		inline void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -91,7 +96,7 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(6));
+			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(9));
 			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(7));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
@@ -104,6 +109,15 @@ namespace wr
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, rtv_srv_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, dsv_srv_handle);
+
+				if (!std::is_same<T, wr::DeferredCompositionTaskData>::value)
+				{
+					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SHADOW);
+					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + i);
+					
+					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
+				}
 			}
 		}
 
@@ -213,6 +227,7 @@ namespace wr
 
 	}
 
+	template<typename T = DeferredCompositionTaskData>
 	inline void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		RenderTargetProperties rt_properties
@@ -232,7 +247,7 @@ namespace wr
 
 		RenderTaskDesc desc;
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::SetupDeferredCompositionTask(rs, fg, handle);
+			internal::SetupDeferredCompositionTask<T>(rs, fg, handle);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteDeferredCompositionTask(rs, fg, sg, handle);

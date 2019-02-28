@@ -31,8 +31,8 @@ struct Offset
     float vertex_offset;
 };
 
-RWTexture2D<float4> output_reflection : register(u0);
-RWTexture2D<float4> output_shadow : register(u1);
+RWTexture2D<float4> output_shadow : register(u0);
+RWTexture2D<float4> output_reflection : register(u1);
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -191,6 +191,7 @@ void RaygenEntry()
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
+		output_shadow[DispatchRaysIndex().xy] = float4(0,0,0, 1);
 		output_reflection[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
 		return;
 	}
@@ -199,8 +200,8 @@ void RaygenEntry()
 	float3 shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
 	float4 reflection_result = float4(albedo, 1);
 
-	output_reflection[DispatchRaysIndex().xy] = float4(reflection_result);
 	output_shadow[DispatchRaysIndex().xy] = float4(shadow_result, 1);
+	output_reflection[DispatchRaysIndex().xy] = float4(reflection_result);
 
 }
 
