@@ -191,13 +191,19 @@ void RaygenEntry()
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		output_shadow[DispatchRaysIndex().xy] = float4(0,0,0, 1);
+		// A value of 1 in the output buffer, means that there is shadow
+		// So, the far plane pixels are set to 0
+		output_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 1);
 		output_reflection[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
 		return;
 	}
 
 	wpos += normal * EPSILON;
+	// Get shadow factor
 	float3 shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	shadow_result = abs(shadow_result - 1.0);
+
+	// Get reflection result
 	float4 reflection_result = float4(albedo, 1);
 
 	output_shadow[DispatchRaysIndex().xy] = float4(shadow_result, 1);
