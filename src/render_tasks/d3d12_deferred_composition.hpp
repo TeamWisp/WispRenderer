@@ -29,6 +29,8 @@ namespace wr
 
 		std::array<d3d12::CommandList*, d3d12::settings::num_back_buffers> out_bundle_cmd_lists;
 		bool out_requires_bundle_recording;
+
+		bool is_in_hybrid;
 	};
 
 	namespace internal
@@ -88,6 +90,8 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::deferred_composition);
 
+			data.is_in_hybrid = !std::is_same<T, wr::DeferredCompositionTaskData>::value;
+
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
 			if (!texture_pool)
@@ -110,7 +114,7 @@ namespace wr
 				d3d12::CreateSRVFromRTV(deferred_main_rt, rtv_srv_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, dsv_srv_handle);
 
-				if (!std::is_same<T, wr::DeferredCompositionTaskData>::value)
+				if (data.is_in_hybrid)
 				{
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
 					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + i);
@@ -161,6 +165,11 @@ namespace wr
 				{
 					data.out_irradiance = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
 					d3d12::CreateSRVFromTexture(data.out_irradiance);
+				}
+
+				if(scene_graph.m_skybox.has_value() && !data.is_in_hybrid)
+				{
+					// Set skybox as hybrid output buffer?
 				}
 
 				// Output UAV
@@ -228,7 +237,7 @@ namespace wr
 	}
 
 	template<typename T = DeferredCompositionTaskData>
-	inline void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
+	inline void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height, bool is_in_hybrid = false)
 	{
 		RenderTargetProperties rt_properties
 		{
