@@ -15,6 +15,8 @@ namespace wr
 {
 	struct ASBuildData
 	{
+		DynamicDescriptorHeap* out_heap;
+
 		DescriptorAllocator* out_allocator;
 		DescriptorAllocation out_scene_ib_alloc;
 		DescriptorAllocation out_scene_mat_alloc;
@@ -63,7 +65,6 @@ namespace wr
 			data.out_materials.reserve(d3d12::settings::num_max_rt_materials);
 			data.out_offsets.reserve(d3d12::settings::num_max_rt_materials);
 			data.out_parsed_materials.reserve(d3d12::settings::num_max_rt_materials);
-
 
 			data.out_allocator = new DescriptorAllocator(n_render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_scene_ib_alloc = std::move(data.out_allocator->Allocate());
@@ -152,9 +153,7 @@ namespace wr
 						obj.m_num_vertices = n_mesh->m_vertex_count;
 						obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
 
-						// Build Bottom level BVH
-						DynamicDescriptorHeap* gpu_visible_heap = cmd_list->m_rt_descriptor_heap.get();
-						d3d12::DescriptorHeap* native_heap = gpu_visible_heap->RequestDescriptorHeap();
+						d3d12::DescriptorHeap* native_heap = data.out_heap->RequestDescriptorHeap();
 
 						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, native_heap, { obj });
 						cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
@@ -242,8 +241,7 @@ namespace wr
 					}
 				}
 
-				DynamicDescriptorHeap* gpu_visible_heap = cmd_list->m_rt_descriptor_heap.get();
-				d3d12::DescriptorHeap* native_heap = gpu_visible_heap->RequestDescriptorHeap();
+				d3d12::DescriptorHeap* native_heap = data.out_heap->RequestDescriptorHeap();
 
 				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, native_heap, data.out_blas_list);
 			}
@@ -308,6 +306,11 @@ namespace wr
 
 			data.out_materials_require_update = false;
 			
+			// Build Bottom level BVH
+			data.out_heap = cmd_list->m_dynamic_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV)].get();
+			d3d12::DescriptorHeap* native_heap = data.out_heap->RequestDescriptorHeap();
+			//data.out_heap->Reset();
+
 			// Initialize requirements
 			if (data.out_init)
 			{
@@ -321,9 +324,6 @@ namespace wr
 
 				// List all materials used by meshes
 				internal::BuildBLASList(device, cmd_list, scene_graph, data);
-
-				DynamicDescriptorHeap* gpu_visible_heap = cmd_list->m_rt_descriptor_heap.get();
-				d3d12::DescriptorHeap* native_heap = gpu_visible_heap->RequestDescriptorHeap();
 
 				data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, native_heap, data.out_blas_list);
 				data.out_tlas.m_native->SetName(L"Highlevelaccel");

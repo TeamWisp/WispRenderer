@@ -3,6 +3,7 @@
 #include <variant>
 
 #include "d3d12_defines.hpp"
+#include "d3d12_descriptors_allocations.hpp"
 
 namespace wr::d3d12
 {
@@ -68,7 +69,8 @@ namespace wr::d3d12
 			DescriptorHeap* heap,
 			std::uint32_t index,
 			ID3D12Resource* resource,
-			UINT buffer_num_elements)
+			UINT buffer_num_elements,
+			DescriptorAllocation& uav_allocation_versioned)
 		{
 
 			if (GetRaytracingType(device) != RaytracingType::FALLBACK)
@@ -90,9 +92,7 @@ namespace wr::d3d12
 			{
 				for (auto frame_idx = 0; frame_idx < 3; frame_idx++)
 				{
-					// desc_heap_idx = AllocateDescriptor(heap, increment_size, &bottomLevelDescriptor, index);
-					bottom_level_descriptor = d3d12::GetCPUHandle(heap, frame_idx, 0); // TODO: Don't harcode this.
-					d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
+					bottom_level_descriptor = uav_allocation_versioned.GetDescriptorHandle(frame_idx);
 					device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
 				}
 			}
