@@ -198,7 +198,8 @@ namespace wr
 
 				for (size_t i = 0; i < 90; ++i)
 				{
-					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + i, txture);
+					unsigned int txt_loc = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES));
+					d3d12::SetRTShaderSRV(cmd_list, 0, txt_loc + i, txture);
 				}
 
 				// Fill descriptor heap with textures used by the scene
@@ -297,7 +298,8 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+				unsigned int verts_loc = rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
+				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, verts_loc);
 
 #ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);

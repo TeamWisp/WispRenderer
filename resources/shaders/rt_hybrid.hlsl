@@ -182,7 +182,6 @@ void RaygenEntry()
 	float3 ambient = (kD * diffuse + specular);
 
 	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
-
 }
 
 //Reflections

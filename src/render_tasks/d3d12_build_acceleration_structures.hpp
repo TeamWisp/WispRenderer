@@ -246,8 +246,7 @@ namespace wr
 					}
 				}
 
-				DynamicDescriptorHeap* heap = cmd_list->m_dynamic_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV)].get();
-				d3d12::DescriptorHeap* native_heap = heap->RequestDescriptorHeap();
+				d3d12::DescriptorHeap* native_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
 				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, native_heap, data.out_allocator, data.out_blas_allocations, data.out_tlas_allocation, data.out_num_allocations, data.out_blas_list);
 			}
