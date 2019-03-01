@@ -22,7 +22,7 @@ namespace util
 	// https://stackoverflow.com/a/3407254
 	//! Round the input number to the nearest multiple of the specified number
 	/*! \param input Number to round. 
-	 *! \param multiple Multiple to round the input to. */
+	 *  \param multiple Multiple to round the input to. */
 	inline std::uint32_t RoundUpToNearestMultiple(std::uint32_t input, std::uint32_t multiple)
 	{
 		if (multiple == 0)
