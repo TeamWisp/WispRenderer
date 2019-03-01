@@ -51,7 +51,7 @@ struct ReflectionHitInfo
 {
 	float3 origin;
 	float3 color;
-	uint seed;
+	unsigned int seed;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -87,7 +87,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 {
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed};
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, 0};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -204,6 +204,7 @@ void RaygenEntry()
 
 	// Get reflection result
 	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
+	reflection_result = skybox2.SampleLevel(s0, SampleSphericalMap(-V), 0);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
@@ -308,7 +309,6 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 }
 
 //Reflection skybox
-
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {

@@ -199,7 +199,8 @@ namespace wr
 				if (scene_graph.m_skybox.has_value())
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX))); // here
+					auto skybox_id = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX));
+					auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, 0, skybox_id); // here
 					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
 

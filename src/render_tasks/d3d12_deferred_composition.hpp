@@ -164,7 +164,7 @@ namespace wr
 				}
 
 				// Get Environment Map
-				if (scene_graph.m_skybox.has_value())
+				if (skybox != nullptr)
 				{
 					data.out_irradiance = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
 					d3d12::CreateSRVFromTexture(data.out_irradiance);

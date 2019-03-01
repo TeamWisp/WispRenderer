@@ -77,6 +77,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection);
 
 		retval = retval * shadow_factor;
+
+		retval = reflection;
 	}
 	else
 	{	
