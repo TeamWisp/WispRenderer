@@ -151,7 +151,9 @@ namespace wr
 
 						d3d12::BindIndexBuffer(cmd_list, pool->GetIndexStagingBuffer(), 0, pool->GetIndexStagingBuffer()->m_size);
 
-						d3d12::SetShaderSRV(cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::cubemap_conversion, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE)), equirect_text);
+						constexpr unsigned int srv_idx = rs_layout::GetHeapLoc(params::cubemap_conversion, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE);
+						d3d12::SetShaderSRV(cmd_list, 2, srv_idx, equirect_text);
+
 						d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
 
 						if (n_mesh->m_index_count != 0)
@@ -165,7 +167,7 @@ namespace wr
 					}
 				}
 
-				d3d12::Transition(cmd_list, cubemap_text, cubemap_text->m_current_state, ResourceState::PIXEL_SHADER_RESOURCE);
+				d3d12::Transition(cmd_list, cubemap_text, cubemap_text->m_subresource_states[0], ResourceState::PIXEL_SHADER_RESOURCE);
 			}
 		}
 	} /* internal */

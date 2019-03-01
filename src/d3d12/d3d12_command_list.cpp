@@ -67,7 +67,7 @@ namespace wr::d3d12
 	void Begin(CommandList* cmd_list, unsigned int frame_idx)
 	{
 		// TODO: move resetting to when the command list is executed. This is how vulkan does it.
-		TRY_M(cmd_list->m_allocators[frame_idx]->Reset(), 
+		TRY_M(cmd_list->m_allocators[frame_idx]->Reset(),
 			"Failed to reset cmd allocators");
 
 		// Only reset with pipeline state if using bundles since only then this will impact fps.
@@ -286,7 +286,7 @@ namespace wr::d3d12
 
 	void BindComputeConstantBuffer(CommandList * cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx)
 	{
-		cmd_list->m_native->SetComputeRootConstantBufferView(root_parameter_idx, 
+		cmd_list->m_native->SetComputeRootConstantBufferView(root_parameter_idx,
 			buffer->m_gpu_addresses[frame_idx]);
 	}
 
@@ -374,26 +374,55 @@ namespace wr::d3d12
 	}
 
 	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to)
-	{		
-		if (texture->m_current_state != to)
+	{
+		if (texture->m_subresource_states[0] != to)
 		{
 			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(texture->m_resource,
-																				   (D3D12_RESOURCE_STATES)from,
-																				   (D3D12_RESOURCE_STATES)to);
+				(D3D12_RESOURCE_STATES)from,
+				(D3D12_RESOURCE_STATES)to);
 
-			texture->m_current_state = to;
-		
+			std::fill(texture->m_subresource_states.begin(), texture->m_subresource_states.end(), to);
+
 			cmd_list->m_native->ResourceBarrier(1, &barrier);
 		}
 	}
 
-	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const & textures, ResourceState from, ResourceState to)
+	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to, unsigned int first_subresource, unsigned int num_subresources)
+	{
+		if (num_subresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+		{
+			for (uint32_t i = 0; i < num_subresources; ++i)
+			{
+				TransitionSubresource(cmd_list, texture, from, to, first_subresource + i);
+			}
+		}
+		else
+		{
+			Transition(cmd_list, texture, from, to);
+		}
+	}
+
+	void TransitionSubresource(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to, unsigned int subresource)
+	{
+		if (texture->m_subresource_states[subresource] != to)
+		{
+			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(texture->m_resource,
+				(D3D12_RESOURCE_STATES)from,
+				(D3D12_RESOURCE_STATES)to, subresource);
+
+			texture->m_subresource_states[subresource] = to;
+
+			cmd_list->m_native->ResourceBarrier(1, &barrier);
+		}
+	}
+
+	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to)
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
 
-		for (auto& texture : textures)
+		for (auto texture : textures)
 		{
-			if (texture->m_current_state != to)
+			if (texture->m_subresource_states[0] != to)
 			{
 				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 					texture->m_resource,
@@ -401,7 +430,7 @@ namespace wr::d3d12
 					(D3D12_RESOURCE_STATES)to
 				);
 
-				texture->m_current_state = to;
+				std::fill(texture->m_subresource_states.begin(), texture->m_subresource_states.end(), to);
 
 				barriers.push_back(barrier);
 			}
@@ -459,10 +488,10 @@ namespace wr::d3d12
 	{
 		SAFE_RELEASE(cmd_list->m_native);
 		SAFE_RELEASE(cmd_list->m_native_fallback)
-		for (auto& allocator : cmd_list->m_allocators)
-		{
-			SAFE_RELEASE(allocator);
-		}
+			for (auto& allocator : cmd_list->m_allocators)
+			{
+				SAFE_RELEASE(allocator);
+			}
 		delete cmd_list;
 	}
 

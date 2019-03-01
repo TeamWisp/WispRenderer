@@ -49,7 +49,7 @@ namespace wr
 
 	struct Model
 	{
-		std::vector<std::pair<Mesh*, MaterialHandle*>> m_meshes;
+		std::vector<std::pair<Mesh*, MaterialHandle>> m_meshes;
 		ModelPool* m_model_pool;
 		std::string m_model_name;
 
@@ -92,9 +92,9 @@ namespace wr
 		virtual void DestroyMesh(internal::MeshInternal* mesh) = 0;
 
 		template<typename TV, typename TI = std::uint32_t>
-		int LoadNodeMeshes(ModelData* data, Model* model, MaterialHandle* default_material);
+		int LoadNodeMeshes(ModelData* data, Model* model, MaterialHandle default_material);
 		template<typename TV, typename TI = std::uint32_t>
-		int LoadNodeMeshesWithMaterials(ModelData* data, Model* model, std::vector<MaterialHandle*> materials);
+		int LoadNodeMeshesWithMaterials(ModelData* data, Model* model, std::vector<MaterialHandle> materials);
 
 		std::size_t m_vertex_buffer_pool_size_in_bytes;
 		std::size_t m_index_buffer_pool_size_in_bytes;
@@ -144,8 +144,9 @@ namespace wr
 				m_loaded_meshes[id] = mesh_data;
 				mesh->id = id;
 			}
+			MaterialHandle handle = { nullptr, 0 };
 			model->m_meshes.push_back(
-				std::make_pair(mesh, nullptr));
+				std::make_pair(mesh, handle));
 
 			if constexpr (std::is_same<TV, Vertex>::value || std::is_same<TV, VertexNoTangent>::value)
 			{
@@ -180,7 +181,7 @@ namespace wr
 
 		Model* model = new Model;
 
-		MaterialHandle* default_material = nullptr;
+		MaterialHandle default_material = { nullptr, 0 };
 
 		// TODO: Create default material
 
@@ -224,7 +225,7 @@ namespace wr
 		dir.erase(dir.begin() + dir.find_last_of('/') + 1, dir.end());
 
 		Model* model = new Model;
-		std::vector<MaterialHandle*> material_handles;
+		std::vector<MaterialHandle> material_handles;
 
 		for (int i = 0; i < data->m_materials.size(); ++i)
 		{
@@ -238,7 +239,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_albedo_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						albedo = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						albedo = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
 				{
@@ -247,7 +255,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				albedo = texture_pool->GetDefaultAlbedo();
 			}
 
 			if (material->m_normal_map_texture_location != TextureLocation::NON_EXISTENT)
@@ -256,7 +264,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_normal_map_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						normals = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						normals = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if (material->m_normal_map_texture_location == TextureLocation::EXTERNAL)
 				{
@@ -265,7 +280,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				normals = texture_pool->GetDefaultNormal();
 			}
 
 			if (material->m_metallic_texture_location != TextureLocation::NON_EXISTENT)
@@ -274,7 +289,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_metallic_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						metallic = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						metallic = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if (material->m_metallic_texture_location == TextureLocation::EXTERNAL)
 				{
@@ -283,7 +305,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				metallic = texture_pool->GetDefaultMetalic();
 			}
 
 			if (material->m_roughness_texture_location != TextureLocation::NON_EXISTENT)
@@ -292,7 +314,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_roughness_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						roughness = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						roughness = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if (material->m_roughness_texture_location == TextureLocation::EXTERNAL)
 				{
@@ -301,7 +330,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				roughness = texture_pool->GetDefaultRoughness();
 			}
 
 			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
@@ -310,7 +339,14 @@ namespace wr
 				{
 					EmbeddedTexture* texture = data->m_embedded_textures[material->m_ambient_occlusion_embedded_texture];
 
-					// TODO: Actually load embeded texture
+					if (texture->m_compressed)
+					{
+						ambient_occlusion = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+					}
+					else
+					{
+						ambient_occlusion = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+					}
 				}
 				else if (material->m_ambient_occlusion_texture_location == TextureLocation::EXTERNAL)
 				{
@@ -319,7 +355,7 @@ namespace wr
 			}
 			else
 			{
-				// TODO: Set texture to default texture
+				ambient_occlusion = texture_pool->GetDefaultAO();
 			}
 
 			bool two_sided = material->m_two_sided;
@@ -327,6 +363,37 @@ namespace wr
 			float opacity = material->m_base_transparency;
 
 			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, false, true);
+			Material* mat = material_pool->GetMaterial(new_handle.m_id);
+
+			mat->SetConstantAlbedo(material->m_base_color);
+			mat->SetConstantAlpha(material->m_base_transparency);
+			mat->SetConstantMetallic(material->m_base_metallic);
+			mat->SetConstantRoughness(std::min(1.f, std::max(material->m_base_roughness, 0.f)));
+
+			if (material->m_albedo_texture_location == TextureLocation::NON_EXISTENT)
+			{
+				mat->SetUseConstantAlbedo(true);
+				mat->UseAlbedoTexture(false);
+			}
+			if (material->m_normal_map_texture_location == TextureLocation::NON_EXISTENT)
+			{
+				mat->UseNormalTexture(false);
+			}
+			if (material->m_metallic_texture_location == TextureLocation::NON_EXISTENT)
+			{
+				mat->SetUseConstantMetallic(true);
+				mat->UseMetallicTexture(false);
+			}
+			if (material->m_roughness_texture_location == TextureLocation::NON_EXISTENT)
+			{
+				mat->SetUseConstantRoughness(true);
+				mat->UseRoughnessTexture(false);
+			}
+			if (material->m_ambient_occlusion_texture_location == TextureLocation::NON_EXISTENT)
+			{
+				mat->UseAOTexture(false);
+			}
+
 			material_handles.push_back(new_handle);
 		}
 

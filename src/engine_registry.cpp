@@ -40,6 +40,7 @@ namespace wr
 			ROOT_PARAM(GetCBV(params::basic, params::BasicE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
 			ROOT_PARAM(GetCBV(params::basic, params::BasicE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
 			ROOT_PARAM_DESC_TABLE(ranges_basic, D3D12_SHADER_VISIBILITY_PIXEL),
+			ROOT_PARAM(GetCBV(params::basic,params::BasicE::MATERIAL_PROPERTIES,D3D12_SHADER_VISIBILITY_PIXEL)),
 		}),
 		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
@@ -75,7 +76,7 @@ namespace wr
 	);
 	REGISTER(root_signatures::mip_mapping, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({
-			ROOT_PARAM(GetConstants(params::mip_mapping, params::MipMappingE::TEXEL_SIZE)),
+			ROOT_PARAM(GetConstants(params::mip_mapping, params::MipMappingE::CBUFFER)),
 			ROOT_PARAM_DESC_TABLE(mip_in_out_ranges, D3D12_SHADER_VISIBILITY_ALL)
 		}),
 		RootSignatureDescription::Samplers({
