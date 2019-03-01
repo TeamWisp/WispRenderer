@@ -150,10 +150,10 @@ namespace wr
 				camera_data.m_inverse_projection = active_camera->m_inverse_projection;
 				camera_data.m_view = active_camera->m_view;
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
+				// Set 'is hybrid' to either 1 or 0 depending on the current frame_graph
 				camera_data.m_is_hybrid = data.is_hybrid ? 1 : 0;
 
 				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &camera_data);
-
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);
 
 				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
