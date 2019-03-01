@@ -106,6 +106,8 @@ namespace wr
 		// Resizes both heaps to the supplied sizes. 
 		// If the supplied size is smaller than the required size the heaps will resize to the required size instead.
 		virtual void Resize(size_t vertex_heap_new_size, size_t index_heap_new_size) = 0;
+		virtual void ResizeVertexHeap(size_t vertex_heap_new_size) = 0;
+		virtual void ResizeIndexHeap(size_t index_heap_new_size) = 0;
 
 		template<typename TV, typename TI> void EditMesh(Mesh* mesh, std::vector<TV> vertices, std::vector<TI> indices);
 
@@ -127,6 +129,9 @@ namespace wr
 		template<typename TV, typename TI = std::uint32_t>
 		int LoadNodeMeshesWithMaterials(ModelData* data, Model* model, std::vector<MaterialHandle> materials);
 
+		template<typename TV>
+		void UpdateModelBoundingBoxes(Model* model, Mesh* mesh, std::vector<TV> vertices_data);
+
 		std::size_t m_vertex_buffer_pool_size_in_bytes;
 		std::size_t m_index_buffer_pool_size_in_bytes;
 
@@ -138,6 +143,8 @@ namespace wr
 		std::uint64_t GetNewID();
 		void FreeID(std::uint64_t id);
 
+		std::vector<Model*> m_loaded_models;
+
 	};
 
 	template<typename TV, typename TI>
@@ -146,6 +153,27 @@ namespace wr
 		IS_PROPER_VERTEX_CLASS(TV);
 
 		auto model = new Model();
+
+		std::size_t total_vertex_size = 0;
+		std::size_t total_index_size = 0;
+
+		for (int i = 0; i < meshes.size(); ++i)
+		{
+			total_vertex_size += meshes[i].m_vertices.size() * sizeof(TV);
+			if (meshes[i].m_indices.has_value())
+			{
+				total_index_size += meshes[i].m_indices.value().size() * sizeof(TI);
+			}
+		}
+
+		if (GetVertexHeapFreeSpace() < total_vertex_size)
+		{
+			ResizeVertexHeap(total_vertex_size + GetVertexHeapOccupiedSpace());
+		}
+		if (GetIndexHeapFreeSpace() < total_index_size)
+		{
+			ResizeIndexHeap(total_index_size + GetIndexHeapOccupiedSpace());
+		}
 
 		for (int i = 0; i < meshes.size(); ++i)
 		{
@@ -191,6 +219,8 @@ namespace wr
 
 		model->m_model_pool = this;
 
+		m_loaded_models.push_back(model);
+
 		return model;
 	}
 
@@ -216,6 +246,25 @@ namespace wr
 
 		// TODO: Create default material
 
+		size_t total_vertex_size = 0;
+		size_t total_index_size = 0;
+
+		for (int i = 0; i < data->m_meshes.size(); ++i)
+		{
+			total_vertex_size += data->m_meshes[i]->m_positions.size() * sizeof(TV);
+			total_index_size += data->m_meshes[i]->m_indices.size() * sizeof(TI);
+		}
+
+		if (GetVertexHeapFreeSpace() < total_vertex_size)
+		{
+			ResizeVertexHeap(GetVertexHeapOccupiedSpace() + total_vertex_size);
+		}
+
+		if (GetIndexHeapFreeSpace() < total_index_size)
+		{
+			ResizeIndexHeap(GetIndexHeapOccupiedSpace() + total_index_size);
+		}
+
 		int ret = LoadNodeMeshes<TV, TI>(data, model, default_material);
 
 		if (ret == 1)
@@ -231,6 +280,8 @@ namespace wr
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
+
+		m_loaded_models.push_back(model);
 
 		return model;
 	}
@@ -428,6 +479,25 @@ namespace wr
 			material_handles.push_back(new_handle);
 		}
 
+		size_t total_vertex_size = 0;
+		size_t total_index_size = 0;
+
+		for (int i = 0; i < data->m_meshes.size(); ++i)
+		{
+			total_vertex_size += data->m_meshes[i]->m_positions.size() * sizeof(TV);
+			total_index_size += data->m_meshes[i]->m_indices.size() * sizeof(TI);
+		}
+
+		if (GetVertexHeapFreeSpace() < total_vertex_size)
+		{
+			ResizeVertexHeap(GetVertexHeapOccupiedSpace() + total_vertex_size);
+		}
+
+		if (GetIndexHeapFreeSpace() < total_index_size)
+		{
+			ResizeIndexHeap(GetIndexHeapOccupiedSpace() + total_index_size);
+		}
+
 		int ret = LoadNodeMeshesWithMaterials<TV, TI>(data, model, material_handles);
 
 		if (ret == 1)
@@ -442,6 +512,8 @@ namespace wr
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
 
+		m_loaded_models.push_back(model);
+
 		return model;
 	}
 
@@ -455,6 +527,17 @@ namespace wr
 			indices.data(),
 			indices.size(),
 			sizeof(TI));
+
+		for (int i = 0; i < m_loaded_models.size(); i++)
+		{
+			for (int j = 0; j < m_loaded_models[i]->m_meshes.size(); ++j)
+			{
+				if (m_loaded_models[i]->m_meshes[j].first->id == mesh->id)
+				{
+					UpdateModelBoundingBoxes<TV>(m_loaded_models[i], mesh, vertices);
+				}
+			}
+		}
 	}
 	
 } /* wr */

@@ -30,5 +30,5 @@ constexpr inline T SizeAlign(T size, A alignment)
 template<typename T, typename A>
 constexpr inline T SizeAlignProper(T size, A alignment)
 {
-	return (1 + (size - 1) / alignment)*alignment;
+	return (size / alignment + (size%alignment > 0))*alignment;
 }

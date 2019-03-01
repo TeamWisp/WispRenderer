@@ -121,12 +121,17 @@ namespace wr
 		// Resizes both heaps to the supplied sizes. 
 		// If the supplied size is smaller than the required size the heaps will resize to the required size instead.
 		void Resize(size_t vertex_heap_new_size, size_t index_heap_new_size) final;
+		void ResizeVertexHeap(size_t vertex_heap_new_size) final;
+		void ResizeIndexHeap(size_t index_heap_new_size) final;
 
 	private:
 		internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
 		internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;
 
 		virtual void UpdateMeshData(Mesh* mesh, void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
+
+		void UpdateMeshVertexData(Mesh* mesh, void* vertices_data, std::size_t num_vertices, std::size_t vertex_size);
+		void UpdateMeshIndexData(Mesh* mesh, void* indices_data, std::size_t num_indices, std::size_t indices_size);
 
 		void DestroyModel(Model* model) final;
 		void DestroyMesh(internal::MeshInternal* mesh) final;
