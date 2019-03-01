@@ -28,7 +28,7 @@ namespace wr
 		d3d12::RootSignature* out_root_signature;
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
 
-		DescriptorAllocation out_uav_from_rtv;
+		bool first_run;
 	};
 
 	namespace internal
@@ -60,7 +60,7 @@ namespace wr
 
 				// Create Table
 				data.out_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count,
-				                                                                   shader_identifier_size);
+					shader_identifier_size);
 				d3d12::AddShaderRecord(data.out_raygen_shader_table[frame_idx], shader_record);
 			}
 
@@ -78,7 +78,7 @@ namespace wr
 
 				// Create Table
 				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count,
-				                                                                 shader_identifier_size);
+					shader_identifier_size);
 
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shader_record);
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_shader_record);
@@ -98,7 +98,7 @@ namespace wr
 
 				// Create Table
 				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count,
-				                                                                     shader_identifier_size);
+					shader_identifier_size);
 
 				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shader_record);
 				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shadow_shader_record);
@@ -113,6 +113,9 @@ namespace wr
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			d3d12::SetName(n_render_target, L"Raytracing Target");
 
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+
 			// Pipeline State Object
 			auto& rt_registry = RTPipelineRegistry::Get();
 			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
@@ -126,17 +129,17 @@ namespace wr
 
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-			data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
-
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
 			{
-				d3d12::DescHeapCPUHandle handle = data.out_uav_from_rtv.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+				auto cpu_handle = d3d12::GetCPUHandle(desc_heap, frame_idx);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 			}
-			
+
 			CreateShaderTables(device, data, 0);
 			CreateShaderTables(device, data, 1);
 			CreateShaderTables(device, data, 2);
+
+			data.first_run = true;
 		}
 
 		inline void ExecuteRaytracingTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
@@ -148,7 +151,13 @@ namespace wr
 			auto& data = fg.GetData<RaytracingData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-			DescriptorAllocation srv_from_struc_buffer;
+			if (data.first_run)
+			{
+				BuildAccelerationStructure(rs, fg, scene_graph, cmd_list, handle);
+				data.first_run = false;
+			}
+
+			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
 
@@ -156,34 +165,28 @@ namespace wr
 			{
 				auto frame_idx = n_render_system.GetFrameIdx();
 
-				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-
 				// Get light buffer
 				{
 					if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
 					{
 						static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
 					}
-
-					srv_from_struc_buffer = std::move(as_build_data.out_allocator->Allocate());
-					auto handle = srv_from_struc_buffer.GetDescriptorHandle();
-
-					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, handle, frame_idx);
-					d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::LIGHTS)), handle);
+					auto cpu_handle = d3d12::GetCPUHandle(desc_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::LIGHTS)));
+					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, cpu_handle, frame_idx);
 				}
 
 				// Get skybox
-				if (scene_graph.m_skybox.has_value()) 
-				{
+				if (scene_graph.m_skybox.has_value()) {
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX)), skybox_t);
+					auto cpu_handle = d3d12::GetCPUHandle(desc_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX))); // here
+					d3d12::CreateSRVFromTexture(skybox_t, cpu_handle);
 				}
 
 				// Get Environment Map
-				if (scene_graph.m_skybox.has_value()) 
-				{
+				if (scene_graph.m_skybox.has_value()) {
 					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
-					d3d12::SetShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::IRRADIANCE_MAP)), irradiance_t);
+					auto cpu_handle = d3d12::GetCPUHandle(desc_heap, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::IRRADIANCE_MAP))); // here
+					d3d12::CreateSRVFromTexture(irradiance_t, cpu_handle);
 				}
 
 				// Update offset data
@@ -205,11 +208,12 @@ namespace wr
 				cam_data.intensity = n_render_system.temp_intensity;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
-				//d3d12::BindDescriptorHeap(cmd_list, as_build_data.out_rt_heap, as_build_data.out_rt_heap->m_create_info.m_type, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-				d3d12::BindDescriptorHeaps(cmd_list, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				//auto gpu_handle = d3d12::GetGPUHandle(as_build_data.out_rt_heap, 0); // here
-				//d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 0);
+				d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+
+				auto gpu_handle = d3d12::GetGPUHandle(desc_heap, 0); // here
+				d3d12::BindComputeDescriptorTable(cmd_list, gpu_handle, 0);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
@@ -227,7 +231,7 @@ namespace wr
 				CreateShaderTables(device, data, frame_idx);
 #endif
 
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
+				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, 0);
 			}
 		}
 

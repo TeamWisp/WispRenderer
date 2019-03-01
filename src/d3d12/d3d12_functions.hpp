@@ -271,19 +271,11 @@ namespace wr::d3d12
 	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		DescriptorAllocator* desc_allocator,
-		DescriptorAllocation& out_blas_allocations,
-		DescriptorAllocation& out_tlas_allocation,
-		std::size_t& out_num_allocations,
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list);
 
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		DescriptorAllocator* desc_allocator,
-		DescriptorAllocation& out_blas_allocations,
-		DescriptorAllocation& out_tlas_allocation,
-		std::size_t& out_num_allocations,
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list);
 
 	// Shader Record

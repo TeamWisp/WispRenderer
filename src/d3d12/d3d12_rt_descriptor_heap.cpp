@@ -131,7 +131,7 @@ namespace wr
 		desc.m_type = m_desc_heap_type;
 		desc.m_num_descriptors = m_num_descr_per_heap;
 		desc.m_shader_visible = true;
-		desc.m_versions = d3d12::settings::num_back_buffers;
+		desc.m_versions = 1;
 
 		d3d12::DescriptorHeap* descriptor_heap = d3d12::CreateDescriptorHeap(m_device, desc);
 
