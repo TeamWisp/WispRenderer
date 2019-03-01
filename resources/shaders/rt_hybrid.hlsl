@@ -87,7 +87,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 {
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, 0};
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -204,11 +204,9 @@ void RaygenEntry()
 
 	// Get reflection result
 	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
-	reflection_result = skybox2.SampleLevel(s0, SampleSphericalMap(-V), 0);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
-
 }
 
 //Reflections
@@ -305,7 +303,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 ambient = (kD * diffuse + specular);
 
 	// Output the final reflections here
-	payload.color = float3(albedo.xyz);
+	payload.color = float3(ambient);
 }
 
 //Reflection skybox
