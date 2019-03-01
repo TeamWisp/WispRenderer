@@ -130,11 +130,11 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
 	return reflection;
 }
 
-float3 DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
+float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	float3 res = float3(0, 0, 0);
+	float res = 0;
 
 	[unroll]
 	for (uint i = 0; i < light_count; i++)
@@ -199,8 +199,7 @@ void RaygenEntry()
 
 	wpos += normal * EPSILON;
 	// Get shadow factor
-	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed).x;
-	shadow_result = abs(shadow_result - 1.0);
+	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
 
 	// Get reflection result
 	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);

@@ -65,10 +65,14 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		flipped_N.y *= -1;
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
-		// Get shadow factor
-		float shadow_factor = buffer_refl_shadow[screen_coord].a;
-		// Invert shadow_factor as it is saved as 1 == fully shadowed
-		shadow_factor = abs(shadow_factor - 1.0);
+		// Get shadow factor (0: fully shadowed, 1: no shadow)
+		float shadow_factor = lerp(
+			// Do deferred shadow (fully lit for now)
+			1.0,
+			// Shadow buffer if its hybrid rendering
+			buffer_refl_shadow[screen_coord].a,
+			// Lerp factor (0: no hybrid, 1: hybrid)
+			is_hybrid);
 		shadow_factor = clamp(shadow_factor, ambient, 1.0);
 		
 		// Get reflection
