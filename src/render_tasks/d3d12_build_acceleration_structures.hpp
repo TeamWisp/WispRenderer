@@ -18,8 +18,8 @@ namespace wr
 	{
 		DescriptorAllocator* out_allocator;
 		DescriptorAllocation out_scene_ib_alloc;
-		DescriptorAllocation out_sb_mat_alloc;
-		DescriptorAllocation out_sb_offset_alloc;
+		DescriptorAllocation out_scene_mat_alloc;
+		DescriptorAllocation out_scene_offset_alloc;
 
 		d3d12::AccelerationStructure out_tlas;
 		D3D12StructuredBufferHandle* out_sb_material_handle;
@@ -66,6 +66,9 @@ namespace wr
 			data.out_parsed_materials.reserve(d3d12::settings::num_max_rt_materials);
 
 			data.out_allocator = new DescriptorAllocator(n_render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, 3);
+			data.out_scene_ib_alloc = std::move(data.out_allocator->Allocate());
+			data.out_scene_mat_alloc = std::move(data.out_allocator->Allocate());
+			data.out_scene_offset_alloc = std::move(data.out_allocator->Allocate());
 		}
 
 		namespace internal
@@ -243,73 +246,38 @@ namespace wr
 				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, out_heap, data.out_blas_list);
 			}
 
-			inline void CreateTextureSRVs(d3d12::CommandList* cmd_list, ASBuildData& data)
+			inline void CreateSRVs(d3d12::CommandList* cmd_list, ASBuildData& data)
 			{
-				d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
-
 				for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
 				{
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
 					{
-						//data.out_scene_ib_alloc = std::move(data.out_allocator->Allocate());
-						//auto cpu_handle = data.out_scene_ib_alloc.GetDescriptorHandle();
-						
-						auto cpu_handle = d3d12::GetCPUHandle(out_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::INDICES)));
-						
+						auto cpu_handle = data.out_scene_ib_alloc.GetDescriptorHandle();
 						d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, 0, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
 					}
 
 					// Create material structured buffer view
 					{
-						//data.out_sb_mat_alloc = std::move(data.out_allocator->Allocate());
-						//auto cpu_handle = data.out_sb_mat_alloc.GetDescriptorHandle();
-						
-						auto cpu_handle = d3d12::GetCPUHandle(out_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::MATERIALS)));
-						
+						auto cpu_handle = data.out_scene_mat_alloc.GetDescriptorHandle();
 						d3d12::CreateSRVFromStructuredBuffer(data.out_sb_material_handle->m_native, cpu_handle, 0);
 					}
 
 					// Create offset structured buffer view
 					{
-						//data.out_sb_offset_alloc = std::move(data.out_allocator->Allocate());
-						//auto cpu_handle = data.out_sb_offset_alloc.GetDescriptorHandle();
-						
-						auto cpu_handle = d3d12::GetCPUHandle(out_heap, i, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)));
-						
+						auto cpu_handle = data.out_scene_offset_alloc.GetDescriptorHandle();
 						d3d12::CreateSRVFromStructuredBuffer(data.out_sb_offset_handle->m_native, cpu_handle, 0);
-					}
-
-
-					// Fill descriptor heap with textures used by the scene
-					for (auto handle : data.out_material_handles)
-					{
-						auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
-
-						auto create_srv = [material_internal, i, out_heap](auto texture_handle)
-						{
-							auto cpu_handle = d3d12::GetCPUHandle(out_heap, i);
-							auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
-
-							d3d12::Offset(cpu_handle, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES)) + texture_handle.m_id, out_heap->m_increment_size);
-							d3d12::CreateSRVFromTexture(texture_internal, cpu_handle);
-						};
-
-						create_srv(material_internal->GetAlbedo());
-						create_srv(material_internal->GetMetallic());
-						create_srv(material_internal->GetNormal());
-						create_srv(material_internal->GetRoughness());
 					}
 				}
 			}
 
 		} /* internal */
 
-
-		inline void BuildAccelerationStructure(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, d3d12::CommandList* cmd_list, RenderTaskHandle handle)
+		inline void ExecuteBuildASTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
+			auto& data = fg.GetData<ASBuildData>(handle);
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto device = n_render_system.m_device;
-			auto& data = fg.GetData<ASBuildData>(handle);
 
 			data.out_materials_require_update = false;
 
@@ -339,7 +307,7 @@ namespace wr
 					d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
 				}
 
-				internal::CreateTextureSRVs(cmd_list, data);
+				internal::CreateSRVs(cmd_list, data);
 
 				data.out_init = false;
 			}
@@ -347,10 +315,6 @@ namespace wr
 			{
 				internal::UpdateTLAS(device, cmd_list, scene_graph, data);
 			}
-		}
-
-		inline void ExecuteBuildASTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
-		{
 		}
 
 		inline void DestroyBuildASTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)

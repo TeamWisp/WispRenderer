@@ -378,6 +378,33 @@ namespace wr
 			return static_cast<T*>(m_cmd_lists[handle]);
 		}
 
+		/*! Get the command list of a previously ran task. */
+		/*!
+			The template variable allows you to cast the command list to a "non platform independent" different type. For example a `D3D12CommandList`.
+			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
+		*/
+		template<typename T>
+		inline wr::CommandList* GetPredecessorCommandList()
+		{
+			static_assert(std::is_class<T>::value,
+				"The template variable should be a void, class or struct.");
+			static_assert(!std::is_pointer<T>::value,
+				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
+
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
+			{
+				if (typeid(T) == m_data_type_info[i])
+				{
+					WaitForCompletion(i);
+
+					return m_cmd_lists[i];
+				}
+			}
+
+			LOGC("Failed to find predecessor command list! Please check your task order.");
+			return nullptr;
+		}
+
 		template<typename T>
 		std::vector<T*> GetAllCommandLists()
 		{
