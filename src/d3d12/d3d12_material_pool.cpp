@@ -5,7 +5,7 @@ namespace wr
 	D3D12MaterialPool::D3D12MaterialPool(D3D12RenderSystem & render_system) :
 		m_render_system(render_system)
 	{
-		m_constant_buffer_pool = m_render_system.CreateConstantBufferPool(1 * 1024 * 1024);		
+		m_constant_buffer_pool = m_render_system.CreateConstantBufferPool(1_mb);		
 	}
 
 	D3D12MaterialPool::~D3D12MaterialPool()

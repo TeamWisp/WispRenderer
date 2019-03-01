@@ -6,7 +6,7 @@ namespace wr
 
 	void CameraNode::SetFov(float deg)
 	{
-		m_fov = deg / 180 * 3.1415926535f;
+		m_fov = deg / 180.0f * 3.1415926535f;
 		SignalChange();
 	}
 

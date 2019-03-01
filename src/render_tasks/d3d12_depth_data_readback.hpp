@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../d3d12/d3d12_structs.hpp"
-#include "../d3d12/d3d12_renderer.hpp"
-#include "../d3d12/d3d12_functions.hpp"
-#include "../frame_graph/frame_graph.hpp"
+#include "d3d12/d3d12_functions.hpp"
+#include "d3d12/d3d12_renderer.hpp"
+#include "d3d12/d3d12_structs.hpp"
+#include "frame_graph/frame_graph.hpp"
 
 namespace wr
 {
@@ -44,14 +44,15 @@ namespace wr
 			data.readback_buffer_desc.m_buffer_height = dx12_render_system.m_viewport.m_viewport.Height;
 			data.readback_buffer_desc.m_bytes_per_pixel = bytesPerPixel;
 
-			std::uint64_t buffer_size = data.readback_buffer_desc.m_buffer_width * data.readback_buffer_desc.m_buffer_height * data.readback_buffer_desc.m_bytes_per_pixel;
-
 			// Create the actual read back buffer
 			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, &data.readback_buffer_desc);
 			d3d12::SetName(data.readback_buffer, L"Depth data read back render pass");
 
+			// Size of the buffer aligned to a multiple of 256
+			std::uint32_t aligned_buffer_size = SizeAlign(data.readback_buffer_desc.m_buffer_width * bytesPerPixel, 256) * data.readback_buffer_desc.m_buffer_height;
+
 			// Keep the read back buffer mapped for the duration of the entire application
-			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, buffer_size));
+			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, aligned_buffer_size));
 			data.cpu_texture_output.m_buffer_width = data.readback_buffer_desc.m_buffer_width;
 			data.cpu_texture_output.m_buffer_height = data.readback_buffer_desc.m_buffer_height;
 			data.cpu_texture_output.m_bytes_per_pixel = data.readback_buffer_desc.m_bytes_per_pixel;
@@ -71,7 +72,11 @@ namespace wr
 			destination.PlacedFootprint.Footprint.Width = dx12_render_system.m_viewport.m_viewport.Width;
 			destination.PlacedFootprint.Footprint.Height = dx12_render_system.m_viewport.m_viewport.Height;
 			destination.PlacedFootprint.Footprint.Depth = 1;
-			destination.PlacedFootprint.Footprint.RowPitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_dsv_format);
+
+			std::uint32_t row_pitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_dsv_format);
+			std::uint32_t aligned_row_pitch = SizeAlign(row_pitch, 256);	// 256 byte aligned
+
+			destination.PlacedFootprint.Footprint.RowPitch = aligned_row_pitch;
 
 			D3D12_TEXTURE_COPY_LOCATION source = {};
 			source.pResource = data.predecessor_render_target->m_depth_stencil_buffer;
