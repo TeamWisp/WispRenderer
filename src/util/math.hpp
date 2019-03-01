@@ -18,20 +18,4 @@ namespace util
 
 		return upper3x3;
 	}
-
-	// https://stackoverflow.com/a/3407254
-	//! Round the input number to the nearest multiple of the specified number
-	/*! \param input Number to round. 
-	 *  \param multiple Multiple to round the input to. */
-	inline std::uint32_t RoundUpToNearestMultiple(std::uint32_t input, std::uint32_t multiple)
-	{
-		if (multiple == 0)
-			return input;
-
-		std::uint32_t remainder = input % multiple;
-		if (remainder == 0)
-			return input;
-
-		return input + multiple - remainder;
-	}
 } /* util */

@@ -4,7 +4,6 @@
 #include "d3d12/d3d12_renderer.hpp"
 #include "d3d12/d3d12_structs.hpp"
 #include "frame_graph/frame_graph.hpp"
-#include "util/math.hpp"
 
 namespace wr
 {
@@ -50,7 +49,7 @@ namespace wr
 			d3d12::SetName(data.readback_buffer, L"Pixel data read back render pass");
 
 			// Size of the buffer aligned to a multiple of 256
-			std::uint32_t aligned_buffer_size = util::RoundUpToNearestMultiple(data.readback_buffer_desc.m_buffer_width * bytesPerPixel, 256) * data.readback_buffer_desc.m_buffer_height;
+			std::uint32_t aligned_buffer_size = SizeAlign(data.readback_buffer_desc.m_buffer_width * bytesPerPixel, 256) * data.readback_buffer_desc.m_buffer_height;
 
 			// Keep the read back buffer mapped for the duration of the entire application
 			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, aligned_buffer_size));
@@ -75,7 +74,7 @@ namespace wr
 			destination.PlacedFootprint.Footprint.Depth = 1;
 
 			std::uint32_t row_pitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
-			std::uint32_t aligned_row_pitch = util::RoundUpToNearestMultiple(row_pitch, 256);	// 256 byte aligned
+			std::uint32_t aligned_row_pitch = SizeAlign(row_pitch, 256);	// 256 byte aligned
 
 			destination.PlacedFootprint.Footprint.RowPitch = aligned_row_pitch;
 
