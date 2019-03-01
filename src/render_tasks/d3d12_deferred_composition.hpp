@@ -30,7 +30,7 @@ namespace wr
 		std::array<d3d12::CommandList*, d3d12::settings::num_back_buffers> out_bundle_cmd_lists;
 		bool out_requires_bundle_recording;
 
-		bool is_in_hybrid;
+		bool is_hybrid;
 	};
 
 	namespace internal
@@ -92,7 +92,7 @@ namespace wr
 
 			// Since including the hybrid render task causes include loops, we assume that the composition task
 			// is the hybrid framegraph by checking if T is not set to the default value (specified in 'AddDeferredCompositionTask')
-			data.is_in_hybrid = !std::is_same<T, wr::DeferredCompositionTaskData>::value;
+			data.is_hybrid = !std::is_same<T, wr::DeferredCompositionTaskData>::value;
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
@@ -117,7 +117,7 @@ namespace wr
 				d3d12::CreateSRVFromDSV(deferred_main_rt, dsv_srv_handle);
 
 				// Bind output(s) from hybrid render task, if the composition task is executed in the hybrid frame graph
-				if (data.is_in_hybrid)
+				if (data.is_hybrid)
 				{
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
 					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + i);
@@ -140,8 +140,21 @@ namespace wr
 			if (n_render_system.m_render_window.has_value())
 			{
 				const auto viewport = n_render_system.m_viewport;
-				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);
 				const auto frame_idx = n_render_system.GetFrameIdx();
+
+				// Update camera constant buffer pool
+				auto active_camera = scene_graph.GetActiveCamera();
+
+				temp::ProjectionView_CBData camera_data;
+				camera_data.m_projection = active_camera->m_projection;
+				camera_data.m_inverse_projection = active_camera->m_inverse_projection;
+				camera_data.m_view = active_camera->m_view;
+				camera_data.m_inverse_view = active_camera->m_inverse_view;
+				camera_data.m_is_hybrid = data.is_hybrid ? 1 : 0;
+
+				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &camera_data);
+
+				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);
 
 				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
 				{
@@ -171,7 +184,7 @@ namespace wr
 				}
 
 				// We need a fallback texture when the composition task is not executed in the hybrid
-				if(scene_graph.m_skybox.has_value() && !data.is_in_hybrid)
+				if(scene_graph.m_skybox.has_value() && !data.is_hybrid)
 				{
 					// Set skybox as hybrid fallback?
 				}
