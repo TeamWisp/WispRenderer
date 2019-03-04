@@ -52,6 +52,7 @@ struct ReflectionHitInfo
 	float3 origin;
 	float3 color;
 	unsigned int seed;
+	unsigned int depth;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -83,11 +84,11 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth)
 {
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed};
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, depth};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -120,13 +121,13 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
+float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint depth)
 {
 	// Calculate ray info
 	float3 reflected = reflect(-V, normal);
 
 	// Shoot reflection ray
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed);
+	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, depth);
 	return reflection;
 }
 
@@ -202,7 +203,7 @@ void RaygenEntry()
 	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
 
 	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
+	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
