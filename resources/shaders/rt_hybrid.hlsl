@@ -292,7 +292,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
-	//TODO: Reflections
+	//Reflection in reflections
+	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
 
 	//Shading
 	float3 flipped_N = fN;
@@ -304,12 +305,12 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
-	float3 specular = (float3(0, 0, 0)) * F;
+	float3 specular = reflection * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
 	// Output the final reflections here
-	payload.color = float3(ambient);
+	payload.color = ambient;
 }
 
 //Reflection skybox
