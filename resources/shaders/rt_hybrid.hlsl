@@ -272,7 +272,6 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 
-
 	//Direction & position
 	const float3 hit_pos = HitWorldPosition();
 	float3 V = normalize(payload.origin - hit_pos);
@@ -292,6 +291,9 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 fN = normalize(mul(normal_t, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
+	//Lighting
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
+
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
 
@@ -306,7 +308,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
     kD *= 1.0 - metal;
 
 	float3 specular = reflection * F;
-	float3 diffuse = albedo * sampled_irradiance;
+	float3 diffuse = lighting * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
 	// Output the final reflections here
