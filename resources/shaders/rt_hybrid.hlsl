@@ -86,6 +86,12 @@ float3 HitWorldPosition()
 
 float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth)
 {
+
+	if (depth >= MAX_RECURSION)
+	{
+		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0).rgb;
+	}
+
 	origin += norm * EPSILON;
 
 	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, depth};
