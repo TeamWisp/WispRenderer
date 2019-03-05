@@ -183,12 +183,6 @@ namespace wr
 					d3d12::CreateSRVFromTexture(data.out_irradiance);
 				}
 
-				// We need a fallback texture when the composition task is not executed in the hybrid
-				if(scene_graph.m_skybox.has_value() && !data.is_hybrid)
-				{
-					// Set skybox as hybrid fallback?
-				}
-
 				// Output UAV
 				{
 					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
@@ -254,7 +248,7 @@ namespace wr
 	}
 
 	template<typename T = DeferredCompositionTaskData>
-	inline void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height, bool is_in_hybrid = false)
+	inline void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
 		RenderTargetProperties rt_properties
 		{

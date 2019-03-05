@@ -77,9 +77,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		
 		// Get reflection
 		float3 reflection = lerp(
-			// Sample from skybox if its hybrid rendering
+			// Sample from skybox if it IS NOT hybrid rendering
 			skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0),
-			// Reflection buffer if its hybrid rendering
+			// Reflection buffer if it IS hybrid rendering
 			buffer_refl_shadow[screen_coord].xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
