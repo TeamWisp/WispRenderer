@@ -47,7 +47,7 @@ namespace wr::d3d12
 			cmd_list->m_descriptor_heaps[i] = nullptr;
 		}
 
-		cmd_list->m_rt_descriptor_heap = std::make_unique<RTDescriptorHeap>(device, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+		cmd_list->m_rt_descriptor_heap = std::make_shared<RTDescriptorHeap>(device, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
 		return cmd_list;
 	}

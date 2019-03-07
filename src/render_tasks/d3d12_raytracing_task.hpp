@@ -59,8 +59,7 @@ namespace wr
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
 
 				// Create Table
-				data.out_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count,
-					shader_identifier_size);
+				data.out_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
 				d3d12::AddShaderRecord(data.out_raygen_shader_table[frame_idx], shader_record);
 			}
 
@@ -77,8 +76,7 @@ namespace wr
 				auto shadow_shader_record = d3d12::CreateShaderRecord(shadow_shader_identifier, shader_identifier_size);
 
 				// Create Table
-				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count,
-					shader_identifier_size);
+				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
 
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shader_record);
 				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_shader_record);
@@ -170,33 +168,50 @@ namespace wr
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::MATERIALS)), as_build_data.out_scene_mat_alloc.GetDescriptorHandle());
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)), as_build_data.out_scene_offset_alloc.GetDescriptorHandle());
 
-				//Test, bind all textures. This will be changed
-				auto hndl = as_build_data.out_material_handles[0];
-				auto mat_int = hndl->m_pool->GetMaterial(hndl->m_id);
-				auto* txture = static_cast<wr::d3d12::TextureResource*>(mat_int->GetAlbedo().m_pool->GetTexture(mat_int->GetAlbedo().m_id));
-
-				for (size_t i = 0; i < 90; ++i)
+				/*
+				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
+				We fill the table with a single descriptor, then overwrite some spots with the he correct textures
+				If a spot is unused, then a default descriptor will be still bound, but not used in the shaders.
+				Since the renderer creates a texture pool that can be used by the render tasks, and
+				the texture pool also has default textures for albedo/roughness/etc... one of those textures is a good
+				candidate for this.
+				*/
 				{
-					unsigned int txt_loc = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES));
-					d3d12::SetRTShaderSRV(cmd_list, 0, txt_loc + i, txture);
+					auto texture_pool = rs.GetDefaultTexturePool();
+
+					if (texture_pool == nullptr)
+					{
+						LOGC("ERROR: Texture Pool in Raytracing Task is nullptr. This is not supposed to happen.");
+					}
+
+					auto texture_handle = texture_pool->GetDefaultAlbedo();
+					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTexture(texture_handle.m_id));
+
+					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::full_raytracing, params::FullRaytracingE::TEXTURES));
+					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES));
+
+					for (size_t i = 0; i < num_textures_in_heap; ++i)
+					{
+						d3d12::SetRTShaderSRV(cmd_list, 0, heap_loc_start + i, texture_resource);
+					}
 				}
 
-				// Fill descriptor heap with textures used by the scene
+				// Fill descriptor heap with actual textures used by the scene
 				for (auto handle : as_build_data.out_material_handles)
 				{
 					auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
 
-					auto create_srv = [&data, material_internal, cmd_list](auto texture_handle)
+					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES)) + texture_handle.m_id, texture_internal);
 					};
 
-					create_srv(material_internal->GetAlbedo());
-					create_srv(material_internal->GetMetallic());
-					create_srv(material_internal->GetNormal());
-					create_srv(material_internal->GetRoughness());
+					set_srv(material_internal->GetAlbedo());
+					set_srv(material_internal->GetMetallic());
+					set_srv(material_internal->GetNormal());
+					set_srv(material_internal->GetRoughness());
 				}
 
 				// Get light buffer
@@ -274,6 +289,10 @@ namespace wr
 
 		inline void DestroyRaytracingTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
+			auto& data = fg.GetData<RaytracingData>(handle);
+
+			// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+			DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
 		}
 
 	} /* internal */

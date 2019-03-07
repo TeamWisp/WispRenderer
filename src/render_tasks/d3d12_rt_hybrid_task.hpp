@@ -200,15 +200,32 @@ namespace wr
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, data.out_gbuffers.GetDescriptorHandle(1));
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, data.out_depthbuffer.GetDescriptorHandle());
 
-				//Test, bind all textures
-				auto hndl = as_build_data.out_material_handles[0];
-				auto mat_int = hndl->m_pool->GetMaterial(hndl->m_id);
-				auto* txture = static_cast<wr::d3d12::TextureResource*>(mat_int->GetAlbedo().m_pool->GetTexture(mat_int->GetAlbedo().m_id));
-
-				for (size_t i = 0; i < 90; ++i)
+				/*
+				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
+				We fill the table with a single descriptor, then overwrite some spots with the he correct textures
+				If a spot is unused, then a default descriptor will be still bound, but not used in the shaders.
+				Since the renderer creates a texture pool that can be used by the render tasks, and
+				the texture pool also has default textures for albedo/roughness/etc... one of those textures is a good
+				candidate for this.
+				*/
 				{
-					unsigned int txt_loc = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES));
-					d3d12::SetRTShaderSRV(cmd_list, 0, txt_loc + i, txture);
+					auto texture_pool = render_system.GetDefaultTexturePool();
+
+					if (texture_pool == nullptr)
+					{
+						LOGC("ERROR: Texture Pool in Raytracing Task is nullptr. This is not supposed to happen.");
+					}
+
+					auto texture_handle = texture_pool->GetDefaultAlbedo();
+					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTexture(texture_handle.m_id));
+
+					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::full_raytracing, params::FullRaytracingE::TEXTURES));
+					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES));
+
+					for (size_t i = 0; i < num_textures_in_heap; ++i)
+					{
+						d3d12::SetRTShaderSRV(cmd_list, 0, heap_loc_start + i, texture_resource);
+					}
 				}
 
 				// Fill descriptor heap with textures used by the scene
@@ -216,17 +233,17 @@ namespace wr
 				{
 					auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
 
-					auto create_srv = [&data, material_internal, cmd_list](auto texture_handle)
+					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
 					};
 
-					create_srv(material_internal->GetAlbedo());
-					create_srv(material_internal->GetMetallic());
-					create_srv(material_internal->GetNormal());
-					create_srv(material_internal->GetRoughness());
+					set_srv(material_internal->GetAlbedo());
+					set_srv(material_internal->GetMetallic());
+					set_srv(material_internal->GetNormal());
+					set_srv(material_internal->GetRoughness());
 				}
 
 				// Get light buffer
@@ -307,6 +324,16 @@ namespace wr
 			}
 		}
 
+		inline void DestroyRTHybridTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			auto& data = fg.GetData<RTHybridData>(handle);
+
+			// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+			DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
+			DescriptorAllocation temp2 = std::move(data.out_gbuffers);
+			DescriptorAllocation temp3 = std::move(data.out_depthbuffer);
+		}
+
 	} /* internal */
 
 	inline void AddRTHybridTask(FrameGraph& fg)
@@ -335,9 +362,9 @@ namespace wr
 		{
 			internal::ExecuteRTHybridTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool)
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			// Nothing to destroy
+			internal::DestroyRTHybridTask(fg, handle, resize);
 		};
 		desc.m_name = "Hybrid raytracing";
 		desc.m_properties = rt_properties;

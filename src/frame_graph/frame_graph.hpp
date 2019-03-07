@@ -380,8 +380,9 @@ namespace wr
 
 		/*! Get the command list of a previously ran task. */
 		/*!
-			The template variable allows you to cast the command list to a "non platform independent" different type. For example a `D3D12CommandList`.
-			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
+			The function allows the user to get a command list from another render task. These command lists are not meant
+			to be used as they could be closed or in flight. This function was created only so that ray tracing tasks could get
+			the heap from the acceleration structure command list.
 		*/
 		template<typename T>
 		inline wr::CommandList* GetPredecessorCommandList()

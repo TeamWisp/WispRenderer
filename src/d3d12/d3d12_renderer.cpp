@@ -49,6 +49,11 @@ namespace wr
 			m_model_pools[i].reset();
 		}
 
+		for (int i = 0; i < m_texture_pools.size(); ++i)
+		{
+			m_texture_pools[i].reset();
+		}
+
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
@@ -303,6 +308,16 @@ namespace wr
 		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_bytes);
 		m_structured_buffer_pools.push_back(pool);
 		return pool;
+	}
+
+	std::shared_ptr<TexturePool> D3D12RenderSystem::GetDefaultTexturePool()
+	{
+		if (m_texture_pools.size() > 0)
+		{
+			return m_texture_pools[0];
+		}
+
+		return std::shared_ptr<TexturePool>();
 	}
 
 	void D3D12RenderSystem::WaitForAllPreviousWork()
