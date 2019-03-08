@@ -33,7 +33,7 @@ namespace wr
 		d3d12::RenderTarget* out_deferred_main_rt;
 
 		unsigned int frame_idx;
-		
+
 		DescriptorAllocation out_uav_from_rtv;
 		DescriptorAllocation out_gbuffers;
 		DescriptorAllocation out_depthbuffer;
@@ -111,9 +111,6 @@ namespace wr
 
 		inline void SetupRTHybridTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
 		{
-			if (resize)
-				return;
-
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto& device = n_render_system.m_device;
@@ -121,17 +118,20 @@ namespace wr
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			d3d12::SetName(n_render_target, L"Raytracing Target");
 
-			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
+			if (!resize)
+			{
+				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+				auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
 
-			cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
+				cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
-			// Get AS build data
-			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+				// Get AS build data
+				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-			data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
-			data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
-			data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
+				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+			}
 
 			// Versioning
 			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
@@ -151,16 +151,19 @@ namespace wr
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
 			}
 
-			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
+			if (!resize)
+			{
+				// Camera constant buffer
+				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
 
-			// Pipeline State Object
-			auto& rt_registry = RTPipelineRegistry::Get();
-			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_hybrid_state_object))->m_native;
+				// Pipeline State Object
+				auto& rt_registry = RTPipelineRegistry::Get();
+				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_hybrid_state_object))->m_native;
 
-			// Root Signature
-			auto& rs_registry = RootSignatureRegistry::Get();
-			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
+				// Root Signature
+				auto& rs_registry = RootSignatureRegistry::Get();
+				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
+			}
 
 			// Create Shader Tables
 			CreateShaderTables(device, data, 0);

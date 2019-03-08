@@ -111,26 +111,28 @@ namespace wr
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			d3d12::SetName(n_render_target, L"Raytracing Target");
 
-			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
+			if (!resize)
+			{
+				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+				auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
 
-			cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
+				cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
-			// Pipeline State Object
-			auto& rt_registry = RTPipelineRegistry::Get();
-			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
+				// Pipeline State Object
+				auto& rt_registry = RTPipelineRegistry::Get();
+				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
 
-			// Root Signature
-			auto& rs_registry = RootSignatureRegistry::Get();
-			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
+				// Root Signature
+				auto& rs_registry = RootSignatureRegistry::Get();
+				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
 
+				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+				// Camera constant buffer
+				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
 
-			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
-
-			data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
+				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
+			}
 
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
 			{
@@ -288,11 +290,13 @@ namespace wr
 
 		inline void DestroyRaytracingTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& data = fg.GetData<RaytracingData>(handle);
+			if (!resize)
+			{
+				auto& data = fg.GetData<RaytracingData>(handle);
 
-			// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-			DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
-
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
+			}
 		}
 
 	} /* internal */
