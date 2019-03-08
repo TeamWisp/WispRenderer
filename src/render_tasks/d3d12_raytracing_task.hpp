@@ -116,8 +116,6 @@ namespace wr
 
 			cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
-			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
-
 			// Pipeline State Object
 			auto& rt_registry = RTPipelineRegistry::Get();
 			data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::state_object))->m_native;
@@ -126,10 +124,11 @@ namespace wr
 			auto& rs_registry = RootSignatureRegistry::Get();
 			data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_test_global))->m_native;
 
-			// Camera constant buffer
-			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
 
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+
+			// Camera constant buffer
+			data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
 
 			data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
 
@@ -224,7 +223,7 @@ namespace wr
 					DescriptorAllocation light_alloc = std::move(as_build_data.out_allocator->Allocate());
 					d3d12::DescHeapCPUHandle light_handle = light_alloc.GetDescriptorHandle();
 					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, light_handle, frame_idx);
-					
+
 					d3d12::DescHeapCPUHandle light_handle2 = light_alloc.GetDescriptorHandle();
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::LIGHTS)), light_handle2);
 				}
@@ -293,6 +292,7 @@ namespace wr
 
 			// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
 			DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
+
 		}
 
 	} /* internal */

@@ -109,8 +109,11 @@ namespace wr
 			}
 		}
 
-		inline void SetupRTHybridTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle)
+		inline void SetupRTHybridTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
 		{
+			if (resize)
+				return;
+
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto& device = n_render_system.m_device;
@@ -122,8 +125,6 @@ namespace wr
 			auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
 
 			cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
-
-			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
 			// Get AS build data
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
@@ -328,10 +329,13 @@ namespace wr
 		{
 			auto& data = fg.GetData<RTHybridData>(handle);
 
-			// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-			DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
-			DescriptorAllocation temp2 = std::move(data.out_gbuffers);
-			DescriptorAllocation temp3 = std::move(data.out_depthbuffer);
+			if (!resize)
+			{
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
+				DescriptorAllocation temp2 = std::move(data.out_gbuffers);
+				DescriptorAllocation temp3 = std::move(data.out_depthbuffer);
+			}
 		}
 
 	} /* internal */
@@ -354,9 +358,9 @@ namespace wr
 		};
 
 		RenderTaskDesc desc;
-		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
+		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			internal::SetupRTHybridTask(rs, fg, handle);
+			internal::SetupRTHybridTask(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{

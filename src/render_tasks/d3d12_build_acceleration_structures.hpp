@@ -66,6 +66,7 @@ namespace wr
 			data.out_parsed_materials.reserve(d3d12::settings::num_max_rt_materials);
 
 			data.out_allocator = new DescriptorAllocator(n_render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, 3);
+
 			data.out_scene_ib_alloc = std::move(data.out_allocator->Allocate());
 			data.out_scene_mat_alloc = std::move(data.out_allocator->Allocate());
 			data.out_scene_offset_alloc = std::move(data.out_allocator->Allocate());
@@ -321,12 +322,15 @@ namespace wr
 		{
 			auto& data = fg.GetData<ASBuildData>(handle);
 
-			// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-			DescriptorAllocation temp1 = std::move(data.out_scene_ib_alloc);
-			DescriptorAllocation temp2 = std::move(data.out_scene_mat_alloc);
-			DescriptorAllocation temp3 = std::move(data.out_scene_offset_alloc);
+			if (!resize)
+			{
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_scene_ib_alloc);
+				DescriptorAllocation temp2 = std::move(data.out_scene_mat_alloc);
+				DescriptorAllocation temp3 = std::move(data.out_scene_offset_alloc);
 
-			delete data.out_allocator;
+				delete data.out_allocator;
+			}
 		}
 
 	} /* internal */
