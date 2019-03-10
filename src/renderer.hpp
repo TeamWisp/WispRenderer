@@ -50,6 +50,7 @@ namespace wr
 		virtual CommandList* GetBundleCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetComputeCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetCopyCommandList(unsigned int num_allocators) = 0;
+		virtual void DestroyCommandList(CommandList* cmd_list) = 0;
 		virtual RenderTarget* GetRenderTarget(RenderTargetProperties properties) = 0;
 		virtual void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) = 0;
 
