@@ -89,7 +89,7 @@ namespace fg_manager
 			wr::AddRTHybridTask(*fg);
 
 			// Composition to compose the hybrid result with the g-buffers
-			wr::AddDeferredCompositionTask<wr::RTHybridData>(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
 			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
