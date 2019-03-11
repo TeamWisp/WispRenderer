@@ -31,6 +31,7 @@ SOFTWARE.
 #include "d3d12_functions.hpp"
 #include "d3d12_defines.hpp"
 #include "d3d12_renderer.hpp"
+#include "d3d12_defines.hpp"
 
 #include "../renderer.hpp"
 #include "../settings.hpp"
@@ -92,6 +93,16 @@ namespace wr
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
 			delete m_allocators[i];
+		}
+
+		while (m_unstaged_textures.size() > 0)
+		{
+			D3D12TexturePool::Unload(m_unstaged_textures.begin()->first);
+		}
+		
+		while(m_staged_textures.size() > 0)
+		{
+			D3D12TexturePool::Unload(m_staged_textures.begin()->first);
 		}
 	}
 
@@ -159,6 +170,7 @@ namespace wr
 				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
 
 				free(texture->m_allocated_memory);
+				texture->m_allocated_memory = nullptr;
 
 				texture->m_is_staged = true;
 
@@ -305,7 +317,9 @@ namespace wr
 		d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));
 		m_staged_textures.erase(texture_id);
 
-		delete[] texture->m_allocated_memory;
+		SAFE_RELEASE(texture->m_resource);
+		SAFE_RELEASE(texture->m_intermediate);
+		if(texture->m_allocated_memory != nullptr) free( texture->m_allocated_memory);
 		delete texture;
 	}
 
