@@ -70,8 +70,7 @@ namespace wr
 			auto& ps_registry = PipelineRegistry::Get();
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::deferred_composition);
 
-			// Since including the hybrid render task causes include loops, we assume that the composition task
-			// is the hybrid framegraph by checking if T is not set to the default value (specified in 'AddDeferredCompositionTask')
+			// Check if the current frame graph contains the hybrid task to know if it is hybrid or not.
 			data.is_hybrid = fg.HasTask<wr::RTHybridData>();
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
