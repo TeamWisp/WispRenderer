@@ -487,8 +487,11 @@ namespace wr::d3d12
 
 	void Destroy(TextureResource* tex)
 	{
-		SAFE_RELEASE(tex->m_resource);
-		delete tex;
+		if (tex != nullptr)
+		{
+			SAFE_RELEASE(tex->m_resource);
+			delete tex;
+		}
 	}
 
 	bool CheckUAVCompatibility(Format format)

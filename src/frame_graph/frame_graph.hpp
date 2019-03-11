@@ -142,6 +142,7 @@ namespace wr
 			m_cmd_lists.resize(m_num_tasks);
 			m_render_targets.resize(m_num_tasks);
 			m_futures.resize(m_num_tasks);
+			m_render_system = &render_system;
 
 			if constexpr (settings::use_multithreading)
 			{
@@ -253,6 +254,11 @@ namespace wr
 			for (auto& data : m_data)
 			{
 				delete data;
+			}
+
+			for (auto& cmd_list : m_cmd_lists)
+			{
+				m_render_system->DestroyCommandList(cmd_list);
 			}
 
 			// Reset all members in the case of the user wanting to reuse this frame graph after `FrameGraph::Destroy`.
@@ -602,6 +608,7 @@ namespace wr
 			m_free_uids.push(uid);
 		}
 
+		RenderSystem* m_render_system;
 		/*! The number of tasks we have added. */
 		std::uint32_t m_num_tasks;
 		/*! The thread pool used for multithreading */
