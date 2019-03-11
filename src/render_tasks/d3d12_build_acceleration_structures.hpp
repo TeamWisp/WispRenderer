@@ -65,7 +65,10 @@ namespace wr
 			data.out_offsets.reserve(d3d12::settings::num_max_rt_materials);
 			data.out_parsed_materials.reserve(d3d12::settings::num_max_rt_materials);
 
-			data.out_allocator = new DescriptorAllocator(n_render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, 3);
+			
+			auto texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.GetDefaultTexturePool());
+
+			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
 			data.out_scene_ib_alloc = std::move(data.out_allocator->Allocate());
 			data.out_scene_mat_alloc = std::move(data.out_allocator->Allocate());
