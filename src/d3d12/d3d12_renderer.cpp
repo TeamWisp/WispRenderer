@@ -256,6 +256,11 @@ namespace wr
 
 		m_bound_model_pool = nullptr;
 
+		for (int i = 0; i < m_model_pools.size(); ++i)
+		{
+			m_model_pools[i]->SetUpdated(false);
+		}
+
 		// Optional CPU-visible copy of the render target pixel data
 		const auto cpu_output_texture = frame_graph.GetOutputTexture();
 

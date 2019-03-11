@@ -325,6 +325,8 @@ namespace wr
 		{
 			LOGE("Vertex buffer has shrunken too much and doesn't fit.");
 		}
+
+		m_updated = true;
 	}
 
 	void D3D12ModelPool::ShrinkIndexHeapToFit()
@@ -453,7 +455,26 @@ namespace wr
 			}
 		}
 		last_occupied_block->m_next_block = nullptr;
-		last_occupied_block->m_size = new_size - last_occupied_block->m_offset;
+
+		if (last_occupied_block->m_offset + last_occupied_block->m_size < new_size)
+		{
+			MemoryBlock* new_block = new MemoryBlock;
+			ZeroMemory(new_block, sizeof(MemoryBlock));
+			new_block->m_alignment = 1;
+			new_block->m_free = true;
+			new_block->m_next_block = nullptr;
+			new_block->m_prev_block = last_occupied_block;
+			new_block->m_offset = last_occupied_block->m_offset + last_occupied_block->m_size;
+			new_block->m_size = new_size - new_block->m_offset;
+
+			last_occupied_block->m_next_block = new_block;
+		}
+		else if (last_occupied_block->m_offset + last_occupied_block->m_size > new_size)
+		{
+			LOGE("Vertex buffer has shrunken too much and doesn't fit.");
+		}
+
+		m_updated = true;
 	}
 
 	void D3D12ModelPool::Defragment()
@@ -709,6 +730,8 @@ namespace wr
 
 			m_command_queue.push(transition_command);
 		}
+
+		m_updated = true;
 	}
 
 	void D3D12ModelPool::DefragmentIndexHeap()
@@ -947,6 +970,8 @@ namespace wr
 
 			m_command_queue.push(transition_command);
 		}
+
+		m_updated = true;
 	}
 	
 	void D3D12ModelPool::Resize(size_t vertex_heap_new_size, size_t index_heap_new_size)
@@ -1126,6 +1151,7 @@ namespace wr
 				}
 			}
 		}
+		m_updated = true;
 	}
 
 	void D3D12ModelPool::ResizeIndexHeap(size_t index_heap_new_size)
@@ -1298,6 +1324,7 @@ namespace wr
 				}
 			}
 		}
+		m_updated = true;
 	}
 
 	internal::MeshInternal* D3D12ModelPool::LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size)
@@ -1393,6 +1420,8 @@ namespace wr
 
 		m_command_queue.push(index_command);
 
+		m_updated = true;
+
 		return mesh;
 	}
 
@@ -1443,6 +1472,8 @@ namespace wr
 		vertex_command->m_size = mesh->m_vertex_staging_buffer_size;
 
 		m_command_queue.push(vertex_command);
+		
+		m_updated = true;
 
 		return mesh;
 	}
@@ -1514,6 +1545,8 @@ namespace wr
 
 			m_command_queue.push(vertex_command);
 		}
+
+		m_updated = true;
 	}
 
 	void D3D12ModelPool::UpdateMeshIndexData(Mesh * mesh, void * indices_data, std::size_t num_indices, std::size_t indices_size)
@@ -1576,6 +1609,8 @@ namespace wr
 
 			m_command_queue.push(index_command);
 		}
+
+		m_updated;
 	}
 
 	void D3D12ModelPool::DestroyModel(Model * model)
@@ -1595,6 +1630,8 @@ namespace wr
 		}
 
 		//TODO: Destroy possible materials owned by model. Material might be used by multiple models, use ref counts?
+
+		m_updated = true;
 
 		delete model;
 	}
@@ -1629,6 +1666,8 @@ namespace wr
 			{
 				FreeMemory(m_index_heap_start_block, static_cast<MemoryBlock*>(n_mesh->m_index_memory_block));
 			}
+
+			m_updated = true;
 
 			//Delete the mesh
 			delete mesh;
