@@ -15,6 +15,7 @@ struct VS_INPUT
 struct VS_OUTPUT
 {
 	float4 pos : SV_POSITION;
+	float4 wpos : POSITION;
 	float2 uv : TEXCOORD;
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
@@ -52,6 +53,7 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float4x4 mvp = mul(projection, vm);
 	
 	output.pos =  mul(mvp, float4(pos, 1.0f));
+	output.wpos = mul(inst.model, float4(pos, 1.f));
 	output.uv = float2(input.uv.x, 1.0f - input.uv.y);
 	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
 	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
@@ -65,6 +67,10 @@ struct PS_OUTPUT
 {
 	float4 albedo_roughness : SV_TARGET0;
 	float4 normal_metallic : SV_TARGET1;
+	float4 debug_0 : SV_TARGET2;
+	float4 debug_1 : SV_TARGET3;
+	float4 debug_2 : SV_TARGET4;
+	float4 debug_3 : SV_TARGET5;
 };
 
 Texture2D material_albedo : register(t0);
@@ -90,7 +96,15 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
 	float3 normal = normalize(mul(tex_normal, tbn));
 
+	//float s = sign(dot(ddx(input.wpos), ddx(normalize(input.normal))) + dot(ddy(input.wpos), ddy(normalize(input.normal))));
+
+	float s = 1;
+
 	output.albedo_roughness = float4(albedo.xyz, roughness.r);
 	output.normal_metallic = float4(normal, metallic.r);
+	output.debug_0.xyz = input.wpos;
+	output.debug_1.xyz = s;
+	//output.debug_2.xyz = (ddx(input.wpos));
+	//output.debug_3.xyz = (ddy(input.wpos));
 	return output;
 }

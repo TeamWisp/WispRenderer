@@ -71,8 +71,8 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
 			RenderTargetProperties::CreateDSVBuffer(true),
 			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
-			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
-			RenderTargetProperties::NumRTVFormats(2),
+			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::NumRTVFormats(6),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true)
 		};

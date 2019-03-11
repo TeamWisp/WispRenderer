@@ -24,7 +24,7 @@ namespace wr::d3d12::settings
 		D3D_FEATURE_LEVEL_11_0
 	};
 
-	static const constexpr bool output_hdr = false;
+	static const constexpr bool output_hdr = true;
 	static const constexpr Format back_buffer_format = output_hdr ? Format::R16G16B16A16_FLOAT : Format::R8G8B8A8_UNORM;
 	static const constexpr DXGI_SWAP_EFFECT flip_mode = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	static const constexpr DXGI_SWAP_CHAIN_FLAG swapchain_flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
@@ -48,6 +48,6 @@ namespace wr::d3d12::settings
 	static const constexpr bool enable_object_culling = true;
 	static const constexpr unsigned int num_max_rt_materials = 3000;
 	static const constexpr unsigned int num_max_rt_textures = 1000;
-	static const constexpr unsigned int fallback_ptrs_offset = 1011;
+	static const constexpr unsigned int fallback_ptrs_offset = 1011+4;
 	
 } /* wr::d3d12::settings */

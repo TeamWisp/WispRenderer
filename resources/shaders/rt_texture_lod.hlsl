@@ -55,7 +55,7 @@ float ComputeTextureLOD(RayCone cone, float3 V, float3 N, float3 P0, float3 P1, 
 // Fig 20.30
 float PixelSpreadAngle(float vertical_fov, float output_height)
 {
-	return atan((2.f * tan(vertical_fov / 2.f)) / 720.f);
+	return atan((2.f * tan(vertical_fov / 2.f)) / output_height);
 }
 
 float3 dumb_ddx(Texture2D t, float3 v)
@@ -123,15 +123,15 @@ float3 dumb_ddy_depth(Texture2D t, float4x4 inv_vp, float3 v)
 	float3 bottom_right = t[float2(pixel.x+1, pixel.y+1)].xyz;
 
 	// Get world space position
-	const float4 __ndc = float4(uv * 2.0 - 1.0, bottom_left.x, 1.0);
-	float4 __wpos = mul(inv_vp, __ndc);
-	float3 __retval = (__wpos.xyz / __wpos.w).xyz;
+	const float4 ndc = float4(uv * 2.0 - 1.0, bottom_left.x, 1.0);
+	float4 wpos = mul(inv_vp, ndc);
+	float3 retval = (wpos.xyz / wpos.w).xyz;
 
-	const float4 ___ndc = float4(uv * 2.0 - 1.0, top_right.x, 1.0);
-	float4 ___wpos = mul(inv_vp, ___ndc);
-	float3 ___retval = (___wpos.xyz / ___wpos.w).xyz;
+	const float4 _ndc = float4(uv * 2.0 - 1.0, top_right.x, 1.0);
+	float4 _wpos = mul(inv_vp, _ndc);
+	float3 _retval = (_wpos.xyz / _wpos.w).xyz;
 
-	return __retval - ___retval;
+	return retval - _retval;
 }
 
 float3 dumb_ddx_depth2(Texture2D t, float4x4 inv_vp, float3 v)
@@ -168,7 +168,7 @@ float3 dumb_ddy_depth2(Texture2D t, float4x4 inv_vp, float3 v)
 	float3 bottom_left = t[float2(pixel.x, pixel.y+1)].xyz;
 	float3 bottom_right = t[float2(pixel.x+1, pixel.y+1)].xyz;
 
-	float3 v2 = bottom_left - top_left;
+	float3 v2 = bottom_left - top_right;
 
 	// Get world space position
 	const float4 ndc = float4(uv * 2.0 - 1.0, v2.x, 1.0);
@@ -179,20 +179,33 @@ float3 dumb_ddy_depth2(Texture2D t, float4x4 inv_vp, float3 v)
 }
 
 // Fig 20.23
-float ComputeSurfaceSpreadAngle(Texture2D g_P, Texture2D g_N, float4x4 inv_vp, float3 P, float3 N)
+float ComputeSurfaceSpreadAngle(Texture2D g_P, Texture2D g_N, Texture2D g_DY, Texture2D g_DY2, float4x4 inv_vp, float3 P, float3 N)
 {
-	float3 aPx = dumb_ddx_depth(g_P, inv_vp, P);
-	float3 aPy = dumb_ddy_depth(g_P, inv_vp, P);
+	float2 pixel = DispatchRaysIndex().xy;
+
+	//float3 aPx = dumb_ddx_depth2(g_P, inv_vp, P);
+	//float3 aPy = dumb_ddy_depth2(g_P, inv_vp, P);
+
+	float3 aPx = dumb_ddx(g_P, P);
+	float3 aPy = dumb_ddy(g_P, P);
 
 	float3 aNx = dumb_ddx(g_N, N);
 	float3 aNy = dumb_ddy(g_N, N);
+
+
+	//aPy = g_DY2[pixel].xyz;
+
+	//aNx = g_N[pixel].xyz;
+	//aNy = g_DY[pixel].xyz;
 
 	float k1 = 1;
 	float k2 = 0;
 	
 	float s = sign(dot(aPx, aNx) + dot(aPy, aNy));
+	s = g_DY2[pixel].x;
+	//return s;
 
-	s = 1; // This fixes most issues. and still looks ok ish with concave surfaces.
+	//s = 1; // This fixes most issues. and still looks ok ish with concave surfaces.
 
 	return 2.f * k1 * s * sqrt(dot(aNx, aNx) + dot(aNy, aNy)) + k2;
 }
@@ -208,12 +221,11 @@ RayCone Propagate(RayCone cone, float surface_spread_angle, float hit_dist)
 }
 
 // Ch 20.6
-RayCone ComputeRayConeFromGBuffer(SurfaceHit hit)
+RayCone ComputeRayConeFromGBuffer(SurfaceHit hit, float vertical_fov, float height)
 {
-	float vfov = 1.39626; // 90 degrees
 	RayCone cone;
 	cone.width = 0;
-	cone.spread_angle = PixelSpreadAngle(vfov, 720);
+	cone.spread_angle = PixelSpreadAngle(vertical_fov, height);
 
 	return Propagate(cone, hit.surface_spread_angle, hit.dist);
 }

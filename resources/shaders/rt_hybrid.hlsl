@@ -38,7 +38,11 @@ StructuredBuffer<Offset> g_offsets : register(t5);
 Texture2D g_textures[1000] : register(t8);
 Texture2D gbuffer_albedo : register(t1008);
 Texture2D gbuffer_normal : register(t1009);
-Texture2D gbuffer_depth : register(t1010);
+Texture2D gbuffer_d0 : register(t1010);
+Texture2D gbuffer_d1 : register(t1011);
+Texture2D gbuffer_d2 : register(t1012);
+Texture2D gbuffer_d3 : register(t1013);
+Texture2D gbuffer_depth : register(t1014);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
 SamplerState s0 : register(s0);
@@ -148,7 +152,7 @@ void RaygenEntry()
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 wpos = gbuffer_d0[DispatchRaysIndex().xy].xyz;
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
 	float3 normal = normal_metallic.xyz;
@@ -158,9 +162,17 @@ void RaygenEntry()
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(cpos - wpos);
 
+	// Get world space position
+
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
+		const float4 ndc = float4(float2(uv.x, 1 - uv.y) * 2.0 - 1.0, 0, 1.0);
+		float4 wpos = mul(inv_vp, ndc);
+		wpos /= wpos.w;
+
+		float3 cam_dir = normalize(wpos.xyz - cpos);
+
+		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(cam_dir), 0));
 		return;
 	}
 
@@ -169,9 +181,9 @@ void RaygenEntry()
 	sfhit.pos = wpos;
 	sfhit.normal = normal;
 	sfhit.dist = length(cpos - wpos);
-	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
+	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_d0, gbuffer_normal, gbuffer_d2, gbuffer_d1, inv_vp, wpos, normal);
 
-	RayCone cone = ComputeRayConeFromGBuffer(sfhit);
+	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 
 	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
 	float3 reflection = DoReflection(wpos, V, normal, rand_seed, cone);
