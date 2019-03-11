@@ -2,7 +2,7 @@
 //#define FOUR_X_AA
 //#define PATH_TRACING
 //#define DEPTH_OF_FIELD
-#define EPSILON 1
+#define EPSILON 0.007
 //#define SOFT_SHADOWS
 #define MAX_SHADOW_SAMPLES 4
 

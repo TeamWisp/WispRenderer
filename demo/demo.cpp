@@ -11,10 +11,11 @@
 #include "resources.hpp"
 #include "scene_cubes.hpp"
 #include "scene_emibl.hpp"
+#include "scene_ao.hpp"
 
 #include "model_loader_assimp.hpp"
 
-#define SCENE emibl_scene
+#define SCENE ao_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;

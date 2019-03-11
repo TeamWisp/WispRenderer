@@ -94,9 +94,10 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance);
 
 	float3 wpos = pos + (normal * EPSILON);
-
+	
+return lighting;
 	// Offset shadow ray direction to get soft-shadows
-#ifdef SOFT_SHADOWS
+#ifdef SOFT_SHADOW
 
 	float shadow_factor = 0.0;
 	[unroll(MAX_SHADOW_SAMPLES)]

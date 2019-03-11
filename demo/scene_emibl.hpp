@@ -26,7 +26,7 @@ namespace emibl_scene
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
-
+		auto dragon = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::dragon_model);
 		// Geometry
 		auto platform1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 
