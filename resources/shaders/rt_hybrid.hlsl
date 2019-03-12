@@ -190,7 +190,6 @@ void RaygenEntry()
 
 	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
 	float3 reflection = DoReflection(wpos, V, normal, rand_seed);
-	//normal *= -1;
 	float3 flipped_N = normal;
 	flipped_N.y *= -1;
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
@@ -203,6 +202,7 @@ void RaygenEntry()
 	float3 specular = (reflection.xyz) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
+	
 	float aoValue = 1.0f;
     const uint spp = 32;
     for(uint i = 0; i< spp; i++)
@@ -210,9 +210,8 @@ void RaygenEntry()
         aoValue -= (1.0f/float(spp)) * TraceShadowRay(0, wpos + normalize(normal) * EPSILON, getCosHemisphereSample(rand_seed, normal), 250.f, 1);
     }
    gOutput[DispatchRaysIndex().xy] = float4((aoValue * ambient + lighting), 1);
-	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
+//	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
 //	gOutput[DispatchRaysIndex().xy] = float4(normal, 1);
-//   gOutput[DispatchRaysIndex().xy] = normal_metallic;//float4(flipped_N, 1);
 
 //	gOutput[DispatchRaysIndex().xy] = float4(aoValue, aoValue, aoValue, 1);
 

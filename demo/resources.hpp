@@ -29,10 +29,7 @@ namespace resources
 	static wr::Model* hairball_model;
 	static wr::Model* dragon_model;
 	static wr::Model* sun_model;
-	static wr::Model* car_model;
 	static wr::Model* bistro_model;
-	static wr::Model* mercedes_model;
-	static wr::Model* model_plane_model;
 	static wr::Model* tank_model;
 
 	static wr::MaterialHandle rusty_metal_material;
@@ -54,10 +51,7 @@ namespace resources
 //#define SUN_TEMPLE
 //#define HAIRBALL
 //#define DRAGON
-//define CAR
 //#define BISTRO
-//#define MERC
-//#define PLANE
 #define TANK
 	void CreateResources(wr::RenderSystem* render_system)
 	{
@@ -281,11 +275,6 @@ namespace resources
 				}
 			}
 #endif
-#ifdef CAR
-			{
-				car_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/Subdiv_Car.fbx");
-			}
-#endif
 #ifdef SUN
 			{
 				sun_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple/SunTemple.fbx");
@@ -308,19 +297,6 @@ namespace resources
 				bistro_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/Bistro/Interior/interior.obj");
 			}
 #endif // BISTRO
-
-#ifdef MERC
-			{
-				mercedes_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/Audi_R8.fbx");
-			}
-
-#endif //MERC
-#ifdef PLANE
-
-			{
-				model_plane_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.f3d");
-			}
-#endif //PLANE
 #ifdef TANK
 			{
 				tank_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/tank/scene.gltf");

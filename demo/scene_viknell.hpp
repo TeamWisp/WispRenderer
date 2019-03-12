@@ -26,7 +26,7 @@ namespace viknell_scene
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		// Geometry
-	/*	auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
@@ -47,8 +47,7 @@ namespace viknell_scene
 		right_wall->SetRotation({0, 90_deg, 0});
 		test_model->SetPosition({0, -1, 0});
 		test_model->SetRotation({0, 180_deg, 0});
-		test_model->SetScale({0.01f,0.01f,0.01f});*/
-		auto pica = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::pica_model);
+		test_model->SetScale({0.01f,0.01f,0.01f});
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{1, 1, 1});
 		//point_light_0->SetRadius(3.0f);
