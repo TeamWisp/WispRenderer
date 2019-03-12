@@ -34,13 +34,15 @@ namespace fg_manager
 				return "Deferred";
 			case PrebuildFrameGraph::RT_HYBRID:
 				return "Hybrid";
+			default:
+				return "Unknown";
 		}
 	}
 
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
-	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
+	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
 	{
 		// Raytracing
 		{
@@ -57,7 +59,7 @@ namespace fg_manager
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			fg->Setup(rs);
 		}
@@ -79,7 +81,7 @@ namespace fg_manager
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			fg->Setup(rs);
 		}
@@ -111,7 +113,7 @@ namespace fg_manager
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			// Finalize the frame graph
 			fg->Setup(rs);

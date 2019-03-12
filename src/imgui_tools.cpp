@@ -105,15 +105,6 @@ namespace wr::imgui::window
 
 		if (open_hardware_info)
 		{
-			if (ImGui::Button("Clear"))
-			{
-				render_system.clear_path = true;
-			}
-			ImGui::DragFloat("Metal", &render_system.temp_metal);
-			ImGui::DragFloat("Rough", &render_system.temp_rough);
-			ImGui::DragFloat("Radius", &render_system.light_radius);
-			ImGui::DragFloat("Intensity", &render_system.temp_intensity);
-
 			ImGui::Begin("Hardware Info", &open_hardware_info);
 			if (ImGui::CollapsingHeader("System Information", ImGuiTreeNodeFlags_DefaultOpen))
 			{
@@ -169,7 +160,7 @@ namespace wr::imgui::window
 		}
 	}
 
-	void LightEditor(SceneGraph* scene_graph)
+	void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
 	{
 		if (open_light_editor)
 		{
@@ -268,7 +259,7 @@ namespace wr::imgui::window
 			DirectX::XMStoreFloat4x4(&rview, view);
 
 			ImGuiIO& io = ImGui::GetIO();
-			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+			ImGuizmo::SetRect(viewport_pos.x, viewport_pos.y, viewport_size.x, viewport_size.y);
 			ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
 
 			ml->m_position = { rmat._41, rmat._42, rmat._43 };

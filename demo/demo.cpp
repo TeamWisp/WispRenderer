@@ -14,15 +14,16 @@
 #include "scene_ao.hpp"
 
 #include "model_loader_assimp.hpp"
+#include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
 #define SCENE ao_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 
-void RenderEditor()
+void RenderEditor(ImTextureID output)
 {
-	engine::RenderEngine(render_system.get(), scene_graph.get());
+	engine::RenderEngine(output, render_system.get(), scene_graph.get());
 }
 
 void SetupShaderDirWatcher()
