@@ -24,7 +24,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	uint tid = light.tid & 3;
 
 	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - pos, light.pos - pos, tid == light_type_directional));
+	float3 L = (lerp(light.pos - pos, -light.dir, tid == light_type_directional));
 	float light_dist = length(L);
 	L /= light_dist;
 
