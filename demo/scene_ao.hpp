@@ -22,7 +22,7 @@ namespace ao_scene
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 0.f, 7.f, 0.f });
 		camera->SetRotation({ -30._deg, 0_deg, 0._deg });
-		camera->SetSpeed(60.0f);
+		camera->SetSpeed(1.50f);
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
@@ -44,6 +44,15 @@ namespace ao_scene
 		auto car = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::car_model);
 #endif // SUN_TEMPLE
 		
+#ifdef BISTRO
+		auto bisto = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::bistro_model);
+#endif // BISTRO
+#ifdef MERC
+		auto mercedes = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::mercedes_model);
+#endif //MERC
+#ifdef TANK
+		auto tank = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::tank_model);
+#endif //TANK
 		// Geometry
 	//	auto platform1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 

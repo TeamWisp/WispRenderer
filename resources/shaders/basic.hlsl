@@ -95,7 +95,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 		s0,
 		input.uv);
 
-	float3 normal = input.normal;// normalize(mul(output_data.normal, tbn));
+	float3 normal = normalize(mul(output_data.normal, tbn));
 
 	output.albedo_roughness = float4(output_data.albedo, output_data.roughness);
 	output.normal_metallic = float4(normal, output_data.metallic);

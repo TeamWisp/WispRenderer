@@ -173,10 +173,10 @@ void RaygenEntry()
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
-	float3 albedo = 1.0f;// albedo_roughness.rgb;
-	float roughness = 1.0f;//albedo_roughness.w;
+	float3 albedo = albedo_roughness.rgb;
+	float roughness = albedo_roughness.w;
 	float3 normal = normal_metallic.xyz;
-	float metallic = 0.1f;//normal_metallic.w;
+	float metallic = normal_metallic.w;
 
 	// Do lighting
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
@@ -204,17 +204,17 @@ void RaygenEntry()
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 	float aoValue = 1.0f;
-    const uint spp = 128;
+    const uint spp = 32;
     for(uint i = 0; i< spp; i++)
     {
-        aoValue -= (1.0f/float(spp)) * TraceShadowRay(0, wpos + normalize(normal) * EPSILON, getCosHemisphereSample(rand_seed, normal), 1500.f, 1);
+        aoValue -= (1.0f/float(spp)) * TraceShadowRay(0, wpos + normalize(normal) * EPSILON, getCosHemisphereSample(rand_seed, normal), 250.f, 1);
     }
-   //gOutput[DispatchRaysIndex().xy] = float4((aoValue * ambient + lighting), 1);
-//	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
-	gOutput[DispatchRaysIndex().xy] = float4(normal, 1);
+   gOutput[DispatchRaysIndex().xy] = float4((aoValue * ambient + lighting), 1);
+	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
+//	gOutput[DispatchRaysIndex().xy] = float4(normal, 1);
 //   gOutput[DispatchRaysIndex().xy] = normal_metallic;//float4(flipped_N, 1);
 
-	//gOutput[DispatchRaysIndex().xy] = float4(aoValue, aoValue, aoValue, 1);
+//	gOutput[DispatchRaysIndex().xy] = float4(aoValue, aoValue, aoValue, 1);
 
 }
 
