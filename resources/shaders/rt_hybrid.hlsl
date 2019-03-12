@@ -284,7 +284,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
 
-	float3 specular = lighting * F;
+	float3 specular = reflection * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = kD * diffuse + specular;
 
