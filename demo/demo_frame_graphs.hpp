@@ -34,6 +34,8 @@ namespace fg_manager
 				return "Deferred";
 			case PrebuildFrameGraph::RT_HYBRID:
 				return "Hybrid";
+			default:
+				return "Unknown";
 		}
 	}
 
