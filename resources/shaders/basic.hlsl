@@ -29,6 +29,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 view;
 	float4x4 projection;
 	float4x4 inv_projection;
+	uint is_hybrid;
 };
 
 struct ObjectData

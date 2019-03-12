@@ -47,7 +47,7 @@ namespace wr::d3d12
 
 	} /* internal */
 
-	std::variant<Shader*, std::string> LoadShader(ShaderType type, std::string const & path, std::string const & entry)
+	std::variant<Shader*, std::string> LoadShader(Device* device, ShaderType type, std::string const & path, std::string const & entry)
 	{
 		auto shader = new Shader();
 
@@ -70,6 +70,12 @@ namespace wr::d3d12
 		IDxcIncludeHandler* include_handler;
 		TRY_M(library->CreateIncludeHandler(&include_handler), "Failed to create default include handler.");
 
+		std::vector<DxcDefine> defines;
+		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+		{
+			defines.push_back({L"FALLBACK", L"1"});
+		}
+
 		IDxcOperationResult* result;
 		HRESULT hr = Device::m_compiler->Compile(
 			source,          // program text
@@ -81,7 +87,7 @@ namespace wr::d3d12
 #else
 			d3d12::settings::release_shader_args.data(), d3d12::settings::release_shader_args.size(),
 #endif
-			nullptr, 0,       // name/value defines and their count
+			defines.data(), defines.size(),       // name/value defines and their count
 			include_handler,          // handler for #include directives
 			&result);
 

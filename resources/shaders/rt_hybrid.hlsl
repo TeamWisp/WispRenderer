@@ -31,7 +31,7 @@ struct Offset
     float vertex_offset;
 };
 
-RWTexture2D<float4> gOutput : register(u0);
+RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -51,7 +51,7 @@ struct ReflectionHitInfo
 {
 	float3 origin;
 	float3 color;
-	uint seed;
+	unsigned int seed;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -161,28 +161,21 @@ void RaygenEntry()
 
 	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
 	{
-		gOutput[DispatchRaysIndex().xy] = float4(skybox.SampleLevel(s0, SampleSphericalMap(-V), 0));
+		// A value of 1 in the output buffer, means that there is shadow
+		// So, the far plane pixels are set to 0
+		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
 		return;
 	}
 
-	float3 lighting = shade_pixel(wpos, V, albedo, metallic, roughness, normal, rand_seed, 0);
-	float3 reflection = DoReflection(wpos, V, normal, rand_seed);
+	wpos += normal * EPSILON;
+	// Get shadow factor
+	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
 
-	float3 flipped_N = normal;
-	flipped_N.y *= -1;
-	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+	// Get reflection result
+	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
 
-	const float3 F = F_SchlickRoughness(max(dot(normal, V), 0.0), metallic, albedo, roughness);
-	float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metallic;
-
-	float3 specular = (reflection.xyz) * F;
-	float3 diffuse = albedo * sampled_irradiance;
-	float3 ambient = (kD * diffuse + specular);
-
-	gOutput[DispatchRaysIndex().xy] = float4(ambient + lighting, 1);
-
+	// xyz: reflection, a: shadow factor
+	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
 }
 
 //Reflections
@@ -205,6 +198,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
 	const Material material = g_materials[offset.material_idx];
+	const float3 hit_pos = HitWorldPosition();
 	const float index_offset = offset.idx_offset;
 	const float vertex_offset = offset.vertex_offset;
 	const float3x4 model_matrix = ObjectToWorld3x4();
@@ -225,6 +219,15 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const Vertex v1 = g_vertices[indices.y];
 	const Vertex v2 = g_vertices[indices.z];
 
+	//Direction & position
+	float3 V = normalize(payload.origin - hit_pos);
+
+	//Normal mapping
+	const float3 frag_pos = HitAttribute(v0.pos, v1.pos, v2.pos, attr);
+	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
+	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
+	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
+
 	//Get data from VBO
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
@@ -242,49 +245,42 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 
-
-	//Direction & position
-	const float3 hit_pos = HitWorldPosition();
-	float3 V = normalize(payload.origin - hit_pos);
-
-	//Normal mapping
-	float3 normal = normalize(HitAttribute(v0.normal, v1.normal, v2.normal, attr));
-	float3 tangent = HitAttribute(v0.tangent, v1.tangent, v2.tangent, attr);
-	float3 bitangent = HitAttribute(v0.bitangent, v1.bitangent, v2.bitangent, attr);
-
-	float3 N = normalize(mul(model_matrix, float4(normal, 0)));
+	float3 N = normalize(mul(model_matrix, float4(-normal, 0)));
 	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
-	float3 B = normalize(mul(model_matrix, float4(bitangent, 0)));
+#define CALC_B
+#ifndef CALC_B
+	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
+#else
+	T = normalize(T - dot(T, N) * N);
+	float3 B = cross(N, T);
+#endif
 	float3x3 TBN = float3x3(T, B, N);
 
-	float3 normal_t = output_data.normal;
-
-	float3 fN = normalize(mul(normal_t, TBN));
+	float3 fN = normalize(mul(output_data.normal, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
-
-	//TODO: Reflections
 
 	//Shading
 	float3 flipped_N = fN;
 	flipped_N.y *= -1;
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
+	// TODO: reflections in reflections
+
 	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), metal, albedo, roughness);
 	float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
 	float3 specular = (float3(0, 0, 0)) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
-
+	// Output the final reflections here
 	payload.color = ambient + lighting;
 }
 
 //Reflection skybox
-
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
