@@ -271,8 +271,10 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
+
 	// Output the final reflections here
-	payload.color = float3(ambient);
+	payload.color = ambient + lighting;
 }
 
 //Reflection skybox
