@@ -51,6 +51,7 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
+			unsigned int m_is_hybrid;
 		};
 
 		struct RTHybridCamera_CBData
