@@ -117,3 +117,31 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 
 	return res;
 }
+
+float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
+{
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+
+	float res = 0;
+
+	for (uint i = 0; i < light_count; i++)
+	{
+		// Get light and light type
+		Light light = lights[i];
+		uint tid = light.tid & 3;
+
+		//Light direction (constant with directional, position dependent with other)
+		float3 L = (lerp(light.pos - wpos, -light.dir, tid == light_type_directional));
+		float light_dist = length(L);
+		L /= light_dist;
+
+		// Get maxium ray length (depending on type)
+		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
+
+		// Add shadow factor to final result
+		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed);
+	}
+
+	// return final res
+	return res / float(light_count);
+}

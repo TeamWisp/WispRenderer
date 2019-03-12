@@ -10,6 +10,7 @@ struct Attributes { };
 
 bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
+#ifndef NO_SHADOWS
 	if (depth >= MAX_RECURSION)
 	{
 		return false;
@@ -36,6 +37,9 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 		payload);
 
 	return payload.is_hit;
+#else
+	return false;
+#endif
 }
 
 [shader("closesthit")]

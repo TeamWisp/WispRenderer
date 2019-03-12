@@ -3,7 +3,6 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_constant_buffer_pool.hpp"
-#include "d3d12_deferred_main.hpp"
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -13,6 +12,7 @@
 #include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../imgui_tools.hpp"
 
 namespace wr
