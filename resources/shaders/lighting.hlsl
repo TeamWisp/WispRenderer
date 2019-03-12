@@ -24,7 +24,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	uint tid = light.tid & 3;
 
 	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - pos, light.pos - pos, tid == light_type_directional));
+	float3 L = (lerp(light.pos - pos, -light.dir, tid == light_type_directional));
 	float light_dist = length(L);
 	L /= light_dist;
 
@@ -96,34 +96,9 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float3 wpos = pos + (normal * EPSILON);
 	
 	// Offset shadow ray direction to get soft-shadows
-#ifdef SOFT_SHADOWS
-
-	float shadow_factor = 0.0;
-	[unroll(MAX_SHADOW_SAMPLES)]
-	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
-	{
-		// Perhaps change randomness to not be purely random, but algorithm-random?
-		float3 offset = normalize(float3(nextRand(rand_seed), nextRand(rand_seed), nextRand(rand_seed))) - 0.5;
-		// Hard-coded 0.05 is to minimalize the offset a ray gets
-		// Should be determined by the area that the light is emitting from
-		offset *= 0.05;
-		float3 shadow_direction = normalize(L + offset);
-
-		bool shadow = TraceShadowRay(1, wpos, shadow_direction, t_max, depth + 1);
-
-		shadow_factor += lerp(1.0, 0.0, shadow);
-	}
-
-	shadow_factor /= float(MAX_SHADOW_SAMPLES);
+	float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, rand_seed);
 
 	lighting *= shadow_factor;
-
-#else /* ifdef SOFT_SHADOWS */
-
-	bool shadow = TraceShadowRay(1, wpos, L, t_max, depth + 1);
-	lighting *= !shadow;
-
-#endif
 
 	return lighting;
 }
@@ -141,4 +116,32 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	}
 
 	return res;
+}
+
+float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
+{
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+
+	float res = 0;
+
+	for (uint i = 0; i < light_count; i++)
+	{
+		// Get light and light type
+		Light light = lights[i];
+		uint tid = light.tid & 3;
+
+		//Light direction (constant with directional, position dependent with other)
+		float3 L = (lerp(light.pos - wpos, -light.dir, tid == light_type_directional));
+		float light_dist = length(L);
+		L /= light_dist;
+
+		// Get maxium ray length (depending on type)
+		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
+
+		// Add shadow factor to final result
+		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed);
+	}
+
+	// return final res
+	return res / float(light_count);
 }
