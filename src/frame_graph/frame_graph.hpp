@@ -415,6 +415,23 @@ namespace wr
 			return static_cast<T*>(m_render_targets[handle]);
 		}
 
+		/*! Check if this frame graph has a task. */
+		/*!
+			This checks if the frame graph has the task that has been given as the template variable.
+		*/
+		template<typename T>
+		inline bool HasTask() const
+		{
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				if (m_data_type_info[i].get() == typeid(T))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
 		/*! Add a task to the Frame Graph. */
 		/*!
 			This creates a new render task based on a description.

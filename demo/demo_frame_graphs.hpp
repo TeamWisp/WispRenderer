@@ -24,6 +24,21 @@ namespace fg_manager
 		RT_HYBRID = 2,
 	};
 
+	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
+	{
+		switch (id)
+		{
+			case PrebuildFrameGraph::RAYTRACING:
+				return "Full Raytracing";
+			case PrebuildFrameGraph::DEFERRED:
+				return "Deferred";
+			case PrebuildFrameGraph::RT_HYBRID:
+				return "Hybrid";
+			default:
+				return "Unknown";
+		}
+	}
+
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
@@ -74,7 +89,10 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(6);
+			fg = new wr::FrameGraph(9);
+
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 
 			 // Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
@@ -85,8 +103,11 @@ namespace fg_manager
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
 
+			// Composition to compose the hybrid result with the g-buffers
+			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
+
 			// Do some post processing
-			wr::AddPostProcessingTask<wr::RTHybridData>(*fg);
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the raytracing pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
