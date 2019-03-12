@@ -138,7 +138,7 @@ namespace wr
 				auto skybox = scene_graph.GetCurrentSkybox();
 				if (skybox != nullptr)
 				{
-					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(skybox->m_hdr.m_id));
+					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
 					d3d12::CreateSRVFromTexture(data.out_skybox);
 				}
 

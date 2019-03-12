@@ -64,8 +64,11 @@ namespace wr
 		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 
 		DescriptorAllocator* GetAllocator(DescriptorHeapType type);
+		DescriptorAllocator* GetMipmappingAllocator() { return m_mipmapping_allocator; }
 
 		void Unload(uint64_t texture_id) final;
+
+		void GenerateMips_Cubemap(d3d12::TextureResource* texture, CommandList* cmd_list, unsigned int array_slice);
 
 	protected:
 

@@ -1,4 +1,5 @@
 #define LIGHTS_REGISTER register(t3)
+#define MAX_REFLECTION_LOD 4
 
 #include "fullscreen_quad.hlsl"
 #include "util.hlsl"
@@ -10,10 +11,11 @@ Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
-Texture2D skybox : register(t4);
-TextureCube irradiance_map : register(t5);
-RWTexture2D<float4> output : register(u0);
-SamplerState s0 : register(s0);
+TextureCube skybox : register(t4);
+TextureCube irradiance_map  : register(t5);
+RWTexture2D<float4> output  : register(u0);
+SamplerState point_sampler  : register(s0);
+SamplerState linear_sampler : register(s1);
 
 cbuffer CameraProperties : register(b0)
 {
@@ -60,11 +62,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
-		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+		const float3 sampled_irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
 
 		const float shadow_factor = 1.0f;
 		
-		float3 skybox_reflection = skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0);
+		float3 skybox_reflection = skybox.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, skybox_reflection);
 
@@ -72,7 +74,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	}
 	else
 	{	
-		retval = skybox.SampleLevel(s0, SampleSphericalMap(-V), 0);
+		retval = skybox.SampleLevel(linear_sampler, -V, 0);
 	}
 
 	//Do shading

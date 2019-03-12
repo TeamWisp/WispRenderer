@@ -338,6 +338,19 @@ namespace wr
 			rs_layout::Entry{(int)CubemapConvolutionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
+		enum class CubemapPrefilteringE
+		{
+			SOURCE,
+			DEST,
+			CBUFFER,
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> cubemap_prefiltering = {
+			rs_layout::Entry{(int)CubemapPrefilteringE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)CubemapPrefilteringE::DEST, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)CubemapPrefilteringE::CBUFFER, 4, rs_layout::Type::CBV_OR_CONST},
+		};
+
 		enum class PostProcessingE
 		{
 			SOURCE,
@@ -426,6 +439,7 @@ namespace wr
 		static RegistryHandle rt_hybrid_global;
 		static RegistryHandle cubemap_conversion;
 		static RegistryHandle cubemap_convolution;
+		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
 	};
 
@@ -441,6 +455,7 @@ namespace wr
 		static RegistryHandle equirect_to_cubemap_vs;
 		static RegistryHandle equirect_to_cubemap_ps;
 		static RegistryHandle cubemap_convolution_ps;
+		static RegistryHandle cubemap_prefiltering_cs;
 		static RegistryHandle post_processing;
 	};
 
@@ -451,6 +466,7 @@ namespace wr
 		static RegistryHandle mip_mapping;
 		static RegistryHandle equirect_to_cubemap;
 		static RegistryHandle cubemap_convolution;
+		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
 	};
 

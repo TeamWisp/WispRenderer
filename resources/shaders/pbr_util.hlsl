@@ -12,7 +12,7 @@ float random(float2 co)
 }
  
 // Radical inverse based on http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
-float2 hammersley2d(uint i, uint N)
+float2 hammersley2d(uint i, uint num)
 {
 	uint bits = (i << 16u) | (i >> 16u);
 	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
@@ -20,7 +20,7 @@ float2 hammersley2d(uint i, uint N)
 	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
 	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
 	float rdi = float(bits) * 2.3283064365386963e-10;
-	return float2(float(i) / float(N), rdi);
+	return float2(float(i) / float(num), rdi);
 }
  
 // Based on http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_slides.pdf
@@ -28,7 +28,8 @@ float3 importanceSample_GGX(float2 Xi, float roughness, float3 normal)
 {
 	// Maps a 2D point to a hemisphere with spread based on roughness
 	float alpha = roughness * roughness;
-	float phi = 2.f * PI * Xi.x + random(normal.xz) * 0.1;
+	//float phi = 2.f * PI * Xi.x + random(normal.xz) * 0.1;
+	float phi = 2.f * PI * Xi.x;
 	float cosTheta = sqrt((1.f - Xi.y) / (1.f + (alpha*alpha - 1.f) * Xi.y));
 	float sinTheta = sqrt(1.f - cosTheta * cosTheta);
 	
@@ -43,7 +44,7 @@ float3 importanceSample_GGX(float2 Xi, float roughness, float3 normal)
 	float3 tangentY = cross(normal, tangentX);
  
 	// Convert to world Space
-	return tangentX * H.x + tangentY * H.y + normal * H.z;
+	return normalize(tangentX * H.x + tangentY * H.y + normal * H.z);
 }
  
 // Normal distribution

@@ -117,7 +117,11 @@ namespace resources
 		mirror_internal->SetAlbedo(white);
 		mirror_internal->SetNormal(flat_normal);
 		mirror_internal->SetRoughness(black);
+		mirror_internal->UseRoughnessTexture(false);
+		mirror_internal->SetConstantRoughness(0.0f);
 		mirror_internal->SetMetallic(white);
+		mirror_internal->UseMetallicTexture(false);
+		mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
 
 		{
 			// Create Material
