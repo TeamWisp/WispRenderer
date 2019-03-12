@@ -84,7 +84,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection);
+		float3 occluded_irradiance = sampled_irradiance * DoAmbientOcclusion(normal, pos, 32, 0.25f, rand_seed);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, occluded_irradiance, reflection);
 
 		retval = retval * shadow_factor;
 	}
