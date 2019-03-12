@@ -163,7 +163,7 @@ void RaygenEntry()
 	{
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
-		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0));
+		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
 		return;
 	}
 
