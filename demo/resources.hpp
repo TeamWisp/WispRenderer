@@ -31,6 +31,7 @@ namespace resources
 	static wr::Model* sun_model;
 	static wr::Model* bistro_model;
 	static wr::Model* tank_model;
+	static wr::Model* tavern_model;
 
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle bamboo_material;
@@ -52,7 +53,8 @@ namespace resources
 //#define HAIRBALL
 //#define DRAGON
 //#define BISTRO
-#define TANK
+//#define TANK
+#define TAVERN
 	void CreateResources(wr::RenderSystem* render_system)
 	{
 		texture_pool = render_system->CreateTexturePool();
@@ -303,6 +305,10 @@ namespace resources
 			}
 
 #endif //TANK
+#ifdef TAVERN
+			tavern_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/the-drunk-troll-tavern/source/tavern2/fbx");
+#endif // TAVERN
+
 
 			{
 				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
