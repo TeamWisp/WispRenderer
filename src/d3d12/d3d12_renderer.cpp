@@ -525,7 +525,7 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto shader_error = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
@@ -599,11 +599,11 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto n_pipeline = static_cast<D3D12Pipeline*>(registry.Find(handle))->m_native;
 
-		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
 			if (!pipeline_shader) return;
 
-			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry);
 
@@ -648,9 +648,9 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto n_pipeline = static_cast<D3D12StateObject*>(registry.Find(handle))->m_native;
 
-		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
-			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry);
 
@@ -687,7 +687,7 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto& n_shader = static_cast<D3D12Shader*>(registry.Find(handle))->m_native;
 
-		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
+		auto new_shader_variant = d3d12::LoadShader(m_device, n_shader->m_type,
 			n_shader->m_path,
 			n_shader->m_entry);
 
