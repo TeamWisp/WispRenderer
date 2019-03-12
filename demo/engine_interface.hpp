@@ -43,12 +43,16 @@ namespace engine
 			if (ImGui::BeginMenu("Window"))
 			{
 				ImGui::MenuItem("Viewport", nullptr, &open_viewport);
+				ImGui::MenuItem("Light Editor", nullptr, &wr::imgui::window::open_light_editor);
+				ImGui::MenuItem("Inspector", nullptr, &wr::imgui::window::open_inspect_editor);
+				ImGui::MenuItem("Hardware Info", nullptr, &wr::imgui::window::open_hardware_info);
+				ImGui::MenuItem("DirectX 12 Settings", nullptr, &wr::imgui::window::open_d3d12_settings);
 				ImGui::Separator();
 				wr::imgui::menu::Registries();
 				ImGui::Separator();
 				ImGui::MenuItem("Theme", nullptr, &open0);
 				ImGui::MenuItem("ImGui Details", nullptr, &open1);
-				ImGui::MenuItem("Logging Example", nullptr, &open2);
+				ImGui::MenuItem("Camera Settings", nullptr, &open2);
 				ImGui::EndMenu();
 			}
 
