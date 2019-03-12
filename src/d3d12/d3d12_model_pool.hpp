@@ -32,6 +32,8 @@ namespace wr
 			std::size_t m_index_staging_buffer_size;
 			std::size_t m_index_count;
 			void* m_index_memory_block;
+
+			bool data_changed;
 		};
 
 		enum CommandType

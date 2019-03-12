@@ -29,6 +29,12 @@ namespace wr
 
 		std::unordered_map<std::uint64_t, d3d12::AccelerationStructure> blasses;
 
+		std::vector<std::vector<d3d12::AccelerationStructure>> old_blasses;
+		std::vector<d3d12::AccelerationStructure> old_tlas;
+
+		unsigned int previous_frame_index;
+		unsigned int current_frame_index;
+
 		bool out_init;
 		bool out_materials_require_update;
 	};
@@ -68,6 +74,9 @@ namespace wr
 			data.out_materials.reserve(d3d12::settings::num_max_rt_materials);
 			data.out_offsets.reserve(d3d12::settings::num_max_rt_materials);
 			data.out_parsed_materials.reserve(d3d12::settings::num_max_rt_materials);
+
+			data.old_blasses.resize(d3d12::settings::num_back_buffers);
+			data.old_tlas.resize(d3d12::settings::num_back_buffers);
 		}
 
 		namespace internal
@@ -116,6 +125,41 @@ namespace wr
 				data.out_offsets.push_back(offset);
 			}
 
+			inline void BuildBLASSingle(d3d12::Device* device, d3d12::CommandList* cmd_list, Model* model, std::pair<Mesh*, MaterialHandle> mesh_material, ASBuildData& data)
+			{
+				auto n_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
+				auto vb = n_model_pool->GetVertexStagingBuffer();
+				auto ib = n_model_pool->GetIndexStagingBuffer();
+				
+				data.out_scene_ib = ib;
+				data.out_scene_vb = vb;
+
+				auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh_material.first->id);
+
+				d3d12::desc::GeometryDesc obj;
+				obj.index_buffer = ib;
+				obj.vertex_buffer = vb;
+
+				obj.m_indices_offset = n_mesh->m_index_staging_buffer_offset;
+				obj.m_num_indices = n_mesh->m_index_count;
+				obj.m_vertices_offset = n_mesh->m_vertex_staging_buffer_offset;
+				obj.m_num_vertices = n_mesh->m_vertex_count;
+				obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
+
+				// Build Bottom level BVH
+				auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, data.out_rt_heap, { obj });
+				cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
+				blas.m_native->SetName(L"Bottomlevelaccel");
+
+				data.blasses.insert({ mesh_material.first->id, blas });
+				
+				data.out_material_handles.push_back(&mesh_material.second); // Used to st eal the textures from the texture pool.
+
+				auto material_id = ExtractMaterialFromMesh(data, &mesh_material.second);
+
+				AppendOffset(data, n_mesh, material_id);
+			}
+
 			inline void BuildBLASList(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
 				data.out_materials.clear();
@@ -125,7 +169,7 @@ namespace wr
 				std::unordered_map<uint64_t, wr::d3d12::AccelerationStructure>::iterator it;
 				for (it = data.blasses.begin(); it != data.blasses.end(); ++it)
 				{
-					d3d12::DestroyAccelerationStructure((*it).second);
+					data.old_blasses[data.current_frame_index].push_back((*it).second);
 				}
 
 				data.blasses.clear();
@@ -200,78 +244,6 @@ namespace wr
 				}
 			}
 
-			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
-			{
-				data.out_materials.clear();
-				data.out_offsets.clear();
-				data.out_parsed_materials.clear();
-
-				auto& batches = scene_graph.GetGlobalBatches();
-				const auto& batchInfo = scene_graph.GetBatches();
-
-				bool needs_reconstruction = false;
-
-				for (auto& batch : batches)
-				{
-					auto model = batch.first;
-
-					for (auto& mesh : model->m_meshes)
-					{
-
-						if (data.blasses.find(mesh.first->id) == data.blasses.end())
-						{
-							needs_reconstruction = true;
-							break;
-						}
-					}
-				}
-
-				if (needs_reconstruction)
-				{
-					BuildBLASList(device, cmd_list, scene_graph, data);
-				}
-
-				auto prev_size = data.out_blas_list.size();
-				data.out_blas_list.clear();
-				data.out_blas_list.reserve(prev_size);
-
-				unsigned int offset_id = 0;
-
-				// Update transformations
-				for (auto& batch : batches)
-				{
-					auto n_model_pool = static_cast<D3D12ModelPool*>(batch.first->m_model_pool);
-					auto model = batch.first;
-
-					for (auto& mesh : model->m_meshes)
-					{
-						auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
-						
-						auto blas = (*data.blasses.find(mesh.first->id)).second;
-
-						auto material_id = ExtractMaterialFromMesh(data, &mesh.second);
-
-						AppendOffset(data, n_mesh, material_id);
-
-						auto it = batchInfo.find(batch.first);
-
-						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
-
-						// Push instances into a array for later use.
-						for (uint32_t i = 0U, j = (uint32_t)it->second.num_global_instances; i < j; i++)
-						{
-							auto transform = batch.second[i].m_model;
-
-							data.out_blas_list.push_back({ blas, offset_id, transform });
-						}
-
-						offset_id++;
-					}
-				}
-
-				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, data.out_rt_heap, data.out_blas_list);
-			}
-
 			inline void CreateTextureSRVs(ASBuildData& data)
 			{
 				for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
@@ -317,6 +289,139 @@ namespace wr
 				}
 			}
 
+			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			{
+				data.out_materials.clear();
+				data.out_offsets.clear();
+				data.out_parsed_materials.clear();
+
+				auto& batches = scene_graph.GetGlobalBatches();
+				const auto& batchInfo = scene_graph.GetBatches();
+
+				bool needs_reconstruction = false;
+
+				std::vector<D3D12ModelPool*> model_pools;
+
+				for (auto& batch : batches)
+				{
+					auto model = batch.first;
+
+					bool model_pool_loaded = false;
+
+					for (int i = 0; i < model_pools.size(); ++i)
+					{
+						if (model_pools[i] == model->m_model_pool)
+						{
+							model_pool_loaded = true;
+						}
+					}
+
+					if (!model_pool_loaded)
+					{
+						model_pools.push_back(static_cast<D3D12ModelPool*>(model->m_model_pool));
+						if (static_cast<D3D12ModelPool*>(model->m_model_pool)->IsUpdated())
+						{
+							needs_reconstruction = true;
+						}
+					}
+				}
+
+				if (needs_reconstruction)
+				{
+					// Transition all model pools for accel structure creation
+					for (auto& pool : model_pools)
+					{
+						d3d12::Transition(cmd_list, pool->GetVertexStagingBuffer(), ResourceState::VERTEX_AND_CONSTANT_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					}
+
+					BuildBLASList(device, cmd_list, scene_graph, data);
+
+					for (auto& pool : model_pools)
+					{
+						d3d12::Transition(cmd_list, pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
+					}
+
+					CreateTextureSRVs(data);
+				}
+
+
+
+				auto prev_size = data.out_blas_list.size();
+				data.out_blas_list.clear();
+				data.out_blas_list.reserve(prev_size);
+
+				unsigned int offset_id = 0;
+
+				// Update transformations
+				for (auto& batch : batches)
+				{
+					auto n_model_pool = static_cast<D3D12ModelPool*>(batch.first->m_model_pool);
+					auto model = batch.first;
+
+					for (auto& mesh : model->m_meshes)
+					{
+						auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
+						
+						std::unordered_map<uint64_t, d3d12::AccelerationStructure>::iterator blas_iterator = data.blasses.find(mesh.first->id);
+
+						if (blas_iterator == data.blasses.end() || n_mesh->data_changed)
+						{
+							if (n_mesh->data_changed)
+							{
+								data.old_blasses[data.current_frame_index].push_back((*blas_iterator).second);
+								data.blasses.erase(blas_iterator);
+								n_mesh->data_changed = false;
+							}
+
+							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::VERTEX_AND_CONSTANT_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+							d3d12::Transition(cmd_list, n_model_pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+
+							BuildBLASSingle(device, cmd_list, model, mesh, data);
+
+							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+							d3d12::Transition(cmd_list, n_model_pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
+
+							CreateTextureSRVs(data);
+
+							blas_iterator = data.blasses.find(mesh.first->id);
+						}
+
+						auto blas = (*blas_iterator).second;
+
+						auto material_id = ExtractMaterialFromMesh(data, &mesh.second);
+
+						AppendOffset(data, n_mesh, material_id);
+
+						auto it = batchInfo.find(batch.first);
+
+						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
+
+						// Push instances into a array for later use.
+						for (uint32_t i = 0U, j = (uint32_t)it->second.num_global_instances; i < j; i++)
+						{
+							auto transform = batch.second[i].m_model;
+
+							data.out_blas_list.push_back({ blas, offset_id, transform });
+						}
+
+						offset_id++;
+					}
+				}
+
+				d3d12::AccelerationStructure old_accel = data.out_tlas;
+				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, data.out_rt_heap, data.out_blas_list);
+
+				if (old_accel.m_scratch != data.out_tlas.m_scratch &&
+					old_accel.m_native != data.out_tlas.m_native &&
+					old_accel.m_instance_desc != data.out_tlas.m_instance_desc)
+				{
+					data.old_tlas[data.current_frame_index] = old_accel;
+				}
+			}
+
 		} /* internal */
 
 		inline void ExecuteBuildASTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
@@ -329,20 +434,7 @@ namespace wr
 
 			data.out_materials_require_update = false;
 
-			bool models_changed = false;
-
-			auto& batches = scene_graph.GetGlobalBatches();
-
-			for (auto& batch : batches)
-			{
-				auto n_model_pool = static_cast<D3D12ModelPool*>(batch.first->m_model_pool);
-
-				if (n_model_pool->IsUpdated())
-				{
-					models_changed = true;
-					break;
-				}
-			}
+			data.current_frame_index = n_render_system.GetFrameIdx();
 
 			// Initialize requirements
 			if (data.out_init)
@@ -372,32 +464,21 @@ namespace wr
 				
 				data.out_init = false;
 			}
-			else if (models_changed)
-			{
-				std::vector<std::shared_ptr<D3D12ModelPool>> model_pools = n_render_system.m_model_pools;
-				// Transition all model pools for accel structure creation
-				for (auto& pool : model_pools)
-				{
-					d3d12::Transition(cmd_list, pool->GetVertexStagingBuffer(), ResourceState::VERTEX_AND_CONSTANT_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
-					d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
-				}
-
-				internal::BuildBLASList(device, cmd_list, scene_graph, data);
-
-				for (auto& pool : model_pools)
-				{
-					d3d12::Transition(cmd_list, pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
-					d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
-				}
-
-				internal::UpdateTLAS(device, cmd_list, scene_graph, data);
-
-				internal::CreateTextureSRVs(data);
-			}
 			else
 			{
+				if (data.current_frame_index != data.previous_frame_index)
+				{
+					for (int i = 0; i < data.old_blasses[data.current_frame_index].size(); ++i)
+					{
+						d3d12::DestroyAccelerationStructure(data.old_blasses[data.current_frame_index][i]);
+					}
+					d3d12::DestroyAccelerationStructure(data.old_tlas[data.current_frame_index]);
+				}
+
 				internal::UpdateTLAS(device, cmd_list, scene_graph, data);
 			}
+
+			data.previous_frame_index = n_render_system.GetFrameIdx();
 		}
 
 		inline void DestroyBuildASTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)

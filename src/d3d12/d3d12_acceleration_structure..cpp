@@ -351,20 +351,11 @@ namespace wr::d3d12
 		return tlas;
 	}
 
-	void DestroyAccelerationStructure(AccelerationStructure structure)
+	void DestroyAccelerationStructure(AccelerationStructure& structure)
 	{
-		if (structure.m_scratch)
-		{
-			SAFE_RELEASE(structure.m_scratch);
-		}
-		if (structure.m_native)
-		{
-			SAFE_RELEASE(structure.m_native);
-		}
-		if (structure.m_instance_desc)
-		{
-			SAFE_RELEASE(structure.m_instance_desc);
-		}
+		SAFE_RELEASE(structure.m_scratch);
+		SAFE_RELEASE(structure.m_native);
+		SAFE_RELEASE(structure.m_instance_desc);
 	}
 
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
@@ -403,7 +394,6 @@ namespace wr::d3d12
 
 		if (rebuild_accel_structure)
 		{
-			DestroyAccelerationStructure(tlas);
 			tlas = CreateTopLevelAccelerationStructure(device, cmd_list, desc_heap, blas_list);
 		}
 		else

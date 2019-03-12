@@ -181,8 +181,6 @@ namespace wr
 
 	void D3D12ModelPool::ShrinkVertexHeapToFit()
 	{
-		m_render_system.WaitForAllPreviousWork();
-
 		MemoryBlock* last_occupied_block;
 		for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
@@ -194,6 +192,11 @@ namespace wr
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
 		new_size = SizeAlignProper(new_size, 65536);
+
+		if (new_size == m_vertex_buffer->m_size)
+		{
+			return;
+		}
 
 		ID3D12Resource* old_buffer = m_vertex_buffer->m_buffer;
 		ID3D12Resource* new_buffer;
@@ -222,6 +225,9 @@ namespace wr
 		m_vertex_buffer->m_size = new_size;
 		m_vertex_buffer->m_is_staged = true;
 		m_vertex_buffer->m_cpu_address = cpu_address;
+
+		m_render_system.WaitForAllPreviousWork();
+
 		SAFE_RELEASE(m_vertex_buffer->m_buffer);
 		SAFE_RELEASE(m_vertex_buffer->m_staging);
 
@@ -331,8 +337,6 @@ namespace wr
 
 	void D3D12ModelPool::ShrinkIndexHeapToFit()
 	{
-		m_render_system.WaitForAllPreviousWork();
-
 		MemoryBlock* last_occupied_block;
 		for (MemoryBlock* mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
@@ -344,6 +348,11 @@ namespace wr
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
 		new_size = SizeAlignProper(new_size, 65536);
+
+		if (new_size == m_index_buffer->m_size)
+		{
+			return;
+		}
 
 		ID3D12Resource* old_buffer = m_index_buffer->m_buffer;
 		ID3D12Resource* new_buffer;
@@ -370,6 +379,9 @@ namespace wr
 		m_index_buffer->m_size = new_size;
 		m_index_buffer->m_is_staged = true;
 		m_index_buffer->m_cpu_address = cpu_address;
+
+		m_render_system.WaitForAllPreviousWork();
+
 		SAFE_RELEASE(m_index_buffer->m_buffer);
 		SAFE_RELEASE(m_index_buffer->m_staging);
 
@@ -569,6 +581,8 @@ namespace wr
 			}
 		}
 
+		bool contents_changed = false;
+
 		MemoryBlock* mem_block = m_vertex_heap_start_block;
 		while (mem_block->m_next_block != nullptr)
 		{
@@ -706,6 +720,8 @@ namespace wr
 					m_command_queue.push(transition_buffer_read_command);
 
 					memcpy(m_vertex_buffer->m_cpu_address + next_block->m_offset, m_vertex_buffer->m_cpu_address + original_offset, next_block->m_size);
+
+					contents_changed = true;
 				}
 			}
 			else
@@ -731,7 +747,10 @@ namespace wr
 			m_command_queue.push(transition_command);
 		}
 
-		m_updated = true;
+		if (contents_changed)
+		{
+			m_updated = true;
+		}
 	}
 
 	void D3D12ModelPool::DefragmentIndexHeap()
@@ -819,6 +838,8 @@ namespace wr
 				m_intermediate_size = SizeAlignProper(largest_block->m_size, 65536);
 			}
 		}
+
+		bool contents_changed = false;
 
 		MemoryBlock* mem_block = m_index_heap_start_block;
 		while (mem_block->m_next_block != nullptr)
@@ -946,6 +967,8 @@ namespace wr
 					m_command_queue.push(transition_buffer_read_command);
 
 					memcpy(m_index_buffer->m_cpu_address + next_block->m_offset, m_index_buffer->m_cpu_address + original_offset, next_block->m_size);
+
+					contents_changed = true;
 				}
 			}
 			else
@@ -971,7 +994,10 @@ namespace wr
 			m_command_queue.push(transition_command);
 		}
 
-		m_updated = true;
+		if (contents_changed)
+		{
+			m_updated = true;
+		}
 	}
 	
 	void D3D12ModelPool::Resize(size_t vertex_heap_new_size, size_t index_heap_new_size)
@@ -982,8 +1008,6 @@ namespace wr
 
 	void D3D12ModelPool::ResizeVertexHeap(size_t vertex_heap_new_size)
 	{
-		m_render_system.WaitForAllPreviousWork();
-
 		MemoryBlock* mem_block = m_vertex_heap_start_block;
 		while (mem_block->m_next_block != nullptr)
 		{
@@ -1028,9 +1052,13 @@ namespace wr
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
 		size_t old_size = m_vertex_buffer->m_size;
 
-		if (new_size >= SizeAlignProper(vertex_heap_new_size, 65536))
+		if (new_size > SizeAlignProper(vertex_heap_new_size, 65536))
 		{
 			ShrinkVertexHeapToFit();
+		}
+		else if (SizeAlignProper(vertex_heap_new_size, 65536) == m_vertex_buffer->m_size)
+		{
+			return;
 		}
 		else
 		{
@@ -1061,6 +1089,9 @@ namespace wr
 			m_vertex_buffer->m_size = new_size;
 			m_vertex_buffer->m_is_staged = true;
 			m_vertex_buffer->m_cpu_address = cpu_address;
+
+			m_render_system.WaitForAllPreviousWork();
+
 			SAFE_RELEASE(m_vertex_buffer->m_buffer);
 			SAFE_RELEASE(m_vertex_buffer->m_staging);
 
@@ -1156,8 +1187,6 @@ namespace wr
 
 	void D3D12ModelPool::ResizeIndexHeap(size_t index_heap_new_size)
 	{
-		m_render_system.WaitForAllPreviousWork();
-
 		MemoryBlock* mem_block = m_index_heap_start_block;
 		while (mem_block->m_next_block != nullptr)
 		{
@@ -1201,9 +1230,13 @@ namespace wr
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
 
-		if (new_size >= SizeAlignProper(index_heap_new_size, 65536))
+		if (new_size > SizeAlignProper(index_heap_new_size, 65536))
 		{
 			ShrinkIndexHeapToFit();
+		}
+		else if (SizeAlignProper(index_heap_new_size, 65536) == m_index_buffer->m_size)
+		{
+			return;
 		}
 		else
 		{
@@ -1234,6 +1267,9 @@ namespace wr
 			m_index_buffer->m_size = new_size;
 			m_index_buffer->m_is_staged = true;
 			m_index_buffer->m_cpu_address = cpu_address;
+
+			m_render_system.WaitForAllPreviousWork();
+
 			SAFE_RELEASE(m_index_buffer->m_buffer);
 			SAFE_RELEASE(m_index_buffer->m_staging);
 
@@ -1420,8 +1456,6 @@ namespace wr
 
 		m_command_queue.push(index_command);
 
-		m_updated = true;
-
 		return mesh;
 	}
 
@@ -1472,8 +1506,6 @@ namespace wr
 		vertex_command->m_size = mesh->m_vertex_staging_buffer_size;
 
 		m_command_queue.push(vertex_command);
-		
-		m_updated = true;
 
 		return mesh;
 	}
@@ -1546,7 +1578,7 @@ namespace wr
 			m_command_queue.push(vertex_command);
 		}
 
-		m_updated = true;
+		mesh_data->data_changed = true;
 	}
 
 	void D3D12ModelPool::UpdateMeshIndexData(Mesh * mesh, void * indices_data, std::size_t num_indices, std::size_t indices_size)
@@ -1610,7 +1642,7 @@ namespace wr
 			m_command_queue.push(index_command);
 		}
 
-		m_updated;
+		mesh_data->data_changed = true;
 	}
 
 	void D3D12ModelPool::DestroyModel(Model * model)
@@ -1630,8 +1662,6 @@ namespace wr
 		}
 
 		//TODO: Destroy possible materials owned by model. Material might be used by multiple models, use ref counts?
-
-		m_updated = true;
 
 		delete model;
 	}
