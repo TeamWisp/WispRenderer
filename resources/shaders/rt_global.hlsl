@@ -6,7 +6,6 @@
 #define SOFT_SHADOWS
 #define MAX_SHADOW_SAMPLES 4
 
-#define FALLBACK
 #ifdef FALLBACK
 	#undef MAX_RECURSION
 	#define MAX_RECURSION 1

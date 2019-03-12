@@ -24,6 +24,19 @@ namespace fg_manager
 		RT_HYBRID = 2,
 	};
 
+	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
+	{
+		switch (id)
+		{
+			case PrebuildFrameGraph::RAYTRACING:
+				return "Full Raytracing";
+			case PrebuildFrameGraph::DEFERRED:
+				return "Deferred";
+			case PrebuildFrameGraph::RT_HYBRID:
+				return "Hybrid";
+		}
+	}
+
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 

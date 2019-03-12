@@ -6,6 +6,7 @@
 #include "scene_graph/scene_graph.hpp"
 #include "d3d12/d3d12_renderer.hpp"
 #include "imgui/ImGuizmo.h"
+#include "demo_frame_graphs.hpp"
 
 namespace engine
 {
@@ -45,8 +46,13 @@ namespace engine
 				ImGui::EndMenu();
 			}
 
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 0.4));
+			ImGui::Text("Current Frame Graph: %s", fg_manager::GetFrameGraphName(fg_manager::current).c_str());
+			ImGui::PopStyleColor();
+
 			ImGui::EndMainMenuBar();
 		}
+
 
 		ImGui::DockSpaceOverViewport(main_menu, nullptr, ImGuiDockNodeFlags_PassthruDockspace);
 
