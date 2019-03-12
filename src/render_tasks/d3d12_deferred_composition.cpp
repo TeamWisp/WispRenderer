@@ -52,8 +52,12 @@ namespace wr
 			d3d12::DescHeapCPUHandle shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow);
 			d3d12::SetShaderSRV(cmd_list, 1, shadow, shadow_handle);
 
+			constexpr unsigned int ao = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_AO);
+			d3d12::DescHeapCPUHandle ao_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(ao);
+			d3d12::SetShaderSRV(cmd_list, 1, ao, ao_handle);
+
 			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
-			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
+			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output_index);
 			d3d12::SetShaderUAV(cmd_list, 1, output, output_handle);
 
 			d3d12::Dispatch(cmd_list,
@@ -81,7 +85,7 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(3 * d3d12::settings::num_back_buffers));
+			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
 			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(7));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
@@ -99,10 +103,10 @@ namespace wr
 				if (data.is_hybrid)
 				{
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
-					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + i);
+					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + (2 * i));
 					
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
-					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
+					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 2, hybrid_rt->m_create_info.m_rtv_formats.data());
 				}
 			}
 		}
@@ -164,7 +168,7 @@ namespace wr
 
 				// Output UAV
 				{
-					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
+					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output_index);
 					std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
 					d3d12::CreateUAVFromRTV(render_target, rtv_out_uav_handle, 1, formats.data());
 				}

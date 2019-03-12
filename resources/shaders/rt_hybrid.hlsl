@@ -3,6 +3,7 @@
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
+#include "ambient_occlusion.hlsl"
 
 struct Vertex
 {
@@ -32,6 +33,7 @@ struct Offset
 };
 
 RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
+RWTexture2D<float4> output_ao : register(u1); // x: AO value
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -130,29 +132,6 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
 	return reflection;
 }
 
-float3 getPerpendicularVector(float3 u)
-{
-	float3 a = abs(u);
-	uint xm = ((a.x - a.y)<0 && (a.x - a.z)<0) ? 1 : 0;
-	uint ym = (a.y - a.z)<0 ? (1 ^ xm) : 0;
-	uint zm = 1 ^ (xm | ym);
-	return cross(u, float3(xm, ym, zm));
-}
-// Get a cosine-weighted random vector centered around a specified normal direction.
-float3 getCosHemisphereSample(inout uint randSeed, float3 hitNorm)
-{
-	// Get 2 random numbers to select our sample with
-	float2 randVal = float2(nextRand(randSeed), nextRand(randSeed));
-
-	// Cosine weighted hemisphere sample from RNG
-	float3 bitangent = getPerpendicularVector(hitNorm);
-	float3 tangent = cross(bitangent, hitNorm);
-	float r = sqrt(randVal.x);
-	float phi = 2.0f * 3.14159265f * randVal.y;
-
-	// Get our cosine-weighted hemisphere lobe sample direction
-	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(max(0.0, 1.0f - randVal.x));
-}
 #define M_PI 3.14159265358979
 
 [shader("raygeneration")]
@@ -187,6 +166,7 @@ void RaygenEntry()
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
 		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+		output_ao[DispatchRaysIndex().xy] = float4(1, 0, 0, 0);
 		return;
 	}
 
@@ -200,13 +180,8 @@ void RaygenEntry()
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
 
-	float aoValue = 1.0f;
-    const uint spp = 32;
-    for(uint i = 0; i< spp; i++)
-    {
-        aoValue -= (1.0f/float(spp)) * TraceShadowRay(0, wpos + normalize(normal) * EPSILON, getCosHemisphereSample(rand_seed, normal), 250.f, 1);
-    }
-   //gOutput[DispatchRaysIndex().xy] = float4((aoValue * ambient + lighting), 1);
+	
+   output_ao[DispatchRaysIndex().xy].x = DoAmbientOcclusion(normal, wpos, 32, 0.25f, rand_seed);
 }
 
 //Reflections

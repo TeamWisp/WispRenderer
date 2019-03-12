@@ -286,10 +286,11 @@ namespace wr
 			SKY_BOX,
 			IRRADIANCE_MAP,
 			BUFFER_REFLECTION_SHADOW,
+			BUFFER_AO,
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 9> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 10> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
@@ -298,6 +299,7 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::SKY_BOX, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION_SHADOW, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_AO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 
@@ -389,6 +391,7 @@ namespace wr
 			CAMERA_PROPERTIES,
 			ACCELERATION_STRUCTURE,
 			OUTPUT,
+			AO_OUTPUT,
 			INDICES,
 			VERTICES,
 			LIGHTS,
@@ -401,9 +404,10 @@ namespace wr
 			FALLBACK_PTRS
 		};
 
-		constexpr std::array<rs_layout::Entry, 20> rt_hybrid = {
+		constexpr std::array<rs_layout::Entry, 21> rt_hybrid = {
 			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::AO_OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},

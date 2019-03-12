@@ -53,8 +53,8 @@ namespace resources
 //#define HAIRBALL
 //#define DRAGON
 //#define BISTRO
-//#define TANK
-#define TAVERN
+#define TANK
+//#define TAVERN
 	void CreateResources(wr::RenderSystem* render_system)
 	{
 		texture_pool = render_system->CreateTexturePool();

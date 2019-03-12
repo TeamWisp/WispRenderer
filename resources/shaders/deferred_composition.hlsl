@@ -13,6 +13,7 @@ Texture2D gbuffer_depth : register(t2);
 Texture2D skybox : register(t4);
 TextureCube irradiance_map : register(t5);
 Texture2D buffer_refl_shadow : register(t6); // xyz: reflection, a: shadow factor
+Texture2D buffer_ao : register(t7); // x: ao factor
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -50,7 +51,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(camera_pos - pos);
 
-	const float ambient = float(0.1);
+	const float ambient = float(0.1) * buffer_ao[screen_coord].x;
+
 	float3 retval;
 	
 	if(depth_f != 1.0f)

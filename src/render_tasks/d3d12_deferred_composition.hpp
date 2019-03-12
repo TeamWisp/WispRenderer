@@ -28,7 +28,7 @@ namespace wr
 
 	namespace internal
 	{
-
+		const unsigned int output_index = 7;
 		void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, DeferredCompositionTaskData const & data, unsigned int frame_idx);
 
 		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle);
