@@ -13,6 +13,7 @@
 #include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../imgui_tools.hpp"
 
 namespace wr
@@ -196,13 +197,26 @@ namespace wr
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
-				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), data.out_uav_from_rtv.GetDescriptorHandle());
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), as_build_data.out_scene_ib_alloc.GetDescriptorHandle());
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::MATERIALS)), as_build_data.out_scene_mat_alloc.GetDescriptorHandle());
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OFFSETS)), as_build_data.out_scene_offset_alloc.GetDescriptorHandle());
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 0, data.out_gbuffers.GetDescriptorHandle(0));
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, data.out_gbuffers.GetDescriptorHandle(1));
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, data.out_depthbuffer.GetDescriptorHandle());
+				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
+
+				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
+
+				auto out_scene_mat_handle = as_build_data.out_scene_mat_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::MATERIALS)), out_scene_mat_handle);
+
+				auto out_scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OFFSETS)), out_scene_offset_handle);
+
+				auto out_scene_gbuffers_handle1 = data.out_gbuffers.GetDescriptorHandle(0);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 0, out_scene_gbuffers_handle1);
+
+				auto out_scene_gbuffers_handle2 = data.out_gbuffers.GetDescriptorHandle(1);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, out_scene_gbuffers_handle2);
+
+				auto out_scene_depth_handle = data.out_depthbuffer.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, out_scene_depth_handle);
 
 				/*
 				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors

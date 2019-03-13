@@ -331,8 +331,6 @@ namespace wr
 				DescriptorAllocation temp1 = std::move(data.out_scene_ib_alloc);
 				DescriptorAllocation temp2 = std::move(data.out_scene_mat_alloc);
 				DescriptorAllocation temp3 = std::move(data.out_scene_offset_alloc);
-
-				delete data.out_allocator;
 			}
 		}
 

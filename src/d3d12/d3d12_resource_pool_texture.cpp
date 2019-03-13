@@ -83,12 +83,12 @@ namespace wr
 
 	D3D12TexturePool::~D3D12TexturePool()
 	{
+		//{
+		//	//Led the allocation go out of scope to clear it before the texture pool and its allocators are destroyed
+		//	DescriptorAllocation alloc = std::move(m_default_uav);
+		//}
+		
 		delete m_mipmapping_allocator;
-
-		{
-			//Led the allocation go out of scope to clear it before the texture pool and its allocators are destroyed
-			DescriptorAllocation alloc = std::move(m_default_uav);
-		}
 
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
