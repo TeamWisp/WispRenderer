@@ -21,14 +21,16 @@ r->SetName(std::wstring(std::wstring(n) + L" (line: " + std::to_wstring(__LINE__
 #define NAME_D3D12RESOURCE(r) { auto temp = std::string(__FILE__); \
 r->SetName(std::wstring(L"Unnamed Resource (line: " + std::to_wstring(__LINE__) + L" file: " + std::wstring(temp.begin(), temp.end())).c_str()); }
 
+// Particular version automatically rounds the alignment to a two power.
 template<typename T, typename A>
-constexpr inline T SizeAlign(T size, A alignment)
+constexpr inline T SizeAlignTwoPower(T size, A alignment)
 {
 	return (size + (alignment - 1U)) & ~(alignment - 1U);
 }
 
+// Particular version always aligns to the provided alignment
 template<typename T, typename A>
-constexpr inline T SizeAlignProper(T size, A alignment)
+constexpr inline T SizeAlignAnyAlignment(T size, A alignment)
 {
 	return (size / alignment + (size%alignment > 0))*alignment;
 }

@@ -131,6 +131,8 @@ namespace wr
 
 		void SetUpdated(bool updated) { m_updated = updated; };
 
+		void MakeSpaceForModel(size_t vertex_size, size_t index_size) final;
+
 	private:
 		internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) final;
 		internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) final;

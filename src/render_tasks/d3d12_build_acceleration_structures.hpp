@@ -23,7 +23,7 @@ namespace wr
 		std::vector<temp::RayTracingMaterial_CBData> out_materials;
 		std::vector<temp::RayTracingOffset_CBData> out_offsets;
 		std::unordered_map<unsigned int, unsigned int> out_parsed_materials;
-		std::vector<MaterialHandle*> out_material_handles;
+		std::vector<MaterialHandle> out_material_handles;
 		d3d12::StagingBuffer* out_scene_ib;
 		d3d12::StagingBuffer* out_scene_vb;
 
@@ -83,14 +83,14 @@ namespace wr
 		{
 
 			//! Get a material id from a mesh.
-			inline unsigned int ExtractMaterialFromMesh(ASBuildData& data, MaterialHandle* material_handle)
+			inline unsigned int ExtractMaterialFromMesh(ASBuildData& data, MaterialHandle material_handle)
 			{
 				unsigned int material_id = 0;
-				if (data.out_parsed_materials.find(material_handle->m_id) == data.out_parsed_materials.end())
+				if (data.out_parsed_materials.find(material_handle.m_id) == data.out_parsed_materials.end())
 				{
 					material_id = data.out_materials.size();
 
-					auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+					auto* material_internal = material_handle.m_pool->GetMaterial(material_handle.m_id);
 
 					// Build material
 					wr::temp::RayTracingMaterial_CBData material;
@@ -103,13 +103,13 @@ namespace wr
 					int y = sizeof(DirectX::XMVECTOR);
 					int z = sizeof(Material::MaterialData);
 					data.out_materials.push_back(material);
-					data.out_parsed_materials[material_handle->m_id] = material_id;
+					data.out_parsed_materials[material_handle.m_id] = material_id;
 
 					data.out_materials_require_update = true;
 				}
 				else
 				{
-					material_id = data.out_parsed_materials[material_handle->m_id];
+					material_id = data.out_parsed_materials[material_handle.m_id];
 				}
 
 				return material_id;
@@ -153,9 +153,9 @@ namespace wr
 
 				data.blasses.insert({ mesh_material.first->id, blas });
 				
-				data.out_material_handles.push_back(&mesh_material.second); // Used to st eal the textures from the texture pool.
+				data.out_material_handles.push_back(mesh_material.second); // Used to st eal the textures from the texture pool.
 
-				auto material_id = ExtractMaterialFromMesh(data, &mesh_material.second);
+				auto material_id = ExtractMaterialFromMesh(data, mesh_material.second);
 
 				AppendOffset(data, n_mesh, material_id);
 			}
@@ -163,6 +163,7 @@ namespace wr
 			inline void BuildBLASList(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
 				data.out_materials.clear();
+				data.out_material_handles.clear();
 				data.out_offsets.clear();
 				data.out_parsed_materials.clear();
 
@@ -211,9 +212,9 @@ namespace wr
 
 						data.blasses.insert({mesh.first->id, blas});
 
-						data.out_material_handles.push_back(&mesh.second); // Used to st eal the textures from the texture pool.
+						data.out_material_handles.push_back(mesh.second); // Used to st eal the textures from the texture pool.
 
-						auto material_id = ExtractMaterialFromMesh(data, &mesh.second);
+						auto material_id = ExtractMaterialFromMesh(data, mesh.second);
 
 						AppendOffset(data, n_mesh, material_id);
 
@@ -270,7 +271,7 @@ namespace wr
 					// Fill descriptor heap with textures used by the scene
 					for (auto handle : data.out_material_handles)
 					{
-						auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+						auto material_internal = handle.m_pool->GetMaterial(handle.m_id);
 
 						auto create_srv = [data, material_internal, i](auto texture_handle)
 						{
@@ -378,7 +379,6 @@ namespace wr
 							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::VERTEX_AND_CONSTANT_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 							d3d12::Transition(cmd_list, n_model_pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
-
 							BuildBLASSingle(device, cmd_list, model, mesh, data);
 
 							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
@@ -391,7 +391,7 @@ namespace wr
 
 						auto blas = (*blas_iterator).second;
 
-						auto material_id = ExtractMaterialFromMesh(data, &mesh.second);
+						auto material_id = ExtractMaterialFromMesh(data, mesh.second);
 
 						AppendOffset(data, n_mesh, material_id);
 
@@ -472,7 +472,11 @@ namespace wr
 					{
 						d3d12::DestroyAccelerationStructure(data.old_blasses[data.current_frame_index][i]);
 					}
+					data.old_blasses[data.current_frame_index].clear();
+
 					d3d12::DestroyAccelerationStructure(data.old_tlas[data.current_frame_index]);
+
+					data.old_tlas[data.current_frame_index] = {};
 				}
 
 				internal::UpdateTLAS(device, cmd_list, scene_graph, data);

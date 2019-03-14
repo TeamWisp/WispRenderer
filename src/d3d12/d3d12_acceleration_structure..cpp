@@ -122,8 +122,7 @@ namespace wr::d3d12
 		DescriptorHeap* desc_heap,
 		std::vector<desc::GeometryDesc> geometry)
 	{
-		AccelerationStructure blas;
-		ZeroMemory(&blas, sizeof(blas));
+		AccelerationStructure blas = {};
 
 		std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometry_descs(geometry.size());
 		for (auto i = 0; i < geometry.size(); i++)
@@ -223,8 +222,7 @@ namespace wr::d3d12
 		DescriptorHeap* desc_heap,
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
 	{
-		AccelerationStructure tlas;
-		ZeroMemory(&tlas, sizeof(tlas));
+		AccelerationStructure tlas = {};
 		tlas.m_rebuild_scratch = true;
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;

@@ -115,6 +115,8 @@ namespace wr
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
 
+		virtual void MakeSpaceForModel(size_t vertex_size, size_t index_size) = 0;
+
 	protected:
 		virtual internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
 		virtual internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) = 0;
@@ -166,14 +168,7 @@ namespace wr
 			}
 		}
 
-		if (GetVertexHeapFreeSpace() < total_vertex_size)
-		{
-			ResizeVertexHeap(total_vertex_size + GetVertexHeapOccupiedSpace());
-		}
-		if (GetIndexHeapFreeSpace() < total_index_size)
-		{
-			ResizeIndexHeap(total_index_size + GetIndexHeapOccupiedSpace());
-		}
+		MakeSpaceForModel(total_vertex_size, total_index_size);
 
 		for (int i = 0; i < meshes.size(); ++i)
 		{
@@ -246,24 +241,7 @@ namespace wr
 
 		// TODO: Create default material
 
-		size_t total_vertex_size = 0;
-		size_t total_index_size = 0;
-
-		for (int i = 0; i < data->m_meshes.size(); ++i)
-		{
-			total_vertex_size += data->m_meshes[i]->m_positions.size() * sizeof(TV);
-			total_index_size += data->m_meshes[i]->m_indices.size() * sizeof(TI);
-		}
-
-		if (GetVertexHeapFreeSpace() < total_vertex_size)
-		{
-			ResizeVertexHeap(GetVertexHeapOccupiedSpace() + total_vertex_size);
-		}
-
-		if (GetIndexHeapFreeSpace() < total_index_size)
-		{
-			ResizeIndexHeap(GetIndexHeapOccupiedSpace() + total_index_size);
-		}
+		MakeSpaceForModel(data->GetTotalVertexSize<TV>(), data->GetTotalIndexSize<TI>());
 
 		int ret = LoadNodeMeshes<TV, TI>(data, model, default_material);
 
@@ -479,24 +457,7 @@ namespace wr
 			material_handles.push_back(new_handle);
 		}
 
-		size_t total_vertex_size = 0;
-		size_t total_index_size = 0;
-
-		for (int i = 0; i < data->m_meshes.size(); ++i)
-		{
-			total_vertex_size += data->m_meshes[i]->m_positions.size() * sizeof(TV);
-			total_index_size += data->m_meshes[i]->m_indices.size() * sizeof(TI);
-		}
-
-		if (GetVertexHeapFreeSpace() < total_vertex_size)
-		{
-			ResizeVertexHeap(GetVertexHeapOccupiedSpace() + total_vertex_size);
-		}
-
-		if (GetIndexHeapFreeSpace() < total_index_size)
-		{
-			ResizeIndexHeap(GetIndexHeapOccupiedSpace() + total_index_size);
-		}
+		MakeSpaceForModel(data->GetTotalVertexSize<TV>(), data->GetTotalIndexSize<TI>());
 
 		int ret = LoadNodeMeshesWithMaterials<TV, TI>(data, model, material_handles);
 
@@ -528,13 +489,13 @@ namespace wr
 			indices.size(),
 			sizeof(TI));
 
-		for (int i = 0; i < m_loaded_models.size(); i++)
+		for (auto model : m_loaded_models)
 		{
-			for (int j = 0; j < m_loaded_models[i]->m_meshes.size(); ++j)
+			for (auto mesh_material : model->m_meshes)
 			{
-				if (m_loaded_models[i]->m_meshes[j].first->id == mesh->id)
+				if (mesh_material.first->id == mesh->id)
 				{
-					UpdateModelBoundingBoxes<TV>(m_loaded_models[i], mesh, vertices);
+					UpdateModelBoundingBoxes<TV>(model, mesh, vertices);
 				}
 			}
 		}

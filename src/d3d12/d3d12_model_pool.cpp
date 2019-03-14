@@ -12,25 +12,25 @@ namespace wr
 	D3D12ModelPool::D3D12ModelPool(D3D12RenderSystem& render_system,
 		std::size_t vertex_buffer_size_in_bytes,
 		std::size_t index_buffer_size_in_bytes) :
-		ModelPool(SizeAlignProper(vertex_buffer_size_in_bytes, 65536), SizeAlignProper(index_buffer_size_in_bytes, 65536)),
+		ModelPool(SizeAlignAnyAlignment(vertex_buffer_size_in_bytes, 65536), SizeAlignAnyAlignment(index_buffer_size_in_bytes, 65536)),
 		m_render_system(render_system),
 		m_intermediate_size(0)
 	{
 		m_vertex_buffer = d3d12::CreateStagingBuffer(render_system.m_device,
 			nullptr,
-			SizeAlignProper(vertex_buffer_size_in_bytes, 65536),
+			SizeAlignAnyAlignment(vertex_buffer_size_in_bytes, 65536),
 			sizeof(VertexColor),
 			ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 		SetName(m_vertex_buffer, L"Model Pool Vertex Buffer");
-		m_vertex_buffer_size = SizeAlignProper(vertex_buffer_size_in_bytes, 65536);
+		m_vertex_buffer_size = SizeAlignAnyAlignment(vertex_buffer_size_in_bytes, 65536);
 
 		m_index_buffer = d3d12::CreateStagingBuffer(render_system.m_device,
 			nullptr,
-			SizeAlignProper(index_buffer_size_in_bytes, 65536),
+			SizeAlignAnyAlignment(index_buffer_size_in_bytes, 65536),
 			sizeof(std::uint32_t),
 			ResourceState::INDEX_BUFFER);
 		SetName(m_index_buffer, L"Model Pool Index Buffer");
-		m_index_buffer_size = SizeAlignProper(index_buffer_size_in_bytes, 65536);
+		m_index_buffer_size = SizeAlignAnyAlignment(index_buffer_size_in_bytes, 65536);
 
 		m_vertex_heap_start_block = new MemoryBlock;
 		m_vertex_heap_start_block->m_free = true;
@@ -191,7 +191,7 @@ namespace wr
 		}
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
-		new_size = SizeAlignProper(new_size, 65536);
+		new_size = SizeAlignAnyAlignment(new_size, 65536);
 
 		if (new_size == m_vertex_buffer->m_size)
 		{
@@ -347,7 +347,7 @@ namespace wr
 		}
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
-		new_size = SizeAlignProper(new_size, 65536);
+		new_size = SizeAlignAnyAlignment(new_size, 65536);
 
 		if (new_size == m_index_buffer->m_size)
 		{
@@ -534,7 +534,7 @@ namespace wr
 				m_render_system.m_device->m_native->CreateCommittedResource(
 					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 					D3D12_HEAP_FLAG_NONE,
-					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignProper(largest_block->m_size, 65536)),
+					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536)),
 					D3D12_RESOURCE_STATE_COPY_DEST,
 					nullptr,
 					IID_PPV_ARGS(&buffer));
@@ -577,7 +577,7 @@ namespace wr
 
 				SAFE_RELEASE(m_intermediate_buffer);
 				m_intermediate_buffer = buffer;
-				m_intermediate_size = SizeAlignProper(largest_block->m_size, 65536);
+				m_intermediate_size = SizeAlignAnyAlignment(largest_block->m_size, 65536);
 			}
 		}
 
@@ -634,16 +634,16 @@ namespace wr
 					next_block->m_next_block = mem_block;
 					mem_block->m_prev_block = next_block;
 
-					next_block->m_offset = SizeAlignProper(mem_block->m_offset, next_block->m_alignment);
+					next_block->m_offset = SizeAlignAnyAlignment(mem_block->m_offset, next_block->m_alignment);
 					if (next_block->m_offset%next_block->m_alignment != 0)
 					{
 						LOGW("Wrong alignment after trying to align");
 					}
 					if (next_block->m_prev_block != nullptr)
 					{
-						next_block->m_size += SizeAlignProper(next_block->m_offset - mem_block->m_offset, next_block->m_alignment);
+						next_block->m_size += SizeAlignAnyAlignment(next_block->m_offset - mem_block->m_offset, next_block->m_alignment);
 					}
-					mem_block->m_size -= SizeAlignProper(next_block->m_offset - mem_block->m_offset, next_block->m_alignment);
+					mem_block->m_size -= SizeAlignAnyAlignment(next_block->m_offset - mem_block->m_offset, next_block->m_alignment);
 					mem_block->m_offset = next_block->m_offset + next_block->m_size;
 
 					std::map<std::uint64_t, internal::MeshInternal*>::iterator it = m_loaded_meshes.begin();
@@ -792,7 +792,7 @@ namespace wr
 				m_render_system.m_device->m_native->CreateCommittedResource(
 					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 					D3D12_HEAP_FLAG_NONE,
-					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignProper(largest_block->m_size, 65536)),
+					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536)),
 					D3D12_RESOURCE_STATE_COPY_DEST,
 					nullptr,
 					IID_PPV_ARGS(&buffer));
@@ -835,7 +835,7 @@ namespace wr
 
 				SAFE_RELEASE(m_intermediate_buffer);
 				m_intermediate_buffer = buffer;
-				m_intermediate_size = SizeAlignProper(largest_block->m_size, 65536);
+				m_intermediate_size = SizeAlignAnyAlignment(largest_block->m_size, 65536);
 			}
 		}
 
@@ -892,7 +892,7 @@ namespace wr
 					next_block->m_next_block = mem_block;
 					mem_block->m_prev_block = next_block;
 
-					next_block->m_offset = SizeAlignProper(mem_block->m_offset, next_block->m_alignment);
+					next_block->m_offset = SizeAlignAnyAlignment(mem_block->m_offset, next_block->m_alignment);
 					if (next_block->m_prev_block != nullptr)
 					{
 						next_block->m_size += next_block->m_offset - mem_block->m_offset;
@@ -907,7 +907,7 @@ namespace wr
 						internal::D3D12MeshInternal* mesh = static_cast<internal::D3D12MeshInternal*>((*it).second);
 						if (mesh->m_index_memory_block == next_block)
 						{
-							mesh->m_index_staging_buffer_offset = SizeAlignProper(next_block->m_offset, next_block->m_alignment)
+							mesh->m_index_staging_buffer_offset = SizeAlignAnyAlignment(next_block->m_offset, next_block->m_alignment)
 								/ next_block->m_alignment;
 						}
 					}
@@ -1052,17 +1052,17 @@ namespace wr
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
 		size_t old_size = m_vertex_buffer->m_size;
 
-		if (new_size > SizeAlignProper(vertex_heap_new_size, 65536))
+		if (new_size > SizeAlignAnyAlignment(vertex_heap_new_size, 65536))
 		{
 			ShrinkVertexHeapToFit();
 		}
-		else if (SizeAlignProper(vertex_heap_new_size, 65536) == m_vertex_buffer->m_size)
+		else if (SizeAlignAnyAlignment(vertex_heap_new_size, 65536) == m_vertex_buffer->m_size)
 		{
 			return;
 		}
 		else
 		{
-			new_size = SizeAlignProper(vertex_heap_new_size, 65536);
+			new_size = SizeAlignAnyAlignment(vertex_heap_new_size, 65536);
 
 			ID3D12Resource* old_buffer = m_vertex_buffer->m_buffer;
 			ID3D12Resource* new_buffer;
@@ -1230,17 +1230,17 @@ namespace wr
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
 
-		if (new_size > SizeAlignProper(index_heap_new_size, 65536))
+		if (new_size > SizeAlignAnyAlignment(index_heap_new_size, 65536))
 		{
 			ShrinkIndexHeapToFit();
 		}
-		else if (SizeAlignProper(index_heap_new_size, 65536) == m_index_buffer->m_size)
+		else if (SizeAlignAnyAlignment(index_heap_new_size, 65536) == m_index_buffer->m_size)
 		{
 			return;
 		}
 		else
 		{
-			new_size = SizeAlignProper(index_heap_new_size, 65536);
+			new_size = SizeAlignAnyAlignment(index_heap_new_size, 65536);
 
 			ID3D12Resource* old_buffer = m_index_buffer->m_buffer;
 			ID3D12Resource* new_buffer;
@@ -1363,6 +1363,18 @@ namespace wr
 		m_updated = true;
 	}
 
+	void D3D12ModelPool::MakeSpaceForModel(size_t vertex_size, size_t index_size)
+	{
+		if (GetVertexHeapFreeSpace() < vertex_size)
+		{
+			ResizeVertexHeap(vertex_size + GetVertexHeapOccupiedSpace());
+		}
+		if (GetIndexHeapFreeSpace() < index_size)
+		{
+			ResizeIndexHeap(index_size + GetIndexHeapOccupiedSpace());
+		}
+	}
+
 	internal::MeshInternal* D3D12ModelPool::LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size)
 	{
 		internal::D3D12MeshInternal* mesh = new internal::D3D12MeshInternal();
@@ -1418,7 +1430,7 @@ namespace wr
 		}
 
 		//Store the offset of the allocated memory from the start of the staging buffer
-		mesh->m_vertex_staging_buffer_offset = SizeAlignProper(vertex_memory_block->m_offset, vertex_size) / vertex_size;
+		mesh->m_vertex_staging_buffer_offset = SizeAlignAnyAlignment(vertex_memory_block->m_offset, vertex_size) / vertex_size;
 		mesh->m_vertex_staging_buffer_size = num_vertices * vertex_size;
 		mesh->m_vertex_staging_buffer_stride = vertex_size;
 		mesh->m_vertex_count = num_vertices;
@@ -1430,7 +1442,7 @@ namespace wr
 		d3d12::UpdateStagingBuffer(m_vertex_buffer, vertices_data, num_vertices*vertex_size, mesh->m_vertex_staging_buffer_offset * vertex_size);
 
 		//Store the offset of the allocated memory from the start of the staging buffer
-		mesh->m_index_staging_buffer_offset = SizeAlignProper(index_memory_block->m_offset, index_size) / index_size;
+		mesh->m_index_staging_buffer_offset = SizeAlignAnyAlignment(index_memory_block->m_offset, index_size) / index_size;
 		mesh->m_index_staging_buffer_size = num_indices * index_size;
 		mesh->m_index_count = num_indices;
 		mesh->m_index_memory_block = index_memory_block;
@@ -1488,7 +1500,7 @@ namespace wr
 		}
 
 		//Store the offset of the allocated memory from the start of the staging buffer
-		mesh->m_vertex_staging_buffer_offset = SizeAlignProper(vertex_memory_block->m_offset, vertex_size) / vertex_size;
+		mesh->m_vertex_staging_buffer_offset = SizeAlignAnyAlignment(vertex_memory_block->m_offset, vertex_size) / vertex_size;
 		mesh->m_vertex_staging_buffer_size = num_vertices * vertex_size;
 		mesh->m_vertex_staging_buffer_stride = vertex_size;
 		mesh->m_vertex_count = num_vertices;
@@ -1562,7 +1574,7 @@ namespace wr
 			}
 
 			mesh_data->m_vertex_memory_block = new_block;
-			mesh_data->m_vertex_staging_buffer_offset = SizeAlignProper(new_block->m_offset, vertex_size) / vertex_size;
+			mesh_data->m_vertex_staging_buffer_offset = SizeAlignAnyAlignment(new_block->m_offset, vertex_size) / vertex_size;
 			mesh_data->m_vertex_staging_buffer_size = num_vertices * vertex_size;
 			mesh_data->m_vertex_staging_buffer_stride = vertex_size;
 			mesh_data->m_vertex_count = num_vertices;
@@ -1627,7 +1639,7 @@ namespace wr
 			}
 
 			mesh_data->m_index_memory_block = new_block;
-			mesh_data->m_index_staging_buffer_offset = SizeAlignProper(new_block->m_offset, indices_size) / indices_size;
+			mesh_data->m_index_staging_buffer_offset = SizeAlignAnyAlignment(new_block->m_offset, indices_size) / indices_size;
 			mesh_data->m_index_staging_buffer_size = num_indices * indices_size;
 			mesh_data->m_index_count = num_indices;
 
