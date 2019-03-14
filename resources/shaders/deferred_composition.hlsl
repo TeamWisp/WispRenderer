@@ -13,6 +13,7 @@ Texture2D gbuffer_depth : register(t2);
 Texture2D skybox : register(t4);
 TextureCube irradiance_map : register(t5);
 Texture2D buffer_refl_shadow : register(t6); // xyz: reflection, a: shadow factor
+Texture2D screen_space_irradiance : register(t7);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -23,6 +24,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_view;
 	uint is_hybrid;
+	uint is_path_tracer;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -62,7 +64,16 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
-		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+		float3 irradiance = float3(0, 0, 0);
+		
+		if (is_path_tracer)
+		{
+			irradiance = screen_space_irradiance[screen_coord].xyz;
+		}
+		else
+		{
+			irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+		}
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -84,9 +95,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection);
 
 		retval = retval * shadow_factor;
+		retval = irradiance;
 	}
 	else
 	{	
