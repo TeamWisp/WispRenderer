@@ -285,10 +285,11 @@ namespace wr
 			LIGHT_BUFFER,
 			SKY_BOX,
 			IRRADIANCE_MAP,
+			PREF_ENV_MAP,
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 8> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 9> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
@@ -296,6 +297,7 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::LIGHT_BUFFER, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::SKY_BOX, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::PREF_ENV_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 
@@ -348,7 +350,7 @@ namespace wr
 		constexpr std::array<rs_layout::Entry, 3> cubemap_prefiltering = {
 			rs_layout::Entry{(int)CubemapPrefilteringE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)CubemapPrefilteringE::DEST, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)CubemapPrefilteringE::CBUFFER, 4, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)CubemapPrefilteringE::CBUFFER, 6, rs_layout::Type::CBV_OR_CONST},
 		};
 
 		enum class PostProcessingE

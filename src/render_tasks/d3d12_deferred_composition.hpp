@@ -26,6 +26,7 @@ namespace wr
 
 		d3d12::TextureResource* out_skybox;
 		d3d12::TextureResource* out_irradiance;
+		d3d12::TextureResource* out_pref_env_map;
 
 		std::array<d3d12::CommandList*, d3d12::settings::num_back_buffers> out_bundle_cmd_lists;
 		bool out_requires_bundle_recording;
@@ -64,6 +65,9 @@ namespace wr
 
 			constexpr unsigned int irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP);
 			d3d12::SetShaderSRV(cmd_list, 1, irradiance, data.out_irradiance);
+
+			constexpr unsigned int pref_env = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::PREF_ENV_MAP);
+			d3d12::SetShaderSRV(cmd_list, 1, pref_env, data.out_pref_env_map);
 
 			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
 			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
@@ -146,6 +150,12 @@ namespace wr
 				{
 					data.out_irradiance = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
 					d3d12::CreateSRVFromTexture(data.out_irradiance);
+				}
+
+				// Get the prefiltered environment map
+				{
+					data.out_pref_env_map = static_cast<d3d12::TextureResource*>(pred_data.out_pref_env_map.m_pool->GetTexture(pred_data.out_pref_env_map.m_id));
+					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
 				}
 
 				// Output UAV

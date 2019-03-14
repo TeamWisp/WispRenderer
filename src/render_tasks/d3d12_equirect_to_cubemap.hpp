@@ -25,6 +25,7 @@ namespace wr
 
 		TextureHandle in_equirect;
 		TextureHandle out_cubemap;
+		TextureHandle out_pref_env;
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
 		D3D12ConstantBufferHandle* cb_handle;
@@ -46,11 +47,63 @@ namespace wr
 		struct PrefilterEnv_CB
 		{
 			DirectX::XMFLOAT2 texture_size;
+			DirectX::XMFLOAT2 skybox_res;
 			float	 roughness;
 			uint32_t cubemap_face;
 		};
 
-		inline void PrefilterCubemapFace(d3d12::TextureResource* texture, CommandList* cmd_list, DescriptorAllocator* alloc, unsigned int array_slice)
+		//inline void PrefilterCubemapFace(d3d12::TextureResource* source_cubemap, d3d12::TextureResource* dest_cubemap, CommandList* cmd_list, DescriptorAllocator* alloc, unsigned int array_slice)
+		//{
+		//	wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
+
+		//	//Create shader resource view for the source texture in the descriptor heap
+		//	DescriptorAllocation srv_alloc = alloc->Allocate();
+		//	d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
+
+		//	d3d12::CreateSRVFromTexture(source_cubemap, srv_handle);
+
+		//	PrefilterEnv_CB prefilter_env_cb;
+
+		//	for (uint32_t src_mip = 0; src_mip < dest_cubemap->m_mip_levels - 1u; ++src_mip)
+		//	{
+		//		uint32_t src_width = dest_cubemap->m_width >> src_mip;
+		//		uint32_t src_height = dest_cubemap->m_height >> src_mip;
+		//		uint32_t dst_width = src_width >> 1;
+		//		uint32_t dst_height = src_height >> 1;
+
+		//		prefilter_env_cb.texture_size = DirectX::XMFLOAT2((float)dst_width, (float)dst_height);
+		//		prefilter_env_cb.roughness = (float)(src_mip + 1u) / (float)(dest_cubemap->m_mip_levels - 1);
+		//		prefilter_env_cb.cubemap_face = array_slice;
+
+		//		//Create views
+		//		//d3d12::CreateSRVFromCubemapFace(texture, srv_handle, 1, src_mip, array_slice);
+
+		//		DescriptorAllocation uav_alloc = alloc->Allocate();
+		//		d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
+
+		//		d3d12::CreateUAVFromCubemapFace(dest_cubemap, uav_handle, src_mip + 1, array_slice);
+
+		//		//Set shader variables
+		//		d3d12::BindCompute32BitConstants(d3d12_cmd_list, &prefilter_env_cb, sizeof(PrefilterEnv_CB) / sizeof(uint32_t), 0, 0);
+
+		//		d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip], ResourceState::PIXEL_SHADER_RESOURCE, src_mip, 1);
+		//		d3d12::SetShaderSRV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::SOURCE)), srv_handle);
+
+		//		d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip + 1], ResourceState::UNORDERED_ACCESS, src_mip + 1, 1);
+		//		d3d12::SetShaderUAV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::DEST)), uav_handle);
+
+		//		d3d12::Dispatch(d3d12_cmd_list, ((dst_width + 8 - 1) / 8), ((dst_height + 8 - 1) / 8), 1u);
+
+		//		//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
+		//		d3d12::UAVBarrier(d3d12_cmd_list, dest_cubemap, 1);
+
+		//		d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip + 1], ResourceState::PIXEL_SHADER_RESOURCE, src_mip + 1, 1);
+		//	}
+
+		//	dest_cubemap->m_need_mips = false;
+		//}
+
+		inline void PrefilterCubemapFace(d3d12::TextureResource* source_cubemap, d3d12::TextureResource* dest_cubemap, CommandList* cmd_list, DescriptorAllocator* alloc, unsigned int array_slice)
 		{
 			wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
 
@@ -58,19 +111,18 @@ namespace wr
 			DescriptorAllocation srv_alloc = alloc->Allocate();
 			d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
 
-			d3d12::CreateSRVFromTexture(texture, srv_handle);
+			d3d12::CreateSRVFromTexture(source_cubemap, srv_handle);
 
 			PrefilterEnv_CB prefilter_env_cb;
 
-			for (uint32_t src_mip = 0; src_mip < texture->m_mip_levels - 1u; ++src_mip)
+			for (uint32_t src_mip = 0; src_mip < dest_cubemap->m_mip_levels; ++src_mip)
 			{
-				uint32_t src_width = texture->m_width >> src_mip;
-				uint32_t src_height = texture->m_height >> src_mip;
-				uint32_t dst_width = src_width >> 1;
-				uint32_t dst_height = src_height >> 1;
+				uint32_t width = dest_cubemap->m_width >> src_mip;
+				uint32_t height = dest_cubemap->m_height >> src_mip;
 
-				prefilter_env_cb.texture_size = DirectX::XMFLOAT2((float)dst_width, (float)dst_height);
-				prefilter_env_cb.roughness = (float)(src_mip + 1u) / (float)(texture->m_mip_levels - 1);
+				prefilter_env_cb.texture_size = DirectX::XMFLOAT2((float)width, (float)height);
+				prefilter_env_cb.skybox_res = DirectX::XMFLOAT2((float)source_cubemap->m_width, (float)source_cubemap->m_height);
+				prefilter_env_cb.roughness = (float)(src_mip) / (float)(dest_cubemap->m_mip_levels);
 				prefilter_env_cb.cubemap_face = array_slice;
 
 				//Create views
@@ -79,43 +131,44 @@ namespace wr
 				DescriptorAllocation uav_alloc = alloc->Allocate();
 				d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
 
-				d3d12::CreateUAVFromCubemapFace(texture, uav_handle, src_mip + 1, array_slice);
+				d3d12::CreateUAVFromCubemapFace(dest_cubemap, uav_handle, src_mip, array_slice);
 
 				//Set shader variables
 				d3d12::BindCompute32BitConstants(d3d12_cmd_list, &prefilter_env_cb, sizeof(PrefilterEnv_CB) / sizeof(uint32_t), 0, 0);
 
-				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[src_mip], ResourceState::PIXEL_SHADER_RESOURCE, src_mip, 1);
+				d3d12::Transition(d3d12_cmd_list, source_cubemap, source_cubemap->m_subresource_states[src_mip], ResourceState::PIXEL_SHADER_RESOURCE, src_mip, 1);
 				d3d12::SetShaderSRV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::SOURCE)), srv_handle);
 
-				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[src_mip + 1], ResourceState::UNORDERED_ACCESS, src_mip + 1, 1);
+				d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip], ResourceState::UNORDERED_ACCESS, src_mip, 1);
 				d3d12::SetShaderUAV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::DEST)), uav_handle);
 
-				d3d12::Dispatch(d3d12_cmd_list, ((dst_width + 8 - 1) / 8), ((dst_height + 8 - 1) / 8), 1u);
+				d3d12::Dispatch(d3d12_cmd_list, ((width + 8 - 1) / 8), ((height + 8 - 1) / 8), 1u);
 
 				//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-				d3d12::UAVBarrier(d3d12_cmd_list, texture, 1);
+				d3d12::UAVBarrier(d3d12_cmd_list, dest_cubemap, 1);
 
-				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[src_mip + 1], ResourceState::PIXEL_SHADER_RESOURCE, src_mip + 1, 1);
+				d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip], ResourceState::PIXEL_SHADER_RESOURCE, src_mip, 1);
 			}
 
-			texture->m_need_mips = false;
+			dest_cubemap->m_need_mips = false;
 		}
 
 
-		inline void PrefilterCubemap(d3d12::CommandList* cmd_list, wr::TextureHandle texture)
+		inline void PrefilterCubemap(d3d12::CommandList* cmd_list, wr::TextureHandle src_texture, wr::TextureHandle dst_texture)
 		{
 			D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::cubemap_prefiltering));
 
 			d3d12::BindComputePipeline(cmd_list, pipeline->m_native);
 			
 			//Get allocator from pool
-			auto allocator = static_cast<D3D12TexturePool*>(texture.m_pool)->GetMipmappingAllocator();
+			auto allocator = static_cast<D3D12TexturePool*>(src_texture.m_pool)->GetMipmappingAllocator();
 
-			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(texture.m_pool->GetTexture(texture.m_id));
+			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(src_texture.m_pool->GetTexture(src_texture.m_id));
+			d3d12::TextureResource* envmap_text = static_cast<d3d12::TextureResource*>(dst_texture.m_pool->GetTexture(dst_texture.m_id));
 
 			for (uint32_t i = 0; i < 6; ++i)
 			{
-				PrefilterCubemapFace(cubemap_text, cmd_list, allocator, i);
+				PrefilterCubemapFace(cubemap_text, envmap_text, cmd_list, allocator, i);
 			}
 		}
 
@@ -173,9 +226,12 @@ namespace wr
 
 			data.in_equirect = skybox_node->m_hdr;
 			
-			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("EnvironmentMap", 128, 128, 5, wr::Format::R32G32B32A32_FLOAT, true);
+			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", 1024, 1024, 0, wr::Format::R32G32B32A32_FLOAT, true);
+
+			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", 512, 512, 5, wr::Format::R32G32B32A32_FLOAT, true);
 
 			data.out_cubemap = skybox_node->m_skybox.value();
+			data.out_pref_env = skybox_node->m_prefiltered_env_map.value();
 
 			d3d12::TextureResource* equirect_text = static_cast<d3d12::TextureResource*>(data.in_equirect.m_pool->GetTexture(data.in_equirect.m_id));
 			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(data.out_cubemap.m_pool->GetTexture(data.out_cubemap.m_id));
@@ -247,22 +303,23 @@ namespace wr
 
 				d3d12::Transition(cmd_list, cubemap_text, cubemap_text->m_subresource_states[0], ResourceState::PIXEL_SHADER_RESOURCE);
 
+				//Mipmap the skybox
+				D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
 
-				//TEST MIPMAPPING
-				//D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
+				d3d12::BindComputePipeline(cmd_list, pipeline->m_native);
 
-				//d3d12::BindComputePipeline(cmd_list, pipeline->m_native);
+				auto texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
 
-				//auto texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
+				texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 0);
+				texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 1);
+				texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 2);
+				texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 3);
+				texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 4);
+				texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 5);
 
-				//texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 0);
-				//texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 1);
-				//texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 2);
-				//texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 3);
-				//texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 4);
-				//texture_pool->GenerateMips_Cubemap(cubemap_text, cmd_list, 5);
 
-				PrefilterCubemap(cmd_list, data.out_cubemap);
+				//Prefilter environment map
+				PrefilterCubemap(cmd_list, data.out_cubemap, data.out_pref_env);
 			}
 		}
 	} /* internal */

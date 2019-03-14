@@ -25,6 +25,7 @@ namespace wr
 
 		TextureHandle in_radiance;
 		TextureHandle out_irradiance;
+		TextureHandle out_pref_env_map;
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
 		D3D12ConstantBufferHandle* cb_handle;
@@ -102,6 +103,7 @@ namespace wr
 			}
 
 			data.in_radiance = pred_data.out_cubemap;
+			data.out_pref_env_map = pred_data.out_pref_env;
 
 			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 32, 32, 1, wr::Format::R32G32B32A32_FLOAT, true);;
 

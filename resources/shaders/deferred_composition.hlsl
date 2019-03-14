@@ -1,5 +1,5 @@
 #define LIGHTS_REGISTER register(t3)
-#define MAX_REFLECTION_LOD 4
+#define MAX_REFLECTION_LOD 3
 
 #include "fullscreen_quad.hlsl"
 #include "util.hlsl"
@@ -13,6 +13,7 @@ Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
 TextureCube skybox : register(t4);
 TextureCube irradiance_map  : register(t5);
+TextureCube pref_env_map	: register(t6);
 RWTexture2D<float4> output  : register(u0);
 SamplerState point_sampler  : register(s0);
 SamplerState linear_sampler : register(s1);
@@ -66,7 +67,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		const float shadow_factor = 1.0f;
 		
-		float3 skybox_reflection = skybox.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
+		float3 skybox_reflection = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, skybox_reflection);
 

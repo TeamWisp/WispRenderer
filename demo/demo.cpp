@@ -11,10 +11,11 @@
 #include "resources.hpp"
 #include "scene_cubes.hpp"
 #include "scene_emibl.hpp"
+#include "scene_spheres.hpp"
 
 #include "model_loader_assimp.hpp"
 
-#define SCENE viknell_scene
+#define SCENE spheres_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;

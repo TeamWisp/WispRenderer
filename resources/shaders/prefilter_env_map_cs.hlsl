@@ -7,6 +7,7 @@ SamplerState s0 : register(s0);
 cbuffer CB : register(b0)
 {
 	float2 texture_size;
+	float2 skybox_res;
 	float  roughness;
 	uint   cubemap_face;
 }
@@ -51,7 +52,19 @@ void main_cs(uint3 dt_id : SV_DispatchThreadID)
 		float NdotL = max(dot(N, L), 0.0f);
 		if (NdotL > 0.0f)
 		{
-			prefiltered_color += src_texture.SampleLevel(s0, N, 0).rgb * NdotL;
+			float NdotH = max(dot(N, H), 0.0f);
+			float HdotV = max(dot(H, V), 0.0f);
+
+			float D = D_GGX(NdotH, roughness);
+
+			float pdf = D * NdotH / (4.0f * HdotV) + 0.0001f;
+
+			float sa_texel = 4.0f * PI / (6.0f * skybox_res.x * skybox_res.y);
+			float sa_sample = 1.0f / (float(SAMPLE_COUNT) * pdf + 0.0001f);
+
+			float mip_level = roughness == 0.0f ? 0.0f : 0.5f * log2(sa_sample / sa_texel);
+
+			prefiltered_color += src_texture.SampleLevel(s0, L, mip_level).rgb * NdotL;
 			total_weight += NdotL;
 		}
 	}
