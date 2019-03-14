@@ -142,6 +142,7 @@ namespace wr
 			m_cmd_lists.resize(m_num_tasks);
 			m_render_targets.resize(m_num_tasks);
 			m_futures.resize(m_num_tasks);
+			m_render_system = &render_system;
 
 			if constexpr (settings::use_multithreading)
 			{
@@ -253,6 +254,11 @@ namespace wr
 			for (auto& data : m_data)
 			{
 				delete data;
+			}
+
+			for (auto& cmd_list : m_cmd_lists)
+			{
+				m_render_system->DestroyCommandList(cmd_list);
 			}
 
 			// Reset all members in the case of the user wanting to reuse this frame graph after `FrameGraph::Destroy`.
@@ -407,6 +413,23 @@ namespace wr
 				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
 
 			return static_cast<T*>(m_render_targets[handle]);
+		}
+
+		/*! Check if this frame graph has a task. */
+		/*!
+			This checks if the frame graph has the task that has been given as the template variable.
+		*/
+		template<typename T>
+		inline bool HasTask() const
+		{
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				if (m_data_type_info[i].get() == typeid(T))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		/*! Add a task to the Frame Graph. */
@@ -602,6 +625,7 @@ namespace wr
 			m_free_uids.push(uid);
 		}
 
+		RenderSystem* m_render_system;
 		/*! The number of tasks we have added. */
 		std::uint32_t m_num_tasks;
 		/*! The thread pool used for multithreading */

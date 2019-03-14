@@ -18,5 +18,4 @@ namespace util
 
 		return upper3x3;
 	}
-
 } /* util */

@@ -43,11 +43,23 @@ namespace wr
 		{
 			m_structured_buffer_pools[i].reset();
 		}
-
 		for (int i = 0; i < m_model_pools.size(); ++i)
 		{
 			m_model_pools[i].reset();
 		}
+
+		for (int i = 0; i < m_texture_pools.size(); ++i)
+		{
+			m_texture_pools[i].reset();
+		}
+		
+		for (auto iter : m_fences)
+		{
+			SAFE_RELEASE(iter->m_native);
+		}
+
+		d3d12::Destroy(m_fullscreen_quad_vb);
+		d3d12::Destroy(m_direct_cmd_list);
 
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
@@ -167,7 +179,6 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -272,7 +283,6 @@ namespace wr
 	{
 
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
-
 		if (m_render_window.has_value())
 		{
 			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
@@ -339,6 +349,11 @@ namespace wr
 		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
+	void D3D12RenderSystem::DestroyCommandList(CommandList* cmd_list)
+	{
+		Destroy(static_cast<wr::d3d12::CommandList*>(cmd_list));
+	}
+
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
 	{
 		if (properties.m_is_render_window)
@@ -399,7 +414,6 @@ namespace wr
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-
 		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
@@ -530,7 +544,7 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto shader_error = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
@@ -604,11 +618,11 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto n_pipeline = static_cast<D3D12Pipeline*>(registry.Find(handle))->m_native;
 
-		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
 			if (!pipeline_shader) return;
 
-			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry);
 
@@ -653,9 +667,9 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto n_pipeline = static_cast<D3D12StateObject*>(registry.Find(handle))->m_native;
 
-		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
-			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry);
 
@@ -692,7 +706,7 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto& n_shader = static_cast<D3D12Shader*>(registry.Find(handle))->m_native;
 
-		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
+		auto new_shader_variant = d3d12::LoadShader(m_device, n_shader->m_type,
 			n_shader->m_path,
 			n_shader->m_entry);
 
@@ -855,7 +869,6 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
-
 		for (auto pool : m_texture_pools)
 		{
 			pool->Stage(m_direct_cmd_list);
@@ -893,6 +906,7 @@ namespace wr
 			data.m_inverse_projection = node->m_inverse_projection;
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
+			data.m_is_hybrid = 0;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);
 		}

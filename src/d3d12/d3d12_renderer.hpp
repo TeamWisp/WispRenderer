@@ -51,6 +51,7 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
+			unsigned int m_is_hybrid;
 		};
 
 		struct RTHybridCamera_CBData
@@ -133,6 +134,7 @@ namespace wr
 		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
+		void DestroyCommandList(CommandList* cmd_list) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);

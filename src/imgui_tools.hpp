@@ -32,7 +32,7 @@ namespace wr::imgui
 		void RootSignatureRegistry();
 		void D3D12HardwareInfo(D3D12RenderSystem& render_system);
 		void D3D12Settings();
-		void LightEditor(SceneGraph* scene_graph);
+		void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
 		void ModelEditor(SceneGraph* scene_graph);
 		void Inspect(SceneGraph* scene_graph);
 
