@@ -108,7 +108,7 @@ namespace wr
 		SetName(m_direct_cmd_list, L"Defauld DX12 Command List");
 
 		// Raytracing cb pool
-		m_raytracing_cb_pool = CreateConstantBufferPool(1_mb);
+		m_raytracing_cb_pool = CreateConstantBufferPool(2_mb);
 
 		// Simple Shapes Model Pool
 		m_shapes_pool = CreateModelPool(8_mb, 8_mb);

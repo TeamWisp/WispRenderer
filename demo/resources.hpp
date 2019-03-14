@@ -12,6 +12,9 @@ namespace resources
 
 	static wr::Model* cube_model;
 	static wr::Model* plane_model;
+	static wr::Model* red_plane_model;
+	static wr::Model* blue_plane_model;
+	static wr::Model* white_plane_model;
 	static wr::Model* light_model;
 	static wr::Model* test_model;
 	static wr::Model* sphere_model;
@@ -39,6 +42,9 @@ namespace resources
 	static wr::MaterialHandle scorched_wood_material;
 
 	static wr::MaterialHandle light_material;
+	static wr::MaterialHandle red_material;
+	static wr::MaterialHandle blue_material;
+	static wr::MaterialHandle white_material;
 	static wr::MaterialHandle mirror_material;
 	static wr::TextureHandle equirectangular_environment_map;
 
@@ -49,6 +55,8 @@ namespace resources
 
 		// Load Texture.
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
+		wr::TextureHandle red = texture_pool->Load("resources/materials/red.png", false, true);
+		wr::TextureHandle blue = texture_pool->Load("resources/materials/blue.png", false, true);
 		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
 		wr::TextureHandle flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
 
@@ -118,6 +126,34 @@ namespace resources
 		mirror_internal->SetNormal(flat_normal);
 		mirror_internal->SetRoughness(black);
 		mirror_internal->SetMetallic(white);
+
+		// flat colors
+		{		
+			red_material = material_pool->Create();
+			blue_material = material_pool->Create();
+			white_material = material_pool->Create();
+
+			wr::Material* red_internal = material_pool->GetMaterial(red_material.m_id);
+
+			red_internal->SetAlbedo(red);
+			red_internal->SetNormal(flat_normal);
+			red_internal->SetRoughness(white);
+			red_internal->SetMetallic(black);
+
+			wr::Material* blue_internal = material_pool->GetMaterial(blue_material.m_id);
+
+			blue_internal->SetAlbedo(blue);
+			blue_internal->SetNormal(flat_normal);
+			blue_internal->SetRoughness(white);
+			blue_internal->SetMetallic(black);
+
+			wr::Material* white_internal = material_pool->GetMaterial(white_material.m_id);
+
+			white_internal->SetAlbedo(white);
+			white_internal->SetNormal(flat_normal);
+			white_internal->SetRoughness(white);
+			white_internal->SetMetallic(black);
+		}
 
 		{
 			// Create Material
@@ -246,10 +282,28 @@ namespace resources
 
 			//plane_model = model_pool->LoadCustom<wr::VertexColor>({ mesh });
 			light_model = plane_model;
+			red_plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");;
+			blue_plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");;
+			white_plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");;
 
 			for (auto& m : plane_model->m_meshes)
 			{
 				m.second = bamboo_material;
+			}
+
+			for (auto& m : red_plane_model->m_meshes)
+			{
+				m.second = red_material;
+			}
+
+			for (auto& m : blue_plane_model->m_meshes)
+			{
+				m.second = blue_material;
+			}
+
+			for (auto& m : white_plane_model->m_meshes)
+			{
+				m.second = white_material;
 			}
 		}
 

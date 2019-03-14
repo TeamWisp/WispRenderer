@@ -52,6 +52,7 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
 			unsigned int m_is_hybrid;
+			unsigned int m_is_path_tracer;
 		};
 
 		struct RTHybridCamera_CBData
@@ -199,7 +200,7 @@ namespace wr
 		std::size_t m_bound_model_pool_stride;
     
 		float temp_metal = 1.0f;
-		float temp_rough = 0.45f;
+		float temp_rough = -3;
 		bool clear_path = false;
 		float light_radius = 50;
 		float temp_intensity = 1;

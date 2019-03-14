@@ -56,6 +56,7 @@ namespace wr
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::SKY_BOX),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::IRRADIANCE_MAP),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW),
+		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE),
 		DESC_RANGE(params::deferred_composition, Type::UAV_RANGE, params::DeferredCompositionE::OUTPUT),
 	);
 
@@ -68,7 +69,6 @@ namespace wr
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP }
 		})
 	});
-
 
 	//MipMapping Root Signature
 	DESC_RANGE_ARRAY(mip_in_out_ranges,
@@ -250,21 +250,42 @@ namespace wr
 		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
 	});
 
+	REGISTER(shaders::accumulation, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/accumulation.hlsl"),
+		ShaderDescription::Entry("main"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
 	REGISTER(shaders::rt_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/raytracing.hlsl"),
 		ShaderDescription::Entry("RaygenEntry"),
 		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 	});
 
-	DESC_RANGE_ARRAY(accum_r,
+	DESC_RANGE_ARRAY(post_r,
 		DESC_RANGE(params::post_processing, Type::SRV_RANGE, params::PostProcessingE::SOURCE),
 		DESC_RANGE(params::post_processing, Type::UAV_RANGE, params::PostProcessingE::DEST),
 	);
 
 	REGISTER(root_signatures::post_processing, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({
-			ROOT_PARAM_DESC_TABLE(accum_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM_DESC_TABLE(post_r, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetConstants(params::post_processing, params::PostProcessingE::HDR_SUPPORT)),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+		})
+	});
+
+	DESC_RANGE_ARRAY(accum_r,
+		DESC_RANGE(params::accumulation, Type::SRV_RANGE, params::PostProcessingE::SOURCE),
+		DESC_RANGE(params::accumulation, Type::UAV_RANGE, params::PostProcessingE::DEST),
+	);
+
+	REGISTER(root_signatures::accumulation, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(accum_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetConstants(params::accumulation, params::AccumulationE::FRAME_IDX)),
 		}),
 		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
@@ -277,6 +298,22 @@ namespace wr
 		PipelineDescription::PixelShader(std::nullopt),
 		PipelineDescription::ComputeShader(shaders::post_processing),
 		PipelineDescription::RootSignature(root_signatures::post_processing),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ d3d12::settings::back_buffer_format }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+	});
+
+	REGISTER(pipelines::accumulation, PipelineRegistry) < Vertex2D > (
+	{
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::accumulation),
+		PipelineDescription::RootSignature(root_signatures::accumulation),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
 		PipelineDescription::RTVFormats({ d3d12::settings::back_buffer_format }),
 		PipelineDescription::NumRTVFormats(1),
@@ -385,11 +422,45 @@ namespace wr
 
 		return lib;
 	}();
+
 	REGISTER(state_objects::rt_hybrid_state_object, RTPipelineRegistry)(
 	{
 		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
 		StateObjectDescription::Library(rt_hybrid_so_library),
 		StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 1)),
+		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
+		StateObjectDescription::MaxRecursionDepth(3),
+		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
+		StateObjectDescription::LocalRootSignatures(std::nullopt),
+	});
+
+	/* ### Path Tracer ### */
+	REGISTER(shaders::path_tracer_lib, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/path_tracer.hlsl"),
+		ShaderDescription::Entry("RaygenEntry"),
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+	});
+
+	StateObjectDescription::LibraryDesc path_tracer_so_library = []()
+	{
+		StateObjectDescription::LibraryDesc lib;
+		lib.shader_handle = shaders::path_tracer_lib;
+		lib.exports.push_back(L"RaygenEntry");
+		lib.exports.push_back(L"ReflectionHit");
+		lib.exports.push_back(L"ReflectionMiss");
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
+		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit" });
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
+
+		return lib;
+	}();
+
+	REGISTER(state_objects::path_tracer_state_object, RTPipelineRegistry)(
+	{
+		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
+		StateObjectDescription::Library(path_tracer_so_library),
+		StateObjectDescription::MaxPayloadSize((sizeof(float) * 7) + (sizeof(unsigned int) * 1)),
 		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
 		StateObjectDescription::MaxRecursionDepth(3),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
