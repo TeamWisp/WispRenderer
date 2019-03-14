@@ -127,7 +127,7 @@ namespace wr::d3d12
 		std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometry_descs(geometry.size());
 		for (auto i = 0; i < geometry.size(); i++)
 		{
-			auto geom = geometry[i];	
+			auto geom = geometry[i];
 
 			geometry_descs[i].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 			if (auto index_buffer = geom.index_buffer.value_or(nullptr))
@@ -401,7 +401,7 @@ namespace wr::d3d12
 				instance_desc.AccelerationStructure = blas.m_native->GetGPUVirtualAddress();
 				instance_descs.push_back(instance_desc);
 			}
-			
+
 			internal::UpdateUploadbuffer(instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), tlas.m_instance_desc);
 		}
 		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)

@@ -20,6 +20,7 @@ namespace wr
 {
 	class DynamicDescriptorHeap;
 	class DescriptorAllocation;
+	class RTDescriptorHeap;
 }
 
 namespace wr::d3d12
@@ -169,6 +170,9 @@ namespace wr::d3d12
 		// Dynamic descriptor heap where staging happens
 		std::unique_ptr<DynamicDescriptorHeap> m_dynamic_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 		
+		// Heap used for RT, shared between all the ray tracing command lists
+		std::shared_ptr<RTDescriptorHeap> m_rt_descriptor_heap;
+
 		// Keep track of currently bound heaps, so that we can avoid changing when not needed
 		ID3D12DescriptorHeap* m_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
 	};
