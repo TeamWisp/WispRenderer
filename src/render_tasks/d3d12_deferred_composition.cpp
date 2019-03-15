@@ -8,6 +8,7 @@
 #include "../scene_graph/skybox_node.hpp"
 #include "../engine_registry.hpp"
 
+#include "../render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_cubemap_convolution.hpp"
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
@@ -51,6 +52,10 @@ namespace wr
 			constexpr unsigned int pref_env = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::PREF_ENV_MAP);
 			d3d12::SetShaderSRV(cmd_list, 1, pref_env, data.out_pref_env_map);
 
+			constexpr unsigned int brdf_lut = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BRDF_LUT);
+			d3d12::DescHeapCPUHandle brdf_lut_handle = data.out_srv_uav_allocation.GetDescriptorHandle(brdf_lut);
+			d3d12::SetShaderSRV(cmd_list, 1, brdf_lut, brdf_lut_handle);
+
 			constexpr unsigned int shadow = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
 			d3d12::DescHeapCPUHandle shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow);
 			d3d12::SetShaderSRV(cmd_list, 1, shadow, shadow_handle);
@@ -84,8 +89,8 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(3 * d3d12::settings::num_back_buffers));
-			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(8));
+			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(9));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
@@ -109,6 +114,12 @@ namespace wr
 					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
 				}
 			}
+
+			//Alloc brdf lut
+			auto brdf_lut_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<BrdfLutTaskData>());
+
+			auto srv_brdf_lut_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BRDF_LUT)));
+			d3d12::CreateSRVFromRTV(brdf_lut_rt, srv_brdf_lut_handle, 1, brdf_lut_rt->m_create_info.m_rtv_formats.data());
 		}
 
 		void ExecuteDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)

@@ -55,17 +55,38 @@ float D_GGX(float dotNH, float roughness)
 	float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
 	return (alpha2)/(PI * denom * denom); 
 }
- 
+
 // Geometric Shadowing function
 float G_SchlicksmithGGX(float NdotL, float NdotV, float roughness)
 {
-	float r = (roughness + 1.0);
-	float k = (r*r) / 8.0;
-	float GL = NdotL / (NdotL * (1.0 - k) + k);
-	float GV = NdotV / (NdotV * (1.0 - k) + k);
+	float r = (roughness + 1.0f);
+	float k = (r*r) / 8.0f;
+	float GL = NdotL / (NdotL * (1.0f - k) + k);
+	float GV = NdotV / (NdotV * (1.0f - k) + k);
 	return GL * GV;
 }
- 
+
+float GeometrySchlickGGX_IBL(float NdotV, float roughness_squared)
+{
+	// Different k for IBL
+	float k = roughness_squared / 2.0;
+
+	float nom = NdotV;
+	float denom = NdotV * (1.0 - k) + k;
+
+	return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySmith_IBL(float NdotV, float NdotL, float roughness)
+{
+	float roughness_squared = roughness * roughness;
+
+	float ggx2 = GeometrySchlickGGX_IBL(NdotV, roughness_squared);
+	float ggx1 = GeometrySchlickGGX_IBL(NdotL, roughness_squared);
+
+	return ggx1 * ggx2;
+}
+
  // Fresnel function
 float3 F_Schlick(float cos_theta, float metallic, float3 material_color)
 {
