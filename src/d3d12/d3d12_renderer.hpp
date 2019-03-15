@@ -9,6 +9,7 @@
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
 
+#include <optix.h>
 
 namespace wr
 {
@@ -213,6 +214,14 @@ namespace wr
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
 		d3d12::CommandSignature* m_cmd_signature;
 		d3d12::CommandSignature* m_cmd_signature_indexed;
+
+		RTcontext m_optix_context;
+
+		d3d12::ReadbackBufferResource* m_output_buffer;
+		d3d12::ReadbackBufferResource* m_albedo_buffer;
+		d3d12::ReadbackBufferResource* m_normal_buffer;
+
+		ID3D12Resource* m_upload_buffer;
 
 		std::optional<bool> m_requested_fullscreen_state;
 

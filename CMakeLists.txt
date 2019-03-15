@@ -153,6 +153,30 @@ set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${C
 
 add_subdirectory(demo ${CMAKE_BINARY_DIR}/WispDemo)
 
+add_custom_command(TARGET WispRenderer POST_BUILD
+	COMMAND @ECHO ON
+    COMMAND ${CMAKE_COMMAND} -E copy  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/deps/OptiX\ SDK\ 6.0.0/bin64/optix.6.0.0.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:WispRenderer>
+    COMMAND ${CMAKE_COMMAND} -E copy  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/deps/OptiX\ SDK\ 6.0.0/bin64/optix_denoiser.6.0.0.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:WispRenderer>
+    COMMAND ${CMAKE_COMMAND} -E copy  # which executes "cmake - E copy..."
+        "${PROJECT_SOURCE_DIR}/deps/OptiX\ SDK\ 6.0.0/bin64/cudnn64_7.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:WispRenderer>)                 # <--this is out-file path
+		
+add_custom_command(TARGET WispDemo POST_BUILD
+	COMMAND @ECHO ON
+    COMMAND ${CMAKE_COMMAND} -E copy  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/deps/OptiX\ SDK\ 6.0.0/bin64/optix.6.0.0.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:WispDemo>
+    COMMAND ${CMAKE_COMMAND} -E copy  # which executes "cmake - E copy_if_different..."
+        "${PROJECT_SOURCE_DIR}/deps/OptiX\ SDK\ 6.0.0/bin64/optix_denoiser.6.0.0.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:WispDemo>
+    COMMAND ${CMAKE_COMMAND} -E copy  # which executes "cmake - E copy..."
+        "${PROJECT_SOURCE_DIR}/deps/OptiX\ SDK\ 6.0.0/bin64/cudnn64_7.dll"      # <--this is in-file
+        $<TARGET_FILE_DIR:WispDemo>)                 # <--this is out-file path
+
 ## Unit Test ##
 if(ENABLE_UNIT_TEST)
     set(BUILD_GMOCK 0)

@@ -39,6 +39,8 @@ namespace wr
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
+		rtContextDestroy(m_optix_context);
+
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
 		{
 			m_structured_buffer_pools[i].reset();
@@ -163,6 +165,12 @@ namespace wr
 
 		//Rendering engine creates a texture pool that will be used by the render tasks.
 		m_texture_pools.push_back(CreateTexturePool());
+
+		RTresult res = rtContextCreate(&m_optix_context);
+		if (res != RT_SUCCESS)
+		{
+			LOGW("Error initializing optix context");
+		}
 	}
 
 	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
