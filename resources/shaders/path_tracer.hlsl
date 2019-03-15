@@ -37,10 +37,10 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[90] : register(t8);
-Texture2D gbuffer_albedo : register(t98);
-Texture2D gbuffer_normal : register(t99);
-Texture2D gbuffer_depth : register(t100);
+Texture2D g_textures[5000] : register(t8);
+Texture2D gbuffer_albedo : register(t5008);
+Texture2D gbuffer_normal : register(t5009);
+Texture2D gbuffer_depth : register(t5010);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
 SamplerState s0 : register(s0);
@@ -103,7 +103,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_CULL_FRONT_FACING_TRIANGLES,
+		RAY_FLAG_NONE,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -156,9 +156,11 @@ void RaygenEntry()
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	//result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
+	result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * cos_theta) * (albedo / PI);
-	result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
+	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
+
+	result = clamp(result, 0, 10);
 
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
@@ -254,13 +256,16 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Irradiance
-	float3 flipped_N = fN;
-	flipped_N.y *= -1;
-	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+	nextRand(payload.seed);
+	const float3 rand_dir = getUniformHemisphereSample(payload.seed, N);
+	const float cos_theta = cos(dot(rand_dir, normal));
+	//float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed);
+	//float3 irradiance = (TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
+	float3 irradiance = (TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed) * M_PI) * (1.0f / (2.0f * M_PI));
 
 	// Direct
 	float3 reflect_dir = reflect(-V, fN);
-	float3 reflection = TraceColorRay(hit_pos + fN * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
+	float3 reflection = TraceColorRay(hit_pos + N * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
 
 	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), 
 		metal, 
@@ -276,18 +281,18 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 		roughness, 
 		fN, 
 		payload.seed, 
-		payload.depth);
+		payload.depth+2000);
 	float3 specular = (reflection) * F;
-	float3 diffuse = albedo * 1;
+	float3 diffuse = albedo * irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
-	payload.color = ambient + (lighting);
+	payload.color = ambient + lighting;
 }
 
 //Reflection skybox
 [shader("miss")]
 void ReflectionMiss(inout HitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
-	payload.color = float3(0, 0, 0);
+	payload.color = (skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0) * M_PI) * (1.0f / (2.0f * M_PI));
+	//payload.color = float3(1, 1, 1);
 }
