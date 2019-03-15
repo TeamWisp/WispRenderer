@@ -1,10 +1,10 @@
-#define MAX_RECURSION 3
+#define MAX_RECURSION 4
 //#define FOUR_X_AA
 //#define PATH_TRACING
 //#define DEPTH_OF_FIELD
-#define EPSILON 0.001
-//#define SOFT_SHADOWS
-#define MAX_SHADOW_SAMPLES 4
+#define EPSILON 0.05
+#define SOFT_SHADOWS
+#define MAX_SHADOW_SAMPLES 6
 
 #ifdef FALLBACK
 	#undef MAX_RECURSION

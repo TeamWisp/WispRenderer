@@ -54,6 +54,29 @@ float D_GGX(float dotNH, float roughness)
 	float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
 	return (alpha2)/(PI * denom * denom); 
 }
+
+// Get a GGX half vector / microfacet normal, sampled according to the distribution computed by
+//     the function ggxNormalDistribution() above.  
+//
+// When using this function to sample, the probability density is pdf = D * NdotH / (4 * HdotV)
+float3 getGGXMicrofacet(inout uint randSeed, float roughness, float3 hitNorm)
+{
+	// Get our uniform random numbers
+	float2 randVal = float2(nextRand(randSeed), nextRand(randSeed));
+
+	// Get an orthonormal basis from the normal
+	float3 B = getPerpendicularVector(hitNorm);
+	float3 T = cross(B, hitNorm);
+
+	// GGX NDF sampling
+	float a2 = roughness * roughness;
+	float cosThetaH = sqrt(max(0.0f, (1.0 - randVal.x) / ((a2 - 1.0) * randVal.x + 1)));
+	float sinThetaH = sqrt(max(0.0f, 1.0f - cosThetaH * cosThetaH));
+	float phiH = randVal.y * PI * 2.0f;
+
+	// Get our GGX NDF sample (i.e., the half vector)
+	return T * (sinThetaH * cos(phiH)) + B * (sinThetaH * sin(phiH)) + hitNorm * cosThetaH;
+}
  
 // Geometric Shadowing function
 float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
