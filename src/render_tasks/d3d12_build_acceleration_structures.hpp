@@ -51,7 +51,7 @@ namespace wr
 
 			// top level, bottom level and output buffer. (even though I don't use bottom level.)
 			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_num_descriptors = 100 + d3d12::settings::num_max_rt_materials; // FIXME: size
+			heap_desc.m_num_descriptors = 100 + d3d12::settings::num_max_rt_materials + d3d12::settings::num_max_rt_textures; // FIXME: size
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_versions = d3d12::settings::num_back_buffers;

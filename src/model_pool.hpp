@@ -250,7 +250,7 @@ namespace wr
 				}
 				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
 				{
-					albedo = texture_pool->Load(dir + material->m_albedo_texture, false, false);
+					albedo = texture_pool->Load(dir + material->m_albedo_texture, false, true);
 				}
 			}
 			else
@@ -275,7 +275,7 @@ namespace wr
 				}
 				else if (material->m_normal_map_texture_location == TextureLocation::EXTERNAL)
 				{
-					normals = texture_pool->Load(dir + material->m_normal_map_texture, false, false);
+					normals = texture_pool->Load(dir + material->m_normal_map_texture, false, true);
 				}
 			}
 			else
@@ -300,7 +300,7 @@ namespace wr
 				}
 				else if (material->m_metallic_texture_location == TextureLocation::EXTERNAL)
 				{
-					metallic = texture_pool->Load(dir + material->m_metallic_texture, false, false);
+					metallic = texture_pool->Load(dir + material->m_metallic_texture, false, true);
 				}
 			}
 			else
@@ -325,7 +325,7 @@ namespace wr
 				}
 				else if (material->m_roughness_texture_location == TextureLocation::EXTERNAL)
 				{
-					roughness = texture_pool->Load(dir + material->m_roughness_texture, false, false);
+					roughness = texture_pool->Load(dir + material->m_roughness_texture, false, true);
 				}
 			}
 			else
