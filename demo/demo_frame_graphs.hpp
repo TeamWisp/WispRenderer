@@ -25,10 +25,25 @@ namespace fg_manager
 		RT_HYBRID = 2,
 	};
 
+	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
+	{
+		switch (id)
+		{
+		case PrebuildFrameGraph::RAYTRACING:
+			return "Full Raytracing";
+		case PrebuildFrameGraph::DEFERRED:
+			return "Deferred";
+		case PrebuildFrameGraph::RT_HYBRID:
+			return "Hybrid";
+		default:
+			return "Unknown";
+		}
+	}
+
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
-	inline void Setup(wr::RenderSystem& rs, util::Delegate<void()> imgui_func)
+	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
 	{
 		// Raytracing
 		{

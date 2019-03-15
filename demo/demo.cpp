@@ -16,7 +16,7 @@
 #include "model_loader_assimp.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-#define SCENE spheres_scene
+#define SCENE viknell_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;

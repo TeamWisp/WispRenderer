@@ -85,14 +85,15 @@ namespace wr
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(3 * d3d12::settings::num_back_buffers));
-			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(7));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(8));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
 				constexpr auto rtv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS);
 				auto rtv_srv_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rtv_id + (2 * i));
 
-				auto dsv_srv_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH)));
+				constexpr auto dsv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH);
+				auto dsv_srv_handle = data.out_srv_uav_allocation.GetDescriptorHandle(dsv_id);
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, rtv_srv_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());

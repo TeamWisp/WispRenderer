@@ -99,6 +99,10 @@ namespace wr
 			//Does it need convolution? And does it have a cubemap already?
 			if (skybox_node->m_irradiance != std::nullopt && skybox_node->m_skybox != std::nullopt)
 			{
+				data.in_radiance = skybox_node->m_skybox.value();
+				data.out_pref_env_map = skybox_node->m_prefiltered_env_map.value();
+				data.out_irradiance = skybox_node->m_irradiance.value();
+
 				return;
 			}
 
