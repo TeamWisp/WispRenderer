@@ -384,6 +384,34 @@ namespace wr
 			return static_cast<T*>(m_cmd_lists[handle]);
 		}
 
+		/*! Get the command list of a previously ran task. */
+		/*!
+			The function allows the user to get a command list from another render task. These command lists are not meant
+			to be used as they could be closed or in flight. This function was created only so that ray tracing tasks could get
+			the heap from the acceleration structure command list.
+		*/
+		template<typename T>
+		inline wr::CommandList* GetPredecessorCommandList()
+		{
+			static_assert(std::is_class<T>::value,
+				"The template variable should be a void, class or struct.");
+			static_assert(!std::is_pointer<T>::value,
+				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
+
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
+			{
+				if (typeid(T) == m_data_type_info[i])
+				{
+					WaitForCompletion(i);
+
+					return m_cmd_lists[i];
+				}
+			}
+
+			LOGC("Failed to find predecessor command list! Please check your task order.");
+			return nullptr;
+		}
+
 		template<typename T>
 		std::vector<T*> GetAllCommandLists()
 		{
@@ -413,6 +441,23 @@ namespace wr
 				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
 
 			return static_cast<T*>(m_render_targets[handle]);
+		}
+
+		/*! Check if this frame graph has a task. */
+		/*!
+			This checks if the frame graph has the task that has been given as the template variable.
+		*/
+		template<typename T>
+		inline bool HasTask() const
+		{
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				if (m_data_type_info[i].get() == typeid(T))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		/*! Add a task to the Frame Graph. */

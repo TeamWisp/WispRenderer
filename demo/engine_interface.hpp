@@ -6,6 +6,7 @@
 #include "scene_graph/scene_graph.hpp"
 #include "d3d12/d3d12_renderer.hpp"
 #include "imgui/ImGuizmo.h"
+#include "demo_frame_graphs.hpp"
 
 namespace engine
 {
@@ -13,6 +14,7 @@ namespace engine
 	static bool main_menu = true;
 	static bool open0 = true;
 	static bool open1 = true;
+	static bool open_viewport = true;
 	static bool open2 = true;
 	static bool open_console = false;
 	static bool show_imgui = true;
@@ -21,11 +23,15 @@ namespace engine
 
 	static wr::imgui::special::DebugConsole debug_console;
 
-	void RenderEngine(wr::D3D12RenderSystem* render_system, wr::SceneGraph* sg)
+	void RenderEngine(ImTextureID output, wr::D3D12RenderSystem* render_system, wr::SceneGraph* sg)
 	{
 		debug_console.Draw("Console", &open_console);
 
-		if (!show_imgui) return;
+		if (!show_imgui)
+		{
+			sg->GetActiveCamera()->SetAspectRatio(render_system->m_viewport.m_viewport.Width / render_system->m_viewport.m_viewport.Height);
+			return;
+		}
 
 		if (main_menu && ImGui::BeginMainMenuBar())
 		{
@@ -37,22 +43,47 @@ namespace engine
 			}
 			if (ImGui::BeginMenu("Window"))
 			{
+				ImGui::MenuItem("Viewport", nullptr, &open_viewport);
+				ImGui::MenuItem("Light Editor", nullptr, &wr::imgui::window::open_light_editor);
+				ImGui::MenuItem("Inspector", nullptr, &wr::imgui::window::open_inspect_editor);
+				ImGui::MenuItem("Hardware Info", nullptr, &wr::imgui::window::open_hardware_info);
+				ImGui::MenuItem("DirectX 12 Settings", nullptr, &wr::imgui::window::open_d3d12_settings);
+				ImGui::Separator();
 				wr::imgui::menu::Registries();
 				ImGui::Separator();
 				ImGui::MenuItem("Theme", nullptr, &open0);
 				ImGui::MenuItem("ImGui Details", nullptr, &open1);
-				ImGui::MenuItem("Logging Example", nullptr, &open2);
+				ImGui::MenuItem("Camera Settings", nullptr, &open2);
 				ImGui::EndMenu();
 			}
 
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 0.4));
+			ImGui::Text("Current Frame Graph: %s", fg_manager::GetFrameGraphName(fg_manager::current).c_str());
+			ImGui::PopStyleColor();
+
 			ImGui::EndMainMenuBar();
 		}
-
-		ImGui::DockSpaceOverViewport(main_menu, nullptr, ImGuiDockNodeFlags_PassthruDockspace);
+		
+		ImGui::DockSpaceOverViewport(main_menu, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruDockspace);
 
 		auto& io = ImGui::GetIO();
 
-		// Create dockable background
+		ImVec2 viewport_pos;
+		ImVec2 viewport_size;
+
+		if (open_viewport)
+		{
+			ImGui::Begin("Viewport");
+			
+			viewport_size = ImGui::GetContentRegionAvail();
+			viewport_pos = ImGui::GetCursorScreenPos();
+
+			sg->GetActiveCamera()->SetAspectRatio(viewport_size.x / viewport_size.y);
+
+			ImGui::Image(output, viewport_size);
+			ImGui::End();
+		}
+
 		if (open0)
 		{
 			ImGui::Begin("Theme", &open0);
@@ -78,20 +109,24 @@ namespace engine
 		if (open2)
 		{
 			ImGui::Begin("Camera Settings", &open2);
-			
+
 			auto pos = sg->GetActiveCamera()->m_position;
 			ImGui::DragFloat3("Position", pos.m128_f32, 0.5f);
-			sg->GetActiveCamera()->SetPosition(pos);
 
-			float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX( sg->GetActiveCamera()->m_rotation_radians)),
-				DirectX::XMConvertToDegrees( DirectX::XMVectorGetY(sg->GetActiveCamera()->m_rotation_radians)),
-				DirectX::XMConvertToDegrees( DirectX::XMVectorGetZ(sg->GetActiveCamera()->m_rotation_radians))};
+			float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(sg->GetActiveCamera()->m_rotation_radians)),
+				DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(sg->GetActiveCamera()->m_rotation_radians)),
+				DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(sg->GetActiveCamera()->m_rotation_radians)) };
 
 			ImGui::DragFloat3("Rotation", rot, 0.01f);
-			sg->GetActiveCamera()->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
 
-			sg->GetActiveCamera()->SignalTransformChange();
-			sg->GetActiveCamera()->SignalChange();
+			if (!ImGui::IsMouseDown(1))
+			{
+				sg->GetActiveCamera()->SetPosition(pos);
+				sg->GetActiveCamera()->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
+				sg->GetActiveCamera()->SignalTransformChange();
+				sg->GetActiveCamera()->SignalChange();
+			}
 
 			ImGui::End();
 		}
@@ -113,7 +148,7 @@ namespace engine
 			ImGui::End();
 		}
 
-		wr::imgui::window::LightEditor(sg);
+		wr::imgui::window::LightEditor(sg, viewport_pos, viewport_size);
 		wr::imgui::window::ModelEditor(sg);
 		wr::imgui::window::ShaderRegistry();
 		wr::imgui::window::PipelineRegistry();

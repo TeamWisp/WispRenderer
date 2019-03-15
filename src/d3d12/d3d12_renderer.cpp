@@ -52,7 +52,7 @@ namespace wr
 		{
 			m_texture_pools[i].reset();
 		}
-		
+
 		for (auto iter : m_fences)
 		{
 			SAFE_RELEASE(iter->m_native);
@@ -60,7 +60,6 @@ namespace wr
 
 		d3d12::Destroy(m_fullscreen_quad_vb);
 		d3d12::Destroy(m_direct_cmd_list);
-
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
@@ -315,6 +314,16 @@ namespace wr
 		return pool;
 	}
 
+	std::shared_ptr<TexturePool> D3D12RenderSystem::GetDefaultTexturePool()
+	{
+		if (m_texture_pools.size() > 0)
+		{
+			return m_texture_pools[0];
+		}
+
+		return std::shared_ptr<TexturePool>();
+	}
+
 	void D3D12RenderSystem::WaitForAllPreviousWork()
 	{
 		for (auto& fence : m_fences)
@@ -539,7 +548,7 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto shader_error = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
@@ -613,11 +622,11 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto n_pipeline = static_cast<D3D12Pipeline*>(registry.Find(handle))->m_native;
 
-		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
 			if (!pipeline_shader) return;
 
-			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry);
 
@@ -662,9 +671,9 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto n_pipeline = static_cast<D3D12StateObject*>(registry.Find(handle))->m_native;
 
-		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
-			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry);
 
@@ -701,7 +710,7 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto& n_shader = static_cast<D3D12Shader*>(registry.Find(handle))->m_native;
 
-		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
+		auto new_shader_variant = d3d12::LoadShader(m_device, n_shader->m_type,
 			n_shader->m_path,
 			n_shader->m_entry);
 
@@ -901,6 +910,7 @@ namespace wr
 			data.m_inverse_projection = node->m_inverse_projection;
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
+			data.m_is_hybrid = 0;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);
 		}

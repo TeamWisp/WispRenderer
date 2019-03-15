@@ -69,6 +69,7 @@ namespace wr
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::SKY_BOX),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::IRRADIANCE_MAP),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::PREF_ENV_MAP),
+		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW),
 		DESC_RANGE(params::deferred_composition, Type::UAV_RANGE, params::DeferredCompositionE::OUTPUT),
 	);
 
@@ -428,7 +429,7 @@ namespace wr
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::IRRADIANCE_MAP),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::TEXTURES),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::GBUFFERS),
-		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset),
+		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset),
 	);
 
 	REGISTER(root_signatures::rt_hybrid_global, RootSignatureRegistry)({
@@ -462,8 +463,8 @@ namespace wr
 	{
 		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
 		StateObjectDescription::Library(rt_hybrid_so_library),
-		StateObjectDescription::MaxPayloadSize(sizeof(float) * 6 + sizeof(unsigned int) * 1),
-		StateObjectDescription::MaxAttributeSize(sizeof(float) * 2),
+		StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 1)),
+		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
 		StateObjectDescription::MaxRecursionDepth(3),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
 		StateObjectDescription::LocalRootSignatures(std::nullopt),

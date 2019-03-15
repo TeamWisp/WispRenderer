@@ -15,7 +15,7 @@ namespace wr
 
 	struct ImGuiTaskData
 	{
-		std::function<void()> in_imgui_func;
+		std::function<void(ImTextureID)> in_imgui_func;
 		d3d12::DescriptorHeap* out_descriptor_heap;
 	};
 	
@@ -45,7 +45,7 @@ namespace wr
 			}
 
 			d3d12::desc::DescriptorHeapDesc heap_desc;
-			heap_desc.m_num_descriptors = 1;
+			heap_desc.m_num_descriptors = 2;
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			data.out_descriptor_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
@@ -70,6 +70,7 @@ namespace wr
 			ImGui::StyleColorsCherry();
 		}
 
+		template<typename T>
 		inline void ExecuteImGuiTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -80,13 +81,21 @@ namespace wr
 			// Temp rendering
 			if (n_render_system.m_render_window.has_value())
 			{
+				auto frame_idx = n_render_system.GetFrameIdx();
+
+				// Create handle to the render target you want to display. and put it in descriptor slot 2.
+				auto display_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
+				auto cpu_handle = d3d12::GetCPUHandle(data.out_descriptor_heap, frame_idx, 1);
+				d3d12::CreateSRVFromSpecificRTV(display_rt, cpu_handle, 0, display_rt->m_create_info.m_rtv_formats[frame_idx]);
+
 				// Prepare imgui
 				ImGui_ImplDX12_NewFrame();
 				ImGui_ImplWin32_NewFrame();
 				ImGui::NewFrame();
 				ImGuizmo::BeginFrame();
 
-				data.in_imgui_func();
+				data.in_imgui_func(ImTextureID(d3d12::GetGPUHandle(data.out_descriptor_heap, frame_idx, 1).m_native.ptr));
 
 				// Render imgui
 				
@@ -123,12 +132,13 @@ namespace wr
 				ImGui_ImplDX12_Shutdown();
 				ImGui_ImplWin32_Shutdown();
 				ImGui::DestroyContext();
-			}			
+			}
 		}
 
 	} /* internal */
 
-	[[nodiscard]] inline RenderTaskDesc GetImGuiTask(std::function<void()> imgui_func)
+	template<typename T>
+	[[nodiscard]] inline RenderTaskDesc GetImGuiTask(std::function<void(ImTextureID)> imgui_func)
 	{
 		RenderTargetProperties rt_properties
 		{
@@ -151,7 +161,7 @@ namespace wr
 			internal::SetupImGuiTask(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteImGuiTask(rs, fg, sg, handle);
+			internal::ExecuteImGuiTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyImGuiTask(fg, handle, resize);

@@ -45,7 +45,7 @@ namespace fg_manager
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			fg->Setup(rs);
 		}
@@ -68,7 +68,7 @@ namespace fg_manager
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			fg->Setup(rs);
 		}
@@ -76,10 +76,13 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(7);
+			fg = new wr::FrameGraph(10);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
+
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 
 			 // Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
@@ -90,6 +93,8 @@ namespace fg_manager
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
 
+			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
+
 			// Do some post processing
 			wr::AddPostProcessingTask<wr::RTHybridData>(*fg);
 
@@ -97,7 +102,7 @@ namespace fg_manager
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			// Finalize the frame graph
 			fg->Setup(rs);

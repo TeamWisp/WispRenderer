@@ -105,15 +105,6 @@ namespace wr::imgui::window
 
 		if (open_hardware_info)
 		{
-			if (ImGui::Button("Clear"))
-			{
-				render_system.clear_path = true;
-			}
-			ImGui::DragFloat("Metal", &render_system.temp_metal);
-			ImGui::DragFloat("Rough", &render_system.temp_rough);
-			ImGui::DragFloat("Radius", &render_system.light_radius);
-			ImGui::DragFloat("Intensity", &render_system.temp_intensity);
-
 			ImGui::Begin("Hardware Info", &open_hardware_info);
 			if (ImGui::CollapsingHeader("System Information", ImGuiTreeNodeFlags_DefaultOpen))
 			{
@@ -169,7 +160,7 @@ namespace wr::imgui::window
 		}
 	}
 
-	void LightEditor(SceneGraph* scene_graph)
+	void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
 	{
 		if (open_light_editor)
 		{
@@ -268,7 +259,7 @@ namespace wr::imgui::window
 			DirectX::XMStoreFloat4x4(&rview, view);
 
 			ImGuiIO& io = ImGui::GetIO();
-			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+			ImGuizmo::SetRect(viewport_pos.x, viewport_pos.y, viewport_size.x, viewport_size.y);
 			ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
 
 			ml->m_position = { rmat._41, rmat._42, rmat._43 };
@@ -560,47 +551,6 @@ namespace wr::imgui::window
 
 					internal::AddressText(obj);
 
-					if (ImGui::Button("Reload"))
-					{
-						std::optional<std::string> error_msg = std::nullopt;
-						auto n_pipeline = static_cast<D3D12Pipeline*>(obj)->m_native;
-
-						auto recompile_shader = [&error_msg](auto& pipeline_shader)
-						{
-							auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
-								pipeline_shader->m_path,
-								pipeline_shader->m_entry);
-
-							if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
-							{
-								pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
-							}
-							else
-							{
-								error_msg = std::get<std::string>(new_shader_variant);
-							}
-						};
-
-						// Vertex Shader
-						{
-							recompile_shader(n_pipeline->m_vertex_shader);
-						}
-						// Pixel Shader
-						if (!error_msg.has_value()) {
-							recompile_shader(n_pipeline->m_pixel_shader);
-						}
-
-						if (error_msg.has_value())
-						{
-							open_shader_compiler_popup = true;
-							shader_compiler_error = error_msg.value();
-						}
-						else
-						{
-							d3d12::RefinalizePipeline(n_pipeline);
-						}
-					}
-
 					ImGui::TreePop();
 				}
 			}
@@ -653,44 +603,6 @@ namespace wr::imgui::window
 					}
 
 					internal::AddressText(obj);
-
-					if (ImGui::Button("Reload"))
-					{
-						std::optional<std::string> error_msg = std::nullopt;
-						auto n_pipeline = static_cast<D3D12StateObject*>(obj)->m_native;
-
-						auto recompile_shader = [&error_msg](auto& pipeline_shader)
-						{
-							auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
-								pipeline_shader->m_path,
-								pipeline_shader->m_entry);
-
-							if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
-							{
-								pipeline_shader = std::get<d3d12::Shader*>(new_shader_variant);
-							}
-							else
-							{
-								error_msg = std::get<std::string>(new_shader_variant);
-							}
-						};
-
-						// Vertex Shader
-						{
-							recompile_shader(n_pipeline->m_desc.m_library);
-						}
-
-						if (error_msg.has_value())
-						{
-							open_shader_compiler_popup = true;
-							shader_compiler_error = error_msg.value();
-						}
-						else
-						{
-							//*n_pipeline = *CreateStateObject(n_pipeline->m_device, n_pipeline->m_desc);
-							d3d12::RecreateStateObject(n_pipeline);
-						}
-					}
 
 					ImGui::TreePop();
 				}

@@ -51,6 +51,7 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
+			unsigned int m_is_hybrid;
 		};
 
 		struct RTHybridCamera_CBData
@@ -117,6 +118,8 @@ namespace wr
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes) final;
 		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes) final;
 		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes) final;
+
+		std::shared_ptr<TexturePool> GetDefaultTexturePool() final;
 
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
