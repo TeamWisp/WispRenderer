@@ -37,10 +37,10 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[90] : register(t8);
-Texture2D gbuffer_albedo : register(t98);
-Texture2D gbuffer_normal : register(t99);
-Texture2D gbuffer_depth : register(t100);
+Texture2D g_textures[5000] : register(t8);
+Texture2D gbuffer_albedo : register(t5008);
+Texture2D gbuffer_normal : register(t5009);
+Texture2D gbuffer_depth : register(t5010);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
 SamplerState s0 : register(s0);
