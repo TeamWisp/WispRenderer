@@ -16,7 +16,7 @@
 #endif
 
 #include "fmt/format.h"
-#include "fmt/time.h"
+#include "fmt/chrono.h"
 
 #ifdef LOG_CALLBACK
 #include <functional>
