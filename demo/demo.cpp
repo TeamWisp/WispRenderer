@@ -224,6 +224,9 @@ int WispEntry()
 	delete assimp_model_loader;
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
+
+	resources::ReleaseResources();
+
 	fg_manager::Destroy();
 	render_system.reset();
 	return 0;

@@ -414,7 +414,7 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::TEXTURES, 90, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
 	} /* srv */
