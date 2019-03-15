@@ -13,15 +13,16 @@
 #include "scene_emibl.hpp"
 
 #include "model_loader_assimp.hpp"
+#include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
 #define SCENE viknell_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 
-void RenderEditor()
+void RenderEditor(ImTextureID output)
 {
-	engine::RenderEngine(render_system.get(), scene_graph.get());
+	engine::RenderEngine(output, render_system.get(), scene_graph.get());
 }
 
 void SetupShaderDirWatcher()
@@ -163,6 +164,9 @@ int WispEntry()
 	delete assimp_model_loader;
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
+
+	resources::ReleaseResources();
+
 	fg_manager::Destroy();
 	render_system.reset();
 	return 0;

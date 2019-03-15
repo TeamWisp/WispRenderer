@@ -119,6 +119,8 @@ namespace wr
 		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes) final;
 		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes) final;
 
+		std::shared_ptr<TexturePool> GetDefaultTexturePool() final;
+
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
@@ -134,6 +136,7 @@ namespace wr
 		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
+		void DestroyCommandList(CommandList* cmd_list) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);

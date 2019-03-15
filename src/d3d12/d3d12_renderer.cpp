@@ -43,12 +43,23 @@ namespace wr
 		{
 			m_structured_buffer_pools[i].reset();
 		}
-
 		for (int i = 0; i < m_model_pools.size(); ++i)
 		{
 			m_model_pools[i].reset();
 		}
 
+		for (int i = 0; i < m_texture_pools.size(); ++i)
+		{
+			m_texture_pools[i].reset();
+		}
+
+		for (auto iter : m_fences)
+		{
+			SAFE_RELEASE(iter->m_native);
+		}
+
+		d3d12::Destroy(m_fullscreen_quad_vb);
+		d3d12::Destroy(m_direct_cmd_list);
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
@@ -167,7 +178,6 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -267,7 +277,6 @@ namespace wr
 	{
 
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
-
 		if (m_render_window.has_value())
 		{
 			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
@@ -305,6 +314,16 @@ namespace wr
 		return pool;
 	}
 
+	std::shared_ptr<TexturePool> D3D12RenderSystem::GetDefaultTexturePool()
+	{
+		if (m_texture_pools.size() > 0)
+		{
+			return m_texture_pools[0];
+		}
+
+		return std::shared_ptr<TexturePool>();
+	}
+
 	void D3D12RenderSystem::WaitForAllPreviousWork()
 	{
 		for (auto& fence : m_fences)
@@ -332,6 +351,11 @@ namespace wr
 	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
 		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	void D3D12RenderSystem::DestroyCommandList(CommandList* cmd_list)
+	{
+		Destroy(static_cast<wr::d3d12::CommandList*>(cmd_list));
 	}
 
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
@@ -394,7 +418,6 @@ namespace wr
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-
 		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
@@ -849,7 +872,6 @@ namespace wr
 		{
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
-
 
 		for (auto pool : m_texture_pools)
 		{

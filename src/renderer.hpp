@@ -39,6 +39,8 @@ namespace wr
 		virtual std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_mb) = 0;
 		virtual std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_mb) = 0;
 
+		virtual std::shared_ptr<TexturePool> GetDefaultTexturePool() = 0;
+
 		virtual void PrepareRootSignatureRegistry() = 0;
 		virtual void PrepareShaderRegistry() = 0;
 		virtual void PreparePipelineRegistry() = 0;
@@ -50,6 +52,7 @@ namespace wr
 		virtual CommandList* GetBundleCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetComputeCommandList(unsigned int num_allocators) = 0;
 		virtual CommandList* GetCopyCommandList(unsigned int num_allocators) = 0;
+		virtual void DestroyCommandList(CommandList* cmd_list) = 0;
 		virtual RenderTarget* GetRenderTarget(RenderTargetProperties properties) = 0;
 		virtual void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) = 0;
 

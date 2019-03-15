@@ -83,6 +83,8 @@ namespace wr
 	public:
 		DescriptorAllocatorPage(D3D12RenderSystem& render_system, DescriptorHeapType type, uint32_t num_descriptors);
 
+		~DescriptorAllocatorPage();
+
 		DescriptorHeapType GetHeapType() const;
 
 		/**

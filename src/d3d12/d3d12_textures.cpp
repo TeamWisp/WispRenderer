@@ -4,6 +4,7 @@
 #include "d3d12_defines.hpp"
 #include "d3dx12.hpp"
 #include "d3d12_texture_resources.hpp"
+#include "d3d12_rt_descriptor_heap.hpp"
 
 namespace wr::d3d12
 {
@@ -471,6 +472,30 @@ namespace wr::d3d12
 		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
 	}
 
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_srv_allocation.GetDescriptorHandle();
+
+		cmd_list->m_rt_descriptor_heap->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle)
+	{
+		cmd_list->m_rt_descriptor_heap->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_uav_allocation.GetDescriptorHandle();
+
+		cmd_list->m_rt_descriptor_heap->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle)
+	{
+		cmd_list->m_rt_descriptor_heap->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
 	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture)
 	{
 		ResourceState src_original_state = src_texture->m_subresource_states[0];
@@ -487,8 +512,11 @@ namespace wr::d3d12
 
 	void Destroy(TextureResource* tex)
 	{
-		SAFE_RELEASE(tex->m_resource);
-		delete tex;
+		if (tex != nullptr)
+		{
+			SAFE_RELEASE(tex->m_resource);
+			delete tex;
+		}
 	}
 
 	bool CheckUAVCompatibility(Format format)
