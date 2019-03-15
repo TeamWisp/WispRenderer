@@ -10,3 +10,4 @@ perf_framerate.txt
 *.dll
 /resources/models 
 /resources/materials 
+deps/OptiX SDK 6.0.0/

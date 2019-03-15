@@ -121,6 +121,8 @@ if (MSVC)
 	target_compile_options(DirectXTex PRIVATE /W0)
 endif()
 
+file(COPY "${CMAKE_SOURCE_DIR}/deps/OptiX\ SDK\ 6.0.0/lib64" DESTINATION "${CMAKE_BINARY_DIR}/optix")
+
 set_target_properties(assimp PROPERTIES FOLDER ThirdParty)
 set_target_properties(assimp_cmd PROPERTIES FOLDER ThirdParty)
 set_target_properties(IrrXML PROPERTIES FOLDER ThirdParty)
@@ -142,8 +144,9 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/DirectXT
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fmt/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/assimp/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fallback/Include)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/OptiX\ SDK\ 6.0.0/include)
 
-target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp)
+target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${CMAKE_BINARY_DIR}/optix/lib64/optix.6.0.0.lib)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
