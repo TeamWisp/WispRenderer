@@ -57,12 +57,12 @@ float D_GGX(float dotNH, float roughness)
 }
  
 // Geometric Shadowing function
-float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
+float G_SchlicksmithGGX(float NdotL, float NdotV, float roughness)
 {
 	float r = (roughness + 1.0);
 	float k = (r*r) / 8.0;
-	float GL = dotNL / (dotNL * (1.0 - k) + k);
-	float GV = dotNV / (dotNV * (1.0 - k) + k);
+	float GL = NdotL / (NdotL * (1.0 - k) + k);
+	float GV = NdotV / (NdotV * (1.0 - k) + k);
 	return GL * GV;
 }
  

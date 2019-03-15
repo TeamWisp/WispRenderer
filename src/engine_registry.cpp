@@ -27,6 +27,19 @@ namespace wr
 {
 	using namespace rs_layout;
 
+	//BDRF Lut Precalculation Root Signature
+	DESC_RANGE_ARRAY(ranges_brdf,
+		DESC_RANGE(params::brdf_lut, Type::UAV_RANGE, params::BRDF_LutE::OUTPUT),
+	);
+	
+	REGISTER(root_signatures::brdf_lut, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({ 
+			ROOT_PARAM_DESC_TABLE(ranges_brdf, D3D12_SHADER_VISIBILITY_ALL)
+		}),
+		RootSignatureDescription::Samplers({ })
+	});
+
+
 	//Basic Deferred Pass Root Signature
 	DESC_RANGE_ARRAY(ranges_basic,
 		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ALBEDO),
@@ -132,6 +145,13 @@ namespace wr
 		})
 	});
 
+
+	REGISTER(shaders::brdf_lut_cs, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/brdf_lut_cs.hlsl"),
+		ShaderDescription::Entry("main_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
 	REGISTER(shaders::basic_vs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/basic.hlsl"),
 		ShaderDescription::Entry("main_vs"),
@@ -185,6 +205,22 @@ namespace wr
 	ShaderDescription::Entry("main_cs"),
 	ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
 	});
+
+	REGISTER(pipelines::brdf_lut_precalculation, PipelineRegistry)<Vertex2D> ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::brdf_lut_cs),
+		PipelineDescription::RootSignature(root_signatures::brdf_lut),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R16G16_FLOAT }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		}
+	);
 
 	REGISTER(pipelines::basic_deferred, PipelineRegistry)<VertexColor>({
 		PipelineDescription::VertexShader(shaders::basic_vs),

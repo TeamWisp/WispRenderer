@@ -254,6 +254,15 @@ namespace wr
 
 	namespace params
 	{
+		enum class BRDF_LutE
+		{
+			OUTPUT,
+		};
+
+		constexpr std::array<rs_layout::Entry, 1> brdf_lut = {
+			rs_layout::Entry{(int)BRDF_LutE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		};
+
 
 		enum class BasicE
 		{
@@ -434,6 +443,7 @@ namespace wr
 
 	struct root_signatures
 	{
+		static RegistryHandle brdf_lut;
 		static RegistryHandle basic;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle rt_test_global;
@@ -447,6 +457,7 @@ namespace wr
 
 	struct shaders
 	{
+		static RegistryHandle brdf_lut_cs;
 		static RegistryHandle basic_vs;
 		static RegistryHandle basic_ps;
 		static RegistryHandle fullscreen_quad_vs;
@@ -463,6 +474,7 @@ namespace wr
 
 	struct pipelines
 	{
+		static RegistryHandle brdf_lut_precalculation;
 		static RegistryHandle basic_deferred;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle mip_mapping;
