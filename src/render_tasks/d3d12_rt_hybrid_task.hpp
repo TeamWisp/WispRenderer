@@ -129,7 +129,7 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
+				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
 			}
@@ -138,14 +138,11 @@ namespace wr
 			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
-<<<<<<< HEAD
-				auto cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx);
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
-=======
+
 				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
->>>>>>> 3e39783fddb4170579e506856f7b5c951edb6f0a
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
+
 
 				// Bind g-buffers (albedo, normal, depth)
 				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
@@ -206,6 +203,9 @@ namespace wr
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
 
+				auto out_uav_handle_ao = data.out_uav_from_rtv.GetDescriptorHandle(1);
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle_ao);
+
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
 
@@ -243,8 +243,8 @@ namespace wr
 					auto texture_handle = texture_pool->GetDefaultAlbedo();
 					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTexture(texture_handle.m_id));
 
-					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::full_raytracing, params::FullRaytracingE::TEXTURES));
-					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES));
+					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::rt_hybrid, params::RTHybridE::TEXTURES));
+					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES));
 
 					for (size_t i = 0; i < num_textures_in_heap; ++i)
 					{
@@ -333,7 +333,9 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
-				unsigned int verts_loc = rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
+				unsigned int verts_loc = 3;/* rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
+				This should be the Parameter index not the heap location, it was only working due to a ridiculous amount of luck and should be fixed, or we completely missunderstand this stuff...
+				Much love, Meine and Florian*/
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, verts_loc);
 
 

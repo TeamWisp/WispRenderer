@@ -13,6 +13,7 @@ Texture2D gbuffer_depth : register(t2);
 Texture2D skybox : register(t4);
 TextureCube irradiance_map : register(t5);
 Texture2D buffer_refl_shadow : register(t6); // xyz: reflection, a: shadow factor
+Texture2D gbuffer_AO : register(t7); //x: AO value
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -84,7 +85,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Shade pixel
-		float3 occluded_irradiance = sampled_irradiance * DoAmbientOcclusion(normal, pos, 32, 0.25f, rand_seed);
+		float3 occluded_irradiance = sampled_irradiance * gbuffer_AO[screen_coord].x;
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, occluded_irradiance, reflection);
 
 		retval = retval * shadow_factor;
