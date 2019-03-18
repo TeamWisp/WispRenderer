@@ -308,7 +308,7 @@ namespace wr
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 	});
 
-	REGISTER(pipelines::accumulation, PipelineRegistry) < Vertex2D > (
+	REGISTER(pipelines::accumulation, PipelineRegistry)<Vertex2D> (
 	{
 		PipelineDescription::VertexShader(std::nullopt),
 		PipelineDescription::PixelShader(std::nullopt),

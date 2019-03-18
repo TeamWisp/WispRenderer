@@ -164,10 +164,14 @@ namespace wr
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OUTPUT)), data.out_uav_from_rtv.GetDescriptorHandle());
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::INDICES)), as_build_data.out_scene_ib_alloc.GetDescriptorHandle());
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::MATERIALS)), as_build_data.out_scene_mat_alloc.GetDescriptorHandle());
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)), as_build_data.out_scene_offset_alloc.GetDescriptorHandle());
+				auto uav_from_rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OUTPUT)), uav_from_rtv_handle);
+				auto scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::INDICES)), scene_ib_handle);
+				auto scene_mat_handle = as_build_data.out_scene_mat_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::MATERIALS)), scene_mat_handle);
+				auto scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)), scene_offset_handle);
 
 				/*
 				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
