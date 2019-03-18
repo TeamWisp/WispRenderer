@@ -70,6 +70,7 @@ namespace wr
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			const auto viewport = n_render_system.m_viewport;
+			auto& path_tracer_data = fg.GetPredecessorData<PathTracerData>();
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
@@ -88,7 +89,6 @@ namespace wr
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % 1 /*versions*/]));
 
-			auto path_tracer_data = fg.GetPredecessorData<PathTracerData>();
 
 			float samples = n_render_system.temp_rough;
 			d3d12::BindCompute32BitConstants(cmd_list, &samples, 1, 0, 1);
