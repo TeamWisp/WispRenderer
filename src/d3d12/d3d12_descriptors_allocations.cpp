@@ -125,6 +125,17 @@ namespace wr
 		AddNewBlock(0, m_num_free_handles);
 	}
 
+	DescriptorAllocatorPage::~DescriptorAllocatorPage()
+	{
+		d3d12::Destroy(m_descriptor_heap);
+
+		m_num_free_handles = 0;
+		m_num_descriptors_in_heap = 0;
+
+		m_freelist_by_offset.clear();
+		m_freelist_by_size.clear();
+	}
+
 	DescriptorHeapType DescriptorAllocatorPage::GetHeapType() const
 	{
 		return m_heap_type;
@@ -313,7 +324,14 @@ namespace wr
 	}
 
 	DescriptorAllocator::~DescriptorAllocator()
-	{}
+	{
+		ReleaseStaleDescriptors();
+
+		for (auto heap : m_heap_pool)
+		{
+			heap.reset();
+		}
+	}
 
 	std::shared_ptr<DescriptorAllocatorPage> DescriptorAllocator::CreateAllocatorPage()
 	{
