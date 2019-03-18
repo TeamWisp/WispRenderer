@@ -169,7 +169,7 @@ void RaygenEntry()
 	}
 	else
 	{
-		output[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+		output[DispatchRaysIndex().xy] = float4(result, 1);
 	}
 }
 
@@ -294,5 +294,6 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 void ReflectionMiss(inout HitInfo payload)
 {
 	payload.color = (skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0) * M_PI) * (1.0f / (2.0f * M_PI));
+	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
 	//payload.color = float3(1, 1, 1);
 }
