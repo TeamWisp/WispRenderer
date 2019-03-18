@@ -27,6 +27,9 @@ namespace wr::d3d12
 			LOGC("Error: Could not create a readback buffer!");
 		}
 
+		readbackBuffer->m_desc = (*description);
+		readbackBuffer->m_size = buffer_size_aligned_to_256;
+
 		return readbackBuffer;
 	}
 

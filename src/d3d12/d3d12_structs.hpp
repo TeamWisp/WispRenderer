@@ -277,6 +277,8 @@ namespace wr::d3d12
 	struct ReadbackBufferResource : ReadbackBuffer
 	{
 		ID3D12Resource* m_resource;
+		unsigned int m_size;
+		desc::ReadbackDesc m_desc;
 	};
 
 	struct HeapResource;

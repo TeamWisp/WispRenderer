@@ -9,6 +9,8 @@
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
 
+#include "../util/thread_pool.hpp"
+
 #include <optix.h>
 
 namespace wr
@@ -161,10 +163,11 @@ namespace wr
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
 
 		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
+		void PreparePostRenderCommands(int frame_idx);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 		void BindMaterial(MaterialHandle material_handle, CommandList* cmd_list);
-
+		
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
 
@@ -181,7 +184,15 @@ namespace wr
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
+		d3d12::CommandList* m_post_render_cmd_list;
+		d3d12::CommandList* m_upload_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
+
+		std::mutex m_denoising_mutex;
+
+		std::array<std::future<void>, d3d12::settings::num_back_buffers> m_denoising_finished_futures;
+
+		util::ThreadPool* m_thread_pool;
 
 		std::vector<std::uint64_t> m_buffer_frame_graph_uids;
 
@@ -217,11 +228,12 @@ namespace wr
 
 		RTcontext m_optix_context;
 
-		d3d12::ReadbackBufferResource* m_output_buffer;
-		d3d12::ReadbackBufferResource* m_albedo_buffer;
-		d3d12::ReadbackBufferResource* m_normal_buffer;
+		RTbuffer m_denoiser_input;
+		RTbuffer m_denoiser_output;
 
-		ID3D12Resource* m_upload_buffer;
+		std::array<d3d12::ReadbackBufferResource*, d3d12::settings::num_back_buffers> m_output_buffers;
+
+		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_upload_buffers;
 
 		std::optional<bool> m_requested_fullscreen_state;
 
