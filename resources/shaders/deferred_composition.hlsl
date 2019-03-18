@@ -84,8 +84,16 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
+			// Get ao
+		float3 occluded_irradiance = lerp(
+			// Sample from irradiance if it IS NOT hybrid rendering
+			sampled_irradiance,
+			// Irradiance and ao buffer if it IS hybrid rendering
+			sampled_irradiance * gbuffer_AO[screen_coord].x,	
+			// Lerp factor (0: no hybrid, 1: hybrid)
+			is_hybrid);
+
 		// Shade pixel
-		float3 occluded_irradiance = sampled_irradiance * gbuffer_AO[screen_coord].x;
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, occluded_irradiance, reflection);
 
 		retval = retval * shadow_factor;
