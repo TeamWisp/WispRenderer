@@ -746,5 +746,4 @@ namespace wr
 		frame_graph.AddTask<ASBuildData>(desc);
 	}
 
->>>>>>> master
 } /* wr */
