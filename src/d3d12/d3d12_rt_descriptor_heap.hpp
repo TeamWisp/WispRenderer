@@ -19,7 +19,7 @@ namespace wr
 	class RTDescriptorHeap
 	{
 	public:
-		RTDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 1024);
+		RTDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 6024);
 
 		virtual ~RTDescriptorHeap();
 
