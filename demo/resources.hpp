@@ -25,13 +25,6 @@ namespace resources
 	static wr::Model* material_knot_marble;
 	static wr::Model* material_knot_rubber;
 	static wr::Model* material_knot_scorched_wood;
-	static wr::Model* pica_model;
-	static wr::Model* hairball_model;
-	static wr::Model* dragon_model;
-	static wr::Model* sun_model;
-	static wr::Model* bistro_model;
-	static wr::Model* tank_model;
-	static wr::Model* tavern_model;
 
 	static wr::MaterialHandle rusty_metal_material;
 	static wr::MaterialHandle bamboo_material;
@@ -49,12 +42,6 @@ namespace resources
 	static wr::MaterialHandle mirror_material;
 	static wr::TextureHandle equirectangular_environment_map;
 
-//#define SUN_TEMPLE
-//#define HAIRBALL
-//#define DRAGON
-//#define BISTRO
-#define TANK
-//#define TAVERN
 	void CreateResources(wr::RenderSystem* render_system)
 	{
 		texture_pool = render_system->CreateTexturePool();
@@ -237,7 +224,7 @@ namespace resources
 			scorched_wood_material_internal->SetMetallic	(scorched_wood_metallic);
 		}
 
-		model_pool = render_system->CreateModelPool(1024_mb, 1024_mb);
+		model_pool = render_system->CreateModelPool(64_mb, 64_mb);
 
 		{
 			wr::MeshData<wr::VertexColor> mesh;
@@ -267,49 +254,6 @@ namespace resources
 		}
 
 		{
-#ifdef HAIRBALL
-			{
-				hairball_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/hairball.obj");
-			
-				for (auto& m : hairball_model->m_meshes)
-				{
-					m.second = marble_material;
-				}
-			}
-#endif
-#ifdef SUN
-			{
-				sun_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple/SunTemple.fbx");
-
-			}
-#endif
-
-#ifdef DRAGON
-			{
-				dragon_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/museumhallRD.obj");
-
-				for (auto& m : dragon_model->m_meshes)
-				{
-					m.second = marble_material;
-				}
-			}
-#endif
-#ifdef BISTRO
-			{
-				bistro_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/Bistro/Interior/interior.obj");
-			}
-#endif // BISTRO
-#ifdef TANK
-			{
-				tank_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/tank/scene.gltf");
-			}
-
-#endif //TANK
-#ifdef TAVERN
-			tavern_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/the-drunk-troll-tavern/source/tavern2/fbx");
-#endif // TAVERN
-
-
 			{
 				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
@@ -332,14 +276,6 @@ namespace resources
 				{
 					m.second = bamboo_material;
 				}
-			}
-
-			{
-				pica_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/pica_scene.fbx");
-					for (auto& m : pica_model->m_meshes)
-					{
-						m.second = bamboo_material;
-					}
 			}
 
 			{
