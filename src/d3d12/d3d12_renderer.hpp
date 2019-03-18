@@ -120,6 +120,8 @@ namespace wr
 		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes) final;
 		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes) final;
 
+		std::shared_ptr<TexturePool> GetDefaultTexturePool() final;
+
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
