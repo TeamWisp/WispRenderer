@@ -13,6 +13,7 @@
 #include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
+#include "render_tasks/d3d12_denoiser.hpp"
 
 namespace fg_manager
 {
@@ -53,10 +54,13 @@ namespace fg_manager
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddRaytracingTask(*fg);
-			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
+
+			wr::AddDenoiserTask<wr::RaytracingData>(*fg);
+
+			wr::AddPostProcessingTask<wr::DenoiserTaskData>(*fg);
 			
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg, true);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
@@ -78,7 +82,7 @@ namespace fg_manager
 			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the composition pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg, true);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
@@ -106,11 +110,14 @@ namespace fg_manager
 			// Composition to compose the hybrid result with the g-buffers
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
+			// Denoise the scene
+			wr::AddDenoiserTask<wr::DeferredCompositionTaskData>(*fg);
+
 			// Do some post processing
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddPostProcessingTask<wr::DenoiserTaskData>(*fg);
 
 			// Copy the raytracing pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg, true);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));

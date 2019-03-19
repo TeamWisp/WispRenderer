@@ -59,6 +59,8 @@ namespace wr
 		const char* m_name;
 		/*! The type of the render task.*/
 		RenderTaskType m_type;
+		/*! If the task should be executed before or after denoising. */
+		bool m_post_processing;
 		/*! The function pointers for the task.*/
 		setup_func_t m_setup_func;
 		execute_func_t m_execute_func;
@@ -92,7 +94,15 @@ namespace wr
 			This works by calling `std::vector::reserve`.
 			\param num_reserved_tasks Amount of tasks we should reserve space for.
 		*/
-		FrameGraph(std::size_t num_reserved_tasks = 1) : m_num_tasks(0), m_thread_pool(new util::ThreadPool(settings::num_frame_graph_threads)), m_uid(GetFreeUID())
+		FrameGraph(std::size_t num_reserved_tasks = 1) : 
+			m_num_tasks(0), 
+			m_num_render_tasks(0), 
+			m_num_multi_threaded_render_tasks(0),
+			m_num_single_threaded_render_tasks(0),
+			m_num_post_processing_tasks(0), 
+			m_num_multi_threaded_post_processing_tasks(0),
+			m_num_single_threaded_post_processing_tasks(0),
+			m_thread_pool(new util::ThreadPool(settings::num_frame_graph_threads)), m_uid(GetFreeUID())
 		{
 			// lambda to simplify reserving space.
 			auto reserve = [num_reserved_tasks](auto v) { v.reserve(num_reserved_tasks); };
@@ -217,6 +227,32 @@ namespace wr
 			else
 			{
 				Execute_ST_Impl(render_system, scene_graph);
+			}
+		}
+
+		inline void ExecuteRenderOnly(RenderSystem& render_system, SceneGraph& scene_graph)
+		{
+			ResetOutputTexture();
+			if constexpr (settings::use_multithreading)
+			{
+				Execute_Render_MT_Impl(render_system, scene_graph);
+			}
+			else
+			{
+				Execute_Render_ST_Impl(render_system, scene_graph);
+			}
+		}
+
+		inline void ExecutePostProcessOnly(RenderSystem& render_system, SceneGraph& scene_graph)
+		{
+			ResetOutputTexture();
+			if constexpr (settings::use_multithreading)
+			{
+				Execute_Post_Process_MT_Impl(render_system, scene_graph);
+			}
+			else
+			{
+				Execute_Post_Process_ST_Impl(render_system, scene_graph);
 			}
 		}
 
@@ -427,6 +463,36 @@ namespace wr
 			return retval;
 		}
 
+		template<typename T>
+		std::vector<T*> GetAllRenderCommandLists()
+		{
+			std::vector<T*> retval(m_num_render_tasks);
+
+			// TODO: Just return the fucking vector as const ref.
+			for (decltype(m_num_render_tasks) i = 0; i < m_num_render_tasks; i++)
+			{
+				WaitForCompletion(i);
+				retval[i] = static_cast<T*>(m_cmd_lists[i]);
+			}
+
+			return retval;
+		}
+
+		template<typename T>
+		std::vector<T*> GetAllPostProcessCommandLists()
+		{
+			std::vector<T*> retval(m_num_post_processing_tasks);
+
+			// TODO: Just return the fucking vector as const ref.
+			for (decltype(m_num_post_processing_tasks) i = m_num_render_tasks; i < m_num_tasks; i++)
+			{
+				WaitForCompletion(i);
+				retval[i - m_num_render_tasks] = static_cast<T*>(m_cmd_lists[i]);
+			}
+
+			return retval;
+		}
+
 		/*! Get the render target of a task. */
 		/*!
 			The template variable allows you to cast the render target to a "non platform independent" different type. For example a `D3D12RenderTarget`.
@@ -477,31 +543,92 @@ namespace wr
 			static_assert(!std::is_pointer<T>::value,
 				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
 
-			m_setup_funcs.emplace_back(desc.m_setup_func);
-			m_execute_funcs.emplace_back(desc.m_execute_func);
-			m_destroy_funcs.emplace_back(desc.m_destroy_func);
-#ifndef FG_MAX_PERFORMANCE
-			m_names.emplace_back(desc.m_name);
-#endif
-			m_types.emplace_back(desc.m_type);
-			m_rt_properties.emplace_back(desc.m_properties);
-			m_data.emplace_back(new (std::nothrow) T());
-			m_data_type_info.emplace_back(typeid(T));
-
-			// If we are allowed to do multithreading place the task in the appropriate vector
-			if constexpr (settings::use_multithreading)
+			if (desc.m_post_processing || m_num_post_processing_tasks == 0)
 			{
-				if (desc.m_allow_multithreading)
+				m_setup_funcs.emplace_back(desc.m_setup_func);
+				m_execute_funcs.emplace_back(desc.m_execute_func);
+				m_destroy_funcs.emplace_back(desc.m_destroy_func);
+
+#ifndef FG_MAX_PERFORMANCE
+				m_names.emplace_back(desc.m_name);
+#endif
+				m_types.emplace_back(desc.m_type);
+				m_rt_properties.emplace_back(desc.m_properties);
+				m_data.emplace_back(new (std::nothrow) T());
+				m_data_type_info.emplace_back(typeid(T));
+
+				// If we are allowed to do multithreading place the task in the appropriate vector
+				if constexpr (settings::use_multithreading)
 				{
-					m_multi_threaded_tasks.emplace_back(m_num_tasks);
+					if (desc.m_allow_multithreading)
+					{
+						m_multi_threaded_tasks.emplace_back(m_num_tasks);
+						if (desc.m_post_processing)
+						{
+							m_num_multi_threaded_post_processing_tasks++;
+						}
+						else
+						{
+							m_num_multi_threaded_render_tasks++;
+						}
+					}
+					else
+					{
+						m_single_threaded_tasks.emplace_back(m_num_tasks);
+						if (desc.m_post_processing)
+						{
+							m_num_single_threaded_post_processing_tasks++;
+						}
+						else
+						{
+							m_num_single_threaded_render_tasks++;
+						}
+					}
+				}
+
+				m_num_tasks++;
+				if (desc.m_post_processing)
+				{
+					m_num_post_processing_tasks++;
 				}
 				else
 				{
-					m_single_threaded_tasks.emplace_back(m_num_tasks);
+					m_num_render_tasks++;
 				}
 			}
+			else
+			{
+				m_setup_funcs.insert(m_setup_funcs.begin() + m_num_render_tasks, desc.m_setup_func);
+				m_execute_funcs.insert(m_execute_funcs.begin() + m_num_render_tasks, desc.m_execute_func);
+				m_destroy_funcs.insert(m_destroy_funcs.begin() + m_num_render_tasks, desc.m_destroy_func);
 
-			m_num_tasks++;
+#ifndef FG_MAX_PERFORMANCE
+				m_names.insert(m_names.begin() + m_num_render_tasks, desc.m_name);
+#endif
+				m_types.insert(m_types.begin() + m_num_render_tasks, desc.m_type);
+				m_rt_properties.insert(m_rt_properties.begin() + m_num_render_tasks, desc.m_properties);
+				m_data.insert(m_data.begin() + m_num_render_tasks, new (std::nothrow) T());
+				m_data_type_info.insert(m_data_type_info.begin() + m_num_render_tasks, typeid(T));
+
+				// If we are allowed to do multithreading place the task in the appropriate vector
+				if constexpr (settings::use_multithreading)
+				{
+					if (desc.m_allow_multithreading)
+					{
+						m_multi_threaded_tasks.insert(m_multi_threaded_tasks.begin() + m_num_multi_threaded_render_tasks, m_num_render_tasks);
+						m_num_multi_threaded_render_tasks++;
+					}
+					else
+					{
+						m_single_threaded_tasks.insert(m_single_threaded_tasks.begin() + m_num_single_threaded_render_tasks, m_num_render_tasks);
+						m_num_single_threaded_render_tasks++;
+					}
+				}
+
+				m_num_tasks++;
+				m_num_render_tasks++;
+			}
+			
 		}
 
 		/*! Return the frame graph's unique id.*/
@@ -597,10 +724,74 @@ namespace wr
 			}
 		}
 
+		/*! Execute tasks multi threaded */
+		inline void Execute_Render_MT_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
+		{
+			// Multithreading behaviour
+			m_thread_pool->DivideWork(m_num_multi_threaded_render_tasks, [&](std::uint64_t index)
+			{
+				const auto handle = m_multi_threaded_tasks[index];
+
+				WaitForCompletion(handle);
+
+				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system, &scene_graph]
+				{
+					ExecuteSingleTask(render_system, scene_graph, handle);
+				});
+			});
+
+			// Singlethreading behaviour
+			for (decltype(m_num_tasks) i = 0; i < m_num_single_threaded_render_tasks; ++i)
+			{
+				ExecuteSingleTask(render_system, scene_graph, m_single_threaded_tasks[i]);
+			}
+		}
+
+		/*! Execute tasks multi threaded */
+		inline void Execute_Post_Process_MT_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
+		{
+			// Multithreading behaviour
+			m_thread_pool->DivideWork(m_num_multi_threaded_post_processing_tasks, [&](std::uint64_t index)
+			{
+				const auto handle = m_multi_threaded_tasks[m_num_multi_threaded_render_tasks + index];
+
+				WaitForCompletion(handle);
+
+				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system, &scene_graph]
+				{
+					ExecuteSingleTask(render_system, scene_graph, handle);
+				});
+			});
+
+			// Singlethreading behaviour
+			for (decltype(m_num_tasks) i = m_num_single_threaded_render_tasks; i < m_single_threaded_tasks.size(); ++i)
+			{
+				ExecuteSingleTask(render_system, scene_graph, m_single_threaded_tasks[i]);
+			}
+		}
+
 		/*! Execute tasks single threaded */
 		inline void Execute_ST_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
 		{
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				ExecuteSingleTask(render_system, scene_graph, i);
+			}
+		}
+
+		/*! Execute tasks single threaded */
+		inline void Execute_Render_ST_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
+		{
+			for (decltype(m_num_tasks) i = 0; i < m_num_render_tasks; ++i)
+			{
+				ExecuteSingleTask(render_system, scene_graph, i);
+			}
+		}
+
+		/*! Execute tasks single threaded */
+		inline void Execute_Post_Process_ST_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
+		{
+			for (decltype(m_num_tasks) i = m_num_render_tasks; i < m_num_tasks; ++i)
 			{
 				ExecuteSingleTask(render_system, scene_graph, i);
 			}
@@ -656,6 +847,12 @@ namespace wr
 		RenderSystem* m_render_system;
 		/*! The number of tasks we have added. */
 		std::uint32_t m_num_tasks;
+		std::uint32_t m_num_render_tasks;
+		std::uint32_t m_num_multi_threaded_render_tasks;
+		std::uint32_t m_num_single_threaded_render_tasks;
+		std::uint32_t m_num_post_processing_tasks;
+		std::uint32_t m_num_multi_threaded_post_processing_tasks;
+		std::uint32_t m_num_single_threaded_post_processing_tasks;
 		/*! The thread pool used for multithreading */
 		util::ThreadPool* m_thread_pool;
 

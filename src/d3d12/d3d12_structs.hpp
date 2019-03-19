@@ -278,6 +278,7 @@ namespace wr::d3d12
 	{
 		ID3D12Resource* m_resource;
 		unsigned int m_size;
+		unsigned int m_width_pitch;
 		desc::ReadbackDesc m_desc;
 	};
 

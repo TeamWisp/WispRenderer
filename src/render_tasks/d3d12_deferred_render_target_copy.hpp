@@ -45,7 +45,7 @@ namespace wr
 	} /* internal */
 
 	template<typename T>
-	inline void AddRenderTargetCopyTask(FrameGraph& frame_graph)
+	inline void AddRenderTargetCopyTask(FrameGraph& frame_graph, bool post_processing)
 	{
 		RenderTargetProperties rt_properties {
 			RenderTargetProperties::IsRenderWindow(true),
@@ -75,6 +75,7 @@ namespace wr
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COPY;
 		desc.m_allow_multithreading = true;
+		desc.m_post_processing = post_processing;
 
 		frame_graph.AddTask<RenderTargetCopyTaskData>(desc);
 	}

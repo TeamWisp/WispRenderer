@@ -144,6 +144,8 @@ namespace wr
 		readback_task_description.m_type = RenderTaskType::COPY;
 		readback_task_description.m_allow_multithreading = false;
 
+		readback_task_description.m_post_processing = true;
+
 		// Save this task to the frame graph system
 		frame_graph.AddTask<PixelReadbackTaskData>(readback_task_description);
 	}

@@ -41,6 +41,9 @@ namespace wr
 	{
 		if (d3d12::settings::use_optix_denoising)
 		{
+			rtCommandListDestroy(m_denoiser_command_list);
+			rtPostProcessingStageDestroy(m_denoiser_post_processor);
+
 			for (auto& buffer : m_output_buffers)
 			{
 				d3d12::Destroy(buffer);
@@ -198,8 +201,8 @@ namespace wr
 			}
 
 			d3d12::desc::ReadbackDesc read_back_desc = {};
-			read_back_desc.m_buffer_width = m_render_window.value()->m_render_targets[0]->GetDesc().Width;
-			read_back_desc.m_buffer_height = m_render_window.value()->m_render_targets[0]->GetDesc().Height;
+			read_back_desc.m_buffer_width = m_viewport.m_viewport.Width;
+			read_back_desc.m_buffer_height = m_viewport.m_viewport.Height;
 			read_back_desc.m_bytes_per_pixel = 4;
 
 			for (auto& buffer : m_output_buffers)
@@ -208,11 +211,11 @@ namespace wr
 			}
 
 			rtBufferCreate(m_optix_context, RT_BUFFER_INPUT, &m_denoiser_input);
-			rtBufferSetFormat(m_denoiser_input, RT_FORMAT_UNSIGNED_BYTE4);
+			rtBufferSetFormat(m_denoiser_input, RT_FORMAT_FLOAT4);
 			rtBufferSetSize2D(m_denoiser_input, read_back_desc.m_buffer_width, read_back_desc.m_buffer_height);
 
 			rtBufferCreate(m_optix_context, RT_BUFFER_OUTPUT, &m_denoiser_output);
-			rtBufferSetFormat(m_denoiser_output, RT_FORMAT_UNSIGNED_BYTE4);
+			rtBufferSetFormat(m_denoiser_output, RT_FORMAT_FLOAT4);
 			rtBufferSetSize2D(m_denoiser_output, read_back_desc.m_buffer_width, read_back_desc.m_buffer_height);
 
 			for (int i = 0; i < m_upload_buffers.size(); ++i)
@@ -239,6 +242,23 @@ namespace wr
 					nullptr,
 					IID_PPV_ARGS(&m_upload_buffers[i]));
 			}
+
+			rtPostProcessingStageCreateBuiltin(m_optix_context, "DLDenoiser", &m_denoiser_post_processor);
+
+			rtPostProcessingStageDeclareVariable(m_denoiser_post_processor, "input_buffer", &m_denoiser_post_processor_input);
+			rtPostProcessingStageDeclareVariable(m_denoiser_post_processor, "output_buffer", &m_denoiser_post_processor_output);
+
+			rtVariableSetObject(m_denoiser_post_processor_input, m_denoiser_input);
+			rtVariableSetObject(m_denoiser_post_processor_output, m_denoiser_output);
+
+			rtCommandListCreate(m_optix_context, &m_denoiser_command_list);
+
+			rtCommandListAppendPostprocessingStage(m_denoiser_command_list, 
+				m_denoiser_post_processor, 
+				read_back_desc.m_buffer_width, 
+				read_back_desc.m_buffer_height);
+
+			rtCommandListFinalize(m_denoiser_command_list);
 		}
 
 		m_post_render_cmd_list = d3d12::CreateCommandList(m_device, d3d12::settings::num_back_buffers, CmdListType::CMD_LIST_DIRECT);
@@ -257,17 +277,9 @@ namespace wr
 		}
 
 		auto frame_idx = GetFrameIdx();
-		if (d3d12::settings::use_optix_denoising)
-		{
-			if (m_denoising_finished_futures[frame_idx].valid())
-			{
-				m_denoising_finished_futures[frame_idx].get();
-			}
-		}
-		else
-		{
-			d3d12::WaitFor(m_fences[frame_idx]);
-		}
+		
+		d3d12::WaitFor(m_fences[frame_idx]);
+		
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -329,14 +341,12 @@ namespace wr
 
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
-		PreparePostRenderCommands(frame_idx);
-
 		scene_graph->Update();
 		scene_graph->Optimize();
 
-		frame_graph.Execute(*this, *scene_graph.get());
+		frame_graph.ExecuteRenderOnly(*this, *scene_graph.get());
 
-		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
+		auto cmd_lists = frame_graph.GetAllRenderCommandLists<d3d12::CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
 
 		n_cmd_lists.push_back(m_direct_cmd_list);
@@ -346,36 +356,124 @@ namespace wr
 			n_cmd_lists.push_back(list);
 		}
 
-		n_cmd_lists.push_back(m_post_render_cmd_list);
+		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
+
+		d3d12::WaitFor(m_fences[frame_idx]);
+
+		frame_graph.ExecutePostProcessOnly(*this, *scene_graph.get());
+
+		cmd_lists = frame_graph.GetAllPostProcessCommandLists<d3d12::CommandList>();
+
+		n_cmd_lists.clear();
+
+		for (auto& list : cmd_lists)
+		{
+			n_cmd_lists.push_back(list);
+		}
 
 		// Reset the batches.
 		ResetBatches(*scene_graph.get());
 
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
-		m_denoising_finished_futures[frame_idx] = m_thread_pool->Enqueue([&](
+		if (m_render_window.has_value())
+		{
+			d3d12::Present(m_render_window.value(), m_device);
+		}
+
+		/*m_denoising_finished_futures[frame_idx] = m_thread_pool->Enqueue([&](
 			d3d12::ReadbackBufferResource* input, 
 			ID3D12Resource* output,
 			d3d12::CommandList* cmd_list,
-			RTbuffer* denoiser_input_buffer, 
-			RTbuffer* denoiser_output_buffer) {
+			RTcommandlist denoiser_cmd_list,
+			RTbuffer denoiser_input_buffer, 
+			RTbuffer denoiser_output_buffer) {
 			d3d12::WaitFor(m_fences[frame_idx]);
 
-			void* source = d3d12::MapReadbackBuffer(m_output_buffers[frame_idx], m_output_buffers[frame_idx]->m_size);
+			std::lock_guard<std::mutex> lock(m_denoising_mutex);
 
-			void* dest;
-			rtBufferMap((*denoiser_input_buffer), &dest);
+			unsigned char* readback_source = reinterpret_cast<unsigned char*>(d3d12::MapReadbackBuffer(input, input->m_size));
 
+			float* rt_dest;
+			void* temp;
+			rtBufferMap(denoiser_input_buffer, &temp);
+
+			rt_dest = reinterpret_cast<float*>(temp);
+
+			for (int i = 0; i < input->m_desc.m_buffer_width*input->m_desc.m_buffer_height * 4; ++i)
+			{
+				rt_dest[i] = static_cast<float>(readback_source[i]) / 255.f;
+			}
+
+			rtBufferUnmap(denoiser_input_buffer);
+			d3d12::UnmapReadbackBuffer(input);
+
+			rtCommandListExecute(denoiser_cmd_list);
+
+			float* rt_source;
+			unsigned char* upload_dest;
+
+			rtBufferMap(denoiser_output_buffer, &temp);
+
+			rt_source = reinterpret_cast<float*>(temp);
+
+			output->Map(0, nullptr, &temp);
+
+			upload_dest = reinterpret_cast<unsigned char*>(temp);
+
+			for (int i = 0; i < input->m_desc.m_buffer_width*input->m_desc.m_buffer_height * 4; ++i)
+			{
+				upload_dest[i] = static_cast<unsigned char>(rt_source[i] * 255.f);
+			}
+
+			rtBufferUnmap(denoiser_output_buffer);
+			output->Unmap(0, nullptr);
+
+			d3d12::Begin(cmd_list, frame_idx);
+
+			cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(
+					m_render_window.value()->m_render_targets[frame_idx],
+					D3D12_RESOURCE_STATE_PRESENT, 
+					D3D12_RESOURCE_STATE_COPY_DEST));
+
+			D3D12_TEXTURE_COPY_LOCATION copy_source = {};
+			copy_source.pResource = output;
+			copy_source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			copy_source.PlacedFootprint.Offset = 0;
+			copy_source.PlacedFootprint.Footprint.Depth = 1;
+			copy_source.PlacedFootprint.Footprint.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			copy_source.PlacedFootprint.Footprint.Height = m_viewport.m_viewport.Height;
+			copy_source.PlacedFootprint.Footprint.Width = m_viewport.m_viewport.Width;
+			copy_source.PlacedFootprint.Footprint.RowPitch = input->m_width_pitch;
+
+			D3D12_TEXTURE_COPY_LOCATION copy_dest = {};
+			copy_dest.pResource = m_render_window.value()->m_render_targets[frame_idx];
+			copy_dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			copy_dest.SubresourceIndex = 0;
+
+			cmd_list->m_native->CopyTextureRegion(&copy_dest, 0, 0, 0, &copy_source, nullptr);
+
+			cmd_list->m_native->ResourceBarrier(1,
+				&CD3DX12_RESOURCE_BARRIER::Transition(
+					m_render_window.value()->m_render_targets[frame_idx],
+					D3D12_RESOURCE_STATE_COPY_DEST,
+					D3D12_RESOURCE_STATE_PRESENT
+				));
+
+			d3d12::End(cmd_list);
+
+			d3d12::Execute(m_direct_queue, { cmd_list }, m_fences[frame_idx]);
 			if (m_render_window.has_value())
 			{
 				d3d12::Present(m_render_window.value(), m_device);
 			}
-		}, m_output_buffers[frame_idx], m_upload_buffers[frame_idx], m_upload_cmd_list, m_denoiser_input, m_denoiser_output);
-
-		if (m_denoising_finished_futures[frame_idx].valid())
-		{
-			m_denoising_finished_futures[frame_idx].get();
-		}
+		}, m_output_buffers[frame_idx], 
+			m_upload_buffers[frame_idx], 
+			m_upload_cmd_list, 
+			m_denoiser_command_list, 
+			m_denoiser_input, 
+			m_denoiser_output);*/
 
 		/*if (m_render_window.has_value())
 		{

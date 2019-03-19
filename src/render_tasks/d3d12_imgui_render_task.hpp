@@ -170,6 +170,7 @@ namespace wr
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = false;
+		desc.m_post_processing = true;
 
 		return desc;
 	}

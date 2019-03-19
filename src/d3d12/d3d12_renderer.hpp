@@ -229,7 +229,13 @@ namespace wr
 		RTcontext m_optix_context;
 
 		RTbuffer m_denoiser_input;
-		RTbuffer m_denoiser_output;
+		RTbuffer m_denoiser_output;		
+
+		RTpostprocessingstage m_denoiser_post_processor;
+		RTvariable m_denoiser_post_processor_input;
+		RTvariable m_denoiser_post_processor_output;
+
+		RTcommandlist m_denoiser_command_list;
 
 		std::array<d3d12::ReadbackBufferResource*, d3d12::settings::num_back_buffers> m_output_buffers;
 
