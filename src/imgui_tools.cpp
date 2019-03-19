@@ -77,6 +77,29 @@ namespace wr::imgui::internal
 	{
 		return val ? "True" : "False";
 	}
+
+	void ManipulateNode(wr::Node* node, SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
+	{
+		DirectX::XMFLOAT4X4 rmat;
+		auto mat = DirectX::XMMatrixTranslationFromVector(node->m_position);
+		DirectX::XMStoreFloat4x4(&rmat, mat);
+
+		auto cam = scene_graph->GetActiveCamera();
+		DirectX::XMFLOAT4X4 rview;
+		DirectX::XMFLOAT4X4 rproj;
+		auto view = cam->m_view;
+		DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
+		DirectX::XMStoreFloat4x4(&rview, view);
+
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(viewport_pos.x, viewport_pos.y, viewport_size.x, viewport_size.y);
+		ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
+
+		node->m_position = { rmat._41, rmat._42, rmat._43 };
+
+		node->SignalTransformChange();
+		node->SignalChange();
+	}
 }
 
 namespace wr::imgui::menu
@@ -247,30 +270,11 @@ namespace wr::imgui::window
 				return;
 			}
 
-			auto ml = selected_light;
-			DirectX::XMFLOAT4X4 rmat;
-			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
-			DirectX::XMStoreFloat4x4(&rmat, mat);
-
-			auto cam = scene_graph->GetActiveCamera();
-			DirectX::XMFLOAT4X4 rview;
-			DirectX::XMFLOAT4X4 rproj;
-			auto view = cam->m_view;
-			DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
-			DirectX::XMStoreFloat4x4(&rview, view);
-
-			ImGuiIO& io = ImGui::GetIO();
-			ImGuizmo::SetRect(viewport_pos.x, viewport_pos.y, viewport_size.x, viewport_size.y);
-			ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
-
-			ml->m_position = { rmat._41, rmat._42, rmat._43 };
-
-			ml->SignalTransformChange();
-			ml->SignalChange();
+			internal::ManipulateNode(selected_light, scene_graph, viewport_pos, viewport_size);
 		}
 	}
 
-	void ModelEditor(SceneGraph * scene_graph)
+	void ModelEditor(SceneGraph * scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
 	{
 		if (open_model_editor)
 		{
@@ -338,26 +342,7 @@ namespace wr::imgui::window
 				return;
 			}
 
-			auto ml = selected_model;
-			DirectX::XMFLOAT4X4 rmat;
-			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
-			DirectX::XMStoreFloat4x4(&rmat, mat);
-
-			auto cam = scene_graph->GetActiveCamera();
-			DirectX::XMFLOAT4X4 rview;
-			DirectX::XMFLOAT4X4 rproj;
-			auto view = cam->m_view;
-			DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
-			DirectX::XMStoreFloat4x4(&rview, view);
-
-			ImGuiIO& io = ImGui::GetIO();
-			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-			ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
-
-			ml->m_position = { rmat._41, rmat._42, rmat._43 };
-
-			ml->SignalTransformChange();
-			ml->SignalChange();
+			internal::ManipulateNode(selected_model, scene_graph, viewport_pos, viewport_size);
 		}
 	}
 
