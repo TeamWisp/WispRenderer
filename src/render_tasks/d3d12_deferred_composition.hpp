@@ -19,6 +19,7 @@ namespace wr
 
 		d3d12::TextureResource* out_skybox;
 		d3d12::TextureResource* out_irradiance;
+		d3d12::TextureResource* out_pref_env_map;
 
 		std::array<d3d12::CommandList*, d3d12::settings::num_back_buffers> out_bundle_cmd_lists;
 		bool out_requires_bundle_recording;

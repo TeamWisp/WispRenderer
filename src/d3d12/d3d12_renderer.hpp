@@ -197,6 +197,8 @@ namespace wr
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
 		D3D12ModelPool* m_bound_model_pool;
 		std::size_t m_bound_model_pool_stride;
+
+		std::optional<wr::TextureHandle> m_brdf_lut = std::nullopt;
     
 		float temp_metal = 1.0f;
 		float temp_rough = 0.45f;

@@ -36,6 +36,7 @@ namespace wr
 		[[nodiscard]] TextureHandle LoadFromMemory(char* data, int width, int height, TextureType type, bool srgb, bool generate_mips);
 		[[nodiscard]] TextureHandle LoadFromMemory(char* data, int width, int height, std::string texture_extension, bool srgb, bool generate_mips);
 		[[nodiscard]] virtual TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) = 0;
+		[[nodiscard]] virtual TextureHandle CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) = 0;
 		virtual void Unload(uint64_t texture_id) = 0;
 
 		virtual void Evict() = 0;

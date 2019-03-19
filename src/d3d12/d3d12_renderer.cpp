@@ -25,6 +25,7 @@
 #include "../scene_graph/light_node.hpp"
 #include "../scene_graph/skybox_node.hpp"
 #include <iostream>
+#include <string>
 
 namespace wr
 {
@@ -387,14 +388,14 @@ namespace wr
 			{
 				auto retval = d3d12::CreateRenderTarget(m_device, properties.m_width.Get().value(), properties.m_height.Get().value(), desc);
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
-					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
+					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
 				return retval;
 			}
 			else if (m_window.has_value())
 			{
 				auto retval = d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
-					retval->m_render_targets[i]->SetName(L"Main Deferred RT");
+					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
 				return retval;
 			}
 			else

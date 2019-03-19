@@ -3,6 +3,9 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../frame_graph/frame_graph.hpp"
+#include <locale>
+#include <codecvt>
+#include <string>
 
 namespace wr
 {
@@ -47,7 +50,12 @@ namespace wr
 	template<typename T>
 	inline void AddRenderTargetCopyTask(FrameGraph& frame_graph)
 	{
-		RenderTargetProperties rt_properties {
+		std::string name_temp = std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") Copy task");
+
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		std::wstring wide = converter.from_bytes(name_temp.c_str());
+
+		RenderTargetProperties rt_properties{
 			RenderTargetProperties::IsRenderWindow(true),
 			RenderTargetProperties::Width(std::nullopt),
 			RenderTargetProperties::Height(std::nullopt),
@@ -58,7 +66,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(wide)
 		};
 
 		RenderTaskDesc desc;
@@ -71,7 +80,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 			// Nothing to destroy
 		};
-		desc.m_name = std::string(std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") Copy task")).c_str();
+		
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COPY;
 		desc.m_allow_multithreading = true;

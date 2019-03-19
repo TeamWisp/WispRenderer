@@ -47,16 +47,6 @@ namespace emibl_scene
 			scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_rubber)
 		};
 
-		//auto model0 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-		//auto model1 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-		//auto model2 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-		//auto model3 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-		//auto model4 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-		//auto model5 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-		//auto model6 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-		//auto model7 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-		//auto model8 = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knot_gold);
-
 		models[9]->SetPosition({ -360,	0	,	-120 });
 		models[8]->SetPosition({-180,	0	,	-120 });
 		models[7]->SetPosition({ 0,		0	,	-120 });

@@ -111,6 +111,8 @@ namespace wr
 	template<typename T>
 	inline void AddPostProcessingTask(FrameGraph& frame_graph)
 	{
+		std::wstring name(L"Post Processing");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -123,7 +125,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ d3d12::settings::back_buffer_format }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
-			RenderTargetProperties::ClearDepth(false)
+			RenderTargetProperties::ClearDepth(false),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -136,7 +139,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyPostProcessing(fg, handle, resize);
 		};
-		desc.m_name = "Post Processing";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
