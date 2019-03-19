@@ -275,13 +275,13 @@ namespace wr
 				// Fill descriptor heap with textures used by the scene
 				for (auto handle : as_build_data.out_material_handles)
 				{
-					auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+					auto* material_internal = handle.m_pool->GetMaterial(handle.m_id);
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
-						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::TEXTURES)) + texture_handle.m_id, texture_internal);
+						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
 					};
 
 					set_srv(material_internal->GetAlbedo());
