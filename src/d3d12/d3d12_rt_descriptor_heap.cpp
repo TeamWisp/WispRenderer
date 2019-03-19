@@ -208,7 +208,7 @@ namespace wr
 			// Scan from LSB to MSB for a bit set in staleDescriptorsBitMask
 			while (_BitScanForward(&root_idx, m_stale_descriptor_table_bit_mask))
 			{
-				UINT num_src_desc = m_descriptor_table_cache[root_idx].m_num_descriptors - 9;
+				UINT num_src_desc = m_descriptor_table_cache[root_idx].m_num_descriptors;
 				D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorHandles = m_descriptor_table_cache[root_idx].m_base_descriptor;
 
 				D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =

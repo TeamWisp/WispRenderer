@@ -395,18 +395,56 @@ namespace wr
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset),
 	);
 
-	REGISTER(root_signatures::rt_hybrid_global, RootSignatureRegistry)({
-		RootSignatureDescription::Parameters({
-			ROOT_PARAM_DESC_TABLE(rt_hybrid_ranges, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::ACCELERATION_STRUCTURE)),
-			ROOT_PARAM(GetCBV(params::rt_hybrid, params::RTHybridE::CAMERA_PROPERTIES)),
-			ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::VERTICES)),
-		}),
-		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
-		}),
-		RootSignatureDescription::RTXLocal(true)
-	});
+  DESC_RANGE_ARRAY(rt_hybrid_range_1,
+    DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::RTHybridE::OUTPUT),
+    DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::GBUFFERS)
+  );
+
+  DESC_RANGE_ARRAY(rt_hybrid_range_2,
+    DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::INDICES),
+    DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::LIGHTS),
+    DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::MATERIALS),
+    DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::OFFSETS),
+    DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::SKYBOX),
+    DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::IRRADIANCE_MAP)
+  );
+
+  DESC_RANGE_ARRAY(rt_hybrid_range_3,
+    DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::TEXTURES)
+  );
+
+  DESC_RANGE_ARRAY(rt_hybrid_range_4,
+    DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset)
+  );
+
+  REGISTER(root_signatures::rt_hybrid_global, RootSignatureRegistry)({
+    RootSignatureDescription::Parameters({
+      ROOT_PARAM_DESC_TABLE(rt_hybrid_range_1, D3D12_SHADER_VISIBILITY_ALL),
+      ROOT_PARAM_DESC_TABLE(rt_hybrid_range_2, D3D12_SHADER_VISIBILITY_ALL),
+      ROOT_PARAM_DESC_TABLE(rt_hybrid_range_3, D3D12_SHADER_VISIBILITY_ALL),
+      ROOT_PARAM_DESC_TABLE(rt_hybrid_range_4, D3D12_SHADER_VISIBILITY_ALL),
+      ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::ACCELERATION_STRUCTURE)),
+      ROOT_PARAM(GetCBV(params::rt_hybrid, params::RTHybridE::CAMERA_PROPERTIES)),
+      ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::VERTICES)),
+    }),
+    RootSignatureDescription::Samplers({
+      { TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+    }),
+    RootSignatureDescription::RTXLocal(true)
+  });
+
+	//REGISTER(root_signatures::rt_hybrid_global, RootSignatureRegistry)({
+	//	RootSignatureDescription::Parameters({
+	//		ROOT_PARAM_DESC_TABLE(rt_hybrid_ranges, D3D12_SHADER_VISIBILITY_ALL),
+	//		ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::ACCELERATION_STRUCTURE)),
+	//		ROOT_PARAM(GetCBV(params::rt_hybrid, params::RTHybridE::CAMERA_PROPERTIES)),
+	//		ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::VERTICES)),
+	//	}),
+	//	RootSignatureDescription::Samplers({
+	//		{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+	//	}),
+	//	RootSignatureDescription::RTXLocal(true)
+	//});
 
 	StateObjectDescription::LibraryDesc rt_hybrid_so_library = []()
 	{
