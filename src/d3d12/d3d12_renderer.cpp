@@ -115,11 +115,11 @@ namespace wr
 		LoadPrimitiveShapes();
 
 		// Material raytracing sb pool
-		size_t rt_mat_align_size = SizeAlign((sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
+		size_t rt_mat_align_size = SizeAlignTwoPower((sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
 		m_raytracing_material_sb_pool = CreateStructuredBufferPool(rt_mat_align_size);
 
 		// Offset raytracing sb pool
-		size_t rt_offset_align_size = SizeAlign((sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
+		size_t rt_offset_align_size = SizeAlignTwoPower((sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
 		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(rt_offset_align_size);
 
 		// Begin Recording
@@ -265,6 +265,11 @@ namespace wr
 		}
 
 		m_bound_model_pool = nullptr;
+
+		for (int i = 0; i < m_model_pools.size(); ++i)
+		{
+			m_model_pools[i]->SetUpdated(false);
+		}
 
 		// Optional CPU-visible copy of the render target pixel data
 		const auto cpu_output_texture = frame_graph.GetOutputTexture();
@@ -797,7 +802,7 @@ namespace wr
 	{
 		if (nodes.empty()) return;
 
-		size_t cam_align_size = SizeAlign(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
+		size_t cam_align_size = SizeAlignTwoPower(nodes.size() * sizeof(temp::ProjectionView_CBData), 256) * d3d12::settings::num_back_buffers;
 		m_camera_pool = CreateConstantBufferPool((size_t)std::ceil(cam_align_size));
 
 		for (auto& node : nodes)
