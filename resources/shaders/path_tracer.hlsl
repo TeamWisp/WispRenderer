@@ -37,12 +37,12 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[5000] : register(t8);
-Texture2D gbuffer_albedo : register(t5008);
-Texture2D gbuffer_normal : register(t5009);
-Texture2D gbuffer_depth : register(t5010);
+Texture2D g_textures[5000] : register(t10);
+Texture2D gbuffer_albedo : register(t5010);
+Texture2D gbuffer_normal : register(t5011);
+Texture2D gbuffer_depth : register(t5012);
 Texture2D skybox : register(t6);
-TextureCube irradiance_map : register(t7);
+TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -160,7 +160,6 @@ void RaygenEntry()
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * cos_theta) * (albedo / PI);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
 
-	result = clamp(result, 0, 10);
 
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
@@ -281,26 +280,19 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 		roughness, 
 		fN, 
 		payload.seed, 
-		payload.depth+2000);
+		payload.depth+1);
 	float3 specular = (reflection) * F;
 	float3 diffuse = albedo * irradiance;
 	float3 ambient = (kD * diffuse + specular);
 
 	payload.color = ambient + lighting;
-<<<<<<< HEAD
-
 
 	// #################### GGX #####################
-
-=======
->>>>>>> e50aac4cc539c3adb70011fd71a3275f779391d2
 }
 
 //Reflection skybox
 [shader("miss")]
 void ReflectionMiss(inout HitInfo payload)
 {
-	payload.color = (skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0) * M_PI) * (1.0f / (2.0f * M_PI));
 	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
-	//payload.color = float3(1, 1, 1);
 }

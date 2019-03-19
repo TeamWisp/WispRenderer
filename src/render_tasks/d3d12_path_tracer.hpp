@@ -329,6 +329,20 @@ namespace wr
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::SKYBOX)), skybox_t);
 				}
 
+				// Get Pre-filtered environment
+				if (scene_graph.m_skybox.has_value())
+				{
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::PREF_ENV_MAP)), irradiance_t);
+				}
+
+				// Get brdf lookup texture
+				if (scene_graph.m_skybox.has_value())
+				{
+					auto brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTexture(n_render_system.m_brdf_lut.value().m_id));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::BRDF_LUT)), brdf_lut_text);
+				}
+
 				// Get Environment Map
 				if (scene_graph.m_skybox.has_value())
 				{
