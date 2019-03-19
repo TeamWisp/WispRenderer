@@ -298,7 +298,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1, shadows_enabled);
 	float3 specular = (float3(0, 0, 0)) * F;
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
