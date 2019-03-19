@@ -287,10 +287,13 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float3 ambient = (kD * diffuse + specular);
 
 	payload.color = ambient + lighting;
+<<<<<<< HEAD
 
 
 	// #################### GGX #####################
 
+=======
+>>>>>>> e50aac4cc539c3adb70011fd71a3275f779391d2
 }
 
 //Reflection skybox

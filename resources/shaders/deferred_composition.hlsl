@@ -11,6 +11,7 @@ Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
+<<<<<<< HEAD
 TextureCube skybox : register(t4);
 TextureCube irradiance_map   : register(t5);
 TextureCube pref_env_map	 : register(t6);
@@ -20,6 +21,14 @@ Texture2D screen_space_irradiance : register(t9);
 RWTexture2D<float4> output   : register(u0);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
+=======
+Texture2D skybox : register(t4);
+TextureCube irradiance_map : register(t5);
+Texture2D buffer_refl_shadow : register(t6); // xyz: reflection, a: shadow factor
+Texture2D screen_space_irradiance : register(t7);
+RWTexture2D<float4> output : register(u0);
+SamplerState s0 : register(s0);
+>>>>>>> e50aac4cc539c3adb70011fd71a3275f779391d2
 
 cbuffer CameraProperties : register(b0)
 {
