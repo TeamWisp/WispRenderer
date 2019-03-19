@@ -12,13 +12,13 @@ namespace wr::d3d12
 		buffer->m_target_resource_state = resource_state;
 		buffer->m_size = size;
 		buffer->m_stride_in_bytes = stride;
-		buffer->m_is_staged = false;
+		buffer->m_is_staged = true;
 
 		device->m_native->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(size),
-			D3D12_RESOURCE_STATE_COPY_DEST,
+			static_cast<D3D12_RESOURCE_STATES>(resource_state),
 			nullptr,
 			IID_PPV_ARGS(&buffer->m_buffer));
 		NAME_D3D12RESOURCE(buffer->m_buffer)
@@ -32,7 +32,7 @@ namespace wr::d3d12
 			IID_PPV_ARGS(&buffer->m_staging));
 		NAME_D3D12RESOURCE(buffer->m_staging);
 
-		CD3DX12_RANGE read_range(0, 0);
+		CD3DX12_RANGE read_range(0, size);
 
 		buffer->m_staging->Map(0, &read_range, reinterpret_cast<void**>(&(buffer->m_cpu_address)));
 
@@ -58,7 +58,10 @@ namespace wr::d3d12
 	void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list)
 	{
 
-		if (buffer->m_is_staged) return;
+		if (buffer->m_is_staged)
+		{
+			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state, D3D12_RESOURCE_STATE_COPY_DEST));
+		}
 
 		cmd_list->m_native->CopyBufferRegion(buffer->m_buffer, 0, buffer->m_staging, 0, buffer->m_size);
 

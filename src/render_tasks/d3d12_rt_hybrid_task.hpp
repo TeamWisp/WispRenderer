@@ -249,7 +249,7 @@ namespace wr
 				// Fill descriptor heap with textures used by the scene
 				for (auto handle : as_build_data.out_material_handles)
 				{
-					auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+					auto* material_internal = handle.m_pool->GetMaterial(handle.m_id);
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{

@@ -12,7 +12,7 @@ namespace wr::d3d12
 
 		auto* readbackBuffer = new ReadbackBufferResource();
 
-		std::uint32_t buffer_size_aligned_to_256 = SizeAlign(description->m_buffer_width * description->m_bytes_per_pixel, 256) * description->m_buffer_height;
+		std::uint32_t buffer_size_aligned_to_256 = SizeAlignTwoPower(description->m_buffer_width * description->m_bytes_per_pixel, 256) * description->m_buffer_height;
 
 		HRESULT res = native_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
