@@ -391,6 +391,7 @@ namespace wr
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
+		desc.m_post_processing = false;
 
 		fg.AddTask<RTHybridData>(desc);
 	}
