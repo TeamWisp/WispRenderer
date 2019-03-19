@@ -529,34 +529,12 @@ namespace wr
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset),
 	);
 
-	DESC_RANGE_ARRAY(p0, DESC_RANGE(params::path_tracing, Type::UAV_RANGE, params::PathTracingE::OUTPUT));
-	DESC_RANGE_ARRAY(p1, DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::INDICES));
-	DESC_RANGE_ARRAY(p2, DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::LIGHTS));
-	DESC_RANGE_ARRAY(p3, DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::MATERIALS));
-	DESC_RANGE_ARRAY(p4, DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::OFFSETS));
-	DESC_RANGE_ARRAY(p5, DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::SKYBOX));
-	DESC_RANGE_ARRAY(p6, DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::IRRADIANCE_MAP));
-	DESC_RANGE_ARRAY(p7, DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::TEXTURES));
-	DESC_RANGE_ARRAY(p8, DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::GBUFFERS));
-	DESC_RANGE_ARRAY(p9, DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset));
-	std::vector<CD3DX12_DESCRIPTOR_RANGE> empty_ranges;
-
 	REGISTER(root_signatures::path_tracing_global, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({
-			ROOT_PARAM_DESC_TABLE(empty_ranges, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM_DESC_TABLE(path_tracer_ranges, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetSRV(params::path_tracing, params::PathTracingE::ACCELERATION_STRUCTURE)),
 			ROOT_PARAM(GetCBV(params::path_tracing, params::PathTracingE::CAMERA_PROPERTIES)),
 			ROOT_PARAM(GetSRV(params::path_tracing, params::PathTracingE::VERTICES)),
-			ROOT_PARAM_DESC_TABLE(p0, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p1, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p2, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p3, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p4, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p5, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p6, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p7, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p8, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM_DESC_TABLE(p9, D3D12_SHADER_VISIBILITY_ALL),
 		}),
 		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
