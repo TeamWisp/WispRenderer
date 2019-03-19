@@ -47,6 +47,8 @@ namespace spheres_scene
 				mat_internal->SetUseConstantAlbedo(true);
 				mat_internal->SetConstantAlbedo(DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f));
 				
+				mat_internal->SetNormal(resources::flat_normal);
+
 				mat_internal->SetUseConstantMetallic(true);
 				mat_internal->SetConstantMetallic(DirectX::XMFLOAT3(metallic, metallic, metallic));
 
@@ -54,13 +56,14 @@ namespace spheres_scene
 				mat_internal->SetConstantRoughness(roughness);
 
 				model->m_meshes.push_back(std::make_pair(resources::sphere_model->m_meshes[0].first, mat));
+				//model->m_meshes.push_back(std::make_pair(resources::sphere_model->m_meshes[0].first, resources::bamboo_material));
 
 				spheres[i * 7 + j] = model;
 			}
 		}
 
 
-		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
+		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 45.0f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({0.0f, 0.0f, 5.f });
 		camera->SetSpeed(60.0f);
 		
@@ -81,6 +84,7 @@ namespace spheres_scene
 				float y_pos = lerp(10.0f, -10.0f, (float)j / 6);
 
 				models[i * 7 + j]->SetPosition({ x_pos, y_pos, 0.0f, 0.0f });
+				models[i * 7 + j]->SetRotation({ 90.0_deg, 0.0_deg, 0.0_deg });
 			}
 		}
 
@@ -90,8 +94,8 @@ namespace spheres_scene
 
 	void UpdateScene()
 	{
-		t += 10.f * ImGui::GetIO().DeltaTime;
+		//t += 10.f * ImGui::GetIO().DeltaTime;
 
-		camera->Update(ImGui::GetIO().DeltaTime);
+		camera->Update(0.16f);
 	}
 } /* spheres_scene */

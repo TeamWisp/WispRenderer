@@ -66,8 +66,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
+
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
+		const float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -77,20 +79,19 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			buffer_refl_shadow[screen_coord].a,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
-		shadow_factor = clamp(shadow_factor, 0.1, 1.0);
+
+		shadow_factor = clamp(shadow_factor, 0.0, 1.0);
 		
 
 
 		// Get reflection
 		float3 reflection = lerp(
 			// Sample from environment if it IS NOT hybrid rendering
-			pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD),
+			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
 			buffer_refl_shadow[screen_coord].xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
-
-
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection, sampled_brdf);

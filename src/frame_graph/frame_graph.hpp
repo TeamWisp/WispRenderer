@@ -55,8 +55,6 @@ namespace wr
 		using execute_func_t = util::Delegate<void(RenderSystem&, FrameGraph&, SceneGraph&, RenderTaskHandle)>;
 		using destroy_func_t = util::Delegate<void(FrameGraph&, RenderTaskHandle, bool)>;
 
-		/*! The name of the render task. (Mainly used for debug purposes) */
-		const char* m_name;
 		/*! The type of the render task.*/
 		RenderTaskType m_type;
 		/*! The function pointers for the task.*/

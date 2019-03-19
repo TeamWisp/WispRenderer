@@ -115,7 +115,7 @@ float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness, float
  
 	if (dotNL > 0.0)
 	{
-		float rroughness = max(0.05, roughness);
+		float rroughness = max(0.05f, roughness);
 		// D = Normal distribution (Distribution of the microfacets)
 		float D = D_GGX(dotNH, roughness); 
 		// G = Geometric shadowing term (Microfacets shadowing)
@@ -123,7 +123,7 @@ float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness, float
 		// F = Fresnel factor (Reflectance depending on angle of incidence)
 		float3 F = F_Schlick(dotNV, metallic, albedo);
  
-		float3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001f);
+		float3 spec = (D * F * G) / ((4.0 * dotNL * dotNV + 0.001f));
  
 		float3 kD = (float3(1, 1, 1) - F) * (1.0 - metallic);
  

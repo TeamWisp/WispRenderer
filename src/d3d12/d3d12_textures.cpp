@@ -348,6 +348,13 @@ namespace wr::d3d12
 		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
 	}
 
+	void CreateUAVFromTexture(TextureResource* tex, unsigned int mip_slice)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_uav_allocation.GetDescriptorHandle();
+
+		CreateUAVFromTexture(tex, handle, mip_slice);
+	}
+
 	void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice)
 	{
 		decltype(Device::m_native) n_device;

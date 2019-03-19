@@ -338,6 +338,8 @@ namespace wr
 
 	inline void AddBuildAccelerationStructuresTask(FrameGraph& frame_graph)
 	{
+		std::wstring name(L"Acceleration Structure Builder");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -350,7 +352,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::UNKNOWN }),
 			RenderTargetProperties::NumRTVFormats(0),
 			RenderTargetProperties::Clear(false),
-			RenderTargetProperties::ClearDepth(false)
+			RenderTargetProperties::ClearDepth(false),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -363,7 +366,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyBuildASTask(fg, handle, resize);
 		};
-		desc.m_name = "Acceleration Structure Builder";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;

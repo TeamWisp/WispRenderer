@@ -106,6 +106,7 @@ namespace wr::d3d12
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle);
 	void CreateSRVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_levels, unsigned int most_detailed_mip);
 	void CreateSRVFromCubemapFace(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_levels, unsigned int most_detailed_mip, unsigned int face_idx);
+	void CreateUAVFromTexture(TextureResource* tex, unsigned int mip_slice);
 	void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice);
 	void CreateUAVFromCubemapFace(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice, unsigned int face_idx);
 	void CreateRTVFromTexture2D(TextureResource* tex);

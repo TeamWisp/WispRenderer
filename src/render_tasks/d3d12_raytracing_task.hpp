@@ -197,7 +197,7 @@ namespace wr
 					}
 				}
 
-				// Fill descriptor heap with actual textures used by the scene
+				// Fill descriptor heap with textures used by the scene
 				for (auto handle : as_build_data.out_material_handles)
 				{
 					auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
@@ -209,10 +209,16 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES)) + texture_handle.m_id, texture_internal);
 					};
 
-					set_srv(material_internal->GetAlbedo());
-					set_srv(material_internal->GetMetallic());
+					if (!material_internal->UsesConstantAlbedo())
+						set_srv(material_internal->GetAlbedo());
+
 					set_srv(material_internal->GetNormal());
-					set_srv(material_internal->GetRoughness());
+
+					if (!material_internal->UsesConstantMetallic())
+						set_srv(material_internal->GetMetallic());
+
+					if (!material_internal->UsesConstantRoughness())
+						set_srv(material_internal->GetRoughness());
 				}
 
 				// Get light buffer
@@ -303,6 +309,8 @@ namespace wr
 
 	inline void AddRaytracingTask(FrameGraph& frame_graph)
 	{
+		std::wstring name(L"Raytracing");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -315,7 +323,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -328,7 +337,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyRaytracingTask(fg, handle, resize);
 		};
-		desc.m_name = "Raytracing";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;

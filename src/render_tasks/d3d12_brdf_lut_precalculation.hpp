@@ -15,9 +15,6 @@ namespace wr
 	{
 		D3D12Pipeline* in_pipeline;
 
-		DescriptorAllocator* out_allocator;
-		DescriptorAllocation out_rtv_uav_allocation;
-
 		bool should_run;
 	};
 
@@ -25,9 +22,15 @@ namespace wr
 	{
 		inline void SetupBrdfLutPrecalculationTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<BrdfLutTaskData>(handle);
+
+			//Does the renderer have a brdf lut already?
+			bool has_brdf = (n_render_system.m_brdf_lut != std::nullopt);
+			data.should_run = !has_brdf;
+
+			if (!resize && data.should_run)
 			{
-				auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 				auto& data = fg.GetData<BrdfLutTaskData>(handle);
 				auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
@@ -41,13 +44,10 @@ namespace wr
 					LOGC("Texture pool is nullptr. This shouldn't happen as the render system should always create the first texture pool");
 				}
 
-				data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-				data.out_rtv_uav_allocation = std::move(data.out_allocator->Allocate(1));
-
-				auto rtv_uav_handle = data.out_rtv_uav_allocation.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(render_target, rtv_uav_handle, 0, wr::Format::R16G16_FLOAT);
-
-				data.should_run = true;
+				if (n_render_system.m_brdf_lut == std::nullopt)
+				{
+					n_render_system.m_brdf_lut = texture_pool->CreateTexture("BRDF LUT 2D", 512, 512, 1, wr::Format::R16G16_FLOAT, false);
+				}
 			}
 		}
 
@@ -63,14 +63,15 @@ namespace wr
 
 				d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
 
-				//d3d12::Transition(cmd_list, render_target, ResourceState::RENDER_TARGET, ResourceState::UNORDERED_ACCESS);
+				d3d12::TextureResource* brdf_lut = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTexture(n_render_system.m_brdf_lut.value().m_id));
 
-				auto rtv_uav_handle = data.out_rtv_uav_allocation.GetDescriptorHandle();
-				d3d12::SetShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::brdf_lut, params::BRDF_LutE::OUTPUT)), rtv_uav_handle);
+				d3d12::Transition(cmd_list, brdf_lut, ResourceState::COPY_DEST, ResourceState::UNORDERED_ACCESS);
+
+				d3d12::SetShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::brdf_lut, params::BRDF_LutE::OUTPUT)), brdf_lut);
 
 				d3d12::Dispatch(cmd_list, static_cast<int>(512 / 16), static_cast<int>(512 / 16.f), 1);
 
-				//d3d12::Transition(cmd_list, render_target, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
+				d3d12::Transition(cmd_list, brdf_lut, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
 
 				data.should_run = false;
 			}
@@ -78,17 +79,13 @@ namespace wr
 
 		inline void DestroyBrdfLutPrecalculationTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<BrdfLutTaskData>(handle);
-
-				DescriptorAllocation temp1 = std::move(data.out_rtv_uav_allocation);
-			}
 		}
 	}
 
 	inline void AddBrdfLutPrecalculationTask(FrameGraph& fg)
 	{
+		std::wstring name(L"BRDF LUT Precalculation");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -101,7 +98,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R16G16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(false)
+			RenderTargetProperties::ClearDepth(false),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -114,7 +112,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyBrdfLutPrecalculationTask(fg, handle, resize);
 		};
-		desc.m_name = "BRDF LUT Precalculation";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;

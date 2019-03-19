@@ -307,6 +307,85 @@ namespace wr
 		return texture_handle;
 	}
 
+	TextureHandle D3D12TexturePool::CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest)
+	{
+		auto device = m_render_system.m_device;
+
+		d3d12::desc::TextureDesc desc;
+
+		uint32_t mip_lvl_final = mip_levels;
+
+		// 0 means generate max number of mip levels
+		if (mip_lvl_final == 0)
+		{
+			mip_lvl_final = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+		}
+
+		desc.m_width = width;
+		desc.m_height = height;
+		desc.m_is_cubemap = false;
+		desc.m_depth = 1;
+		desc.m_array_size = 1;
+		desc.m_mip_levels = mip_lvl_final;
+		desc.m_texture_format = format;
+		desc.m_initial_state = allow_render_dest ? ResourceState::RENDER_TARGET : ResourceState::COPY_DEST;
+
+		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, true);
+
+		texture->m_allocated_memory = nullptr;
+		texture->m_allow_render_dest = allow_render_dest;
+		texture->m_is_staged = true;
+		texture->m_need_mips = false;
+
+		std::wstring wide_string(name.begin(), name.end());
+
+		d3d12::SetName(texture, wide_string);
+
+		DescriptorAllocation srv_alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+		DescriptorAllocation uav_alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+
+		if (srv_alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+		if (uav_alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+
+		texture->m_srv_allocation = std::move(srv_alloc);
+		texture->m_uav_allocation = std::move(uav_alloc);
+
+		d3d12::CreateSRVFromTexture(texture);
+		d3d12::CreateUAVFromTexture(texture, 0);
+
+		if (allow_render_dest)
+		{
+			DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]->Allocate(6);
+
+			if (alloc.IsNull())
+			{
+				LOGC("Couldn't allocate descriptor for the texture resource");
+			}
+
+			texture->m_rtv_allocation = std::move(alloc);
+
+			d3d12::CreateRTVFromTexture2D(texture);
+		}
+
+		m_loaded_textures++;
+
+		uint64_t texture_id = m_id_factory.GetUnusedID();
+
+		TextureHandle texture_handle;
+		texture_handle.m_pool = this;
+		texture_handle.m_id = texture_id;
+
+		m_staged_textures.insert(std::make_pair(texture_id, texture));
+
+		return texture_handle;
+	}
+
 	DescriptorAllocator * D3D12TexturePool::GetAllocator(DescriptorHeapType type)
 	{
 		return m_allocators[static_cast<size_t>(type)];

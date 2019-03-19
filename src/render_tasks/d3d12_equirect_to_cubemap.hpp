@@ -52,57 +52,6 @@ namespace wr
 			uint32_t cubemap_face;
 		};
 
-		//inline void PrefilterCubemapFace(d3d12::TextureResource* source_cubemap, d3d12::TextureResource* dest_cubemap, CommandList* cmd_list, DescriptorAllocator* alloc, unsigned int array_slice)
-		//{
-		//	wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
-
-		//	//Create shader resource view for the source texture in the descriptor heap
-		//	DescriptorAllocation srv_alloc = alloc->Allocate();
-		//	d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
-
-		//	d3d12::CreateSRVFromTexture(source_cubemap, srv_handle);
-
-		//	PrefilterEnv_CB prefilter_env_cb;
-
-		//	for (uint32_t src_mip = 0; src_mip < dest_cubemap->m_mip_levels - 1u; ++src_mip)
-		//	{
-		//		uint32_t src_width = dest_cubemap->m_width >> src_mip;
-		//		uint32_t src_height = dest_cubemap->m_height >> src_mip;
-		//		uint32_t dst_width = src_width >> 1;
-		//		uint32_t dst_height = src_height >> 1;
-
-		//		prefilter_env_cb.texture_size = DirectX::XMFLOAT2((float)dst_width, (float)dst_height);
-		//		prefilter_env_cb.roughness = (float)(src_mip + 1u) / (float)(dest_cubemap->m_mip_levels - 1);
-		//		prefilter_env_cb.cubemap_face = array_slice;
-
-		//		//Create views
-		//		//d3d12::CreateSRVFromCubemapFace(texture, srv_handle, 1, src_mip, array_slice);
-
-		//		DescriptorAllocation uav_alloc = alloc->Allocate();
-		//		d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
-
-		//		d3d12::CreateUAVFromCubemapFace(dest_cubemap, uav_handle, src_mip + 1, array_slice);
-
-		//		//Set shader variables
-		//		d3d12::BindCompute32BitConstants(d3d12_cmd_list, &prefilter_env_cb, sizeof(PrefilterEnv_CB) / sizeof(uint32_t), 0, 0);
-
-		//		d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip], ResourceState::PIXEL_SHADER_RESOURCE, src_mip, 1);
-		//		d3d12::SetShaderSRV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::SOURCE)), srv_handle);
-
-		//		d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip + 1], ResourceState::UNORDERED_ACCESS, src_mip + 1, 1);
-		//		d3d12::SetShaderUAV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::DEST)), uav_handle);
-
-		//		d3d12::Dispatch(d3d12_cmd_list, ((dst_width + 8 - 1) / 8), ((dst_height + 8 - 1) / 8), 1u);
-
-		//		//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-		//		d3d12::UAVBarrier(d3d12_cmd_list, dest_cubemap, 1);
-
-		//		d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip + 1], ResourceState::PIXEL_SHADER_RESOURCE, src_mip + 1, 1);
-		//	}
-
-		//	dest_cubemap->m_need_mips = false;
-		//}
-
 		inline void PrefilterCubemapFace(d3d12::TextureResource* source_cubemap, d3d12::TextureResource* dest_cubemap, CommandList* cmd_list, DescriptorAllocator* alloc, unsigned int array_slice)
 		{
 			wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
@@ -175,6 +124,11 @@ namespace wr
 
 		inline void SetupEquirectToCubemapTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
+			if (resize)
+			{
+				return;
+			}
+
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
@@ -322,10 +276,21 @@ namespace wr
 				PrefilterCubemap(cmd_list, data.out_cubemap, data.out_pref_env);
 			}
 		}
+
+		inline void DestroyEquirectToCubemapTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			if (resize)
+			{
+				return;
+			}
+		}
+
 	} /* internal */
 
 	inline void AddEquirectToCubemapTask(FrameGraph& fg)
 	{
+		std::wstring name(L"Equirect To Cubemap");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -338,7 +303,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -348,10 +314,10 @@ namespace wr
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
-			// Nothing to destroy
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyEquirectToCubemapTask(fg, handle, resize);
 		};
-		desc.m_name = "Equirect To Cubemap";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;

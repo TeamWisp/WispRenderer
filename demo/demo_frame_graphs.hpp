@@ -111,7 +111,7 @@ namespace fg_manager
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
-			wr::AddPostProcessingTask<wr::RTHybridData>(*fg);
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the raytracing pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);

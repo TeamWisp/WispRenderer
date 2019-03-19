@@ -53,5 +53,5 @@ void main_cs(uint3 dt_id : SV_DispatchThreadID)
 
 	uv.y = 1.0f - uv.y;
 
-	output[dt_id.xy] = IntegrateBRDF(uv.x, uv.y);
+	output[dt_id.xy] = IntegrateBRDF(uv.y, uv.x);
 }
