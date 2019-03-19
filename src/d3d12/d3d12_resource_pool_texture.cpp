@@ -402,7 +402,7 @@ namespace wr
 		delete texture;
 	}
 
-	d3d12::TextureResource* D3D12TexturePool::LoadPNG(std::string_view path, bool srgb, bool generate_mips)
+	d3d12::TextureResource* D3D12TexturePool::LoadPNG_JPEG(std::string_view path, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 

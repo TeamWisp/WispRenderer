@@ -73,7 +73,7 @@ namespace wr
 
 	protected:
 
-		d3d12::TextureResource* LoadPNG(std::string_view path, bool srgb, bool generate_mips) final;
+		d3d12::TextureResource* LoadPNG_JPEG(std::string_view path, bool srgb, bool generate_mips) final;
 		d3d12::TextureResource* LoadDDS(std::string_view path, bool srgb, bool generate_mips) final;
 		d3d12::TextureResource* LoadHDR(std::string_view path, bool srgb, bool generate_mips) final;
 		d3d12::TextureResource* LoadPNGFromMemory(char* data, size_t size, bool srgb, bool generate_mips) final;
