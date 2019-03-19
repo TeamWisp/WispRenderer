@@ -31,7 +31,7 @@ struct Offset
     float vertex_offset;
 };
 
-RWTexture2D<float4> output : register(u1); // xyz: reflection, a: shadow factor
+RWTexture2D<float4> output : register(u0); // xyz: reflection, a: shadow factor
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -165,7 +165,7 @@ void RaygenEntry()
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
 	{
-		output[DispatchRaysIndex().xy] += float4(result, 1);
+		output[DispatchRaysIndex().xy] = float4(result, 1);
 	}
 	else
 	{

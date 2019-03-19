@@ -1,9 +1,9 @@
 #pragma once
 
 #define LOG_PRINT_TIME
-//#define LOG_PRINT_THREAD
+#define LOG_PRINT_THREAD
 #define LOG_CALLBACK
-//#define LOG_PRINT_LOC
+#define LOG_PRINT_LOC
 #define LOG_PRINT_COLORS
 //#define LOG_PRINT_TO_OUTPUT
 
