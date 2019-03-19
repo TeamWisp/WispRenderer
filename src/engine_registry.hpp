@@ -412,7 +412,7 @@ namespace wr
 
 		constexpr std::array<rs_layout::Entry, 12> full_raytracing = {
 			rs_layout::Entry{(int)FullRaytracingE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)FullRaytracingE::OUTPUT, 2, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)FullRaytracingE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
@@ -444,7 +444,7 @@ namespace wr
 
 		constexpr std::array<rs_layout::Entry, 20> rt_hybrid = {
 			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)RTHybridE::OUTPUT, 2, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.
+			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.
 			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
@@ -458,6 +458,39 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
+		enum class PathTracingE
+		{
+			CAMERA_PROPERTIES,
+			ACCELERATION_STRUCTURE,
+			OUTPUT,
+			INDICES,
+			VERTICES,
+			LIGHTS,
+			MATERIALS,
+			OFFSETS,
+			SKYBOX,
+			IRRADIANCE_MAP,
+			TEXTURES,
+			GBUFFERS,
+			FALLBACK_PTRS
+		};
+
+		constexpr std::array<rs_layout::Entry, 20> path_tracing = {
+			rs_layout::Entry{(int)PathTracingE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)PathTracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.
+			rs_layout::Entry{(int)PathTracingE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)PathTracingE::INDICES, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::VERTICES, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)PathTracingE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
+		};
+
 	} /* srv */
 
 	struct root_signatures
@@ -468,6 +501,7 @@ namespace wr
 		static RegistryHandle rt_test_global;
 		static RegistryHandle mip_mapping;
 		static RegistryHandle rt_hybrid_global;
+		static RegistryHandle path_tracing_global;
 		static RegistryHandle cubemap_conversion;
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle cubemap_prefiltering;
@@ -511,6 +545,7 @@ namespace wr
 	{
 		static RegistryHandle state_object;
 		static RegistryHandle rt_hybrid_state_object;
+		static RegistryHandle path_tracing_state_object;
 		static RegistryHandle path_tracer_state_object;
 	};
 

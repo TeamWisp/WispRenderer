@@ -134,7 +134,7 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
+				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
 				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
 			}
@@ -171,7 +171,7 @@ namespace wr
 
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
-				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
+				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::path_tracing_global))->m_native;
 			}
 
 			// Create Shader Tables
@@ -217,6 +217,79 @@ namespace wr
 			{
 				auto frame_idx = n_render_system.GetFrameIdx();
 
+
+				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+
+				// Bind output, indices and materials, offsets, etc
+				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OUTPUT)), out_uav_handle);
+				//out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
+				//d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OUTPUT)) + 1, out_uav_handle);
+
+				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::INDICES)), out_scene_ib_handle);
+
+				auto out_scene_mat_handle = as_build_data.out_scene_mat_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::MATERIALS)), out_scene_mat_handle);
+
+				auto out_scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OFFSETS)), out_scene_offset_handle);
+
+				auto out_scene_gbuffers_handle1 = data.out_gbuffers.GetDescriptorHandle(0);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 0, out_scene_gbuffers_handle1);
+
+				auto out_scene_gbuffers_handle2 = data.out_gbuffers.GetDescriptorHandle(1);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 1, out_scene_gbuffers_handle2);
+
+				auto out_scene_depth_handle = data.out_depthbuffer.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 2, out_scene_depth_handle);
+
+				/*
+				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
+				We fill the table with a single descriptor, then overwrite some spots with the he correct textures
+				If a spot is unused, then a default descriptor will be still bound, but not used in the shaders.
+				Since the renderer creates a texture pool that can be used by the render tasks, and
+				the texture pool also has default textures for albedo/roughness/etc... one of those textures is a good
+				candidate for this.
+				*/
+				{
+					auto texture_pool = render_system.GetDefaultTexturePool();
+
+					if (texture_pool == nullptr)
+					{
+						LOGC("ERROR: Texture Pool in Raytracing Task is nullptr. This is not supposed to happen.");
+					}
+
+					auto texture_handle = texture_pool->GetDefaultAlbedo();
+					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTexture(texture_handle.m_id));
+
+					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::path_tracing, params::PathTracingE::TEXTURES));
+					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::TEXTURES));
+
+					for (size_t i = 0; i < num_textures_in_heap; ++i)
+					{
+						d3d12::SetRTShaderSRV(cmd_list, 0, heap_loc_start + i, texture_resource);
+					}
+				}
+
+				// Fill descriptor heap with textures used by the scene
+				for (auto handle : as_build_data.out_material_handles)
+				{
+					auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+
+					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
+					{
+						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
+
+						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::TEXTURES)) + texture_handle.m_id, texture_internal);
+					};
+
+					set_srv(material_internal->GetAlbedo());
+					set_srv(material_internal->GetMetallic());
+					set_srv(material_internal->GetNormal());
+					set_srv(material_internal->GetRoughness());
+				}
+
 				// Get light buffer
 				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
 				{
@@ -228,7 +301,7 @@ namespace wr
 				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, light_handle, frame_idx);
 
 				d3d12::DescHeapCPUHandle light_handle2 = light_alloc.GetDescriptorHandle();
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::LIGHTS)), light_handle2);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::LIGHTS)), light_handle2);
 
 				// Update offset data
 				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
@@ -253,14 +326,14 @@ namespace wr
 				if (scene_graph.m_skybox.has_value())
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX)), skybox_t);
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::SKYBOX)), skybox_t);
 				}
 
 				// Get Environment Map
 				if (scene_graph.m_skybox.has_value())
 				{
 					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
-					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::IRRADIANCE_MAP)), irradiance_t);
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::IRRADIANCE_MAP)), irradiance_t);
 				}
 
 				// Transition depth to NON_PIXEL_RESOURCE
@@ -279,8 +352,7 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
-				unsigned int verts_loc = rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, verts_loc);
+				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
 				//#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);

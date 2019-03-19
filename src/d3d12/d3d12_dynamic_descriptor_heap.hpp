@@ -19,7 +19,7 @@ namespace wr
 	class DynamicDescriptorHeap
 	{
 	public:
-		DynamicDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 1024);
+		DynamicDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 5000);
 
 		virtual ~DynamicDescriptorHeap();
 

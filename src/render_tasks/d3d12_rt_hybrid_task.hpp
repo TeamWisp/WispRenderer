@@ -199,6 +199,8 @@ namespace wr
 				// Bind output, indices and materials, offsets, etc
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
+				//out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
+				//d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
@@ -237,8 +239,8 @@ namespace wr
 					auto texture_handle = texture_pool->GetDefaultAlbedo();
 					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTexture(texture_handle.m_id));
 
-					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::full_raytracing, params::FullRaytracingE::TEXTURES));
-					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES));
+					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::rt_hybrid, params::RTHybridE::TEXTURES));
+					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES));
 
 					for (size_t i = 0; i < num_textures_in_heap; ++i)
 					{
@@ -333,8 +335,7 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
-				unsigned int verts_loc = rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, verts_loc);
+				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
 //#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
