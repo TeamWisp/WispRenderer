@@ -143,7 +143,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Reflections and shadows task
-			//wr::AddRTHybridTask(*fg);
+			wr::AddRTHybridTask(*fg);
 
 			//  Path Tracing task
 			wr::AddPathTracerTask(*fg);

@@ -233,7 +233,7 @@ namespace wr
 		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
 		PipelineDescription::NumRTVFormats(3),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
-		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
 		PipelineDescription::Depth(true),
 		PipelineDescription::CounterClockwise(false),
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
@@ -537,7 +537,7 @@ namespace wr
 		StateObjectDescription::Library(path_tracer_so_library),
 		StateObjectDescription::MaxPayloadSize((sizeof(float) * 7) + (sizeof(unsigned int) * 1)),
 		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
-		StateObjectDescription::MaxRecursionDepth(3),
+		StateObjectDescription::MaxRecursionDepth(6),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
 		StateObjectDescription::LocalRootSignatures(std::nullopt),
 	});
