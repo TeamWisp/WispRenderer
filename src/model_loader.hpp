@@ -26,6 +26,26 @@ namespace wr
 		std::vector<ModelMaterialData*> m_materials;
 		std::vector<EmbeddedTexture*> m_embedded_textures;
 		ModelSkeletonData* m_skeleton_data;
+
+		template<typename TV> size_t GetTotalVertexSize()
+		{
+			size_t size = 0;
+			for (auto& mesh : m_meshes)
+			{
+				size += mesh->GetTotalVertexSize<TV>();
+			}
+			return size;
+		};
+
+		template<typename TI> size_t GetTotalIndexSize()
+		{
+			size_t size = 0;
+			for (auto& mesh : m_meshes)
+			{
+				size += mesh->GetTotalVertexSize<TI>();
+			}
+			return size;
+		};
 	};
 
 	struct ModelMeshData
@@ -42,6 +62,16 @@ namespace wr
 		std::vector<DirectX::XMFLOAT4> m_bone_ids;
 
 		std::vector<std::uint32_t> m_indices;
+
+		template<typename TV> size_t GetTotalVertexSize()
+		{
+			return m_positions.size() * sizeof(TV);
+		};
+
+		template<typename TI> size_t GetTotalIndexSize()
+		{
+			return m_indices.size() * sizeof(TI);
+		};
 
 		int m_material_id;
 	};
