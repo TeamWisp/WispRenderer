@@ -2,6 +2,8 @@
 //48 * 1024 / (4 * 4 * 4) = 48 * 1024 / 64 = 48 * 16 = 768
 #define MAX_INSTANCES 768
 
+#include "material_util.hlsl"
+
 struct VS_INPUT
 {
 	float3 pos : POSITION;
@@ -27,6 +29,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 view;
 	float4x4 projection;
 	float4x4 inv_projection;
+	uint is_hybrid;
 };
 
 struct ObjectData
@@ -74,23 +77,29 @@ Texture2D material_metallic : register(t3);
 
 SamplerState s0 : register(s0);
 
+cbuffer MaterialProperties : register(b2)
+{
+	MaterialData data;
+}
+
+
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
 	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
-	float4 albedo = material_albedo.Sample(s0, input.uv);
-//#define COMPRESSED_PBR
-#ifdef COMPRESSED_PBR
-	float4 roughness = material_metallic.SampleLevel(s0, input.uv, 0).y;
-	float4 metallic = material_metallic.SampleLevel(s0, input.uv, 0).z;
-#else
-	float4 roughness = max(0.05f, material_roughness.Sample(s0, input.uv));
-	float4 metallic = material_metallic.Sample(s0, input.uv);
-#endif
-	float3 tex_normal = material_normal.Sample(s0, input.uv).rgb * 2.0 - float3(1.0, 1.0, 1.0);
-	float3 normal = normalize(mul(tex_normal, tbn));
 
-	output.albedo_roughness = float4(albedo.xyz, roughness.r);
-	output.normal_metallic = float4(normal, metallic.r);
+	OutputMaterialData output_data = InterpretMaterialData(data,
+		material_albedo,
+		material_normal,
+		material_roughness,
+		material_metallic,
+		s0,
+		input.uv);
+
+	float3 normal = normalize(mul(output_data.normal, tbn));
+
+	output.albedo_roughness = float4(output_data.albedo, output_data.roughness);
+	output.normal_metallic = float4(normal, output_data.metallic);
+
 	return output;
 }

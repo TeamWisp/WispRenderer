@@ -51,6 +51,7 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
+			unsigned int m_is_hybrid;
 		};
 
 		struct RTHybridCamera_CBData
@@ -82,6 +83,8 @@ namespace wr
 			float normal_id;
 			float roughness_id;
 			float metallicness_id;
+
+			Material::MaterialData material_data;
 		};
 
 		struct RayTracingOffset_CBData
@@ -116,6 +119,8 @@ namespace wr
 		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes) final;
 		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes) final;
 
+		std::shared_ptr<TexturePool> GetDefaultTexturePool() final;
+
 		void PrepareRootSignatureRegistry() final;
 		void PrepareShaderRegistry() final;
 		void PreparePipelineRegistry() final;
@@ -131,6 +136,7 @@ namespace wr
 		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
+		void DestroyCommandList(CommandList* cmd_list) final;
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);
@@ -156,7 +162,7 @@ namespace wr
 		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
-		void BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list);
+		void BindMaterial(MaterialHandle material_handle, CommandList* cmd_list);
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
@@ -210,7 +216,7 @@ namespace wr
 
 		std::optional<bool> m_requested_fullscreen_state;
 
-		MaterialHandle* m_last_material = nullptr;
+		MaterialHandle m_last_material = { nullptr, 0 };
 	};
 
 } /* wr */

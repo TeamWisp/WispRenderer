@@ -4,6 +4,7 @@
 #include "d3d12_defines.hpp"
 #include "d3dx12.hpp"
 #include "d3d12_texture_resources.hpp"
+#include "d3d12_rt_descriptor_heap.hpp"
 
 namespace wr::d3d12
 {
@@ -75,13 +76,17 @@ namespace wr::d3d12
 		texture->m_array_size = description->m_array_size;
 		texture->m_mip_levels = description->m_mip_levels;
 		texture->m_format = description->m_texture_format;
-		texture->m_current_state = description->m_initial_state;
 		texture->m_resource = resource;
 		texture->m_intermediate = intermediate;
 		texture->m_need_mips = (texture->m_mip_levels > 1);
 		texture->m_is_cubemap = description->m_is_cubemap;
 		texture->m_is_staged = false;
 		texture->m_needed_memory = textureUploadBufferSize;
+
+		for (uint32_t i = 0; i < description->m_mip_levels; ++i)
+		{
+			texture->m_subresource_states.push_back(description->m_initial_state);
+		}
 
 		return texture;
 	}
@@ -137,13 +142,17 @@ namespace wr::d3d12
 		texture->m_array_size = description->m_array_size;
 		texture->m_mip_levels = description->m_mip_levels;
 		texture->m_format = description->m_texture_format;
-		texture->m_current_state = description->m_initial_state;
 		texture->m_resource = resource;
 		texture->m_intermediate = nullptr;
 		texture->m_need_mips = (texture->m_mip_levels > 1);
 		texture->m_is_cubemap = description->m_is_cubemap;
 		texture->m_is_staged = false;
 		texture->m_needed_memory = 0;
+
+		for (uint32_t i = 0; i < description->m_mip_levels; ++i)
+		{
+			texture->m_subresource_states.push_back(description->m_initial_state);
+		}
 
 		return texture;
 	}
@@ -463,10 +472,34 @@ namespace wr::d3d12
 		cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
 	}
 
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_srv_allocation.GetDescriptorHandle();
+
+		cmd_list->m_rt_descriptor_heap->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle)
+	{
+		cmd_list->m_rt_descriptor_heap->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_uav_allocation.GetDescriptorHandle();
+
+		cmd_list->m_rt_descriptor_heap->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle)
+	{
+		cmd_list->m_rt_descriptor_heap->StageDescriptors(rootParameterIndex, descriptorOffset, 1, handle);
+	}
+
 	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture)
 	{
-		ResourceState src_original_state = src_texture->m_current_state;
-		ResourceState dst_original_state = dst_texture->m_current_state;
+		ResourceState src_original_state = src_texture->m_subresource_states[0];
+		ResourceState dst_original_state = dst_texture->m_subresource_states[0];
 
 		d3d12::Transition(cmd_list, src_texture, src_original_state, ResourceState::COPY_SOURCE);
 		d3d12::Transition(cmd_list, dst_texture, dst_original_state, ResourceState::COPY_DEST);
@@ -479,8 +512,11 @@ namespace wr::d3d12
 
 	void Destroy(TextureResource* tex)
 	{
-		SAFE_RELEASE(tex->m_resource);
-		delete tex;
+		if (tex != nullptr)
+		{
+			SAFE_RELEASE(tex->m_resource);
+			delete tex;
+		}
 	}
 
 	bool CheckUAVCompatibility(Format format)

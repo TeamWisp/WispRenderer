@@ -263,15 +263,17 @@ namespace wr
 			NORMAL,
 			ROUGHNESS,
 			METALLIC,
+			MATERIAL_PROPERTIES,
 		};
 
-		constexpr std::array<rs_layout::Entry, 6> basic = {
+		constexpr std::array<rs_layout::Entry, 7> basic = {
 			rs_layout::Entry{(int)BasicE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)BasicE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)BasicE::ALBEDO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::METALLIC, 1, rs_layout::Type::SRV_RANGE}
+			rs_layout::Entry{(int)BasicE::METALLIC, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BasicE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
 		enum class DeferredCompositionE
@@ -283,10 +285,11 @@ namespace wr
 			LIGHT_BUFFER,
 			SKY_BOX,
 			IRRADIANCE_MAP,
+			BUFFER_REFLECTION_SHADOW,
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 8> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 9> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
@@ -294,6 +297,7 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::LIGHT_BUFFER, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::SKY_BOX, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION_SHADOW, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 
@@ -301,13 +305,13 @@ namespace wr
 		{
 			SOURCE,
 			DEST,
-			TEXEL_SIZE,
+			CBUFFER,
 		};
 
 		constexpr std::array<rs_layout::Entry, 3> mip_mapping = {
 			rs_layout::Entry{(int)MipMappingE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)MipMappingE::DEST, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)MipMappingE::TEXEL_SIZE, 2, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)MipMappingE::DEST, 4, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)MipMappingE::CBUFFER, 6, rs_layout::Type::CBV_OR_CONST},
 		};
 
 		enum class CubemapConversionE
@@ -410,7 +414,7 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::TEXTURES, 90, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
 	} /* srv */

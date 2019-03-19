@@ -16,12 +16,12 @@ namespace wr
 		struct Device;
 	};
 
-	class DynamicDescriptorHeap
+	class RTDescriptorHeap
 	{
 	public:
-		DynamicDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 1024);
+		RTDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 1024);
 
-		virtual ~DynamicDescriptorHeap();
+		virtual ~RTDescriptorHeap();
 
 		/**
 		 * Stages a contiguous range of CPU visible descriptors.
@@ -38,8 +38,8 @@ namespace wr
 		 *   * Before a draw    : ID3D12GraphicsCommandList::SetGraphicsRootDescriptorTable
 		 *   * Before a dispatch: ID3D12GraphicsCommandList::SetComputeRootDescriptorTable
 		 */
-		void CommitStagedDescriptorsForDraw(d3d12::CommandList& cmd_list);
-		void CommitStagedDescriptorsForDispatch(d3d12::CommandList& cmd_list);
+		void CommitStagedDescriptorsForDraw(d3d12::CommandList& cmd_list, unsigned int frame_idx);
+		void CommitStagedDescriptorsForDispatch(d3d12::CommandList& cmd_list, unsigned int frame_idx);
 
 		/**
 		 * Copies a single CPU visible descriptor to a GPU visible descriptor heap.
@@ -56,7 +56,7 @@ namespace wr
 		 *
 		 * @return The GPU visible descriptor.
 		 */
-		d3d12::DescHeapGPUHandle CopyDescriptor(d3d12::CommandList& cmd_list, d3d12::DescHeapCPUHandle cpu_desc);
+		d3d12::DescHeapGPUHandle CopyDescriptor(d3d12::CommandList& cmd_list, d3d12::DescHeapCPUHandle cpu_desc, unsigned int frame_idx);
 
 		/**
 		 * Parse the root signature to determine which root parameters contain
@@ -70,15 +70,17 @@ namespace wr
 		 * that are being referenced by a command list has finished executing on the
 		 * command queue.
 		 */
-		void Reset();
+		void Reset(unsigned int frame_idx);
+
+		/**
+		* Ideally, this is only used when building the acceleration structures.
+		* Don't call it otherwise.
+		*/
+		d3d12::DescriptorHeap* GetHeap() { return m_heap; }
 
 	protected:
 
 	private:
-
-		// Request a descriptor heap if one is available.
-		d3d12::DescriptorHeap* RequestDescriptorHeap();
-
 		// Create a new descriptor heap of no descriptor heap is available.
 		d3d12::DescriptorHeap* CreateDescriptorHeap();
 
@@ -139,21 +141,17 @@ namespace wr
 		// Each bit in the bit mask represents the index in the root signature
 		// that contains a descriptor table.
 		uint32_t m_descriptor_table_bit_mask;
+
 		// Each bit set in the bit mask represents a descriptor table
 		// in the root signature that has changed since the last time the 
 		// descriptors were copied.
 		uint32_t m_stale_descriptor_table_bit_mask;
 
-		using DescriptorHeapPool = std::queue< d3d12::DescriptorHeap* >;
-
-		DescriptorHeapPool m_descriptor_heap_pool;
-		DescriptorHeapPool m_available_descriptor_heaps;
-
-		d3d12::DescriptorHeap* m_current_descriptor_heap = nullptr;
+		d3d12::DescriptorHeap* m_heap;
 		d3d12::DescHeapGPUHandle m_current_gpu_desc_handle;
 		d3d12::DescHeapCPUHandle m_current_cpu_desc_handle;
 
-		uint32_t m_num_free_handles;
+		uint32_t m_num_free_handles[d3d12::settings::num_back_buffers];
 
 		wr::d3d12::Device* m_device;
 	};

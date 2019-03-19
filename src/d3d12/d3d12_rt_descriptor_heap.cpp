@@ -1,16 +1,15 @@
-#include "d3d12_dynamic_descriptor_heap.hpp"
+#include "d3d12_rt_descriptor_heap.hpp"
 #include "d3d12_renderer.hpp"
 #include "d3d12_functions.hpp"
 #include "../util/log.hpp"
 
 namespace wr
 {
-	DynamicDescriptorHeap::DynamicDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap)
+	RTDescriptorHeap::RTDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap)
 		: m_desc_heap_type(type)
 		, m_num_descr_per_heap(num_descriptors_per_heap)
 		, m_descriptor_table_bit_mask(0)
 		, m_stale_descriptor_table_bit_mask(0)
-		, m_num_free_handles(0)
 		, m_device(device)
 	{
 		m_current_cpu_desc_handle.m_native.ptr = 0;
@@ -20,12 +19,19 @@ namespace wr
 
 		// Allocate space for staging CPU visible descriptors.
 		m_descriptor_handle_cache = std::make_unique<D3D12_CPU_DESCRIPTOR_HANDLE[]>(m_num_descr_per_heap);
+
+		for (size_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
+		{
+			m_num_free_handles[i] = num_descriptors_per_heap;
+		}
+
+		m_heap = CreateDescriptorHeap();
 	}
 
-	DynamicDescriptorHeap::~DynamicDescriptorHeap()
+	RTDescriptorHeap::~RTDescriptorHeap()
 	{}
 
-	void DynamicDescriptorHeap::ParseRootSignature(const d3d12::RootSignature& root_signature)
+	void RTDescriptorHeap::ParseRootSignature(const d3d12::RootSignature& root_signature)
 	{
 		// If the root signature changes, all descriptors must be (re)bound to the
 		// command list.
@@ -77,7 +83,7 @@ namespace wr
 		if (current_offset > m_num_descr_per_heap) { LOGC("The root signature requires more than the maximum number of descriptors per descriptor heap. Consider increasing the maximum number of descriptors per descriptor heap."); }
 	}
 
-	void DynamicDescriptorHeap::StageDescriptors(uint32_t root_param_idx, uint32_t offset, uint32_t num_descriptors, const d3d12::DescHeapCPUHandle src_desc)
+	void RTDescriptorHeap::StageDescriptors(uint32_t root_param_idx, uint32_t offset, uint32_t num_descriptors, const d3d12::DescHeapCPUHandle src_desc)
 	{
 		if (num_descriptors > m_num_descr_per_heap || root_param_idx >= MaxDescriptorTables)
 		{
@@ -104,7 +110,7 @@ namespace wr
 		m_stale_descriptor_table_bit_mask |= (1 << root_param_idx);
 	}
 
-	uint32_t DynamicDescriptorHeap::ComputeStaleDescriptorCount() const
+	uint32_t RTDescriptorHeap::ComputeStaleDescriptorCount() const
 	{
 		uint32_t num_stale_desc = 0;
 		DWORD i;
@@ -119,25 +125,7 @@ namespace wr
 		return num_stale_desc;
 	}
 
-	d3d12::DescriptorHeap* DynamicDescriptorHeap::RequestDescriptorHeap()
-	{
-		d3d12::DescriptorHeap* descriptor_heap;
-
-		if (!m_available_descriptor_heaps.empty())
-		{
-			descriptor_heap = m_available_descriptor_heaps.front();
-			m_available_descriptor_heaps.pop();
-		}
-		else
-		{
-			descriptor_heap = CreateDescriptorHeap();
-			m_descriptor_heap_pool.push(descriptor_heap);
-		}
-
-		return descriptor_heap;
-	}
-
-	d3d12::DescriptorHeap* DynamicDescriptorHeap::CreateDescriptorHeap()
+	d3d12::DescriptorHeap* RTDescriptorHeap::CreateDescriptorHeap()
 	{
 		d3d12::desc::DescriptorHeapDesc desc;
 		desc.m_type = m_desc_heap_type;
@@ -150,27 +138,19 @@ namespace wr
 		return descriptor_heap;
 	}
 
-	void DynamicDescriptorHeap::CommitStagedDescriptorsForDraw(d3d12::CommandList& cmd_list)
+	void RTDescriptorHeap::CommitStagedDescriptorsForDraw(d3d12::CommandList& cmd_list, unsigned int frame_idx)
 	{
 		// Compute the number of descriptors that need to be copied 
 		uint32_t num_descriptors_to_commit = ComputeStaleDescriptorCount();
-		
+
 		if (num_descriptors_to_commit > 0)
 		{
-			if (!m_current_descriptor_heap || m_num_free_handles < num_descriptors_to_commit)
+			if (m_num_free_handles[frame_idx] < num_descriptors_to_commit)
 			{
-				m_current_descriptor_heap = RequestDescriptorHeap();
-				m_current_cpu_desc_handle = d3d12::GetCPUHandle(m_current_descriptor_heap, 0);
-				m_current_gpu_desc_handle = d3d12::GetGPUHandle(m_current_descriptor_heap, 0);
-				m_num_free_handles = m_num_descr_per_heap;
-
-				d3d12::BindDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
-
-				// When updating the descriptor heap on the command list, all descriptor
-				// tables must be (re)recopied to the new descriptor heap (not just
-				// the stale descriptor tables).
-				m_stale_descriptor_table_bit_mask = m_descriptor_table_bit_mask;
+				LOGC("ERROR: Descriptor Heap for RT is full");
 			}
+
+			d3d12::BindDescriptorHeap(&cmd_list, m_heap, m_desc_heap_type, frame_idx, d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK);
 
 			DWORD root_idx;
 			// Scan from LSB to MSB for a bit set in staleDescriptorsBitMask
@@ -199,7 +179,7 @@ namespace wr
 				d3d12::Offset(m_current_cpu_desc_handle, num_src_desc, m_descriptor_handle_increment_size);
 				d3d12::Offset(m_current_gpu_desc_handle, num_src_desc, m_descriptor_handle_increment_size);
 
-				m_num_free_handles -= num_src_desc;
+				m_num_free_handles[frame_idx] -= num_src_desc;
 
 				// Flip the stale bit so the descriptor table is not recopied again unless it is updated with a new descriptor.
 				m_stale_descriptor_table_bit_mask ^= (1 << root_idx);
@@ -207,33 +187,28 @@ namespace wr
 		}
 	}
 
-	void DynamicDescriptorHeap::CommitStagedDescriptorsForDispatch(d3d12::CommandList& cmd_list)
+	void RTDescriptorHeap::CommitStagedDescriptorsForDispatch(d3d12::CommandList& cmd_list, unsigned int frame_idx)
 	{
+		m_current_gpu_desc_handle = d3d12::GetGPUHandle(m_heap, frame_idx);
+		m_current_cpu_desc_handle = d3d12::GetCPUHandle(m_heap, frame_idx);
+
 		// Compute the number of descriptors that need to be copied 
 		uint32_t num_descriptors_to_commit = ComputeStaleDescriptorCount();
 
 		if (num_descriptors_to_commit > 0)
 		{
-			if (!m_current_descriptor_heap || m_num_free_handles < num_descriptors_to_commit)
+			if (m_num_free_handles[frame_idx] < num_descriptors_to_commit)
 			{
-				m_current_descriptor_heap = RequestDescriptorHeap();
-				m_current_cpu_desc_handle = d3d12::GetCPUHandle(m_current_descriptor_heap, 0);
-				m_current_gpu_desc_handle = d3d12::GetGPUHandle(m_current_descriptor_heap, 0);
-				m_num_free_handles = m_num_descr_per_heap;
-
-				d3d12::BindDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0, d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK);
-
-				// When updating the descriptor heap on the command list, all descriptor
-				// tables must be (re)recopied to the new descriptor heap (not just
-				// the stale descriptor tables).
-				m_stale_descriptor_table_bit_mask = m_descriptor_table_bit_mask;
+				LOGC("ERROR: Descriptor Heap for RT is full");
 			}
+
+			d3d12::BindDescriptorHeap(&cmd_list, m_heap, m_desc_heap_type, frame_idx, d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK);
 
 			DWORD root_idx;
 			// Scan from LSB to MSB for a bit set in staleDescriptorsBitMask
 			while (_BitScanForward(&root_idx, m_stale_descriptor_table_bit_mask))
 			{
-				UINT num_src_desc = m_descriptor_table_cache[root_idx].m_num_descriptors;
+				UINT num_src_desc = m_descriptor_table_cache[root_idx].m_num_descriptors - 9;
 				D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorHandles = m_descriptor_table_cache[root_idx].m_base_descriptor;
 
 				D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
@@ -249,14 +224,14 @@ namespace wr
 				m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes,
 					num_src_desc, pSrcDescriptorHandles, nullptr, static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(m_desc_heap_type));
 
-				// Set the descriptors on the command list using the passed-in setter function.
+				// Set the descriptors on the command list using the setter function.
 				d3d12::BindComputeDescriptorTable(&cmd_list, m_current_gpu_desc_handle, root_idx);
 
 				// Offset current CPU and GPU descriptor handles.
 				d3d12::Offset(m_current_cpu_desc_handle, num_src_desc, m_descriptor_handle_increment_size);
 				d3d12::Offset(m_current_gpu_desc_handle, num_src_desc, m_descriptor_handle_increment_size);
 
-				m_num_free_handles -= num_src_desc;
+				m_num_free_handles[frame_idx] -= num_src_desc;
 
 				// Flip the stale bit so the descriptor table is not recopied again unless it is updated with a new descriptor.
 				m_stale_descriptor_table_bit_mask ^= (1 << root_idx);
@@ -264,23 +239,19 @@ namespace wr
 		}
 	}
 
-	d3d12::DescHeapGPUHandle DynamicDescriptorHeap::CopyDescriptor(d3d12::CommandList& cmd_list, d3d12::DescHeapCPUHandle cpu_desc)
+	d3d12::DescHeapGPUHandle RTDescriptorHeap::CopyDescriptor(d3d12::CommandList& cmd_list, d3d12::DescHeapCPUHandle cpu_desc, unsigned int frame_idx)
 	{
-		if (!m_current_descriptor_heap || m_num_free_handles < 1)
+		if (m_num_free_handles[frame_idx] < 1)
 		{
-			m_current_descriptor_heap = RequestDescriptorHeap();
-			m_current_cpu_desc_handle = d3d12::GetCPUHandle(m_current_descriptor_heap, 0);
-			m_current_gpu_desc_handle = d3d12::GetGPUHandle(m_current_descriptor_heap, 0);
-
-			m_num_free_handles = m_num_descr_per_heap;
-
-			d3d12::BindDescriptorHeap(&cmd_list, m_current_descriptor_heap, m_desc_heap_type, 0);
-
-			// When updating the descriptor heap on the command list, all descriptor
-			// tables must be (re)recopied to the new descriptor heap (not just
-			// the stale descriptor tables).
-			m_stale_descriptor_table_bit_mask = m_descriptor_table_bit_mask;
+			LOGC("ERROR: Descriptor Heap for RT is full");
 		}
+
+		d3d12::BindDescriptorHeap(&cmd_list, m_heap, m_desc_heap_type, frame_idx, d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK);
+
+		// When updating the descriptor heap on the command list, all descriptor
+		// tables must be (re)recopied to the new descriptor heap (not just
+		// the stale descriptor tables).
+		m_stale_descriptor_table_bit_mask = m_descriptor_table_bit_mask;
 
 		d3d12::DescHeapGPUHandle h_gpu = m_current_gpu_desc_handle;
 
@@ -289,32 +260,16 @@ namespace wr
 		d3d12::Offset(m_current_cpu_desc_handle, 1, m_descriptor_handle_increment_size);
 		d3d12::Offset(m_current_gpu_desc_handle, 1, m_descriptor_handle_increment_size);
 
-		m_num_free_handles -= 1;
+		m_num_free_handles[frame_idx] -= 1;
 
 		return h_gpu;
 	}
 
-	void DynamicDescriptorHeap::Reset()
+	void RTDescriptorHeap::Reset(unsigned int frame_idx)
 	{
-		m_available_descriptor_heaps = m_descriptor_heap_pool;
-		
-		m_current_descriptor_heap = nullptr;
-
-		/*if (m_current_descriptor_heap)
-		{
-			ID3D12DescriptorHeap* temp = m_current_descriptor_heap->m_native[0];
-			if (temp)
-			{
-				m_current_descriptor_heap->m_native[0] = nullptr;
-				temp->Release();
-			}
-
-			m_current_descriptor_heap = nullptr;
-		}*/
-
 		m_current_cpu_desc_handle.m_native = CD3DX12_CPU_DESCRIPTOR_HANDLE(D3D12_DEFAULT);
 		m_current_gpu_desc_handle.m_native = CD3DX12_GPU_DESCRIPTOR_HANDLE(D3D12_DEFAULT);
-		m_num_free_handles = 0;
+		m_num_free_handles[frame_idx] = m_num_descr_per_heap;
 		m_descriptor_table_bit_mask = 0;
 		m_stale_descriptor_table_bit_mask = 0;
 

@@ -249,23 +249,23 @@ namespace resources
 
 			for (auto& m : plane_model->m_meshes)
 			{
-				m.second = &bamboo_material;
+				m.second = bamboo_material;
 			}
 		}
 
 		{
 			{
-				test_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
-				for (auto& m : test_model->m_meshes)
-				{
-					m.second = &rusty_metal_material;
-				}
+				//for (auto& m : test_model->m_meshes)
+				//{
+				//	m.second = &rusty_metal_material;
+				//}
 
 				for (auto& m : sphere_model->m_meshes)
 				{
-					m.second = &mirror_material;
+					m.second = mirror_material;
 				}
 			}
 
@@ -274,7 +274,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					m.second = &bamboo_material;
+					m.second = bamboo_material;
 				}
 			}
 
@@ -283,7 +283,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_plastic->m_meshes.push_back(std::make_pair(m.first, &plastic_material));
+					material_knot_plastic->m_meshes.push_back(std::make_pair(m.first, plastic_material));
 					material_knot_plastic->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_plastic->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_plastic->m_box[2] = material_knot_bamboo->m_box[2];
@@ -300,7 +300,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_metal->m_meshes.push_back(std::make_pair(m.first, &metal_material));
+					material_knot_metal->m_meshes.push_back(std::make_pair(m.first, metal_material));
 					material_knot_metal->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_metal->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_metal->m_box[2] = material_knot_bamboo->m_box[2];
@@ -316,7 +316,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_titanium->m_meshes.push_back(std::make_pair(m.first, &titanium_material));
+					material_knot_titanium->m_meshes.push_back(std::make_pair(m.first, titanium_material));
 					material_knot_titanium->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_titanium->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_titanium->m_box[2] = material_knot_bamboo->m_box[2];
@@ -333,7 +333,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_copper->m_meshes.push_back(std::make_pair(m.first, &copper_material));
+					material_knot_copper->m_meshes.push_back(std::make_pair(m.first, copper_material));
 					material_knot_copper->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_copper->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_copper->m_box[2] = material_knot_bamboo->m_box[2];
@@ -350,7 +350,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_rusted_iron->m_meshes.push_back(std::make_pair(m.first, &rusted_iron_material));
+					material_knot_rusted_iron->m_meshes.push_back(std::make_pair(m.first, rusted_iron_material));
 					material_knot_rusted_iron->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_rusted_iron->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_rusted_iron->m_box[2] = material_knot_bamboo->m_box[2];
@@ -367,7 +367,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_gold->m_meshes.push_back(std::make_pair(m.first, &gold_material));
+					material_knot_gold->m_meshes.push_back(std::make_pair(m.first, gold_material));
 					material_knot_gold->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_gold->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_gold->m_box[2] = material_knot_bamboo->m_box[2];
@@ -384,7 +384,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_marble->m_meshes.push_back(std::make_pair(m.first, &marble_material));
+					material_knot_marble->m_meshes.push_back(std::make_pair(m.first, marble_material));
 					material_knot_marble->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_marble->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_marble->m_box[2] = material_knot_bamboo->m_box[2];
@@ -401,7 +401,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_rubber->m_meshes.push_back(std::make_pair(m.first, &rubber_material));
+					material_knot_rubber->m_meshes.push_back(std::make_pair(m.first, rubber_material));
 					material_knot_rubber->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_rubber->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_rubber->m_box[2] = material_knot_bamboo->m_box[2];
@@ -418,7 +418,7 @@ namespace resources
 
 				for (auto& m : material_knot_bamboo->m_meshes)
 				{
-					material_knot_scorched_wood->m_meshes.push_back(std::make_pair(m.first, &scorched_wood_material));
+					material_knot_scorched_wood->m_meshes.push_back(std::make_pair(m.first, scorched_wood_material));
 					material_knot_scorched_wood->m_box[0] = material_knot_bamboo->m_box[0];
 					material_knot_scorched_wood->m_box[1] = material_knot_bamboo->m_box[1];
 					material_knot_scorched_wood->m_box[2] = material_knot_bamboo->m_box[2];
@@ -433,40 +433,11 @@ namespace resources
 		}
 	}
 
-#pragma region REPLACE_LOADING_WITH_THIS
-		// Once the ray tracing implementation supports multiple model pools
-		// Replace the loading code above with this one.
-
-		//// Load Cube.
-		//{
-		//	cube_model = render_system->GetSimpleShape(wr::RenderSystem::SimpleShapes::CUBE);
-
-		//	for (auto& m : cube_model->m_meshes)
-		//	{
-		//		m.second = &rock_material;
-		//	}
-		//}
-
-		//{
-		//	plane_model = render_system->GetSimpleShape(wr::RenderSystem::SimpleShapes::PLANE);
-
-		//	light_model = plane_model;
-
-		//	for (auto& m : plane_model->m_meshes)
-		//	{
-		//		m.second = &rock_material;
-		//	}
-		//}
-
-
-		//{
-		//	test_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-
-		//	for (auto& m : test_model->m_meshes)
-		//	{
-		//		m.second = &rusty_metal_material;
-		//	}
-		//}
-#pragma endregion
+	void ReleaseResources()
+	{
+		model_pool.reset();
+		texture_pool.reset();
+		material_pool.reset();
+	};
 
 }

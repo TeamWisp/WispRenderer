@@ -7,7 +7,7 @@
 #include "../window.hpp"
 
 #include "d3d12_defines.hpp"
-#include "../material_pool.hpp"
+#include "d3d12_material_pool.hpp"
 #include "d3d12_resource_pool_texture.hpp"
 #include "d3d12_model_pool.hpp"
 #include "d3d12_constant_buffer_pool.hpp"
@@ -43,12 +43,23 @@ namespace wr
 		{
 			m_structured_buffer_pools[i].reset();
 		}
-		
 		for (int i = 0; i < m_model_pools.size(); ++i)
 		{
 			m_model_pools[i].reset();
 		}
 
+		for (int i = 0; i < m_texture_pools.size(); ++i)
+		{
+			m_texture_pools[i].reset();
+		}
+
+		for (auto iter : m_fences)
+		{
+			SAFE_RELEASE(iter->m_native);
+		}
+
+		d3d12::Destroy(m_fullscreen_quad_vb);
+		d3d12::Destroy(m_direct_cmd_list);
 		d3d12::Destroy(m_device);
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
@@ -149,12 +160,15 @@ namespace wr
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
 
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
+
+		//Rendering engine creates a texture pool that will be used by the render tasks.
+		m_texture_pools.push_back(CreateTexturePool());
 	}
 
 	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
 
- 		if (m_requested_fullscreen_state.has_value())
+		if (m_requested_fullscreen_state.has_value())
 		{
 			WaitForAllPreviousWork();
 			m_render_window.value()->m_swap_chain->SetFullscreenState(m_requested_fullscreen_state.value(), nullptr);
@@ -164,7 +178,6 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
-		
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -264,7 +277,6 @@ namespace wr
 	{
 
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
-		
 		if (m_render_window.has_value())
 		{
 			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
@@ -280,7 +292,7 @@ namespace wr
 
 	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_bytes)
 	{
-		return std::make_shared<MaterialPool>();
+		return std::make_shared<D3D12MaterialPool>(*this);
 	}
 
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes)
@@ -300,6 +312,16 @@ namespace wr
 		std::shared_ptr<D3D12StructuredBufferPool> pool = std::make_shared<D3D12StructuredBufferPool>(*this, size_in_bytes);
 		m_structured_buffer_pools.push_back(pool);
 		return pool;
+	}
+
+	std::shared_ptr<TexturePool> D3D12RenderSystem::GetDefaultTexturePool()
+	{
+		if (m_texture_pools.size() > 0)
+		{
+			return m_texture_pools[0];
+		}
+
+		return std::shared_ptr<TexturePool>();
 	}
 
 	void D3D12RenderSystem::WaitForAllPreviousWork()
@@ -329,6 +351,11 @@ namespace wr
 	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
 		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+	}
+
+	void D3D12RenderSystem::DestroyCommandList(CommandList* cmd_list)
+	{
+		Destroy(static_cast<wr::d3d12::CommandList*>(cmd_list));
 	}
 
 	RenderTarget* D3D12RenderSystem::GetRenderTarget(RenderTargetProperties properties)
@@ -391,7 +418,6 @@ namespace wr
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-	
 		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
@@ -522,7 +548,7 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto shader_error = d3d12::LoadShader(desc.second.type, desc.second.path, desc.second.entry);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
@@ -543,7 +569,7 @@ namespace wr
 		auto& registry = PipelineRegistry::Get();
 
 		for (auto desc : registry.m_descriptions)
-		{		
+		{
 			d3d12::desc::PipelineStateDesc n_desc;
 			n_desc.m_counter_clockwise = desc.second.m_counter_clockwise;
 			n_desc.m_cull_mode = desc.second.m_cull_mode;
@@ -596,11 +622,11 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto n_pipeline = static_cast<D3D12Pipeline*>(registry.Find(handle))->m_native;
 
-		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
 			if (!pipeline_shader) return;
 
-			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry);
 
@@ -645,9 +671,9 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto n_pipeline = static_cast<D3D12StateObject*>(registry.Find(handle))->m_native;
 
-		auto recompile_shader = [&error_msg](auto& pipeline_shader)
+		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
-			auto new_shader_variant = d3d12::LoadShader(pipeline_shader->m_type,
+			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry);
 
@@ -684,7 +710,7 @@ namespace wr
 		std::optional<std::string> error_msg = std::nullopt;
 		auto& n_shader = static_cast<D3D12Shader*>(registry.Find(handle))->m_native;
 
-		auto new_shader_variant = d3d12::LoadShader(n_shader->m_type,
+		auto new_shader_variant = d3d12::LoadShader(m_device, n_shader->m_type,
 			n_shader->m_path,
 			n_shader->m_entry);
 
@@ -847,7 +873,6 @@ namespace wr
 			m_model_pools[i]->StageMeshes(m_direct_cmd_list);
 		}
 
-		
 		for (auto pool : m_texture_pools)
 		{
 			pool->Stage(m_direct_cmd_list);
@@ -885,8 +910,9 @@ namespace wr
 			data.m_inverse_projection = node->m_inverse_projection;
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
+			data.m_is_hybrid = 0;
 
-			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &data);
+			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);
 		}
 	}
 
@@ -897,7 +923,7 @@ namespace wr
 
 		std::vector<std::shared_ptr<LightNode>>& light_nodes = scene_graph.GetLightNodes();
 
-		for (uint32_t i = 0, j = (uint32_t) light_nodes.size(); i < j; ++i)
+		for (uint32_t i = 0, j = (uint32_t)light_nodes.size(); i < j; ++i)
 		{
 			std::shared_ptr<LightNode>& node = light_nodes[i];
 
@@ -1021,7 +1047,7 @@ namespace wr
 				for (auto& mesh : model->m_meshes)
 				{
 					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
-					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride) 
+					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride)
 					{
 						d3d12::BindVertexBuffer(n_cmd_list,
 							static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
@@ -1037,11 +1063,11 @@ namespace wr
 						m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 						m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 					}
-					
+
 					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
 					auto material_handle = mesh.second;
-					
+
 					if (material_handle != m_last_material)
 					{
 						m_last_material = material_handle;
@@ -1080,30 +1106,74 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::BindMaterial(MaterialHandle* material_handle, CommandList* cmd_list)
+	void D3D12RenderSystem::BindMaterial(MaterialHandle material_handle, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 
-		auto* material_internal = material_handle->m_pool->GetMaterial(material_handle->m_id);
+		auto* material_internal = material_handle.m_pool->GetMaterial(material_handle.m_id);
+
+		material_internal->UpdateConstantBuffer();
+
+		D3D12ConstantBufferHandle* handle = static_cast<D3D12ConstantBufferHandle*>(material_internal->GetConstantBufferHandle());
+
+		D3D12TexturePool* texture_pool = static_cast<D3D12TexturePool*>(material_internal->GetTexturePool());
+
+		if (texture_pool == nullptr)
+		{
+			texture_pool = static_cast<D3D12TexturePool*>(m_texture_pools[0].get());
+		}
 
 		auto albedo_handle = material_internal->GetAlbedo();
-		auto* albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+		wr::d3d12::TextureResource* albedo_internal;
+		if (albedo_handle.m_pool == nullptr)
+		{
+			albedo_internal = texture_pool->GetTexture(texture_pool->GetDefaultAlbedo().m_id);
+		}
+		else
+		{
+			albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTexture(albedo_handle.m_id));
+		}
 
 		auto normal_handle = material_internal->GetNormal();
-		auto* normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+		wr::d3d12::TextureResource* normal_internal;
+		if (normal_handle.m_pool == nullptr)
+		{
+			normal_internal = texture_pool->GetTexture(texture_pool->GetDefaultNormal().m_id);
+		}
+		else
+		{
+			normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTexture(normal_handle.m_id));
+		}
 
 		auto roughness_handle = material_internal->GetRoughness();
-		auto* roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTexture(roughness_handle.m_id));
+		wr::d3d12::TextureResource* roughness_internal;
+		if (roughness_handle.m_pool == nullptr)
+		{
+			roughness_internal = texture_pool->GetTexture(texture_pool->GetDefaultRoughness().m_id);
+		}
+		else
+		{
+			roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTexture(roughness_handle.m_id));
+		}
 
 		auto metallic_handle = material_internal->GetMetallic();
-		auto* metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
+		wr::d3d12::TextureResource* metallic_internal;
+		if (metallic_handle.m_pool == nullptr)
+		{
+			metallic_internal = texture_pool->GetTexture(texture_pool->GetDefaultMetalic().m_id);
+		}
+		else
+		{
+			metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTexture(metallic_handle.m_id));
+		}
 
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ALBEDO)), albedo_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::NORMAL)), normal_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ROUGHNESS)), roughness_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::METALLIC)), metallic_internal);
+		d3d12::BindConstantBuffer(n_cmd_list, handle->m_native, 3, GetFrameIdx());
 	}
-	
+
 	unsigned int D3D12RenderSystem::GetFrameIdx()
 	{
 		if (m_render_window.has_value())

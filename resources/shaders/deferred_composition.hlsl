@@ -12,6 +12,7 @@ Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
 Texture2D skybox : register(t4);
 TextureCube irradiance_map : register(t5);
+Texture2D buffer_refl_shadow : register(t6); // xyz: reflection, a: shadow factor
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 
@@ -21,6 +22,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
 	float4x4 inv_projection;
 	float4x4 inv_view;
+	uint is_hybrid;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -47,7 +49,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
 	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(camera_pos - pos);
-
+	
 	float3 retval;
 	
 	if(depth_f != 1.0f)
@@ -62,11 +64,27 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		flipped_N.y *= -1;
 		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
-		const float shadow_factor = 1.0f;
+		// Get shadow factor (0: fully shadowed, 1: no shadow)
+		float shadow_factor = lerp(
+			// Do deferred shadow (fully lit for now)
+			1.0,
+			// Shadow buffer if its hybrid rendering
+			buffer_refl_shadow[screen_coord].a,
+			// Lerp factor (0: no hybrid, 1: hybrid)
+			is_hybrid);
+		shadow_factor = clamp(shadow_factor, 0.1, 1.0);
 		
-		float3 skybox_reflection = skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0);
+		// Get reflection
+		float3 reflection = lerp(
+			// Sample from skybox if it IS NOT hybrid rendering
+			skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0),
+			// Reflection buffer if it IS hybrid rendering
+			buffer_refl_shadow[screen_coord].xyz,	
+			// Lerp factor (0: no hybrid, 1: hybrid)
+			is_hybrid);
 
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, skybox_reflection);
+		// Shade pixel
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection);
 
 		retval = retval * shadow_factor;
 	}

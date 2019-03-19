@@ -7,11 +7,11 @@
 #include "d3d12_structs.hpp"
 #include "d3d12_constant_buffer_pool.hpp"
 #include "d3d12_dynamic_descriptor_heap.hpp"
+#include "d3d12_descriptors_allocations.hpp"
 
 namespace wr::d3d12
 {
 	struct TextureResource;
-
 
 	// Device
 	[[nodiscard]] Device* CreateDevice();
@@ -61,13 +61,15 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to);
+	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to, unsigned int first_subresource, unsigned int num_subresources);
+	void TransitionSubresource(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to, unsigned int subresource);
 	void Transition(CommandList* cmd_list, std::vector<TextureResource*> const& textures, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx);
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void Alias(CommandList* cmd_list, TextureResource* resource_before, TextureResource* resource_after);
 	void UAVBarrier(CommandList* cmd_list, TextureResource* resource, unsigned int number_of_barriers);
-	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth);
+	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth, unsigned int frame_idx);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
 
@@ -111,6 +113,10 @@ namespace wr::d3d12
 	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
 	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture);
 	void Destroy(TextureResource* tex);
 
@@ -158,7 +164,7 @@ namespace wr::d3d12
 	void ResizeViewport(Viewport& viewport, int width, int height);
 
 	// Shader
-	[[nodiscard]] std::variant<Shader*, std::string> LoadShader(ShaderType type, std::string const & path, std::string const & entry = "main");
+	[[nodiscard]] std::variant<Shader*, std::string> LoadShader(Device* device, ShaderType type, std::string const & path, std::string const & entry = "main");
 	void Destroy(Shader* shader);
 
 	// Root Signature
