@@ -6,10 +6,10 @@
 namespace wr
 {
 	D3D12StructuredBufferPool::D3D12StructuredBufferPool(D3D12RenderSystem & render_system, std::size_t size_in_bytes) :
-		StructuredBufferPool(SizeAlign(size_in_bytes, 65536)),
+		StructuredBufferPool(SizeAlignTwoPower(size_in_bytes, 65536)),
 		m_render_system(render_system)
 	{
-		m_heap = d3d12::CreateHeap_BSBO(m_render_system.m_device, SizeAlign(size_in_bytes, 65536), ResourceType::BUFFER, d3d12::settings::num_back_buffers);
+		m_heap = d3d12::CreateHeap_BSBO(m_render_system.m_device, SizeAlignTwoPower(size_in_bytes, 65536), ResourceType::BUFFER, d3d12::settings::num_back_buffers);
 		SetName(m_heap, L"Structured buffer heap");
 		m_buffer_update_queues.resize(d3d12::settings::num_back_buffers);
 	}

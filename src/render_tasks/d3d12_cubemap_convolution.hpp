@@ -25,6 +25,7 @@ namespace wr
 
 		TextureHandle in_radiance;
 		TextureHandle out_irradiance;
+		TextureHandle out_pref_env_map;
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
 		D3D12ConstantBufferHandle* cb_handle;
@@ -102,8 +103,9 @@ namespace wr
 			}
 
 			data.in_radiance = pred_data.out_cubemap;
+			data.out_pref_env_map = pred_data.out_pref_env;
 
-			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 32, 32, 1, wr::Format::R32G32B32A32_FLOAT, true);;
+			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R32G32B32A32_FLOAT, true);;
 
 			data.out_irradiance = skybox_node->m_irradiance.value();
 
@@ -185,10 +187,20 @@ namespace wr
 			//if (data.should_run)
 		}
 
+		inline void DestroyCubemapConvolutionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			if (resize)
+			{
+				return;
+			}
+		}
+
 	} /* internal */
 
 	inline void AddCubemapConvolutionTask(FrameGraph& fg)
 	{
+		std::wstring name(L"Cubemap Convolution");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -201,7 +213,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -211,10 +224,10 @@ namespace wr
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteCubemapConvolutionTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
-			// Nothing to destroy
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyCubemapConvolutionTask(fg, handle, resize);
 		};
-		desc.m_name = "Cubemap Convolution";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;

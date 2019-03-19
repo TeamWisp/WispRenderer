@@ -1,4 +1,5 @@
 #define LIGHTS_REGISTER register(t3)
+#define MAX_REFLECTION_LOD 3
 
 #include "fullscreen_quad.hlsl"
 #include "util.hlsl"
@@ -10,12 +11,15 @@ Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
-Texture2D skybox : register(t4);
-TextureCube irradiance_map : register(t5);
-Texture2D buffer_refl_shadow : register(t6); // xyz: reflection, a: shadow factor
-Texture2D gbuffer_AO : register(t7); //x: AO value
-RWTexture2D<float4> output : register(u0);
-SamplerState s0 : register(s0);
+TextureCube skybox : register(t4);
+TextureCube irradiance_map   : register(t5);
+TextureCube pref_env_map	 : register(t6);
+Texture2D brdf_lut			 : register(t7);
+Texture2D buffer_refl_shadow : register(t8); // xyz: reflection, a: shadow factor
+Texture2D gbuffer_AO 		 : register(t9); //x: AO value
+RWTexture2D<float4> output   : register(u0);
+SamplerState point_sampler   : register(s0);
+SamplerState linear_sampler  : register(s1);
 
 cbuffer CameraProperties : register(b0)
 {
@@ -63,7 +67,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
-		const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+
+		const float3 sampled_irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
+		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
+		const float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -73,12 +80,15 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			buffer_refl_shadow[screen_coord].a,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
-		shadow_factor = clamp(shadow_factor, 0.1, 1.0);
+
+		shadow_factor = clamp(shadow_factor, 0.0, 1.0);
 		
+
+
 		// Get reflection
 		float3 reflection = lerp(
-			// Sample from skybox if it IS NOT hybrid rendering
-			skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0),
+			// Sample from environment if it IS NOT hybrid rendering
+			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
 			buffer_refl_shadow[screen_coord].xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
@@ -94,13 +104,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, occluded_irradiance, reflection);
-
-		retval = retval * shadow_factor;
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, occluded_irradiance, reflection, sampled_brdf, shadow_factor);
 	}
 	else
 	{	
-		retval = skybox.SampleLevel(s0, SampleSphericalMap(-V), 0);
+		retval = skybox.SampleLevel(linear_sampler, -V, 0);
 	}
 
 	//Do shading

@@ -35,7 +35,7 @@ namespace wr::d3d12
 	{
 		auto table = new ShaderTable();
 
-		table->m_shader_record_size = SizeAlign(shader_record_size, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+		table->m_shader_record_size = SizeAlignTwoPower(shader_record_size, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
 		table->m_shader_records.reserve(num_shader_records);
 		std::uint64_t buffer_size = num_shader_records * table->m_shader_record_size;
 		

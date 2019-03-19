@@ -22,7 +22,8 @@ namespace wr::imgui
 	enum InspectItem
 	{
 		NONE,
-		LIGHT
+		LIGHT,
+		MODEL
 	};
 
 	namespace window
@@ -34,22 +35,24 @@ namespace wr::imgui
 		void D3D12Settings();
 		void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
 		void EffectEditor(SceneGraph* scene_graph);
-		void ModelEditor(SceneGraph* scene_graph);
+		void ModelEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
 		void Inspect(SceneGraph* scene_graph);
 
 		static bool open_hardware_info = true;
 		static bool open_d3d12_settings = true;
-		static bool open_shader_registry = true;
+		static bool open_shader_registry = false;
 		static bool open_shader_compiler_popup = false;
 		static std::string shader_compiler_error = "No shader error";
-		static bool open_pipeline_registry = true;
-		static bool open_root_signature_registry = true;
+		static bool open_pipeline_registry = false;
+		static bool open_root_signature_registry = false;
 		static bool open_light_editor = true;
 		static bool open_effect_editor = true;
 		static bool open_model_editor = true;
 		static bool open_inspect_editor = true;
 		static wr::LightNode* selected_light = nullptr;
+		static wr::MeshNode* selected_model = nullptr;
 		static bool light_selected = false;
+		static bool model_selected = false;
 		static InspectItem inspect_item = NONE;
 	}
 

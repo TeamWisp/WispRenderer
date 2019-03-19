@@ -77,6 +77,29 @@ namespace wr::imgui::internal
 	{
 		return val ? "True" : "False";
 	}
+
+	void ManipulateNode(wr::Node* node, SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
+	{
+		DirectX::XMFLOAT4X4 rmat;
+		auto mat = DirectX::XMMatrixTranslationFromVector(node->m_position);
+		DirectX::XMStoreFloat4x4(&rmat, mat);
+
+		auto cam = scene_graph->GetActiveCamera();
+		DirectX::XMFLOAT4X4 rview;
+		DirectX::XMFLOAT4X4 rproj;
+		auto view = cam->m_view;
+		DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
+		DirectX::XMStoreFloat4x4(&rview, view);
+
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(viewport_pos.x, viewport_pos.y, viewport_size.x, viewport_size.y);
+		ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
+
+		node->m_position = { rmat._41, rmat._42, rmat._43 };
+
+		node->SignalTransformChange();
+		node->SignalChange();
+	}
 }
 
 namespace wr::imgui::menu
@@ -213,10 +236,11 @@ namespace wr::imgui::window
 				if (pressed_light)
 				{
 
-					if (selected_light != lights[i].get())
+					if (selected_light != lights[i].get() || inspect_item != LIGHT)
 					{
 						selected_light = lights[i].get();
 						light_selected = true;
+						model_selected = false;
 						inspect_item = LIGHT;
 					}
 					else
@@ -241,31 +265,12 @@ namespace wr::imgui::window
 			ImGui::End();
 
 
-			if (selected_light == nullptr)
+			if (selected_light == nullptr || light_selected == false)
 			{
 				return;
 			}
 
-			auto ml = selected_light;
-			DirectX::XMFLOAT4X4 rmat;
-			auto mat = DirectX::XMMatrixTranslationFromVector(ml->m_position);
-			DirectX::XMStoreFloat4x4(&rmat, mat);
-
-			auto cam = scene_graph->GetActiveCamera();
-			DirectX::XMFLOAT4X4 rview;
-			DirectX::XMFLOAT4X4 rproj;
-			auto view = cam->m_view;
-			DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
-			DirectX::XMStoreFloat4x4(&rview, view);
-
-			ImGuiIO& io = ImGui::GetIO();
-			ImGuizmo::SetRect(viewport_pos.x, viewport_pos.y, viewport_size.x, viewport_size.y);
-			ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
-
-			ml->m_position = { rmat._41, rmat._42, rmat._43 };
-
-			ml->SignalTransformChange();
-			ml->SignalChange();
+			internal::ManipulateNode(selected_light, scene_graph, viewport_pos, viewport_size);
 		}
 	}
 
@@ -282,121 +287,77 @@ namespace wr::imgui::window
 			ImGui::End();
 		}
 	}
-	void ModelEditor(SceneGraph * scene_graph)
+	
+	void ModelEditor(SceneGraph * scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
 	{
-		/*if (open_model_editor)
+		if (open_model_editor)
 		{
 			auto& models = scene_graph->GetMeshNodes();
 
 			ImGui::Begin("Model Editor", &open_model_editor);
 
-			static std::vector<char> text(256);
-			
-
-			ImGui::InputText("Model Path", text.data(), text.size());
-
-			if (ImGui::Button("Add Model"))
-			{
-
-				//Model* model = scene_graph->GetModelPool()->Load<Vertex>(
-				//	scene_graph->GetMaterialPool().get(),
-				//	scene_graph->GetTexturePool().get(),
-				//	text.data(), ModelType::FBX);
-
-				//if (model != nullptr) {
-				//	scene_graph->CreateChild<wr::MeshNode>(nullptr, model);
-				//}
-			}
-
-			ImGui::Separator();
-
-			std::vector<std::pair<std::string, int>> model_count;
+			std::map<std::string, int> model_counter;
 
 			for (int i = 0; i < models.size(); ++i)
 			{
-				auto model = models[i];
-
-				bool found = false;
-
-				int j;
-
-				for (j = 0; j < model_count.size(); ++j) 
-				{
-					if (model_count[j].first.compare(model->m_model->m_model_name) == 0) 
-					{
-						found = true;
-						model_count[j].second++;
-						break;
-					}
-				}
+				auto window_size = ImGui::GetWindowSize();
 
 				std::string model_name;
 
-				if (!found)
+				if (model_counter.find(models[i]->m_model->m_model_name) != model_counter.end())
 				{
-					model_count.push_back(std::make_pair(model->m_model->m_model_name, 0));
-					model_name = "Model: " + model->m_model->m_model_name + " " + std::to_string(0);
+					int count = model_counter[models[i]->m_model->m_model_name];
+					count++;
+					model_counter[models[i]->m_model->m_model_name] = count;
+					model_name = models[i]->m_model->m_model_name + " " + std::to_string(count);
 				}
 				else
 				{
-					model_count.push_back(std::make_pair(model->m_model->m_model_name, 0));
-					model_name = "Model: " + model->m_model->m_model_name + " " + std::to_string(model_count[j].second);
+					model_name = models[i]->m_model->m_model_name + " " + "1";
+					model_counter[models[i]->m_model->m_model_name] = 1;
 				}
-				
 
-				if (ImGui::TreeNode(model_name.c_str()))
+				bool button_selected = false;
+				if (model_selected && models[i].get() == selected_model) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(152.f / 255.f, 43.f / 255.f, 91.f / 255.f, 1.0f));
+					button_selected = true;
+					inspect_item = MODEL;
+				}
+
+				bool pressed_model = ImGui::Button(model_name.c_str(), ImVec2(ImGui::GetWindowSize().x, 20));
+
+				if (pressed_model)
 				{
-
-					float pos[3] = { DirectX::XMVectorGetX(model->m_position),
-						DirectX::XMVectorGetY(model->m_position),
-						DirectX::XMVectorGetZ(model->m_position) };
-					ImGui::DragFloat3("Position", pos);
-					model->SetPosition(DirectX::XMVectorSet(pos[0], pos[1], pos[2], 1));
-					
-					float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(model->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(model->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(model->m_rotation_radians)) };
-					ImGui::DragFloat3("Rotation", rot, 0.01f);
-					model->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
-
-					float scl[3] = { DirectX::XMVectorGetX(model->m_scale),
-						DirectX::XMVectorGetY(model->m_scale),
-						DirectX::XMVectorGetZ(model->m_scale) };
-					ImGui::DragFloat3("Scale", scl);
-					model->SetScale(DirectX::XMVectorSet(scl[0], scl[1], scl[2], 1));
-
-					if (ImGui::Button("Remove"))
+					if (selected_model != models[i].get() || inspect_item != MODEL)
 					{
-						int c = 0;
-						for (int j = 0; j < models.size(); ++j) 
-						{
-							if (model->m_model == models[j]->m_model)
-								c++;
-
-						}
-						if (c == 1)
-							model->m_model->m_model_pool->Destroy(model->m_model);
-						scene_graph->DestroyNode(model);
+						selected_model = models[i].get();
+						inspect_item = MODEL;
+						model_selected = true;
+						light_selected = false;
 					}
-
-					ImGui::SameLine();
-
-					if (ImGui::Button("Duplicate"))
+					else
 					{
-						auto node = scene_graph->CreateChild<wr::MeshNode>(nullptr, model->m_model);
-						node->SetPosition(model->m_position);
-						node->SetRotation(model->m_rotation_radians);
-						node->SetScale(model->m_scale);
+						selected_model = nullptr;
+						inspect_item = NONE;
+						model_selected = false;
 					}
-
-					ImGui::TreePop();
 				}
-				
+
+				if (button_selected)
+				{
+					ImGui::PopStyleColor();
+				}
 			}
 
 			ImGui::End();
 
-		}*/
+			if (selected_model == nullptr || model_selected == false)
+			{
+				return;
+			}
+
+			internal::ManipulateNode(selected_model, scene_graph, viewport_pos, viewport_size);
+		}
 	}
 
 	void Inspect(SceneGraph * scene_graph)
@@ -404,7 +365,7 @@ namespace wr::imgui::window
 		if (open_inspect_editor)
 		{
 			ImGui::Begin("Inspect", &open_inspect_editor);
-
+			
 			switch (inspect_item)
 			{
 			case LIGHT:
@@ -455,7 +416,38 @@ namespace wr::imgui::window
 					light_node->SignalChange();
 				}
 				break;
+			case MODEL:
+				if (selected_model != nullptr)
+				{
+					ImGui::Separator();
 
+					auto& model_node = selected_model;
+					auto* model = model_node->m_model;
+
+					ImGui::DragFloat3("Position", model_node->m_position.m128_f32, 0.25f);
+
+					float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(model_node->m_rotation_radians)),
+					DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(model_node->m_rotation_radians)),
+					DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(model_node->m_rotation_radians)) };
+					ImGui::DragFloat3("Rotation", rot, 0.1f);
+					model_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
+					float scale[3] = { DirectX::XMVectorGetX(model_node->m_scale),
+					DirectX::XMVectorGetY(model_node->m_scale),
+					DirectX::XMVectorGetZ(model_node->m_scale) };
+					ImGui::DragFloat3("Scale", scale, 0.01f);
+					model_node->SetScale(DirectX::XMVectorSet(scale[0], scale[1], scale[2], 1.f));
+
+					if (ImGui::Button("Take Camera Transform"))
+					{
+						model_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
+						model_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+					}
+
+					model_node->SignalTransformChange();
+					model_node->SignalChange();
+				}
+				break;
 			default:
 				break;
 			}

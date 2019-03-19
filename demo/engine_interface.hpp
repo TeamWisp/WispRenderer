@@ -131,8 +131,25 @@ namespace engine
 			ImGui::End();
 		}
 
+		{
+			ImGui::Begin("IBL Testing Ground");
+
+			auto mirror_internal = resources::mirror_material.m_pool->GetMaterial(resources::mirror_material.m_id);
+
+			float roughness = mirror_internal->GetConstantRoughness();
+			float metallic = mirror_internal->GetConstantMetallic().x;
+
+			ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f);
+			ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f);
+
+			mirror_internal->SetConstantRoughness(roughness);
+			mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(metallic, metallic, metallic));
+
+			ImGui::End();
+		}
+
 		wr::imgui::window::LightEditor(sg, viewport_pos, viewport_size);
-		wr::imgui::window::ModelEditor(sg);
+		wr::imgui::window::ModelEditor(sg, viewport_pos, viewport_size);
 		wr::imgui::window::EffectEditor(sg);
 		wr::imgui::window::ShaderRegistry();
 		wr::imgui::window::PipelineRegistry();

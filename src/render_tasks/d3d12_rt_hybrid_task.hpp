@@ -255,7 +255,7 @@ namespace wr
 				// Fill descriptor heap with textures used by the scene
 				for (auto handle : as_build_data.out_material_handles)
 				{
-					auto* material_internal = handle->m_pool->GetMaterial(handle->m_id);
+					auto* material_internal = handle.m_pool->GetMaterial(handle.m_id);
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
@@ -264,10 +264,16 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
 					};
 
-					set_srv(material_internal->GetAlbedo());
-					set_srv(material_internal->GetMetallic());
+					if(!material_internal->UsesConstantAlbedo())
+						set_srv(material_internal->GetAlbedo());
+
 					set_srv(material_internal->GetNormal());
-					set_srv(material_internal->GetRoughness());
+					
+					if (!material_internal->UsesConstantMetallic())
+						set_srv(material_internal->GetMetallic());
+					
+					if (!material_internal->UsesConstantRoughness())
+						set_srv(material_internal->GetRoughness());
 				}
 
 				// Get light buffer
@@ -371,6 +377,8 @@ namespace wr
 
 	inline void AddRTHybridTask(FrameGraph& fg)
 	{
+		std::wstring name(L"Hybrid raytracing");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -383,7 +391,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM, Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(2),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -399,7 +408,7 @@ namespace wr
 		{
 			internal::DestroyRTHybridTask(fg, handle, resize);
 		};
-		desc.m_name = "Hybrid raytracing";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
