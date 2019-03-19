@@ -382,7 +382,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(L"Path Tracer")
 		};
 
 		RenderTaskDesc desc;
@@ -398,7 +399,6 @@ namespace wr
 		{
 			// Nothing to destroy
 		};
-		desc.m_name = "Path Tracer";
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;

@@ -62,7 +62,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{
 		// GBuffer contents
 		float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
-		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
+		float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
 
@@ -79,7 +79,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 		else
 		{
-			irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+			irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
 		}
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
@@ -106,7 +106,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, sampled_brdf, shadow_factor);
-		//retval = irradiance;
 	}
 	else
 	{	
