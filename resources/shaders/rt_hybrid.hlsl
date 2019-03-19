@@ -62,9 +62,13 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float2 padding;
+	float3 padding;
 	float frame_idx;
 	float intensity;
+
+	uint shadows_enabled;
+	uint reflections_enabled;
+	uint ao_enabled;
 };
 
 struct Ray
@@ -171,17 +175,34 @@ void RaygenEntry()
 	}
 
 	wpos += normal * EPSILON;
-	// Get shadow factor
-	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	// Get shadow factor  
+	float shadow_result = 1.0f;
+	if (shadows_enabled == 1)
+	{
+		shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	} 
 
 	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
+	float3 reflection_result;
+	if (reflections_enabled == 1)
+	{
+		reflection_result = DoReflection(wpos, V, normal, rand_seed);
+	}
+	else
+	{
+		reflection_result = skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0);
+	}
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
 
-	
-   output_ao[DispatchRaysIndex().xy].x = DoAmbientOcclusion(normal, wpos, 32, 0.25f, rand_seed);
+	//Store the AO value in the GBuffer
+	float aoValue = 1.0f;
+	if(ao_enabled == 1)
+	{
+		aoValue = DoAmbientOcclusion(normal, wpos, 32, 0.25f, rand_seed);
+	}
+   	output_ao[DispatchRaysIndex().xy].x = aoValue;
 }
 
 //Reflections

@@ -60,9 +60,12 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inv_vp;
 
-			uint32_t m_padding[2];
+			uint32_t m_padding[3];
 			float m_frame_idx;
 			float m_intensity;
+			unsigned int m_shadows_enabled;
+			unsigned int m_reflections_enabled;
+			unsigned int m_ao_enabled;
 		};
 
 		struct RayTracingCamera_CBData

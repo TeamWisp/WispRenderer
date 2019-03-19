@@ -301,6 +301,10 @@ namespace wr
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cam_data.m_intensity = n_render_system.temp_intensity;
 				cam_data.m_frame_idx = ++data.frame_idx;
+				cam_data.m_shadows_enabled = camera->m_shadows_enabled;
+				cam_data.m_reflections_enabled = camera->m_reflections_enabled;
+				cam_data.m_ao_enabled = camera->m_ao_enabled;
+
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				// Get skybox

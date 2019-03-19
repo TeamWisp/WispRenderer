@@ -33,6 +33,7 @@ namespace wr::imgui
 		void D3D12HardwareInfo(D3D12RenderSystem& render_system);
 		void D3D12Settings();
 		void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
+		void EffectEditor(SceneGraph* scene_graph);
 		void ModelEditor(SceneGraph* scene_graph);
 		void Inspect(SceneGraph* scene_graph);
 
@@ -44,6 +45,7 @@ namespace wr::imgui
 		static bool open_pipeline_registry = true;
 		static bool open_root_signature_registry = true;
 		static bool open_light_editor = true;
+		static bool open_effect_editor = true;
 		static bool open_model_editor = true;
 		static bool open_inspect_editor = true;
 		static wr::LightNode* selected_light = nullptr;

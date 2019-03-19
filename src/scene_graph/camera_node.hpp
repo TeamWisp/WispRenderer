@@ -42,6 +42,10 @@ namespace wr
 		DirectX::XMMATRIX m_inverse_projection;
 		DirectX::XMMATRIX m_inverse_view;
 
+		bool m_shadows_enabled = true;
+		bool m_reflections_enabled = true;
+		bool m_ao_enabled = true;
+
 		DirectX::XMVECTOR m_planes[6];
 
 		ConstantBufferHandle* m_camera_cb;
