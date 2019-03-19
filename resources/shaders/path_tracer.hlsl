@@ -165,7 +165,7 @@ void RaygenEntry()
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
 	{
-		output[DispatchRaysIndex().xy] = float4(result, 1);
+		output[DispatchRaysIndex().xy] += float4(result, 1);
 	}
 	else
 	{
@@ -287,6 +287,10 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float3 ambient = (kD * diffuse + specular);
 
 	payload.color = ambient + lighting;
+
+
+	// #################### GGX #####################
+
 }
 
 //Reflection skybox

@@ -23,5 +23,5 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	float3 color = input[DTid.xy].rgb / (frame_idx);
 
-	output[DTid.xy] = float4(input[DTid.xy].rgb, 1);
+	output[DTid.xy] = float4(color, 1);
 }
