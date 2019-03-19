@@ -81,12 +81,47 @@ namespace wr
 		void Destroy(Model* model);
 		void Destroy(internal::MeshInternal* mesh);
 
+		// Shrinks down both heaps to the minimum size required. 
+		// Does not rearrange the contents of the heaps, meaning that it doesn't shrink to the absolute minimum size.
+		// To do that, call Defragment first.
+		virtual void ShrinkToFit() = 0;
+		virtual void ShrinkVertexHeapToFit() = 0;
+		virtual void ShrinkIndexHeapToFit() = 0;
+
+		// Removes any holes in the memory, stitching all allocations back together to maximize the amount of contiguous free space.
+		// These functions are called automatically if the allocator has enough free space but no large enough free blocks.
+		virtual void Defragment() = 0;
+		virtual void DefragmentVertexHeap() = 0;
+		virtual void DefragmentIndexHeap() = 0;
+
+		virtual size_t GetVertexHeapOccupiedSpace() = 0;
+		virtual size_t GetIndexHeapOccupiedSpace() = 0;
+
+		virtual size_t GetVertexHeapFreeSpace() = 0;
+		virtual size_t GetIndexHeapFreeSpace() = 0;
+
+		virtual size_t GetVertexHeapSize() = 0;
+		virtual size_t GetIndexHeapSize() = 0;
+
+		// Resizes both heaps to the supplied sizes. 
+		// If the supplied size is smaller than the required size the heaps will resize to the required size instead.
+		virtual void Resize(size_t vertex_heap_new_size, size_t index_heap_new_size) = 0;
+		virtual void ResizeVertexHeap(size_t vertex_heap_new_size) = 0;
+		virtual void ResizeIndexHeap(size_t index_heap_new_size) = 0;
+
+		template<typename TV, typename TI> void EditMesh(Mesh* mesh, std::vector<TV> vertices, std::vector<TI> indices);
+
+
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
+
+		virtual void MakeSpaceForModel(size_t vertex_size, size_t index_size) = 0;
 
 	protected:
 		virtual internal::MeshInternal* LoadCustom_VerticesAndIndices(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
 		virtual internal::MeshInternal* LoadCustom_VerticesOnly(void* vertices_data, std::size_t num_vertices, std::size_t vertex_size) = 0;
+
+		virtual void UpdateMeshData(Mesh* mesh, void* vertices_data, std::size_t num_vertices, std::size_t vertex_size, void* indices_data, std::size_t num_indices, std::size_t index_size) = 0;
 
 		virtual void DestroyModel(Model* model) = 0;
 		virtual void DestroyMesh(internal::MeshInternal* mesh) = 0;
@@ -95,6 +130,9 @@ namespace wr
 		int LoadNodeMeshes(ModelData* data, Model* model, MaterialHandle default_material);
 		template<typename TV, typename TI = std::uint32_t>
 		int LoadNodeMeshesWithMaterials(ModelData* data, Model* model, std::vector<MaterialHandle> materials);
+
+		template<typename TV>
+		void UpdateModelBoundingBoxes(Model* model, Mesh* mesh, std::vector<TV> vertices_data);
 
 		std::size_t m_vertex_buffer_pool_size_in_bytes;
 		std::size_t m_index_buffer_pool_size_in_bytes;
@@ -107,6 +145,8 @@ namespace wr
 		std::uint64_t GetNewID();
 		void FreeID(std::uint64_t id);
 
+		std::vector<Model*> m_loaded_models;
+
 	};
 
 	template<typename TV, typename TI>
@@ -115,6 +155,20 @@ namespace wr
 		IS_PROPER_VERTEX_CLASS(TV);
 
 		auto model = new Model();
+
+		std::size_t total_vertex_size = 0;
+		std::size_t total_index_size = 0;
+
+		for (int i = 0; i < meshes.size(); ++i)
+		{
+			total_vertex_size += meshes[i].m_vertices.size() * sizeof(TV);
+			if (meshes[i].m_indices.has_value())
+			{
+				total_index_size += meshes[i].m_indices.value().size() * sizeof(TI);
+			}
+		}
+
+		MakeSpaceForModel(total_vertex_size, total_index_size);
 
 		for (int i = 0; i < meshes.size(); ++i)
 		{
@@ -160,6 +214,8 @@ namespace wr
 
 		model->m_model_pool = this;
 
+		m_loaded_models.push_back(model);
+
 		return model;
 	}
 
@@ -185,6 +241,8 @@ namespace wr
 
 		// TODO: Create default material
 
+		MakeSpaceForModel(data->GetTotalVertexSize<TV>(), data->GetTotalIndexSize<TI>());
+
 		int ret = LoadNodeMeshes<TV, TI>(data, model, default_material);
 
 		if (ret == 1)
@@ -200,6 +258,8 @@ namespace wr
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
+
+		m_loaded_models.push_back(model);
 
 		return model;
 	}
@@ -397,6 +457,8 @@ namespace wr
 			material_handles.push_back(new_handle);
 		}
 
+		MakeSpaceForModel(data->GetTotalVertexSize<TV>(), data->GetTotalIndexSize<TI>());
+
 		int ret = LoadNodeMeshesWithMaterials<TV, TI>(data, model, material_handles);
 
 		if (ret == 1)
@@ -411,8 +473,32 @@ namespace wr
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
 
+		m_loaded_models.push_back(model);
+
 		return model;
 	}
 
+	template<typename TV, typename TI>
+	void ModelPool::EditMesh(Mesh* mesh, std::vector<TV> vertices, std::vector<TI> indices)
+	{
+		UpdateMeshData(mesh,
+			vertices.data(),
+			vertices.size(),
+			sizeof(TV),
+			indices.data(),
+			indices.size(),
+			sizeof(TI));
+
+		for (auto model : m_loaded_models)
+		{
+			for (auto mesh_material : model->m_meshes)
+			{
+				if (mesh_material.first->id == mesh->id)
+				{
+					UpdateModelBoundingBoxes<TV>(model, mesh, vertices);
+				}
+			}
+		}
+	}
 	
 } /* wr */

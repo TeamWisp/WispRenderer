@@ -284,6 +284,33 @@ namespace wr
 
 		return 0;
 	}
+
+	template<>
+	void ModelPool::UpdateModelBoundingBoxes<Vertex>(Model * model, Mesh* mesh, std::vector<Vertex> vertices_data)
+	{
+		for (int i = 0; i < vertices_data.size(); ++i)
+		{
+			model->Expand(vertices_data[i].m_pos, mesh);
+		}
+	}
+
+	template<>
+	void ModelPool::UpdateModelBoundingBoxes<VertexNoTangent>(Model * model, Mesh* mesh, std::vector<VertexNoTangent> vertices_data)
+	{
+		for (int i = 0; i < vertices_data.size(); ++i)
+		{
+			model->Expand(vertices_data[i].m_pos, mesh);
+		}
+	}
+
+	template<>
+	void ModelPool::UpdateModelBoundingBoxes<VertexColor>(Model * model, Mesh* mesh, std::vector<VertexColor> vertices_data)
+	{
+		for (int i = 0; i < vertices_data.size(); ++i)
+		{
+			model->Expand(vertices_data[i].m_pos, mesh);
+		}
+	}
 	
 	template<>
 	int ModelPool::LoadNodeMeshesWithMaterials<VertexColor, std::uint32_t>(ModelData* data, Model * model, std::vector<MaterialHandle> materials)

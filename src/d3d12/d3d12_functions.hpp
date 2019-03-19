@@ -273,6 +273,8 @@ namespace wr::d3d12
 		DescriptorHeap* desc_heap,
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list);
 
+	void DestroyAccelerationStructure(AccelerationStructure& structure);
+
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
