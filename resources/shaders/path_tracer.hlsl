@@ -1,10 +1,8 @@
 #define LIGHTS_REGISTER register(t2)
 #include "util.hlsl"
 #include "pbr_util.hlsl"
-#include "lighting.hlsl"
 #include "material_util.hlsl"
-
-static const float M_PI = 3.14159265f;
+#include "lighting.hlsl"
 
 struct Vertex
 {
@@ -33,18 +31,22 @@ struct Offset
     float vertex_offset;
 };
 
-RWTexture2D<float4> gOutput : register(u0);
+RWTexture2D<float4> output : register(u1); // xyz: reflection, a: shadow factor
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
+Texture2D g_textures[90] : register(t8);
+Texture2D gbuffer_albedo : register(t98);
+Texture2D gbuffer_normal : register(t99);
+Texture2D gbuffer_depth : register(t100);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
-Texture2D g_textures[90] : register(t8);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
+
 struct HitInfo
 {
 	float3 color;
@@ -55,13 +57,11 @@ struct HitInfo
 
 cbuffer CameraProperties : register(b0)
 {
-	float4x4 view;
-	float4x4 inv_projection_view;
-	float3 camera_position;
-	float padding;
+	float4x4 inv_view;
+	float4x4 inv_projection;
+	float4x4 inv_vp;
 
-	float focal_radius;
-	float focal_len;
+	float2 padding;
 	float frame_idx;
 	float intensity;
 };
@@ -75,69 +75,13 @@ struct Ray
 uint3 Load3x32BitIndices(uint offsetBytes)
 {
 	// Load first 2 indices
- 	return g_indices.Load3(offsetBytes);
-}
-
-inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset, unsigned int seed)
-{
-#ifdef DEPTH_OF_FIELD
-	float2 pixelOff = float2(nextRand(seed), nextRand(seed));  // Random offset in pixel to reduce floating point error.
-
-	float3 cameraU = float3(1, 0, 0);
-	float3 cameraV = float3(0, 1, 0);
-	float3 cameraW = float3(0, 0, 1);
-
-	float2 xy = (index + offset + pixelOff) + 0.5f; // center in the middle of the pixel.
-	float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
-
-	// Invert Y for DirectX-style coordinates.
-	screenPos.y = -screenPos.y;
-
-	// Unproject the pixel coordinate into a world positon.
-	float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
-	world.xyz = world.x * cameraU + world.y * cameraV + cameraW;
-	world.xyz /= 1;
-
-	float2 pixelCenter = (index + offset) / DispatchRaysDimensions().xy;            // Pixel ID -> [0..1] over screen
-	float2 ndc = float2(2, -2) * pixelCenter + float2(-1, 1);             // Convert to [-1..1]
-	float3 rayDir = ndc.x * cameraU + ndc.y * cameraV + cameraW;  // Ray to point on near plane
-	rayDir /= 1;
-
-	float focallen = focal_len;
-	float lensrad = focal_len / (2.0f * 16);
-	float3 focalPt = cameraPosition + focallen * world;
-
-	float2 rngLens = float2(6.2831853f * nextRand(seed), lensrad*nextRand(seed));
-	float2 lensPos = float2(cos(rngLens.x) * rngLens.y, sin(rngLens.x) * rngLens.y);
-
-	//lensPos = mul(float4(lensPos, 0, 0), projectionToWorld);
-
-	Ray ray;
-	ray.origin = cameraPosition + float3(lensPos, 0);
-	ray.direction = normalize(focalPt.xyz - ray.origin);
-#else
-    float2 xy = (index + offset) + 0.5f; // center in the middle of the pixel.
-    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
-
-	// Invert Y for DirectX-style coordinates.
-	screenPos.y = -screenPos.y;
-
-    // Unproject the pixel coordinate into a world positon.
-    float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
-    world.xyz /= world.w;
-
-    Ray ray;
-    ray.origin = cameraPosition;
-    ray.direction = normalize(world.xyz - ray.origin);
-
-    return ray;
-#endif
+	return g_indices.Load3(offsetBytes);
 }
 
 // Retrieve hit world position.
 float3 HitWorldPosition()
 {
-    return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
+	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
 float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
@@ -170,40 +114,63 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	return float4(payload.color, 1);
 }
 
+float3 unpack_position(float2 uv, float depth)
+{
+	// Get world space position
+	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
+	float4 wpos = mul(inv_vp, ndc);
+	return (wpos.xyz / wpos.w).xyz;
+}
+
+#define M_PI 3.14159265358979
+
 [shader("raygeneration")]
 void RaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
-//#define FOUR_X_AA
-#ifdef FOUR_X_AA
-	Ray a = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.5, 0), rand_seed);
-	Ray b = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(-0.5, 0), rand_seed);
-	Ray c = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, 0.5), rand_seed);
-	Ray d = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.0, -0.5), rand_seed);
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
-	float3 result_a = TraceColorRay(a.origin, a.direction, 0, rand_seed);
-	nextRand(rand_seed);
-	float3 result_b = TraceColorRay(b.origin, b.direction, 0, rand_seed);
-	nextRand(rand_seed);
-	float3 result_c = TraceColorRay(c.origin, c.direction, 0, rand_seed);
-	nextRand(rand_seed);
-	float3 result_d = TraceColorRay(d.origin, d.direction, 0, rand_seed);
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screen_co = DispatchRaysIndex().xy;
 
-	float3 result = (result_a + result_b + result_c + result_d) / 4;
-#else
-	Ray ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0, 0), rand_seed);
-	float3 result = TraceColorRay(ray.origin, ray.direction, 0, rand_seed);
-#endif
-	
-	gOutput[DispatchRaysIndex().xy] = float4(result, 1);
+	// Get g-buffer information
+	float4 albedo_roughness = gbuffer_albedo[screen_co];
+	float4 normal_metallic = gbuffer_normal[screen_co];
+
+	// Unpack G-Buffer
+	float depth = gbuffer_depth[screen_co].x;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 albedo = albedo_roughness.rgb;
+	float roughness = albedo_roughness.w;
+	float3 normal = normal_metallic.xyz;
+	float metallic = normal_metallic.w;
+
+	// Do lighting
+	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(cpos - wpos);
+
+	float3 result = float3(0, 0, 0);
+
+	nextRand(rand_seed);
+	const float3 rand_dir = getCosHemisphereSample(rand_seed, normal);
+	const float cos_theta = cos(dot(rand_dir, normal));
+	result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
+	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * cos_theta) * (albedo / PI);
+
+	// xyz: reflection, a: shadow factor
+	if (frame_idx > 0 && !any(isnan(result)))
+	{
+		output[DispatchRaysIndex().xy] += float4(result, 1);
+	}
+	else
+	{
+		output[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+	}
 }
 
-[shader("miss")]
-void MissEntry(inout HitInfo payload)
-{
-	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
-}
+//Reflections
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
 {
@@ -212,13 +179,13 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 	vertexAttribute[1] = b;
 	vertexAttribute[2] = c;
 
-    return vertexAttribute[0] +
-        attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
-        attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
+	return vertexAttribute[0] +
+		attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
+		attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
 
 [shader("closesthit")]
-void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
+void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 {
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
@@ -281,7 +248,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 #endif
 	const float3x3 TBN = float3x3(T, B, N);
 
-	float3 fN = normalize(mul(output_data.normal, TBN));
+	float3 fN = N;
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Irradiance
@@ -312,4 +279,11 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 	payload.color = ambient + lighting;
+}
+
+//Reflection skybox
+[shader("miss")]
+void ReflectionMiss(inout HitInfo payload)
+{
+	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
 }

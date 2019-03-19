@@ -297,10 +297,11 @@ namespace wr
 			PREF_ENV_MAP,
 			BRDF_LUT,
 			BUFFER_REFLECTION_SHADOW,
+			BUFFER_SCREEN_SPACE_IRRADIANCE,
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 11> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 12> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
@@ -311,6 +312,7 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::PREF_ENV_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION_SHADOW, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 
@@ -379,6 +381,19 @@ namespace wr
 			rs_layout::Entry{(int)PostProcessingE::HDR_SUPPORT, 2, rs_layout::Type::CBV_OR_CONST},
 		};
 
+		enum class AccumulationE
+		{
+			SOURCE,
+			DEST,
+			FRAME_IDX,
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> accumulation = {
+			rs_layout::Entry{(int)AccumulationE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)AccumulationE::DEST, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)AccumulationE::FRAME_IDX, 2, rs_layout::Type::CBV_OR_CONST},
+		};
+
 		enum class FullRaytracingE
 		{
 			CAMERA_PROPERTIES,
@@ -397,7 +412,7 @@ namespace wr
 
 		constexpr std::array<rs_layout::Entry, 12> full_raytracing = {
 			rs_layout::Entry{(int)FullRaytracingE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)FullRaytracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::OUTPUT, 2, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)FullRaytracingE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
@@ -429,7 +444,7 @@ namespace wr
 
 		constexpr std::array<rs_layout::Entry, 20> rt_hybrid = {
 			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::OUTPUT, 2, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.
 			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
@@ -457,6 +472,7 @@ namespace wr
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
+		static RegistryHandle accumulation;
 	};
 
 	struct shaders
@@ -468,12 +484,14 @@ namespace wr
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_hybrid_lib;
+		static RegistryHandle path_tracer_lib;
 		static RegistryHandle mip_mapping_cs;
 		static RegistryHandle equirect_to_cubemap_vs;
 		static RegistryHandle equirect_to_cubemap_ps;
 		static RegistryHandle cubemap_convolution_ps;
 		static RegistryHandle cubemap_prefiltering_cs;
 		static RegistryHandle post_processing;
+		static RegistryHandle accumulation;
 	};
 
 	struct pipelines
@@ -486,12 +504,14 @@ namespace wr
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
+		static RegistryHandle accumulation;
 	};
 
 	struct state_objects
 	{
 		static RegistryHandle state_object;
 		static RegistryHandle rt_hybrid_state_object;
+		static RegistryHandle path_tracer_state_object;
 	};
 
 } /* wr */
