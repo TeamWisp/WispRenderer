@@ -154,10 +154,11 @@ void RaygenEntry()
 	float3 result = float3(0, 0, 0);
 
 	nextRand(rand_seed);
-	const float3 rand_dir = getCosHemisphereSample(rand_seed, normal);
+	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
+	//result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * cos_theta) * (albedo / PI);
+	result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
 
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
@@ -237,7 +238,7 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 	
-	float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
+	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 #define CALC_B
 #ifndef CALC_B
@@ -248,7 +249,8 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 #endif
 	const float3x3 TBN = float3x3(T, B, N);
 
-	float3 fN = N;
+	//float3 fN = N;
+	float3 fN = normalize(mul(output_data.normal, TBN));
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Irradiance
@@ -276,9 +278,10 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 		payload.seed, 
 		payload.depth);
 	float3 specular = (reflection) * F;
-	float3 diffuse = albedo * sampled_irradiance;
+	float3 diffuse = albedo * 1;
 	float3 ambient = (kD * diffuse + specular);
-	payload.color = ambient + lighting;
+
+	payload.color = ambient + (lighting);
 }
 
 //Reflection skybox
@@ -286,4 +289,5 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 void ReflectionMiss(inout HitInfo payload)
 {
 	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
+	payload.color = float3(0, 0, 0);
 }

@@ -11,20 +11,6 @@ cbuffer Properties : register(b0)
 };
 
 
-float4 ChromaticAberration(Texture2D tex, float2 uv, float strength) {
-	float2 r_offset = float2(strength, 0);
-	float2 g_offset = float2(-strength, 0);
-	float2 b_offset = float2(0, 0);
- 
-	float4 r = float4(1, 1, 1, 1);
-	r.x = tex.SampleLevel(s0, uv + r_offset, 0).x;
-	r.y = tex.SampleLevel(s0, uv + g_offset, 0).y;
-	r.z = tex.SampleLevel(s0, uv + b_offset, 0).z;
-	r.a = tex.SampleLevel(s0, uv, 0).a;
- 
-	return r;
-}
-
 [numthreads(16, 16, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
