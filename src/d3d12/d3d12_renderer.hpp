@@ -11,8 +11,6 @@
 
 #include "../util/thread_pool.hpp"
 
-#include <optix.h>
-
 namespace wr
 {
 	namespace d3d12
@@ -163,7 +161,6 @@ namespace wr
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
 
 		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
-		void PreparePostRenderCommands(int frame_idx);
 
 		void Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list);
 		void BindMaterial(MaterialHandle material_handle, CommandList* cmd_list);
@@ -184,8 +181,6 @@ namespace wr
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;
-		d3d12::CommandList* m_post_render_cmd_list;
-		d3d12::CommandList* m_upload_cmd_list;
 		d3d12::StagingBuffer* m_fullscreen_quad_vb;
 
 		std::mutex m_denoising_mutex;
@@ -225,21 +220,6 @@ namespace wr
 		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
 		d3d12::CommandSignature* m_cmd_signature;
 		d3d12::CommandSignature* m_cmd_signature_indexed;
-
-		RTcontext m_optix_context;
-
-		RTbuffer m_denoiser_input;
-		RTbuffer m_denoiser_output;		
-
-		RTpostprocessingstage m_denoiser_post_processor;
-		RTvariable m_denoiser_post_processor_input;
-		RTvariable m_denoiser_post_processor_output;
-
-		RTcommandlist m_denoiser_command_list;
-
-		std::array<d3d12::ReadbackBufferResource*, d3d12::settings::num_back_buffers> m_output_buffers;
-
-		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_upload_buffers;
 
 		std::optional<bool> m_requested_fullscreen_state;
 
