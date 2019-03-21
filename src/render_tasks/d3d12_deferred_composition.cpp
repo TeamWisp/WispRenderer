@@ -55,8 +55,8 @@ namespace wr
 			d3d12::SetShaderSRV(cmd_list, 1, shadow, shadow_handle);
 
 			constexpr unsigned int sp_irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE);
-			d3d12::DescHeapCPUHandle sp_irradiance_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(sp_irradiance);
-			d3d12::SetShaderSRV(cmd_list, 1, sp_irradiance, sp_irradiance_handle);
+			d3d12::DescHeapCPUHandle sp_irradiance_handle = data.out_srv_uav_allocation.GetDescriptorHandle(sp_irradiance);
+			d3d12::SetShaderSRV(cmd_list, 1, sp_irradiance, sp_irradiance_handle); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
 
 			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
 			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
@@ -89,21 +89,22 @@ namespace wr
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(3 * d3d12::settings::num_back_buffers));
-			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(8));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(9));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
 				constexpr auto rtv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS);
 				auto rtv_srv_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rtv_id + (2 * i));
 
-				auto dsv_srv_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH)));
+        constexpr auto dsv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH);
+				auto dsv_srv_handle = data.out_srv_uav_allocation.GetDescriptorHandle(dsv_id);
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, rtv_srv_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
 				d3d12::CreateSRVFromDSV(deferred_main_rt, dsv_srv_handle);
 
 				// Bind output(s) from hybrid render task, if the composition task is executed in the hybrid frame graph
-				if (data.is_hybrid)
+				if (data.is_hybrid || data.is_path_tracer)
 				{
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
 					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + i);
@@ -150,7 +151,8 @@ namespace wr
 
 				//Get light buffer
 				{
-					auto srv_struct_buffer_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::LIGHT_BUFFER)));
+          constexpr auto light_buffer_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::LIGHT_BUFFER);
+					auto srv_struct_buffer_handle = data.out_srv_uav_allocation.GetDescriptorHandle(light_buffer_id);
 					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, srv_struct_buffer_handle, frame_idx);
 				}
 
@@ -165,9 +167,11 @@ namespace wr
 				// Get Screen Space Environment Texture
 				if (data.is_path_tracer)
 				{
-					auto irradiance_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE));
-					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
-					d3d12::CreateSRVFromSpecificRTV(hybrid_rt, irradiance_handle, 0, hybrid_rt->m_create_info.m_rtv_formats[0]);
+          constexpr auto irradiance_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE);
+					auto irradiance_handle = data.out_srv_uav_allocation.GetDescriptorHandle(irradiance_id);
+
+					auto accum_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
+					d3d12::CreateSRVFromSpecificRTV(accum_rt, irradiance_handle, 0, accum_rt->m_create_info.m_rtv_formats[0]);
 				}
 				
 				// Get Environment Map
@@ -179,7 +183,8 @@ namespace wr
 
 				// Output UAV
 				{
-					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
+          constexpr auto output_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
+					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output_id);
 					std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
 					d3d12::CreateUAVFromRTV(render_target, rtv_out_uav_handle, 1, formats.data());
 				}

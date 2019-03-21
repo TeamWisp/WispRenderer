@@ -41,7 +41,7 @@ StructuredBuffer<Offset> g_offsets : register(t5);
 
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
-Texture2D g_textures[1000] : register(t8);
+Texture2D g_textures[500] : register(t8);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;

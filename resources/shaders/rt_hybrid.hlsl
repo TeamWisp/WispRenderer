@@ -32,16 +32,17 @@ struct Offset
 };
 
 RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
+RWTexture2D<float4> output : register(u1);
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[5000] : register(t8);
-Texture2D gbuffer_albedo : register(t5008);
-Texture2D gbuffer_normal : register(t5009);
-Texture2D gbuffer_depth : register(t5010);
-Texture2D skybox : register(t6);
+Texture2D g_textures[500] : register(t8);
+Texture2D gbuffer_albedo : register(t508);
+Texture2D gbuffer_normal : register(t509);
+Texture2D gbuffer_depth : register(t510);
+TextureCube skybox : register(t6);
 TextureCube irradiance_map : register(t7);
 SamplerState s0 : register(s0);
 
@@ -85,7 +86,7 @@ float3 HitWorldPosition()
 
 float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed)
 {
-	origin += norm * EPSILON;
+	origin += norm * 1.f;
 
 	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed};
 
@@ -123,7 +124,7 @@ float3 unpack_position(float2 uv, float depth)
 float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
 {
 	// Calculate ray info
-	float3 reflected = reflect(-V, normal);
+	float3 reflected = reflect(-V, -normal);
 
 	// Shoot reflection ray
 	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed);
@@ -173,6 +174,8 @@ void RaygenEntry()
 
 	// Get reflection result
 	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
+
+  reflection_result = irradiance_map.SampleLevel(s0, normal, 0);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
@@ -284,5 +287,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
+	//payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
+  payload.color = skybox.SampleLevel(s0, float3(0.0f, 1.0f, 0.0f), 0);
+  //payload.color = float3(0.0f, 1.0f, 0.0f);
 }

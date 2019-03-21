@@ -16,6 +16,14 @@
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../imgui_tools.hpp"
 
+
+#define DBOUT( s )            \
+{                             \
+   std::ostringstream os_;    \
+   os_ << s;                   \
+   OutputDebugString( os_.str().c_str() );  \
+}
+
 namespace wr
 {
 	struct RTHybridData
@@ -117,7 +125,7 @@ namespace wr
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-			d3d12::SetName(n_render_target, L"Raytracing Target");
+			d3d12::SetName(n_render_target, L"Raytracing Target Hybrid");
 
 			if (!resize)
 			{
@@ -142,14 +150,19 @@ namespace wr
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 
 				// Bind g-buffers (albedo, normal, depth)
-				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
 				d3d12::DescHeapCPUHandle depth_buffer_handle = data.out_depthbuffer.GetDescriptorHandle();
 
 				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-				d3d12::CreateSRVFromRTV(deferred_main_rt, gbuffers_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
-				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
+				
+        d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
+        d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, gbuffers_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
+        
+        gbuffers_handle = data.out_gbuffers.GetDescriptorHandle(1);
+        d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, gbuffers_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+
+        d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
 			}
 
 			if (!resize)
@@ -177,6 +190,9 @@ namespace wr
 
 		inline void ExecuteRTHybridTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
 		{
+
+      DBOUT("Executing hybrid task\n\n")
+
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto window = n_render_system.m_window.value();
@@ -200,7 +216,7 @@ namespace wr
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				//d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
         d3d12::SetRTShaderUAV(cmd_list, 0, 0, out_uav_handle);
-        d3d12::SetRTShaderUAV(cmd_list, 0, 1, out_uav_handle);
+        //d3d12::SetRTShaderUAV(cmd_list, 0, 1, out_uav_handle);
         //out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
 				//d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle);
 
@@ -218,15 +234,15 @@ namespace wr
 
 				auto out_scene_gbuffers_handle1 = data.out_gbuffers.GetDescriptorHandle(0);
 				//d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 0, out_scene_gbuffers_handle1);
-        d3d12::SetRTShaderSRV(cmd_list, 0, 2 + 0, out_scene_gbuffers_handle1);
+        d3d12::SetRTShaderSRV(cmd_list, 0, 1 + 0, out_scene_gbuffers_handle1);
 
 				auto out_scene_gbuffers_handle2 = data.out_gbuffers.GetDescriptorHandle(1);
 				//d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, out_scene_gbuffers_handle2);
-        d3d12::SetRTShaderSRV(cmd_list, 0, 2 + 1, out_scene_gbuffers_handle2);
+        d3d12::SetRTShaderSRV(cmd_list, 0, 1 + 1, out_scene_gbuffers_handle2);
 
 				auto out_scene_depth_handle = data.out_depthbuffer.GetDescriptorHandle();
 				//d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, out_scene_depth_handle);
-        d3d12::SetRTShaderSRV(cmd_list, 0, 2 + 2, out_scene_depth_handle);
+        d3d12::SetRTShaderSRV(cmd_list, 0, 1 + 2, out_scene_depth_handle);
 
 				/*
 				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
@@ -310,21 +326,21 @@ namespace wr
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				// Get skybox
-				if (scene_graph.m_skybox.has_value())
-				{
-					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					//d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX)), skybox_t);
-          d3d12::SetRTShaderSRV(cmd_list, 1, 4, skybox_t);
 
-        }
+        auto skybox = scene_graph.GetCurrentSkybox();
+    //    if (skybox != nullptr)
+				//{
+				//	auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTexture(skybox->m_skybox->m_id));
+				//	//d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX)), skybox_t);
+    //      d3d12::SetRTShaderSRV(cmd_list, 1, 4, skybox_t);
+    //    }
 
 				// Get Environment Map
-				if (scene_graph.m_skybox.has_value())
+        if (skybox != nullptr)
 				{
-					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTexture(skybox->m_irradiance->m_id));
 					//d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::IRRADIANCE_MAP)), irradiance_t);
           d3d12::SetRTShaderSRV(cmd_list, 1, 5, irradiance_t);
-
         }
 
 				// Transition depth to NON_PIXEL_RESOURCE
@@ -334,7 +350,6 @@ namespace wr
 				d3d12::BindDescriptorHeaps(cmd_list, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 				//d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
         d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 5, frame_idx);
-
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
 				{
@@ -349,6 +364,13 @@ namespace wr
 
 				//d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
         d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 6);
+
+        if (skybox != nullptr)
+        {
+          auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTexture(skybox->m_skybox->m_id));
+          //d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX)), skybox_t);
+          d3d12::SetRTShaderSRV(cmd_list, 1, 4, skybox_t);
+        }
 
 //#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);

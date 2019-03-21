@@ -81,7 +81,8 @@ namespace wr
 
 		// Make sure the maximum number of descriptors per descriptor heap has not been exceeded.
 		if (current_offset > m_num_descr_per_heap) { LOGC("The root signature requires more than the maximum number of descriptors per descriptor heap. Consider increasing the maximum number of descriptors per descriptor heap."); }
-	}
+
+  }
 
 	void RTDescriptorHeap::StageDescriptors(uint32_t root_param_idx, uint32_t offset, uint32_t num_descriptors, const d3d12::DescHeapCPUHandle src_desc)
 	{
@@ -131,7 +132,7 @@ namespace wr
 		desc.m_type = m_desc_heap_type;
 		desc.m_num_descriptors = m_num_descr_per_heap;
 		desc.m_shader_visible = true;
-		desc.m_versions = 1;
+		desc.m_versions = 3;
 
 		d3d12::DescriptorHeap* descriptor_heap = d3d12::CreateDescriptorHeap(m_device, desc);
 
@@ -219,10 +220,15 @@ namespace wr
 				{
 					num_src_desc
 				};
+        UINT pSrcDescriptorRangeSizes[] =
+        {
+          num_src_desc
+        };
 
 				// Copy the staged CPU visible descriptors to the GPU visible descriptor heap.
-				m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes,
-					num_src_desc, pSrcDescriptorHandles, nullptr, static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(m_desc_heap_type));
+				//m_device->m_native->CopyDescriptors(1, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes,
+					//num_src_desc, pSrcDescriptorHandles, nullptr, static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(m_desc_heap_type));
+        m_device->m_native->CopyDescriptorsSimple(num_src_desc, m_current_cpu_desc_handle.m_native, *m_descriptor_table_cache[root_idx].m_base_descriptor, static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(m_desc_heap_type));
 
 				// Set the descriptors on the command list using the setter function.
 				d3d12::BindComputeDescriptorTable(&cmd_list, m_current_gpu_desc_handle, root_idx);
@@ -269,6 +275,7 @@ namespace wr
 	{
 		m_current_cpu_desc_handle.m_native = CD3DX12_CPU_DESCRIPTOR_HANDLE(D3D12_DEFAULT);
 		m_current_gpu_desc_handle.m_native = CD3DX12_GPU_DESCRIPTOR_HANDLE(D3D12_DEFAULT);
+
 		m_num_free_handles[frame_idx] = m_num_descr_per_heap;
 		m_descriptor_table_bit_mask = 0;
 		m_stale_descriptor_table_bit_mask = 0;

@@ -83,8 +83,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			buffer_refl_shadow[screen_coord].a,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
-		shadow_factor = clamp(shadow_factor, 0.1, 1.0);
+		
+    shadow_factor = clamp(shadow_factor, 0.1, 1.0);
     shadow_factor = 1;
+
 		// Get reflection
 		float3 reflection = lerp(
 			// Sample from skybox if it IS NOT hybrid rendering
@@ -94,12 +96,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
-    albedo = float3(1.0f, 1.0f, 1.0f);
-    metallic = 0.0f;
-    roughness = 1.0f;
+    //albedo = float3(1.0f, 1.0f, 1.0f);
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, shadow_factor);
+
+    retval = buffer_refl_shadow[screen_coord].xyz;
 	}
 	else
 	{	

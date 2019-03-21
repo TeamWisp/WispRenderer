@@ -55,7 +55,7 @@ namespace wr
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<ASBuildData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-			d3d12::SetName(n_render_target, L"Raytracing Target");
+			d3d12::SetName(n_render_target, L"Raytracing Target ASBuild");
 
 			data.out_init = true;
 			data.out_materials_require_update = true;

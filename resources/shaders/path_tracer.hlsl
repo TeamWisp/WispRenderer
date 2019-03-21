@@ -37,10 +37,10 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[5000] : register(t8);
-Texture2D gbuffer_albedo : register(t5008);
-Texture2D gbuffer_normal : register(t5009);
-Texture2D gbuffer_depth : register(t5010);
+Texture2D g_textures[500] : register(t8);
+Texture2D gbuffer_albedo : register(t508);
+Texture2D gbuffer_normal : register(t509);
+Texture2D gbuffer_depth : register(t510);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
 SamplerState s0 : register(s0);
@@ -161,6 +161,8 @@ void RaygenEntry()
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
 
 	result = clamp(result, 0, 10);
+
+  //result = float3(0.0f, 1.0f, 0.0f);
 
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
