@@ -11,6 +11,7 @@
 #include "resources.hpp"
 #include "scene_cubes.hpp"
 #include "scene_emibl.hpp"
+#include "scene_spheres.hpp"
 
 #include "model_loader_assimp.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
@@ -104,6 +105,66 @@ int WispEntry()
 		if (action == WM_KEYUP && key == VK_F2)
 		{
 			fg_manager::Next();
+		}
+		if (action == WM_KEYUP && key == VK_F3)
+		{
+			resources::model_pool->Defragment();
+		}
+		if (action == WM_KEYUP && key == VK_F4)
+		{
+			resources::model_pool->ShrinkToFit();
+		}
+		if (action == WM_KEYUP && key == VK_F5)
+		{
+			auto model = wr::ModelLoader::m_registered_model_loaders[0]->Load("resources/models/material_ball.fbx");
+
+			std::vector<wr::VertexColor> vertices(model->m_meshes[0]->m_positions.size());
+			std::vector<std::uint32_t> indices(model->m_meshes[0]->m_indices.size());
+
+			for (unsigned int j = 0; j < model->m_meshes[0]->m_positions.size(); ++j)
+			{
+				wr::VertexColor &vertex = vertices[j];
+
+				memcpy(vertex.m_pos, &model->m_meshes[0]->m_positions[j], sizeof(vertex.m_pos));
+				memcpy(vertex.m_normal, &model->m_meshes[0]->m_normals[j], sizeof(vertex.m_normal));
+				memcpy(vertex.m_tangent, &model->m_meshes[0]->m_tangents[j], sizeof(vertex.m_tangent));
+				memcpy(vertex.m_bitangent, &model->m_meshes[0]->m_bitangents[j], sizeof(vertex.m_bitangent));
+				memcpy(vertex.m_uv, &model->m_meshes[0]->m_uvw[j], sizeof(vertex.m_uv));
+				memcpy(vertex.m_color, &model->m_meshes[0]->m_colors[j], sizeof(vertex.m_color));
+
+			}
+
+			memcpy(indices.data(), model->m_meshes[0]->m_indices.data(), indices.size() * sizeof(std::uint32_t));
+
+			resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(resources::test_model->m_meshes[0].first, vertices, indices);
+
+			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
+		}
+		if (action == WM_KEYUP && key == VK_F6)
+		{
+			auto model = wr::ModelLoader::m_registered_model_loaders[0]->Load("resources/models/xbot.fbx");
+
+			std::vector<wr::VertexColor> vertices(model->m_meshes[0]->m_positions.size());
+			std::vector<std::uint32_t> indices(model->m_meshes[0]->m_indices.size());
+
+			for (unsigned int j = 0; j < model->m_meshes[0]->m_positions.size(); ++j)
+			{
+				wr::VertexColor &vertex = vertices[j];
+
+				memcpy(vertex.m_pos, &model->m_meshes[0]->m_positions[j], sizeof(vertex.m_pos));
+				memcpy(vertex.m_normal, &model->m_meshes[0]->m_normals[j], sizeof(vertex.m_normal));
+				memcpy(vertex.m_tangent, &model->m_meshes[0]->m_tangents[j], sizeof(vertex.m_tangent));
+				memcpy(vertex.m_bitangent, &model->m_meshes[0]->m_bitangents[j], sizeof(vertex.m_bitangent));
+				memcpy(vertex.m_uv, &model->m_meshes[0]->m_uvw[j], sizeof(vertex.m_uv));
+				memcpy(vertex.m_color, &model->m_meshes[0]->m_colors[j], sizeof(vertex.m_color));
+
+			}
+
+			memcpy(indices.data(), model->m_meshes[0]->m_indices.data(), indices.size() * sizeof(std::uint32_t));
+
+			resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(resources::test_model->m_meshes[0].first, vertices, indices);
+
+			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
 		}
 	});
 

@@ -44,11 +44,11 @@ namespace wr::d3d12
 		heap->m_current_offset = 0;
 		heap->m_alignment = 256;
 
-		auto aligned_size = SizeAlign(size_in_bytes, 65536);
+		auto aligned_size = SizeAlignTwoPower(size_in_bytes, 65536);
 
 		heap->m_heap_size = aligned_size;
 
-		auto page_frame_count = SizeAlign(heap->m_heap_size / heap->m_alignment, 64) / 64;
+		auto page_frame_count = SizeAlignTwoPower(heap->m_heap_size / heap->m_alignment, 64) / 64;
 
 		heap->m_bitmap.resize(page_frame_count);
 
@@ -80,11 +80,11 @@ namespace wr::d3d12
 		heap->m_current_offset = 0;
 		heap->m_alignment = 65536;
 
-		auto aligned_size = SizeAlign(size_in_bytes, 65536);
+		auto aligned_size = SizeAlignTwoPower(size_in_bytes, 65536);
 
 		heap->m_heap_size = aligned_size;
 
-		auto page_frame_count = SizeAlign(heap->m_heap_size / heap->m_alignment, 64) / 64;
+		auto page_frame_count = SizeAlignTwoPower(heap->m_heap_size / heap->m_alignment, 64) / 64;
 
 		heap->m_bitmap.resize(page_frame_count);
 
@@ -126,11 +126,11 @@ namespace wr::d3d12
 		heap->m_current_offset = 0;
 		heap->m_alignment = 256;
 
-		auto aligned_size = SizeAlign(size_in_bytes, 65536);
+		auto aligned_size = SizeAlignTwoPower(size_in_bytes, 65536);
 
 		heap->m_heap_size = aligned_size;
 
-		auto page_frame_count = SizeAlign(heap->m_heap_size / heap->m_alignment, 64) / 64;
+		auto page_frame_count = SizeAlignTwoPower(heap->m_heap_size / heap->m_alignment, 64) / 64;
 
 		heap->m_bitmap.resize(page_frame_count);
 
@@ -176,11 +176,11 @@ namespace wr::d3d12
 		heap->m_current_offset = 0;
 		heap->m_alignment = 65536;
 
-		auto aligned_size = SizeAlign(size_in_bytes, 65536);
+		auto aligned_size = SizeAlignTwoPower(size_in_bytes, 65536);
 
 		heap->m_heap_size = aligned_size;
 
-		auto page_frame_count = SizeAlign(heap->m_heap_size / heap->m_alignment, 64) / 64;
+		auto page_frame_count = SizeAlignTwoPower(heap->m_heap_size / heap->m_alignment, 64) / 64;
 
 		heap->m_bitmap.resize(page_frame_count);
 
@@ -232,7 +232,7 @@ namespace wr::d3d12
 	{
 		auto cb = new HeapResource();
 
-		auto aligned_size = SizeAlign(size_in_bytes, 256);
+		auto aligned_size = SizeAlignTwoPower(size_in_bytes, 256);
 		cb->m_unaligned_size = size_in_bytes;
 		cb->m_gpu_addresses.resize(heap->m_versioning_count);
 
@@ -269,7 +269,7 @@ namespace wr::d3d12
 			auto&& addresses = cb->m_cpu_addresses.value();
 			for (auto i = 0; i < heap->m_versioning_count; i++)
 			{
-				addresses[i] = heap->m_cpu_address + (cb->m_begin_offset + (SizeAlign(cb->m_unaligned_size, 255) * i));
+				addresses[i] = heap->m_cpu_address + (cb->m_begin_offset + (SizeAlignTwoPower(cb->m_unaligned_size, 255) * i));
 			}
 		}
 		
@@ -289,7 +289,7 @@ namespace wr::d3d12
 		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
 		cb->m_unaligned_size = size_in_bytes;
 
-		auto aligned_size_in_bytes = SizeAlign(size_in_bytes, 65536);
+		auto aligned_size_in_bytes = SizeAlignTwoPower(size_in_bytes, 65536);
 
 		auto frame_count = heap->m_heap_size / heap->m_alignment;
 		auto needed_frames = aligned_size_in_bytes / heap->m_alignment*heap->m_versioning_count;
@@ -355,7 +355,7 @@ namespace wr::d3d12
 		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
 		cb->m_unaligned_size = size_in_bytes;
 
-		auto aligned_size_in_bytes = SizeAlign(size_in_bytes, 65536);
+		auto aligned_size_in_bytes = SizeAlignTwoPower(size_in_bytes, 65536);
 
 		auto frame_count = heap->m_heap_size / heap->m_alignment;
 		auto needed_frames = aligned_size_in_bytes / heap->m_alignment*heap->m_versioning_count;
@@ -423,7 +423,7 @@ namespace wr::d3d12
 		cb->m_stride = stride;
 		cb->m_used_as_uav = used_as_uav;
 
-		auto aligned_size_in_bytes = SizeAlign(size_in_bytes, 65536);
+		auto aligned_size_in_bytes = SizeAlignTwoPower(size_in_bytes, 65536);
 
 		auto frame_count = heap->m_heap_size / heap->m_alignment;
 		auto needed_frames = aligned_size_in_bytes / heap->m_alignment*heap->m_versioning_count;
@@ -486,7 +486,7 @@ namespace wr::d3d12
 		heap->m_native->GetDevice(IID_PPV_ARGS(&n_device));
 		cb->m_unaligned_size = size_in_bytes;
 
-		auto aligned_size_in_bytes = SizeAlign(size_in_bytes, 65536);
+		auto aligned_size_in_bytes = SizeAlignTwoPower(size_in_bytes, 65536);
 
 		auto frame_count = heap->m_heap_size / heap->m_alignment;
 		auto needed_frames = aligned_size_in_bytes / heap->m_alignment*heap->m_versioning_count;
@@ -578,7 +578,7 @@ namespace wr::d3d12
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
-		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, 256) / heap->m_alignment * heap->m_versioning_count;
+		std::uint64_t frame_count = SizeAlignTwoPower(heapResource->m_unaligned_size, 256) / heap->m_alignment * heap->m_versioning_count;
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
@@ -617,7 +617,7 @@ namespace wr::d3d12
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
-		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, heap->m_alignment) / heap->m_alignment * heap->m_versioning_count;
+		std::uint64_t frame_count = SizeAlignTwoPower(heapResource->m_unaligned_size, heap->m_alignment) / heap->m_alignment * heap->m_versioning_count;
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
@@ -656,7 +656,7 @@ namespace wr::d3d12
 		}
 
 		std::uint64_t frame = heapResource->m_begin_offset / heap->m_alignment;
-		std::uint64_t frame_count = SizeAlign(heapResource->m_unaligned_size, heap->m_alignment) / heap->m_alignment * heap->m_versioning_count;
+		std::uint64_t frame_count = SizeAlignTwoPower(heapResource->m_unaligned_size, heap->m_alignment) / heap->m_alignment * heap->m_versioning_count;
 
 		for (int i = 0; i < frame_count; ++i) 
 		{
@@ -684,7 +684,7 @@ namespace wr::d3d12
 
 			for (auto i = 0; i < heap->m_versioning_count; i++)
 			{
-				addresses[i] = address + (handle->m_begin_offset + (SizeAlign(handle->m_unaligned_size, 255) * i));
+				addresses[i] = address + (handle->m_begin_offset + (SizeAlignTwoPower(handle->m_unaligned_size, 255) * i));
 			}
 		}
 	}
@@ -875,7 +875,7 @@ namespace wr::d3d12
 			return;
 		}
 
-		std::size_t aligned_size = SizeAlign(buffer->m_unaligned_size, 65536);
+		std::size_t aligned_size = SizeAlignTwoPower(buffer->m_unaligned_size, 65536);
 
 		memcpy(buffer->m_heap_bsbo->m_cpu_address + buffer->m_begin_offset + offset + aligned_size * frame_idx, data, size_in_bytes);
 

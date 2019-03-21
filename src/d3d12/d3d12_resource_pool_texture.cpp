@@ -307,6 +307,85 @@ namespace wr
 		return texture_handle;
 	}
 
+	TextureHandle D3D12TexturePool::CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest)
+	{
+		auto device = m_render_system.m_device;
+
+		d3d12::desc::TextureDesc desc;
+
+		uint32_t mip_lvl_final = mip_levels;
+
+		// 0 means generate max number of mip levels
+		if (mip_lvl_final == 0)
+		{
+			mip_lvl_final = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+		}
+
+		desc.m_width = width;
+		desc.m_height = height;
+		desc.m_is_cubemap = false;
+		desc.m_depth = 1;
+		desc.m_array_size = 1;
+		desc.m_mip_levels = mip_lvl_final;
+		desc.m_texture_format = format;
+		desc.m_initial_state = allow_render_dest ? ResourceState::RENDER_TARGET : ResourceState::COPY_DEST;
+
+		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, true);
+
+		texture->m_allocated_memory = nullptr;
+		texture->m_allow_render_dest = allow_render_dest;
+		texture->m_is_staged = true;
+		texture->m_need_mips = false;
+
+		std::wstring wide_string(name.begin(), name.end());
+
+		d3d12::SetName(texture, wide_string);
+
+		DescriptorAllocation srv_alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+		DescriptorAllocation uav_alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
+
+		if (srv_alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+		if (uav_alloc.IsNull())
+		{
+			LOGC("Couldn't allocate descriptor for the texture resource");
+		}
+
+		texture->m_srv_allocation = std::move(srv_alloc);
+		texture->m_uav_allocation = std::move(uav_alloc);
+
+		d3d12::CreateSRVFromTexture(texture);
+		d3d12::CreateUAVFromTexture(texture, 0);
+
+		if (allow_render_dest)
+		{
+			DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]->Allocate(6);
+
+			if (alloc.IsNull())
+			{
+				LOGC("Couldn't allocate descriptor for the texture resource");
+			}
+
+			texture->m_rtv_allocation = std::move(alloc);
+
+			d3d12::CreateRTVFromTexture2D(texture);
+		}
+
+		m_loaded_textures++;
+
+		uint64_t texture_id = m_id_factory.GetUnusedID();
+
+		TextureHandle texture_handle;
+		texture_handle.m_pool = this;
+		texture_handle.m_id = texture_id;
+
+		m_staged_textures.insert(std::make_pair(texture_id, texture));
+
+		return texture_handle;
+	}
+
 	DescriptorAllocator * D3D12TexturePool::GetAllocator(DescriptorHeapType type)
 	{
 		return m_allocators[static_cast<size_t>(type)];
@@ -1086,5 +1165,103 @@ namespace wr
 		GenerateMips(texture_copy, cmd_list);
 
 		d3d12::CopyResource(d3d12_cmd_list, texture_copy, texture);
+	}
+
+	void D3D12TexturePool::GenerateMips_Cubemap(d3d12::TextureResource* texture, CommandList* cmd_list, unsigned int array_slice)
+	{
+		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
+
+		//Create shader resource view for the source texture in the descriptor heap
+		DescriptorAllocation srv_alloc = m_mipmapping_allocator->Allocate();
+		d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
+
+		d3d12::CreateSRVFromCubemapFace(texture, srv_handle, texture->m_mip_levels, 0, array_slice);
+
+		MipMapping_CB generate_mips_cb;
+
+		for (uint32_t src_mip = 0; src_mip < texture->m_mip_levels - 1u;)
+		{
+			uint32_t src_width = texture->m_width >> src_mip;
+			uint32_t src_height = texture->m_height >> src_mip;
+			uint32_t dst_width = src_width >> 1;
+			uint32_t dst_height = src_height >> 1;
+
+			// Determine the compute shader to use based on the dimension of the 
+			// source texture.
+			// 0b00(0): Both width and height are even.
+			// 0b01(1): Width is odd, height is even.
+			// 0b10(2): Width is even, height is odd.
+			// 0b11(3): Both width and height are odd.
+			generate_mips_cb.src_dimension = (src_height & 1) << 1 | (src_width & 1);
+
+			// Max amount of mip levels to compute in a pass is 4.
+			DWORD mip_count;
+
+			// The number of times we can half the size of the texture and get
+			// exactly a 50% reduction in size.
+			// A 1 bit in the width or height indicates an odd dimension.
+			// The case where either the width or the height is exactly 1 is handled
+			// as a special case (as the dimension does not require reduction).
+			_BitScanForward(&mip_count, (dst_width == 1 ? dst_height : dst_width) |
+				(dst_height == 1 ? dst_width : dst_height));
+
+			// Maximum number of mips to generate is 4.
+			mip_count = std::min<DWORD>(4, mip_count + 1);
+			// Clamp to total number of mips left over.
+			mip_count = ((src_mip + mip_count) > texture->m_mip_levels) ? texture->m_mip_levels - src_mip : mip_count;
+
+			// Dimensions should not reduce to 0.
+			// This can happen if the width and height are not the same.
+			dst_width = std::max<DWORD>(1, dst_width);
+			dst_height = std::max<DWORD>(1, dst_height);
+
+			generate_mips_cb.src_mip_level = src_mip;
+			generate_mips_cb.num_mip_levels = mip_count;
+			generate_mips_cb.texel_size.x = 1.0f / (float)dst_width;
+			generate_mips_cb.texel_size.y = 1.0f / (float)dst_height;
+
+			d3d12::BindCompute32BitConstants(d3d12_cmd_list, &generate_mips_cb, sizeof(MipMapping_CB) / sizeof(uint32_t), 0, 0);
+
+			d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[src_mip], ResourceState::PIXEL_SHADER_RESOURCE, src_mip, 1);
+
+			d3d12::SetShaderSRV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::SOURCE)), srv_handle);
+
+			for (uint32_t mip = 0; mip < mip_count; ++mip)
+			{
+				size_t idx = src_mip + mip + 1;
+
+				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::UNORDERED_ACCESS, idx, 1);
+
+				DescriptorAllocation uav_alloc = m_mipmapping_allocator->Allocate();
+				d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
+
+				d3d12::CreateUAVFromCubemapFace(texture, uav_handle, src_mip + mip + 1, array_slice);
+
+				d3d12::SetShaderUAV(d3d12_cmd_list, 1, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::DEST)) + mip, uav_handle);
+			}
+			// Pad any unused mip levels with a default UAV to keeps the DX12 runtime happy.
+			if (mip_count < 4)
+			{
+				d3d12_cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(
+					COMPILATION_EVAL(rs_layout::GetHeapLoc(params::mip_mapping, params::MipMappingE::DEST)),
+					mip_count + 1, 4 - mip_count, m_default_uav.GetDescriptorHandle());
+			}
+
+			d3d12::Dispatch(d3d12_cmd_list, ((dst_width + 8 - 1) / 8), ((dst_height + 8 - 1) / 8), 1u);
+
+			//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
+			d3d12::UAVBarrier(d3d12_cmd_list, texture, 1);
+
+			for (uint32_t mip = 0; mip < mip_count; ++mip)
+			{
+				size_t idx = src_mip + mip + 1;
+
+				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::PIXEL_SHADER_RESOURCE, idx, 1);
+			}
+
+			src_mip += mip_count;
+		}
+
+		texture->m_need_mips = false;
 	}
 }

@@ -74,7 +74,7 @@ namespace wr
 			destination.PlacedFootprint.Footprint.Depth = 1;
 
 			std::uint32_t row_pitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
-			std::uint32_t aligned_row_pitch = SizeAlign(row_pitch, 256);	// 256 byte aligned
+			std::uint32_t aligned_row_pitch = SizeAlignTwoPower(row_pitch, 256);	// 256 byte aligned
 
 			destination.PlacedFootprint.Footprint.RowPitch = aligned_row_pitch;
 

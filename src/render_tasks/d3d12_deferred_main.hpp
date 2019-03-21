@@ -62,6 +62,8 @@ namespace wr
 
 	inline void AddDeferredMainTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
+		std::wstring name(L"Deferred Main");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -74,7 +76,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(2),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -87,7 +90,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 			// Nothing to destroy
 		};
-		desc.m_name = "Deferred Main";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;

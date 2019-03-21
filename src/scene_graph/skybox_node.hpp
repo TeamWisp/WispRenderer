@@ -15,6 +15,7 @@ namespace wr {
 		wr::TextureHandle m_hdr;
 		std::optional<wr::TextureHandle> m_skybox;
 		std::optional<wr::TextureHandle> m_irradiance;
+		std::optional<wr::TextureHandle> m_prefiltered_env_map;
 	};
 
 };// namespace wr 

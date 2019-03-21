@@ -42,6 +42,8 @@ namespace resources
 	static wr::MaterialHandle mirror_material;
 	static wr::TextureHandle equirectangular_environment_map;
 
+	static wr::TextureHandle flat_normal;
+
 	void CreateResources(wr::RenderSystem* render_system)
 	{
 		texture_pool = render_system->CreateTexturePool();
@@ -50,7 +52,7 @@ namespace resources
 		// Load Texture.
 		wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
 		wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
-		wr::TextureHandle flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
+		flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
 
 		wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", true, true);
 		wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metal-splotchy-normal-dx.png", false, true);
@@ -107,7 +109,7 @@ namespace resources
 		wr::TextureHandle rubber_roughness = texture_pool->Load("resources/materials/rubber/roughness.png", false, true);
 		wr::TextureHandle rubber_metallic = texture_pool->Load("resources/materials/rubber/metallic.png", false, true);
 
-		equirectangular_environment_map = texture_pool->Load("resources/materials/Barce_Rooftop_C_3k.hdr", false, false);
+		equirectangular_environment_map = texture_pool->Load("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();
@@ -117,7 +119,11 @@ namespace resources
 		mirror_internal->SetAlbedo(white);
 		mirror_internal->SetNormal(flat_normal);
 		mirror_internal->SetRoughness(black);
+		mirror_internal->UseRoughnessTexture(false);
+		mirror_internal->SetConstantRoughness(0.0f);
 		mirror_internal->SetMetallic(white);
+		mirror_internal->UseMetallicTexture(false);
+		mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
 
 		{
 			// Create Material
