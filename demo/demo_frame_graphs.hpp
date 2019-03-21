@@ -21,18 +21,15 @@ namespace fg_manager
 
 	enum class PrebuildFrameGraph
 	{
-		RAYTRACING = 0,
-		DEFERRED = 1,
-		RT_HYBRID = 2,
-		PATH_TRACER = 3,
+		DEFERRED = 0,
+		RT_HYBRID = 1,
+		PATH_TRACER = 2,
 	};
 
 	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
 	{
 		switch (id)
 		{
-			case PrebuildFrameGraph::RAYTRACING:
-				return "Full Raytracing";
 			case PrebuildFrameGraph::DEFERRED:
 				return "Deferred";
 			case PrebuildFrameGraph::RT_HYBRID:
@@ -45,29 +42,29 @@ namespace fg_manager
 	}
 
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
-	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
+	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
 	{
-		// Raytracing
-		{
-			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
-			fg = new wr::FrameGraph(4);
+		//// Raytracing
+		//{
+		//	auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
+		//	fg = new wr::FrameGraph(4);
 
-			wr::AddBuildAccelerationStructuresTask(*fg);
-			wr::AddEquirectToCubemapTask(*fg);
-			wr::AddCubemapConvolutionTask(*fg);
-			wr::AddRaytracingTask(*fg);
-			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
-			
-			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+		//	wr::AddBuildAccelerationStructuresTask(*fg);
+		//	wr::AddEquirectToCubemapTask(*fg);
+		//	wr::AddCubemapConvolutionTask(*fg);
+		//	wr::AddRaytracingTask(*fg);
+		//	wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
+		//	
+		//	// Copy the scene render pixel data to the final render target
+		//	wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
-			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+		//	// Display ImGui
+		//	fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
-			fg->Setup(rs);
-		}
+		//	fg->Setup(rs);
+		//}
 
 		// Deferred
 		{
