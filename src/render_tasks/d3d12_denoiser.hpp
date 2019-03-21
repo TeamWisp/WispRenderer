@@ -129,7 +129,7 @@ namespace wr
 			destination.PlacedFootprint.Footprint.Depth = 1;
 
 			std::uint32_t row_pitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.m_prev_output->m_create_info.m_rtv_formats[0]);
-			std::uint32_t aligned_row_pitch = SizeAlign(row_pitch, 256);	// 256 byte aligned
+			std::uint32_t aligned_row_pitch = SizeAlignTwoPower(row_pitch, 256);	// 256 byte aligned
 
 			destination.PlacedFootprint.Footprint.RowPitch = aligned_row_pitch;
 
@@ -227,7 +227,7 @@ namespace wr
 			copy_source.PlacedFootprint.Footprint.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 			copy_source.PlacedFootprint.Footprint.Height = data.m_readback_buffer->m_desc.m_buffer_height;
 			copy_source.PlacedFootprint.Footprint.Width = data.m_readback_buffer->m_desc.m_buffer_width;
-			copy_source.PlacedFootprint.Footprint.RowPitch = SizeAlign(data.m_readback_buffer->m_desc.m_buffer_width * 4, 256);
+			copy_source.PlacedFootprint.Footprint.RowPitch = SizeAlignTwoPower(data.m_readback_buffer->m_desc.m_buffer_width * 4, 256);
 
 			D3D12_TEXTURE_COPY_LOCATION copy_dest = {};
 			copy_dest.pResource = render_target->m_render_targets[0];
@@ -293,7 +293,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyDenoiserTask(fg, handle, resize);
 		};
-		desc.m_name = "Post Processing";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COPY;
 		desc.m_allow_multithreading = true;
