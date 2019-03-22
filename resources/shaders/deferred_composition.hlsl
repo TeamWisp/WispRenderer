@@ -66,13 +66,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		float metallic = gbuffer_normal_metallic[screen_coord].w;
 
-		roughness = 0.05;
-
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
 		
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
-		const float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
+		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
 		float3 irradiance = float3(0, 0, 0);
 		if (is_path_tracer)
@@ -106,6 +104,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, sampled_brdf, shadow_factor);
+		retval = roughness;
 	}
 	else
 	{	

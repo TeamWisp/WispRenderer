@@ -88,6 +88,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 {
 	if (depth >= MAX_RECURSION)
 	{
+		return float4(0, 0, 0, 0);
 		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
 	}
 
@@ -96,7 +97,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	ray.Origin = origin;
 	ray.Direction = direction;
 	ray.TMin = 0;
-	ray.TMax = 10000.0;
+	ray.TMax = 1.0e38f;
 
 	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
 
@@ -124,6 +125,77 @@ float3 unpack_position(float2 uv, float depth)
 
 #define M_PI 3.14159265358979
 
+// NVIDIA's luminance function
+inline float luminance(float3 rgb)
+{
+    return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f));
+}
+
+// NVIDIA's probability function
+float probabilityToSampleDiffuse(float3 difColor, float3 specColor)
+{
+	float lumDiffuse = max(0.01f, luminance(difColor.rgb));
+	float lumSpecular = max(0.01f, luminance(specColor.rgb));
+	return lumDiffuse / (lumDiffuse + lumSpecular);
+}
+
+float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
+{
+	// #################### GGX #####################
+	float diffuse_probability = probabilityToSampleDiffuse(albedo, metal);
+	diffuse_probability = 0;
+	float choose_diffuse = (nextRand(seed) < diffuse_probability);
+
+	// Diffuse lobe
+	if (choose_diffuse)
+	{
+		nextRand(seed);
+		const float3 rand_dir = getUniformHemisphereSample(seed, N);
+		float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), rand_dir, depth, seed);
+
+		float3 lighting = shade_pixel(hit_pos, V, 
+			albedo, 
+			metal, 
+			roughness, 
+			fN, 
+			seed, 
+			depth+1);
+
+		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
+
+		return (lighting + (irradiance * albedo)) / diffuse_probability;
+	}
+	else
+	{
+		nextRand(seed);
+		float3 H = getGGXMicrofacet(seed, roughness, N);
+
+		// ### BRDF ###
+		float3 L = normalize(2.f * dot(V, H) * H - V);
+
+		float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), L, depth, seed);
+		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
+
+		// Compute some dot products needed for shading
+		float NdotV = saturate(dot(N, V));
+		float NdotL = saturate(dot(N, L));
+		float NdotH = saturate(dot(N, H));
+		float LdotH = saturate(dot(L, H));
+
+		// D = Normal distribution (Distribution of the microfacets)
+		float D = D_GGX(NdotH, roughness); 
+		// G = Geometric shadowing term (Microfacets shadowing)
+		float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);
+		// F = Fresnel factor (Reflectance depending on angle of incidence)
+		float3 F = F_Schlick(NdotH, metal, albedo);
+ 
+		float3 spec = (D * F * G) / ((4.0 * NdotL * NdotV + 0.001f));
+		float  ggx_probability = D * NdotH / (4 * LdotH);
+
+		return NdotL * irradiance * spec / (1 * (1.0f - diffuse_probability));
+	}
+}
+
 [shader("raygeneration")]
 void RaygenEntry()
 {
@@ -141,11 +213,16 @@ void RaygenEntry()
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 	float3 albedo = albedo_roughness.rgb;
-	float roughness = albedo_roughness.w;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 	float3 normal = normal_metallic.xyz;
 	float metallic = normal_metallic.w;
+	float roughness = albedo_roughness.w;
+
+#ifdef HARD_VALUES
+	metallic = mm;
+	roughness = rr;
+#endif
 
 	// Do lighting
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
@@ -156,11 +233,14 @@ void RaygenEntry()
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
+	//result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
+	result = ggxIndirect(wpos + (normal * EPSILON), normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * cos_theta) * (albedo / PI);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
 
 
+	result = clamp(result, 0, 100000);
+	
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
 	{
@@ -239,6 +319,11 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 	
+	#ifdef HARD_VALUES
+	metal = mm;
+	roughness = rr;
+	#endif
+
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 #define CALC_B
@@ -255,6 +340,7 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	if (dot(fN, V) <= 0.0f) fN = -fN;
 
 	// Irradiance
+#ifdef OLDSCHOOL
 	nextRand(payload.seed);
 	const float3 rand_dir = getUniformHemisphereSample(payload.seed, N);
 	const float cos_theta = cos(dot(rand_dir, normal));
@@ -286,8 +372,13 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float3 ambient = (kD * diffuse + specular);
 
 	payload.color = ambient + lighting;
+#else
 
 	// #################### GGX #####################
+	nextRand(payload.seed);
+	payload.color = ggxIndirect(hit_pos + (N * EPSILON), fN, fN, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+
+#endif
 }
 
 //Reflection skybox

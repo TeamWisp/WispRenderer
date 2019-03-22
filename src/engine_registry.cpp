@@ -245,7 +245,7 @@ namespace wr
 		PipelineDescription::ComputeShader(shaders::deferred_composition_cs),
 		PipelineDescription::RootSignature(root_signatures::deferred_composition),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats({ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 		PipelineDescription::NumRTVFormats(1),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),

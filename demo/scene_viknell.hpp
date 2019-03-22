@@ -24,7 +24,7 @@ namespace viknell_scene
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
-//#define WALLS
+#define WALLS
 		// Geometry
 #ifdef WALLS
 		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::white_plane_model);

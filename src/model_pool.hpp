@@ -310,7 +310,7 @@ namespace wr
 				}
 				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
 				{
-					albedo = texture_pool->Load(dir + material->m_albedo_texture, false, true);
+					albedo = texture_pool->Load(dir + material->m_albedo_texture, true, true);
 				}
 			}
 			else
