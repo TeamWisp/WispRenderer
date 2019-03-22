@@ -200,7 +200,7 @@ void RaygenEntry()
 	float aoValue = 1.0f;
 	if(ao_enabled == 1)
 	{
-		aoValue = DoAmbientOcclusion(normal, wpos, 32, 0.25f, rand_seed);
+		aoValue = DoAmbientOcclusion(normal, wpos, 32, 2502.f, rand_seed);
 	}
    	output_ao[DispatchRaysIndex().xy].x = aoValue;
 }

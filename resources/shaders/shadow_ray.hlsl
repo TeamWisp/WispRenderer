@@ -20,7 +20,7 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = 0;
+	ray.TMin = 0.0f;
 	ray.TMax = far;
 
 	ShadowHitInfo payload = { false, 0 };

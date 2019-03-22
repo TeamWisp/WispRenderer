@@ -112,5 +112,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	}
 
 	//Do shading
-	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
+	output[int2(dispatch_thread_id.xy)] = float4(gbuffer_AO[screen_coord].x, gbuffer_AO[screen_coord].x,gbuffer_AO[screen_coord].x, 1.f);//float4(retval, 1.f);
 }

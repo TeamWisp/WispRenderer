@@ -236,7 +236,7 @@ namespace wr::d3d12
 		// Get prebuild info top level
 		internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
 
-		LOG("{}", tlas.m_prebuild_info.ResultDataMaxSizeInBytes);
+		//LOG("{}", tlas.m_prebuild_info.ResultDataMaxSizeInBytes);
 
 		// Allocate scratch resource
 		internal::AllocateUAVBuffer(device,
@@ -374,7 +374,7 @@ namespace wr::d3d12
 		internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
 		if (tlas.m_rebuild_scratch)
 		{
-			LOG("{}", tlas.m_prebuild_info.ResultDataMaxSizeInBytes);
+	//		LOG("{}", tlas.m_prebuild_info.ResultDataMaxSizeInBytes);
 
 			if (tlas.m_scratch)
 			{
