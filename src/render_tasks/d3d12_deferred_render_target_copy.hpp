@@ -83,7 +83,7 @@ namespace wr
 		
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COPY;
-		desc.m_allow_multithreading = d3d12::settings::multithread_framegraph;
+		desc.m_allow_multithreading = true;
 
 		frame_graph.AddTask<RenderTargetCopyTaskData>(desc);
 	}
