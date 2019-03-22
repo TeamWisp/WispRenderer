@@ -61,6 +61,8 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
 	output.color = input.color;
 
+	output.uv *= 5.0f;
+
 	return output;
 }
 

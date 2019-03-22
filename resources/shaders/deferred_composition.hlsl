@@ -59,7 +59,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	if(depth_f != 1.0f)
 	{
 		// GBuffer contents
-		float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
+		float3 albedo = pow(gbuffer_albedo_roughness[screen_coord].xyz, 2.2);
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
@@ -94,7 +94,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection, sampled_brdf, shadow_factor);
 
-		retval = buffer_refl_shadow[screen_coord].xyz;
+		//retval = buffer_refl_shadow[screen_coord].xyz;
+		//retval = albedo;
 	}
 	else
 	{	

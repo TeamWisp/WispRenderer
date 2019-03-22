@@ -132,20 +132,20 @@ namespace engine
 		}
 
 		{
-			ImGui::Begin("IBL Testing Ground");
+			//ImGui::Begin("IBL Testing Ground");
 
-			auto mirror_internal = resources::mirror_material.m_pool->GetMaterial(resources::mirror_material.m_id);
+			//auto mirror_internal = resources::mirror_material.m_pool->GetMaterial(resources::mirror_material.m_id);
 
-			float roughness = mirror_internal->GetConstantRoughness();
-			float metallic = mirror_internal->GetConstantMetallic().x;
+			//float roughness = mirror_internal->GetConstantRoughness();
+			//float metallic = mirror_internal->GetConstantMetallic().x;
 
-			ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f);
-			ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f);
+			//ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f);
+			//ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f);
 
-			mirror_internal->SetConstantRoughness(roughness);
-			mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(metallic, metallic, metallic));
+			//mirror_internal->SetConstantRoughness(roughness);
+			//mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(metallic, metallic, metallic));
 
-			ImGui::End();
+			//ImGui::End();
 		}
 
 		wr::imgui::window::LightEditor(sg, viewport_pos, viewport_size);
