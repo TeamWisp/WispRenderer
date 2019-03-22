@@ -230,7 +230,7 @@ namespace wr
 
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::DIRECT;
-		desc.m_allow_multithreading = true;
+		desc.m_allow_multithreading = d3d12::settings::multithread_framegraph;
 
 		fg.AddTask<CubemapConvolutionTaskData>(desc);
 	}

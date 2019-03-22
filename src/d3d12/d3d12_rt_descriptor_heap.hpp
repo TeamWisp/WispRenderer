@@ -19,7 +19,7 @@ namespace wr
 	class RTDescriptorHeap
 	{
 	public:
-		RTDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 1024);
+		RTDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 100024);
 
 		virtual ~RTDescriptorHeap();
 
@@ -38,7 +38,6 @@ namespace wr
 		 *   * Before a draw    : ID3D12GraphicsCommandList::SetGraphicsRootDescriptorTable
 		 *   * Before a dispatch: ID3D12GraphicsCommandList::SetComputeRootDescriptorTable
 		 */
-		void CommitStagedDescriptorsForDraw(d3d12::CommandList& cmd_list, unsigned int frame_idx);
 		void CommitStagedDescriptorsForDispatch(d3d12::CommandList& cmd_list, unsigned int frame_idx);
 
 		/**
@@ -148,8 +147,8 @@ namespace wr
 		uint32_t m_stale_descriptor_table_bit_mask;
 
 		d3d12::DescriptorHeap* m_heap;
-		d3d12::DescHeapGPUHandle m_current_gpu_desc_handle;
-		d3d12::DescHeapCPUHandle m_current_cpu_desc_handle;
+		d3d12::DescHeapGPUHandle m_current_gpu_desc_handle[d3d12::settings::num_back_buffers];
+		d3d12::DescHeapCPUHandle m_current_cpu_desc_handle[d3d12::settings::num_back_buffers];
 
 		uint32_t m_num_free_handles[d3d12::settings::num_back_buffers];
 

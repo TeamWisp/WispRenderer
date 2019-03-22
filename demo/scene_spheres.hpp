@@ -94,8 +94,8 @@ namespace spheres_scene
 
 	void UpdateScene()
 	{
-		//t += 10.f * ImGui::GetIO().DeltaTime;
+		t += 10.f * ImGui::GetIO().DeltaTime;
 
-		camera->Update(0.16f);
+		camera->Update(ImGui::GetIO().DeltaTime);
 	}
 } /* spheres_scene */

@@ -32,9 +32,9 @@ namespace wr
 
 		void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, DeferredCompositionTaskData const & data, unsigned int frame_idx);
 
-		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle);
+		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize);
 		void ExecuteDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle);
-		void DestroyDeferredCompositionTask(FrameGraph& fg, RenderTaskHandle handle);
+		void DestroyDeferredCompositionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize);
 
 	}
 
