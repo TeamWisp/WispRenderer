@@ -443,6 +443,71 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
+		enum class DoFCoCE
+		{
+			CAMERA_PROPERTIES,
+			GDEPTH,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> dof_coc = {
+			rs_layout::Entry{(int)DoFCoCE::GDEPTH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFCoCE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFCoCE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST}
+		};
+
+		enum class DoFDownScaleE
+		{
+			SOURCE,
+			OUTPUT,
+			COC
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> dof_down_scale = {
+			rs_layout::Entry{(int)DoFDownScaleE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFDownScaleE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFDownScaleE::COC, 1, rs_layout::Type::SRV_RANGE}
+		};
+
+		enum class DoFBokehE
+		{
+			CAMERA_PROPERTIES,
+			SOURCE,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> dof_bokeh = {
+			rs_layout::Entry{(int)DoFBokehE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
+		enum class DoFBokehPostFilterE
+		{
+			SOURCE,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 2> dof_bokeh_post_filter = {
+			rs_layout::Entry{(int)DoFBokehPostFilterE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehPostFilterE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
+		};
+
+		enum class DoFCompositionE
+		{
+			SOURCE,
+			OUTPUT,
+			BOKEH,
+			COC
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> dof_composition = {
+			rs_layout::Entry{(int)DoFCompositionE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFCompositionE::BOKEH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFCompositionE::COC, 1, rs_layout::Type::SRV_RANGE},
+		};
+
 	} /* srv */
 
 	struct root_signatures
@@ -457,6 +522,11 @@ namespace wr
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
+		static RegistryHandle dof_coc;
+		static RegistryHandle dof_down_scale;
+		static RegistryHandle dof_bokeh;
+		static RegistryHandle dof_bokeh_post_filter;
+		static RegistryHandle dof_composition;
 	};
 
 	struct shaders
@@ -474,6 +544,11 @@ namespace wr
 		static RegistryHandle cubemap_convolution_ps;
 		static RegistryHandle cubemap_prefiltering_cs;
 		static RegistryHandle post_processing;
+		static RegistryHandle dof_coc;
+		static RegistryHandle dof_down_scale;
+		static RegistryHandle dof_bokeh;
+		static RegistryHandle dof_bokeh_post_filter;
+		static RegistryHandle dof_composition;
 	};
 
 	struct pipelines
@@ -486,6 +561,11 @@ namespace wr
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
+		static RegistryHandle dof_coc;
+		static RegistryHandle dof_down_scale;
+		static RegistryHandle dof_bokeh;
+		static RegistryHandle dof_bokeh_post_filter;
+		static RegistryHandle dof_composition;
 	};
 
 	struct state_objects

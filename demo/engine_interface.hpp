@@ -119,6 +119,15 @@ namespace engine
 
 			ImGui::DragFloat3("Rotation", rot, 0.01f);
 
+			ImGui::MenuItem("Enable DOF", nullptr, &sg->GetActiveCamera()->m_enable_dof);
+			ImGui::DragFloat("F number", &sg->GetActiveCamera()->m_f_number, 1.f, 1.f, 128.f);
+			ImGui::DragFloat("Film size", &sg->GetActiveCamera()->m_film_size, 1.f, 25.f, 100.f);
+			ImGui::DragInt("Aperture blades", &sg->GetActiveCamera()->m_aperture_blades, 1, 3, 7);
+			ImGui::DragFloat("Focal Length", &sg->GetActiveCamera()->m_focal_length, 1.f, 1.f, 300.f);
+			ImGui::DragFloat("Focal plane distance", &sg->GetActiveCamera()->m_focus_dist, 1.f, 0.f, 1000.f);
+
+			sg->GetActiveCamera()->SetFov(sg->GetActiveCamera()->m_aspect_ratio, sg->GetActiveCamera()->m_film_size);
+
 			if (!ImGui::IsMouseDown(1))
 			{
 				sg->GetActiveCamera()->SetPosition(pos);

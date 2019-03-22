@@ -317,6 +317,193 @@ namespace wr
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 	});
 
+	/* ### Depth of field ### */
+
+	// Cone of confusion
+	REGISTER(shaders::dof_coc, ShaderRegistry) ({
+		ShaderDescription::Path("resources/shaders/dof_coc.hlsl"),
+			ShaderDescription::Entry("main_cs"),
+			ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		});
+
+	DESC_RANGE_ARRAY(dofcoc_r,
+		DESC_RANGE(params::dof_coc, Type::SRV_RANGE, params::DoFCoCE::GDEPTH),
+		DESC_RANGE(params::dof_coc, Type::UAV_RANGE, params::DoFCoCE::OUTPUT),
+		);
+
+	REGISTER(root_signatures::dof_coc, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(dofcoc_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::dof_coc, params::DoFCoCE::CAMERA_PROPERTIES)),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+		})
+		});
+
+	REGISTER(pipelines::dof_coc, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::dof_coc),
+		PipelineDescription::RootSignature(root_signatures::dof_coc),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		});
+
+	// Down Scale texture
+	REGISTER(shaders::dof_down_scale, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/dof_down_scale.hlsl"),
+		ShaderDescription::Entry("main_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		});
+
+	DESC_RANGE_ARRAY(dscale_r,
+		DESC_RANGE(params::dof_down_scale, Type::SRV_RANGE, params::DoFDownScaleE::SOURCE),
+		DESC_RANGE(params::dof_down_scale, Type::UAV_RANGE, params::DoFDownScaleE::OUTPUT),
+		DESC_RANGE(params::dof_down_scale, Type::SRV_RANGE, params::DoFDownScaleE::COC),
+		);
+
+	REGISTER(root_signatures::dof_down_scale, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(dscale_r, D3D12_SHADER_VISIBILITY_ALL),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+		})
+		});
+
+	REGISTER(pipelines::dof_down_scale, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::dof_down_scale),
+		PipelineDescription::RootSignature(root_signatures::dof_down_scale),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		});
+
+	//dof bokeh
+	REGISTER(shaders::dof_bokeh, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/dof_bokeh.hlsl"),
+		ShaderDescription::Entry("main_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		});
+
+	DESC_RANGE_ARRAY(dof_bokeh_r,
+		DESC_RANGE(params::dof_bokeh, Type::SRV_RANGE, params::DoFBokehE::SOURCE),
+		DESC_RANGE(params::dof_bokeh, Type::UAV_RANGE, params::DoFBokehE::OUTPUT),
+		);
+
+	REGISTER(root_signatures::dof_bokeh, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(dof_bokeh_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::dof_bokeh, params::DoFBokehE::CAMERA_PROPERTIES)),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+		})
+		});
+
+	REGISTER(pipelines::dof_bokeh, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::dof_bokeh),
+		PipelineDescription::RootSignature(root_signatures::dof_bokeh),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R16G16B16A16_UNORM }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		});
+
+	//dof bokeh post filter
+	REGISTER(shaders::dof_bokeh_post_filter, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/dof_bokeh_post_filter.hlsl"),
+		ShaderDescription::Entry("main_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		});
+
+	DESC_RANGE_ARRAY(dof_bokeh_post_filter_r,
+		DESC_RANGE(params::dof_bokeh_post_filter, Type::SRV_RANGE, params::DoFBokehPostFilterE::SOURCE),
+		DESC_RANGE(params::dof_bokeh_post_filter, Type::UAV_RANGE, params::DoFBokehPostFilterE::OUTPUT),
+		);
+
+	REGISTER(root_signatures::dof_bokeh_post_filter, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(dof_bokeh_post_filter_r, D3D12_SHADER_VISIBILITY_ALL),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+		})
+		});
+
+	REGISTER(pipelines::dof_bokeh_post_filter, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::dof_bokeh_post_filter),
+		PipelineDescription::RootSignature(root_signatures::dof_bokeh_post_filter),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		});
+
+	// depth of field composition
+	REGISTER(shaders::dof_composition, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/dof_composition.hlsl"),
+		ShaderDescription::Entry("main_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		});
+
+	DESC_RANGE_ARRAY(dof_composition_r,
+		DESC_RANGE(params::dof_composition, Type::SRV_RANGE, params::DoFCompositionE::SOURCE),
+		DESC_RANGE(params::dof_composition, Type::UAV_RANGE, params::DoFCompositionE::OUTPUT),
+		DESC_RANGE(params::dof_composition, Type::SRV_RANGE, params::DoFCompositionE::BOKEH),
+		DESC_RANGE(params::dof_composition, Type::SRV_RANGE, params::DoFCompositionE::COC),
+		);
+
+	REGISTER(root_signatures::dof_composition, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(dof_composition_r, D3D12_SHADER_VISIBILITY_ALL),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER}
+		})
+		});
+
+	REGISTER(pipelines::dof_composition, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::dof_composition),
+		PipelineDescription::RootSignature(root_signatures::dof_composition),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		});
+
 
 	/* ### Raytracing ### */
 	REGISTER(shaders::post_processing, ShaderRegistry)({
