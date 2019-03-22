@@ -10,7 +10,7 @@ struct Attributes { };
 
 bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
-#ifndef NO_SHADOWS
+//#ifndef NO_SHADOWS
 	if (depth >= MAX_RECURSION)
 	{
 		return false;
@@ -37,9 +37,9 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 		payload);
 
 	return payload.is_hit;
-#else
-	return false;
-#endif
+//#else
+//	return false;
+//#endif
 }
 
 [shader("closesthit")]
@@ -60,7 +60,6 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 	float shadow_factor = 0.0f;
 
 #ifdef SOFT_SHADOWS
-	[unroll(MAX_SHADOW_SAMPLES)]
 	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
 	{
 		// Perhaps change randomness to not be purely random, but algorithm-random?
