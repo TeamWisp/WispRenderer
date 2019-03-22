@@ -24,6 +24,7 @@ namespace wr
 		using NumRTVFormats = util::NamedType<unsigned int>;
 		using Clear = util::NamedType<bool>;
 		using ClearDepth = util::NamedType<bool>;
+		using ResourceName = util::NamedType<std::wstring>;
 
 		IsRenderWindow m_is_render_window;
 		Width m_width;
@@ -37,6 +38,8 @@ namespace wr
 
 		Clear m_clear = Clear(false);
 		ClearDepth m_clear_depth = ClearDepth(false);
+
+		ResourceName m_name = ResourceName(std::wstring());
 	};
 
 } /* wr */

@@ -2,6 +2,7 @@
 
 #include "frame_graph/frame_graph.hpp"
 #include "render_tasks/d3d12_imgui_render_task.hpp"
+#include "render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "render_tasks/d3d12_deferred_main.hpp"
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
@@ -28,14 +29,14 @@ namespace fg_manager
 	{
 		switch (id)
 		{
-			case PrebuildFrameGraph::RAYTRACING:
-				return "Full Raytracing";
-			case PrebuildFrameGraph::DEFERRED:
-				return "Deferred";
-			case PrebuildFrameGraph::RT_HYBRID:
-				return "Hybrid";
-			default:
-				return "Unknown";
+		case PrebuildFrameGraph::RAYTRACING:
+			return "Full Raytracing";
+		case PrebuildFrameGraph::DEFERRED:
+			return "Deferred";
+		case PrebuildFrameGraph::RT_HYBRID:
+			return "Hybrid";
+		default:
+			return "Unknown";
 		}
 	}
 
@@ -67,8 +68,9 @@ namespace fg_manager
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(6);
+			fg = new wr::FrameGraph(7);
 			
+			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
@@ -89,7 +91,10 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(9);
+			fg = new wr::FrameGraph(10);
+
+			// Precalculate BRDF Lut
+			wr::AddBrdfLutPrecalculationTask(*fg);
 
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
@@ -103,7 +108,6 @@ namespace fg_manager
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
 
-			// Composition to compose the hybrid result with the g-buffers
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing

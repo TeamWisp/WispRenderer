@@ -57,7 +57,7 @@ void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
 // Get shadow factor
 float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, inout uint rand_seed)
 {
-	float shadow_factor = 0.0;
+	float shadow_factor = 0.0f;
 
 #ifdef SOFT_SHADOWS
 	[unroll(MAX_SHADOW_SAMPLES)]

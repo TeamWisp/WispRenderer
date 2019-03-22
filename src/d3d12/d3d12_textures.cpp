@@ -315,6 +315,46 @@ namespace wr::d3d12
 		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
 	}
 
+	void CreateSRVFromCubemapFace(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_levels, unsigned int most_detailed_mip, unsigned int face_idx)
+	{
+		decltype(Device::m_native) n_device;
+
+		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
+
+		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srv_desc.Format = (DXGI_FORMAT)tex->m_format;
+
+		//Calculate dimension
+		D3D12_SRV_DIMENSION dimension;
+
+		if (tex->m_is_cubemap)
+		{
+			dimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+			srv_desc.Texture2DArray.MipLevels = mip_levels;
+			srv_desc.Texture2DArray.MostDetailedMip = most_detailed_mip;
+			srv_desc.Texture2DArray.ArraySize = 1;
+			srv_desc.Texture2DArray.FirstArraySlice = face_idx;
+		}
+		else
+		{
+			LOGC("[ERROR]: Texture is not a cubemap");
+		}
+
+		srv_desc.ViewDimension = dimension;
+
+		n_device->CreateShaderResourceView(tex->m_resource, &srv_desc, handle.m_native);
+	}
+
+	void CreateUAVFromTexture(TextureResource* tex, unsigned int mip_slice)
+	{
+		d3d12::DescHeapCPUHandle handle = tex->m_uav_allocation.GetDescriptorHandle();
+
+		CreateUAVFromTexture(tex, handle, mip_slice);
+	}
+
 	void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice)
 	{
 		decltype(Device::m_native) n_device;
@@ -333,7 +373,6 @@ namespace wr::d3d12
 		if (tex->m_is_cubemap)
 		{
 			dimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-
 			uav_desc.Texture2DArray.MipSlice = mip_slice;
 			uav_desc.Texture2DArray.ArraySize = tex->m_array_size;
 		}
@@ -386,6 +425,33 @@ namespace wr::d3d12
 		}
 
 		uav_desc.ViewDimension = dimension;
+
+		n_device->CreateUnorderedAccessView(tex->m_resource, nullptr, &uav_desc, handle.m_native);
+	}
+
+	void CreateUAVFromCubemapFace(TextureResource * tex, DescHeapCPUHandle & handle, unsigned int mip_slice, unsigned int face_idx)
+	{
+		decltype(Device::m_native) n_device;
+
+		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
+
+		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
+
+		uav_desc.Format = (DXGI_FORMAT)tex->m_format;
+
+		if (tex->m_is_cubemap)
+		{
+			uav_desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+			uav_desc.Texture2DArray.MipSlice = mip_slice;
+			uav_desc.Texture2DArray.FirstArraySlice = face_idx;
+			uav_desc.Texture2DArray.ArraySize = 1;
+		}
+		else
+		{
+			LOGC("[ERROR]: Texture is not a cubemap");
+		}
 
 		n_device->CreateUnorderedAccessView(tex->m_resource, nullptr, &uav_desc, handle.m_native);
 	}

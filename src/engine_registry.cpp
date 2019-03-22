@@ -27,6 +27,19 @@ namespace wr
 {
 	using namespace rs_layout;
 
+	//BDRF Lut Precalculation Root Signature
+	DESC_RANGE_ARRAY(ranges_brdf,
+		DESC_RANGE(params::brdf_lut, Type::UAV_RANGE, params::BRDF_LutE::OUTPUT),
+	);
+	
+	REGISTER(root_signatures::brdf_lut, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({ 
+			ROOT_PARAM_DESC_TABLE(ranges_brdf, D3D12_SHADER_VISIBILITY_ALL)
+		}),
+		RootSignatureDescription::Samplers({ })
+	});
+
+
 	//Basic Deferred Pass Root Signature
 	DESC_RANGE_ARRAY(ranges_basic,
 		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ALBEDO),
@@ -55,6 +68,8 @@ namespace wr
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::LIGHT_BUFFER),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::SKY_BOX),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::IRRADIANCE_MAP),
+		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::PREF_ENV_MAP),
+		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BRDF_LUT),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW),
 		DESC_RANGE(params::deferred_composition, Type::UAV_RANGE, params::DeferredCompositionE::OUTPUT),
 	);
@@ -65,7 +80,8 @@ namespace wr
 			ROOT_PARAM_DESC_TABLE(srv_ranges, D3D12_SHADER_VISIBILITY_ALL),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP }
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP },
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
 		})
 	});
 
@@ -79,6 +95,21 @@ namespace wr
 		RootSignatureDescription::Parameters({
 			ROOT_PARAM(GetConstants(params::mip_mapping, params::MipMappingE::CBUFFER)),
 			ROOT_PARAM_DESC_TABLE(mip_in_out_ranges, D3D12_SHADER_VISIBILITY_ALL)
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
+		})
+	});
+
+	//Prefiltering Root Signature
+	DESC_RANGE_ARRAY(prefilter_in_out_ranges,
+		DESC_RANGE(params::cubemap_prefiltering, Type::SRV_RANGE, params::CubemapPrefilteringE::SOURCE),
+		DESC_RANGE(params::cubemap_prefiltering, Type::UAV_RANGE, params::CubemapPrefilteringE::DEST),
+		);
+	REGISTER(root_signatures::cubemap_prefiltering, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM(GetConstants(params::cubemap_prefiltering, params::CubemapPrefilteringE::CBUFFER)),
+			ROOT_PARAM_DESC_TABLE(prefilter_in_out_ranges, D3D12_SHADER_VISIBILITY_ALL)
 		}),
 		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
@@ -116,6 +147,12 @@ namespace wr
 		})
 	});
 
+
+	REGISTER(shaders::brdf_lut_cs, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/brdf_lut_cs.hlsl"),
+		ShaderDescription::Entry("main_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
 
 	REGISTER(shaders::basic_vs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/basic.hlsl"),
@@ -164,6 +201,28 @@ namespace wr
 		ShaderDescription::Entry("main_ps"),
 		ShaderDescription::Type(ShaderType::PIXEL_SHADER)
 	});
+
+	REGISTER(shaders::cubemap_prefiltering_cs, ShaderRegistry)({
+	ShaderDescription::Path("resources/shaders/prefilter_env_map_cs.hlsl"),
+	ShaderDescription::Entry("main_cs"),
+	ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
+	REGISTER(pipelines::brdf_lut_precalculation, PipelineRegistry)<Vertex2D> ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::brdf_lut_cs),
+		PipelineDescription::RootSignature(root_signatures::brdf_lut),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R16G16_FLOAT }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		}
+	);
 
 	REGISTER(pipelines::basic_deferred, PipelineRegistry)<VertexColor>({
 		PipelineDescription::VertexShader(shaders::basic_vs),
@@ -236,6 +295,22 @@ namespace wr
 		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 		PipelineDescription::NumRTVFormats(1),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(false),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+	});
+
+	REGISTER(pipelines::cubemap_prefiltering, PipelineRegistry) < Vertex > (
+	{
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::cubemap_prefiltering_cs),
+		PipelineDescription::RootSignature(root_signatures::cubemap_prefiltering),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::UNKNOWN }),
+		PipelineDescription::NumRTVFormats(0),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_NONE),
 		PipelineDescription::Depth(false),
 		PipelineDescription::CounterClockwise(false),

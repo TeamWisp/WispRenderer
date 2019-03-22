@@ -98,7 +98,8 @@ namespace wr
 				data.in_imgui_func(ImTextureID(d3d12::GetGPUHandle(data.out_descriptor_heap, frame_idx, 1).m_native.ptr));
 
 				// Render imgui
-				
+				d3d12::Transition(cmd_list, display_rt, wr::ResourceState::COPY_SOURCE, wr::ResourceState::PIXEL_SHADER_RESOURCE);
+
 				//EXCEPTION CODE START
 				d3d12::BindDescriptorHeap(cmd_list, data.out_descriptor_heap, data.out_descriptor_heap->m_create_info.m_type, n_render_system.GetFrameIdx());
 				d3d12::BindDescriptorHeaps(cmd_list, n_render_system.GetFrameIdx());
@@ -118,6 +119,10 @@ namespace wr
 					ImGui::UpdatePlatformWindows();
 					ImGui::RenderPlatformWindowsDefault();
 				}
+
+
+				d3d12::Transition(cmd_list, display_rt, wr::ResourceState::PIXEL_SHADER_RESOURCE, wr::ResourceState::COPY_SOURCE);
+
 			}
 		}
 
@@ -140,6 +145,8 @@ namespace wr
 	template<typename T>
 	[[nodiscard]] inline RenderTaskDesc GetImGuiTask(std::function<void(ImTextureID)> imgui_func)
 	{
+		std::wstring name(L"Dear ImGui");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(true),
@@ -152,7 +159,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
-			RenderTargetProperties::ClearDepth(false)
+			RenderTargetProperties::ClearDepth(false),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -166,7 +174,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyImGuiTask(fg, handle, resize);
 		};
-		desc.m_name = "Dear ImGui";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = false;

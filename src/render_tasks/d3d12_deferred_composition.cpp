@@ -8,6 +8,7 @@
 #include "../scene_graph/skybox_node.hpp"
 #include "../engine_registry.hpp"
 
+#include "../render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_cubemap_convolution.hpp"
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
@@ -48,6 +49,14 @@ namespace wr
 			constexpr unsigned int irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP);
 			d3d12::SetShaderSRV(cmd_list, 1, irradiance, data.out_irradiance);
 
+			constexpr unsigned int pref_env = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::PREF_ENV_MAP);
+			d3d12::SetShaderSRV(cmd_list, 1, pref_env, data.out_pref_env_map);
+
+			constexpr unsigned int brdf_lut_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BRDF_LUT);
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			d3d12::TextureResource* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTexture(n_render_system.m_brdf_lut.value().m_id));
+			d3d12::SetShaderSRV(cmd_list, 1, brdf_lut_loc, brdf_lut_text);
+
 			constexpr unsigned int shadow = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
 			d3d12::DescHeapCPUHandle shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow);
 			d3d12::SetShaderSRV(cmd_list, 1, shadow, shadow_handle);
@@ -62,7 +71,7 @@ namespace wr
 				1);
 		}
 
-		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
+		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
@@ -81,15 +90,16 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(3 * d3d12::settings::num_back_buffers));
-			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(7));
+			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(9));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
 				constexpr auto rtv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS);
 				auto rtv_srv_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rtv_id + (2 * i));
 
-				auto dsv_srv_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH)));
+				constexpr auto dsv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH);
+				auto dsv_srv_handle = data.out_srv_uav_allocation.GetDescriptorHandle(dsv_id);
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, rtv_srv_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
@@ -151,15 +161,25 @@ namespace wr
 				auto skybox = scene_graph.GetCurrentSkybox();
 				if (skybox != nullptr)
 				{
-					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
+					//data.out_skybox = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
+					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTexture(skybox->m_skybox->m_id));
 					d3d12::CreateSRVFromTexture(data.out_skybox);
 				}
 
-				// Get Environment Map
+				// Get Irradiance Map
 				if (skybox != nullptr)
 				{
-					data.out_irradiance = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					//data.out_irradiance = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
+					data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTexture(skybox->m_irradiance->m_id));
 					d3d12::CreateSRVFromTexture(data.out_irradiance);
+				}
+
+				// Get the prefiltered environment map	
+				if (skybox != nullptr)	
+				{		
+					//data.out_pref_env_map = static_cast<d3d12::TextureResource*>(pred_data.out_pref_env_map.m_pool->GetTexture(pred_data.out_pref_env_map.m_id));
+					data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTexture(skybox->m_prefiltered_env_map->m_id));
+					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
 				}
 
 				// Output UAV
@@ -215,19 +235,24 @@ namespace wr
 			}
 		}
 
-		void DestroyDeferredCompositionTask(FrameGraph& fg, RenderTaskHandle handle)
+		void DestroyDeferredCompositionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
+			if (!resize)
+			{
+				auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
 
-			// Small hack to force the allocations to go out of scope, which will tell the texture pool to free them
-			DescriptorAllocation temp1 = std::move(data.out_rtv_srv_allocation);
-			DescriptorAllocation temp2 = std::move(data.out_srv_uav_allocation);
+				// Small hack to force the allocations to go out of scope, which will tell the texture pool to free them
+				DescriptorAllocation temp1 = std::move(data.out_rtv_srv_allocation);
+				DescriptorAllocation temp2 = std::move(data.out_srv_uav_allocation);
+			}
 		}
 
 	}
 
 	void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
+		std::wstring name(L"Deferred Composition");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -240,20 +265,21 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
-		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::SetupDeferredCompositionTask(rs, fg, handle);
+		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::SetupDeferredCompositionTask(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteDeferredCompositionTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::DestroyDeferredCompositionTask(fg, handle);
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyDeferredCompositionTask(fg, handle, resize);
 		};
-		desc.m_name = "Deferred Composition";
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
