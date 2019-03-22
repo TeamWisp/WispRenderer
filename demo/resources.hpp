@@ -117,7 +117,7 @@ namespace resources
 		wr::TextureHandle rubber_roughness = texture_pool->Load("resources/materials/rubber/roughness.png", false, true);
 		wr::TextureHandle rubber_metallic = texture_pool->Load("resources/materials/rubber/metallic.png", false, true);
 
-		equirectangular_environment_map = texture_pool->Load("resources/materials/simons_town_rocks_16k.hdr", false, false);
+		equirectangular_environment_map = texture_pool->Load("resources/materials/venice_sunset_16k.hdr", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();
@@ -315,8 +315,8 @@ namespace resources
 
 		{
 			{
-				//test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/pink_room/pink_room.fbx");
-				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/pink_room/pink_room.fbx");
+				//test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 				sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 
 				for (auto& m : test_model->m_meshes)

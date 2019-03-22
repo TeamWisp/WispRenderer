@@ -2,7 +2,7 @@
 //#define FOUR_X_A
 //#define PATH_TRACING
 //#define DEPTH_OF_FIELD
-#define EPSILON 1
+#define EPSILON 0.001
 #define MAX_SHADOW_SAMPLES 4
 
 #ifdef FALLBACK
@@ -13,9 +13,9 @@
 #endif
 
 
-
-#define rr 0.6
-#define mm 0.1
+#define HARD_VALUES
+#define rr 1
+#define mm 0.05
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 

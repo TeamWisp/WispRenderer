@@ -13,8 +13,6 @@
 #define MATERIAL_HAS_ALPHA_CONSTANT 1<<12;
 #define MATERIAL_IS_DOUBLE_SIDED 1<<13;
 
-#define COMPRESSED_PBR
-
 struct MaterialData
 {
 	float4 albedo_alpha;

@@ -143,7 +143,6 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 {
 	// #################### GGX #####################
 	float diffuse_probability = probabilityToSampleDiffuse(albedo, metal);
-	diffuse_probability = 0;
 	float choose_diffuse = (nextRand(seed) < diffuse_probability);
 
 	// Diffuse lobe
@@ -233,13 +232,13 @@ void RaygenEntry()
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	//result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
-	result = ggxIndirect(wpos + (normal * EPSILON), normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
+	//result = ggxIndirect(wpos + (normal * EPSILON), normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * cos_theta) * (albedo / PI);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
 
 
-	result = clamp(result, 0, 100000);
+	result = clamp(result, 0, 100);
 	
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
