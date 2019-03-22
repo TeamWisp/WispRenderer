@@ -18,7 +18,9 @@ namespace wr
 		{
 			Texture* texture;
 
-			if (ext_int.find("png") != std::string_view::npos)
+			if (ext_int.find("png") != std::string_view::npos || 
+				ext_int.find("jpg") != std::string_view::npos || 
+				ext_int.find("jpeg") != std::string_view::npos)
 			{
 				texture = LoadPNG(path, srgb, generate_mips);
 			}
@@ -63,6 +65,9 @@ namespace wr
 		case TextureType::PNG:
 			texture = LoadPNGFromMemory(data, width, srgb, generate_mips);
 			break;
+		case TextureType::JPEG:
+			texture = LoadPNGFromMemory(data, width, srgb, generate_mips);
+			break;
 		case TextureType::HDR:
 			texture = LoadHDRFromMemory(data, width, srgb, generate_mips);
 			break;
@@ -97,6 +102,10 @@ namespace wr
 		else if (texture_extension.compare("png") == 0)
 		{
 			type = TextureType::PNG;
+		}
+		else if (texture_extension.compare("jpg") == 0)
+		{
+			type = TextureType::JPEG;
 		}
 		else if (texture_extension.compare("dds") == 0)
 		{

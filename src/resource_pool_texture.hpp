@@ -16,6 +16,7 @@ namespace wr
 	enum class TextureType
 	{
 		PNG,
+		JPEG,
 		DDS,
 		HDR,
 		RAW

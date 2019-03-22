@@ -19,6 +19,7 @@ namespace wr
 		RTpostprocessingstage m_denoiser_post_processor;
 		RTvariable m_denoiser_post_processor_input;
 		RTvariable m_denoiser_post_processor_output;
+		RTvariable m_denoiser_post_processor_hdr;
 
 		RTcommandlist m_denoiser_command_list;
 
@@ -90,7 +91,7 @@ namespace wr
 				nullptr,
 				IID_PPV_ARGS(&data.m_upload_buffer));
 
-			if (!resize)
+			if (true)
 			{
 
 				rtPostProcessingStageCreateBuiltin(data.m_optix_context, "DLDenoiser", &data.m_denoiser_post_processor);
@@ -98,10 +99,17 @@ namespace wr
 				rtPostProcessingStageDeclareVariable(data.m_denoiser_post_processor, "input_buffer", &data.m_denoiser_post_processor_input);
 				rtPostProcessingStageDeclareVariable(data.m_denoiser_post_processor, "output_buffer", &data.m_denoiser_post_processor_output);
 
+				RTresult res = rtPostProcessingStageDeclareVariable(data.m_denoiser_post_processor, "hdr", &data.m_denoiser_post_processor_hdr);
+				if (res != RT_SUCCESS)
+				{
+					LOGW("Couldn't find optix variable");
+				}
+
 			}
 
 			rtVariableSetObject(data.m_denoiser_post_processor_input, data.m_denoiser_input);
 			rtVariableSetObject(data.m_denoiser_post_processor_output, data.m_denoiser_output);
+			rtVariableSet1ui(data.m_denoiser_post_processor_hdr, 1);
 
 			rtCommandListCreate(data.m_optix_context, &data.m_denoiser_command_list);
 
@@ -188,9 +196,13 @@ namespace wr
 
 				rt_dest = reinterpret_cast<float*>(temp);
 
+				float max_value = 0.f;
+				float min_value = 0.f;
 				for (int i = 0; i < data.m_readback_buffer->m_desc.m_buffer_width*data.m_readback_buffer->m_desc.m_buffer_height * 4; ++i)
 				{
 					rt_dest[i] = readback_source[i];
+					min_value = (min_value > readback_source[i] || min_value == 0.f) ? readback_source[i] : min_value;
+					max_value = (max_value < readback_source[i] || max_value == 0.f) ? readback_source[i] : max_value;
 				}
 
 				rtBufferUnmap(data.m_denoiser_input);
