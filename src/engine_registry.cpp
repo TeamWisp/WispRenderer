@@ -56,7 +56,7 @@ namespace wr
 			ROOT_PARAM(GetCBV(params::basic,params::BasicE::MATERIAL_PROPERTIES,D3D12_SHADER_VISIBILITY_PIXEL)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
 		})
 	});
 

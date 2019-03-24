@@ -10,7 +10,7 @@
 	#undef MAX_RECURSION
 	#define MAX_RECURSION 1
 
-	//#define NO_SHADOWS
+	#define NO_SHADOWS
 #endif
 
 RaytracingAccelerationStructure Scene : register(t0, space0);

@@ -182,7 +182,7 @@ namespace wr
 			
 			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", 1024, 1024, 0, wr::Format::R32G32B32A32_FLOAT, true);
 
-			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", 512, 512, 5, wr::Format::R32G32B32A32_FLOAT, true);
+			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", 512, 512, 6, wr::Format::R32G32B32A32_FLOAT, true);
 
 			data.out_cubemap = skybox_node->m_skybox.value();
 			data.out_pref_env = skybox_node->m_prefiltered_env_map.value();

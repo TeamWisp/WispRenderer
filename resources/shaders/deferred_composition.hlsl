@@ -1,5 +1,5 @@
 #define LIGHTS_REGISTER register(t3)
-#define MAX_REFLECTION_LOD 3
+#define MAX_REFLECTION_LOD 5
 
 #include "fullscreen_quad.hlsl"
 #include "util.hlsl"
@@ -67,9 +67,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
 
-		const float3 sampled_irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
+		float3 sampled_irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
 		const float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
+
+		//sampled_irradiance *= float3(1.0f, 1.0f, 0.7f);
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
