@@ -1,6 +1,7 @@
 #include "dof_properties.hlsl"
 
 Texture2D source : register(t0);
+Texture2D cocbuffer :register(t1);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
@@ -15,6 +16,22 @@ cbuffer CameraProperties : register(b0)
 	uint num_blades;
 	int enable_dof;
 };
+
+float GetDownSampledCoC(float2 uv, float2 texelSize)
+{
+	float4 offset = texelSize.xyxy * float2(-0.5f, 0.5f).xxyy;
+	float coc0 = cocbuffer.SampleLevel(s1, uv + offset.xy, 0).a;
+	float coc1 = cocbuffer.SampleLevel(s1, uv + offset.zy, 0).a;
+	float coc2 = cocbuffer.SampleLevel(s1, uv + offset.xw, 0).a;
+	float coc3 = cocbuffer.SampleLevel(s1, uv + offset.zw, 0).a;
+
+	float cocMin = min(min(min(coc0, coc1), coc2), coc3);
+	float cocMax = max(max(max(coc0, coc1), coc2), coc3);
+
+	float coc = cocMax >= -cocMin ? cocMax : cocMin;
+
+	return coc;
+}
 
 // Maps a value inside the square [0,1]x[0,1] to a value in a disk of radius 1 using concentric squares.
 // This mapping preserves area, bi continuity, and minimizes deformation.
@@ -72,6 +89,7 @@ float2 SquareToConcentricDiskMapping(float x, float y, float numSides, float pol
 
 float Weigh(float coc, float radius)
 {
+	//return coc >= radius;
 	return saturate((coc - radius + 2) / 2);
 }
 
@@ -83,7 +101,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 	float2 texelSize = 1.0f / screen_size;
 
-	float2 uv = (screen_coord + 0.5f) / screen_size;
+	float2 uv = screen_coord / screen_size;
 
 	const uint NumSamples = NumDOFSamples * NumDOFSamples;
 
@@ -95,6 +113,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 bgColor = float3(0, 0, 0);
 	float bgWeight = 0.f;
 
+	float curSamp = GetDownSampledCoC(uv, texelSize);
 	if (enable_dof > 0)
 	{
 		for (int i = 0; i < NumSamples; i++)
@@ -111,11 +130,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 			float2 finalUV = uv + o;
 
-			//finalUV = clamp(finalUV, 0.002, 0.998);
-
 			float3 s = source.SampleLevel(s0, finalUV, 0).rgb;
-			float coc = source.SampleLevel(s1, finalUV, 0).a;
-
+			float coc = cocbuffer.SampleLevel(s1, finalUV, 0);
+			//float coc = GetDownSampledCoC(finalUV, texelSize);
+		
 			float bgw = Weigh(max(0, coc * MaxKernelSize), radius);
 			bgColor += s.rgb * bgw;
 			bgWeight += bgw;
@@ -131,7 +149,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	fgColor.rgb *= 1 / (fgWeight + (fgWeight == 0));
 
 	//boost foreground weight to reduce artefacts
-	float bgfg = min(1, fgWeight * 1.39996323 / NumSamples);
+	float bgfg = min(1, fgWeight * Pi / NumSamples);
 
 	float3 finalColor = lerp(bgColor.rgb, fgColor.rgb, bgfg);
 

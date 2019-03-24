@@ -347,7 +347,7 @@ namespace wr
 		PipelineDescription::ComputeShader(shaders::dof_coc),
 		PipelineDescription::RootSignature(root_signatures::dof_coc),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats({ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::RTVFormats({ Format::R16G16B16A16_FLOAT }),
 		PipelineDescription::NumRTVFormats(1),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),
@@ -404,6 +404,7 @@ namespace wr
 	DESC_RANGE_ARRAY(dof_bokeh_r,
 		DESC_RANGE(params::dof_bokeh, Type::SRV_RANGE, params::DoFBokehE::SOURCE),
 		DESC_RANGE(params::dof_bokeh, Type::UAV_RANGE, params::DoFBokehE::OUTPUT),
+		DESC_RANGE(params::dof_bokeh, Type::SRV_RANGE, params::DoFBokehE::COC),
 		);
 
 	REGISTER(root_signatures::dof_bokeh, RootSignatureRegistry)({

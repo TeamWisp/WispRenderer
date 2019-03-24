@@ -89,12 +89,12 @@ namespace fg_manager
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 			wr::AddDoFDownScaleTask<wr::PostProcessingData,
 				wr::DoFCoCData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-			wr::AddDoFBokehTask<wr::DoFDownScaleData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+			wr::AddDoFBokehTask<wr::DoFDownScaleData, wr::DoFCoCData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 			wr::AddDoFCompositionTask<
 				wr::PostProcessingData,
 				wr::DoFBokehPostFilterData,
-				wr::DoFDownScaleData>(*fg);
+				wr::DoFCoCData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
@@ -134,12 +134,12 @@ namespace fg_manager
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 			wr::AddDoFDownScaleTask<wr::PostProcessingData,
 				wr::DoFCoCData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-			wr::AddDoFBokehTask<wr::DoFDownScaleData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+			wr::AddDoFBokehTask<wr::DoFDownScaleData, wr::DoFCoCData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 			wr::AddDoFCompositionTask<
 				wr::PostProcessingData,
 				wr::DoFBokehPostFilterData,
-				wr::DoFDownScaleData>(*fg);
+				wr::DoFCoCData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);

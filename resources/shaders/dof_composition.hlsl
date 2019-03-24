@@ -40,25 +40,23 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 texelSize = 1.0 / screen_size;
 	float2 Uuv = (screen_coord + 0.5f) / screen_size;
 	float2 uv = screen_coord / screen_size;
-	// Start with center sample color
-	float3 vColorSum = source[screen_coord].xyz;;
 
-	uv = clamp(uv, 0.002, 0.998);
-	Uuv = clamp(Uuv, 0.002, 0.998);
 
 	// Normalize color sum
 	float3 Bokeh = bokeh.SampleLevel(s1, uv, 0).rgb; //vColorSum / kernelSampleCount;
-	float bgfg = bokeh.SampleLevel(s0, uv, 0).a;
+	float bgfg = bokeh.SampleLevel(s0, uv, 0).a ;
 
 	float3 Original = source.SampleLevel(s1, uv, 0).rgb;
 
-	float coc = cocbuffer.SampleLevel(s0, uv, 0).a * maxBokehSize ;
-
+	//float coc = GetDownSampledCoC(uv, texelSize);
+	float coc = cocbuffer.SampleLevel(s0, uv, 0);
 	float dofStrength = smoothstep(0.0f, 1.0f, abs(coc));
 
 	float3 color = float3(0, 0, 0);
 
-	color = lerp(Original, Bokeh, smoothstep(0.0f,1.0f,(dofStrength + bgfg) - (dofStrength * bgfg)));
+	color = lerp(Original, Bokeh, dofStrength + bgfg - dofStrength * bgfg);
+
+	//color = bgfg;
 
 	output[int2(dispatch_thread_id.xy)] = float4(color, 1.f);
 }
