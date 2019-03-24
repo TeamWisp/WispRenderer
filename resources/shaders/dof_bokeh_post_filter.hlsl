@@ -1,8 +1,7 @@
-#include "hdr_util.hlsl"
-
 Texture2D source : register(t0);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
+SamplerState s1 : register(s1);
 
 [numthreads(16, 16, 1)]
 void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
@@ -17,13 +16,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 
-	float bgfg = source.SampleLevel(s0, uv, 0).a;
+	float bgfg = source.SampleLevel(s1, uv, 0).a;
 
 	float3 vFinalColor = 
-		source.SampleLevel(s0, clamp(uv + offset.xy, 0.002, 0.998), 0).rgb +
-		source.SampleLevel(s0, clamp(uv + offset.zy, 0.002, 0.998), 0).rgb +
-		source.SampleLevel(s0, clamp(uv + offset.xw, 0.002, 0.998), 0).rgb +
-		source.SampleLevel(s0, clamp(uv + offset.zw, 0.002, 0.998), 0).rgb;
+		source.SampleLevel(s0, uv + offset.xy, 0).rgb +
+		source.SampleLevel(s0, uv + offset.zy, 0).rgb +
+		source.SampleLevel(s0, uv + offset.xw, 0).rgb +
+		source.SampleLevel(s0, uv + offset.zw, 0).rgb;
 	
 	vFinalColor *= 0.25f;
 

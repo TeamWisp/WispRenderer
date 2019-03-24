@@ -337,7 +337,7 @@ namespace wr
 			ROOT_PARAM(GetCBV(params::dof_coc, params::DoFCoCE::CAMERA_PROPERTIES)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
 		})
 		});
 
@@ -374,7 +374,8 @@ namespace wr
 			ROOT_PARAM_DESC_TABLE(dscale_r, D3D12_SHADER_VISIBILITY_ALL),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_CLAMP},
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
 		})
 		});
 
@@ -411,7 +412,8 @@ namespace wr
 			ROOT_PARAM(GetCBV(params::dof_bokeh, params::DoFBokehE::CAMERA_PROPERTIES)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP},
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
 		})
 		});
 
@@ -447,7 +449,8 @@ namespace wr
 			ROOT_PARAM_DESC_TABLE(dof_bokeh_post_filter_r, D3D12_SHADER_VISIBILITY_ALL),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_CLAMP},
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
 		})
 		});
 
@@ -485,7 +488,8 @@ namespace wr
 			ROOT_PARAM_DESC_TABLE(dof_composition_r, D3D12_SHADER_VISIBILITY_ALL),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER}
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP},
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP}
 		})
 		});
 

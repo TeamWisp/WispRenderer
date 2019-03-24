@@ -6,7 +6,7 @@ RWTexture2D<float4> output : register(u0);
 Texture2D bokeh : register(t1);
 Texture2D cocbuffer : register(t2);
 SamplerState s0 : register(s0);
-
+SamplerState s1 : register(s1);
 
 
 static uint min_depth = 0xFFFFFFFF;
@@ -47,19 +47,18 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	Uuv = clamp(Uuv, 0.002, 0.998);
 
 	// Normalize color sum
-	float4 Bokeh = bokeh.SampleLevel(s0, Uuv, 0).rgba ; //vColorSum / kernelSampleCount;
+	float3 Bokeh = bokeh.SampleLevel(s1, uv, 0).rgb; //vColorSum / kernelSampleCount;
+	float bgfg = bokeh.SampleLevel(s0, uv, 0).a;
 
-	float3 Original = source.SampleLevel(s0, uv, 0).rgb;
+	float3 Original = source.SampleLevel(s1, uv, 0).rgb;
 
-	float coc = cocbuffer.SampleLevel(s0, uv, 0).a * maxBokehSize;
-
+	float coc = cocbuffer.SampleLevel(s0, uv, 0).a * maxBokehSize ;
 
 	float dofStrength = smoothstep(0.0f, 1.0f, abs(coc));
 
 	float3 color = float3(0, 0, 0);
 
-	color = lerp(Original, Bokeh.rgb, (dofStrength + Bokeh.a) - (dofStrength * Bokeh.a));
-
+	color = lerp(Original, Bokeh, smoothstep(0.0f,1.0f,(dofStrength + bgfg) - (dofStrength * bgfg)));
 
 	output[int2(dispatch_thread_id.xy)] = float4(color, 1.f);
 }

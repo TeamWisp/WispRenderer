@@ -220,8 +220,12 @@ namespace wr
 
 		inline void Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height)
 		{
-			float widthScalar = (float)width / (float)m_old_window_size_width;
-			float heightScalar = (float)height / (float)m_old_window_size_height;
+			//double widthScalar = width / m_old_window_size_width;
+			//double heightScalar = height / m_old_window_size_height;
+
+			std::uint32_t widthScalar = (width * 100000u)  / m_old_window_size_width;
+			std::uint32_t heightScalar = (height * 100000u) / m_old_window_size_height;
+
 
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
@@ -236,10 +240,10 @@ namespace wr
 
 					if (m_rt_properties[i].value().m_width.Get().has_value())
 					{
-						if (m_rt_properties[i].value().m_width.Get().value() > 0u)
+						if (m_rt_properties[i].value().m_width.Get().value() > 0u && m_rt_properties[i].value().m_width.Get().value() > 0u)
 						{
-							newWidth = uint32_t(m_rt_properties[i].value().m_width.Get().value() * widthScalar);
-							newHeight = uint32_t(m_rt_properties[i].value().m_height.Get().value() * heightScalar);
+							newWidth = uint32_t((m_rt_properties[i].value().m_width.Get().value() * widthScalar) / 100000);
+							newHeight = uint32_t((m_rt_properties[i].value().m_height.Get().value() * heightScalar) / 100000);
 						}
 					}
 

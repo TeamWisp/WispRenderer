@@ -3,6 +3,7 @@
 Texture2D source : register(t0);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
+SamplerState s1 : register(s1);
 
 static const float Pi = 3.141592654f;
 static const float Pi2 = 6.283185308f;
@@ -82,7 +83,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 	float2 texelSize = 1.0f / screen_size;
 
-	float2 uv = screen_coord / screen_size;
+	float2 uv = (screen_coord + 0.5f) / screen_size;
 
 	const uint NumSamples = NumDOFSamples * NumDOFSamples;
 
@@ -94,7 +95,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 bgColor = float3(0, 0, 0);
 	float bgWeight = 0.f;
 
-	float4 originalSample = source.SampleLevel(s0, uv, 0).rgba;
 	if (enable_dof > 0)
 	{
 		for (int i = 0; i < NumSamples; i++)
@@ -111,15 +111,16 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 			float2 finalUV = uv + o;
 
-			finalUV = clamp(finalUV, 0.002, 0.998);
+			//finalUV = clamp(finalUV, 0.002, 0.998);
 
-			float4 s = source.SampleLevel(s0, finalUV, 0).rgba;
+			float3 s = source.SampleLevel(s0, finalUV, 0).rgb;
+			float coc = source.SampleLevel(s1, finalUV, 0).a;
 
-			float bgw = Weigh(max(0, s.a * MaxKernelSize), radius);
+			float bgw = Weigh(max(0, coc * MaxKernelSize), radius);
 			bgColor += s.rgb * bgw;
 			bgWeight += bgw;
 
-			float fgw = Weigh(-s.a * MaxKernelSize, radius);
+			float fgw = Weigh(-coc * MaxKernelSize, radius);
 			fgColor += s.rgb * fgw;
 			fgWeight += fgw;
 

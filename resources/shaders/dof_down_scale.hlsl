@@ -4,14 +4,16 @@ Texture2D source : register(t0);
 RWTexture2D<float4> output : register(u0);
 Texture2D cocbuffer : register(t1);
 SamplerState s0 : register(s0);
+SamplerState s1 : register(s1);
 
 float GetDownSampledCoC(float2 uv, float2 screen_coord, float2 texelSize)
 {
 	float4 offset = texelSize.xyxy * float2(-0.5f, 0.5f).xxyy;
-	float coc0 = cocbuffer.SampleLevel(s0, clamp(uv + offset.xy, 0.002, 0.998), 0);
-	float coc1 = cocbuffer.SampleLevel(s0, clamp(uv + offset.zy, 0.002, 0.998), 0);
-	float coc2 = cocbuffer.SampleLevel(s0, clamp(uv + offset.xw, 0.002, 0.998), 0);
-	float coc3 = cocbuffer.SampleLevel(s0, clamp(uv + offset.zw, 0.002, 0.998), 0);
+
+	float coc0 = cocbuffer.SampleLevel(s1, uv + offset.xy, 0);
+	float coc1 = cocbuffer.SampleLevel(s1, uv + offset.zy, 0);
+	float coc2 = cocbuffer.SampleLevel(s1, uv + offset.xw, 0);
+	float coc3 = cocbuffer.SampleLevel(s1, uv + offset.zw, 0);
 
 	float cocMin = min(min(min(coc0, coc1), coc2), coc3);
 	float cocMax = max(max(max(coc0, coc1), coc2), coc3);
@@ -38,11 +40,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float4 offset = texelSize.xyxy * float2(-0.5, 0.5).xxyy;
 
 	float2 uv = (screen_coord + 0.5f) / screen_size;
-	
-	float3 source0 = source.SampleLevel(s0, clamp(uv + offset.xy, 0.002, 0.998), 0).rgb;
-	float3 source1 = source.SampleLevel(s0, clamp(uv + offset.zy, 0.002, 0.998), 0).rgb;
-	float3 source2 = source.SampleLevel(s0, clamp(uv + offset.xw, 0.002, 0.998), 0).rgb;
-	float3 source3 = source.SampleLevel(s0, clamp(uv + offset.zw, 0.002, 0.998), 0).rgb;
+
+	float3 source0 = source.SampleLevel(s0, uv + offset.xy, 0).rgb;
+	float3 source1 = source.SampleLevel(s0, uv + offset.zy, 0).rgb;
+	float3 source2 = source.SampleLevel(s0, uv + offset.xw, 0).rgb;
+	float3 source3 = source.SampleLevel(s0, uv + offset.zw, 0).rgb;
 
 	float w0 = Weigh(source0);
 	float w1 = Weigh(source1);
