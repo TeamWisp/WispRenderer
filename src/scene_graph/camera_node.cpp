@@ -10,7 +10,7 @@ namespace wr
 		SignalChange();
 	}
 
-	void CameraNode::SetFov(float aspect_ratio, float filmSize)
+	void CameraNode::SetFovFromFocalLength(float aspect_ratio, float filmSize)
 	{
 		float verticalSize = filmSize / aspect_ratio;
 		m_fov = 2.0f * std::atan2(verticalSize, 2.0f * m_focal_length);
@@ -26,7 +26,7 @@ namespace wr
 	void CameraNode::SetFocalLength(float length)
 	{
 		m_focal_length = length;
-		SetFov(m_aspect_ratio, m_film_size);
+		SetFovFromFocalLength(m_aspect_ratio, m_film_size);
 		SignalChange();
 	}
 

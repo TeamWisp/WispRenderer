@@ -126,7 +126,7 @@ namespace engine
 			ImGui::DragFloat("Focal Length", &sg->GetActiveCamera()->m_focal_length, 1.f, 1.f, 300.f);
 			ImGui::DragFloat("Focal plane distance", &sg->GetActiveCamera()->m_focus_dist, 1.f, 0.f, 1000.f);
 
-			sg->GetActiveCamera()->SetFov(sg->GetActiveCamera()->m_aspect_ratio, sg->GetActiveCamera()->m_film_size);
+			sg->GetActiveCamera()->SetFovFromFocalLength(sg->GetActiveCamera()->m_aspect_ratio, sg->GetActiveCamera()->m_film_size);
 
 			if (!ImGui::IsMouseDown(1))
 			{

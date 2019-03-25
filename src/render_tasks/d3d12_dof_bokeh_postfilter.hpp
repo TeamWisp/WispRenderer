@@ -75,26 +75,19 @@ namespace wr
 				1);
 		}
 
-		inline void DestroyDoFBokehPostFilter(FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			auto& data = fg.GetData<DoFBokehPostFilterData>(handle);
-
-			// d3d12::Destroy(data.out_srv_heap);
-		}
-
 	} /* internal */
 
 	template<typename T>
 	inline void AddDoFBokehPostFilterTask(FrameGraph& frame_graph, int32_t width, int32_t height)
 	{
-		const uint32_t halfwidth = (uint32_t)width / 2;
-		const uint32_t halfheight = (uint32_t)height / 2;
+		const std::uint32_t m_half_width = (uint32_t)width / 2;
+		const std::uint32_t m_half_height = (uint32_t)height / 2;
 
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(halfwidth),
-			RenderTargetProperties::Height(halfheight),
+			RenderTargetProperties::Width(m_half_width),
+			RenderTargetProperties::Height(m_half_height),
 			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
@@ -113,7 +106,6 @@ namespace wr
 			internal::ExecuteDoFBokehPostFilterTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyDoFBokehPostFilter(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;

@@ -26,7 +26,7 @@ namespace wr
 
 		void SetFov(float deg);
 
-		void SetFov(float aspect_ratio, float filmSize);
+		void SetFovFromFocalLength(float aspect_ratio, float filmSize);
 
 		void SetAspectRatio(float ratio);
 

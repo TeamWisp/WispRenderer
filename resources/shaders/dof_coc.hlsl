@@ -1,11 +1,9 @@
 #include "dof_properties.hlsl"
+#include "dof_util.hlsl"
 
 Texture2D gbuffer_depth : register(t0);
 RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
-
-static const float fNear = 0.1f;
-static const float fFar = 1000.f;
 
 cbuffer CameraProperties : register(b0)
 {
@@ -17,27 +15,22 @@ cbuffer CameraProperties : register(b0)
 	int enable_dof;
 };
 
-float GetLinearDepth(float depth)
-{
-	float z = (2 * fNear) / (fFar + fNear - (depth * (fFar - fNear)));
-	return z;
-}
-
-float GetCoC(float linearDepth, float focusDist)
+float GetCoC(float lineardepth, float focusdist)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
 
-	float fStop = focal_length / f_number * 0.5f;
+	float fstop = focal_length / f_number * 0.5f;
 	////// Compute CoC in meters
-	float coc = -fStop * (focal_length * (focusDist - linearDepth)) / (linearDepth * (focusDist - focal_length));
+	float coc = -fstop * (focal_length * (focusdist - lineardepth)) / (lineardepth * (focusdist - focal_length));
 
 	//// Convert to pixels
 	coc = (coc / film_size) * screen_size.x;
 
-	coc = clamp(coc / maxBokehSize, -1.f, 1.f);
+	coc = clamp(coc / MAXBOKEHSIZE, -1.f, 1.f);
 	return coc * enable_dof;
 }
+
 
 float GetAutoFocusDepth(float2 screen_dimensions)
 {
@@ -68,17 +61,17 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = screen_coord / screen_size;
 	
-	float sampleDepth = gbuffer_depth[screen_coord].r;
-	float focusDepth = GetAutoFocusDepth(screen_size);
+	float sample_depth = gbuffer_depth[screen_coord].r;
+	float focus_depth = GetAutoFocusDepth(screen_size);
 
-	sampleDepth = GetLinearDepth(sampleDepth) * fFar;
+	sample_depth = GetLinearDepth(sample_depth) * FFAR;
 
-	float coc = GetCoC(sampleDepth, focus_dist);
+	float coc = GetCoC(sample_depth, focus_dist);
 
 	if (focus_dist < 1)
 	{
-		focusDepth = GetLinearDepth(focusDepth) * fFar;
-		coc = GetCoC(sampleDepth, focusDepth);
+		focus_depth = GetLinearDepth(focus_depth) * FFAR;
+		coc = GetCoC(sample_depth, focus_depth);
 	}
 	
 	output[int2(dispatch_thread_id.xy)] = coc;

@@ -1,2 +1,2 @@
-static const float maxBokehSize = 16.f;
-static const uint NumDOFSamples = 7;
+static const float MAXBOKEHSIZE = 18.f;
+static const uint NUMDOFSAMPLES = 7;

@@ -91,13 +91,6 @@ namespace wr
 				1);
 		}
 
-		inline void DestroyDoFComposition(FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			auto& data = fg.GetData<DoFCompositionData>(handle);
-
-			// d3d12::Destroy(data.out_srv_heap);
-		}
-
 	} /* internal */
 
 	template<typename T, typename T1, typename T2>
@@ -126,7 +119,6 @@ namespace wr
 			internal::ExecuteDoFCompositionTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyDoFComposition(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;

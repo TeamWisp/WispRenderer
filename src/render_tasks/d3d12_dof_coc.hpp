@@ -111,13 +111,6 @@ namespace wr
 				1);
 		}
 
-		inline void DestroyDoFCoC(FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			auto& data = fg.GetData<DoFCoCData>(handle);
-
-			// d3d12::Destroy(data.out_srv_heap);
-		}
-
 	} /* internal */
 
 	template<typename T>
@@ -146,7 +139,6 @@ namespace wr
 			internal::ExecuteDoFCoCTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyDoFCoC(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;

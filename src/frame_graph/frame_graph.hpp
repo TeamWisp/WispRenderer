@@ -220,8 +220,8 @@ namespace wr
 
 		inline void Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height)
 		{
-			std::uint32_t widthScalar = (width * 100000u)  / m_old_window_size_width;
-			std::uint32_t heightScalar = (height * 100000u) / m_old_window_size_height;
+			std::uint32_t m_width_scalar = (width * 100000u)  / m_old_window_size_width;
+			std::uint32_t m_height_scalar = (height * 100000u) / m_old_window_size_height;
 
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
@@ -231,19 +231,22 @@ namespace wr
 
 				if (!m_rt_properties[i].value().m_is_render_window)
 				{
-					uint32_t newWidth = width;
-					uint32_t newHeight = height;
+					std::uint32_t m_new_width = width;
+					std::uint32_t m_new_height = height;
 
 					if (m_rt_properties[i].value().m_width.Get().has_value())
 					{
-						if (m_rt_properties[i].value().m_width.Get().value() > 0u && m_rt_properties[i].value().m_width.Get().value() > 0u)
+						std::uint32_t m_cur_width = m_rt_properties[i].value().m_width.Get().value();
+						std::uint32_t m_cur_height = m_rt_properties[i].value().m_height.Get().value();
+
+						if (m_cur_width > 0u && m_cur_height > 0u)
 						{
-							newWidth = (m_rt_properties[i].value().m_width.Get().value() * widthScalar) / 100000u;
-							newHeight = (m_rt_properties[i].value().m_height.Get().value() * heightScalar) / 100000u;
+							m_new_width = (m_cur_width * m_width_scalar) / 100000u;
+							m_new_height = (m_cur_height * m_height_scalar) / 100000u;
 						}
 					}
 
-					render_system.ResizeRenderTarget(&m_render_targets[i], newWidth, newHeight);
+					render_system.ResizeRenderTarget(&m_render_targets[i], m_new_width, m_new_height);
 				}
 
 				m_setup_funcs[i](render_system, *this, i, true);
@@ -705,8 +708,8 @@ namespace wr
 		static std::stack<std::uint64_t> m_free_uids;
 
 		/*! Store old resolution for proper rendertarget scaling. */
-		uint32_t m_old_window_size_width = 1240;
-		uint32_t m_old_window_size_height = 720;
+		std::uint32_t m_old_window_size_width = 1240;
+		std::uint32_t m_old_window_size_height = 720;
 	};
 
 } /* wr */

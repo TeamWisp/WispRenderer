@@ -76,18 +76,10 @@ namespace wr
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
-			//TODO: numthreads is currently hardcoded to half resolution, change when dimensions are done properly
 			d3d12::Dispatch(cmd_list,
 				static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
 				static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Height / 16.f)),
 				1);
-		}
-
-		inline void DestroyDoFDownScale(FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			auto& data = fg.GetData<DoFDownScaleData>(handle);
-
-			// d3d12::Destroy(data.out_srv_heap);
 		}
 
 	} /* internal */
@@ -95,14 +87,14 @@ namespace wr
 	template<typename T, typename T1>
 	inline void AddDoFDownScaleTask(FrameGraph& frame_graph, int32_t width, int32_t height)
 	{
-		const uint32_t halfwidth = (uint32_t)width / 2;
-		const uint32_t halfheight = (uint32_t)height / 2;
+		const std::uint32_t m_half_width = (uint32_t)width / 2;
+		const std::uint32_t m_half_height = (uint32_t)height / 2;
 
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(halfwidth),
-			RenderTargetProperties::Height(halfheight),
+			RenderTargetProperties::Width(m_half_width),
+			RenderTargetProperties::Height(m_half_height),
 			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
@@ -121,7 +113,6 @@ namespace wr
 			internal::ExecuteDoFDownScaleTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyDoFDownScale(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
