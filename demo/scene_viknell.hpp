@@ -24,14 +24,14 @@ namespace viknell_scene
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
-#define WALLS
+
 		// Geometry
-#ifdef WALLS
-		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::white_plane_model);
-		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::white_plane_model);
-		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::white_plane_model);
-		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::red_plane_model);
-		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::blue_plane_model);
+		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
 		floor->SetPosition({0, -1, 0});
 		floor->SetRotation({90_deg, 0, 0});
@@ -45,9 +45,7 @@ namespace viknell_scene
 		left_wall->SetRotation({0, -90_deg, 0});
 		right_wall->SetPosition({1, 0, 0});
 		right_wall->SetRotation({0, 90_deg, 0});
-#endif
-		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
-		test_model->SetPosition({ 0, -1, 0});
+		test_model->SetPosition({0, -1, 0});
 		test_model->SetRotation({0, 180_deg, 0});
 		test_model->SetScale({0.01f,0.01f,0.01f});
 

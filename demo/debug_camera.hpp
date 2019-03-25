@@ -8,7 +8,7 @@ class DebugCamera : public wr::CameraNode
 {
 public:
 	DebugCamera(float fov, float aspect_ratio)
-		: wr::CameraNode(fov, aspect_ratio), m_forward_axis(0), m_right_axis(0), m_up_axis(0), m_rmb_down(false), m_speed(1), m_sensitivity(0.01), m_position_lerp_speed(10.f), m_rotation_lerp_speed(10.f)
+		: wr::CameraNode(fov, aspect_ratio), m_forward_axis(0), m_right_axis(0), m_up_axis(0), m_rmb_down(false), m_speed(1), m_sensitivity(0.01), m_position_lerp_speed(10.f), m_rotation_lerp_speed(5.f)
 	{
 		GetCursorPos(&m_last_cursor_pos);
 		m_target_rotation_radians = m_rotation_radians;

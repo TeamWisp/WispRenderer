@@ -84,14 +84,6 @@ namespace engine
 			ImGui::End();
 		}
 
-		ImGui::Begin("Debug");
-		ImGui::Text("Accumulation IDX: %s", std::to_string(render_system->temp_rough).c_str());
-		if (ImGui::Button("Reset Accumulation"))
-		{
-			render_system->temp_rough = -1;
-		}
-		ImGui::End();
-
 		if (open0)
 		{
 			ImGui::Begin("Theme", &open0);
