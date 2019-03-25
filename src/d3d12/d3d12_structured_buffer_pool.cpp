@@ -43,12 +43,20 @@ namespace wr
 			else
 			{
 				ID3D12Resource * resource = info.m_buffer_handle->m_native->m_heap_bsbo->m_resources[info.m_buffer_handle->m_native->m_heap_vector_location].second[frame_idx];
-				cmd_list->m_native->ResourceBarrier(1,
-					&CD3DX12_RESOURCE_BARRIER::Transition(
-						resource,
-						static_cast<D3D12_RESOURCE_STATES>(info.m_buffer_handle->m_native->m_states[frame_idx]),
-						static_cast<D3D12_RESOURCE_STATES>(info.m_new_state)));
-				info.m_buffer_handle->m_native->m_states[frame_idx] = info.m_new_state;
+
+				if (info.m_buffer_handle->m_native->m_states[frame_idx] != info.m_new_state)
+				{
+					cmd_list->m_native->ResourceBarrier(1,
+						&CD3DX12_RESOURCE_BARRIER::Transition(
+							resource,
+							static_cast<D3D12_RESOURCE_STATES>(info.m_buffer_handle->m_native->m_states[frame_idx]),
+							static_cast<D3D12_RESOURCE_STATES>(info.m_new_state)));
+					info.m_buffer_handle->m_native->m_states[frame_idx] = info.m_new_state;
+				}
+				else
+				{
+					LOG("Trying to transition a resource to a state is already in. This should be avoided.");
+				}
 			}
 			m_buffer_update_queues[frame_idx].pop();
 		}
