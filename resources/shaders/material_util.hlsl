@@ -13,7 +13,6 @@
 #define MATERIAL_HAS_ALPHA_CONSTANT 1<<12;
 #define MATERIAL_IS_DOUBLE_SIDED 1<<13;
 
-
 struct MaterialData
 {
 	float4 albedo_alpha;
@@ -52,8 +51,8 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 
 	//#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
-	float4 roughness = lerp(material_metallic.SampleLevel(s0, input.uv, 0).y, data.metallic_roughness.w, use_roughness_constant != 0 || has_roughness_texture == 0);
-	float4 metallic = lerp(material_metallic.SampleLevel(s0, input.uv, 0).z, length(data.metallic_roughness.xyz), use_metallic_constant != 0 || has_metallic_texture == 0);
+	float4 roughness = lerp(material_metallic.Sample(s0, uv).y, data.metallic_roughness.w, use_roughness_constant != 0 || has_roughness_texture == 0);
+	float4 metallic = lerp(material_metallic.Sample(s0, uv).z, length(data.metallic_roughness.xyz), use_metallic_constant != 0 || has_metallic_texture == 0);
 #else
 	float4 roughness = lerp(max(0.05f, material_roughness.Sample(s0, uv)), data.metallic_roughness.wwww, use_roughness_constant != 0 || has_roughness_texture == 0);
 	float4 metallic = lerp(material_metallic.Sample(s0, uv), data.metallic_roughness.xyzx, use_metallic_constant != 0 || has_metallic_texture == 0);

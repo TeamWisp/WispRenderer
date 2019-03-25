@@ -14,8 +14,6 @@ namespace wr
 	struct BrdfLutTaskData
 	{
 		D3D12Pipeline* in_pipeline;
-
-		bool should_run;
 	};
 
 	namespace internal
@@ -25,18 +23,11 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<BrdfLutTaskData>(handle);
 
-			//Does the renderer have a brdf lut already?
-			bool has_brdf = (n_render_system.m_brdf_lut != std::nullopt);
-			data.should_run = !has_brdf;
+			auto& ps_registry = PipelineRegistry::Get();
+			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::brdf_lut_precalculation);
 
-			if (!resize && data.should_run)
+			if (!resize && !n_render_system.m_brdf_lut.has_value())
 			{
-				auto& data = fg.GetData<BrdfLutTaskData>(handle);
-				auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-
-				auto& ps_registry = PipelineRegistry::Get();
-				data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::brdf_lut_precalculation);
-
 				//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 				std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
 				if (!texture_pool)
@@ -56,7 +47,7 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<BrdfLutTaskData>(handle);
 
-			if (data.should_run)
+			if (!n_render_system.m_brdf_lut_generated)
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 				auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
@@ -73,7 +64,7 @@ namespace wr
 
 				d3d12::Transition(cmd_list, brdf_lut, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
 
-				data.should_run = false;
+				n_render_system.m_brdf_lut_generated = true;
 			}
 		}
 
