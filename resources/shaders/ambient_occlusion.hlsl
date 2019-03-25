@@ -1,12 +1,76 @@
 #include "rt_global.hlsl"
 #include "util.hlsl"
 
-float DoAmbientOcclusion(float3 normal, float3 wpos, uint spp, float ray_length, uint rand_seed)
+RWTexture2D<float4> output_ao : register(u0); // x: AO value
+Texture2D gbuffer_normal : register(t99);
+Texture2D gbuffer_depth : register(t100);
+
+struct AOHitInfo
 {
+  float is_hit;
+  float thisvariablesomehowmakeshybridrenderingwork_killme;
+};
+
+bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
+{
+	// Define a ray, consisting of origin, direction, and the min-max distance values
+	RayDesc ray;
+	ray.Origin = origin;
+	ray.Direction = direction;
+	ray.TMin = EPSILON;
+	ray.TMax = far;
+
+	AOHitInfo payload = { false, 0 };
+
+	// Trace the ray
+	TraceRay(
+		Scene,
+		RAY_FLAG_NONE,
+		~0, // InstanceInclusionMask
+		1, // RayContributionToHitGroupIndex
+		0, // MultiplierForGeometryContributionToHitGroupIndex
+		1, // miss shader index is set to idx but can probably be anything.
+		ray,
+		payload);
+
+	return payload.is_hit;
+}
+
+
+[shader("raygeneration")]
+void RaygenEntry()
+{
+    uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screen_co = DispatchRaysIndex().xy;
+
+    float normal = gbuffer_normal[screen_co].xyz;
+
+	float depth = gbuffer_depth[screen_co].x;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+
+    uint spp = 32;
     float aoValue = 1.0f;
     for(uint i = 0; i< spp; i++)
     {
-        aoValue -= (1.0f/float(spp)) * TraceShadowRay(0, wpos + normalize(normal) * EPSILON, getCosHemisphereSample(rand_seed, normal), 0.25f, 1);
+        aoValue -= (1.0f/float(spp)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), 0.25f, 1);
     }
-    return aoValue;
+
+    output_ao[DispatchRaysIndex().xy].x = aoValue;
+}
+
+[shader("closesthit")]
+void AOClosestHitEntry(inout AOHitInfo hit, Attributes bary)
+{
+    hit.is_hit = true;
+}
+
+[shader("miss")]
+void AOMissEntry(inout AOHitInfo hit : SV_RayPayload)
+{
+    hit.is_hit = false;
 }
