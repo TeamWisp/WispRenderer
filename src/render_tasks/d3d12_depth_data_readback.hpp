@@ -111,6 +111,8 @@ namespace wr
 	template<typename T>
 	inline void AddDepthDataReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
+		std::wstring name(L"Depth Data CPU Readback");
+
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
 		RenderTargetProperties rt_properties{
@@ -125,6 +127,7 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		// Render task information
