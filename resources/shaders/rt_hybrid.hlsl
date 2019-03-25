@@ -42,7 +42,7 @@ Texture2D gbuffer_albedo : register(t1010);
 Texture2D gbuffer_normal : register(t1011);
 Texture2D gbuffer_depth : register(t1012);
 Texture2D skybox : register(t6);
-Texture2D brdf_lut : register(t7);
+Texture2D brdf_lut : register(t8);
 TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
 
@@ -286,8 +286,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
 
-	float3 specular = reflection * F;
-	//float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
+	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = kD * diffuse + specular;
 

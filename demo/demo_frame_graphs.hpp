@@ -93,7 +93,7 @@ namespace fg_manager
 			fg->Setup(rs);
 		}
 
-		// Hybrid raytracing
+		// Path Tracer
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::PATH_TRACER];
 			fg = new wr::FrameGraph(10);
