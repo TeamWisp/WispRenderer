@@ -120,7 +120,7 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::ClearDepth(true),
 			RenderTargetProperties::ResourceName(name)
 		};
 
