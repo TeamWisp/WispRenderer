@@ -54,6 +54,7 @@ struct ReflectionHitInfo
 	float3 origin;
 	float3 color;
 	unsigned int seed;
+	unsigned int depth;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -89,11 +90,17 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth)
 {
+
+	if (depth >= MAX_RECURSION)
+	{
+		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0).rgb;
+	}
+
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed};
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, depth};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -126,13 +133,13 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
+float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint depth)
 {
 	// Calculate ray info
 	float3 reflected = reflect(-V, normal);
 
 	// Shoot reflection ray
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed);
+	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, depth);
 	return reflection;
 }
 
@@ -179,7 +186,7 @@ void RaygenEntry()
 	float shadow_result = 1.0f;
 	if (shadows_enabled == 1)
 	{
-		shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+		shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 	} 
 
 	// Get reflection result
@@ -298,10 +305,20 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
+<<<<<<< HEAD
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1, shadows_enabled);
 	float3 specular = (float3(0, 0, 0)) * F;
+=======
+	//Lighting
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
+
+	//Reflection in reflections
+	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
+
+	float3 specular = reflection * F;
+>>>>>>> origin/master
 	float3 diffuse = albedo * sampled_irradiance;
-	float3 ambient = (kD * diffuse + specular);
+	float3 ambient = kD * diffuse + specular;
 
 	// Output the final reflections here
 	payload.color = ambient + lighting;
