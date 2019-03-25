@@ -18,13 +18,9 @@ namespace wr
 		{
 			Texture* texture;
 
-			if (ext_int.find("png") != std::string_view::npos)
+			if (ext_int.find("png") != std::string_view::npos || ext_int.find("jpeg") != std::string_view::npos)
 			{
-				texture = LoadPNG_JPEG(path, srgb, generate_mips);
-			}
-			else if (ext_int.find("jpeg") != std::string_view::npos)
-			{
-				texture = LoadPNG_JPEG(path, srgb, generate_mips);
+				texture = LoadWIC(path, srgb, generate_mips);
 			}
 			else if (ext_int.find("dds") != std::string_view::npos)
 			{

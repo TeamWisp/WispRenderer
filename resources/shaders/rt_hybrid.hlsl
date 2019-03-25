@@ -193,7 +193,7 @@ void RaygenEntry()
 	float3 reflection_result;
 	if (reflections_enabled == 1)
 	{
-		reflection_result = DoReflection(wpos, V, normal, rand_seed);
+		reflection_result = DoReflection(wpos, V, normal, rand_seed, 0);
 	}
 	else
 	{
@@ -305,18 +305,13 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
-<<<<<<< HEAD
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, 1, shadows_enabled);
-	float3 specular = (float3(0, 0, 0)) * F;
-=======
 	//Lighting
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth, shadows_enabled);
 
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
 
 	float3 specular = reflection * F;
->>>>>>> origin/master
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = kD * diffuse + specular;
 
