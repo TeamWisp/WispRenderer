@@ -296,11 +296,12 @@ namespace wr
 			IRRADIANCE_MAP,
 			PREF_ENV_MAP,
 			BRDF_LUT,
-			BUFFER_REFLECTION_SHADOW,
+			BUFFER_REFLECTION,
+			BUFFER_SHADOW,
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 11> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 12> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
@@ -310,7 +311,8 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::PREF_ENV_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION_SHADOW, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SHADOW, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 
@@ -468,6 +470,8 @@ namespace wr
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_hybrid_lib;
+		static RegistryHandle rt_shadow_lib;
+		static RegistryHandle rt_reflection_lib;
 		static RegistryHandle mip_mapping_cs;
 		static RegistryHandle equirect_to_cubemap_vs;
 		static RegistryHandle equirect_to_cubemap_ps;
@@ -492,6 +496,8 @@ namespace wr
 	{
 		static RegistryHandle state_object;
 		static RegistryHandle rt_hybrid_state_object;
+		static RegistryHandle rt_shadow_state_object;
+		static RegistryHandle rt_reflection_state_object;
 	};
 
 } /* wr */

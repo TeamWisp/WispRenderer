@@ -133,7 +133,7 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed)
 #define M_PI 3.14159265358979
 
 [shader("raygeneration")]
-void RaygenEntry()
+void HybridRaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
@@ -169,13 +169,97 @@ void RaygenEntry()
 
 	wpos += normal * EPSILON;
 	// Get shadow factor
-	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
 
 	// Get reflection result
 	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
 
 	// xyz: reflection, a: shadow factor
-	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
+	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result.w);
+}
+
+[shader("raygeneration")]
+void ShadowRaygenEntry()
+{
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screen_co = DispatchRaysIndex().xy;
+
+	// Get g-buffer information
+	float4 albedo_roughness = gbuffer_albedo[screen_co];
+	float4 normal_metallic = gbuffer_normal[screen_co];
+
+	// Unpack G-Buffer
+	float depth = gbuffer_depth[screen_co].x;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 normal = normal_metallic.xyz;
+
+	// Do lighting
+	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(cpos - wpos);
+
+	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
+	{
+		// A value of 1 in the output buffer, means that there is shadow
+		// So, the far plane pixels are set to 0
+		output_refl_shadow[DispatchRaysIndex().xy] = float4(1, 1, 1, 0);
+		return;
+	}
+
+	wpos += normal * EPSILON;
+	// Get shadow factor
+	float4 shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+
+	// xyz: reflection, a: shadow factor
+	output_refl_shadow[DispatchRaysIndex().xy] = float4(shadow_result);
+}
+
+[shader("raygeneration")]
+void ReflectionRaygenEntry()
+{
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screen_co = DispatchRaysIndex().xy;
+
+	// Get g-buffer information
+	float4 albedo_roughness = gbuffer_albedo[screen_co];
+	float4 normal_metallic = gbuffer_normal[screen_co];
+
+	// Unpack G-Buffer
+	float depth = gbuffer_depth[screen_co].x;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 albedo = albedo_roughness.rgb;
+	float roughness = albedo_roughness.w;
+	float3 normal = normal_metallic.xyz;
+	float metallic = normal_metallic.w;
+
+	// Do lighting
+	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(cpos - wpos);
+
+	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
+	{
+		// A value of 1 in the output buffer, means that there is shadow
+		// So, the far plane pixels are set to 0
+		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+		return;
+	}
+
+	wpos += normal * EPSILON;
+
+	// Get reflection result
+	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed);
+
+	// xyz: reflection, a: shadow factor
+	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, 0);
 }
 
 //Reflections

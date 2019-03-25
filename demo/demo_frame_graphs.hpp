@@ -8,6 +8,7 @@
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_rt_hybrid_task.hpp"
+#include "render_tasks/d3d12_rt_shadow_task.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
 #include "resources.hpp"
@@ -106,7 +107,9 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			//wr::AddRTHybridTask(*fg);
+
+			wr::AddRTShadowTask(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 

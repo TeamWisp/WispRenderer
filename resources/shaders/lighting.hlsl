@@ -44,7 +44,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	return lighting;
 }
 
-float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, float3 irradiance, float3 reflection, float2 brdf, float shadow_factor)
+float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, float3 irradiance, float3 reflection, float2 brdf, float3 shadow_factor)
 {
 	float3 res = float3(0.0f, 0.0f, 0.0f);
 
@@ -54,7 +54,14 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
+		uint tid = lights[i].tid & 3;
+
+		//Light direction (constant with directional, position dependent with other)
+		float3 L = (lerp(lights[i].pos - pos, -lights[i].dir, tid == light_type_directional));
+		float light_dist = length(L);
+		L /= light_dist;
+
+		res += BRDF(L, V, normal, metallic, roughness, albedo, shadow_factor);
 	}
 
 
@@ -74,7 +81,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	
 	float3 ambient = (kD * diffuse + specular) * 1.0f; //Replace 1.0f with AO, when we have it.
 
-	return ambient + (res * shadow_factor);
+	return ambient + (res);
 }
 
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, inout uint rand_seed, uint depth)
@@ -127,11 +134,11 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	return res;
 }
 
-float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
+float4 DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	float res = 0;
+	float4 res = float4(0,0,0,0);
 
 	for (uint i = 0; i < light_count; i++)
 	{
@@ -148,9 +155,25 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
 		// Add shadow factor to final result
-		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed);
+		float shadow_factor = GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed);
+
+	//Spot intensity (only used with spot; but always calculated)
+	float min_cos = cos(light.ang);
+	float max_cos = lerp(min_cos, 1, 0.5f);
+	float cos_angle = dot(light.dir, -L);
+	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
+
+	//Attenuation & spot intensity (only used with point or spot)
+	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
+
+	float3 radiance = (light.col * spot_intensity) * attenuation;
+
+		res.xyz += radiance * shadow_factor;
+		res.w += shadow_factor;
 	}
 
 	// return final res
-	return res / float(light_count);
+	res.w = res.w / float(light_count);
+
+	return res;
 }
