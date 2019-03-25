@@ -227,11 +227,8 @@ void RaygenEntry()
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	//result = TraceColorRay(wpos, rand_dir, 0, rand_seed);
-	result = ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
-	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * cos_theta) * (albedo / PI);
-	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
-
+	result = TraceColorRay(wpos, rand_dir, 0, rand_seed);
+	//result = ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 
 	result = clamp(result, 0, 100);
 	
