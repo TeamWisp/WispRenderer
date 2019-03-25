@@ -200,6 +200,7 @@ namespace wr
 		std::size_t m_bound_model_pool_stride;
 
 		std::optional<wr::TextureHandle> m_brdf_lut = std::nullopt;
+		bool m_brdf_lut_generated = false;
     
 		float temp_metal = 1.0f;
 		float temp_rough = -3;

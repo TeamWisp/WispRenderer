@@ -322,6 +322,10 @@ namespace wr
 				cam_data.m_frame_idx = ++n_render_system.temp_rough;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
+				// Make sure the convolution pass wrote to the skybox.
+				fg.GetPredecessorData<BrdfLutTaskData>();
+				fg.GetPredecessorData<CubemapConvolutionTaskData>();
+
 				// Get skybox
 				if (scene_graph.m_skybox.has_value())
 				{
