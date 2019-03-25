@@ -22,10 +22,6 @@ namespace wr
 			{
 				texture = LoadPNG(path, srgb, generate_mips);
 			}
-			else if (ext_int.find("jpg") != std::string_view::npos)
-			{
-				texture = LoadPNG(path, srgb, generate_mips);
-			}
 			else if (ext_int.find("dds") != std::string_view::npos)
 			{
 				texture = LoadDDS(path, srgb, generate_mips);

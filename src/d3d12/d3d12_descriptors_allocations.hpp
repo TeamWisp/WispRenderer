@@ -202,7 +202,7 @@ namespace wr
 	class DescriptorAllocator
 	{
 	public:
-		DescriptorAllocator(D3D12RenderSystem& render_system, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 5000);
+		DescriptorAllocator(D3D12RenderSystem& render_system, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 256);
 		virtual ~DescriptorAllocator();
 
 		/**
