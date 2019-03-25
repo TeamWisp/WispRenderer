@@ -28,7 +28,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
 
 	float2 texel_size = 1.0 / screen_size;
 	//float2 Uuv = (screen_coord + 0.5f) / screen_size;
@@ -37,7 +37,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 bokeh = bokeh_buffer.SampleLevel(s1, uv, 0).rgb;
 	float bgfg = bokeh_buffer.SampleLevel(s0, uv, 0).a ;
 
-	float3 original = source.SampleLevel(s1, uv, 0).rgb;
+	float3 original = source.SampleLevel(s0, uv, 0).rgb;
 
 	float coc = GetDownSampledCoC(uv, texel_size);
 	//float coc = coc_buffer.SampleLevel(s0, uv, 0);
