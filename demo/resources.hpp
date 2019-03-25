@@ -117,7 +117,7 @@ namespace resources
 		wr::TextureHandle rubber_roughness = texture_pool->Load("resources/materials/rubber/roughness.png", false, true);
 		wr::TextureHandle rubber_metallic = texture_pool->Load("resources/materials/rubber/metallic.png", false, true);
 
-		equirectangular_environment_map = texture_pool->Load("resources/materials/venice_sunset_16k.hdr", false, false);
+		equirectangular_environment_map = texture_pool->Load("resources/materials/MonValley_G_DirtRoad_3k.hdr", false, false);
 
 		// Create Material
 		mirror_material = material_pool->Create();

@@ -88,15 +88,15 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 {
 	if (depth >= MAX_RECURSION)
 	{
+		//return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
 		return float4(0, 0, 0, 0);
-		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
 	}
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = 0;
+	ray.TMin = EPSILON;
 	ray.TMax = 1.0e38f;
 
 	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
@@ -150,7 +150,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 	{
 		nextRand(seed);
 		const float3 rand_dir = getUniformHemisphereSample(seed, N);
-		float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), rand_dir, depth, seed);
+		float3 irradiance = TraceColorRay(hit_pos, rand_dir, depth, seed);
 
 		float3 lighting = shade_pixel(hit_pos, V, 
 			albedo, 
@@ -162,7 +162,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 
 		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
 
-		return (lighting + (irradiance * albedo)) / diffuse_probability;
+		return ((irradiance * albedo)) / diffuse_probability;
 	}
 	else
 	{
@@ -172,7 +172,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		// ### BRDF ###
 		float3 L = normalize(2.f * dot(V, H) * H - V);
 
-		float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), L, depth, seed);
+		float3 irradiance = TraceColorRay(hit_pos, L, depth, seed);
 		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
 
 		// Compute some dot products needed for shading
@@ -191,7 +191,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		float3 spec = (D * F * G) / ((4.0 * NdotL * NdotV + 0.001f));
 		float  ggx_probability = D * NdotH / (4 * LdotH);
 
-		return NdotL * irradiance * spec / (1 * (1.0f - diffuse_probability));
+		return NdotL * irradiance * spec / (ggx_probability * (1.0f - diffuse_probability));
 	}
 }
 
@@ -218,11 +218,6 @@ void RaygenEntry()
 	float metallic = normal_metallic.w;
 	float roughness = albedo_roughness.w;
 
-#ifdef HARD_VALUES
-	metallic = mm;
-	roughness = rr;
-#endif
-
 	// Do lighting
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(cpos - wpos);
@@ -232,8 +227,8 @@ void RaygenEntry()
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed);
-	//result = ggxIndirect(wpos + (normal * EPSILON), normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result = TraceColorRay(wpos, rand_dir, 0, rand_seed);
+	result = ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * cos_theta) * (albedo / PI);
 	//result = (TraceColorRay(wpos + (normal * EPSILON), rand_dir, 0, rand_seed) * M_PI) * (1.0f / (2.0f * M_PI));
 
@@ -318,11 +313,6 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 	
-	#ifdef HARD_VALUES
-	metal = mm;
-	roughness = rr;
-	#endif
-
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 #define CALC_B
@@ -345,11 +335,11 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	const float cos_theta = cos(dot(rand_dir, normal));
 	//float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed);
 	//float3 irradiance = (TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
-	float3 irradiance = (TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed) * M_PI) * (1.0f / (2.0f * M_PI));
+	float3 irradiance = (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed) * M_PI) * (1.0f / (2.0f * M_PI));
 
 	// Direct
 	float3 reflect_dir = reflect(-V, fN);
-	float3 reflection = TraceColorRay(hit_pos + N * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
+	float3 reflection = TraceColorRay(hit_pos, reflect_dir, payload.depth + 1, payload.seed);
 
 	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), 
 		metal, 
@@ -375,7 +365,7 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 
 	// #################### GGX #####################
 	nextRand(payload.seed);
-	payload.color = ggxIndirect(hit_pos + (N * EPSILON), fN, fN, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 
 #endif
 }
