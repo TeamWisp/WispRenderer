@@ -144,14 +144,14 @@ void RaygenEntry()
 	int2 screen_co = DispatchRaysIndex().xy;
 
 	// Get g-buffer information
-	float4 albedo_roughness = gbuffer_albedo[screen_co];
+	//float4 albedo_roughness = gbuffer_albedo[screen_co];
 	float4 normal_metallic = gbuffer_normal[screen_co];
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
-	float3 albedo = albedo_roughness.rgb;
-	float roughness = albedo_roughness.w;
+	//float3 albedo = pow(albedo_roughness.rgb, 1.0f / 2.2f);
+	//float roughness = albedo_roughness.w;
 	float3 normal = normal_metallic.xyz;
 	float metallic = normal_metallic.w;
 
@@ -241,7 +241,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 		s0,
 		uv);
 
-	float3 albedo = output_data.albedo;
+	float3 albedo = pow(output_data.albedo, 2.2f);
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 

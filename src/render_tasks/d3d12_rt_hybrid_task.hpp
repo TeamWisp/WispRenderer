@@ -126,12 +126,24 @@ namespace wr
 
 				cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
+				// Pipeline State Object
+				auto& rt_registry = RTPipelineRegistry::Get();
+				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_hybrid_state_object))->m_native;
+
+				// Root Signature
+				auto& rs_registry = RootSignatureRegistry::Get();
+				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
+
+				// Camera constant buffer
+				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
+
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+
 			}
 
 			// Versioning
@@ -145,25 +157,9 @@ namespace wr
 				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
 				d3d12::DescHeapCPUHandle depth_buffer_handle = data.out_depthbuffer.GetDescriptorHandle();
 
-				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
-
-				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-				d3d12::CreateSRVFromRTV(deferred_main_rt, gbuffers_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
-				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
-			}
-
-			if (!resize)
-			{
-				// Camera constant buffer
-				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
-
-				// Pipeline State Object
-				auto& rt_registry = RTPipelineRegistry::Get();
-				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_hybrid_state_object))->m_native;
-
-				// Root Signature
-				auto& rs_registry = RootSignatureRegistry::Get();
-				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
+				data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
+				d3d12::CreateSRVFromRTV(data.out_deferred_main_rt, gbuffers_handle, 2, data.out_deferred_main_rt->m_create_info.m_rtv_formats.data());
+				d3d12::CreateSRVFromDSV(data.out_deferred_main_rt, depth_buffer_handle);
 			}
 
 			// Create Shader Tables
@@ -186,6 +182,26 @@ namespace wr
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+
+
+			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
+
+			// Versioning
+			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
+			{
+				// Bind output texture
+				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+
+				// Bind g-buffers (albedo, normal, depth)
+				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
+				d3d12::DescHeapCPUHandle depth_buffer_handle = data.out_depthbuffer.GetDescriptorHandle();
+
+				data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
+				d3d12::CreateSRVFromRTV(data.out_deferred_main_rt, gbuffers_handle, 2, data.out_deferred_main_rt->m_create_info.m_rtv_formats.data());
+				d3d12::CreateSRVFromDSV(data.out_deferred_main_rt, depth_buffer_handle);
+			}
+
 
 			// Wait for AS to be built
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
@@ -237,8 +253,8 @@ namespace wr
 					auto texture_handle = texture_pool->GetDefaultAlbedo();
 					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTexture(texture_handle.m_id));
 
-					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::full_raytracing, params::FullRaytracingE::TEXTURES));
-					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES));
+					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::full_raytracing, params::RTHybridE::TEXTURES));
+					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::RTHybridE::TEXTURES));
 
 					for (size_t i = 0; i < num_textures_in_heap; ++i)
 					{
@@ -283,6 +299,19 @@ namespace wr
 				d3d12::DescHeapCPUHandle light_handle2 = light_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::LIGHTS)), light_handle2);
 
+				// Get skybox
+				if (scene_graph.m_skybox.has_value())
+				{
+					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX)), skybox_t);
+				}
+
+				// Get Environment Map
+				if (scene_graph.m_skybox.has_value())
+				{
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::IRRADIANCE_MAP)), irradiance_t);
+				}
 
 				// Update offset data
 				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
@@ -302,20 +331,6 @@ namespace wr
 				cam_data.m_intensity = n_render_system.temp_intensity;
 				cam_data.m_frame_idx = ++data.frame_idx;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
-
-				// Get skybox
-				if (scene_graph.m_skybox.has_value())
-				{
-					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
-					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX)), skybox_t);
-				}
-
-				// Get Environment Map
-				if (scene_graph.m_skybox.has_value())
-				{
-					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTexture(scene_graph.GetCurrentSkybox()->m_irradiance->m_id));
-					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::IRRADIANCE_MAP)), irradiance_t);
-				}
 
 				// Transition depth to NON_PIXEL_RESOURCE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
@@ -350,10 +365,10 @@ namespace wr
 
 		inline void DestroyRTHybridTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& data = fg.GetData<RTHybridData>(handle);
-
 			if (!resize)
 			{
+				auto& data = fg.GetData<RTHybridData>(handle);
+
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
 				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
 				DescriptorAllocation temp2 = std::move(data.out_gbuffers);
@@ -378,7 +393,7 @@ namespace wr
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(true),
 			RenderTargetProperties::ResourceName(name)
 		};

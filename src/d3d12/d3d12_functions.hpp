@@ -31,6 +31,7 @@ namespace wr::d3d12
 	void SetName(CommandList* cmd_list, std::wstring const & name);
 	void Begin(CommandList* cmd_list, unsigned int frame_idx);
 	void End(CommandList* cmd_list);
+	void ResetRTHeap(CommandList* cmd_list, unsigned int frame_idx);
 	void ExecuteBundle(CommandList* cmd_list, CommandList* bundle);
 	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer, uint32_t frame_idx);
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear = true, bool clear_depth = true);

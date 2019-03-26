@@ -52,6 +52,7 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
 			unsigned int m_is_hybrid;
+			DirectX::XMFLOAT3 m_padding;
 		};
 
 		struct RTHybridCamera_CBData
@@ -147,6 +148,8 @@ namespace wr
 		void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		
+		void ResetRayTracingHeap(CommandList* cmd_list);
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 

@@ -27,6 +27,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_view;
 	uint is_hybrid;
+	float3 padding;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -96,8 +97,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection, sampled_brdf, shadow_factor);
 
-		//retval = buffer_refl_shadow[screen_coord].xyz;
-		//retval = albedo;
+		retval = buffer_refl_shadow[screen_coord].xyz;
+		//retval = float3(sampled_brdf.xy, 0.0f);
 	}
 	else
 	{	

@@ -93,6 +93,9 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
 			fg = new wr::FrameGraph(10);
 
+			// Build Acceleration Structure
+			wr::AddBuildAccelerationStructuresTask(*fg);
+
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
 
@@ -101,9 +104,6 @@ namespace fg_manager
 
 			 // Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
-
-			// Build Acceleration Structure
-			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
@@ -114,7 +114,7 @@ namespace fg_manager
 			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the raytracing pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::RTHybridData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));

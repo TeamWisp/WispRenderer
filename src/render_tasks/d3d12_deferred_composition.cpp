@@ -125,6 +125,11 @@ namespace wr
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			
+			if (data.is_hybrid)
+			{
+				const auto& rt_hybrid_data = fg.GetPredecessorData<RTHybridData>();
+			}
 
 			if (n_render_system.m_render_window.has_value())
 			{

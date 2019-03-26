@@ -575,6 +575,11 @@ namespace wr
 		/*! Execute tasks multi threaded */
 		inline void Execute_MT_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
 		{
+			//for (auto cmd_list : m_cmd_lists)
+			//{
+			//	render_system.ResetRayTracingHeap(cmd_list);
+			//}
+
 			// Multithreading behaviour
 			m_thread_pool->DivideWork(m_multi_threaded_tasks.size(), [&](std::uint64_t index)
 			{

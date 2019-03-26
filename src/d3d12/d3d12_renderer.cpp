@@ -179,6 +179,7 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
+
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -523,6 +524,13 @@ namespace wr
 		}
 
 		d3d12::End(n_cmd_list);
+	}
+
+	void D3D12RenderSystem::ResetRayTracingHeap(CommandList* cmd_list)
+	{
+		auto d3d12_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+
+		d3d12::ResetRTHeap(d3d12_cmd_list, GetFrameIdx());
 	}
 
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()

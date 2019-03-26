@@ -153,7 +153,7 @@ namespace wr
 				LOGC("ERROR: Descriptor Heap for RT is full, consider increasing its size");
 			}
 
-			d3d12::BindDescriptorHeap(&cmd_list, m_heap, m_desc_heap_type, frame_idx, d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK);
+     		d3d12::BindDescriptorHeap(&cmd_list, m_heap, m_desc_heap_type, frame_idx, d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK);
 
 			DWORD root_idx;
 			// Scan from LSB to MSB for a bit set in staleDescriptorsBitMask
@@ -231,6 +231,4 @@ namespace wr
 			m_descriptor_table_cache[i].Reset();
 		}
 	}
-
-
 }
