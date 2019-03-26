@@ -10,6 +10,7 @@
 #include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
+#include "render_tasks/d3d12_rtao_task.hpp"
 #include "resources.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_pixel_data_readback.hpp"
@@ -98,7 +99,6 @@ namespace fg_manager
 
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
-
 			 // Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 
@@ -107,6 +107,8 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
+
+			wr::AddAOTask(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 

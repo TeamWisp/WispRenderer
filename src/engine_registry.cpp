@@ -423,7 +423,6 @@ namespace wr
 
 	DESC_RANGE_ARRAY(rt_hybrid_ranges,
 		DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::RTHybridE::OUTPUT),
-		DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::RTHybridE::AO_OUTPUT),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::INDICES),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::LIGHTS),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::MATERIALS),
@@ -470,6 +469,51 @@ namespace wr
 		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
 		StateObjectDescription::MaxRecursionDepth(3),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
+		StateObjectDescription::LocalRootSignatures(std::nullopt),
+	});
+
+	/*### Raytraced Ambient Oclusion ### */
+	REGISTER(shaders::rt_ao_lib, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/ambient_occlusion.hlsl"),
+		ShaderDescription::Entry("AORaygenEntry"),
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+	});
+
+	DESC_RANGE_ARRAY(rt_ao_ranges,
+		DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::RTAOE::OUTPUT),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTAOE::GBUFFERS),
+		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, d3d12::settings::fallback_ptrs_offset),
+	);
+
+	REGISTER(root_signatures::rt_ao_global, RootSignatureRegistry)({
+	RootSignatureDescription::Parameters({
+		ROOT_PARAM_DESC_TABLE(rt_ao_ranges, D3D12_SHADER_VISIBILITY_ALL),
+		ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTAOE::ACCELERATION_STRUCTURE)),
+		ROOT_PARAM(GetCBV(params::rt_hybrid, params::RTAOE::CAMERA_PROPERTIES)),
+	}),
+	RootSignatureDescription::Samplers({}),
+	RootSignatureDescription::RTXLocal(true)
+	});
+
+	StateObjectDescription::LibraryDesc rt_ao_so_library = []()
+	{
+		StateObjectDescription::LibraryDesc lib;
+		lib.shader_handle = shaders::rt_ao_lib;
+		lib.exports.push_back(L"AORaygenEntry");
+		lib.exports.push_back(L"ClosestHitEntry");
+		lib.exports.push_back(L"MissEntry");
+		lib.m_hit_groups.push_back({ L"AOHitGroup", L"ClosestHitEntry" });
+		return lib;
+	}();
+
+	REGISTER(state_objects::rt_ao_state_opbject, RTPipelineRegistry)(
+	{
+		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
+		StateObjectDescription::Library(rt_ao_so_library),
+		StateObjectDescription::MaxPayloadSize( (sizeof(unsigned int) * 2 )),
+		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
+		StateObjectDescription::MaxRecursionDepth(1),
+		StateObjectDescription::GlobalRootSignature(root_signatures::rt_ao_global),
 		StateObjectDescription::LocalRootSignatures(std::nullopt),
 	});
 

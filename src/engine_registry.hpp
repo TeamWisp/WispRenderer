@@ -417,7 +417,6 @@ namespace wr
 			CAMERA_PROPERTIES,
 			ACCELERATION_STRUCTURE,
 			OUTPUT,
-			AO_OUTPUT,
 			INDICES,
 			VERTICES,
 			LIGHTS,
@@ -430,10 +429,9 @@ namespace wr
 			FALLBACK_PTRS
 		};
 
-		constexpr std::array<rs_layout::Entry, 21> rt_hybrid = {
+		constexpr std::array<rs_layout::Entry, 20> rt_hybrid = {
 			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::AO_OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
@@ -449,25 +447,19 @@ namespace wr
 
 		enum class RTAOE
 		{
+			CAMERA_PROPERTIES,
+			ACCELERATION_STRUCTURE,
 			OUTPUT,
-			GBUFFERS
+			GBUFFERS,
+			FALLBACK_PTRS
 		};
 
-		constexpr std::array<rs_layout::Entry, 21> rt_ao = {
-			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::AO_OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
-			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::VERTICES, 1, rs_layout::Type::SRV},
-			rs_layout::Entry{(int)RTHybridE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::TEXTURES, 90, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
+		constexpr std::array<rs_layout::Entry, 5> rt_ao = {
+			rs_layout::Entry{(int)RTAOE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)RTAOE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)RTAOE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)RTAOE::GBUFFERS, 2, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTAOE::FALLBACK_PTRS, 2, rs_layout::Type::SRV_RANGE},
 		};
 
 	} /* srv */
@@ -480,6 +472,7 @@ namespace wr
 		static RegistryHandle rt_test_global;
 		static RegistryHandle mip_mapping;
 		static RegistryHandle rt_hybrid_global;
+		static RegistryHandle rt_ao_global;
 		static RegistryHandle cubemap_conversion;
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle cubemap_prefiltering;
@@ -495,6 +488,7 @@ namespace wr
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_hybrid_lib;
+		static RegistryHandle rt_ao_lib;
 		static RegistryHandle mip_mapping_cs;
 		static RegistryHandle equirect_to_cubemap_vs;
 		static RegistryHandle equirect_to_cubemap_ps;
@@ -519,6 +513,7 @@ namespace wr
 	{
 		static RegistryHandle state_object;
 		static RegistryHandle rt_hybrid_state_object;
+		static RegistryHandle rt_ao_state_opbject;
 	};
 
 } /* wr */

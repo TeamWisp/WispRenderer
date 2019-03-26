@@ -99,7 +99,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Sample from irradiance if it IS NOT hybrid rendering
 			sampled_irradiance,
 			// Irradiance and ao buffer if it IS hybrid rendering
-			sampled_irradiance * gbuffer_AO[screen_coord].x,	
+			sampled_irradiance,// * gbuffer_AO[screen_coord].x,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 

@@ -129,9 +129,9 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(2));
+				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
 				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
-				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate(1));
 			}
 
 			// Versioning
@@ -141,7 +141,6 @@ namespace wr
 
 				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
 
 
 				// Bind g-buffers (albedo, normal, depth)
@@ -202,9 +201,6 @@ namespace wr
 				// Bind output, indices and materials, offsets, etc
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
-
-				auto out_uav_handle_ao = data.out_uav_from_rtv.GetDescriptorHandle(1);
-				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle_ao);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
@@ -388,8 +384,8 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM, Format::R8G8B8A8_UNORM }),
-			RenderTargetProperties::NumRTVFormats(2),
+			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM}),
+			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
 			RenderTargetProperties::ResourceName(name)

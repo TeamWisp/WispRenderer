@@ -3,7 +3,6 @@
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
-#include "ambient_occlusion.hlsl"
 
 struct Vertex
 {
@@ -33,7 +32,6 @@ struct Offset
 };
 
 RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
-RWTexture2D<float4> output_ao : register(u1); // x: AO value
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -129,7 +127,7 @@ float3 unpack_position(float2 uv, float depth)
 {
 	// Get world space position
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-	float4 wpos = mul(inv_vp, ndc);
+	float4 wpos =ndc;// mul(inv_vp, ndc);
 	return (wpos.xyz / wpos.w).xyz;
 }
 
@@ -177,7 +175,7 @@ void RaygenEntry()
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
 		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
-		output_ao[DispatchRaysIndex().xy] = float4(1, 0, 0, 0);
+	//	output_ao[DispatchRaysIndex().xy] = float4(1, 0, 0, 0);
 		return;
 	}
 
@@ -207,9 +205,9 @@ void RaygenEntry()
 	float aoValue = 1.0f;
 	if(ao_enabled == 1)
 	{
-		aoValue = DoAmbientOcclusion(normal, wpos, 32, 0.25f, rand_seed);
+	//	aoValue = DoAmbientOcclusion(normal, wpos, 32, 0.25f, rand_seed);
 	}
-   	output_ao[DispatchRaysIndex().xy].x = aoValue;
+   	//output_ao[DispatchRaysIndex().xy].x = aoValue;
 }
 
 //Reflections

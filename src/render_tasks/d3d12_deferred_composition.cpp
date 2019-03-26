@@ -94,7 +94,7 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
+			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(12 * d3d12::settings::num_back_buffers));
 			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(10));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
@@ -116,7 +116,7 @@ namespace wr
 					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + (2 * i));
 					
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
-					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 2, hybrid_rt->m_create_info.m_rtv_formats.data());
+					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
 				}
 			}
 		}
