@@ -16,7 +16,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = screen_coord  / screen_size;
 
-	float sigma = 4.0f;
+	float sigma = 2.0f;
 	float4 color = 0;
 	float weightSum = 0.0f;
 	for (int i = -7; i < 7; i++)
@@ -29,6 +29,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	}
 
 	color /= weightSum;
-	
+
+
+
 	output_near[int2(dispatch_thread_id.xy)] = color.x;
 }

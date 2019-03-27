@@ -199,7 +199,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		kernel_radius = MAXKERNELSIZE * near_coc;
 
 		[branch]
-		if (kernel_radius > 0.25f)
+		if (kernel_radius > 0.0f)
 		{
 			float weightsum = 0.00001f;
 
@@ -212,7 +212,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float4 s = source_near.SampleLevel(s0, (uv + kernel_offset * kernel_radius * texel_size), 0.0f);
 				float samplecoc = s.w * MAXKERNELSIZE;
 
-				float sw = 1.0f;
+				float sw = 1.0f;  
 
 				fgcolor.xyz += s.xyz * sw;
 
@@ -227,7 +227,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 			fgcolor.xyz /= weightsum;
 			fgcolor.w = saturate(fgcolor.w  * (1.0f / NUMSAMPLES));
-			fgcolor.w = max(fgcolor.w, source_near[screen_coord + 0.5f].w);
+			fgcolor.w = max(fgcolor.w, near_coc);
 		}
 		else
 		{
