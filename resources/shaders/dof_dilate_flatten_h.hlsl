@@ -23,14 +23,14 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{
 		float weight = CalcGaussianWeight(i, sigma);
 		weightSum += weight;
-		uv = (screen_coord + 0.5f) / screen_size + (float2(1.5f * i, 0.5) * texel_size) * 4;
-		float4 s = source_near.SampleLevel(s0, uv, 0).xxxx;
+		uv = (screen_coord + 0.5f + float2(1.0f * i, 0.0f)) / screen_size;
+		float s = source_near.SampleLevel(s0, uv, 0).x;
 		color += s * weight;
 	}
 
 	color /= weightSum;
 
-	//2color = source_near.SampleLevel(s0, (screen_coord + 0.5f) / screen_size, 0);
+	color.x = max(source_near.SampleLevel(s0, uv, 0).x, color.x);
 
-	output_near[int2(dispatch_thread_id.xy)] = color;
+	output_near[int2(dispatch_thread_id.xy)] = color.x;
 }

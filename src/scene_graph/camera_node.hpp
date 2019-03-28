@@ -19,6 +19,7 @@ namespace wr
 			m_focal_length(30.0f),
 			m_film_size(35.0f),
 			m_f_number(4.2f),
+			m_shape_amt(0.0f),
 			m_aperture_blades(5),
 			m_focus_dist(0)
 		{
@@ -48,6 +49,7 @@ namespace wr
 		float m_film_size;
 		float m_f_number;
 		float m_focus_dist;
+		float m_shape_amt;
 		int m_aperture_blades;
 		bool m_enable_dof = false;
 

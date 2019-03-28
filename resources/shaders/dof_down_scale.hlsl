@@ -20,7 +20,7 @@ float GetDownSampledCoC(float2 uv, float2 texelSize)
 	float cocMax = max(max(max(coc0, coc1), coc2), coc3);
 	//
 	float coc = cocMax >= -cocMin ? cocMax : cocMin;
-	//float coc = (coc0 + coc1 + coc2 + coc3) * 0.25f;
+	//coc = (coc0 + coc1 + coc2 + coc3) * 0.25f;
 	return coc;
 }
 
@@ -42,17 +42,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 source2 = source.SampleLevel(s0, uv + offset.xw, 0).rgb;
 	float3 source3 = source.SampleLevel(s0, uv + offset.zw, 0).rgb;
 
-	float w0 = WeighColor(source0);
-	float w1 = WeighColor(source1);
-	float w2 = WeighColor(source2);
-	float w3 = WeighColor(source3);
-
-	float3 finalcolor = source0 * w0 + source1 * w1 + source2 * w2 + source3 * w3;
-	finalcolor /= max(w0 + w1 + w2 + w3, 0.00001f);
-
-	//finalcolor = (source0 + source1 + source2 + source3) * 0.25f;
+	float3 finalcolor = (source0 + source1 + source2 + source3) * 0.25f;
 	float coc = GetDownSampledCoC(uv, texel_size);
-	//float coc = cocbuffer.SampleLevel(s1, uv, 0);
 
 	float4 out_near = float4(finalcolor, 1.0f) * max(-coc, 0.0f);
 	out_near.rgb = finalcolor;

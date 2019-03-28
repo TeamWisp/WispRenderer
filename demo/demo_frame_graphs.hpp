@@ -99,7 +99,7 @@ namespace fg_manager
 			wr::AddDoFDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFDilateTask<wr::DoFDownScaleData>(*fg, 
+			wr::AddDoFDilateTask<wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,

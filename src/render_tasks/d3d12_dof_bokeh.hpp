@@ -30,6 +30,7 @@ namespace wr
 		struct Bokeh_CB
 		{
 			float m_f_number;
+			float m_shape;
 			float m_bokeh_poly;
 			uint32_t m_blades;
 			int m_enable_dof;
@@ -100,6 +101,7 @@ namespace wr
 
 			Bokeh_CB cb_data;
 			cb_data.m_f_number = sg.GetActiveCamera()->m_f_number;
+			cb_data.m_shape = sg.GetActiveCamera()->m_shape_amt;
 			cb_data.m_blades = sg.GetActiveCamera()->m_aperture_blades;
 			cb_data.m_bokeh_poly = sqrt(std::clamp((sg.GetActiveCamera()->m_f_number - 1.8f) / (5.0f - 1.8f), 0.f, 1.f));
 			cb_data.m_enable_dof = sg.GetActiveCamera()->m_enable_dof;

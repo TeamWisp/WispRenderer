@@ -15,6 +15,7 @@ static const float PI2 = 6.283185308f;
 cbuffer CameraProperties : register(b0)
 {
 	float f_number;
+	float shape_curve;
 	float bokeh_poly_amount;
 	uint num_blades;
 	int enable_dof;
@@ -29,11 +30,11 @@ float GetDownSampledCoC(float2 uv, float2 texel_size)
 	float coc2 = near_mask.SampleLevel(s1, uv + offset.xw, 0);
 	float coc3 = near_mask.SampleLevel(s1, uv + offset.zw, 0);
 
-	/*float coc_min = min(min(min(coc0, coc1), coc2), coc3);
+	float coc_min = min(min(min(coc0, coc1), coc2), coc3);
 	float coc_max = max(max(max(coc0, coc1), coc2), coc3);
 
-	float coc = coc_max >= -coc_min ? coc_max : coc_min;*/
-	float coc = (coc0 + coc1 + coc2 + coc3) * 0.25f;
+	float coc = coc_max >= -coc_min ? coc_max : coc_min;
+//	float coc = (coc0 + coc1 + coc2 + coc3) * 0.25f;
 	return coc;
 }
 
@@ -149,15 +150,15 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 	float2 texel_size = 1.0f / screen_size;
 
-	float2 uv = (screen_coord + 0.5f) / screen_size;
+	float2 uv = (screen_coord) / screen_size;
 
 	const uint NUMSAMPLES = NUMDOFSAMPLES * NUMDOFSAMPLES;
 	const float MAXKERNELSIZE = MAXBOKEHSIZE * 0.5f;
 	const float SHAPECURVE = 2.0f;
-	const float SHAPECURVEAMT = 0.0f;
 
 	float4 fgcolor = float4(0, 0, 0, 0);
 	float4 bgcolor = float4(0, 0, 0, 0);
+
 
 	float masking = 0;
 	if (enable_dof > 0)
@@ -166,6 +167,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		float far_coc = source_far[screen_coord + 0.5f].w;
 		float kernel_radius = MAXKERNELSIZE * far_coc;
+		
 
 		[branch]
 		if (kernel_radius > 0.5f)
@@ -176,11 +178,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float lensX = saturate((i % NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount);
-				float4 s = source_far.SampleLevel(s0, (uv + kernel_offset * kernel_radius * texel_size), 0.0f);
+				float4 s = source_far.SampleLevel(s0, (screen_coord + 0.5f + kernel_offset * kernel_radius) / screen_size, 0.0f);
 				float samplecoc = s.w;
 
 				s *= saturate(1.0f + (samplecoc - far_coc));
-				s *= (1.0f - SHAPECURVEAMT) + pow(max(length(kernel_offset), 0.01f), SHAPECURVE) * SHAPECURVEAMT;
+				s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.01f), SHAPECURVE) * shape_curve;
 				bgcolor += s;
 			}
 
@@ -194,12 +196,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float near_coc = source_near[screen_coord + 0.5f].w;
 		float nearMask = SampleTextureBSpline(near_mask, s0, uv).x;
 		nearMask = saturate(nearMask * 1.0f);
-		masking = max(near_coc, nearMask);
 		near_coc = max(near_coc, nearMask);
+		masking = nearMask;
 		kernel_radius = MAXKERNELSIZE * near_coc;
 
 		[branch]
-		if (kernel_radius > 0.0f)
+		if (kernel_radius > 0.25f)
 		{
 			float weightsum = 0.00001f;
 
@@ -209,7 +211,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float lensX = saturate((i % NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount);
-				float4 s = source_near.SampleLevel(s0, (uv + kernel_offset * kernel_radius * texel_size), 0.0f);
+				float4 s = source_near.SampleLevel(s0, (screen_coord + 0.5f + kernel_offset * kernel_radius) / screen_size , 0.0f);
 				float samplecoc = s.w * MAXKERNELSIZE;
 
 				float sw = 1.0f;  
@@ -226,55 +228,15 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			}
 
 			fgcolor.xyz /= weightsum;
-			fgcolor.w = saturate(fgcolor.w  * (1.0f / NUMSAMPLES));
-			fgcolor.w = max(fgcolor.w, near_coc);
+			fgcolor.w = saturate(fgcolor.w * (1.0f / NUMSAMPLES));
+			fgcolor.w = max(fgcolor.w, source_near[screen_coord + 0.5f].w);
 		}
 		else
 		{
 			fgcolor = source_near.SampleLevel(s0, uv, 0);
 		}
-			
-		//for (int i = 0; i < NUMSAMPLES; i++)
-		//{
-		//	float lensX = saturate((i % NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
-		//	float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
-
-		//	float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount);
-
-		//	float2 o = kernel_offset * MAXKERNELSIZE;
-		//	float radius = length(o);
-
-		//	o *= texel_size;
-
-		//	float2 final_uv = uv + o;
-
-		//	float4 snear = source_near.SampleLevel(s1, final_uv, 0).rgba;
-		//	float4 sfar = source_far.SampleLevel(s1, final_uv, 0).rgba;
-		//	//float coc = source_near.SampleLevel(s1, final_uv , 0).a;
-		//	//float coc1 = source_far.SampleLevel(s1, final_uv , 0).a;
-		//	//float coc = GetDownSampledCoC(final_uv, texel_size);
-		//
-		//	float bgw = WeighCoC(max(0, sfar.a * MAXKERNELSIZE), radius);
-		//	bgcolor += sfar.rgb * bgw;
-		//	bgweight += bgw;
-
-		//	float fgw = WeighCoC(snear.a * MAXKERNELSIZE, radius);
-		//	fgcolor += snear.rgb * fgw;
-		//	fgweight += fgw;
-
-		//}
-
-
 		
 	}
-
-	//bgcolor.rgb *= 1 / (bgweight + (bgweight == 0));
-	//fgcolor.rgb *= 1 / (fgweight + (fgweight == 0));
-
-	//boost foreground weight to reduce artefacts
-	//float bgfg = min(1, fgweight * PI / 2 / NUMSAMPLES);
-
-	//float3 finalcolor = lerp(bgcolor.rgb, fgcolor.rgb, bgfg);
 
 	//output_near[int2(dispatch_thread_id.xy)] = float4(masking, masking, masking, masking);
 	output_near[int2(dispatch_thread_id.xy)] = fgcolor;
