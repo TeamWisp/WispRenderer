@@ -4,11 +4,29 @@
 
 #define D3DX12_INC d3dx12_rt.h
 
+inline std::string HResultToString(HRESULT hr)
+{
+	if (FACILITY_WINDOWS == HRESULT_FACILITY(hr))
+		hr = HRESULT_CODE(hr);
+	TCHAR* szErrMsg;
+
+	if (FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&szErrMsg, 0, NULL) != 0)
+	{
+		return(szErrMsg);
+		LocalFree(szErrMsg);
+	}
+	else
+		return(std::string("[Could not find a description for error # %#x.", hr));
+}
+
 //! Checks whether the d3d12 object exists before releasing it.
 #define SAFE_RELEASE(obj) { if ( obj ) { obj->Release(); obj = NULL; } }
 
 //! Handles a hresult.
-#define TRY(result) if (FAILED(result)) { LOGC("An hresult returned a error!. File: " + std::string(__FILE__) + " Line: " + std::to_string(__LINE__)); }
+#define TRY(result) if (FAILED(result)) { LOGC("An hresult returned a error!. File: " + std::string(__FILE__) + " Line: " + std::to_string(__LINE__) + " HRResult: " +  HResultToString(result)); }
 
 //! Handles a hresult and outputs a specific message.
 #define TRY_M(result, msg) if (FAILED(result)) { LOGC(msg); }
