@@ -114,7 +114,7 @@ namespace fg_manager
 			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the raytracing pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::RTHybridData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));

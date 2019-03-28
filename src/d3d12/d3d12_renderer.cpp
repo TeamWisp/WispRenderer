@@ -526,13 +526,6 @@ namespace wr
 		d3d12::End(n_cmd_list);
 	}
 
-	void D3D12RenderSystem::ResetRayTracingHeap(CommandList* cmd_list)
-	{
-		auto d3d12_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-
-		d3d12::ResetRTHeap(d3d12_cmd_list, GetFrameIdx());
-	}
-
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()
 	{
 		auto& registry = RootSignatureRegistry::Get();

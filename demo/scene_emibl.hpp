@@ -22,30 +22,11 @@ namespace emibl_scene
 		static wr::Model* cube_model;
 		static wr::Model* plane_model;
 		static wr::Model* test_model;
-		//static wr::Model* material_knobs[0];
-		//static wr::Model* material_knot_red_black_pattern;
-		//static wr::Model* material_knot_metal;
-		//static wr::Model* material_knobs[3];
-		//static wr::Model* material_knobs[4];
-		//static wr::Model* material_knobs[5];
-		//static wr::Model* material_knobs[6];
-		//static wr::Model* material_knobs[7];
-		//static wr::Model* material_knobs[8];
-		//static wr::Model* material_knobs[9];
+
 		static wr::Model* cube_models[10];
 		static wr::Model* material_knobs[10];
 
 		static wr::MaterialHandle rusty_metal_material;
-		//static wr::MaterialHandle mahogfloor_material;
-		//static wr::MaterialHandle red_black_pattern_material;
-		//static wr::MaterialHandle metal_material;
-		//static wr::MaterialHandle brick_tiles_material;
-		//static wr::MaterialHandle leather_material;
-		//static wr::MaterialHandle blue_tiles_material;
-		//static wr::MaterialHandle gold_material;
-		//static wr::MaterialHandle marble_material;
-		//static wr::MaterialHandle floreal_tiles_material;
-		//static wr::MaterialHandle bw_tiles_material;
 
 		static wr::MaterialHandle material_handles[10];
 

@@ -61,8 +61,6 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
 	output.color = input.color;
 
-	output.uv *= 6.0f;
-
 	return output;
 }
 
@@ -100,7 +98,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 
 	float3 normal = normalize(mul(output_data.normal, tbn));
 
-	output.albedo_roughness = float4(output_data.albedo, output_data.roughness);
+	output.albedo_roughness = float4(pow(output_data.albedo, 2.2), output_data.roughness);
 	output.normal_metallic = float4(normal, output_data.metallic);
 
 	return output;

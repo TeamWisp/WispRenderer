@@ -432,19 +432,21 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
+
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -513,19 +515,21 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
+
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -591,19 +595,21 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
+
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 

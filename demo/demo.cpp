@@ -8,8 +8,6 @@
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
-//#include "resources.hpp"
-#include "scene_cubes.hpp"
 #include "scene_emibl.hpp"
 #include "scene_spheres.hpp"
 

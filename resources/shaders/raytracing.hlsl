@@ -291,7 +291,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		s0,
 		uv);
 
-	float3 albedo = output_data.albedo;
+	float3 albedo = pow(output_data.albedo, 2.2);
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 	

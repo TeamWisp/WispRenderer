@@ -92,11 +92,6 @@ namespace wr::d3d12
 		cmd_list->m_native->Close();
 	}
 
-	void ResetRTHeap(CommandList * cmd_list, unsigned int frame_idx)
-	{
-		cmd_list->m_rt_descriptor_heap->Reset(frame_idx);
-	}
-
 	void ExecuteBundle(CommandList* cmd_list, CommandList* bundle)
 	{
 		cmd_list->m_native->ExecuteBundle(bundle->m_native);

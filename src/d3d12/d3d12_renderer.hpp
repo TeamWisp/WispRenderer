@@ -148,8 +148,6 @@ namespace wr
 		void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		
-		void ResetRayTracingHeap(CommandList* cmd_list);
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 
