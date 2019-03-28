@@ -25,6 +25,7 @@ namespace wr
 		bool out_requires_bundle_recording;
 
 		bool is_hybrid;
+		bool is_path_tracer;
 	};
 
 	namespace internal

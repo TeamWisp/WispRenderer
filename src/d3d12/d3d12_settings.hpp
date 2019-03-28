@@ -12,7 +12,7 @@ namespace wr::d3d12::settings
 	enum class DebugLayer
 	{
 		ENABLE,
-		DISABLE,
+		DISABLE, 
 		ENABLE_WITH_GPU_VALIDATION
 	};
 
@@ -47,7 +47,7 @@ namespace wr::d3d12::settings
 	static const constexpr bool disable_rtx = false;
 	static const constexpr bool enable_object_culling = true;
 	static const constexpr unsigned int num_max_rt_materials = 3000;
-	static const constexpr unsigned int num_max_rt_textures = 90;
-	static const constexpr unsigned int fallback_ptrs_offset = 10001;
+	static const constexpr unsigned int num_max_rt_textures = 1000;
+	static const constexpr unsigned int fallback_ptrs_offset = 4000;
 	
 } /* wr::d3d12::settings */

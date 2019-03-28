@@ -1,3 +1,4 @@
+#include "util.hlsl"
 #include "pbr_util.hlsl"
 
 TextureCube<float4> src_texture : register(t0);
