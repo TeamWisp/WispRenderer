@@ -480,16 +480,16 @@ namespace wr
 	});
 
 	DESC_RANGE_ARRAY(rt_ao_ranges,
-		DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::RTAOE::OUTPUT),
-		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTAOE::GBUFFERS),
-		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, d3d12::settings::fallback_ptrs_offset),
+		DESC_RANGE(params::rt_ao, Type::UAV_RANGE, params::RTAOE::OUTPUT),
+		DESC_RANGE(params::rt_ao, Type::SRV_RANGE, params::RTAOE::GBUFFERS),
+		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset),
 	);
 
 	REGISTER(root_signatures::rt_ao_global, RootSignatureRegistry)({
 	RootSignatureDescription::Parameters({
 		ROOT_PARAM_DESC_TABLE(rt_ao_ranges, D3D12_SHADER_VISIBILITY_ALL),
-		ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTAOE::ACCELERATION_STRUCTURE)),
-		ROOT_PARAM(GetCBV(params::rt_hybrid, params::RTAOE::CAMERA_PROPERTIES)),
+		ROOT_PARAM(GetSRV(params::rt_ao, params::RTAOE::ACCELERATION_STRUCTURE)),
+		ROOT_PARAM(GetCBV(params::rt_ao, params::RTAOE::CAMERA_PROPERTIES)),
 	}),
 	RootSignatureDescription::Samplers({}),
 	RootSignatureDescription::RTXLocal(true)

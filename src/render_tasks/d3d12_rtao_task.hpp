@@ -14,6 +14,7 @@
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
+#include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "../imgui_tools.hpp"
 
 namespace wr
@@ -168,6 +169,7 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTAOData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+			fg.GetPredecessorData<wr::RTHybridData>(); //Wait for RTHybrid to avoid hyper threading issues.
 
 			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
@@ -225,7 +227,7 @@ namespace wr
 				}
 				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 				{
-					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
+					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(1, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
 #ifdef _DEBUG
@@ -240,7 +242,18 @@ namespace wr
 			}
 		}
 
-		inline void DestroyAOTask(FrameGraph& fg, RenderTaskHandle handle, bool resize) {}
+		inline void DestroyAOTask(FrameGraph& fg, RenderTaskHandle handle, bool resize) 
+		{
+			auto& data = fg.GetData<RTAOData>(handle);
+
+			if (!resize)
+			{
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
+				DescriptorAllocation temp2 = std::move(data.in_gbuffers);
+				DescriptorAllocation temp3 = std::move(data.in_depthbuffer);
+			}
+		}
 	}
 	inline void AddAOTask(FrameGraph& fg)
 	{

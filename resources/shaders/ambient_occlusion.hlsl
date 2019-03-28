@@ -75,7 +75,7 @@ void AORaygenEntry()
 
     float3 normal = gbuffer_normal[screen_co].xyz;
 
-	float depth = 1.f;//gbuffer_depth[screen_co].x;
+	float depth = gbuffer_depth[screen_co].x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 
     uint spp = 32;
