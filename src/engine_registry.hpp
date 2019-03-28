@@ -298,10 +298,11 @@ namespace wr
 			BRDF_LUT,
 			BUFFER_REFLECTION_SHADOW,
 			BUFFER_AO,
+			BUFFER_SCREEN_SPACE_IRRADIANCE,
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 12> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 13> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
@@ -313,6 +314,7 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION_SHADOW, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_AO, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 
@@ -381,6 +383,19 @@ namespace wr
 			rs_layout::Entry{(int)PostProcessingE::HDR_SUPPORT, 2, rs_layout::Type::CBV_OR_CONST},
 		};
 
+		enum class AccumulationE
+		{
+			SOURCE,
+			DEST,
+			FRAME_IDX,
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> accumulation = {
+			rs_layout::Entry{(int)AccumulationE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)AccumulationE::DEST, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)AccumulationE::FRAME_IDX, 2, rs_layout::Type::CBV_OR_CONST},
+		};
+
 		enum class FullRaytracingE
 		{
 			CAMERA_PROPERTIES,
@@ -423,6 +438,8 @@ namespace wr
 			MATERIALS,
 			OFFSETS,
 			SKYBOX,
+			PREF_ENV_MAP,
+			BRDF_LUT,
 			IRRADIANCE_MAP,
 			TEXTURES,
 			GBUFFERS,
@@ -431,7 +448,7 @@ namespace wr
 
 		constexpr std::array<rs_layout::Entry, 20> rt_hybrid = {
 			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.
 			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
@@ -439,8 +456,10 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::PREF_ENV_MAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)RTHybridE::TEXTURES, 90, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTHybridE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
@@ -462,6 +481,44 @@ namespace wr
 			rs_layout::Entry{(int)RTAOE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
+		enum class PathTracingE
+		{
+			CAMERA_PROPERTIES,
+			ACCELERATION_STRUCTURE,
+			OUTPUT,
+			INDICES,
+			VERTICES,
+			LIGHTS,
+			MATERIALS,
+			OFFSETS,
+			SKYBOX,
+			PREF_ENV_MAP,
+			BRDF_LUT,
+			IRRADIANCE_MAP,
+			TEXTURES,
+			GBUFFERS,
+			FALLBACK_PTRS
+		};
+
+		
+		constexpr std::array<rs_layout::Entry, 20> path_tracing = {
+			rs_layout::Entry{(int)PathTracingE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)PathTracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.
+			rs_layout::Entry{(int)PathTracingE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)PathTracingE::INDICES, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::VERTICES, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)PathTracingE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::PREF_ENV_MAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
+		};
+
 	} /* srv */
 
 	struct root_signatures
@@ -473,10 +530,12 @@ namespace wr
 		static RegistryHandle mip_mapping;
 		static RegistryHandle rt_hybrid_global;
 		static RegistryHandle rt_ao_global;
+		static RegistryHandle path_tracing_global;
 		static RegistryHandle cubemap_conversion;
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
+		static RegistryHandle accumulation;
 	};
 
 	struct shaders
@@ -489,12 +548,14 @@ namespace wr
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_hybrid_lib;
 		static RegistryHandle rt_ao_lib;
+		static RegistryHandle path_tracer_lib;
 		static RegistryHandle mip_mapping_cs;
 		static RegistryHandle equirect_to_cubemap_vs;
 		static RegistryHandle equirect_to_cubemap_ps;
 		static RegistryHandle cubemap_convolution_ps;
 		static RegistryHandle cubemap_prefiltering_cs;
 		static RegistryHandle post_processing;
+		static RegistryHandle accumulation;
 	};
 
 	struct pipelines
@@ -507,6 +568,7 @@ namespace wr
 		static RegistryHandle cubemap_convolution;
 		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
+		static RegistryHandle accumulation;
 	};
 
 	struct state_objects
@@ -514,6 +576,8 @@ namespace wr
 		static RegistryHandle state_object;
 		static RegistryHandle rt_hybrid_state_object;
 		static RegistryHandle rt_ao_state_opbject;
+		static RegistryHandle path_tracing_state_object;
+		static RegistryHandle path_tracer_state_object;
 	};
 
 } /* wr */

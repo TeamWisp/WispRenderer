@@ -41,7 +41,7 @@ StructuredBuffer<Offset> g_offsets : register(t5);
 
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t7);
-Texture2D g_textures[90] : register(t8);
+Texture2D g_textures[1000] : register(t8);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -270,7 +270,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 	
-	float3 N = normalize(mul(ObjectToWorld3x4(), float4(-normal, 0)));
+	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 #define CALC_B
 #ifndef CALC_B

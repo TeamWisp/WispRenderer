@@ -37,12 +37,13 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D g_textures[90] : register(t8);
-Texture2D gbuffer_albedo : register(t98);
-Texture2D gbuffer_normal : register(t99);
-Texture2D gbuffer_depth : register(t100);
+Texture2D g_textures[1000] : register(t10);
+Texture2D gbuffer_albedo : register(t1010);
+Texture2D gbuffer_normal : register(t1011);
+Texture2D gbuffer_depth : register(t1012);
 Texture2D skybox : register(t6);
-TextureCube irradiance_map : register(t7);
+Texture2D brdf_lut : register(t8);
+TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -303,13 +304,15 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metal;
 
+	const float2 sampled_brdf = brdf_lut.SampleLevel(s0, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
+
 	//Lighting
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth, shadows_enabled);
 
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
 
-	float3 specular = reflection * F;
+	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = kD * diffuse + specular;
 

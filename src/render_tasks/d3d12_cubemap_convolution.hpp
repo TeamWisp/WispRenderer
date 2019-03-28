@@ -9,12 +9,12 @@
 #include "../d3d12/d3d12_resource_pool_texture.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
+#include "../scene_graph/skybox_node.hpp"
 #include "../d3d12/d3d12_pipeline_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../platform_independend_structs.hpp"
 #include "d3d12_imgui_render_task.hpp"
-#include "../scene_graph/camera_node.hpp"
 #include "d3d12_equirect_to_cubemap.hpp"
 
 namespace wr
