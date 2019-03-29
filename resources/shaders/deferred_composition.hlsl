@@ -17,6 +17,7 @@ TextureCube pref_env_map	 : register(t6);
 Texture2D brdf_lut			 : register(t7);
 Texture2D buffer_reflection	 : register(t8); // xyz: reflection, a: shadow factor
 Texture2D buffer_shadow		 : register(t9);
+Texture2D screen_space_irradiance : register(t10);
 RWTexture2D<float4> output   : register(u0);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
@@ -28,6 +29,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_view;
 	uint is_hybrid;
+	uint is_path_tracer;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -67,10 +69,19 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
-
-		const float3 sampled_irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
+		
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
-		const float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
+		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
+		
+		float3 irradiance = float3(0, 0, 0);
+		if (is_path_tracer)
+		{
+			irradiance = screen_space_irradiance[screen_coord].xyz;
+		}
+		else
+		{
+			irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
+		}
 
 		float4 shadow_info = buffer_shadow[screen_coord];
 
@@ -83,7 +94,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
-
+		shadow_factor = clamp(shadow_factor, 0.0, 1.0);
+		
 		// Get reflection
 		float3 reflection = lerp(
 			// Sample from environment if it IS NOT hybrid rendering
@@ -95,9 +107,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection, sampled_brdf, shadow_factor);
-
-		//retval = shadow_factor;
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, sampled_brdf, shadow_factor);
 	}
 	else
 	{	

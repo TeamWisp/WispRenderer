@@ -58,6 +58,7 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
 			unsigned int m_is_hybrid;
+			unsigned int m_is_path_tracer;
 		};
 
 		struct RTHybridCamera_CBData
@@ -176,6 +177,8 @@ namespace wr
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
 		wr::Model* GetSimpleShape(SimpleShapes type) final;
 
+		bool IsFallback() final;
+
 	public:
 		d3d12::Device* m_device;
 		std::optional<d3d12::RenderWindow*> m_render_window;
@@ -205,9 +208,10 @@ namespace wr
 		std::size_t m_bound_model_pool_stride;
 
 		std::optional<wr::TextureHandle> m_brdf_lut = std::nullopt;
+		bool m_brdf_lut_generated = false;
     
 		float temp_metal = 1.0f;
-		float temp_rough = 0.45f;
+		float temp_rough = -3;
 		bool clear_path = false;
 		float light_radius = 50;
 		float temp_intensity = 1;

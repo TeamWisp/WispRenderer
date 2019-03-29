@@ -3,6 +3,7 @@
 #include <variant>
 
 #include "d3d12_defines.hpp"
+#include "d3d12_rt_descriptor_heap.hpp"
 
 namespace wr::d3d12
 {
@@ -236,8 +237,6 @@ namespace wr::d3d12
 		// Get prebuild info top level
 		internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
 
-		LOG("{}", tlas.m_prebuild_info.ResultDataMaxSizeInBytes);
-
 		// Allocate scratch resource
 		internal::AllocateUAVBuffer(device,
 			tlas.m_prebuild_info.ScratchDataSizeInBytes,
@@ -374,8 +373,6 @@ namespace wr::d3d12
 		internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
 		if (tlas.m_rebuild_scratch)
 		{
-			LOG("{}", tlas.m_prebuild_info.ResultDataMaxSizeInBytes);
-
 			if (tlas.m_scratch)
 			{
 				//tlas.m_scratch->Release();
@@ -491,6 +488,26 @@ namespace wr::d3d12
 	{
 		acceleration_structure.first.m_native->SetName((name + L" - Bottom Level Acceleration Structure").c_str());
 		acceleration_structure.second.m_native->SetName((name + L" - Top Level Acceleration Structure").c_str());
+	}
+
+	void CreateOrUpdateTLAS(Device* device, CommandList* cmd_list, bool& requires_init, d3d12::AccelerationStructure& out_tlas,
+		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
+	{
+		d3d12::DescriptorHeap* heap = static_cast<d3d12::CommandList*>(cmd_list)->m_rt_descriptor_heap->GetHeap();
+
+		if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+		{
+			if (requires_init)
+			{
+				out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, heap, blas_list);
+
+				requires_init = false;
+			}
+			else
+			{
+				d3d12::UpdateTopLevelAccelerationStructure(out_tlas, device, cmd_list, heap, blas_list);
+			}
+		}
 	}
 
 } /* wr::d3d12 */

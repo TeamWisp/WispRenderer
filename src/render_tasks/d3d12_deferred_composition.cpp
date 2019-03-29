@@ -15,6 +15,8 @@
 #include "../render_tasks/d3d12_rt_shadow_task.hpp"
 #include "../render_tasks/d3d12_rt_reflection_task.hpp"
 #include "../render_tasks/d3d12_shadow_denoiser_task.hpp"
+#include "../render_tasks/d3d12_path_tracer.hpp"
+#include "../render_tasks/d3d12_accumulation.hpp"
 
 namespace wr
 {
@@ -68,6 +70,10 @@ namespace wr
 			d3d12::DescHeapCPUHandle shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow);
 			d3d12::SetShaderSRV(cmd_list, 1, shadow, shadow_handle);
 
+			constexpr unsigned int sp_irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE);
+			d3d12::DescHeapCPUHandle sp_irradiance_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(sp_irradiance);
+			d3d12::SetShaderSRV(cmd_list, 1, sp_irradiance, sp_irradiance_handle);
+
 			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
 			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
 			d3d12::SetShaderUAV(cmd_list, 1, output, output_handle);
@@ -87,6 +93,7 @@ namespace wr
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::deferred_composition);
 
 			// Check if the current frame graph contains the hybrid task to know if it is hybrid or not.
+			data.is_path_tracer = fg.HasTask<wr::PathTracerData>();
 			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTHybridData>() || fg.HasTask<wr::RTReflectionData>();
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
@@ -183,8 +190,8 @@ namespace wr
 				camera_data.m_inverse_projection = active_camera->m_inverse_projection;
 				camera_data.m_view = active_camera->m_view;
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
-				// Set 'is hybrid' to either 1 or 0 depending on the current frame_graph
-				camera_data.m_is_hybrid = data.is_hybrid ? 1 : 0;
+				camera_data.m_is_hybrid = data.is_hybrid;
+				camera_data.m_is_path_tracer = data.is_path_tracer;
 
 				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &camera_data);
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);
@@ -210,6 +217,14 @@ namespace wr
 					d3d12::CreateSRVFromTexture(data.out_skybox);
 				}
 
+				// Get Screen Space Environment Texture
+				if (data.is_path_tracer)
+				{
+					auto irradiance_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE));
+					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
+					d3d12::CreateSRVFromSpecificRTV(hybrid_rt, irradiance_handle, 0, hybrid_rt->m_create_info.m_rtv_formats[0]);
+				}
+				
 				// Get Irradiance Map
 				if (skybox != nullptr)
 				{
