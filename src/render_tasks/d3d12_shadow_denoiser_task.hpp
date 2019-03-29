@@ -102,8 +102,8 @@ namespace wr
 			}
 			else
 			{
-				int width = 48;
-				int height = 48;
+				int width = 12;
+				int height = 12;
 				std::vector<unsigned char> kernel_data(width * height * 4);
 
 				for (int i = 0; i < height; ++i)
@@ -115,7 +115,7 @@ namespace wr
 							kernel_data[(i*width + j) * 4 + 2] =
 							kernel_data[(i*width + j) * 4 + 3] =
 							static_cast<unsigned char>(CalculateGaussian(
-								1.f, 0.f, 5.f,
+								1.f, 0.f, 4.f,
 								sqrtf((i - height / 2.f)*(i - height / 2.f) + (j - width / 2.f) * (j - width / 2.f)))*255.f);
 
 					}

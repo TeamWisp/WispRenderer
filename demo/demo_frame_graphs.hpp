@@ -43,7 +43,7 @@ namespace fg_manager
 		}
 	}
 
-	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
+	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::RT_HYBRID;
 	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
@@ -110,10 +110,10 @@ namespace fg_manager
 
 			// Raytracing task
 			//wr::AddRTHybridTask(*fg);
-			
-			wr::AddRTShadowTask(*fg);
 
 			wr::AddRTReflectionTask(*fg);
+
+			wr::AddRTShadowTask(*fg);
 
 			wr::AddShadowDenoiserTask(*fg, std::nullopt);
 

@@ -40,7 +40,7 @@ namespace wr
 					info.m_buffer_handle->m_native->m_stride,
 					cmd_list);
 			}
-			else
+			else if (info.m_buffer_handle->m_native->m_states[frame_idx] != info.m_new_state)
 			{
 				ID3D12Resource * resource = info.m_buffer_handle->m_native->m_heap_bsbo->m_resources[info.m_buffer_handle->m_native->m_heap_vector_location].second[frame_idx];
 				cmd_list->m_native->ResourceBarrier(1,

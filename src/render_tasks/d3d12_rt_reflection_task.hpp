@@ -136,11 +136,11 @@ namespace wr
 			}
 
 			// Versioning
-			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
+			//for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
 				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+				d3d12::CreateUAVFromRTV(n_render_target, rtv_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
 				// Bind g-buffers (albedo, normal, depth)
 				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();

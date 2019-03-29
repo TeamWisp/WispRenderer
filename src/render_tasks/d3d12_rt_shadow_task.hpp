@@ -118,7 +118,7 @@ namespace wr
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<RTShadowData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-			d3d12::SetName(n_render_target, L"Raytracing Target");
+			d3d12::SetName(n_render_target, L"Raytracing Shadow Target");
 
 			if (!resize)
 			{
@@ -136,11 +136,11 @@ namespace wr
 			}
 
 			// Versioning
-			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
+			//for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
 				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+				d3d12::CreateUAVFromRTV(n_render_target, rtv_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
 
 				// Bind g-buffers (albedo, normal, depth)
 				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
@@ -366,7 +366,7 @@ namespace wr
 
 	inline void AddRTShadowTask(FrameGraph& fg)
 	{
-		std::wstring name(L"Hybrid raytracing");
+		std::wstring name(L"Hybrid raytracing shadows");
 
 		RenderTargetProperties rt_properties
 		{
