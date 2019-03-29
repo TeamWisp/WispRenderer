@@ -15,7 +15,18 @@
 #include "../d3d12/d3d12_settings.hpp"
 #include "../structs.hpp"
 
+#ifndef _DEBUG
 #define FG_MAX_PERFORMANCE
+#endif
+
+#define EXPAND(x) x // Because msvc handles the preprocessor differently
+#define FG_DEPS(N, ...) EXPAND(FG_DEPS##N(__VA_ARGS__))
+#define FG_DEPS1(a) { typeid(a) }
+#define FG_DEPS2(a, b) { typeid(a), typeid(b) }
+#define FG_DEPS3(a, b, c) { typeid(a), typeid(b), typeid(c) }
+#define FG_DEPS4(a, b, c, d) { typeid(a), typeid(b), typeid(c), typeid(d) }
+#define FG_DEPS5(a, b, c, d, e) { typeid(a), typeid(b), typeid(c), typeid(d), typeid(e) }
+#define FG_DEPS6(a, b, c, d, e, f) { typeid(a), typeid(b), typeid(c), typeid(d), typeid(e), typeid(f) }
 
 namespace wr
 {
@@ -104,7 +115,7 @@ namespace wr
 			reserve(m_data);
 			reserve(m_data_type_info);
 #ifndef FG_MAX_PERFORMANCE
-			reserve(m_names);
+			reserve(m_dependencies);
 #endif
 			reserve(m_types);
 			reserve(m_rt_properties);
@@ -136,6 +147,13 @@ namespace wr
 		*/
 		inline void Setup(RenderSystem& render_system)
 		{
+			bool is_valid = Validate();
+
+			if (!is_valid)
+			{
+				LOGE("Framegraph validation failed. Aborting setup.");
+			}
+
 			// Resize these vectors since we know the end size already.
 			m_cmd_lists.resize(m_num_tasks);
 			m_render_targets.resize(m_num_tasks);
@@ -268,7 +286,7 @@ namespace wr
 			m_data.clear();
 			m_data_type_info.clear();
 #ifndef FG_MAX_PERFORMANCE
-			m_names.clear();
+			m_dependencies.clear();
 #endif
 			m_types.clear();
 			m_rt_properties.clear();
@@ -458,13 +476,55 @@ namespace wr
 			return false;
 		}
 
+		/*! Validates the frame graph for correctness */
+		/*!
+			This function uses the dependencies to check whether the frame graph is constructed properly by the user.
+			Note: This function only works when `FG_MAX_PERFORMANCE` is defined.
+		*/
+		bool Validate()
+		{
+			bool result = true;
+#ifndef FG_MAX_PERFORMANCE
+
+			// Loop over all the tasks.
+			for (decltype(m_num_tasks) handle = 0; handle < m_num_tasks; ++handle)
+			{
+				// Loop over the task's dependencies.
+				for (auto dependency : m_dependencies[handle])
+				{
+					bool found_dependency = false;
+
+					// Loop over the predecessor tasks.
+					for (decltype(m_num_tasks) prev_handle = 0; prev_handle < handle; ++prev_handle)
+					{
+						const auto& task_type_info = m_data_type_info[prev_handle].get();
+						if (task_type_info == dependency.get())
+						{
+							found_dependency = true;
+						}
+					}
+
+					if (!found_dependency)
+					{
+						LOGW("Framegraph validation: Failed to find dependency {}", dependency.get().name());
+						result = false;
+					}
+				}
+			}
+#endif
+
+			return result;
+		}
+
 		/*! Add a task to the Frame Graph. */
 		/*!
 			This creates a new render task based on a description.
+			The dependencies parameters can contain a list of typeid's of render tasks this task depends on.
+			You can use the FG_DEPS macro as followed: `AddTask<desc, FG_DEPS(OtherTaskData)>`
 			\param desc A description of the render task.
 		*/
 		template<typename T>
-		inline void AddTask(RenderTaskDesc& desc)
+		inline void AddTask(RenderTaskDesc& desc, std::vector<std::reference_wrapper<const std::type_info>> dependencies = {})
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -479,7 +539,7 @@ namespace wr
 			m_execute_funcs.emplace_back(desc.m_execute_func);
 			m_destroy_funcs.emplace_back(desc.m_destroy_func);
 #ifndef FG_MAX_PERFORMANCE
-			m_names.emplace_back(desc.m_name);
+			m_dependencies.emplace_back(dependencies);
 #endif
 			m_types.emplace_back(desc.m_type);
 			m_rt_properties.emplace_back(desc.m_properties);
@@ -671,7 +731,8 @@ namespace wr
 		std::vector<std::reference_wrapper<const std::type_info>> m_data_type_info;
 		/*! Descriptions of the tasks. */
 #ifndef FG_MAX_PERFORMANCE
-		std::vector<const char*> m_names;
+		/*! Stored the dependencies of a task. */
+		std::vector<std::vector<std::reference_wrapper<const std::type_info>>> m_dependencies;
 #endif
 		std::vector<RenderTaskType> m_types;
 		std::vector<std::optional<RenderTargetProperties>> m_rt_properties;
