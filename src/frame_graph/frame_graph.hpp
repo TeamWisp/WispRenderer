@@ -21,12 +21,12 @@
 
 #define EXPAND(x) x // Because msvc handles the preprocessor differently
 #define FG_DEPS(N, ...) EXPAND(FG_DEPS##N(__VA_ARGS__))
-#define FG_DEPS1(a) { typeid(a) }
-#define FG_DEPS2(a, b) { typeid(a), typeid(b) }
-#define FG_DEPS3(a, b, c) { typeid(a), typeid(b), typeid(c) }
-#define FG_DEPS4(a, b, c, d) { typeid(a), typeid(b), typeid(c), typeid(d) }
-#define FG_DEPS5(a, b, c, d, e) { typeid(a), typeid(b), typeid(c), typeid(d), typeid(e) }
-#define FG_DEPS6(a, b, c, d, e, f) { typeid(a), typeid(b), typeid(c), typeid(d), typeid(e), typeid(f) }
+#define FG_DEPS1(A) { typeid(A) }
+#define FG_DEPS2(A, B) { typeid(A), typeid(B) }
+#define FG_DEPS3(A, B, C) { typeid(A), typeid(B), typeid(C) }
+#define FG_DEPS4(A, B, C, D) { typeid(A), typeid(B), typeid(C), typeid(D) }
+#define FG_DEPS5(A, B, C, D, E) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E) }
+#define FG_DEPS6(A, B, C, D, E, F) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E), typeid(F) }
 
 namespace wr
 {
