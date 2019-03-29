@@ -15,11 +15,11 @@ namespace wr
 	{
 		struct Device;
 	};
-
+	
 	class RTDescriptorHeap
 	{
 	public:
-		RTDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 100024);
+		RTDescriptorHeap(wr::d3d12::Device* device, DescriptorHeapType type, uint32_t num_descriptors_per_heap = 5000);
 
 		virtual ~RTDescriptorHeap();
 

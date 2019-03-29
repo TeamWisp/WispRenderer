@@ -8,6 +8,7 @@
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
+#include "resources.hpp"
 #include "scene_emibl.hpp"
 #include "scene_spheres.hpp"
 
@@ -106,13 +107,17 @@ int WispEntry()
 		}
 		if (action == WM_KEYUP && key == VK_F3)
 		{
-			SCENE::resources::model_pool->Defragment();
+			fg_manager::Prev();
 		}
 		if (action == WM_KEYUP && key == VK_F4)
 		{
-			SCENE::resources::model_pool->ShrinkToFit();
+			SCENE::resources::model_pool->Defragment();
 		}
 		if (action == WM_KEYUP && key == VK_F5)
+		{
+			SCENE::resources::model_pool->ShrinkToFit();
+		}
+		if (action == WM_KEYUP && key == VK_F6)
 		{
 			auto model = wr::ModelLoader::m_registered_model_loaders[0]->Load("resources/models/material_ball.fbx");
 
@@ -138,7 +143,7 @@ int WispEntry()
 
 			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
 		}
-		if (action == WM_KEYUP && key == VK_F6)
+		if (action == WM_KEYUP && key == VK_F7)
 		{
 			auto model = wr::ModelLoader::m_registered_model_loaders[0]->Load("resources/models/xbot.fbx");
 

@@ -71,6 +71,7 @@ namespace wr
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::PREF_ENV_MAP),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BRDF_LUT),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW),
+		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE),
 		DESC_RANGE(params::deferred_composition, Type::UAV_RANGE, params::DeferredCompositionE::OUTPUT),
 	);
 
@@ -84,7 +85,6 @@ namespace wr
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
 		})
 	});
-
 
 	//MipMapping Root Signature
 	DESC_RANGE_ARRAY(mip_in_out_ranges,
@@ -233,7 +233,7 @@ namespace wr
 		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
 		PipelineDescription::NumRTVFormats(3),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
-		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
 		PipelineDescription::Depth(true),
 		PipelineDescription::CounterClockwise(false),
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
@@ -245,7 +245,7 @@ namespace wr
 		PipelineDescription::ComputeShader(shaders::deferred_composition_cs),
 		PipelineDescription::RootSignature(root_signatures::deferred_composition),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats({ Format::R8G8B8A8_UNORM }),
+		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 		PipelineDescription::NumRTVFormats(1),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),
@@ -325,21 +325,42 @@ namespace wr
 		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
 	});
 
+	REGISTER(shaders::accumulation, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/accumulation.hlsl"),
+		ShaderDescription::Entry("main"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
 	REGISTER(shaders::rt_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/raytracing.hlsl"),
 		ShaderDescription::Entry("RaygenEntry"),
 		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 	});
 
-	DESC_RANGE_ARRAY(accum_r,
+	DESC_RANGE_ARRAY(post_r,
 		DESC_RANGE(params::post_processing, Type::SRV_RANGE, params::PostProcessingE::SOURCE),
 		DESC_RANGE(params::post_processing, Type::UAV_RANGE, params::PostProcessingE::DEST),
 	);
 
 	REGISTER(root_signatures::post_processing, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({
-			ROOT_PARAM_DESC_TABLE(accum_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM_DESC_TABLE(post_r, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetConstants(params::post_processing, params::PostProcessingE::HDR_SUPPORT)),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+		})
+	});
+
+	DESC_RANGE_ARRAY(accum_r,
+		DESC_RANGE(params::accumulation, Type::SRV_RANGE, params::PostProcessingE::SOURCE),
+		DESC_RANGE(params::accumulation, Type::UAV_RANGE, params::PostProcessingE::DEST),
+	);
+
+	REGISTER(root_signatures::accumulation, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(accum_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetConstants(params::accumulation, params::AccumulationE::FRAME_IDX)),
 		}),
 		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
@@ -352,6 +373,22 @@ namespace wr
 		PipelineDescription::PixelShader(std::nullopt),
 		PipelineDescription::ComputeShader(shaders::post_processing),
 		PipelineDescription::RootSignature(root_signatures::post_processing),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ d3d12::settings::back_buffer_format }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+	});
+
+	REGISTER(pipelines::accumulation, PipelineRegistry) < Vertex2D > (
+	{
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::accumulation),
+		PipelineDescription::RootSignature(root_signatures::accumulation),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
 		PipelineDescription::RTVFormats({ d3d12::settings::back_buffer_format }),
 		PipelineDescription::NumRTVFormats(1),
@@ -427,6 +464,8 @@ namespace wr
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::MATERIALS),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::OFFSETS),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::SKYBOX),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::PREF_ENV_MAP),
+		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::BRDF_LUT),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::IRRADIANCE_MAP),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::TEXTURES),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::GBUFFERS),
@@ -460,14 +499,76 @@ namespace wr
 
 		return lib;
 	}();
+
 	REGISTER(state_objects::rt_hybrid_state_object, RTPipelineRegistry)(
 	{
 		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
 		StateObjectDescription::Library(rt_hybrid_so_library),
-		StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 1)),
+		StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 2)),
 		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
 		StateObjectDescription::MaxRecursionDepth(3),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
+		StateObjectDescription::LocalRootSignatures(std::nullopt),
+	});
+
+	/* ### Path Tracer ### */
+	REGISTER(shaders::path_tracer_lib, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/path_tracer.hlsl"),
+		ShaderDescription::Entry("RaygenEntry"),
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+	});
+
+	DESC_RANGE_ARRAY(path_tracer_ranges,
+		DESC_RANGE(params::path_tracing, Type::UAV_RANGE, params::PathTracingE::OUTPUT),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::INDICES),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::LIGHTS),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::MATERIALS),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::OFFSETS),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::SKYBOX),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::PREF_ENV_MAP),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::BRDF_LUT),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::IRRADIANCE_MAP),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::TEXTURES),
+		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::GBUFFERS),
+		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset),
+	);
+
+	REGISTER(root_signatures::path_tracing_global, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(path_tracer_ranges, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetSRV(params::path_tracing, params::PathTracingE::ACCELERATION_STRUCTURE)),
+			ROOT_PARAM(GetCBV(params::path_tracing, params::PathTracingE::CAMERA_PROPERTIES)),
+			ROOT_PARAM(GetSRV(params::path_tracing, params::PathTracingE::VERTICES)),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+		}),
+		RootSignatureDescription::RTXLocal(true)
+	});
+
+	StateObjectDescription::LibraryDesc path_tracer_so_library = []()
+	{
+		StateObjectDescription::LibraryDesc lib;
+		lib.shader_handle = shaders::path_tracer_lib;
+		lib.exports.push_back(L"RaygenEntry");
+		lib.exports.push_back(L"ReflectionHit");
+		lib.exports.push_back(L"ReflectionMiss");
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
+		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit" });
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
+
+		return lib;
+	}();
+
+	REGISTER(state_objects::path_tracer_state_object, RTPipelineRegistry)(
+	{
+		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
+		StateObjectDescription::Library(path_tracer_so_library),
+		StateObjectDescription::MaxPayloadSize((sizeof(float) * 7) + (sizeof(unsigned int) * 1)),
+		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
+		StateObjectDescription::MaxRecursionDepth(6),
+		StateObjectDescription::GlobalRootSignature(root_signatures::path_tracing_global),
 		StateObjectDescription::LocalRootSignatures(std::nullopt),
 	});
 

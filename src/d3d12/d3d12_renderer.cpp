@@ -846,28 +846,6 @@ namespace wr
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_descriptor(m_render_window.value()->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart());
 
 			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
-
-			float clear_color[] = { 0, 0, 0, 0 };
-
-			m_direct_cmd_list->m_native->ResourceBarrier(1,
-				&CD3DX12_RESOURCE_BARRIER::Transition(
-					m_render_window.value()->m_render_targets[frame_idx],
-					D3D12_RESOURCE_STATE_PRESENT,
-					D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-			m_direct_cmd_list->m_native->ClearRenderTargetView(
-				rtv_descriptor,
-				clear_color,
-				0,
-				nullptr
-			);
-
-
-			m_direct_cmd_list->m_native->ResourceBarrier(1,
-				&CD3DX12_RESOURCE_BARRIER::Transition(
-					m_render_window.value()->m_render_targets[frame_idx],
-					D3D12_RESOURCE_STATE_RENDER_TARGET,
-					D3D12_RESOURCE_STATE_PRESENT));
 		}
 
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)

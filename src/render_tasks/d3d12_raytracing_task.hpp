@@ -8,6 +8,7 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "../d3d12/d3d12_root_signature_registry.hpp"
+
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../engine_registry.hpp"
 #include "../util/math.hpp"
@@ -21,6 +22,8 @@ namespace wr
 {
 	struct RaytracingData
 	{
+		d3d12::AccelerationStructure out_tlas;
+
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
@@ -29,6 +32,8 @@ namespace wr
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
 
 		DescriptorAllocation out_uav_from_rtv;
+
+		bool tlas_requires_init;
 	};
 
 	namespace internal
@@ -114,9 +119,6 @@ namespace wr
 			if (!resize)
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
-
-				cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
@@ -132,6 +134,8 @@ namespace wr
 				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
 
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
+
+				data.tlas_requires_init = true;
 			}
 
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
@@ -153,8 +157,8 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RaytracingData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-
-			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+	
+			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
 
@@ -164,15 +168,12 @@ namespace wr
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
-				auto rtv_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
-				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OUTPUT)), rtv_uav_handle);
-				
+				auto uav_from_rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OUTPUT)), uav_from_rtv_handle);
 				auto scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::INDICES)), scene_ib_handle);
-				
 				auto scene_mat_handle = as_build_data.out_scene_mat_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::MATERIALS)), scene_mat_handle);
-				
 				auto scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)), scene_offset_handle);
 
@@ -290,12 +291,11 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
-				unsigned int verts_loc = rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, verts_loc);
+				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
-#endif
+//#endif
 
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
 			}
