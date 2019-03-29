@@ -33,7 +33,7 @@ namespace wr
 
 		DescriptorAllocation out_uav_from_rtv;
 
-		bool requires_init;
+		bool tlas_requires_init;
 	};
 
 	namespace internal
@@ -119,9 +119,6 @@ namespace wr
 			if (!resize)
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				//auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
-
-				//cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
@@ -138,7 +135,7 @@ namespace wr
 
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
 
-				data.requires_init = true;
+				data.tlas_requires_init = true;
 			}
 
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
@@ -160,22 +157,8 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RaytracingData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-
-			d3d12::DescriptorHeap* heap = cmd_list->m_rt_descriptor_heap->GetHeap();
-
-			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
-			{
-				if (data.requires_init)
-				{
-					data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, heap, as_build_data.out_blas_list);
-
-					data.requires_init = false;
-				}
-				else
-				{
-					d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, heap, as_build_data.out_blas_list);
-				}
-			}
+	
+			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
 

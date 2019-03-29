@@ -41,7 +41,7 @@ namespace wr
 		DescriptorAllocation out_gbuffers;
 		DescriptorAllocation out_depthbuffer;
 
-		bool requires_init;
+		bool tlas_requires_init;
 	};
 
 	namespace internal
@@ -139,7 +139,7 @@ namespace wr
 				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
 
-				data.requires_init = true;
+				data.tlas_requires_init = true;
 			}
 
 			// Get AS build data
@@ -198,21 +198,7 @@ namespace wr
 			auto& data = fg.GetData<PathTracerData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-			d3d12::DescriptorHeap* heap = cmd_list->m_rt_descriptor_heap->GetHeap();
-
-			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
-			{
-				if (data.requires_init)
-				{
-					data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, heap, as_build_data.out_blas_list);
-
-					data.requires_init = false;
-				}
-				else
-				{
-					d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, heap, as_build_data.out_blas_list);
-				}
-			}
+			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
 
 			// Reset accmulation if nessessary
 			if (DirectX::XMVector3Length(DirectX::XMVectorSubtract(scene_graph.GetActiveCamera()->m_position, data.last_cam_pos)).m128_f32[0] > 0.01)
