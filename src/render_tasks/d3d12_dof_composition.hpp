@@ -101,6 +101,8 @@ namespace wr
 	template<typename T, typename T1, typename T2>
 	inline void AddDoFCompositionTask(FrameGraph& frame_graph)
 	{
+		std::wstring name(L"DoF composition");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -113,7 +115,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ d3d12::settings::back_buffer_format}),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
-			RenderTargetProperties::ClearDepth(false)
+			RenderTargetProperties::ClearDepth(false),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;

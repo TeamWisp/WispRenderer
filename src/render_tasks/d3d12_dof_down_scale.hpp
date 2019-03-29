@@ -95,6 +95,8 @@ namespace wr
 		const std::uint32_t m_half_width = (uint32_t)width / 2;
 		const std::uint32_t m_half_height = (uint32_t)height / 2;
 
+		std::wstring name(L"DoF down scale");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -107,7 +109,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT}),
 			RenderTargetProperties::NumRTVFormats(2),
 			RenderTargetProperties::Clear(false),
-			RenderTargetProperties::ClearDepth(false)
+			RenderTargetProperties::ClearDepth(false),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc; 

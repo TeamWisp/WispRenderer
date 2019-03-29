@@ -84,6 +84,8 @@ namespace wr
 		const std::uint32_t m_quarter_width = (uint32_t)width / 4;
 		const std::uint32_t m_quarter_height = (uint32_t)height / 4;
 
+		std::wstring name(L"DoF dilate");
+
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -96,7 +98,8 @@ namespace wr
 			RenderTargetProperties::RTVFormats({wr::Format::R32_FLOAT}),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
-			RenderTargetProperties::ClearDepth(false)
+			RenderTargetProperties::ClearDepth(false),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
