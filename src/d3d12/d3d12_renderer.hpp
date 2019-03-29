@@ -174,6 +174,8 @@ namespace wr
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
 		wr::Model* GetSimpleShape(SimpleShapes type) final;
 
+		bool IsFallback() final;
+
 	public:
 		d3d12::Device* m_device;
 		std::optional<d3d12::RenderWindow*> m_render_window;

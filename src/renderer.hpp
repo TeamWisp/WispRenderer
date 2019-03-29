@@ -80,6 +80,8 @@ namespace wr
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
 		virtual wr::Model* GetSimpleShape(SimpleShapes type) = 0;
 
+		virtual bool IsFallback() = 0;
+
 		std::shared_ptr<ModelPool> m_shapes_pool;
 		wr::Model* m_simple_shapes[COUNT];
 	};
