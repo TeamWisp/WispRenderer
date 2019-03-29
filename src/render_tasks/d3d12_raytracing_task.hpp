@@ -163,15 +163,18 @@ namespace wr
 
 			d3d12::DescriptorHeap* heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
-			if (data.requires_init)
+			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
-				data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, heap, as_build_data.out_blas_list);
+				if (data.requires_init)
+				{
+					data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, heap, as_build_data.out_blas_list);
 
-				data.requires_init = false;
-			}
-			else
-			{
-				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, heap, as_build_data.out_blas_list);
+					data.requires_init = false;
+				}
+				else
+				{
+					d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, heap, as_build_data.out_blas_list);
+				}
 			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
