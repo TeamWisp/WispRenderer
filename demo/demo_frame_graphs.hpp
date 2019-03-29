@@ -69,6 +69,8 @@ namespace fg_manager
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddRaytracingTask(*fg);
 			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
+
+
 			
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
@@ -191,14 +193,26 @@ namespace fg_manager
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-			wr::AddDoFDownScaleTask<wr::PostProcessingData,
-				wr::DoFCoCData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-			wr::AddDoFBokehTask<wr::DoFDownScaleData, wr::DoFCoCData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-			wr::AddDoFCompositionTask<
-				wr::PostProcessingData,
-				wr::DoFBokehPostFilterData,
-				wr::DoFCoCData>(*fg);
+
+			wr::AddDoFDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddDoFDilateTask<wr::DoFCoCData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddDoFBokehTask<wr::DoFDownScaleData, wr::DoFDilateFlattenHData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);

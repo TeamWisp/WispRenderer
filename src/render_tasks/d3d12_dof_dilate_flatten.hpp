@@ -19,9 +19,6 @@ namespace wr
 		ID3D12Resource* out_previous;
 		DescriptorAllocator* out_allocator;
 		DescriptorAllocation out_allocation;
-
-		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
-		D3D12ConstantBufferHandle* cb_handle;
 	};
 
 	namespace internal
@@ -84,14 +81,14 @@ namespace wr
 	template<typename T>
 	inline void AddDoFDilateFlattenTask(FrameGraph& frame_graph, int32_t width, int32_t height)
 	{
-		const std::uint32_t m_half_width = (uint32_t)width / 2;
-		const std::uint32_t m_half_height = (uint32_t)height / 2;
+		const std::uint32_t m_quarter_width = (uint32_t)width / 4;
+		const std::uint32_t m_quarter_height = (uint32_t)height / 4;
 
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(m_half_width),
-			RenderTargetProperties::Height(m_half_height),
+			RenderTargetProperties::Width(m_quarter_width),
+			RenderTargetProperties::Height(m_quarter_height),
 			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),

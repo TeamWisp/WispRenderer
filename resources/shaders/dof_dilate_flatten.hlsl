@@ -9,7 +9,7 @@ SamplerState s0 : register(s0);
 void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
-	source_near.GetDimensions(screen_size.x, screen_size.y);
+	output_near.GetDimensions(screen_size.x, screen_size.y);
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 	float2 texel_size = 1.0f / screen_size;
@@ -23,8 +23,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{
 		float weight = CalcGaussianWeight(i, sigma);
 		weightSum += weight;
-		uv = (screen_coord + 0.5 + float2(0.0f, 1.0f * i)) / screen_size;
-		float4 s = source_near.SampleLevel(s0, uv, 0).xxxx;
+		float2 o_uv = (screen_coord + 0.5f) / screen_size + (float2(0.0f, 1.5f * i) * texel_size) * 2;
+		float4 s = source_near.SampleLevel(s0, o_uv, 0).xxxx;
 		color += s * weight;
 	}
 

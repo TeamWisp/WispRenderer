@@ -34,19 +34,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 texel_size = 1.0 / screen_size;
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 
-	//float3 bokeh = bokeh_far.SampleLevel(s1, uv, 0).rgb;
-	//float bgfg = bokeh_near.SampleLevel(s0, uv, 0).a;
-
-	//float3 original = source.SampleLevel(s0, uv, 0).rgb;
-
-	//float coc = GetDownSampledCoC(uv, texel_size);
-	////float coc = coc_buffer.SampleLevel(s0, uv, 0);
-	//float dofstrength = smoothstep(0.0f, 1.0f, abs(coc));
-
-	//float3 color = lerp(original, bokeh, dofstrength + bgfg - dofstrength * bgfg);
-
 	float coc = GetDownSampledCoC(uv, texel_size);
-	//float coc = coc_buffer.SampleLevel(s0, uv, 0);
 
 	float3 original_sample = source.SampleLevel(s1, uv, 0).rgb;
 	float4 near_sample = bokeh_near.SampleLevel(s1, uv, 0);
@@ -67,6 +55,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float near_blend = saturate(near_sample.w * 2.0f);
 	result = lerp(result, near.rgb, smoothstep(0.0f, 1.0f, near_blend));
-	
+
 	output[int2(dispatch_thread_id.xy)] = float4(result, 1.0f);
 }
