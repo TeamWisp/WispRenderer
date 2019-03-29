@@ -6,14 +6,14 @@ namespace wr
 
 	void CameraNode::SetFov(float deg)
 	{
-		m_fov = deg / 180.0f * 3.1415926535f;
+		m_fov.m_fov = deg / 180.0f * 3.1415926535f;
 		SignalChange();
 	}
 
 	void CameraNode::SetFovFromFocalLength(float aspect_ratio, float filmSize)
 	{
 		float verticalSize = filmSize / aspect_ratio;
-		m_fov = 2.0f * std::atan2(verticalSize, 2.0f * m_focal_length);
+		m_fov.m_fov = 2.0f * std::atan2(verticalSize, 2.0f * m_focal_length);
 		SignalChange();
 	}
 
@@ -40,7 +40,7 @@ namespace wr
 
 		m_view = DirectX::XMMatrixLookToRH(pos, forward, up);
 
-		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
+		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov.m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
 		m_view_projection = m_view * m_projection;
 		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 		m_inverse_view = DirectX::XMMatrixInverse(nullptr, m_view);
