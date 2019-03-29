@@ -1194,6 +1194,11 @@ namespace wr
 		return m_simple_shapes[type];
 	}
 
+	bool D3D12RenderSystem::IsFallback()
+	{
+		return d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK;
+	}
+
 	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)
 	{
 		for (auto& batch : sg.GetBatches())

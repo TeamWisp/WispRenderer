@@ -25,7 +25,7 @@ namespace fg_manager
 		RAYTRACING = 0,
 		DEFERRED = 1,
 		RT_HYBRID = 2,
-		//PATH_TRACER = 3,
+		PATH_TRACER = 3,
 	};
 
 	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
@@ -38,16 +38,17 @@ namespace fg_manager
 			return "Deferred";
 		case PrebuildFrameGraph::RT_HYBRID:
 			return "Hybrid";
-		//case PrebuildFrameGraph::PATH_TRACER:
-		//	return "Path Tracer";
+		case PrebuildFrameGraph::PATH_TRACER:
+			return "Path Tracer";
 		default:
 			return "Unknown";
 		}
 	}
 
+	static bool is_fallback;
+
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
-	//static std::array<wr::FrameGraph*, 4> frame_graphs = {};
-	static std::array<wr::FrameGraph*, 3> frame_graphs = {};
+	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
 	{
@@ -94,44 +95,44 @@ namespace fg_manager
 			fg->Setup(rs);
 		}
 
-		//// Path Tracer
-		//{
-		//	auto& fg = frame_graphs[(int)PrebuildFrameGraph::PATH_TRACER];
-		//	fg = new wr::FrameGraph(10);
+		// Path Tracer
+		{
+			auto& fg = frame_graphs[(int)PrebuildFrameGraph::PATH_TRACER];
+			fg = new wr::FrameGraph(10);
 
-		//	// Precalculate BRDF Lut
-		//	wr::AddBrdfLutPrecalculationTask(*fg);
+			// Precalculate BRDF Lut
+			wr::AddBrdfLutPrecalculationTask(*fg);
 
-		//	wr::AddEquirectToCubemapTask(*fg);
-		//	wr::AddCubemapConvolutionTask(*fg);
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
 
-		//	// Construct the G-buffer
-		//	wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			// Construct the G-buffer
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 
-		//	// Build Acceleration Structure
-		//	wr::AddBuildAccelerationStructuresTask(*fg);
+			// Build Acceleration Structure
+			wr::AddBuildAccelerationStructuresTask(*fg);
 
-		//	// Raytracing task
-		//	//wr::AddRTHybridTask(*fg);
+			// Raytracing task
+			//wr::AddRTHybridTask(*fg);
 
-		//	// Global Illumination Path Tracing
-		//	wr::AddPathTracerTask(*fg);
-		//	wr::AddAccumulationTask<wr::PathTracerData>(*fg);
+			// Global Illumination Path Tracing
+			wr::AddPathTracerTask(*fg);
+			wr::AddAccumulationTask<wr::PathTracerData>(*fg);
 
-		//	wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-		//	// Do some post processing
-		//	wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+			// Do some post processing
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
-		//	// Copy the raytracing pixel data to the final render target
-		//	wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			// Copy the raytracing pixel data to the final render target
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
-		//	// Display ImGui
-		//	fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+			// Display ImGui
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
-		//	// Finalize the frame graph
-		//	fg->Setup(rs);
-		//}
+			// Finalize the frame graph
+			fg->Setup(rs);
+		}
 
 		// Hybrid raytracing
 		{
@@ -185,6 +186,12 @@ namespace fg_manager
 	inline void Next()
 	{
 		current = (PrebuildFrameGraph)(((int)current + 1) % frame_graphs.size());
+
+		if (current == PrebuildFrameGraph::PATH_TRACER
+			&& is_fallback)
+		{
+			Next();
+		}
 	}
 
 	inline void Set(PrebuildFrameGraph value)
