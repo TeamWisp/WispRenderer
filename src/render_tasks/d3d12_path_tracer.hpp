@@ -19,6 +19,8 @@ namespace wr
 {
 	struct PathTracerData
 	{
+		d3d12::AccelerationStructure out_tlas;
+
 		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
@@ -38,6 +40,8 @@ namespace wr
 		DescriptorAllocation out_uav_from_rtv;
 		DescriptorAllocation out_gbuffers;
 		DescriptorAllocation out_depthbuffer;
+
+		bool requires_init;
 	};
 
 	namespace internal
@@ -127,9 +131,6 @@ namespace wr
 			if (!resize)
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				//auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
-
-				//cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
@@ -137,6 +138,8 @@ namespace wr
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
 				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+
+				data.requires_init = true;
 			}
 
 			// Get AS build data
@@ -195,7 +198,18 @@ namespace wr
 			auto& data = fg.GetData<PathTracerData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+			d3d12::DescriptorHeap* heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+
+			if (data.requires_init)
+			{
+				data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, heap, as_build_data.out_blas_list);
+
+				data.requires_init = false;
+			}
+			else
+			{
+				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, heap, as_build_data.out_blas_list);
+			}
 
 			// Reset accmulation if nessessary
 			if (DirectX::XMVector3Length(DirectX::XMVectorSubtract(scene_graph.GetActiveCamera()->m_position, data.last_cam_pos)).m128_f32[0] > 0.01)

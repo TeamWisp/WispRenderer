@@ -65,7 +65,7 @@ namespace wr::d3d12
 
 		WRAPPED_GPU_POINTER CreateFallbackWrappedPointer(
 			Device* device,
-			DescriptorAllocation& versioned_alloc,
+			DescriptorHeap* heap,
 			std::uint32_t index,
 			ID3D12Resource* resource,
 			UINT buffer_num_elements)
@@ -82,13 +82,17 @@ namespace wr::d3d12
 			rawBufferUavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 			rawBufferUavDesc.Buffer.NumElements = buffer_num_elements;
 
+			d3d12::DescHeapCPUHandle bottom_level_descriptor;
+
 			// Only compute fallback requires a valid descriptor index when creating a wrapped pointer.
 			UINT desc_heap_idx = index; // TODO don't hardcode this.
 			if (!device->m_fallback_native->UsingRaytracingDriver())
 			{
 				for (auto frame_idx = 0; frame_idx < 3; frame_idx++)
 				{
-					d3d12::DescHeapCPUHandle bottom_level_descriptor = versioned_alloc.GetDescriptorHandle(frame_idx);
+					// desc_heap_idx = AllocateDescriptor(heap, increment_size, &bottomLevelDescriptor, index);
+					bottom_level_descriptor = d3d12::GetCPUHandle(heap, frame_idx, 0); // TODO: Don't harcode this.
+					d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
 					device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
 				}
 			}
