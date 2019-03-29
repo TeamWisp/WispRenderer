@@ -236,6 +236,12 @@ namespace wr
 			}
 		}
 
+		/*! Resize all render tasks */
+		/*!
+			This function calls resize all render tasks to a specific width and height.
+			The width and height parameters should be the output size.
+			Please note this function calls Destroy than setup with the resize boolean set to true.
+		*/
 		inline void Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height)
 		{
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
