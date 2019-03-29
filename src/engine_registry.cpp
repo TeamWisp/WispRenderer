@@ -639,7 +639,7 @@ namespace wr
 		{
 			StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
 			StateObjectDescription::Library(rt_shadow_so_library),
-			StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 1)),
+			StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 2)),
 			StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
 			StateObjectDescription::MaxRecursionDepth(3),
 			StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
@@ -671,7 +671,7 @@ namespace wr
 		{
 			StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
 			StateObjectDescription::Library(rt_reflection_so_library),
-			StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 1)),
+			StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 2)),
 			StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
 			StateObjectDescription::MaxRecursionDepth(3),
 			StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),

@@ -105,7 +105,7 @@ namespace wr
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
-			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(10));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(11));
 
 			//for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
@@ -125,14 +125,14 @@ namespace wr
 					constexpr auto reflection_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION);
 					auto reflection_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(reflection_id/* + i*/);
 					
-					if (fg.HasTask<wr::RTHybridData>())
-					{
-						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
-						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
-					}
-					else if (fg.HasTask<wr::RTReflectionData>())
+					if (fg.HasTask<wr::RTReflectionData>())
 					{
 						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTReflectionData>());
+						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
+					}
+					else if (fg.HasTask<wr::RTHybridData>())
+					{
+						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
 						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
 					}
 					else
