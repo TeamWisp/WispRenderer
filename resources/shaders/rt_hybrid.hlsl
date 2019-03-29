@@ -176,10 +176,12 @@ void RaygenEntry()
 	}
 	
 	// Get shadow factor
-	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
+	//float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
+	float shadow_result = 1.0f;
 
 	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0);
+	//float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0);
+	float3 reflection_result = float3(1.0f, 0.0f, 0.0f);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
@@ -284,7 +286,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
 
 	//Reflection in reflections
-	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
+	//float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
+	float3 reflection = float3(1.0f, 0.0f, 0.0f);
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;

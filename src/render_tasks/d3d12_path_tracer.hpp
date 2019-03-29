@@ -127,9 +127,9 @@ namespace wr
 			if (!resize)
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
+				//auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
 
-				cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
+				//cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
