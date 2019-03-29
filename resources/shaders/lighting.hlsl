@@ -148,7 +148,7 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
 		// Add shadow factor to final result
-		float shadow_factor = GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed);
+		float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, rand_seed);
 
 		res += shadow_factor;
 	}

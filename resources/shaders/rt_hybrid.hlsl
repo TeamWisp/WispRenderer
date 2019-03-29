@@ -365,14 +365,18 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const float2 sampled_brdf = brdf_lut.SampleLevel(s0, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
 
 	//Lighting
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
+	//float3 lighting = float3(1,1,1);
 
 	//Reflection in reflections
-#ifndef FALLBACK
+//#ifndef FALLBACK
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
+	/*
 #else
 	float3 reflection = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
 #endif
+*/
+
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
