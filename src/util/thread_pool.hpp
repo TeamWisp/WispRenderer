@@ -50,27 +50,6 @@ namespace util
 		decltype(auto) Enqueue(F&& f, Args&&... args);
 		~ThreadPool();
 
-		inline void DivideWork(const std::size_t num_tasks, util::Delegate<void(std::uint64_t)> func)
-		{
-			auto num_threads = m_workers.size();
-			const std::size_t num_tasks_per_thread = num_tasks / num_threads;
-			const std::size_t num_tougher_threads = num_tasks % num_threads;
-
-			const auto ThreadDivider = [&](unsigned int const thread_id)
-			{
-				int index0 = num_tasks_per_thread - (num_threads - thread_id) * num_tasks_per_thread;
-				for (std::size_t index0 = (thread_id < num_tougher_threads ? thread_id * (num_tasks_per_thread + 1) : num_tasks - (num_threads - thread_id) * num_tasks_per_thread), index = index0; index < index0 + num_tasks_per_thread + (thread_id < num_tougher_threads); ++index)
-				{
-					func(index);
-				}
-			};
-
-			for (decltype(num_threads) i = 0; i < num_threads; i++)
-			{
-				ThreadDivider(i);
-			}
-		}
-
 	private:
 		// need to keep track of threads so we can join them
 		std::vector<std::thread> m_workers;
