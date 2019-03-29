@@ -35,7 +35,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 
 	float coc = GetDownSampledCoC(uv, texel_size);
-
+	coc = coc_buffer.SampleLevel(s0, uv, 0);
 	float3 original_sample = source.SampleLevel(s1, uv, 0).rgb;
 	float4 near_sample = bokeh_near.SampleLevel(s1, uv, 0);
 	float4 far_sample = bokeh_far.SampleLevel(s1, uv, 0);

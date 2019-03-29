@@ -13,14 +13,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 	float2 texel_size = 1.0f / screen_size;
-	float2 uv = (screen_coord + 0.5f) / screen_size;
-	static const int SampleRadius = 4;
-	static const int SampleDiameter = SampleRadius * 2 + 1;
+	float2 uv = screen_coord / screen_size;
+	static const int SampleRadius = 2;
+	static const int SampleDiameter = SampleRadius * 2;
 
-	float output = source_near.SampleLevel(s0, uv , 0).x;
-
-	//only sample near coc, negative coc represents near coc.
-	output = max(0, -output);
+	float output = source_near.SampleLevel(s0, uv , 0).a;
 
 	[unroll]
 	for (int y = -SampleRadius; y <= SampleRadius; ++y)
@@ -28,7 +25,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		[unroll]
 		for (int x = -SampleRadius; x <= SampleRadius; ++x)
 		{
-			output = max(output, source_near.SampleLevel(s0, (screen_coord + 0.5f + (float2(x, y)) / screen_size), 0).x);
+			float tmp = source_near.SampleLevel(s0, ((screen_coord + float2(x, y)) / screen_size), 0).a;
+			output = max(output, tmp);
 		}
 	}
 

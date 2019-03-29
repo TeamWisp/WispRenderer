@@ -28,7 +28,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 	float2 texel_size = 1.0f / screen_size;
 
-	float2 uv = screen_coord / screen_size;
+	float2 uv = (screen_coord + 0.5f) / screen_size;
 
 	const uint NUMSAMPLES = NUMDOFSAMPLES * NUMDOFSAMPLES;
 	const float MAXKERNELSIZE = MAXBOKEHSIZE * 0.5f;
@@ -37,12 +37,15 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float4 fgcolor = float4(0, 0, 0, 0);
 	float4 bgcolor = float4(0, 0, 0, 0);
 
+	float masking = 0;
+
 	//BakingLab kernel gather method credits to MJP and David Neubelt.
 	if (enable_dof > 0)
 	{
-		float far_coc = source_far[screen_coord + 0.5f].w;
+		float far_coc = source_far.SampleLevel(s0, uv, 0).w;// [screen_coord + 0.5f].w;
 		float kernel_radius = MAXKERNELSIZE * far_coc;
 		
+		masking = kernel_radius;
 		[branch]
 		if (kernel_radius > 0.5f)
 		{
@@ -53,10 +56,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount);
 				float4 s = source_far.SampleLevel(s0, (screen_coord + 0.5f + kernel_offset * kernel_radius) / screen_size, 0.0f);
-				float samplecoc = s.w * kernel_radius;
+				float samplecoc = s.w ;
 
-				s *= saturate(1.0f + (samplecoc - far_coc));
-				s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.01f), SHAPECURVE) * shape_curve;
+				s *= saturate(0.999f + (samplecoc - far_coc));
+				s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.001f), SHAPECURVE) * shape_curve;
 				bgcolor += s;
 			}
 
@@ -64,15 +67,14 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 		else
 		{
-			bgcolor = source_far.SampleLevel(s0, uv, 0);
+			bgcolor = source_far.SampleLevel(s1, uv, 0);
 		}
 
-		float near_coc = source_near[screen_coord].w;
+		float near_coc = source_near.SampleLevel(s1, uv, 0).w;// [screen_coord + 0.5f].w;
 		float nearMask = SampleTextureBSpline(near_mask, s0, uv).x;
 		nearMask = saturate(nearMask * 1.0f);
 		near_coc = max(near_coc, nearMask);
 		kernel_radius = MAXKERNELSIZE * near_coc;
-
 		[branch]
 		if (kernel_radius > 0.25f)
 		{
@@ -102,11 +104,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 			fgcolor.xyz /= weightsum;
 			fgcolor.w = saturate(fgcolor.w * (1.0f / NUMSAMPLES));
-			fgcolor.w = max(fgcolor.w, source_near[screen_coord].w);
+			fgcolor.w = max(fgcolor.w, near_coc);
 		}
 		else
 		{
-			fgcolor = source_near.SampleLevel(s0, uv, 0);
+			fgcolor = source_near.SampleLevel(s1, uv, 0);
 		}
 		
 	}
