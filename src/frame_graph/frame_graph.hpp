@@ -314,6 +314,36 @@ namespace wr
 			}
 		}
 
+		/*! Wait for a previous task. */
+		/*!
+			This function loops over all tasks and checks whether it has the same type information as the template variable.
+			If a task was found it waits for it.
+			If no task is found with the type specified a nullptr will be returned and a error message send to the logging system.
+			The template parameter should be a Data struct of a the task you want to wait for.
+		*/
+		template<typename T>
+		inline void WaitForPredecessorTask()
+		{
+			static_assert(std::is_class<T>::value ||
+				std::is_floating_point<T>::value ||
+				std::is_integral<T>::value,
+				"The template variable should be a class, struct, floating point value or a integral value.");
+			static_assert(!std::is_pointer<T>::value,
+				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
+
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
+			{
+				if (typeid(T) == m_data_type_info[i])
+				{
+					WaitForCompletion(i);
+					return;
+				}
+			}
+
+			LOGC("Failed to find predecessor data! Please check your task order.");
+			return;
+		}
+
 		/*! Get the data of a task. (Modifyable) */
 		/*!
 			The template variable is used to specify the type of the data structure.
