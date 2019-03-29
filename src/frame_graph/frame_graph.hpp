@@ -577,14 +577,13 @@ namespace wr
 		inline void Setup_MT_Impl(RenderSystem& render_system)
 		{
 			// Multithreading behaviour
-			m_thread_pool->DivideWork(m_multi_threaded_tasks.size(), [&](std::uint64_t index)
+			for (const auto handle : m_multi_threaded_tasks)
 			{
-				const auto handle = m_multi_threaded_tasks[index];
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system]
 				{
 					m_setup_funcs[handle](render_system, *this, handle, false);
 				});
-			});
+			}
 
 			// Singlethreading behaviour
 			for (const auto handle : m_single_threaded_tasks)
@@ -597,17 +596,13 @@ namespace wr
 		inline void Execute_MT_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
 		{
 			// Multithreading behaviour
-			m_thread_pool->DivideWork(m_multi_threaded_tasks.size(), [&](std::uint64_t index)
+			for (const auto handle : m_multi_threaded_tasks)
 			{
-				const auto handle = m_multi_threaded_tasks[index];
-
-				WaitForCompletion(handle);
-
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system, &scene_graph]
 				{
 					ExecuteSingleTask(render_system, scene_graph, handle);
 				});
-			});
+			}
 
 			// Singlethreading behaviour
 			for (const auto handle : m_single_threaded_tasks)
