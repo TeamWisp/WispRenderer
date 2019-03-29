@@ -401,8 +401,8 @@ namespace wr
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
 			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::Clear(false),
+			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(L"Path Tracer")
 		};
 
@@ -423,7 +423,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<PathTracerData>(desc);
+		fg.AddTask<PathTracerData>(desc, FG_DEPS(1, DeferredMainTaskData));
 	}
 
 } /* wr */

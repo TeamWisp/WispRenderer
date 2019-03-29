@@ -125,8 +125,8 @@ namespace wr
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::Clear(false),
+			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(name)
 		};
 
@@ -153,7 +153,7 @@ namespace wr
 		readback_task_description.m_allow_multithreading = false;
 
 		// Save this task to the frame graph system
-		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description);
+		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description, FG_DEPS(1, T));
 	}
 
 } /* wr */

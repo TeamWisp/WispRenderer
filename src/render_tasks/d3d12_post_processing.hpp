@@ -144,7 +144,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<PostProcessingData>(desc);
+		frame_graph.AddTask<PostProcessingData>(desc, FG_DEPS(1, T));
 	}
 
 } /* wr */
