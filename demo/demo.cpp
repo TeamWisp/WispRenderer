@@ -108,13 +108,17 @@ int WispEntry()
 		}
 		if (action == WM_KEYUP && key == VK_F3)
 		{
-			resources::model_pool->Defragment();
+			fg_manager::Prev();
 		}
 		if (action == WM_KEYUP && key == VK_F4)
 		{
-			resources::model_pool->ShrinkToFit();
+			resources::model_pool->Defragment();
 		}
 		if (action == WM_KEYUP && key == VK_F5)
+		{
+			resources::model_pool->ShrinkToFit();
+		}
+		if (action == WM_KEYUP && key == VK_F6)
 		{
 			auto model = wr::ModelLoader::m_registered_model_loaders[0]->Load("resources/models/material_ball.fbx");
 
@@ -140,7 +144,7 @@ int WispEntry()
 
 			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
 		}
-		if (action == WM_KEYUP && key == VK_F6)
+		if (action == WM_KEYUP && key == VK_F7)
 		{
 			auto model = wr::ModelLoader::m_registered_model_loaders[0]->Load("resources/models/xbot.fbx");
 

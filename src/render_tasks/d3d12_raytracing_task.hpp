@@ -8,6 +8,7 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "../d3d12/d3d12_root_signature_registry.hpp"
+
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../engine_registry.hpp"
 #include "../util/math.hpp"
@@ -21,6 +22,8 @@ namespace wr
 {
 	struct RaytracingData
 	{
+		d3d12::AccelerationStructure out_tlas;
+
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
@@ -29,6 +32,8 @@ namespace wr
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
 
 		DescriptorAllocation out_uav_from_rtv;
+
+		bool tlas_requires_init;
 	};
 
 	namespace internal
@@ -114,9 +119,6 @@ namespace wr
 			if (!resize)
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
-
-				cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
@@ -132,6 +134,8 @@ namespace wr
 				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RayTracingCamera_CBData)));
 
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
+
+				data.tlas_requires_init = true;
 			}
 
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
@@ -153,8 +157,8 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RaytracingData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-
-			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+	
+			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
 
@@ -325,8 +329,8 @@ namespace wr
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
 			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::Clear(false),
+			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(name)
 		};
 

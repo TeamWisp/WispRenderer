@@ -22,9 +22,9 @@ namespace fg_manager
 
 	enum class PrebuildFrameGraph
 	{
-		RAYTRACING = 0,
-		DEFERRED = 1,
-		RT_HYBRID = 2,
+		DEFERRED = 0,
+		RT_HYBRID = 1,
+		RAYTRACING = 2,
 		PATH_TRACER = 3,
 	};
 
@@ -32,12 +32,12 @@ namespace fg_manager
 	{
 		switch (id)
 		{
-		case PrebuildFrameGraph::RAYTRACING:
-			return "Full Raytracing";
 		case PrebuildFrameGraph::DEFERRED:
 			return "Deferred";
 		case PrebuildFrameGraph::RT_HYBRID:
 			return "Hybrid";
+		case PrebuildFrameGraph::RAYTRACING:
+			return "Full Raytracing";
 		case PrebuildFrameGraph::PATH_TRACER:
 			return "Path Tracer";
 		default:
@@ -184,6 +184,11 @@ namespace fg_manager
 	inline void Next()
 	{
 		current = (PrebuildFrameGraph)(((int)current + 1) % frame_graphs.size());
+	}
+
+	inline void Prev()
+	{
+		current = (PrebuildFrameGraph)(((int)current - 1) % frame_graphs.size());
 	}
 
 	inline void Set(PrebuildFrameGraph value)

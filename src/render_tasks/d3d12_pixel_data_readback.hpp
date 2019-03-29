@@ -49,7 +49,7 @@ namespace wr
 			d3d12::SetName(data.readback_buffer, L"Pixel data read back render pass");
 
 			// Size of the buffer aligned to a multiple of 256
-			std::uint32_t aligned_buffer_size = SizeAlign(data.readback_buffer_desc.m_buffer_width * bytesPerPixel, 256) * data.readback_buffer_desc.m_buffer_height;
+			std::uint32_t aligned_buffer_size = SizeAlignTwoPower(data.readback_buffer_desc.m_buffer_width * bytesPerPixel, 256) * data.readback_buffer_desc.m_buffer_height;
 
 			// Keep the read back buffer mapped for the duration of the entire application
 			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, aligned_buffer_size));
@@ -105,6 +105,8 @@ namespace wr
 	template<typename T>
 	inline void AddPixelDataReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
+		std::wstring name(L"Pixel Data CPU Readback");
+
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
 		RenderTargetProperties rt_properties{
@@ -117,8 +119,9 @@ namespace wr
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true)
+			RenderTargetProperties::Clear(false),
+			RenderTargetProperties::ClearDepth(false),
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		// Render task information
@@ -139,7 +142,6 @@ namespace wr
 			internal::DestroyPixelDataReadBackTask(frame_graph, handle);
 		};
 
-		readback_task_description.m_name = std::string(std::string("Render target pixel data (") + std::string(typeid(T).name()) + std::string(") read-back task")).c_str();
 		readback_task_description.m_properties = rt_properties;
 		readback_task_description.m_type = RenderTaskType::COPY;
 		readback_task_description.m_allow_multithreading = false;
