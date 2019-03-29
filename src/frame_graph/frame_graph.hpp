@@ -220,9 +220,6 @@ namespace wr
 
 		inline void Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height)
 		{
-			std::uint32_t m_width_scalar = (width * 100000u)  / m_old_window_size_width;
-			std::uint32_t m_height_scalar = (height * 100000u) / m_old_window_size_height;
-
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
 				WaitForCompletion(i);
@@ -230,30 +227,14 @@ namespace wr
 				m_destroy_funcs[i](*this, i, true);
 
 				if (!m_rt_properties[i].value().m_is_render_window)
-				{
-					std::uint32_t m_new_width = width;
-					std::uint32_t m_new_height = height;
-
-					if (m_rt_properties[i].value().m_width.Get().has_value())
-					{
-						std::uint32_t m_cur_width = m_rt_properties[i].value().m_width.Get().value();
-						std::uint32_t m_cur_height = m_rt_properties[i].value().m_height.Get().value();
-
-						if (m_cur_width > 0u && m_cur_height > 0u)
-						{
-							m_new_width = (m_cur_width * m_width_scalar) / 100000u;
-							m_new_height = (m_cur_height * m_height_scalar) / 100000u;
-						}
-					}
-
-					render_system.ResizeRenderTarget(&m_render_targets[i], m_new_width, m_new_height);
+				{		
+					render_system.ResizeRenderTarget(&m_render_targets[i], 
+						width * m_rt_properties[i].value().m_resolution_scale.Get(), 
+						height * m_rt_properties[i].value().m_resolution_scale.Get());
 				}
 
 				m_setup_funcs[i](render_system, *this, i, true);
 			}
-
-			m_old_window_size_width = width;
-			m_old_window_size_height = height;
 		}
 
 		/*! Destroy all tasks */
@@ -701,10 +682,6 @@ namespace wr
 		const std::uint64_t m_uid;
 		static std::uint64_t m_largest_uid;
 		static std::stack<std::uint64_t> m_free_uids;
-
-		/*! Store old resolution for proper rendertarget scaling. */
-		std::uint32_t m_old_window_size_width = 1240;
-		std::uint32_t m_old_window_size_height = 720;
 	};
 
 } /* wr */

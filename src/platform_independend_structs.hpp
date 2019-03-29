@@ -25,6 +25,7 @@ namespace wr
 		using Clear = util::NamedType<bool>;
 		using ClearDepth = util::NamedType<bool>;
 		using ResourceName = util::NamedType<std::wstring>;
+		using ResolutionScalar = util::NamedType<float>;
 
 		IsRenderWindow m_is_render_window;
 		Width m_width;
@@ -35,11 +36,13 @@ namespace wr
 		DSVFormat m_dsv_format;
 		RTVFormats m_rtv_formats;
 		NumRTVFormats m_num_rtv_formats;
+		
 
 		Clear m_clear = Clear(false);
 		ClearDepth m_clear_depth = ClearDepth(false);
 
 		ResourceName m_name = ResourceName(std::wstring());
+		ResolutionScalar m_resolution_scale = ResolutionScalar(1.0f);
 	};
 
 } /* wr */

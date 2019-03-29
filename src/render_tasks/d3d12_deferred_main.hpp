@@ -77,7 +77,7 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(2),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ResourceName(name),
 		};
 
 		RenderTaskDesc desc;
