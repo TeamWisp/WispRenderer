@@ -176,13 +176,11 @@ void RaygenEntry()
 	}
 	
 	// Get shadow factor
-	//float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
-	float shadow_result = 1.0f;
+	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result
-	//float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0);
-	float3 reflection_result = float3(1.0f, 0.0f, 0.0f);
-
+	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0);
+	
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
 }
