@@ -105,8 +105,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float3 wpos = pos + (normal * EPSILON);
 
 	// Offset shadow ray direction to get soft-shadows
-	//float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, rand_seed);
-	float shadow_factor = 1.0f;
+	float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, rand_seed);
 
 	lighting *= shadow_factor;
 

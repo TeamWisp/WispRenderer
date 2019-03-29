@@ -45,8 +45,6 @@ namespace fg_manager
 		}
 	}
 
-	static bool is_fallback;
-
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
 
