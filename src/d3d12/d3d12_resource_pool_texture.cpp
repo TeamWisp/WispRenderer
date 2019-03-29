@@ -640,7 +640,7 @@ namespace wr
 		return texture;
 	}
 
-	d3d12::TextureResource * D3D12TexturePool::LoadPNGFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
+	d3d12::TextureResource * D3D12TexturePool::LoadPNGFromMemory(unsigned char * data, size_t size, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -717,7 +717,7 @@ namespace wr
 		return texture;
 	}
 
-	d3d12::TextureResource * D3D12TexturePool::LoadDDSFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
+	d3d12::TextureResource * D3D12TexturePool::LoadDDSFromMemory(unsigned char * data, size_t size, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -796,7 +796,7 @@ namespace wr
 		return texture;
 	}
 
-	d3d12::TextureResource * D3D12TexturePool::LoadHDRFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
+	d3d12::TextureResource * D3D12TexturePool::LoadHDRFromMemory(unsigned char * data, size_t size, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -872,7 +872,7 @@ namespace wr
 		return texture;
 	}
 
-	d3d12::TextureResource * D3D12TexturePool::LoadRawFromMemory(char * data, int width, int height, bool srgb, bool generate_mips)
+	d3d12::TextureResource * D3D12TexturePool::LoadRawFromMemory(unsigned char * data, int width, int height, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 

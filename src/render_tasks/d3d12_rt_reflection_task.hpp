@@ -19,7 +19,7 @@
 
 namespace wr
 {
-	struct RTShadowData
+	struct RTReflectionData
 	{
 		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
@@ -44,7 +44,7 @@ namespace wr
 	namespace internal
 	{
 
-		inline void CreateShaderTablesShadows(d3d12::Device* device, RTShadowData& data, int frame_idx)
+		inline void CreateShaderTablesReflections(d3d12::Device* device, RTReflectionData& data, int frame_idx)
 		{
 			// Delete existing shader table
 			if (data.out_miss_shader_table[frame_idx])
@@ -65,7 +65,7 @@ namespace wr
 				// Create Record(s)
 				UINT shader_record_count = 1;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowRaygenEntry");
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ReflectionRaygenEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
 
@@ -111,12 +111,12 @@ namespace wr
 			}
 		}
 
-		inline void SetupRTShadowTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
+		inline void SetupRTReflectionTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
 		{
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto& device = n_render_system.m_device;
-			auto& data = fg.GetData<RTShadowData>(handle);
+			auto& data = fg.GetData<RTReflectionData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			d3d12::SetName(n_render_target, L"Raytracing Target");
 
@@ -160,7 +160,7 @@ namespace wr
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_shadow_state_object))->m_native;
+				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_reflection_state_object))->m_native;
 
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
@@ -168,22 +168,22 @@ namespace wr
 			}
 
 			// Create Shader Tables
-			CreateShaderTablesShadows(device, data, 0);
-			CreateShaderTablesShadows(device, data, 1);
-			CreateShaderTablesShadows(device, data, 2);
+			CreateShaderTablesReflections(device, data, 0);
+			CreateShaderTablesReflections(device, data, 1);
+			CreateShaderTablesReflections(device, data, 2);
 
 			// Setup frame index
 			data.frame_idx = 0;
 		}
 
-		inline void ExecuteRTShadowTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
+		inline void ExecuteRTReflectionTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
 		{
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			auto& data = fg.GetData<RTShadowData>(handle);
+			auto& data = fg.GetData<RTReflectionData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
@@ -338,7 +338,7 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, verts_loc);
 
 #ifdef _DEBUG
-				CreateShaderTablesShadows(device, data, frame_idx);
+				CreateShaderTablesReflections(device, data, frame_idx);
 #endif
 
 				// Dispatch hybrid ray tracing rays
@@ -349,9 +349,9 @@ namespace wr
 			}
 		}
 
-		inline void DestroyRTShadowTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void DestroyRTReflectionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& data = fg.GetData<RTShadowData>(handle);
+			auto& data = fg.GetData<RTReflectionData>(handle);
 
 			if (!resize)
 			{
@@ -364,9 +364,9 @@ namespace wr
 
 	} /* internal */
 
-	inline void AddRTShadowTask(FrameGraph& fg)
+	inline void AddRTReflectionTask(FrameGraph& fg)
 	{
-		std::wstring name(L"Hybrid raytracing");
+		std::wstring name(L"Hybrid raytracing reflections");
 
 		RenderTargetProperties rt_properties
 		{
@@ -387,22 +387,22 @@ namespace wr
 		RenderTaskDesc desc;
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			internal::SetupRTShadowTask(rs, fg, handle, resize);
+			internal::SetupRTReflectionTask(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
-			internal::ExecuteRTShadowTask(rs, fg, sg, handle);
+			internal::ExecuteRTReflectionTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			internal::DestroyRTShadowTask(fg, handle, resize);
+			internal::DestroyRTReflectionTask(fg, handle, resize);
 		};
 
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<RTShadowData>(desc);
+		fg.AddTask<RTReflectionData>(desc);
 	}
 
 } /* wr */

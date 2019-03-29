@@ -285,6 +285,25 @@ namespace wr
 			rs_layout::Entry{(int)BasicE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
+		enum class ShadowDenoiserE
+		{
+			SOURCE,
+			DEPTH,
+			KERNEL,
+			DEST,
+			CAMERA_PROPERTIES,
+			DENOISER_PROPERTIES,
+		};
+
+		constexpr std::array<rs_layout::Entry, 6> shadow_denoiser = {
+			rs_layout::Entry{(int)ShadowDenoiserE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::DEPTH, 1,rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::KERNEL, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::DEST, 1,rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::CAMERA_PROPERTIES, 1,rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)ShadowDenoiserE::DENOISER_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
 		enum class DeferredCompositionE
 		{
 			CAMERA_PROPERTIES,
@@ -451,6 +470,7 @@ namespace wr
 	{
 		static RegistryHandle brdf_lut;
 		static RegistryHandle basic;
+		static RegistryHandle shadow_denoiser;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle rt_test_global;
 		static RegistryHandle mip_mapping;
@@ -467,6 +487,7 @@ namespace wr
 		static RegistryHandle basic_vs;
 		static RegistryHandle basic_ps;
 		static RegistryHandle fullscreen_quad_vs;
+		static RegistryHandle shadow_denoiser_cs;
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_hybrid_lib;
@@ -484,6 +505,7 @@ namespace wr
 	{
 		static RegistryHandle brdf_lut_precalculation;
 		static RegistryHandle basic_deferred;
+		static RegistryHandle shadow_denoiser;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle mip_mapping;
 		static RegistryHandle equirect_to_cubemap;

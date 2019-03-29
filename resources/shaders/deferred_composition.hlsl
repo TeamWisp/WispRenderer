@@ -75,13 +75,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float4 shadow_info = buffer_shadow[screen_coord];
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
-		float3 shadow_factor = lerp(
+		float shadow_factor = lerp(
 			// Do deferred shadow (fully lit for now)
-			float3(1.0, 1.0, 1.0),
+			1,
 			// Shadow buffer if its hybrid rendering
-			shadow_info.xyz,
+			shadow_info.r,
 			// Lerp factor (0: no hybrid, 1: hybrid)
-			1);
+			is_hybrid);
 
 
 		// Get reflection
@@ -93,8 +93,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
+
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, sampled_irradiance, reflection, sampled_brdf, shadow_factor);
+
+		retval = shadow_factor;
 	}
 	else
 	{	

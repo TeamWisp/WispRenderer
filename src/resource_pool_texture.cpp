@@ -53,7 +53,7 @@ namespace wr
 		}
 	}
 
-	TextureHandle TexturePool::LoadFromMemory(char * data, int width, int height, TextureType type, bool srgb, bool generate_mips)
+	TextureHandle TexturePool::LoadFromMemory(unsigned char * data, int width, int height, TextureType type, bool srgb, bool generate_mips)
 	{
 		Texture* texture;
 		switch (type) {
@@ -68,8 +68,9 @@ namespace wr
 			break;
 		case TextureType::RAW:
 			texture = LoadRawFromMemory(data, width, height, srgb, generate_mips);
+			break;
 		default:
-			LOGC("Texture {} not loaded. Format not supported.");
+			LOGC("Texture {} not loaded. Format not supported.", "EMBEDDED");
 		}
 
 		uint64_t texture_id = m_id_factory.GetUnusedID();
@@ -83,7 +84,7 @@ namespace wr
 		return texture_handle;
 	}
 
-	TextureHandle TexturePool::LoadFromMemory(char * data, int width, int height, std::string texture_extension, bool srgb, bool generate_mips)
+	TextureHandle TexturePool::LoadFromMemory(unsigned char * data, int width, int height, std::string texture_extension, bool srgb, bool generate_mips)
 	{
 		std::for_each(texture_extension.begin(), texture_extension.end(), [](char & c) {
 			c = ::tolower(c);

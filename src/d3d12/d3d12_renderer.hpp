@@ -45,6 +45,12 @@ namespace wr
 			D3D12_DRAW_INDEXED_ARGUMENTS draw_arguments;
 		};
 
+		struct ShadowDenoiserSettings_CBData
+		{
+			DirectX::XMFLOAT2 m_direction;
+			float m_depth_contrast;
+		};
+
 		struct ProjectionView_CBData
 		{
 			DirectX::XMMATRIX m_view;

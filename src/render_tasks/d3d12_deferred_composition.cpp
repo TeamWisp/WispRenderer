@@ -13,6 +13,8 @@
 #include "../render_tasks/d3d12_cubemap_convolution.hpp"
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "../render_tasks/d3d12_rt_shadow_task.hpp"
+#include "../render_tasks/d3d12_rt_reflection_task.hpp"
+#include "../render_tasks/d3d12_shadow_denoiser_task.hpp"
 
 namespace wr
 {
@@ -85,7 +87,7 @@ namespace wr
 			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::deferred_composition);
 
 			// Check if the current frame graph contains the hybrid task to know if it is hybrid or not.
-			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTHybridData>();
+			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTHybridData>() || fg.HasTask<wr::RTReflectionData>();
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
@@ -98,10 +100,10 @@ namespace wr
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
 			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(10));
 
-			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
+			//for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
 				constexpr auto rtv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS);
-				auto rtv_srv_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rtv_id + (2 * i));
+				auto rtv_srv_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rtv_id /*+ (2 * i)*/);
 
 				constexpr auto dsv_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH);
 				auto dsv_srv_handle = data.out_srv_uav_allocation.GetDescriptorHandle(dsv_id);
@@ -114,11 +116,16 @@ namespace wr
 				if (data.is_hybrid)
 				{
 					constexpr auto reflection_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION);
-					auto reflection_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(reflection_id + i);
+					auto reflection_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(reflection_id/* + i*/);
 					
 					if (fg.HasTask<wr::RTHybridData>())
 					{
 						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
+						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
+					}
+					else if (fg.HasTask<wr::RTReflectionData>())
+					{
+						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTReflectionData>());
 						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
 					}
 					else
@@ -128,10 +135,28 @@ namespace wr
 					}
 
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SHADOW);
-					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + i);
+					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id /*+ i*/);
 
-					auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
-					d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+					if (fg.HasTask<wr::ShadowDenoiserData>())
+					{
+						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::ShadowDenoiserData>());
+						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+					}
+					else if(fg.HasTask<wr::RTShadowData>())
+					{
+						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
+						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+					}
+					else if (fg.HasTask<wr::RTHybridData>())
+					{
+						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
+						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+					}
+					else
+					{
+						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTReflectionData>());
+						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+					}
 				}
 			}
 		}

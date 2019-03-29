@@ -43,7 +43,7 @@ namespace wr
 	namespace internal
 	{
 
-		inline void CreateShaderTables(d3d12::Device* device, RTHybridData& data, int frame_idx)
+		inline void CreateShaderTablesHybrid(d3d12::Device* device, RTHybridData& data, int frame_idx)
 		{
 			// Delete existing shader table
 			if (data.out_miss_shader_table[frame_idx])
@@ -64,7 +64,7 @@ namespace wr
 				// Create Record(s)
 				UINT shader_record_count = 1;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "HybridRaygenEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
 
@@ -167,9 +167,9 @@ namespace wr
 			}
 
 			// Create Shader Tables
-			CreateShaderTables(device, data, 0);
-			CreateShaderTables(device, data, 1);
-			CreateShaderTables(device, data, 2);
+			CreateShaderTablesHybrid(device, data, 0);
+			CreateShaderTablesHybrid(device, data, 1);
+			CreateShaderTablesHybrid(device, data, 2);
 
 			// Setup frame index
 			data.frame_idx = 0;
@@ -337,7 +337,7 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, verts_loc);
 
 #ifdef _DEBUG
-				CreateShaderTables(device, data, frame_idx);
+				CreateShaderTablesHybrid(device, data, frame_idx);
 #endif
 
 				// Dispatch hybrid ray tracing rays

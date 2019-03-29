@@ -206,16 +206,16 @@ void ShadowRaygenEntry()
 	{
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
-		output_refl_shadow[DispatchRaysIndex().xy] = float4(1, 1, 1, 0);
+		output_refl_shadow[DispatchRaysIndex().xy] = float4(1, 1, 1, 1);
 		return;
 	}
 
 	wpos += normal * EPSILON;
 	// Get shadow factor
-	float4 shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
 
 	// xyz: reflection, a: shadow factor
-	output_refl_shadow[DispatchRaysIndex().xy] = float4(shadow_result);
+	output_refl_shadow[DispatchRaysIndex().xy] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
 }
 
 [shader("raygeneration")]
@@ -249,7 +249,7 @@ void ReflectionRaygenEntry()
 	{
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
-		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+		output_refl_shadow[DispatchRaysIndex().xy] = float4(1, 1, 1, 0);
 		return;
 	}
 

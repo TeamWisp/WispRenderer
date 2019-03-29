@@ -9,8 +9,10 @@
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_rt_shadow_task.hpp"
+#include "render_tasks/d3d12_rt_reflection_task.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
+#include "render_tasks/d3d12_shadow_denoiser_task.hpp"
 #include "resources.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_pixel_data_readback.hpp"
@@ -108,8 +110,12 @@ namespace fg_manager
 
 			// Raytracing task
 			//wr::AddRTHybridTask(*fg);
-
+			
 			wr::AddRTShadowTask(*fg);
+
+			wr::AddRTReflectionTask(*fg);
+
+			wr::AddShadowDenoiserTask(*fg, std::nullopt);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
