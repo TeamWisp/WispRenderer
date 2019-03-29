@@ -33,7 +33,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	
 	float2 uv = float2(DTid.xy) / resolution;
 	float gamma = 2.2;
-	float exposure = 1.2;
+	float exposure = 1.0;
 
 	//float3 color = ChromaticAberration(input, uv, 0.001).rgb;
 	float3 color = input[DTid.xy].rgb;
