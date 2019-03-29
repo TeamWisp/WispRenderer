@@ -20,6 +20,8 @@ namespace wr
 {
 	struct RTHybridData
 	{
+		d3d12::AccelerationStructure out_tlas;
+
 		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
@@ -38,6 +40,8 @@ namespace wr
 		DescriptorAllocation out_uav_from_rtv;
 		DescriptorAllocation out_gbuffers;
 		DescriptorAllocation out_depthbuffer;
+
+		bool tlas_requires_init;
 	};
 
 	namespace internal
@@ -122,9 +126,6 @@ namespace wr
 			if (!resize)
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
-
-				cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
 
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
@@ -132,6 +133,8 @@ namespace wr
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+
+				data.tlas_requires_init = true;
 			}
 
 			// Versioning
@@ -185,7 +188,7 @@ namespace wr
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
 
 			// Wait for AS to be built
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));

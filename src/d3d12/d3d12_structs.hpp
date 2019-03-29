@@ -154,6 +154,11 @@ namespace wr::d3d12
 		bool m_dxr_support;
 		RaytracingType m_rt_type;
 		ID3D12RaytracingFallbackDevice* m_fallback_native;
+
+		bool IsFallback() 
+		{
+			return m_rt_type == RaytracingType::FALLBACK;
+		}
 	};
 
 	struct CommandQueue
