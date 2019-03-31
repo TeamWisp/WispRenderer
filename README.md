@@ -5,15 +5,15 @@ We are a group of students from [Breda University of Applied Sciences]([https://
 
 - [Showcase](#showcase)
 
-- [Product overview](#product_overview)
+- [Product overview](#product-overview)
 - [Features](#features)
 - [Contributing](#contributing)
-  - [Setting up your workspace](#setting_up_your_workspace)
-  - [Development pipeline](#development_pipeline)
-  - [Coding standards](#coding_standards)
-  - [Documentation standards](#documentation_standards)
-  - [Code architecture](#code_architecture)
-- [More information](#more_information)
+  - [Setting up your workspace](#setting-up-your-workspace)
+  - [Development pipeline](#development-pipeline)
+  - [Coding standards](#coding-standards)
+  - [Documentation standards](#documentation-standards)
+  - [Code architecture](#code-architecture)
+- [More information](#more-information)
 
 ## Showcase
 
