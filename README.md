@@ -154,4 +154,4 @@ New contributors may find it a bit overwhelming to get started on a project of t
 
 This README is only a summary of the most important things developers should know about the project. It is highly encouraged to have a look at our [Wiki](https://teamwisp.github.io/). It covers all topics mentioned above, and more...
 
-If you made it this far, congratulations! We hope to see you soon in our development server: https://t.co/ReYKQKcaXm
+If you made it this far, congratulations! We hope to see you soon in our development server: https://discordapp.com/invite/KthSUvs
