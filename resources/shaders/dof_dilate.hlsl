@@ -13,7 +13,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 	float2 texel_size = 1.0f / screen_size;
-	float2 uv = screen_coord / screen_size;
+	float2 uv = (screen_coord + 0.5f) / screen_size;
 	static const int SampleRadius = 2;
 	static const int SampleDiameter = SampleRadius * 2;
 
@@ -25,8 +25,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		[unroll]
 		for (int x = -SampleRadius; x <= SampleRadius; ++x)
 		{
-			float tmp = source_near.SampleLevel(s0, ((screen_coord + float2(x, y)) / screen_size), 0).a;
-			output = max(output, tmp);
+			output = max(output, source_near.SampleLevel(s0, ((screen_coord + 0.5f + float2(x, y)) / screen_size), 0).a);
 		}
 	}
 
