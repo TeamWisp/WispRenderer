@@ -3,7 +3,17 @@ We are a group of students from [Breda University of Applied Sciences]([https://
 
 ## Table of contents
 
-[TOC]
+- [Showcase](#showcase)
+
+- [Product overview](#product_overview)
+- [Features](#features)
+- [Contributing](#contributing)
+  - [Setting up your workspace](#setting_up_your_workspace)
+  - [Development pipeline](#development_pipeline)
+  - [Coding standards](#coding_standards)
+  - [Documentation standards](#documentation_standards)
+  - [Code architecture](#code_architecture)
+- [More information](#more_information)
 
 ## Showcase
 
