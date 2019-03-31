@@ -58,8 +58,8 @@ You can find a more detailed list [here](http://teamwisp.github.io/feature_list)
 
 #### Installation
 
-1. Open CMD or Powershell in the installation directory of your choice.
-2. `git clone https://github.com/TeamWisp/Procedural-Ray-Tracing.git` (Clones the repository in a foler named Procedural-Ray-Tracing. To specify a different directory add a space to the end of the command followed by your prefered path).
+1. Open CMD or PowerShell in the installation directory of your choice.
+2. `git clone https://github.com/TeamWisp/Procedural-Ray-Tracing.git` (Clones the repository in a folder named Procedural-Ray-Tracing. To specify a different directory add a space to the end of the command followed by your preferred path).
 3. Run `install.bat`.
 4. The project files are located in `build_[compiler]_[platform]`.
 
@@ -99,7 +99,7 @@ To create a feature branch call `git checkout -b feature_[yourfeaturename]`.
    1. Open pull request into the `development` branch. ([Tutorial](https://help.github.com/articles/about-pull-requests/))
       - Describe changes in detail.
       - Add a bullet point changelog.
-   2. The [build server](http://teamwisp.github.io/build_server) builds the pull request.
+   2. The build server builds the pull request.
 5. **Code review**
    1. Other developers should review code and leave suggestions. ([Tutorial](https://github.com/features/code-review/))
       - No overly complex or clever code.
@@ -136,7 +136,7 @@ No action will be taken against people who brake the build. However if it become
 
 ### Coding standards
 
-This project follows the a modified version of the Lefticus coding standard available on [github](https://gist.github.com/lefticus/10191322) and the [C++ Code Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md).
+This project follows the a modified version of the Lefticus coding standard available on [GitHub](https://gist.github.com/lefticus/10191322) and the [C++ Code Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md).
 
 Please read this page thoroughly before starting on your feature: [https://teamwisp.github.io/code_standards/](https://teamwisp.github.io/code_standards/)
 
