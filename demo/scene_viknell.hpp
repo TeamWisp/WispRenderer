@@ -44,7 +44,7 @@ namespace viknell_scene
 			wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 			wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
-			equirectangular_environment_map = texture_pool->Load("resources/materials/artist_workshop_4k.hdr", false, false);
+			equirectangular_environment_map = texture_pool->Load("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 			// Create Materials
 			mirror_material = material_pool->Create();
