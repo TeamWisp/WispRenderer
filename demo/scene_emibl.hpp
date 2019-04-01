@@ -22,9 +22,7 @@ namespace emibl_scene
 		static wr::Model* cube_model;
 		static wr::Model* plane_model;
 		static wr::Model* test_model;
-
-		static wr::Model* cube_models[10];
-		static wr::Model* material_knobs[10];
+		static wr::Model* material_knob;
 
 		static wr::MaterialHandle rusty_metal_material;
 
@@ -242,57 +240,14 @@ namespace emibl_scene
 						m.second = material_handles[0];
 					}
 
-					//Create the platforms
-					for (size_t i = 0; i < 10; ++i)
-					{
-						cube_models[i] = new wr::Model();
-
-						for (auto& m : cube_model->m_meshes)
-						{
-							cube_models[i]->m_meshes.push_back(std::make_pair(m.first, material_handles[i]));
-							cube_models[i]->m_box[0] = cube_model->m_box[0];
-							cube_models[i]->m_box[1] = cube_model->m_box[1];
-							cube_models[i]->m_box[2] = cube_model->m_box[2];
-							cube_models[i]->m_box[3] = cube_model->m_box[3];
-							cube_models[i]->m_box[4] = cube_model->m_box[4];
-							cube_models[i]->m_box[5] = cube_model->m_box[5];
-							cube_models[i]->m_model_name = cube_model->m_model_name;
-							cube_models[i]->m_model_pool = cube_model->m_model_pool;
-						}
-					}
-
 				}
 
 				{
-					material_knobs[0] = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
-
-					for (auto& m : material_knobs[0]->m_meshes)
+					material_knob = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/material_ball.fbx");
+					for (auto& m : material_knob->m_meshes)
 					{
 						m.second = material_handles[0];
 					}
-				}
-
-				{
-					//Create the material models 
-
-					for (size_t i = 1; i < 10; ++i)
-					{
-						material_knobs[i] = new wr::Model();
-
-						for (auto& m : material_knobs[0]->m_meshes)
-						{
-							material_knobs[i]->m_meshes.push_back(std::make_pair(m.first, material_handles[i]));
-							material_knobs[i]->m_box[0] = material_knobs[0]->m_box[0];
-							material_knobs[i]->m_box[1] = material_knobs[0]->m_box[1];
-							material_knobs[i]->m_box[2] = material_knobs[0]->m_box[2];
-							material_knobs[i]->m_box[3] = material_knobs[0]->m_box[3];
-							material_knobs[i]->m_box[4] = material_knobs[0]->m_box[4];
-							material_knobs[i]->m_box[5] = material_knobs[0]->m_box[5];
-							material_knobs[i]->m_model_name = material_knobs[0]->m_model_name;
-							material_knobs[i]->m_model_pool = material_knobs[0]->m_model_pool;
-						}
-					}
-
 				}
 			}
 		}
@@ -325,19 +280,21 @@ namespace emibl_scene
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition(camera_start_pos);
-		//camera->SetRotation({ -16._deg, 180._deg, 0._deg });
 		camera->SetRotation({ -16._deg, 0._deg, 0._deg });
 		camera->SetSpeed(100.0f);
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
-
 		// Geometry
 		for (size_t i = 0; i < 10; ++i)
 		{
-			models[i] = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knobs[i]);
-			platforms[i] = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::cube_models[i]);
+			std::vector<wr::MaterialHandle> mat_handles(resources::material_knob->m_meshes.size(), resources::material_handles[i]);
+
+			models[i] = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::material_knob);
+			models[i]->SetMaterials(mat_handles);
+			platforms[i] = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::cube_model);
+			platforms[i]->SetMaterials(mat_handles);
 			platforms[i]->SetScale({ 38, 1, 38 });
 		}
 
