@@ -4,7 +4,6 @@
 #include "wisp.hpp"
 #include "window.hpp"
 #include "scene_graph/scene_graph.hpp"
-#include "resources.hpp"
 #include "imgui/imgui.hpp"
 #include "debug_camera.hpp"
 
@@ -40,7 +39,7 @@ namespace viknell_scene
 			wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
 			flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
 
-			wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", false, true);
+			wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
 			wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
 			wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 			wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
