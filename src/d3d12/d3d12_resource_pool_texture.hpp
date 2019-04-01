@@ -81,7 +81,7 @@ namespace wr
 		d3d12::TextureResource* LoadHDRFromMemory(char* data, size_t size, bool srgb, bool generate_mips) final;
 		d3d12::TextureResource* LoadRawFromMemory(char* data, int width, int height, bool srgb, bool generate_mips) final;
 
-		void MoveStagedTextures();
+		void MoveStagedTextures(unsigned int frame_idx);
 		void GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list);
 
 		void GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list);

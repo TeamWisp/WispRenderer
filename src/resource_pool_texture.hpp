@@ -63,7 +63,8 @@ namespace wr
 		virtual Texture* LoadHDRFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
 		virtual Texture* LoadRawFromMemory(char* data, int width, int height, bool srgb, bool generate_mips) = 0;
 
-		std::unordered_map<uint64_t, Texture*> m_unstaged_textures, m_staging_textures, m_staged_textures;
+		std::unordered_map<uint64_t, Texture*> m_unstaged_textures, m_staged_textures;
+		std::vector<std::unordered_map<uint64_t, Texture*>> m_staging_textures;
 
 		std::size_t m_loaded_textures = 0;
 

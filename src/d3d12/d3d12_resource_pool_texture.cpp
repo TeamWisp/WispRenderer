@@ -50,6 +50,8 @@ namespace wr
 	{
 		auto device = m_render_system.m_device;
 
+		m_staging_textures.resize(3);
+
 		//Staging heap
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
@@ -190,7 +192,7 @@ namespace wr
 				GenerateMips(t, cmd_list);
 			}
 
-			MoveStagedTextures();
+			MoveStagedTextures(m_render_system.GetFrameIdx());
 		}
 	}
 
@@ -224,7 +226,9 @@ namespace wr
 			d3d12::Destroy(h);
 		}
 
-		for (auto &elem : m_staging_textures)
+		auto &vec = m_staging_textures[frame_idx];
+
+		for (auto &elem : vec)
 		{
 			auto *tex = (d3d12::TextureResource*) elem.second;
 
@@ -234,7 +238,7 @@ namespace wr
 			((d3d12::TextureResource*)m_staged_textures[elem.first])->m_intermediate = nullptr;
 		}
 
-		m_staging_textures.clear();
+		vec.clear();
 		m_temporary_heaps[frame_idx].clear();
 	}
 
@@ -957,12 +961,12 @@ namespace wr
 		return texture;
 	}
 
-	void D3D12TexturePool::MoveStagedTextures()
+	void D3D12TexturePool::MoveStagedTextures(unsigned int frame_idx)
 	{
 		for (auto itr = m_unstaged_textures.begin(); itr != m_unstaged_textures.end(); ++itr)
 		{
 			m_staged_textures.insert(std::make_pair(itr->first, itr->second));
-			m_staging_textures.insert(std::make_pair(itr->first, itr->second));
+			m_staging_textures[frame_idx].insert(std::make_pair(itr->first, itr->second));
 		}
 
 		m_unstaged_textures.clear();
