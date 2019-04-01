@@ -194,9 +194,6 @@ int WispEntry()
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
-	//Are we on fallback or native
-	fg_manager::is_fallback = render_system->IsFallback();
-
 	fg_manager::Setup(*render_system.get(), &RenderEditor);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)

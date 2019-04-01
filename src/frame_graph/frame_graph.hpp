@@ -15,7 +15,18 @@
 #include "../d3d12/d3d12_settings.hpp"
 #include "../structs.hpp"
 
+#ifndef _DEBUG
 #define FG_MAX_PERFORMANCE
+#endif
+
+#define EXPAND(x) x // Because msvc handles the preprocessor differently
+#define FG_DEPS(N, ...) EXPAND(FG_DEPS##N(__VA_ARGS__))
+#define FG_DEPS1(A) { typeid(A) }
+#define FG_DEPS2(A, B) { typeid(A), typeid(B) }
+#define FG_DEPS3(A, B, C) { typeid(A), typeid(B), typeid(C) }
+#define FG_DEPS4(A, B, C, D) { typeid(A), typeid(B), typeid(C), typeid(D) }
+#define FG_DEPS5(A, B, C, D, E) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E) }
+#define FG_DEPS6(A, B, C, D, E, F) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E), typeid(F) }
 
 namespace wr
 {
@@ -104,7 +115,7 @@ namespace wr
 			reserve(m_data);
 			reserve(m_data_type_info);
 #ifndef FG_MAX_PERFORMANCE
-			reserve(m_names);
+			reserve(m_dependencies);
 #endif
 			reserve(m_types);
 			reserve(m_rt_properties);
@@ -136,6 +147,13 @@ namespace wr
 		*/
 		inline void Setup(RenderSystem& render_system)
 		{
+			bool is_valid = Validate();
+
+			if (!is_valid)
+			{
+				LOGE("Framegraph validation failed. Aborting setup.");
+			}
+
 			// Resize these vectors since we know the end size already.
 			m_cmd_lists.resize(m_num_tasks);
 			m_render_targets.resize(m_num_tasks);
@@ -218,6 +236,12 @@ namespace wr
 			}
 		}
 
+		/*! Resize all render tasks */
+		/*!
+			This function calls resize all render tasks to a specific width and height.
+			The width and height parameters should be the output size.
+			Please note this function calls Destroy than setup with the resize boolean set to true.
+		*/
 		inline void Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height)
 		{
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
@@ -268,7 +292,7 @@ namespace wr
 			m_data.clear();
 			m_data_type_info.clear();
 #ifndef FG_MAX_PERFORMANCE
-			m_names.clear();
+			m_dependencies.clear();
 #endif
 			m_types.clear();
 			m_rt_properties.clear();
@@ -288,6 +312,36 @@ namespace wr
 					future.wait();
 				}
 			}
+		}
+
+		/*! Wait for a previous task. */
+		/*!
+			This function loops over all tasks and checks whether it has the same type information as the template variable.
+			If a task was found it waits for it.
+			If no task is found with the type specified a nullptr will be returned and a error message send to the logging system.
+			The template parameter should be a Data struct of a the task you want to wait for.
+		*/
+		template<typename T>
+		inline void WaitForPredecessorTask()
+		{
+			static_assert(std::is_class<T>::value ||
+				std::is_floating_point<T>::value ||
+				std::is_integral<T>::value,
+				"The template variable should be a class, struct, floating point value or a integral value.");
+			static_assert(!std::is_pointer<T>::value,
+				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
+
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
+			{
+				if (typeid(T) == m_data_type_info[i])
+				{
+					WaitForCompletion(i);
+					return;
+				}
+			}
+
+			LOGC("Failed to find predecessor data! Please check your task order.");
+			return;
 		}
 
 		/*! Get the data of a task. (Modifyable) */
@@ -458,13 +512,55 @@ namespace wr
 			return false;
 		}
 
+		/*! Validates the frame graph for correctness */
+		/*!
+			This function uses the dependencies to check whether the frame graph is constructed properly by the user.
+			Note: This function only works when `FG_MAX_PERFORMANCE` is defined.
+		*/
+		bool Validate()
+		{
+			bool result = true;
+#ifndef FG_MAX_PERFORMANCE
+
+			// Loop over all the tasks.
+			for (decltype(m_num_tasks) handle = 0; handle < m_num_tasks; ++handle)
+			{
+				// Loop over the task's dependencies.
+				for (auto dependency : m_dependencies[handle])
+				{
+					bool found_dependency = false;
+
+					// Loop over the predecessor tasks.
+					for (decltype(m_num_tasks) prev_handle = 0; prev_handle < handle; ++prev_handle)
+					{
+						const auto& task_type_info = m_data_type_info[prev_handle].get();
+						if (task_type_info == dependency.get())
+						{
+							found_dependency = true;
+						}
+					}
+
+					if (!found_dependency)
+					{
+						LOGW("Framegraph validation: Failed to find dependency {}", dependency.get().name());
+						result = false;
+					}
+				}
+			}
+#endif
+
+			return result;
+		}
+
 		/*! Add a task to the Frame Graph. */
 		/*!
 			This creates a new render task based on a description.
+			The dependencies parameters can contain a list of typeid's of render tasks this task depends on.
+			You can use the FG_DEPS macro as followed: `AddTask<desc, FG_DEPS(OtherTaskData)>`
 			\param desc A description of the render task.
 		*/
 		template<typename T>
-		inline void AddTask(RenderTaskDesc& desc)
+		inline void AddTask(RenderTaskDesc& desc, std::vector<std::reference_wrapper<const std::type_info>> dependencies = {})
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -479,7 +575,7 @@ namespace wr
 			m_execute_funcs.emplace_back(desc.m_execute_func);
 			m_destroy_funcs.emplace_back(desc.m_destroy_func);
 #ifndef FG_MAX_PERFORMANCE
-			m_names.emplace_back(desc.m_name);
+			m_dependencies.emplace_back(dependencies);
 #endif
 			m_types.emplace_back(desc.m_type);
 			m_rt_properties.emplace_back(desc.m_properties);
@@ -556,14 +652,13 @@ namespace wr
 		inline void Setup_MT_Impl(RenderSystem& render_system)
 		{
 			// Multithreading behaviour
-			m_thread_pool->DivideWork(m_multi_threaded_tasks.size(), [&](std::uint64_t index)
+			for (const auto handle : m_multi_threaded_tasks)
 			{
-				const auto handle = m_multi_threaded_tasks[index];
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system]
 				{
 					m_setup_funcs[handle](render_system, *this, handle, false);
 				});
-			});
+			}
 
 			// Singlethreading behaviour
 			for (const auto handle : m_single_threaded_tasks)
@@ -576,17 +671,13 @@ namespace wr
 		inline void Execute_MT_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
 		{
 			// Multithreading behaviour
-			m_thread_pool->DivideWork(m_multi_threaded_tasks.size(), [&](std::uint64_t index)
+			for (const auto handle : m_multi_threaded_tasks)
 			{
-				const auto handle = m_multi_threaded_tasks[index];
-
-				WaitForCompletion(handle);
-
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system, &scene_graph]
 				{
 					ExecuteSingleTask(render_system, scene_graph, handle);
 				});
-			});
+			}
 
 			// Singlethreading behaviour
 			for (const auto handle : m_single_threaded_tasks)
@@ -676,7 +767,8 @@ namespace wr
 		std::vector<std::reference_wrapper<const std::type_info>> m_data_type_info;
 		/*! Descriptions of the tasks. */
 #ifndef FG_MAX_PERFORMANCE
-		std::vector<const char*> m_names;
+		/*! Stored the dependencies of a task. */
+		std::vector<std::vector<std::reference_wrapper<const std::type_info>>> m_dependencies;
 #endif
 		std::vector<RenderTaskType> m_types;
 		std::vector<std::optional<RenderTargetProperties>> m_rt_properties;
