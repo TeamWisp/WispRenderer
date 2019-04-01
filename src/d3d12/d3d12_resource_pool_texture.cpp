@@ -432,19 +432,21 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+    adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
+
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
 
 		d3d12::desc::TextureDesc desc;
 
@@ -511,21 +513,23 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
-		Format adjusted_format;
+    Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+    adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
+
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
 
 		d3d12::desc::TextureDesc desc;
 
@@ -589,21 +593,23 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
-		Format adjusted_format;
+    Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+    adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
+
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
 
 		d3d12::desc::TextureDesc desc;
 
@@ -666,21 +672,23 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
-		Format adjusted_format;
+    Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+    adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
+
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
 
 		d3d12::desc::TextureDesc desc;
 
@@ -745,21 +753,23 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
-		Format adjusted_format;
+    Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+    adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
+
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
 
 		d3d12::desc::TextureDesc desc;
 
@@ -821,21 +831,23 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
-		Format adjusted_format;
+    Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
+    adjusted_format = static_cast<wr::Format>(metadata.format);
 
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		//if (srgb)
+		//{
+		//	adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
+		//}
+		//else
+		//{
+		//	adjusted_format = static_cast<wr::Format>(metadata.format);
+
+		//	if (d3d12::CheckSRGBFormat(adjusted_format))
+		//	{
+		//		adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+		//	}
+		//}
 
 		d3d12::desc::TextureDesc desc;
 
@@ -896,11 +908,6 @@ namespace wr
 		else
 		{
 			adjusted_format = static_cast<wr::Format>(DXGI_FORMAT_R8G8B8A8_UNORM);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
 		}
 
 		d3d12::desc::TextureDesc desc;
