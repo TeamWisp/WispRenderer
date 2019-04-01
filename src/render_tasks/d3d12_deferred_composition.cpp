@@ -14,6 +14,7 @@
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "../render_tasks/d3d12_path_tracer.hpp"
 #include "../render_tasks/d3d12_accumulation.hpp"
+#include "../render_tasks/d3d12_rtao_task.hpp"
 
 namespace wr
 {
@@ -124,7 +125,16 @@ namespace wr
 					
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
 					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
-				}
+				
+					if (RTAOData::is_active)
+					{
+						constexpr auto ao_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_AO);
+						auto ao_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(ao_id + (2 * i));
+
+						auto ao_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTAOData>());
+						d3d12::CreateSRVFromRTV(ao_buffer, ao_handle, 1, ao_buffer->m_create_info.m_rtv_formats.data());
+					}			
+				}				
 			}
 		}
 
@@ -152,6 +162,7 @@ namespace wr
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
 				camera_data.m_is_hybrid = data.is_hybrid;
 				camera_data.m_is_path_tracer = data.is_path_tracer;
+				camera_data.m_ao_enabled = RTAOData::is_active;
 
 				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &camera_data);
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);

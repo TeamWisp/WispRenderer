@@ -3,7 +3,6 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_constant_buffer_pool.hpp"
-#include "d3d12_deferred_main.hpp"
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
@@ -15,12 +14,13 @@
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
-#include "../imgui_tools.hpp"
+//#include "../imgui_tools.hpp"
 
 namespace wr
 {
 	struct RTAOData
 	{
+		inline static bool is_active = true;
 		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_miss_shader_table = { nullptr, nullptr, nullptr };
@@ -136,9 +136,8 @@ namespace wr
 			//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
 
 			auto deferred_main_rt = data.in_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-			d3d12::CreateSRVFromRTV(deferred_main_rt, gbuffers_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data());
+			d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, gbuffers_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
 			d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
-
 
 			if (!resize)
 			{
@@ -186,7 +185,7 @@ namespace wr
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::OUTPUT)), out_uav_handle);
 
-				auto in_scene_gbuffers_handle1 = data.in_gbuffers.GetDescriptorHandle(0);
+				auto in_scene_gbuffers_handle1 = data.in_gbuffers.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_gbuffers_handle1);
 
 				auto in_scene_depth_handle = data.in_depthbuffer.GetDescriptorHandle();
@@ -210,7 +209,7 @@ namespace wr
 				cam_data.m_intensity = n_render_system.temp_intensity;
 				cam_data.m_shadows_enabled = camera->m_shadows_enabled;
 				cam_data.m_reflections_enabled = camera->m_reflections_enabled;
-				cam_data.m_ao_enabled = camera->m_ao_enabled;
+				//TODO: Should use ProjectionView_CBData or not?
 
 				n_render_system.m_camera_pool->Update(data.in_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 

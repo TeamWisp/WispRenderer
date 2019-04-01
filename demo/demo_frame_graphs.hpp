@@ -151,8 +151,12 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
-
-			wr::AddAOTask(*fg);
+			
+			//Ambient Occlusion task
+			if (wr::RTAOData::is_active)
+			{
+				wr::AddAOTask(*fg);
+			}
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 

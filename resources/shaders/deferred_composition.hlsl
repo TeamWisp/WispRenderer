@@ -28,8 +28,11 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
 	float4x4 inv_projection;
 	float4x4 inv_view;
+	float3 padding;
+
 	uint is_hybrid;
 	uint is_path_tracer;
+	uint ao_enabled;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -108,7 +111,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Sample from irradiance if it IS NOT hybrid rendering
 			irradiance,
 			// Irradiance and ao buffer if it IS hybrid rendering
-			irradiance,// * gbuffer_AO[screen_coord].x,	
+			irradiance * gbuffer_AO[screen_coord].x,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 

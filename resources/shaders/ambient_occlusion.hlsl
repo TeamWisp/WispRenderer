@@ -32,7 +32,7 @@ float3 unpack_position(float2 uv, float depth)
 {
 	// Get world space position
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-	float4 wpos = ndc;//mul(inv_vp, ndc);
+	float4 wpos = mul(inv_vp, ndc);
 	return (wpos.xyz / wpos.w).xyz;
 }
 
@@ -52,9 +52,9 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 		Scene,
 		RAY_FLAG_NONE,
 		~0, // InstanceInclusionMask
-		1, // RayContributionToHitGroupIndex
+		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
-		1, // miss shader index is set to idx but can probably be anything.
+		0, // miss shader index is set to idx but can probably be anything.
 		ray,
 		payload);
 
@@ -65,7 +65,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 [shader("raygeneration")]
 void AORaygenEntry()
 {
-    uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, 0);
+    uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
@@ -82,7 +82,7 @@ void AORaygenEntry()
     float aoValue = 1.0f;
     for(uint i = 0; i< spp; i++)
     {
-        aoValue -= (1.0f/float(spp)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), 0.25f, 1);
+        aoValue -= (1.0f/float(spp)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), 25.f, 0);
     }
 
     output[DispatchRaysIndex().xy].x = aoValue;

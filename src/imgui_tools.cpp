@@ -19,8 +19,11 @@
 #include "d3d12/d3d12_pipeline_registry.hpp"
 #include "imgui/ImGuizmo.h"
 
+
 namespace wr::imgui::internal
 {
+	struct RTAOData;
+
 	template <typename T>
 	inline std::string ConvertPointerToStringAddress(const T* obj)
 	{

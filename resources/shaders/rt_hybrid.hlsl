@@ -62,13 +62,12 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float3 padding;
+	//float3 padding;
 	float frame_idx;
 	float intensity;
 
 	uint shadows_enabled;
 	uint reflections_enabled;
-	uint ao_enabled;
 };
 
 struct Ray
@@ -128,7 +127,7 @@ float3 unpack_position(float2 uv, float depth)
 {
 	// Get world space position
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-	float4 wpos =ndc;// mul(inv_vp, ndc);
+	float4 wpos = mul(inv_vp, ndc);
 	return (wpos.xyz / wpos.w).xyz;
 }
 
@@ -201,14 +200,6 @@ void RaygenEntry()
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
-
-	//Store the AO value in the GBuffer
-	float aoValue = 1.0f;
-	if(ao_enabled == 1)
-	{
-	//	aoValue = DoAmbientOcclusion(normal, wpos, 32, 0.25f, rand_seed);
-	}
-   	//output_ao[DispatchRaysIndex().xy].x = aoValue;
 }
 
 //Reflections

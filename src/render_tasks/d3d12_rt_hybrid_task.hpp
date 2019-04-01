@@ -204,8 +204,6 @@ namespace wr
 				// Bind output, indices and materials, offsets, etc
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
-				//out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
-				//d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
@@ -310,7 +308,6 @@ namespace wr
 				cam_data.m_frame_idx = ++data.frame_idx;
 				cam_data.m_shadows_enabled = camera->m_shadows_enabled;
 				cam_data.m_reflections_enabled = camera->m_reflections_enabled;
-				cam_data.m_ao_enabled = camera->m_ao_enabled;
 
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
