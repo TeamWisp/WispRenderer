@@ -233,6 +233,7 @@ namespace wr
 
 					auto& batch = m_batches[mesh_materials_pair];
 					batch.batch_buffer = object_buffer;
+					batch.m_materials = node->GetMaterials();
 					batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
 					
 					if (obj == m_objects.end()) {
@@ -245,6 +246,7 @@ namespace wr
 
 				//Replace data in buffer
 				temp::MeshBatch& batch = it->second;
+				batch.m_materials = node->GetMaterials();
 
 				if (GetActiveCamera()->InView(node) || !d3d12::settings::enable_object_culling) 
 				{

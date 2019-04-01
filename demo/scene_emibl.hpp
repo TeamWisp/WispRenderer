@@ -106,7 +106,7 @@ namespace emibl_scene
 				// Create Material
 				rusty_metal_material = material_pool->Create();
 
-				wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material.m_id);
+				wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material);
 
 				rusty_metal_internal->SetAlbedo(metal_splotchy_albedo);
 				rusty_metal_internal->SetNormal(metal_splotchy_normal);
@@ -116,7 +116,7 @@ namespace emibl_scene
 				// Create Material
 				material_handles[0] = material_pool->Create();
 
-				wr::Material* mahogfloor_material_internal = material_pool->GetMaterial(material_handles[0].m_id);
+				wr::Material* mahogfloor_material_internal = material_pool->GetMaterial(material_handles[0]);
 
 				mahogfloor_material_internal->SetAlbedo(mahogfloor_albedo);
 				mahogfloor_material_internal->SetNormal(mahogfloor_normal);
@@ -126,7 +126,7 @@ namespace emibl_scene
 				// Create Material
 				material_handles[1] = material_pool->Create();
 
-				wr::Material* red_black_pattern_internal = material_pool->GetMaterial(material_handles[1].m_id);
+				wr::Material* red_black_pattern_internal = material_pool->GetMaterial(material_handles[1]);
 
 				red_black_pattern_internal->SetAlbedo(red_black_albedo);
 				red_black_pattern_internal->SetNormal(red_black_normal);
@@ -136,7 +136,7 @@ namespace emibl_scene
 				// Create Material
 				material_handles[2] = material_pool->Create();
 
-				wr::Material* metal_material_internal = material_pool->GetMaterial(material_handles[2].m_id);
+				wr::Material* metal_material_internal = material_pool->GetMaterial(material_handles[2]);
 
 				metal_material_internal->SetAlbedo(metal_albedo);
 				metal_material_internal->SetNormal(metal_normal);
@@ -145,7 +145,7 @@ namespace emibl_scene
 
 				material_handles[3] = material_pool->Create();
 
-				wr::Material* brick_tiles_mat_internal = material_pool->GetMaterial(material_handles[3].m_id);
+				wr::Material* brick_tiles_mat_internal = material_pool->GetMaterial(material_handles[3]);
 
 				brick_tiles_mat_internal->SetAlbedo(brick_tiles_albedo);
 				brick_tiles_mat_internal->SetNormal(brick_tiles_normal);
@@ -154,7 +154,7 @@ namespace emibl_scene
 
 				material_handles[4] = material_pool->Create();
 
-				wr::Material* leather_material_internal = material_pool->GetMaterial(material_handles[4].m_id);
+				wr::Material* leather_material_internal = material_pool->GetMaterial(material_handles[4]);
 
 				leather_material_internal->SetAlbedo(leather_albedo);
 				leather_material_internal->SetNormal(leather_normal);
@@ -163,7 +163,7 @@ namespace emibl_scene
 
 				material_handles[5] = material_pool->Create();
 
-				wr::Material* blue_tiles_material_internal = material_pool->GetMaterial(material_handles[5].m_id);
+				wr::Material* blue_tiles_material_internal = material_pool->GetMaterial(material_handles[5]);
 
 				blue_tiles_material_internal->SetAlbedo(blue_tiles_albedo);
 				blue_tiles_material_internal->SetNormal(blue_tiles_normal);
@@ -172,7 +172,7 @@ namespace emibl_scene
 
 				material_handles[6] = material_pool->Create();
 
-				wr::Material* gold_material_internal = material_pool->GetMaterial(material_handles[6].m_id);
+				wr::Material* gold_material_internal = material_pool->GetMaterial(material_handles[6]);
 
 				gold_material_internal->SetAlbedo(gold_albedo);
 				gold_material_internal->SetNormal(gold_normal);
@@ -181,7 +181,7 @@ namespace emibl_scene
 
 				material_handles[7] = material_pool->Create();
 
-				wr::Material* marble_material_internal = material_pool->GetMaterial(material_handles[7].m_id);
+				wr::Material* marble_material_internal = material_pool->GetMaterial(material_handles[7]);
 
 				marble_material_internal->SetAlbedo(marble_albedo);
 				marble_material_internal->SetNormal(marble_normal);
@@ -190,7 +190,7 @@ namespace emibl_scene
 
 				material_handles[8] = material_pool->Create();
 
-				wr::Material* floreal_tiles_internal = material_pool->GetMaterial(material_handles[8].m_id);
+				wr::Material* floreal_tiles_internal = material_pool->GetMaterial(material_handles[8]);
 
 				floreal_tiles_internal->SetAlbedo(floreal_tiles_albedo);
 				floreal_tiles_internal->SetNormal(floreal_tiles_normal);
@@ -199,7 +199,7 @@ namespace emibl_scene
 
 				material_handles[9] = material_pool->Create();
 
-				wr::Material* bw_tiles_internal = material_pool->GetMaterial(material_handles[9].m_id);
+				wr::Material* bw_tiles_internal = material_pool->GetMaterial(material_handles[9]);
 
 				bw_tiles_internal->SetAlbedo(bw_tiles_albedo);
 				bw_tiles_internal->SetNormal(bw_tiles_normal);

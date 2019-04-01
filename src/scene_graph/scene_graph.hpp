@@ -60,6 +60,7 @@ namespace wr
 			unsigned int num_instances = 0, num_global_instances = 0;
 			ConstantBufferHandle* batch_buffer;
 			MeshBatch_CBData data;
+			std::vector<MaterialHandle> m_materials;
 		};
 
 		using BatchKey = std::pair<Model*, std::vector<MaterialHandle>>;

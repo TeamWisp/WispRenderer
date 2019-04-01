@@ -95,7 +95,7 @@ namespace wr
 				{
 					material_id = data.out_materials.size();
 
-					auto* material_internal = material_handle.m_pool->GetMaterial(material_handle.m_id);
+					auto* material_internal = material_handle.m_pool->GetMaterial(material_handle);
 
 					// Build material
 					wr::temp::RayTracingMaterial_CBData material;
@@ -201,9 +201,16 @@ namespace wr
 					data.out_scene_ib = ib;
 					data.out_scene_vb = vb;
 
-					for (auto& mesh : model->m_meshes)
+					for (std::size_t mesh_i = 0; mesh_i < model->m_meshes.size(); mesh_i++)
 					{
+						auto mesh = model->m_meshes[mesh_i];
 						auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
+
+						auto material_handle = mesh.second;
+						if (materials.size() > mesh_i)
+						{
+							material_handle = materials[mesh_i];
+						}
 
 						d3d12::desc::GeometryDesc obj;
 						obj.index_buffer = ib;
@@ -222,9 +229,9 @@ namespace wr
 
 						data.blasses.insert({ mesh.first->id, blas });
 
-						data.out_material_handles.push_back(mesh.second); // Used to st eal the textures from the texture pool.
+						data.out_material_handles.push_back(material_handle); // Used to st eal the textures from the texture pool.
 
-						auto material_id = ExtractMaterialFromMesh(data, mesh.second);
+						auto material_id = ExtractMaterialFromMesh(data, material_handle);
 
 						AppendOffset(data, n_mesh, material_id);
 
@@ -354,9 +361,17 @@ namespace wr
 					auto materials = batch.first.second;
 					auto n_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 
-					for (auto& mesh : model->m_meshes)
+					for (std::size_t mesh_i = 0; mesh_i < model->m_meshes.size(); mesh_i++)
 					{
+						auto mesh = model->m_meshes[mesh_i];
 						auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
+
+						// Pick the standard material or if available a user defined material.
+						auto material_handle = mesh.second;
+						if (materials.size() > mesh_i)
+						{
+							material_handle = materials[mesh_i];
+						}
 						
 						std::unordered_map<uint64_t, d3d12::AccelerationStructure>::iterator blas_iterator = data.blasses.find(mesh.first->id);
 
@@ -372,7 +387,7 @@ namespace wr
 							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::VERTEX_AND_CONSTANT_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 							d3d12::Transition(cmd_list, n_model_pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
-							BuildBLASSingle(device, cmd_list, model, mesh, data);
+							BuildBLASSingle(device, cmd_list, model, { mesh.first, material_handle }, data);
 
 							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 							d3d12::Transition(cmd_list, n_model_pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
@@ -384,7 +399,7 @@ namespace wr
 
 						auto blas = (*blas_iterator).second;
 
-						auto material_id = ExtractMaterialFromMesh(data, mesh.second);
+						auto material_id = ExtractMaterialFromMesh(data, material_handle);
 
 						AppendOffset(data, n_mesh, material_id);
 

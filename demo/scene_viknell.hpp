@@ -49,7 +49,7 @@ namespace viknell_scene
 			// Create Materials
 			mirror_material = material_pool->Create();
 
-			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material.m_id);
+			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material);
 
 			mirror_internal->SetAlbedo(white);
 			mirror_internal->SetNormal(flat_normal);
@@ -61,7 +61,7 @@ namespace viknell_scene
 			mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
 
 			bamboo_material = material_pool->Create();
-			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material.m_id);
+			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material);
 
 			bamboo_material_internal->SetAlbedo(bamboo_albedo);
 			bamboo_material_internal->SetNormal(bamboo_normal);
@@ -129,6 +129,8 @@ namespace viknell_scene
 		test_model->SetPosition({0, -1, 0});
 		test_model->SetRotation({0, 180_deg, 0});
 		test_model->SetScale({0.01f,0.01f,0.01f});
+
+		left_wall->AddMaterial(resources::mirror_material);
 
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{1, 1, 1});

@@ -43,7 +43,7 @@ namespace spheres_scene
 			// Create Materials
 			spheres_material = material_pool->Create();
 
-			wr::Material* spheres_material_internal = material_pool->GetMaterial(spheres_material.m_id);
+			wr::Material* spheres_material_internal = material_pool->GetMaterial(spheres_material);
 
 			spheres_material_internal->SetAlbedo(spheres_albedo);
 			spheres_material_internal->SetNormal(spheres_normal);
