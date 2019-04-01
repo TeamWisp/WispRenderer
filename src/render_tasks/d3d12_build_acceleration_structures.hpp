@@ -192,10 +192,11 @@ namespace wr
 
 				for (auto& batch : batches)
 				{
-					auto n_model_pool = static_cast<D3D12ModelPool*>(batch.first->m_model_pool);
+					auto model = batch.first.first;
+					auto materials = batch.first.second;
+					auto n_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 					auto vb = n_model_pool->GetVertexStagingBuffer();
 					auto ib = n_model_pool->GetIndexStagingBuffer();
-					auto model = batch.first;
 
 					data.out_scene_ib = ib;
 					data.out_scene_vb = vb;
@@ -227,7 +228,7 @@ namespace wr
 
 						AppendOffset(data, n_mesh, material_id);
 
-						auto it = batchInfo.find(batch.first);
+						auto it = batchInfo.find({ model, materials });
 
 						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
 
@@ -295,7 +296,8 @@ namespace wr
 
 				for (auto& batch : batches)
 				{
-					auto model = batch.first;
+					auto model = batch.first.first;
+					auto materials = batch.first.second;
 
 					bool model_pool_loaded = false;
 
@@ -348,8 +350,9 @@ namespace wr
 				// Update transformations
 				for (auto& batch : batches)
 				{
-					auto n_model_pool = static_cast<D3D12ModelPool*>(batch.first->m_model_pool);
-					auto model = batch.first;
+					auto model = batch.first.first;
+					auto materials = batch.first.second;
+					auto n_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 
 					for (auto& mesh : model->m_meshes)
 					{
@@ -385,7 +388,7 @@ namespace wr
 
 						AppendOffset(data, n_mesh, material_id);
 
-						auto it = batchInfo.find(batch.first);
+						auto it = batchInfo.find({ model, materials });
 
 						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
 

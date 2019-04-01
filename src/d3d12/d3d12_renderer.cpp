@@ -959,7 +959,8 @@ namespace wr
 		//Render batches
 		for (auto& elem : batches)
 		{
-			Model* model = elem.first;
+			auto model = elem.first.first;
+			auto materials = elem.first.second;
 			temp::MeshBatch& batch = elem.second;
 
 			// Execute Indirect Pipeline
