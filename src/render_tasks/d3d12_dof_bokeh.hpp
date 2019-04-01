@@ -97,8 +97,6 @@ namespace wr
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
-			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(sg.GetActiveCamera()->m_camera_cb);
-
 			Bokeh_CB cb_data;
 			cb_data.m_f_number = sg.GetActiveCamera()->m_f_number;
 			cb_data.m_shape = sg.GetActiveCamera()->m_shape_amt;

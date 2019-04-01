@@ -27,7 +27,7 @@ float GetCoC(float lineardepth, float focusdist)
 	//// Convert to pixels
 	coc = (coc / film_size) * screen_size.x;
 
-	coc = clamp(coc / (MAXBOKEHSIZE * 0.5f), -1.f, 1.f);
+	coc = clamp(coc / MAXBOKEHSIZE, -1.f, 1.f);
 	return coc * enable_dof;
 }
 
