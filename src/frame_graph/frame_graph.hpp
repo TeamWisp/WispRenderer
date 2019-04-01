@@ -250,7 +250,7 @@ namespace wr
 
 				m_destroy_funcs[i](*this, i, true);
 
-				if (!m_rt_properties[i].value().m_is_render_window && m_rt_properties[i].value().m_height.Get().has_value())
+				if (!m_rt_properties[i].value().m_is_render_window)
 				{
 					render_system.ResizeRenderTarget(&m_render_targets[i],
 						width * m_rt_properties[i].value().m_resolution_scale.Get(),
