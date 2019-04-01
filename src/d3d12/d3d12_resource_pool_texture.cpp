@@ -169,8 +169,11 @@ namespace wr
 
 				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
 
-				free(texture->m_allocated_memory);
-				texture->m_allocated_memory = nullptr;
+				if (texture->m_allocated_memory)
+				{
+					free(texture->m_allocated_memory);
+					texture->m_allocated_memory = nullptr;
+				}
 
 				texture->m_is_staged = true;
 
@@ -221,6 +224,17 @@ namespace wr
 			d3d12::Destroy(h);
 		}
 
+		for (auto &elem : m_staging_textures)
+		{
+			auto *tex = (d3d12::TextureResource*) elem.second;
+
+			if(tex->m_intermediate)
+				SAFE_RELEASE(tex->m_intermediate);
+
+			((d3d12::TextureResource*)m_staged_textures[elem.first])->m_intermediate = nullptr;
+		}
+
+		m_staging_textures.clear();
 		m_temporary_heaps[frame_idx].clear();
 	}
 
@@ -397,8 +411,13 @@ namespace wr
 		m_staged_textures.erase(texture_id);
 
 		SAFE_RELEASE(texture->m_resource);
-		SAFE_RELEASE(texture->m_intermediate);
-		if(texture->m_allocated_memory != nullptr) free( texture->m_allocated_memory);
+
+		if(texture->m_intermediate)
+			SAFE_RELEASE(texture->m_intermediate);
+
+		if(texture->m_allocated_memory != nullptr) 
+			free(texture->m_allocated_memory);
+
 		delete texture;
 	}
 
@@ -943,6 +962,7 @@ namespace wr
 		for (auto itr = m_unstaged_textures.begin(); itr != m_unstaged_textures.end(); ++itr)
 		{
 			m_staged_textures.insert(std::make_pair(itr->first, itr->second));
+			m_staging_textures.insert(std::make_pair(itr->first, itr->second));
 		}
 
 		m_unstaged_textures.clear();
