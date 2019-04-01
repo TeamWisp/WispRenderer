@@ -128,22 +128,15 @@ namespace engine
 				sg->GetActiveCamera()->SignalChange();
 			}
 
-			ImGui::End();
-		}
+			ImGui::MenuItem("Enable DOF", nullptr, &sg->GetActiveCamera()->m_enable_dof);
+			ImGui::DragFloat("F number", &sg->GetActiveCamera()->m_f_number, 1.f, 1.f, 128.f);
+			ImGui::DragFloat("Film size", &sg->GetActiveCamera()->m_film_size, 1.f, 25.f, 100.f);
+			ImGui::DragFloat("Bokeh Shape amount", &sg->GetActiveCamera()->m_shape_amt, 0.005f, 0.f, 2.f);
+			ImGui::DragInt("Aperture blades", &sg->GetActiveCamera()->m_aperture_blades, 1, 3, 7);
+			ImGui::DragFloat("Focal Length", &sg->GetActiveCamera()->m_focal_length, 1.f, 1.f, 300.f);
+			ImGui::DragFloat("Focal plane distance", &sg->GetActiveCamera()->m_focus_dist, 1.f, 0.f, 1000.f);
 
-		{
-			ImGui::Begin("IBL Testing Ground");
-
-			auto mirror_internal = resources::mirror_material.m_pool->GetMaterial(resources::mirror_material.m_id);
-
-			float roughness = mirror_internal->GetConstantRoughness();
-			float metallic = mirror_internal->GetConstantMetallic().x;
-
-			ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f);
-			ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f);
-
-			mirror_internal->SetConstantRoughness(roughness);
-			mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(metallic, metallic, metallic));
+			sg->GetActiveCamera()->SetFovFromFocalLength(sg->GetActiveCamera()->m_aspect_ratio, sg->GetActiveCamera()->m_film_size);
 
 			ImGui::End();
 		}
