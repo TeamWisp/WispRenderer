@@ -293,11 +293,12 @@ namespace wr
 
 			ModelMaterialData* material = data->m_materials[i];
 
-			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
+			// This lambda loads a texture either from memory or from disc.
+			auto load_material_texture = [&](auto texture_location, auto embedded_texture_idx, bool srgb, bool gen_mips)
 			{
-				if (material->m_albedo_texture_location==TextureLocation::EMBEDDED)
+				if (texture_location == TextureLocation::EMBEDDED)
 				{
-					EmbeddedTexture* texture = data->m_embedded_textures[material->m_albedo_embedded_texture];
+					EmbeddedTexture* texture = data->m_embedded_textures[embedded_texture_idx];
 
 					if (texture->m_compressed)
 					{
@@ -308,10 +309,15 @@ namespace wr
 						albedo = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
-				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
+				else if (material->m_albedo_texture_location == TextureLocation::EXTERNAL)
 				{
 					albedo = texture_pool->LoadFromFile(dir + material->m_albedo_texture, true, true);
 				}
+			};
+
+			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
+			{
+				load_material_texture(material->m_albedo_texture_location, material->m_albedo_embedded_texture, true, true);
 			}
 			else
 			{
@@ -320,23 +326,7 @@ namespace wr
 
 			if (material->m_normal_map_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				if (material->m_normal_map_texture_location == TextureLocation::EMBEDDED)
-				{
-					EmbeddedTexture* texture = data->m_embedded_textures[material->m_normal_map_embedded_texture];
-
-					if (texture->m_compressed)
-					{
-						normals = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
-					}
-					else
-					{
-						normals = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
-					}
-				}
-				else if (material->m_normal_map_texture_location == TextureLocation::EXTERNAL)
-				{
-					normals = texture_pool->LoadFromFile(dir + material->m_normal_map_texture, false, true);
-				}
+				load_material_texture(material->m_normal_map_texture_location, material->m_normal_map_embedded_texture, false, true);
 			}
 			else
 			{
@@ -345,23 +335,7 @@ namespace wr
 
 			if (material->m_metallic_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				if (material->m_metallic_texture_location == TextureLocation::EMBEDDED)
-				{
-					EmbeddedTexture* texture = data->m_embedded_textures[material->m_metallic_embedded_texture];
-
-					if (texture->m_compressed)
-					{
-						metallic = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
-					}
-					else
-					{
-						metallic = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
-					}
-				}
-				else if (material->m_metallic_texture_location == TextureLocation::EXTERNAL)
-				{
-					metallic = texture_pool->LoadFromFile(dir + material->m_metallic_texture, false, true);
-				}
+				load_material_texture(material->m_metallic_texture_location, material->m_metallic_embedded_texture, false, true);
 			}
 			else
 			{
@@ -370,23 +344,7 @@ namespace wr
 
 			if (material->m_roughness_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				if (material->m_roughness_texture_location == TextureLocation::EMBEDDED)
-				{
-					EmbeddedTexture* texture = data->m_embedded_textures[material->m_roughness_embedded_texture];
-
-					if (texture->m_compressed)
-					{
-						roughness = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
-					}
-					else
-					{
-						roughness = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
-					}
-				}
-				else if (material->m_roughness_texture_location == TextureLocation::EXTERNAL)
-				{
-					roughness = texture_pool->LoadFromFile(dir + material->m_roughness_texture, false, true);
-				}
+				load_material_texture(material->m_roughness_texture_location, material->m_roughness_embedded_texture, false, true);
 			}
 			else
 			{
@@ -395,23 +353,7 @@ namespace wr
 
 			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				if (material->m_ambient_occlusion_texture_location == TextureLocation::EMBEDDED)
-				{
-					EmbeddedTexture* texture = data->m_embedded_textures[material->m_ambient_occlusion_embedded_texture];
-
-					if (texture->m_compressed)
-					{
-						ambient_occlusion = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
-					}
-					else
-					{
-						ambient_occlusion = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
-					}
-				}
-				else if (material->m_ambient_occlusion_texture_location == TextureLocation::EXTERNAL)
-				{
-					ambient_occlusion = texture_pool->LoadFromFile(dir + material->m_ambient_occlusion_texture, false, false);
-				}
+				load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, false, true);
 			}
 			else
 			{
@@ -423,7 +365,7 @@ namespace wr
 			float opacity = material->m_base_transparency;
 
 			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, false, true);
-			Material* mat = material_pool->GetMaterial(new_handle.m_id);
+			Material* mat = material_pool->GetMaterial(new_handle);
 
 			mat->SetConstantAlbedo(material->m_base_color);
 			mat->SetConstantAlpha(material->m_base_transparency);

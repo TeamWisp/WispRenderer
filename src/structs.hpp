@@ -31,14 +31,14 @@ namespace wr
 		MaterialPool* m_pool;
 		uint64_t m_id;
 
-		bool operator==(MaterialHandle& rhs)
+		friend bool operator ==(MaterialHandle const & lhs, MaterialHandle const & rhs)
 		{
-			return m_pool == rhs.m_pool && m_id == rhs.m_id;
+			return lhs.m_pool == rhs.m_pool && lhs.m_id == rhs.m_id;
 		}
 
-		bool operator!=(MaterialHandle& rhs)
+		friend bool operator!=(MaterialHandle const& lhs, MaterialHandle const& rhs)
 		{
-			return m_pool != rhs.m_pool || m_id != rhs.m_id;
+			return lhs.m_pool != rhs.m_pool || lhs.m_id != rhs.m_id;
 		}
 	};
 

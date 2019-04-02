@@ -48,8 +48,7 @@ namespace viknell_scene
 
 			// Create Materials
 			mirror_material = material_pool->Create();
-
-			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material.m_id);
+			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material);
 
 			mirror_internal->SetAlbedo(white);
 			mirror_internal->SetNormal(flat_normal);
@@ -61,7 +60,7 @@ namespace viknell_scene
 			mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
 
 			bamboo_material = material_pool->Create();
-			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material.m_id);
+			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material);
 
 			bamboo_material_internal->SetAlbedo(bamboo_albedo);
 			bamboo_material_internal->SetNormal(bamboo_normal);
@@ -69,18 +68,8 @@ namespace viknell_scene
 			bamboo_material_internal->SetMetallic(bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			for (auto& m : plane_model->m_meshes)
-			{
-				m.second = bamboo_material;
-			}
-
 			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
-		
-			for (auto& m : sphere_model->m_meshes)
-			{
-				m.second = mirror_material;
-			}
 		}
 
 		void ReleaseResources()
@@ -116,19 +105,26 @@ namespace viknell_scene
 		auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
 		floor->SetPosition({0, -1, 0});
 		floor->SetRotation({90_deg, 0, 0});
+		floor->AddMaterial(resources::bamboo_material);
 		sphere->SetPosition({1, -1, -1});
 		sphere->SetScale({0.6f, 0.6f, 0.6f});
+		sphere->AddMaterial(resources::mirror_material);
 		roof->SetPosition({0, 1, 0});
 		roof->SetRotation({-90_deg, 0, 0});
+		roof->AddMaterial(resources::bamboo_material);
 		back_wall->SetPosition({0, 0, -1});
 		back_wall->SetRotation({0, 180_deg, 0});
+		back_wall->AddMaterial(resources::bamboo_material);
 		left_wall->SetPosition({-1, 0, 0});
 		left_wall->SetRotation({0, -90_deg, 0});
+		left_wall->AddMaterial(resources::bamboo_material);
 		right_wall->SetPosition({1, 0, 0});
 		right_wall->SetRotation({0, 90_deg, 0});
+		right_wall->AddMaterial(resources::bamboo_material);
 		test_model->SetPosition({0, -1, 0});
 		test_model->SetRotation({0, 180_deg, 0});
 		test_model->SetScale({0.01f,0.01f,0.01f});
+
 
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{1, 1, 1});
