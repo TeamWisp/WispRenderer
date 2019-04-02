@@ -7,6 +7,8 @@
 
 #include "d3d12_descriptors_allocations.hpp"
 
+#include "DirectXTex.h"
+
 namespace wr::d3d12
 {
 	struct TextureResource : Texture
@@ -24,6 +26,9 @@ namespace wr::d3d12
 		std::vector<ResourceState> m_subresource_states;
 		DescriptorAllocation m_srv_allocation;
 		DescriptorAllocation m_uav_allocation;
+
+		std::vector<D3D12_SUBRESOURCE_DATA> m_subresources;
+		DirectX::ScratchImage* image;
 
 		//This allocation can be either 1 or 6 continous descriptors based on m_is_cubemap
 		std::optional<DescriptorAllocation> m_rtv_allocation = std::nullopt;

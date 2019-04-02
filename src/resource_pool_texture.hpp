@@ -55,9 +55,8 @@ namespace wr
 
 	protected:
 
-		virtual Texture* LoadPNG(std::string_view path, bool srgb, bool generate_mips) = 0;
-		virtual Texture* LoadDDS(std::string_view path, bool srgb, bool generate_mips) = 0;
-		virtual Texture* LoadHDR(std::string_view path, bool srgb, bool generate_mips) = 0;
+		virtual Texture* LoadFromFile(std::string_view path, bool srgb, bool generate_mips) = 0;
+
 		virtual Texture* LoadPNGFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
 		virtual Texture* LoadDDSFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
 		virtual Texture* LoadHDRFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;

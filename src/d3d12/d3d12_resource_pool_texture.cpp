@@ -138,36 +138,55 @@ namespace wr
 				decltype(d3d12::Device::m_native) n_device;
 				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
 
-				std::uint32_t num_subresources = texture->m_array_size * texture->m_mip_levels;
+				//std::uint32_t num_subresources = texture->m_array_size * texture->m_mip_levels;
 
-				std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints;
-				footprints.resize(num_subresources);
-				std::vector<UINT> num_rows;
-				num_rows.resize(num_subresources);
-				std::vector<UINT64> row_sizes;
-				row_sizes.resize(num_subresources);
-				UINT64 total_size;
+				//std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints;
+				//footprints.resize(num_subresources);
+				//std::vector<UINT> num_rows;
+				//num_rows.resize(num_subresources);
+				//std::vector<UINT64> row_sizes;
+				//row_sizes.resize(num_subresources);
+				//UINT64 total_size;
 
-				D3D12_RESOURCE_DESC desc = texture->m_resource->GetDesc();
-				n_device->GetCopyableFootprints(&desc, 0, num_subresources, 0, &footprints[0], &num_rows[0], &row_sizes[0], &total_size);
+				//D3D12_RESOURCE_DESC desc = texture->m_resource->GetDesc();
+				//n_device->GetCopyableFootprints(&desc, 0, num_subresources, 0, &footprints[0], &num_rows[0], &row_sizes[0], &total_size);
 
-				std::vector<D3D12_SUBRESOURCE_DATA> subresource_data;
-				subresource_data.resize(num_subresources);
+				//std::vector<D3D12_SUBRESOURCE_DATA> subresource_data;
+				//subresource_data.resize(num_subresources);
 
-				for (uint32_t i = 0; i < num_subresources; ++i)
+				//for (uint32_t i = 0; i < num_subresources; ++i)
+				//{
+				//	D3D12_SUBRESOURCE_FOOTPRINT& footprint = footprints[i].Footprint;
+
+				//	size_t row_pitch, slice_pitch;
+
+				//	DirectX::ComputePitch(footprint.Format, footprint.Width, footprint.Height, row_pitch, slice_pitch);
+
+				//	subresource_data[i].pData = texture->m_allocated_memory + footprints[i].Offset;
+				//	subresource_data[i].RowPitch = row_pitch;
+				//	subresource_data[i].SlicePitch = slice_pitch;
+				//}
+
+				//UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
+				
+
+				DirectX::ScratchImage* image = texture->image;
+
+				texture->m_subresources.resize(image->GetImageCount());
+				const DirectX::Image* pImages = image->GetImages();
+				for (int i = 0; i < image->GetImageCount(); ++i)
 				{
-					D3D12_SUBRESOURCE_FOOTPRINT& footprint = footprints[i].Footprint;
-
-					size_t row_pitch, slice_pitch;
-
-					DirectX::ComputePitch(footprint.Format, footprint.Width, footprint.Height, row_pitch, slice_pitch);
-
-					subresource_data[i].pData = texture->m_allocated_memory + footprints[i].Offset;
-					subresource_data[i].RowPitch = row_pitch;
-					subresource_data[i].SlicePitch = slice_pitch;
+					auto& subresource = texture->m_subresources[i];
+					subresource.RowPitch = pImages[i].rowPitch;
+					subresource.SlicePitch = pImages[i].slicePitch;
+					subresource.pData = pImages[i].pixels;
 				}
 
-				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
+
+				std::vector<D3D12_SUBRESOURCE_DATA> subresources = texture->m_subresources;
+				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, 0, static_cast<uint32_t>(subresources.size()), subresources.data());
+
+				delete image;
 
 				free(texture->m_allocated_memory);
 				texture->m_allocated_memory = nullptr;
@@ -407,12 +426,12 @@ namespace wr
 		auto device = m_render_system.m_device;
 
 		DirectX::TexMetadata metadata;
-		DirectX::ScratchImage image;
+		DirectX::ScratchImage* image = new DirectX::ScratchImage;
 
 		std::wstring wide_string(path.begin(), path.end());
 
 		HRESULT hr = LoadFromWICFile(wide_string.c_str(),
-			DirectX::WIC_FLAGS_NONE, &metadata, image);
+			DirectX::WIC_FLAGS_NONE, &metadata, *image);
 
 		if (FAILED(hr))
 		{
@@ -461,7 +480,8 @@ namespace wr
 
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
-		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		//memcpy(texture->m_allocated_memory, image->GetPixels(), image->GetPixelsSize());
+		texture->image = image;
 
 		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
@@ -486,12 +506,12 @@ namespace wr
 		auto device = m_render_system.m_device;
 
 		DirectX::TexMetadata metadata;
-		DirectX::ScratchImage image;
+		DirectX::ScratchImage* image = new DirectX::ScratchImage;
 
 		std::wstring wide_string(path.begin(), path.end());
 
 		HRESULT hr = LoadFromDDSFile(wide_string.c_str(),
-			DirectX::DDS_FLAGS_NONE, &metadata, image);
+			DirectX::DDS_FLAGS_NONE, &metadata, *image);
 
 		if (FAILED(hr))
 		{
@@ -542,7 +562,8 @@ namespace wr
 
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
-		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		//memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		texture->image = image;
 
 		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
@@ -567,11 +588,11 @@ namespace wr
 		auto device = m_render_system.m_device;
 
 		DirectX::TexMetadata metadata;
-		DirectX::ScratchImage image;
+		DirectX::ScratchImage* image = new DirectX::ScratchImage;
 
 		std::wstring wide_string(path.begin(), path.end());
 
-		HRESULT hr = LoadFromHDRFile(wide_string.c_str(), &metadata, image);
+		HRESULT hr = LoadFromHDRFile(wide_string.c_str(), &metadata, *image);
 
 		if (FAILED(hr))
 		{
@@ -620,7 +641,9 @@ namespace wr
 
 		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
 
-		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		//memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		texture->image = image;
+
 
 		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
@@ -937,6 +960,25 @@ namespace wr
 
 		return texture;
 	}
+
+
+	d3d12::TextureResource* D3D12TexturePool::LoadFromFile(std::string_view path, bool srgb, bool generate_mips)
+	{
+
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
 
 	void D3D12TexturePool::MoveStagedTextures()
 	{
