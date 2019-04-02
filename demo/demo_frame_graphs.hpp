@@ -1,6 +1,7 @@
 #pragma once
 
 #include "frame_graph/frame_graph.hpp"
+#include "settings.hpp"
 #include "render_tasks/d3d12_imgui_render_task.hpp"
 #include "render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "render_tasks/d3d12_deferred_main.hpp"
@@ -236,7 +237,7 @@ namespace fg_manager
 	inline void UpdateIfTasksChanged(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
 	{
 		bool should_update = enabled_effects.ao != rs.m_effects_enabled.m_ao;
-		if (should_update)
+		if (should_update && !wr::settings::use_multithreading) //Currently not working with multithreading, should probably be fixed once we have time
 		{
 			Setup(rs, imgui_func);
 
