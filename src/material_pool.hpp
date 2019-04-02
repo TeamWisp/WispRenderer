@@ -42,8 +42,6 @@ namespace wr
 		MAX_OFFSET = 7
 	};
 
-	//TODO: Double sided and alpha constant
-
 	class Material
 	{
 	public:
