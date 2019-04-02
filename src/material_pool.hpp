@@ -10,6 +10,7 @@
 
 #include "structs.hpp"
 #include "util/defines.hpp"
+#include "util/log.hpp"
 #include "id_factory.hpp"
 #include "constant_buffer_pool.hpp"
 
@@ -69,7 +70,7 @@ namespace wr
 		void GetConstant(MaterialConstantType type, float(&val)[s]);
 		
 		template<uint16_t s>
-		void SetConstant(MaterialConstantType type, float(val)[s]);
+		void SetConstant(MaterialConstantType type, float(&val)[s]);
 
 		void SetConstant(MaterialConstantType type, float val);
 		void GetConstant(MaterialConstantType type, float &val);
@@ -126,7 +127,7 @@ namespace wr
 
 		union {
 
-			TextureHandle m_textures[size_t(MaterialTextureType::COUNT)];
+			TextureHandle m_textures[size_t(MaterialTextureType::COUNT)]{};
 
 			struct {
 				TextureHandle m_albedo;
@@ -191,22 +192,22 @@ namespace wr
 	template<uint16_t s>
 	void Material::GetConstant(MaterialConstantType type, float(&val)[s])
 	{
-		uint16_t offset = uint16_t(type >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
-		uint16_t count(type);
+		uint16_t offset = (uint16_t(type) >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
+		uint16_t count = uint16_t(type);
 
-		if (s >= count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
+		if (s > count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
 			LOGC("Material constant out of bounds");
 
 		memcpy(val, m_material_data.m_constant_data + offset, count * sizeof(float));
 	}
 
 	template<uint16_t s>
-	void Material::SetConstant(MaterialConstantType type, float(val)[s])
+	void Material::SetConstant(MaterialConstantType type, float(&val)[s])
 	{
-		uint16_t offset = uint16_t(type >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
-		uint16_t count(type);
+		uint16_t offset = (uint16_t(type) >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
+		uint16_t count = uint16_t(type);
 
-		if (s >= count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
+		if (s > count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
 			LOGC("Material constant out of bounds");
 
 		memcpy(m_material_data.m_constant_data + offset, val, count * sizeof(float));

@@ -99,10 +99,10 @@ namespace wr
 
 					// Build material
 					wr::temp::RayTracingMaterial_CBData material;
-					material.albedo_id = material_internal->GetAlbedo().m_id;
-					material.normal_id = material_internal->GetNormal().m_id;
-					material.roughness_id = material_internal->GetRoughness().m_id;
-					material.metallicness_id = material_internal->GetMetallic().m_id;
+					material.albedo_id = material_internal->GetTexture(wr::MaterialTextureType::ALBEDO).m_id;
+					material.normal_id = material_internal->GetTexture(wr::MaterialTextureType::NORMAL).m_id;
+					material.roughness_id = material_internal->GetTexture(wr::MaterialTextureType::ROUGHNESS).m_id;
+					material.metallicness_id = material_internal->GetTexture(wr::MaterialTextureType::METALLIC).m_id;
 					material.material_data = material_internal->GetMaterialData();
 					int x = sizeof(wr::temp::RayTracingMaterial_CBData);
 					int y = sizeof(DirectX::XMVECTOR);

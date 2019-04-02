@@ -68,7 +68,8 @@ namespace wr
 	}
 
 	void Material::SetConstant(MaterialConstantType type, float val) {
-		SetConstant(type, { val });
+		float arr[1] = { val };
+		SetConstant(type, arr);
 	}
 
 	void Material::GetConstant(MaterialConstantType type, float &val) {
