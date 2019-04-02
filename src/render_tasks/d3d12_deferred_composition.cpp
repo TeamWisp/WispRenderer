@@ -73,7 +73,7 @@ namespace wr
 			d3d12::SetShaderSRV(cmd_list, 1, sp_irradiance, sp_irradiance_handle);
 
 			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
-			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output_index);
+			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
 			d3d12::SetShaderUAV(cmd_list, 1, output, output_handle);
 
 			d3d12::Dispatch(cmd_list,
