@@ -17,15 +17,31 @@ struct aiMaterial;
 
 namespace wr
 {
-	enum class MaterialPBR : unsigned int
+	enum class MaterialTextureType : size_t
 	{
-		ALBEDO = 0,
+		ALBEDO,
 		NORMAL,
 		ROUGHNESS,
 		METALLIC,
-
+		AO,
 		COUNT
 	};
+
+	//u32 type = { u16 offset (in floats), u16 size (in floats) }
+	enum class MaterialConstantType : uint32_t
+	{
+		COLOR = (0 << 16) | 3,
+		R = (0 << 16) | 1, 
+		G = (1 << 16) | 1,
+		B = (2 << 16) | 1,
+		METALLIC = (3 << 16) | 1,
+		ROUGHNESS = (4 << 16) | 1,
+		IS_DOUBLE_SIDED = (5 << 16) | 1,
+		USE_ALPHA_CONSTANT = (6 << 16) | 1,
+		MAX_OFFSET = 7
+	};
+
+	//TODO: Double sided and alpha constant
 
 	class Material
 	{
@@ -37,82 +53,26 @@ namespace wr
 				 TextureHandle roughness,
 				 TextureHandle metallic,
 				 TextureHandle ao, 
-				 bool alpha_masked = false, 
-				 bool double_sided = false);
+				 float alpha_constant = false,
+				 float double_sided = false);
 
 		Material(const Material& rhs) = default;
 
 		~Material();
 
-		TextureHandle GetAlbedo() { return m_albedo; }
-		void SetAlbedo(TextureHandle albedo);
+		TextureHandle GetTexture(MaterialTextureType type);
+		void SetTexture(MaterialTextureType type, TextureHandle handle);
+		void ClearTexture(MaterialTextureType type);
+		bool HasTexture(MaterialTextureType type);
 
-		void UseAlbedoTexture(bool use_albedo);
+		template<uint16_t s>
+		void GetConstant(MaterialConstantType type, float(&val)[s]);
+		
+		template<uint16_t s>
+		void SetConstant(MaterialConstantType type, float(val)[s]);
 
-		TextureHandle GetNormal() { return m_normal; }
-		void SetNormal(TextureHandle normal);
-
-		void UseNormalTexture(bool use_normal);
-
-		TextureHandle GetRoughness() { return m_rougness; }
-		void SetRoughness(TextureHandle roughness);
-
-		void UseRoughnessTexture(bool use_roughness);
-
-		TextureHandle GetMetallic() { return m_metallic; }
-		void SetMetallic(TextureHandle metallic);
-
-		void UseMetallicTexture(bool use_metallic);
-
-		TextureHandle GetAmbientOcclusion() { return m_ao; }
-		void SetAmbientOcclusion(TextureHandle ao);
-
-		void UseAOTexture(bool use_ao);
-
-		DirectX::XMFLOAT3 GetConstantAlbedo()
-		{
-			return
-			{
-				DirectX::XMVectorGetX(m_material_data.m_color),
-				DirectX::XMVectorGetY(m_material_data.m_color),
-				DirectX::XMVectorGetZ(m_material_data.m_color)
-			};
-		};
-
-		void SetConstantAlbedo(DirectX::XMFLOAT3 color);
-
-		bool UsesConstantAlbedo() { return m_material_data.m_material_flags.m_use_albedo_constant; };
-		void SetUseConstantAlbedo(bool use_constant_albedo) { m_material_data.m_material_flags.m_use_albedo_constant = use_constant_albedo; };
-
-		float GetConstantAlpha() { return DirectX::XMVectorGetW(m_material_data.m_color); };
-		void SetConstantAlpha(float alpha);
-
-		DirectX::XMFLOAT3 GetConstantMetallic()
-		{
-			return
-			{
-				DirectX::XMVectorGetX(m_material_data.m_metallic_roughness),
-				DirectX::XMVectorGetY(m_material_data.m_metallic_roughness),
-				DirectX::XMVectorGetZ(m_material_data.m_metallic_roughness)
-			};
-		};
-
-		void SetConstantMetallic(DirectX::XMFLOAT3 metallic);
-
-		bool UsesConstantMetallic() { return m_material_data.m_material_flags.m_use_metallic_constant; };
-		void SetUseConstantMetallic(bool use_constant_metallic) { m_material_data.m_material_flags.m_use_metallic_constant = use_constant_metallic; };
-
-		float GetConstantRoughness() { return DirectX::XMVectorGetW(m_material_data.m_metallic_roughness); };
-		void SetConstantRoughness(float roughness);
-
-		bool UsesConstantRoughness() { return m_material_data.m_material_flags.m_use_roughness_constant; };
-		void SetUseConstantRoughness(bool use_constant_roughness) { m_material_data.m_material_flags.m_use_roughness_constant = use_constant_roughness; };
-
-		bool IsAlphaMasked() { return m_alpha_masked; };
-		void SetAlphaMasked(bool alpha_masked);
-
-		bool IsDoubleSided() { return m_double_sided; };
-		void SetDoubleSided(bool double_sided);
+		void SetConstant(MaterialConstantType type, float val);
+		void GetConstant(MaterialConstantType type, float &val);
 
 		TexturePool* const GetTexturePool() { return m_texture_pool; }
 
@@ -121,45 +81,62 @@ namespace wr
 
 		void UpdateConstantBuffer();
 
-		struct MaterialFlags
+		struct TextureFlags
 		{
-			unsigned m_has_albedo_texture : 1;
-			unsigned m_has_albedo_constant : 1;
-			unsigned m_use_albedo_constant : 1;
-			unsigned m_has_normal_texture : 1;
-			unsigned m_has_roughness_texture : 1;
-			unsigned m_has_roughness_constant : 1;
-			unsigned m_use_roughness_constant : 1;
-			unsigned m_has_metallic_texture : 1;
-			unsigned m_has_metallic_constant : 1;
-			unsigned m_use_metallic_constant : 1;
-			unsigned m_has_ao_texture : 1;
-			unsigned m_has_alpha_mask : 1;
-			unsigned m_has_constant_alpha : 1;
-			unsigned m_is_double_sided : 1;
-			unsigned m_placeholder : 18;
+			uint32_t m_has_albedo_texture : 1;
+			uint32_t m_has_normal_texture : 1;
+			uint32_t m_has_roughness_texture : 1;
+			uint32_t m_has_metallic_texture : 1;
+			uint32_t m_has_ao_texture : 1;
+		};
+
+		union MaterialData
+		{
+			struct {
+
+				float m_color[3];
+				float m_metallic;
+
+				float m_roughness;
+				float m_is_double_sided;
+				float m_use_alpha_constant;
+				TextureFlags m_material_flags;
+
+			};
+
+			float m_constant_data[size_t(MaterialConstantType::MAX_OFFSET) + 1]{};
 
 		};
 
-		struct MaterialData
-		{
-			DirectX::XMVECTOR m_color;
-			DirectX::XMVECTOR m_metallic_roughness;
-			MaterialFlags m_material_flags;
-			std::uint32_t padding[3];
-		};
+		MaterialData GetMaterialData() { 
 
-		MaterialData GetMaterialData() { return m_material_data; };
+			//Update material flags
+			m_material_data.m_material_flags = {
+				HasTexture(MaterialTextureType::ALBEDO),
+				HasTexture(MaterialTextureType::NORMAL),
+				HasTexture(MaterialTextureType::ROUGHNESS),
+				HasTexture(MaterialTextureType::METALLIC),
+				HasTexture(MaterialTextureType::AO)
+			};
+
+			return m_material_data; 
+		};
 
 	protected:
-		TextureHandle m_albedo;
-		TextureHandle m_normal;
-		TextureHandle m_rougness;
-		TextureHandle m_metallic;
-		TextureHandle m_ao;
 
-		bool m_alpha_masked = false;
-		bool m_double_sided = false;
+		union {
+
+			TextureHandle m_textures[size_t(MaterialTextureType::COUNT)];
+
+			struct {
+				TextureHandle m_albedo;
+				TextureHandle m_normal;
+				TextureHandle m_roughness;
+				TextureHandle m_metallic;
+				TextureHandle m_ao;
+			};
+
+		};
 
 		TexturePool* m_texture_pool = nullptr;
 
@@ -208,5 +185,31 @@ namespace wr
 
 		IDFactory m_id_factory;
 	};
+
+	//Material template functions
+
+	template<uint16_t s>
+	void Material::GetConstant(MaterialConstantType type, float(&val)[s])
+	{
+		uint16_t offset = uint16_t(type >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
+		uint16_t count(type);
+
+		if (s >= count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
+			LOGC("Material constant out of bounds");
+
+		memcpy(val, m_material_data.m_constant_data + offset, count * sizeof(float));
+	}
+
+	template<uint16_t s>
+	void Material::SetConstant(MaterialConstantType type, float(val)[s])
+	{
+		uint16_t offset = uint16_t(type >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
+		uint16_t count(type);
+
+		if (s >= count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
+			LOGC("Material constant out of bounds");
+
+		memcpy(m_material_data.m_constant_data + offset, val, count * sizeof(float));
+	}
 
 } /* wr */

@@ -15,12 +15,6 @@ namespace wr
 	Material::Material()
 	{
 		memset(&m_material_data, 0, sizeof(m_material_data));
-
-		m_albedo = { nullptr,0 };
-		m_normal = { nullptr,0 };
-		m_rougness = { nullptr,0 };
-		m_metallic = { nullptr,0 };
-		m_ao = { nullptr,0 };
 	}
 
 	Material::Material(TextureHandle albedo,
@@ -28,189 +22,64 @@ namespace wr
 					   TextureHandle roughness,
 					   TextureHandle metallic,
 		               TextureHandle ao,
-		               bool alpha_masked,
-					   bool double_sided)
+		               float alpha_constant,
+					   float double_sided): Material()
 	{
 		m_texture_pool = albedo.m_pool;
-		memset(&m_material_data, 0, sizeof(m_material_data));
 
-		SetAlbedo(albedo);
-		SetNormal(normal);
-		SetRoughness(roughness);
-		SetMetallic(metallic);
-		SetAmbientOcclusion(ao);
+		SetTexture(MaterialTextureType::ALBEDO, albedo);
+		SetTexture(MaterialTextureType::NORMAL, normal);
+		SetTexture(MaterialTextureType::ROUGHNESS, roughness);
+		SetTexture(MaterialTextureType::METALLIC, metallic);
+		SetTexture(MaterialTextureType::AO, ao);
 
-		SetAlphaMasked(alpha_masked);
-		SetDoubleSided(double_sided);
+		SetConstant(MaterialConstantType::USE_ALPHA_CONSTANT, alpha_constant);
+		SetConstant(MaterialConstantType::IS_DOUBLE_SIDED, double_sided);
+	}
+
+	TextureHandle Material::GetTexture(MaterialTextureType type) { 
+		return m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)]; 
+	}
+
+	void Material::SetTexture(MaterialTextureType type, TextureHandle handle)
+	{
+		if (handle.m_pool != m_texture_pool && m_texture_pool)
+		{
+			ClearTexture(type);
+			LOGW("Textures in a material need to belong to the same texture pool");
+		}
+		else
+		{
+			if (!m_texture_pool)
+			{
+				m_texture_pool = handle.m_pool;
+			}
+			m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)] = handle;
+		}
+	}
+
+
+	void Material::ClearTexture(MaterialTextureType type) {
+		m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)] = { nullptr, 0 }; 
+	}
+
+	bool Material::HasTexture(MaterialTextureType type) {
+		return m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)].m_pool;
+	}
+
+	void Material::SetConstant(MaterialConstantType type, float val) {
+		SetConstant(type, { val });
+	}
+
+	void Material::GetConstant(MaterialConstantType type, float &val) {
+		float arr[1];
+		GetConstant(type, arr);
+		val = *arr;
 	}
 
 	Material::~Material()
 	{
 		m_constant_buffer_handle->m_pool->Destroy(m_constant_buffer_handle);
-	}
-
-	void Material::SetAlbedo(TextureHandle albedo)
-	{
-		if (albedo.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_albedo = m_texture_pool->GetDefaultAlbedo();
-			m_material_data.m_material_flags.m_has_albedo_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = albedo.m_pool;
-			}
-			m_albedo = albedo;
-			m_material_data.m_material_flags.m_has_albedo_texture = true;
-			
-		}
-	}
-
-	void Material::UseAlbedoTexture(bool use_albedo)
-	{
-		m_material_data.m_material_flags.m_has_albedo_texture = use_albedo;
-	}
-
-
-	void Material::SetNormal(TextureHandle normal)
-	{
-		if (normal.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			m_normal = m_texture_pool->GetDefaultNormal();
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_material_data.m_material_flags.m_has_normal_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = normal.m_pool;
-			}
-			m_normal = normal;
-			m_material_data.m_material_flags.m_has_normal_texture = true;
-			
-		}
-	}
-
-	void Material::UseNormalTexture(bool use_normal)
-	{
-		m_material_data.m_material_flags.m_has_normal_texture = use_normal;
-	}
-
-	void Material::SetRoughness(TextureHandle roughness)
-	{
-		if (roughness.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			m_rougness = m_texture_pool->GetDefaultRoughness();
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_material_data.m_material_flags.m_has_roughness_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = roughness.m_pool;
-			}
-			m_rougness = roughness;
-			m_material_data.m_material_flags.m_has_roughness_texture = true;
-		}
-	}
-
-	void Material::UseRoughnessTexture(bool use_roughness)
-	{
-		m_material_data.m_material_flags.m_has_roughness_texture = use_roughness;
-	}
-
-	void Material::SetMetallic(TextureHandle metallic)
-	{
-		if (metallic.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			m_metallic = m_texture_pool->GetDefaultMetalic();
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_material_data.m_material_flags.m_has_metallic_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = metallic.m_pool;
-			}
-			m_metallic = metallic;
-			m_material_data.m_material_flags.m_has_metallic_texture = true;
-		}
-	}
-
-	void Material::UseMetallicTexture(bool use_metallic)
-	{
-		m_material_data.m_material_flags.m_has_metallic_texture = use_metallic;
-	}
-
-	void Material::SetAmbientOcclusion(TextureHandle ao)
-	{
-		if (ao.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			m_ao = m_texture_pool->GetDefaultAO();
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_material_data.m_material_flags.m_has_ao_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = ao.m_pool;
-			}
-			m_ao = ao;
-			m_material_data.m_material_flags.m_has_ao_texture = true;
-		}
-	}
-
-	void Material::UseAOTexture(bool use_ao)
-	{
-		m_material_data.m_material_flags.m_has_ao_texture = use_ao;
-	}
-
-	void Material::SetConstantAlbedo(DirectX::XMFLOAT3 color)
-	{
-		m_material_data.m_color = DirectX::XMVectorSet(color.x, color.y, color.z, GetConstantAlpha());
-		m_material_data.m_material_flags.m_has_albedo_constant = true;
-	}
-
-	void Material::SetConstantAlpha(float alpha)
-	{
-		m_material_data.m_color = DirectX::XMVectorSetW(m_material_data.m_color, alpha);
-		m_material_data.m_material_flags.m_has_constant_alpha = true;
-	}
-
-	void Material::SetConstantMetallic(DirectX::XMFLOAT3 metallic)
-	{
-		m_material_data.m_metallic_roughness = DirectX::XMVectorSet(metallic.x, metallic.y, metallic.z, GetConstantRoughness());
-		m_material_data.m_material_flags.m_has_metallic_constant = true;
-	}
-
-	void Material::SetConstantRoughness(float roughness)
-	{
-		m_material_data.m_metallic_roughness = DirectX::XMVectorSetW(m_material_data.m_metallic_roughness, roughness);
-		m_material_data.m_material_flags.m_has_roughness_constant = true;
-	}
-
-	void Material::SetAlphaMasked(bool alpha_masked)
-	{
-		m_alpha_masked = alpha_masked;
-		m_material_data.m_material_flags.m_has_alpha_mask = alpha_masked;
-	}
-
-	void Material::SetDoubleSided(bool double_sided)
-	{
-		m_double_sided = double_sided;
-		m_material_data.m_material_flags.m_is_double_sided = double_sided;
 	}
 
 	void Material::UpdateConstantBuffer()
