@@ -41,6 +41,8 @@ SOFTWARE.
 #include "d3d12_descriptors_allocations.hpp"
 
 #include "DirectXTex.h"
+#include <comdef.h>
+
 
 namespace wr
 {
@@ -59,11 +61,11 @@ namespace wr
 		m_mipmapping_allocator = new DescriptorAllocator(render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
 		// Load the default textures
-		m_default_albedo = Load(settings::default_albedo_path, false, false);
-		m_default_normal = Load(settings::default_normal_path, false, false);
-		m_default_roughness = Load(settings::default_roughness_path, false, false);
-		m_default_metalic = Load(settings::default_metalic_path, false, false);
-		m_default_ao = Load(settings::default_ao_path, false, false);
+		m_default_albedo = LoadFromFile(settings::default_albedo_path, false, false);
+		m_default_normal = LoadFromFile(settings::default_normal_path, false, false);
+		m_default_roughness = LoadFromFile(settings::default_roughness_path, false, false);
+		m_default_metalic = LoadFromFile(settings::default_metalic_path, false, false);
+		m_default_ao = LoadFromFile(settings::default_ao_path, false, false);
 
 		// Default UAVs
 		m_default_uav = m_mipmapping_allocator->Allocate(4);
@@ -131,46 +133,15 @@ namespace wr
 
 			for (itr; itr != m_unstaged_textures.end(); ++itr)
 			{
-				d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(itr->second);
+				d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(itr->second.first);
 
 				unstaged_textures.push_back(texture);
 
 				decltype(d3d12::Device::m_native) n_device;
 				texture->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
 
-				//std::uint32_t num_subresources = texture->m_array_size * texture->m_mip_levels;
 
-				//std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints;
-				//footprints.resize(num_subresources);
-				//std::vector<UINT> num_rows;
-				//num_rows.resize(num_subresources);
-				//std::vector<UINT64> row_sizes;
-				//row_sizes.resize(num_subresources);
-				//UINT64 total_size;
-
-				//D3D12_RESOURCE_DESC desc = texture->m_resource->GetDesc();
-				//n_device->GetCopyableFootprints(&desc, 0, num_subresources, 0, &footprints[0], &num_rows[0], &row_sizes[0], &total_size);
-
-				//std::vector<D3D12_SUBRESOURCE_DATA> subresource_data;
-				//subresource_data.resize(num_subresources);
-
-				//for (uint32_t i = 0; i < num_subresources; ++i)
-				//{
-				//	D3D12_SUBRESOURCE_FOOTPRINT& footprint = footprints[i].Footprint;
-
-				//	size_t row_pitch, slice_pitch;
-
-				//	DirectX::ComputePitch(footprint.Format, footprint.Width, footprint.Height, row_pitch, slice_pitch);
-
-				//	subresource_data[i].pData = texture->m_allocated_memory + footprints[i].Offset;
-				//	subresource_data[i].RowPitch = row_pitch;
-				//	subresource_data[i].SlicePitch = slice_pitch;
-				//}
-
-				//UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, num_subresources, total_size, &footprints[0], &num_rows[0], &row_sizes[0], &subresource_data[0]);
-				
-
-				DirectX::ScratchImage* image = texture->image;
+				DirectX::ScratchImage* image = itr->second.second;
 
 				texture->m_subresources.resize(image->GetImageCount());
 				const DirectX::Image* pImages = image->GetImages();
@@ -185,11 +156,6 @@ namespace wr
 
 				std::vector<D3D12_SUBRESOURCE_DATA> subresources = texture->m_subresources;
 				UpdateSubresources(cmdlist->m_native, texture->m_resource, texture->m_intermediate, 0, 0, static_cast<uint32_t>(subresources.size()), subresources.data());
-
-				delete image;
-
-				free(texture->m_allocated_memory);
-				texture->m_allocated_memory = nullptr;
 
 				texture->m_is_staged = true;
 
@@ -273,7 +239,6 @@ namespace wr
 
 		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, true);
 
-		texture->m_allocated_memory = nullptr;
 		texture->m_allow_render_dest = allow_render_dest;
 		texture->m_is_staged = true;
 		texture->m_need_mips = false;
@@ -351,7 +316,6 @@ namespace wr
 
 		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, true);
 
-		texture->m_allocated_memory = nullptr;
 		texture->m_allow_render_dest = allow_render_dest;
 		texture->m_is_staged = true;
 		texture->m_need_mips = false;
@@ -417,105 +381,54 @@ namespace wr
 
 		SAFE_RELEASE(texture->m_resource);
 		SAFE_RELEASE(texture->m_intermediate);
-		if(texture->m_allocated_memory != nullptr) free( texture->m_allocated_memory);
+
 		delete texture;
 	}
 
-	d3d12::TextureResource* D3D12TexturePool::LoadPNG(std::string_view path, bool srgb, bool generate_mips)
+
+	TextureHandle D3D12TexturePool::LoadFromFile(std::string_view path, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
 		DirectX::TexMetadata metadata;
 		DirectX::ScratchImage* image = new DirectX::ScratchImage;
 
+		std::optional<std::string_view> extension = util::GetFileExtension(path);
 		std::wstring wide_string(path.begin(), path.end());
 
-		HRESULT hr = LoadFromWICFile(wide_string.c_str(),
-			DirectX::WIC_FLAGS_NONE, &metadata, *image);
-
-		if (FAILED(hr))
+		if (std::string_view ext_int = extension.value(); extension.has_value())
 		{
-			LOGC("ERROR: Texture not loaded correctly.");
-		}
+			HRESULT hr;
 
-		uint32_t mip_lvls;
-
-		if (generate_mips)
-		{
-			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
-		}
-		else
-		{
-			mip_lvls = metadata.mipLevels;
-		}
-
-		Format adjusted_format;
-
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
+			if (ext_int.find("png") != std::string_view::npos
+				|| ext_int.find("jpeg") != std::string_view::npos
+				|| ext_int.find("jpg") != std::string_view::npos
+				|| ext_int.find("bmp") != std::string_view::npos)
 			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
+				hr = LoadFromWICFile(wide_string.c_str(),
+					DirectX::WIC_FLAGS_NONE, &metadata, *image);
 			}
-		}
+			else if (ext_int.find("dds") != std::string_view::npos)
+			{
+				hr = LoadFromDDSFile(wide_string.c_str(),
+					DirectX::DDS_FLAGS_NONE, &metadata, *image);
+			}
+			else if (ext_int.find("hdr") != std::string_view::npos)
+			{
+				hr = LoadFromHDRFile(wide_string.c_str(), &metadata, *image);
+			}
+			else
+			{
+				LOGC("Texture {} not loaded. Format not supported.", path);
+			}
 
-		d3d12::desc::TextureDesc desc;
+			if (FAILED(hr))
+			{
+				_com_error err(hr);
+				LPCTSTR errMsg = err.ErrorMessage();
 
-		desc.m_width = metadata.width;
-		desc.m_height = metadata.height;
-		desc.m_is_cubemap = metadata.IsCubemap();
-		desc.m_depth = metadata.depth;
-		desc.m_array_size = metadata.arraySize;
-		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = adjusted_format;
-		desc.m_initial_state = ResourceState::COPY_DEST;
-
-		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
-
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
-
-		//memcpy(texture->m_allocated_memory, image->GetPixels(), image->GetPixelsSize());
-		texture->image = image;
-
-		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
-
-		if (alloc.IsNull())
-		{
-			LOGC("Couldn't allocate descriptor for the texture resource");
-		}
-
-		texture->m_need_mips = generate_mips;
-		texture->m_srv_allocation = std::move(alloc);
-		texture->m_resource->SetName(wide_string.c_str());
-
-		d3d12::CreateSRVFromTexture(texture);
-
-		m_loaded_textures++;
-
-		return texture;
-	}
-
-	d3d12::TextureResource* D3D12TexturePool::LoadDDS(std::string_view path, bool srgb, bool generate_mips)
-	{
-		auto device = m_render_system.m_device;
-
-		DirectX::TexMetadata metadata;
-		DirectX::ScratchImage* image = new DirectX::ScratchImage;
-
-		std::wstring wide_string(path.begin(), path.end());
-
-		HRESULT hr = LoadFromDDSFile(wide_string.c_str(),
-			DirectX::DDS_FLAGS_NONE, &metadata, *image);
-
-		if (FAILED(hr))
-		{
-			LOGC("ERROR: Texture not loaded correctly.");
+				LOGC("ERROR: DirectXTex error: {}", errMsg);
+			}
 		}
 
 		uint32_t mip_lvls;
@@ -531,21 +444,7 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
-		Format adjusted_format;
-
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		Format texture_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -555,15 +454,10 @@ namespace wr
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
 		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = adjusted_format;
+		desc.m_texture_format = texture_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto texture = d3d12::CreateTexture(device, &desc, mip_generation);
-
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
-
-		//memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
-		texture->image = image;
+		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, mip_generation);
 
 		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
@@ -580,179 +474,67 @@ namespace wr
 
 		m_loaded_textures++;
 
-		return texture;
-	}
+		LOG("[TEXTURE LOADED] {}", path);
 
-	d3d12::TextureResource* D3D12TexturePool::LoadHDR(std::string_view path, bool srgb, bool generate_mips)
+		uint64_t texture_id = m_id_factory.GetUnusedID();
+
+		TextureHandle texture_handle;
+		texture_handle.m_pool = this;
+		texture_handle.m_id = texture_id;
+
+		m_unstaged_textures.insert(std::make_pair(texture_id, std::make_pair(texture, image)));
+
+		return texture_handle;
+	}
+	
+	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
 		DirectX::TexMetadata metadata;
 		DirectX::ScratchImage* image = new DirectX::ScratchImage;
 
-		std::wstring wide_string(path.begin(), path.end());
+		HRESULT hr;
 
-		HRESULT hr = LoadFromHDRFile(wide_string.c_str(), &metadata, *image);
+		switch (type)
+		{
+		case wr::TextureType::WIC:
+		{
+			//Assuming RGBA8_UNORM for the time being, need to find a solution
+			hr = LoadFromWICMemory(data, width * height * 8/*bits*/ * 4/*channels*/,
+				DirectX::WIC_FLAGS_NONE, &metadata, *image);
+
+			break;
+		}
+		case wr::TextureType::DDS:
+		{
+			//Assuming RGBA8_UNORM for the time being, need to find a solution
+			hr = LoadFromDDSMemory(data, width * height * 8/*bits*/ * 4/*channels*/,
+				DirectX::DDS_FLAGS_NONE, &metadata, *image);
+
+			break;
+		}
+
+		case wr::TextureType::HDR:
+		{
+			//Assuming RGBA16_FLOAT for the time being, need to find a solution
+			hr = LoadFromHDRMemory(data, width * height * 16/*bits*/ * 4/*channels*/,
+				&metadata, *image);
+
+			break;
+		}
+
+		default:
+			LOGC("[ERROR]: How did we even get here?")
+			break;
+		}
 
 		if (FAILED(hr))
 		{
-			LOGC("ERROR: Texture not loaded correctly.");
-		}
+			_com_error err(hr);
+			LPCTSTR errMsg = err.ErrorMessage();
 
-		uint32_t mip_lvls;
-
-		if (generate_mips)
-		{
-			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
-		}
-		else
-		{
-			mip_lvls = metadata.mipLevels;
-		}
-
-		Format adjusted_format;
-
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
-
-		d3d12::desc::TextureDesc desc;
-
-		desc.m_width = metadata.width;
-		desc.m_height = metadata.height;
-		desc.m_is_cubemap = metadata.IsCubemap();
-		desc.m_depth = metadata.depth;
-		desc.m_array_size = metadata.arraySize;
-		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = adjusted_format;
-		desc.m_initial_state = ResourceState::COPY_DEST;
-
-		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
-
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
-
-		//memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
-		texture->image = image;
-
-
-		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
-
-		if (alloc.IsNull())
-		{
-			LOGC("Couldn't allocate descriptor for the texture resource");
-		}
-
-		texture->m_need_mips = generate_mips;
-		texture->m_srv_allocation = std::move(alloc);
-		texture->m_resource->SetName(wide_string.c_str());
-
-		d3d12::CreateSRVFromTexture(texture);
-
-		m_loaded_textures++;
-
-		return texture;
-	}
-
-	d3d12::TextureResource * D3D12TexturePool::LoadPNGFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
-	{
-		auto device = m_render_system.m_device;
-
-		DirectX::TexMetadata metadata;
-		DirectX::ScratchImage image;
-
-		HRESULT hr = LoadFromWICMemory(data, size,
-			DirectX::WIC_FLAGS_NONE, &metadata, image);
-
-		if (FAILED(hr))
-		{
-			LOGC("ERROR: Texture not loaded correctly.");
-		}
-
-		uint32_t mip_lvls;
-
-		if (generate_mips)
-		{
-			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
-		}
-		else
-		{
-			mip_lvls = metadata.mipLevels;
-		}
-
-		Format adjusted_format;
-
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
-
-		d3d12::desc::TextureDesc desc;
-
-		desc.m_width = metadata.width;
-		desc.m_height = metadata.height;
-		desc.m_is_cubemap = metadata.IsCubemap();
-		desc.m_depth = metadata.depth;
-		desc.m_array_size = metadata.arraySize;
-		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = adjusted_format;
-		desc.m_initial_state = ResourceState::COPY_DEST;
-
-		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
-
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
-
-		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
-
-		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
-
-		if (alloc.IsNull())
-		{
-			LOGC("Couldn't allocate descriptor for the texture resource");
-		}
-
-		texture->m_need_mips = generate_mips;
-		texture->m_srv_allocation = std::move(alloc);
-		NAME_D3D12RESOURCE(texture->m_resource);
-
-		d3d12::CreateSRVFromTexture(texture);
-
-		m_loaded_textures++;
-
-		return texture;
-	}
-
-	d3d12::TextureResource * D3D12TexturePool::LoadDDSFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
-	{
-		auto device = m_render_system.m_device;
-
-		DirectX::TexMetadata metadata;
-		DirectX::ScratchImage image;
-
-		HRESULT hr = LoadFromDDSMemory(data, size,
-			DirectX::DDS_FLAGS_NONE, &metadata, image);
-
-		if (FAILED(hr))
-		{
-			LOGC("ERROR: Texture not loaded correctly.");
+			LOGC("ERROR: DirectXTex error: {}", errMsg);
 		}
 
 		uint32_t mip_lvls;
@@ -768,21 +550,7 @@ namespace wr
 			mip_lvls = metadata.mipLevels;
 		}
 
-		Format adjusted_format;
-
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		Format texture_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -792,14 +560,10 @@ namespace wr
 		desc.m_depth = metadata.depth;
 		desc.m_array_size = metadata.arraySize;
 		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = adjusted_format;
+		desc.m_texture_format = texture_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
 
-		auto texture = d3d12::CreateTexture(device, &desc, mip_generation);
-
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
-
-		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
+		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, mip_generation);
 
 		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
 
@@ -810,181 +574,45 @@ namespace wr
 
 		texture->m_need_mips = mip_generation;
 		texture->m_srv_allocation = std::move(alloc);
-		NAME_D3D12RESOURCE(texture->m_resource);
+
+		std::wstring name = L"TextureFromMemory" + std::to_wstring(m_loaded_textures);
+		texture->m_resource->SetName(name.c_str());
 
 		d3d12::CreateSRVFromTexture(texture);
 
 		m_loaded_textures++;
 
-		return texture;
+		LOG("[TEXTURE LOADED]: Texture from Memory");
+
+		uint64_t texture_id = m_id_factory.GetUnusedID();
+
+		TextureHandle texture_handle;
+		texture_handle.m_pool = this;
+		texture_handle.m_id = texture_id;
+
+		m_unstaged_textures.insert(std::make_pair(texture_id, std::make_pair(texture, image)));
+
+		return texture_handle;
+
 	}
 
-	d3d12::TextureResource * D3D12TexturePool::LoadHDRFromMemory(char * data, size_t size, bool srgb, bool generate_mips)
+	TextureHandle D3D12TexturePool::LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips)
 	{
-		auto device = m_render_system.m_device;
+		TextureHandle handle;
 
-		DirectX::TexMetadata metadata;
-		DirectX::ScratchImage image;
+		LOGC("THIS FUNCTION IS NOT IMPLEMENTED");
 
-		HRESULT hr = LoadFromHDRMemory(data, size, &metadata, image);
-
-		if (FAILED(hr))
-		{
-			LOGC("ERROR: Texture not loaded correctly.");
-		}
-
-		uint32_t mip_lvls;
-
-		if (generate_mips)
-		{
-			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
-		}
-		else
-		{
-			mip_lvls = metadata.mipLevels;
-		}
-
-		Format adjusted_format;
-
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
-
-		d3d12::desc::TextureDesc desc;
-
-		desc.m_width = metadata.width;
-		desc.m_height = metadata.height;
-		desc.m_is_cubemap = metadata.IsCubemap();
-		desc.m_depth = metadata.depth;
-		desc.m_array_size = metadata.arraySize;
-		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = adjusted_format;
-		desc.m_initial_state = ResourceState::COPY_DEST;
-
-		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
-
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
-
-		memcpy(texture->m_allocated_memory, image.GetPixels(), image.GetPixelsSize());
-
-		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
-
-		if (alloc.IsNull())
-		{
-			LOGC("Couldn't allocate descriptor for the texture resource");
-		}
-
-		texture->m_need_mips = generate_mips;
-		texture->m_srv_allocation = std::move(alloc);
-		NAME_D3D12RESOURCE(texture->m_resource);
-
-		d3d12::CreateSRVFromTexture(texture);
-
-		m_loaded_textures++;
-
-		return texture;
+		return handle;
 	}
-
-	d3d12::TextureResource * D3D12TexturePool::LoadRawFromMemory(char * data, int width, int height, bool srgb, bool generate_mips)
-	{
-		auto device = m_render_system.m_device;
-
-		uint32_t mip_lvls;
-
-		if (generate_mips)
-		{
-			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-		}
-		else
-		{
-			mip_lvls = 1;
-		}
-
-		Format adjusted_format;
-
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(DXGI_FORMAT_R8G8B8A8_UNORM));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(DXGI_FORMAT_R8G8B8A8_UNORM);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
-
-		d3d12::desc::TextureDesc desc;
-
-		desc.m_width = width;
-		desc.m_height = height;
-		desc.m_is_cubemap = false;
-		desc.m_depth = 1;
-		desc.m_array_size = 1;
-		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = adjusted_format;
-		desc.m_initial_state = ResourceState::COPY_DEST;
-
-		auto texture = d3d12::CreateTexture(device, &desc, generate_mips);
-
-		texture->m_allocated_memory = static_cast<uint8_t*>(malloc(texture->m_needed_memory));
-
-		memcpy(texture->m_allocated_memory, data, width*height * 4);
-
-		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
-
-		if (alloc.IsNull())
-		{
-			LOGC("Couldn't allocate descriptor for the texture resource");
-		}
-
-		texture->m_need_mips = generate_mips;
-		texture->m_srv_allocation = std::move(alloc);
-		NAME_D3D12RESOURCE(texture->m_resource);
-
-		d3d12::CreateSRVFromTexture(texture);
-
-		m_loaded_textures++;
-
-		return texture;
-	}
-
-
-	d3d12::TextureResource* D3D12TexturePool::LoadFromFile(std::string_view path, bool srgb, bool generate_mips)
-	{
-
-
-
-
-
-	}
-
-
-
-
-
-
-
-
-
 
 	void D3D12TexturePool::MoveStagedTextures()
 	{
 		for (auto itr = m_unstaged_textures.begin(); itr != m_unstaged_textures.end(); ++itr)
 		{
-			m_staged_textures.insert(std::make_pair(itr->first, itr->second));
+			m_staged_textures.insert(std::make_pair(itr->first, itr->second.first));
+
+			//Free the ScratchImage as it's not needed anymore after staging
+			delete itr->second.second;
 		}
 
 		m_unstaged_textures.clear();

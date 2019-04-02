@@ -28,13 +28,9 @@ namespace wr::d3d12
 		DescriptorAllocation m_uav_allocation;
 
 		std::vector<D3D12_SUBRESOURCE_DATA> m_subresources;
-		DirectX::ScratchImage* image;
 
 		//This allocation can be either 1 or 6 continous descriptors based on m_is_cubemap
 		std::optional<DescriptorAllocation> m_rtv_allocation = std::nullopt;
-
-		uint8_t* m_allocated_memory;
-		size_t m_needed_memory;
 
 		bool m_is_staged = false;
 		bool m_need_mips = false;

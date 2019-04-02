@@ -40,67 +40,67 @@ namespace emibl_scene
 			material_pool = render_system->CreateMaterialPool(256);
 
 			// Load Texture.
-			wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
-			wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
-			flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
+			wr::TextureHandle white = texture_pool->LoadFromFile("resources/materials/white.png", false, true);
+			wr::TextureHandle black = texture_pool->LoadFromFile("resources/materials/black.png", false, true);
+			flat_normal = texture_pool->LoadFromFile("resources/materials/flat_normal.png", false, true);
 
-			wr::TextureHandle metal_splotchy_albedo = texture_pool->Load("resources/materials/metal-splotchy-albedo.png", true, true);
-			wr::TextureHandle metal_splotchy_normal = texture_pool->Load("resources/materials/metal-splotchy-normal-dx.png", false, true);
-			wr::TextureHandle metal_splotchy_roughness = texture_pool->Load("resources/materials/metal-splotchy-rough.png", false, true);
-			wr::TextureHandle metal_splotchy_metallic = texture_pool->Load("resources/materials/metal-splotchy-metal.png", false, true);
+			wr::TextureHandle metal_splotchy_albedo = texture_pool->LoadFromFile("resources/materials/metal-splotchy-albedo.png", true, true);
+			wr::TextureHandle metal_splotchy_normal = texture_pool->LoadFromFile("resources/materials/metal-splotchy-normal-dx.png", false, true);
+			wr::TextureHandle metal_splotchy_roughness = texture_pool->LoadFromFile("resources/materials/metal-splotchy-rough.png", false, true);
+			wr::TextureHandle metal_splotchy_metallic = texture_pool->LoadFromFile("resources/materials/metal-splotchy-metal.png", false, true);
 
-			wr::TextureHandle mahogfloor_albedo = texture_pool->Load("resources/materials/dds_diffuse.dds", true, true);
-			wr::TextureHandle mahogfloor_normal = texture_pool->Load("resources/materials/mahogfloor/normal.png", false, true);
-			wr::TextureHandle mahogfloor_roughness = texture_pool->Load("resources/materials/mahogfloor/roughness.png", false, true);
-			wr::TextureHandle mahogfloor_metallic = texture_pool->Load("resources/materials/mahogfloor/metallic.png", false, true);
+			wr::TextureHandle mahogfloor_albedo = texture_pool->LoadFromFile("resources/materials/dds_diffuse.dds", true, true);
+			wr::TextureHandle mahogfloor_normal = texture_pool->LoadFromFile("resources/materials/mahogfloor/normal.png", false, true);
+			wr::TextureHandle mahogfloor_roughness = texture_pool->LoadFromFile("resources/materials/mahogfloor/roughness.png", false, true);
+			wr::TextureHandle mahogfloor_metallic = texture_pool->LoadFromFile("resources/materials/mahogfloor/metallic.png", false, true);
 
-			wr::TextureHandle red_black_albedo = texture_pool->Load("resources/materials/dragon_egg/albedo.png", true, true);
-			wr::TextureHandle red_black_normal = texture_pool->Load("resources/materials/dragon_egg/normal.png", false, true);
-			wr::TextureHandle red_black_roughness = texture_pool->Load("resources/materials/dragon_egg/roughness.png", false, true);
-			wr::TextureHandle red_black_metallic = texture_pool->Load("resources/materials/dragon_egg/metallic.png", false, true);
+			wr::TextureHandle red_black_albedo = texture_pool->LoadFromFile("resources/materials/dragon_egg/albedo.png", true, true);
+			wr::TextureHandle red_black_normal = texture_pool->LoadFromFile("resources/materials/dragon_egg/normal.png", false, true);
+			wr::TextureHandle red_black_roughness = texture_pool->LoadFromFile("resources/materials/dragon_egg/roughness.png", false, true);
+			wr::TextureHandle red_black_metallic = texture_pool->LoadFromFile("resources/materials/dragon_egg/metallic.png", false, true);
 
-			wr::TextureHandle metal_albedo = texture_pool->Load("resources/materials/greasy_pan/albedo.png", true, true);
-			wr::TextureHandle metal_normal = texture_pool->Load("resources/materials/greasy_pan/normal.png", false, true);
-			wr::TextureHandle metal_roughness = texture_pool->Load("resources/materials/greasy_pan/roughness.png", false, true);
-			wr::TextureHandle metal_metallic = texture_pool->Load("resources/materials/greasy_pan/metallic.png", false, true);
+			wr::TextureHandle metal_albedo = texture_pool->LoadFromFile("resources/materials/greasy_pan/albedo.png", true, true);
+			wr::TextureHandle metal_normal = texture_pool->LoadFromFile("resources/materials/greasy_pan/normal.png", false, true);
+			wr::TextureHandle metal_roughness = texture_pool->LoadFromFile("resources/materials/greasy_pan/roughness.png", false, true);
+			wr::TextureHandle metal_metallic = texture_pool->LoadFromFile("resources/materials/greasy_pan/metallic.png", false, true);
 
-			wr::TextureHandle brick_tiles_albedo = texture_pool->Load("resources/materials/brick_tiles/albedo.png", true, true);
-			wr::TextureHandle brick_tiles_normal = texture_pool->Load("resources/materials/brick_tiles/normal.png", false, true);
-			wr::TextureHandle brick_tiles_roughness = texture_pool->Load("resources/materials/brick_tiles/roughness.png", false, true);
-			wr::TextureHandle brick_tiles_metallic = texture_pool->Load("resources/materials/brick_tiles/metallic.png", false, true);
+			wr::TextureHandle brick_tiles_albedo = texture_pool->LoadFromFile("resources/materials/brick_tiles/albedo.png", true, true);
+			wr::TextureHandle brick_tiles_normal = texture_pool->LoadFromFile("resources/materials/brick_tiles/normal.png", false, true);
+			wr::TextureHandle brick_tiles_roughness = texture_pool->LoadFromFile("resources/materials/brick_tiles/roughness.png", false, true);
+			wr::TextureHandle brick_tiles_metallic = texture_pool->LoadFromFile("resources/materials/brick_tiles/metallic.png", false, true);
 
-			wr::TextureHandle leather_albedo = texture_pool->Load("resources/materials/leather_with_metal/albedo.png", true, true);
-			wr::TextureHandle leather_normal = texture_pool->Load("resources/materials/leather_with_metal/normal.png", false, true);
-			wr::TextureHandle leather_roughness = texture_pool->Load("resources/materials/leather_with_metal/roughness.png", false, true);
-			wr::TextureHandle leather_metallic = texture_pool->Load("resources/materials/leather_with_metal/metallic.png", false, true);
+			wr::TextureHandle leather_albedo = texture_pool->LoadFromFile("resources/materials/leather_with_metal/albedo.png", true, true);
+			wr::TextureHandle leather_normal = texture_pool->LoadFromFile("resources/materials/leather_with_metal/normal.png", false, true);
+			wr::TextureHandle leather_roughness = texture_pool->LoadFromFile("resources/materials/leather_with_metal/roughness.png", false, true);
+			wr::TextureHandle leather_metallic = texture_pool->LoadFromFile("resources/materials/leather_with_metal/metallic.png", false, true);
 
-			wr::TextureHandle blue_tiles_albedo = texture_pool->Load("resources/materials/blue_tiles/albedo.png", true, true);
-			wr::TextureHandle blue_tiles_normal = texture_pool->Load("resources/materials/blue_tiles/normal.png", false, true);
-			wr::TextureHandle blue_tiles_roughness = texture_pool->Load("resources/materials/blue_tiles/roughness.png", false, true);
-			wr::TextureHandle blue_tiles_metallic = texture_pool->Load("resources/materials/blue_tiles/metallic.png", false, true);
+			wr::TextureHandle blue_tiles_albedo = texture_pool->LoadFromFile("resources/materials/blue_tiles/albedo.png", true, true);
+			wr::TextureHandle blue_tiles_normal = texture_pool->LoadFromFile("resources/materials/blue_tiles/normal.png", false, true);
+			wr::TextureHandle blue_tiles_roughness = texture_pool->LoadFromFile("resources/materials/blue_tiles/roughness.png", false, true);
+			wr::TextureHandle blue_tiles_metallic = texture_pool->LoadFromFile("resources/materials/blue_tiles/metallic.png", false, true);
 
-			wr::TextureHandle gold_albedo = texture_pool->Load("resources/materials/gold_scuffed/albedo.png", true, true);
-			wr::TextureHandle gold_normal = texture_pool->Load("resources/materials/gold_scuffed/normal.png", false, true);
-			wr::TextureHandle gold_roughness = texture_pool->Load("resources/materials/gold_scuffed/roughness.png", false, true);
-			wr::TextureHandle gold_metallic = texture_pool->Load("resources/materials/gold_scuffed/metallic.png", false, true);
+			wr::TextureHandle gold_albedo = texture_pool->LoadFromFile("resources/materials/gold_scuffed/albedo.png", true, true);
+			wr::TextureHandle gold_normal = texture_pool->LoadFromFile("resources/materials/gold_scuffed/normal.png", false, true);
+			wr::TextureHandle gold_roughness = texture_pool->LoadFromFile("resources/materials/gold_scuffed/roughness.png", false, true);
+			wr::TextureHandle gold_metallic = texture_pool->LoadFromFile("resources/materials/gold_scuffed/metallic.png", false, true);
 
-			wr::TextureHandle marble_albedo = texture_pool->Load("resources/materials/marble_speckled/albedo.png", true, true);
-			wr::TextureHandle marble_normal = texture_pool->Load("resources/materials/marble_speckled/normal.png", false, true);
-			wr::TextureHandle marble_roughness = texture_pool->Load("resources/materials/marble_speckled/roughness.png", false, true);
-			wr::TextureHandle marble_metallic = texture_pool->Load("resources/materials/marble_speckled/metallic.png", false, true);
+			wr::TextureHandle marble_albedo = texture_pool->LoadFromFile("resources/materials/marble_speckled/albedo.png", true, true);
+			wr::TextureHandle marble_normal = texture_pool->LoadFromFile("resources/materials/marble_speckled/normal.png", false, true);
+			wr::TextureHandle marble_roughness = texture_pool->LoadFromFile("resources/materials/marble_speckled/roughness.png", false, true);
+			wr::TextureHandle marble_metallic = texture_pool->LoadFromFile("resources/materials/marble_speckled/metallic.png", false, true);
 
 
-			wr::TextureHandle floreal_tiles_albedo = texture_pool->Load("resources/materials/floreal_tiles/albedo.png", true, true);
-			wr::TextureHandle floreal_tiles_normal = texture_pool->Load("resources/materials/floreal_tiles/normal.png", false, true);
-			wr::TextureHandle floreal_tiles_roughness = texture_pool->Load("resources/materials/floreal_tiles/roughness.png", false, true);
-			wr::TextureHandle floreal_tiles_metallic = texture_pool->Load("resources/materials/floreal_tiles/metallic.png", false, true);
+			wr::TextureHandle floreal_tiles_albedo = texture_pool->LoadFromFile("resources/materials/floreal_tiles/albedo.png", true, true);
+			wr::TextureHandle floreal_tiles_normal = texture_pool->LoadFromFile("resources/materials/floreal_tiles/normal.png", false, true);
+			wr::TextureHandle floreal_tiles_roughness = texture_pool->LoadFromFile("resources/materials/floreal_tiles/roughness.png", false, true);
+			wr::TextureHandle floreal_tiles_metallic = texture_pool->LoadFromFile("resources/materials/floreal_tiles/metallic.png", false, true);
 
-			wr::TextureHandle bw_tiles_albedo = texture_pool->Load("resources/materials/bw_tiles_gold_lining/albedo.png", true, true);
-			wr::TextureHandle bw_tiles_normal = texture_pool->Load("resources/materials/bw_tiles_gold_lining/normal.png", false, true);
-			wr::TextureHandle bw_tiles_roughness = texture_pool->Load("resources/materials/bw_tiles_gold_lining/roughness.png", false, true);
-			wr::TextureHandle bw_tiles_metallic = texture_pool->Load("resources/materials/bw_tiles_gold_lining/metallic.png", false, true);
+			wr::TextureHandle bw_tiles_albedo = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/albedo.png", true, true);
+			wr::TextureHandle bw_tiles_normal = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/normal.png", false, true);
+			wr::TextureHandle bw_tiles_roughness = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/roughness.png", false, true);
+			wr::TextureHandle bw_tiles_metallic = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/metallic.png", false, true);
 
-			equirectangular_environment_map = texture_pool->Load("resources/materials/artist_workshop_4k.hdr", false, false);
+			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/artist_workshop_4k.hdr", false, false);
 
 			{
 				// Create Material

@@ -301,16 +301,16 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						albedo = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+						albedo = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						albedo = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+						albedo = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
 				else if(material->m_albedo_texture_location==TextureLocation::EXTERNAL)
 				{
-					albedo = texture_pool->Load(dir + material->m_albedo_texture, true, true);
+					albedo = texture_pool->LoadFromFile(dir + material->m_albedo_texture, true, true);
 				}
 			}
 			else
@@ -326,16 +326,16 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						normals = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+						normals = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						normals = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+						normals = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
 				else if (material->m_normal_map_texture_location == TextureLocation::EXTERNAL)
 				{
-					normals = texture_pool->Load(dir + material->m_normal_map_texture, false, true);
+					normals = texture_pool->LoadFromFile(dir + material->m_normal_map_texture, false, true);
 				}
 			}
 			else
@@ -351,16 +351,16 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						metallic = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+						metallic = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						metallic = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+						metallic = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
 				else if (material->m_metallic_texture_location == TextureLocation::EXTERNAL)
 				{
-					metallic = texture_pool->Load(dir + material->m_metallic_texture, false, true);
+					metallic = texture_pool->LoadFromFile(dir + material->m_metallic_texture, false, true);
 				}
 			}
 			else
@@ -376,16 +376,16 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						roughness = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+						roughness = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						roughness = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+						roughness = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
 				else if (material->m_roughness_texture_location == TextureLocation::EXTERNAL)
 				{
-					roughness = texture_pool->Load(dir + material->m_roughness_texture, false, true);
+					roughness = texture_pool->LoadFromFile(dir + material->m_roughness_texture, false, true);
 				}
 			}
 			else
@@ -401,16 +401,16 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						ambient_occlusion = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+						ambient_occlusion = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						ambient_occlusion = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, true, true);
+						ambient_occlusion = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
 				else if (material->m_ambient_occlusion_texture_location == TextureLocation::EXTERNAL)
 				{
-					ambient_occlusion = texture_pool->Load(dir + material->m_ambient_occlusion_texture, false, false);
+					ambient_occlusion = texture_pool->LoadFromFile(dir + material->m_ambient_occlusion_texture, false, false);
 				}
 			}
 			else

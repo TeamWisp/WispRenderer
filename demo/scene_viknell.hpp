@@ -35,16 +35,16 @@ namespace viknell_scene
 			material_pool = render_system->CreateMaterialPool(256);
 			model_pool = render_system->CreateModelPool(64_mb, 64_mb);
 
-			wr::TextureHandle white = texture_pool->Load("resources/materials/white.png", false, true);
-			wr::TextureHandle black = texture_pool->Load("resources/materials/black.png", false, true);
-			flat_normal = texture_pool->Load("resources/materials/flat_normal.png", false, true);
+			wr::TextureHandle white = texture_pool->LoadFromFile("resources/materials/white.png", false, true);
+			wr::TextureHandle black = texture_pool->LoadFromFile("resources/materials/black.png", false, true);
+			flat_normal = texture_pool->LoadFromFile("resources/materials/flat_normal.png", false, true);
 
-			wr::TextureHandle bamboo_albedo = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
-			wr::TextureHandle bamboo_normal = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
-			wr::TextureHandle bamboo_roughness = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
-			wr::TextureHandle bamboo_metallic = texture_pool->Load("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
+			wr::TextureHandle bamboo_albedo = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
+			wr::TextureHandle bamboo_normal = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
+			wr::TextureHandle bamboo_roughness = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
+			wr::TextureHandle bamboo_metallic = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
-			equirectangular_environment_map = texture_pool->Load("resources/materials/Circus_Backstage_3k.hdr", false, false);
+			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 			// Create Materials
 			mirror_material = material_pool->Create();

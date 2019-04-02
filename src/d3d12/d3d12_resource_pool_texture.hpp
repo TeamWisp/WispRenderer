@@ -60,7 +60,9 @@ namespace wr
 		void ReleaseTemporaryResources() final;
 
 		d3d12::TextureResource* GetTexture(uint64_t texture_id) final;
-
+		[[nodiscard]] TextureHandle LoadFromFile(std::string_view path, bool srgb, bool generate_mips) final;
+		[[nodiscard]] TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips) final;
+		[[nodiscard]] TextureHandle LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips) final;
 		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 		[[nodiscard]] TextureHandle CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 
@@ -73,21 +75,21 @@ namespace wr
 
 	protected:
 
-		d3d12::TextureResource* LoadFromFile(std::string_view path, bool srgb, bool generate_mips) final;
-		
-		d3d12::TextureResource* LoadPNGFromMemory(char* data, size_t size, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadDDSFromMemory(char* data, size_t size, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadHDRFromMemory(char* data, size_t size, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadRawFromMemory(char* data, int width, int height, bool srgb, bool generate_mips) final;
-
-
-
 		void MoveStagedTextures();
 		void GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list);
 
 		void GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list);
 		void GenerateMips_BGR(d3d12::TextureResource* texture, CommandList* cmd_list);
 		void GenerateMips_SRGB(d3d12::TextureResource* texture, CommandList* cmd_list);
+
+		//Unstaged textures are stored as pairs in a map. This removes the necessity of having a ScratchImage
+		//pointer in the Texture struct. Once the textures are staged the ScratchImages are deleted.
+		std::unordered_map<uint64_t, std::pair<Texture*, DirectX::ScratchImage*>> m_unstaged_textures;
+
+		std::unordered_map<uint64_t, Texture*> m_staged_textures;
+
+
+
 
 		D3D12RenderSystem& m_render_system;
 
