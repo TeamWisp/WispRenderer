@@ -320,37 +320,42 @@ namespace wr
 				}
 			};
 
+			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, false, true);
+			Material* mat = material_pool->GetMaterial(new_handle);
+
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_albedo_texture_location, material->m_albedo_embedded_texture, material->m_albedo_texture, albedo, true, true);
+				mat->SetTexture(MaterialTextureType::ALBEDO, albedo);
 			}
 
 			if (material->m_normal_map_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_normal_map_texture_location, material->m_normal_map_embedded_texture, material->m_normal_map_texture, normals, false, true);
+				mat->SetTexture(MaterialTextureType::NORMAL, normals);
 			}
 
 			if (material->m_metallic_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_metallic_texture_location, material->m_metallic_embedded_texture, material->m_metallic_texture, metallic, false, true);
+				mat->SetTexture(MaterialTextureType::METALLIC, metallic);
 			}
 
 			if (material->m_roughness_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_roughness_texture_location, material->m_roughness_embedded_texture, material->m_roughness_texture, roughness, false, true);
+				mat->SetTexture(MaterialTextureType::ROUGHNESS, roughness);
 			}
 
 			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, material->m_ambient_occlusion_texture, ambient_occlusion, false, true);
+				mat->SetTexture(MaterialTextureType::AO, ambient_occlusion);
 			}
 
 			bool two_sided = material->m_two_sided;
 
 			float opacity = material->m_base_transparency;
-
-			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, false, true);
-			Material* mat = material_pool->GetMaterial(new_handle);
 
 			mat->SetConstant(MaterialConstantType::COLOR, material->m_base_color);
 			mat->SetConstant(MaterialConstantType::METALLIC, material->m_base_metallic);
