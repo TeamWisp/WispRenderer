@@ -20,12 +20,6 @@ namespace wr::imgui
 	{
 		void Registries();
 	}
-	enum InspectItem
-	{
-		NONE,
-		LIGHT,
-		MODEL
-	};
 
 	namespace window
 	{
@@ -34,9 +28,8 @@ namespace wr::imgui
 		void RootSignatureRegistry();
 		void D3D12HardwareInfo(D3D12RenderSystem& render_system);
 		void D3D12Settings();
-		void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
-		void ModelEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
-		void Inspect(SceneGraph* scene_graph);
+		void SceneGraphEditor(SceneGraph* scene_graph);
+		void Inspector(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
 
 		static bool open_hardware_info = true;
 		static bool open_d3d12_settings = true;
@@ -45,14 +38,10 @@ namespace wr::imgui
 		static std::string shader_compiler_error = "No shader error";
 		static bool open_pipeline_registry = false;
 		static bool open_root_signature_registry = false;
-		static bool open_light_editor = true;
-		static bool open_model_editor = true;
-		static bool open_inspect_editor = true;
+		static bool open_scene_graph_editor = true;
+		static bool open_inspector = true;
 		static wr::LightNode* selected_light = nullptr;
-		static wr::MeshNode* selected_model = nullptr;
 		static bool light_selected = false;
-		static bool model_selected = false;
-		static InspectItem inspect_item = NONE;
 
 		static std::shared_ptr<Node> selected_node = nullptr;
 
