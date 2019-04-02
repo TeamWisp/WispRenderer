@@ -40,27 +40,27 @@ namespace wr
 		return LoadFromCompressedMemory(data, width, height, type, srgb, generate_mips);
 	}
 
-	TextureHandle TexturePool::GetDefaultAlbedo()
+	TextureHandle TexturePool::GetDefaultAlbedo() const
 	{
 		return m_default_albedo;
 	}
 
-	TextureHandle TexturePool::GetDefaultNormal()
+	TextureHandle TexturePool::GetDefaultNormal() const
 	{
 		return m_default_normal;
 	}
 
-	TextureHandle TexturePool::GetDefaultRoughness()
+	TextureHandle TexturePool::GetDefaultRoughness() const
 	{
 		return m_default_roughness;
 	}
 
-	TextureHandle TexturePool::GetDefaultMetalic()
+	TextureHandle TexturePool::GetDefaultMetalic() const
 	{
 		return m_default_metalic;
 	}
 
-	TextureHandle TexturePool::GetDefaultAO()
+	TextureHandle TexturePool::GetDefaultAO() const
 	{
 		return m_default_ao;
 	}

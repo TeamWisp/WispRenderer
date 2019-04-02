@@ -46,11 +46,11 @@ namespace wr
 		virtual void PostStageClear() = 0;
 		virtual void ReleaseTemporaryResources() = 0;
 
-		TextureHandle GetDefaultAlbedo();
-		TextureHandle GetDefaultNormal();
-		TextureHandle GetDefaultRoughness();
-		TextureHandle GetDefaultMetalic();
-		TextureHandle GetDefaultAO();
+		TextureHandle GetDefaultAlbedo() const;
+		TextureHandle GetDefaultNormal() const;
+		TextureHandle GetDefaultRoughness() const;
+		TextureHandle GetDefaultMetalic() const;
+		TextureHandle GetDefaultAO() const;
 
 		virtual Texture* GetTexture(uint64_t texture_id) = 0;
 
