@@ -248,7 +248,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 		s0,
 		uv);
 
-	float3 albedo = output_data.albedo;
+	float3 albedo = pow(output_data.albedo, 2.2f);
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 

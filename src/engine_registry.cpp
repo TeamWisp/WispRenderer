@@ -406,6 +406,7 @@ namespace wr
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::MATERIALS),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::OFFSETS),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::SKYBOX),
+    DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::BRDF_LUT),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::IRRADIANCE_MAP),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::TEXTURES),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset),
@@ -419,7 +420,8 @@ namespace wr
 			ROOT_PARAM(GetSRV(params::full_raytracing, params::FullRaytracingE::VERTICES)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP },
+      { TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP }
 		}),
 		RootSignatureDescription::ForRTX(true)
 	});

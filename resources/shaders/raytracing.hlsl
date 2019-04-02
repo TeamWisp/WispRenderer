@@ -40,9 +40,11 @@ StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
 Texture2D skybox : register(t6);
-TextureCube irradiance_map : register(t7);
-Texture2D g_textures[1000] : register(t8);
+Texture2D brdf_lut : register(t7);
+TextureCube irradiance_map : register(t8);
+Texture2D g_textures[1000] : register(t9);
 SamplerState s0 : register(s0);
+SamplerState point_sampler : register(s1);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 struct HitInfo
@@ -266,8 +268,9 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		s0,
 		uv);
 
-	float3 albedo = output_data.albedo;
-	float roughness = output_data.roughness;
+	float3 albedo = pow(output_data.albedo, 2.2f);
+  //float3 albedo = output_data.albedo;
+  float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 	
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
@@ -288,6 +291,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 flipped_N = fN;
 	flipped_N.y *= -1;
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
+  
+  const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
 
 	// Direct
 	float3 reflect_dir = reflect(-V, fN);
@@ -297,9 +302,10 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		metal, 
 		albedo, 
 		roughness);
+
 	float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metal;
+  float3 kD = 1.0 - kS;
+  kD *= 1.0 - metal;
 
 	float3 lighting = shade_pixel(hit_pos, V, 
 		albedo, 
@@ -308,7 +314,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		fN, 
 		payload.seed, 
 		payload.depth);
-	float3 specular = (reflection) * F;
+
+	float3 specular = reflection * (F * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular);
 	payload.color = ambient + lighting;

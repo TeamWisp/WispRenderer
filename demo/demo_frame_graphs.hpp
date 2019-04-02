@@ -140,7 +140,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			//wr::AddRTHybridTask(*fg);
+			wr::AddRTHybridTask(*fg);
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
