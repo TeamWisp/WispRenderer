@@ -104,7 +104,7 @@ namespace wr
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(5 * d3d12::settings::num_back_buffers));
-			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(10));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(11));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
@@ -147,6 +147,12 @@ namespace wr
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+      
+      if (data.is_hybrid)
+      {
+        // Wait on hybrid task
+        const auto& hybird_data = fg.GetPredecessorData<RTHybridData>();
+      }
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -215,8 +221,8 @@ namespace wr
 
 				// Output UAV
 				{
-					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output_index);
-					std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
+					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
+					std::vector<Format> formats = { Format::R32G32B32A32_FLOAT };
 					d3d12::CreateUAVFromRTV(render_target, rtv_out_uav_handle, 1, formats.data());
 				}
 
@@ -293,7 +299,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
+			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),

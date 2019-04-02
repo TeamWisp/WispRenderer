@@ -426,6 +426,7 @@ namespace wr::imgui::window
 
 					auto& model_node = selected_model;
 					auto* model = model_node->m_model;
+					auto& materials = model_node->GetMaterials();
 
 					ImGui::DragFloat3("Position", model_node->m_position.m128_f32, 0.25f);
 
@@ -445,6 +446,28 @@ namespace wr::imgui::window
 					{
 						model_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
 						model_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+					}
+
+					// Material Settings
+					if (ImGui::CollapsingHeader("Material Settings", ImGuiTreeNodeFlags_None))
+					{
+						if (ImGui::Button("Add User-defined Material"))
+						{
+							materials.emplace_back(model->m_meshes[0].second);
+						}
+
+						for (std::size_t mat_i = 0; mat_i < materials.size(); mat_i++)
+						{
+							auto& material = materials[mat_i];
+							auto prev_material = material;
+
+							ImGui::InputInt(("Remove##" + std::to_string(mat_i)).c_str(), reinterpret_cast<int*>(&material.m_id));
+
+							if (!material.m_pool->HasMaterial(material))
+							{
+								material = prev_material;
+							}
+						}
 					}
 
 					model_node->SignalTransformChange();

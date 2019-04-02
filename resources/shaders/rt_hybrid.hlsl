@@ -3,6 +3,7 @@
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
+#include "rt_texture_lod.hlsl"
 
 struct Vertex
 {
@@ -54,6 +55,7 @@ struct ReflectionHitInfo
 	float3 color;
 	unsigned int seed;
 	unsigned int depth;
+	RayCone cone;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -88,7 +90,7 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone)
 {
 
 	if (depth >= MAX_RECURSION)
@@ -98,7 +100,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, depth};
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, depth, cone};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -131,13 +133,13 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint depth)
+float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint depth, RayCone cone)
 {
 	// Calculate ray info
 	float3 reflected = reflect(-V, normal);
 
 	// Shoot reflection ray
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, depth);
+	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, depth, cone);
 	return reflection;
 }
 
@@ -179,19 +181,29 @@ void RaygenEntry()
 		return;
 	}
 
-	wpos += normal * EPSILON;
-	// Get shadow factor  
+	// Describe the surface for mip level generation
+	SurfaceHit sfhit;
+	sfhit.pos = wpos;
+	sfhit.normal = normal;
+	sfhit.dist = length(cpos - wpos);
+	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
+
+	// Compute the initial ray cone from the gbuffers.
+ 	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
+	
 	float shadow_result = 1.0f;
 	if (shadows_enabled == 1)
 	{
-		shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
-	} 
+		// Get shadow factor
+		float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
+	}
 
 	// Get reflection result
 	float3 reflection_result;
 	if (reflections_enabled == 1)
 	{
-		reflection_result = DoReflection(wpos, V, normal, rand_seed, 0);
+		// Get reflection result
+		reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, cone);
 	}
 	else
 	{
@@ -256,16 +268,32 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
+	// Propogate the ray cone
+	payload.cone = Propagate(payload.cone, 0, length(payload.origin - hit_pos));
+
+	// Calculate the texture LOD level 
+	float mip_level = ComputeTextureLOD(
+		payload.cone,
+		V,
+		normalize(mul(model_matrix, float4(normal, 0))),
+		mul(model_matrix, float4(v0.pos, 1)),
+		mul(model_matrix, float4(v1.pos, 1)),
+		mul(model_matrix, float4(v2.pos, 1)),
+		v0.uv,
+		v1.uv,
+		v2.uv,
+		g_textures[material.albedo_id]);
+
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
 		g_textures[material.normal_id],
 		g_textures[material.roughness_id],
 		g_textures[material.metalicness_id],
-		0,
+		mip_level,
 		s0,
 		uv);
 
-	float3 albedo = output_data.albedo;
+	float3 albedo = pow(output_data.albedo, 2.2f);
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
 
@@ -301,7 +329,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth, shadows_enabled);
 
 	//Reflection in reflections
-	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1);
+	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, payload.cone);
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
