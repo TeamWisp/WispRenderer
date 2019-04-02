@@ -212,6 +212,8 @@ int WispEntry()
 
 		SCENE::UpdateScene();
 
+		fg_manager::UpdateIfTasksChanged(*render_system.get(), &RenderEditor);
+
 		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
 
 		// Example usage of the render function output:

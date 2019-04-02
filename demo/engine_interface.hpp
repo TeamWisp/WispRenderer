@@ -150,7 +150,7 @@ namespace engine
 
 		wr::imgui::window::LightEditor(sg, viewport_pos, viewport_size);
 		wr::imgui::window::ModelEditor(sg, viewport_pos, viewport_size);
-		wr::imgui::window::EffectEditor(sg);
+		wr::imgui::window::EffectEditor(sg, *render_system);
 		wr::imgui::window::ShaderRegistry();
 		wr::imgui::window::PipelineRegistry();
 		wr::imgui::window::RootSignatureRegistry();

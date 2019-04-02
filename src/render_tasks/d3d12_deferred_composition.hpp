@@ -26,6 +26,7 @@ namespace wr
 
 		bool is_hybrid;
 		bool is_path_tracer;
+		bool ao_enabled;
 	};
 
 	namespace internal

@@ -34,7 +34,7 @@ namespace wr::imgui
 		void D3D12HardwareInfo(D3D12RenderSystem& render_system);
 		void D3D12Settings();
 		void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
-		void EffectEditor(SceneGraph* scene_graph);
+		void EffectEditor(SceneGraph* scene_graph, D3D12RenderSystem& render_system);
 		void ModelEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
 		void Inspect(SceneGraph* scene_graph);
 

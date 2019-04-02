@@ -277,7 +277,7 @@ namespace wr::imgui::window
 		}
 	}
 
-	void EffectEditor(SceneGraph* scene_graph)
+	void EffectEditor(SceneGraph* scene_graph, D3D12RenderSystem& render_system)
 	{
 		if (open_effect_editor)
 		{
@@ -285,7 +285,7 @@ namespace wr::imgui::window
 			auto cam = scene_graph->GetActiveCamera();
 			ImGui::Checkbox("Shadows Enabled", &cam->m_shadows_enabled);
 			ImGui::Checkbox("Reflections Enabled", &cam->m_reflections_enabled);
-			ImGui::Checkbox("Ambient Occlusion Enabled", &cam->m_ao_enabled);
+			ImGui::Checkbox("Ambient Occlusion Enabled", &render_system.m_effects_enabled.m_ao);
 
 			ImGui::End();
 		}

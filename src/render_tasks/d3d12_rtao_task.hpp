@@ -14,13 +14,11 @@
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
-//#include "../imgui_tools.hpp"
 
 namespace wr
 {
 	struct RTAOData
 	{
-		inline static bool is_active = true;
 		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_miss_shader_table = { nullptr, nullptr, nullptr };

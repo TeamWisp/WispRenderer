@@ -29,6 +29,11 @@ namespace fg_manager
 		PATH_TRACER = 3,
 	};
 
+	struct Effects
+	{
+		bool ao = false;
+	};
+
 	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
 	{
 		switch (id)
@@ -48,6 +53,8 @@ namespace fg_manager
 
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
+
+	static Effects enabled_effects = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
 	{
@@ -111,9 +118,6 @@ namespace fg_manager
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
-			// Raytracing task
-			//wr::AddRTHybridTask(*fg);
-
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
 			wr::AddAccumulationTask<wr::PathTracerData>(*fg);
@@ -153,8 +157,9 @@ namespace fg_manager
 			wr::AddRTHybridTask(*fg);
 			
 			//Ambient Occlusion task
-			if (wr::RTAOData::is_active)
+			if (rs.m_effects_enabled.m_ao)
 			{
+				enabled_effects.ao = true;
 				wr::AddAOTask(*fg);
 			}
 
@@ -171,6 +176,17 @@ namespace fg_manager
 
 			// Finalize the frame graph
 			fg->Setup(rs);
+		}
+	}
+
+	inline void UpdateIfTasksChanged(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
+	{
+		bool should_update = enabled_effects.ao != rs.m_effects_enabled.m_ao;
+		if (should_update)
+		{
+			Setup(rs, imgui_func);
+
+			enabled_effects.ao =  rs.m_effects_enabled.m_ao;
 		}
 	}
 

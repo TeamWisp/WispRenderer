@@ -113,7 +113,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Irradiance and ao buffer if it IS hybrid rendering
 			irradiance * gbuffer_AO[screen_coord].x,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
-			is_hybrid);
+			ao_enabled);
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, occluded_irradiance, reflection, sampled_brdf, shadow_factor);
