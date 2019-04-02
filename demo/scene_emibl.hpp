@@ -47,7 +47,7 @@ namespace emibl_scene
 			wr::TextureHandle metal_splotchy_roughness = texture_pool->LoadFromFile("resources/materials/metal-splotchy-rough.png", false, true);
 			wr::TextureHandle metal_splotchy_metallic = texture_pool->LoadFromFile("resources/materials/metal-splotchy-metal.png", false, true);
 
-			wr::TextureHandle mahogfloor_albedo = texture_pool->LoadFromFile("resources/materials/dds_diffuse.dds", true, true);
+			wr::TextureHandle mahogfloor_albedo = texture_pool->LoadFromFile("resources/materials/mahogfloor/albedo.png", true, true);
 			wr::TextureHandle mahogfloor_normal = texture_pool->LoadFromFile("resources/materials/mahogfloor/normal.png", false, true);
 			wr::TextureHandle mahogfloor_roughness = texture_pool->LoadFromFile("resources/materials/mahogfloor/roughness.png", false, true);
 			wr::TextureHandle mahogfloor_metallic = texture_pool->LoadFromFile("resources/materials/mahogfloor/metallic.png", false, true);
