@@ -1,4 +1,5 @@
 #include "node.hpp"
+#include "../util/log.hpp"
 
 namespace wr
 {
@@ -51,6 +52,14 @@ namespace wr
 	void Node::SetRotation(DirectX::XMVECTOR roll_pitch_yaw)
 	{
 		m_rotation_radians = roll_pitch_yaw;
+		m_use_quat = false;
+		SignalTransformChange();
+	}
+
+	void Node::SetRotationQuat(DirectX::XMVECTOR roll_pitch_yaw)
+	{
+		m_rotation = roll_pitch_yaw;
+		m_use_quat = true;
 		SignalTransformChange();
 	}
 
@@ -75,7 +84,11 @@ namespace wr
 
 	void Node::UpdateTransform()
 	{
-		m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
+		if (!m_use_quat)
+			m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
+		else
+			LOG("Huh?");
+
 		DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslationFromVector(m_position);
 		DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationQuaternion(m_rotation);
 		DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScalingFromVector(m_scale);

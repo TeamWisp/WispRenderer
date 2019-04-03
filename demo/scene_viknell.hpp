@@ -6,6 +6,7 @@
 #include "scene_graph/scene_graph.hpp"
 #include "imgui/imgui.hpp"
 #include "debug_camera.hpp"
+#include "spline_node.hpp"
 
 namespace viknell_scene
 {
@@ -82,6 +83,7 @@ namespace viknell_scene
 
 
 	static std::shared_ptr<DebugCamera> camera;
+	static std::shared_ptr<SplineNode> camera_spline_node;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
 	static std::shared_ptr<wr::MeshNode> test_model;
 	static float t = 0;
@@ -91,6 +93,8 @@ namespace viknell_scene
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float) window->GetWidth() / (float) window->GetHeight());
 		camera->SetPosition({0, 0, 2});
 		camera->SetSpeed(10);
+
+		camera_spline_node = scene_graph->CreateChild<SplineNode>(nullptr);
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
@@ -152,5 +156,6 @@ namespace viknell_scene
 		//test_model->SetPosition(pos);
 
 		camera->Update(ImGui::GetIO().DeltaTime);
+		camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, camera);
 	}
 } /* cube_scene */

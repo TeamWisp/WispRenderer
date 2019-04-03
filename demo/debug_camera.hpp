@@ -19,6 +19,7 @@ public:
 	virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw) override
 	{
 		m_rotation_radians = roll_pitch_yaw;
+		m_use_quat = false;
 		m_target_rotation_radians = roll_pitch_yaw;
 	}
 
@@ -60,7 +61,7 @@ public:
 
 			// Rotation
 			DirectX::XMVECTOR new_rot{ cursor_pos.y - m_last_cursor_pos.y, cursor_pos.x - m_last_cursor_pos.x };
-			m_target_rotation_radians = DirectX::XMVectorSubtract(m_target_rotation_radians, DirectX::XMVectorScale(new_rot, m_sensitivity));
+			SetRotation(DirectX::XMVectorSubtract(m_target_rotation_radians, DirectX::XMVectorScale(new_rot, m_sensitivity)));
 		}
 		else
 		{
@@ -70,7 +71,7 @@ public:
 		}
 
 		m_position = DirectX::XMVectorLerp(m_position, m_target_position, delta * m_position_lerp_speed);
-		m_rotation_radians = DirectX::XMVectorLerp(m_rotation_radians, m_target_rotation_radians, delta * m_rotation_lerp_speed);
+		SetRotation(DirectX::XMVectorLerp(m_rotation_radians, m_target_rotation_radians, delta * m_rotation_lerp_speed));
 		SignalTransformChange();
 
 		m_last_cursor_pos = cursor_pos;

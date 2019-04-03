@@ -22,6 +22,9 @@ namespace wr
 
 		//Takes roll, pitch and yaw and converts it to quaternion
 		virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw);
+		virtual void SetRotationQuat(DirectX::XMVECTOR roll_pitch_yaw);
+
+		bool m_use_quat = false;
 
 		//Sets position
 		virtual void SetPosition(DirectX::XMVECTOR position);
