@@ -2,7 +2,12 @@
 
 namespace wr
 {
-	Node::Node()
+	Node::Node() : m_type_info(typeid(Node))
+	{
+		SignalTransformChange();
+	}
+
+	Node::Node(std::type_info const & type_info) : m_type_info(type_info)
 	{
 		SignalTransformChange();
 	}

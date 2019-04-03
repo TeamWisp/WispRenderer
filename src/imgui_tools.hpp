@@ -50,44 +50,38 @@ namespace wr::imgui
 			using name_func_t = std::function<std::string(std::shared_ptr<Node>)>;
 			using inspect_func_t = std::function<void(std::shared_ptr<Node>, SceneGraph*)>;
 			using context_menu_func_t = std::function<bool(std::shared_ptr<Node>, SceneGraph*)>;
-			static const std::unordered_map<std::type_index, name_func_t> sg_editor_type_names;
-			static const std::unordered_map<std::type_index, inspect_func_t> sg_editor_type_inspect;
-			static const std::unordered_map<std::type_index, context_menu_func_t> sg_editor_type_context_menu;
+			static std::unordered_map<std::type_index, name_func_t> sg_editor_type_names;
+			static std::unordered_map<std::type_index, inspect_func_t> sg_editor_type_inspect;
+			static std::unordered_map<std::type_index, context_menu_func_t> sg_editor_type_context_menu;
 
-			template<typename T>
-			static void TryUpdateName(std::shared_ptr<Node> node, std::string& out)
+			static std::optional<std::string> GetNodeName(std::shared_ptr<Node> node)
 			{
-				if (auto t_node = std::dynamic_pointer_cast<T>(node))
+				if (auto it = SceneGraphEditorDetails::sg_editor_type_names.find(node->m_type_info); it != SceneGraphEditorDetails::sg_editor_type_names.end())
 				{
-					if (auto it = SceneGraphEditorDetails::sg_editor_type_names.find(typeid(T)); it != SceneGraphEditorDetails::sg_editor_type_names.end())
-					{
-						out = it->second(node);
-					}
+					return it->second(node);
 				}
+
+				return std::nullopt;
 			}
 
-			template<typename T>
-			static void TryUpdateInspectFunction(std::shared_ptr<Node> node, inspect_func_t& out)
+			static std::optional<inspect_func_t> GetNodeInspectFunction(std::shared_ptr<Node> node)
 			{
-				if (auto t_node = std::dynamic_pointer_cast<T>(node))
+				if (auto it = SceneGraphEditorDetails::sg_editor_type_inspect.find(node->m_type_info); it != SceneGraphEditorDetails::sg_editor_type_inspect.end())
 				{
-					if (auto it = SceneGraphEditorDetails::sg_editor_type_inspect.find(typeid(T)); it != SceneGraphEditorDetails::sg_editor_type_inspect.end())
-					{
-						out = it->second;
-					}
+					return it->second;
 				}
+
+				return std::nullopt;
 			}
 
-			template<typename T>
-			static void TryUpdateContextMenuFunction(std::shared_ptr<Node> node, context_menu_func_t& out)
+			static std::optional<context_menu_func_t> GetNodeContextMenuFunction(std::shared_ptr<Node> node)
 			{
-				if (auto t_node = std::dynamic_pointer_cast<T>(node))
+				if (auto it = SceneGraphEditorDetails::sg_editor_type_context_menu.find(node->m_type_info); it != SceneGraphEditorDetails::sg_editor_type_context_menu.end())
 				{
-					if (auto it = SceneGraphEditorDetails::sg_editor_type_context_menu.find(typeid(T)); it != SceneGraphEditorDetails::sg_editor_type_context_menu.end())
-					{
-						out = it->second;
-					}
+					return it->second;
 				}
+
+				return std::nullopt;
 			}
 		};
 	}

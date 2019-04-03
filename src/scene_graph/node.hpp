@@ -10,6 +10,7 @@ namespace wr
 	struct Node : std::enable_shared_from_this<Node>
 	{
 		Node();
+		Node(std::type_info const & type_info);
 
 		void SignalChange();
 		void SignalUpdate(unsigned int frame_idx);
@@ -51,6 +52,8 @@ namespace wr
 
 		//Transformation
 		DirectX::XMMATRIX m_local_transform, m_transform;
+
+		const std::type_info& m_type_info;
 
 	private:
 
