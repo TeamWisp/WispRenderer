@@ -59,7 +59,7 @@ namespace wr
 		void PostStageClear() final;
 		void ReleaseTemporaryResources() final;
 
-		d3d12::TextureResource* GetTexture(uint64_t texture_id) final;
+		d3d12::TextureResource* GetTextureResource(TextureHandle handle) final;
 		[[nodiscard]] TextureHandle LoadFromFile(std::string_view path, bool srgb, bool generate_mips) final;
 		[[nodiscard]] TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips) final;
 		[[nodiscard]] TextureHandle LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips) final;
@@ -69,7 +69,7 @@ namespace wr
 		DescriptorAllocator* GetAllocator(DescriptorHeapType type);
 		DescriptorAllocator* GetMipmappingAllocator() { return m_mipmapping_allocator; }
 
-		void Unload(uint64_t texture_id) final;
+		void Unload(TextureHandle& handle) final;
 
 		void GenerateMips_Cubemap(d3d12::TextureResource* texture, CommandList* cmd_list, unsigned int array_slice);
 
@@ -84,12 +84,11 @@ namespace wr
 
 		//Unstaged textures are stored as pairs in a map. This removes the necessity of having a ScratchImage
 		//pointer in the Texture struct. Once the textures are staged the ScratchImages are deleted.
-		std::unordered_map<uint64_t, std::pair<Texture*, DirectX::ScratchImage*>> m_unstaged_textures;
+		using UnstagedTextures = std::unordered_map<uint64_t, std::pair<Texture*, DirectX::ScratchImage*>>;
+		UnstagedTextures m_unstaged_textures;
 
-		std::unordered_map<uint64_t, Texture*> m_staged_textures;
-
-
-
+		using StagedTextures = std::unordered_map<uint64_t, Texture*>;
+		StagedTextures m_staged_textures;
 
 		D3D12RenderSystem& m_render_system;
 

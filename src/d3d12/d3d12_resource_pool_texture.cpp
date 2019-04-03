@@ -99,12 +99,21 @@ namespace wr
 
 		while (m_unstaged_textures.size() > 0)
 		{
-			D3D12TexturePool::Unload(m_unstaged_textures.begin()->first);
+			uint64_t texture_id = m_unstaged_textures.begin()->first;
+
+			d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(m_unstaged_textures.at(texture_id).first);
+			m_unstaged_textures.erase(texture_id);
+
+			SAFE_RELEASE(texture->m_resource);
+			SAFE_RELEASE(texture->m_intermediate);
+
+			delete texture;
 		}
 		
 		while(m_staged_textures.size() > 0)
 		{
-			D3D12TexturePool::Unload(m_staged_textures.begin()->first);
+			TextureHandle handle = { this, m_staged_textures.begin()->first };
+			D3D12TexturePool::Unload(handle);
 		}
 	}
 
@@ -209,9 +218,9 @@ namespace wr
 		m_temporary_heaps[frame_idx].clear();
 	}
 
-	d3d12::TextureResource* D3D12TexturePool::GetTexture(uint64_t texture_id)
+	d3d12::TextureResource* D3D12TexturePool::GetTextureResource(TextureHandle handle)
 	{
-		return static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));
+		return static_cast<d3d12::TextureResource*>(m_staged_textures.at(handle.m_id));
 	}
 
 	TextureHandle D3D12TexturePool::CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest)
@@ -374,8 +383,10 @@ namespace wr
 		return m_allocators[static_cast<size_t>(type)];
 	}
 
-	void D3D12TexturePool::Unload(uint64_t texture_id)
+	void D3D12TexturePool::Unload(TextureHandle& handle)
 	{
+		uint64_t texture_id = handle.m_id;
+
 		d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));
 		m_staged_textures.erase(texture_id);
 
@@ -383,6 +394,12 @@ namespace wr
 		SAFE_RELEASE(texture->m_intermediate);
 
 		delete texture;
+
+#ifdef _DEBUG
+		LOGW("[DEBUG MESSAGE]: Handle {} from {} invalidated.", texture_id, m_name);
+#endif
+		handle.m_pool = nullptr;
+		handle.m_id = -UINT_MAX;
 	}
 
 
@@ -416,6 +433,10 @@ namespace wr
 			else if (ext_int.find("hdr") != std::string_view::npos)
 			{
 				hr = LoadFromHDRFile(wide_string.c_str(), &metadata, *image);
+			}
+			else if (ext_int.find("tga") != std::string_view::npos)
+			{
+				hr = DirectX::LoadFromTGAFile(wide_string.c_str(), &metadata, *image);
 			}
 			else
 			{
