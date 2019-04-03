@@ -1,4 +1,5 @@
 #include "dof_properties.hlsl"
+#include "hdr_util.hlsl"
 
 Texture2D source : register(t0);
 RWTexture2D<float4> output : register(u0);
@@ -34,8 +35,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 texel_size = 1.0 / screen_size;
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 
-	float coc = GetDownSampledCoC(uv, texel_size);
+	float gamma = 2.2;
+	float exposure = 1;
 
+	float coc = GetDownSampledCoC(uv, texel_size);
+	
 	float3 original_sample = source.SampleLevel(s0, uv, 0).rgb;
 	float4 near_sample = bokeh_near.SampleLevel(s1, uv, 0);
 	float4 far_sample = bokeh_far.SampleLevel(s1, uv, 0);
@@ -55,6 +59,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float near_blend = saturate(near_sample.w * 2.0f);
 	result = lerp(result, near.rgb, smoothstep(0.0f, 1.0f, near_blend));
+
+	result = linearToneMapping(result, exposure, gamma);
 
 	output[int2(dispatch_thread_id.xy)] = float4(result, 1.0f);
 }

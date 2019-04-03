@@ -1,2 +1,2 @@
-static const float MAXBOKEHSIZE = 20.f;
+static const float MAXBOKEHSIZE = 18.f;
 static const uint NUMDOFSAMPLES = 7;

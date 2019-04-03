@@ -18,7 +18,7 @@
 #include "render_tasks/d3d12_dof_bokeh.hpp"
 #include "render_tasks/d3d12_dof_bokeh_postfilter.hpp"
 #include "render_tasks/d3d12_dof_coc.hpp"
-#include "render_tasks/d3d12_dof_down_scale.hpp"
+#include "render_tasks/d3d12_down_scale.hpp"
 #include "render_tasks/d3d12_dof_composition.hpp"
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten.hpp"
@@ -80,7 +80,7 @@ namespace fg_manager
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(15);
+			fg = new wr::FrameGraph(17);
 			
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
@@ -94,10 +94,10 @@ namespace fg_manager
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
-			wr::AddDoFDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFDilateTask<wr::DoFDownScaleData>(*fg,
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
@@ -106,14 +106,15 @@ namespace fg_manager
 			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFBokehTask<wr::DoFDownScaleData, wr::DoFDilateFlattenHData>(*fg,
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
+			//wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
 			// Display ImGui
@@ -189,10 +190,10 @@ namespace fg_manager
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
-			wr::AddDoFDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
+			wr::AddDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFDilateTask<wr::DoFDownScaleData>(*fg,
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
@@ -201,7 +202,7 @@ namespace fg_manager
 			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFBokehTask<wr::DoFDownScaleData, wr::DoFDilateFlattenHData>(*fg,
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,

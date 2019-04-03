@@ -3,6 +3,7 @@
 Texture2D source : register(t0);
 RWTexture2D<float4> output_near : register(u0);
 RWTexture2D<float4> output_far : register(u1);
+RWTexture2D<float4> output_bright : register(u2);
 Texture2D cocbuffer : register(t1);
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
@@ -29,12 +30,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_size = float2(0.f, 0.f);
 	output_near.GetDimensions(screen_size.x, screen_size.y);
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
 
 	float2 texel_size = 1.0f / screen_size;
 	float4 offset = texel_size.xyxy * float2(-0.5, 0.5).xxyy;
 
-	float2 uv = (screen_coord + 0.5f) / screen_size;
+	float2 uv = screen_coord / screen_size;
 
 	float3 source0 = source.SampleLevel(s0, uv + offset.xy, 0).rgb;
 	float3 source1 = source.SampleLevel(s0, uv + offset.zy, 0).rgb;
@@ -49,6 +50,15 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float4 out_far = float4(finalcolor, 1.0f) * max(coc, 0.0f);
 
+	float4 out_bright = float4(0.0f, 0.0f, 0.0f, 1.0f);
+	float brightness = dot(finalcolor, float3(0.2126f, 0.7152f, 0.0722f));
+
+	if (brightness > 1.0f)
+	{
+		out_bright = float4(finalcolor, 1.0f);
+	}
+
+	output_bright[int2(dispatch_thread_id.xy)] = out_bright;
 	output_near[int2(dispatch_thread_id.xy)] = out_near;
 	output_far[int2(dispatch_thread_id.xy)] = out_far;
 }
