@@ -307,16 +307,16 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						handle = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, srgb, gen_mips);
+						handle = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						handle = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, srgb, gen_mips);
+						handle = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
 				else if (texture_location == TextureLocation::EXTERNAL)
 				{
-					handle = texture_pool->Load(texture_path, srgb, gen_mips);
+					handle = texture_pool->LoadFromFile(dir + material->m_albedo_texture, true, true);
 				}
 			};
 

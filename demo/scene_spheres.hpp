@@ -33,12 +33,12 @@ namespace spheres_scene
 			material_pool = render_system->CreateMaterialPool(256);
 			model_pool = render_system->CreateModelPool(64_mb, 64_mb);
 		
-			wr::TextureHandle spheres_albedo = texture_pool->Load("resources/materials/bw_tiles_gold_lining/albedo.png", true, true);
-			wr::TextureHandle spheres_normal = texture_pool->Load("resources/materials/bw_tiles_gold_lining/normal.png", false, true);
-			wr::TextureHandle spheres_roughness = texture_pool->Load("resources/materials/bw_tiles_gold_lining/roughness.png", false, true);
-			wr::TextureHandle spheres_metallic = texture_pool->Load("resources/materials/bw_tiles_gold_lining/metallic.png", false, true);
+			wr::TextureHandle spheres_albedo = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/albedo.png", true, true);
+			wr::TextureHandle spheres_normal = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/normal.png", false, true);
+			wr::TextureHandle spheres_roughness = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/roughness.png", false, true);
+			wr::TextureHandle spheres_metallic = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/metallic.png", false, true);
 
-			equirectangular_environment_map = texture_pool->Load("resources/materials/Circus_Backstage_3k.hdr", false, false);
+			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 			// Create Materials
 			spheres_material = material_pool->Create();

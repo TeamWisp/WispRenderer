@@ -348,13 +348,13 @@ namespace wr
 			ROOT_PARAM(GetConstants(params::post_processing, params::PostProcessingE::HDR_SUPPORT)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER }
 		})
 	});
 
 	DESC_RANGE_ARRAY(accum_r,
-		DESC_RANGE(params::accumulation, Type::SRV_RANGE, params::PostProcessingE::SOURCE),
-		DESC_RANGE(params::accumulation, Type::UAV_RANGE, params::PostProcessingE::DEST),
+		DESC_RANGE(params::accumulation, Type::SRV_RANGE, params::AccumulationE::SOURCE),
+		DESC_RANGE(params::accumulation, Type::UAV_RANGE, params::AccumulationE::DEST),
 	);
 
 	REGISTER(root_signatures::accumulation, RootSignatureRegistry)({
@@ -406,6 +406,7 @@ namespace wr
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::MATERIALS),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::OFFSETS),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::SKYBOX),
+    DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::BRDF_LUT),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::IRRADIANCE_MAP),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::TEXTURES),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset),
@@ -419,7 +420,8 @@ namespace wr
 			ROOT_PARAM(GetSRV(params::full_raytracing, params::FullRaytracingE::VERTICES)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP },
+      { TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP }
 		}),
 		RootSignatureDescription::ForRTX(true)
 	});
@@ -810,7 +812,7 @@ namespace wr
 	{
 		StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
 		StateObjectDescription::Library(rt_hybrid_so_library),
-		StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 2)),
+		StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2)),
 		StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
 		StateObjectDescription::MaxRecursionDepth(3),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),

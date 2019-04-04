@@ -54,7 +54,7 @@ namespace wr
 
 				d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
 
-				d3d12::TextureResource* brdf_lut = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTexture(n_render_system.m_brdf_lut.value().m_id));
+				d3d12::TextureResource* brdf_lut = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
 
 				d3d12::Transition(cmd_list, brdf_lut, ResourceState::COPY_DEST, ResourceState::UNORDERED_ACCESS);
 
