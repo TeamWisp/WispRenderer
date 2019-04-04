@@ -28,7 +28,7 @@ float GetDownSampledCoC(float2 uv, float2 texelSize)
 void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
-	output_near.GetDimensions(screen_size.x, screen_size.y);
+	output_far.GetDimensions(screen_size.x, screen_size.y);
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
 
@@ -45,10 +45,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 finalcolor = (source0 + source1 + source2 + source3) * 0.25f;
 	float coc = GetDownSampledCoC(uv, texel_size);
 
-	float4 out_near = float4(finalcolor, 1.0f) * max(-coc, 0.0f);
+	float4 out_near = max(0,float4(finalcolor, 1.0f) * max(-coc, 0.0f));
 	out_near.rgb = finalcolor;
 
-	float4 out_far = float4(finalcolor, 1.0f) * max(coc, 0.0f);
+	float4 out_far = max(0,float4(finalcolor, 1.0f) * max(coc, 0.0f));
 
 	float4 out_bright = float4(0.0f, 0.0f, 0.0f, 1.0f);
 	float brightness = dot(finalcolor, float3(0.2126f, 0.7152f, 0.0722f));

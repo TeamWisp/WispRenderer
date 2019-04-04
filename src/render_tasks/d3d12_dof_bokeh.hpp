@@ -85,6 +85,7 @@ namespace wr
 			}
 		}
 
+		template<typename T, typename T1>
 		inline void ExecuteDoFBokehTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -94,6 +95,38 @@ namespace wr
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			const auto viewport = n_render_system.m_viewport;
+
+			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+			auto source_coc_rt = data.out_source_coc_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
+
+			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			{
+				// Destination
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::OUTPUT_NEAR)));
+					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+				}
+				// Destination far
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::OUTPUT_FAR)));
+					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
+				}
+				// Source near
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::SOURCE_NEAR)));
+					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+				}
+				// Source far
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::SOURCE_FAR)));
+					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 1, source_rt->m_create_info.m_rtv_formats[1]);
+				}
+				// Dilated COC
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::COC)));
+					d3d12::CreateSRVFromSpecificRTV(source_coc_rt, cpu_handle, frame_idx, source_coc_rt->m_create_info.m_rtv_formats[frame_idx]);
+				}
+			}
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
@@ -139,7 +172,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({wr::Format::R32G32B32A32_FLOAT,wr::Format::R32G32B32A32_FLOAT}),
+			RenderTargetProperties::RTVFormats({wr::Format::R16G16B16A16_FLOAT,wr::Format::R16G16B16A16_FLOAT}),
 			RenderTargetProperties::NumRTVFormats(2),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
@@ -152,7 +185,7 @@ namespace wr
 			internal::SetupDoFBokehTask<T, T1>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteDoFBokehTask(rs, fg, sg, handle);
+			internal::ExecuteDoFBokehTask<T, T1>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};

@@ -54,7 +54,7 @@ namespace wr
 				// Source
 				{
 					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::SOURCE)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt_comp, cpu_handle, frame_idx, source_rt_comp->m_create_info.m_rtv_formats[frame_idx]);
+					d3d12::CreateSRVFromSpecificRTV(source_rt_comp, cpu_handle, 0, source_rt_comp->m_create_info.m_rtv_formats[0]);
 				}
 				// Bokeh near
 				{
@@ -74,6 +74,7 @@ namespace wr
 			}
 		}
 
+		template<typename T, typename T1, typename T2>
 		inline void ExecuteDoFCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -85,6 +86,39 @@ namespace wr
 			const auto viewport = n_render_system.m_viewport;
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
+
+			auto source_rt_comp = data.out_source_rt_comp = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+			auto source_rt_bokeh_filtered = data.out_source_bokeh_filtered = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
+			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T2>());
+
+			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			{
+				// Destination
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::OUTPUT)));
+					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+				}
+				// Source
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::SOURCE)));
+					d3d12::CreateSRVFromSpecificRTV(source_rt_comp, cpu_handle, 0, source_rt_comp->m_create_info.m_rtv_formats[0]);
+				}
+				// Bokeh near
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::BOKEH_NEAR)));
+					d3d12::CreateSRVFromSpecificRTV(source_rt_bokeh_filtered, cpu_handle, 0, source_rt_bokeh_filtered->m_create_info.m_rtv_formats[0]);
+				}
+				// Bokeh far
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::BOKEH_FAR)));
+					d3d12::CreateSRVFromSpecificRTV(source_rt_bokeh_filtered, cpu_handle, 1, source_rt_bokeh_filtered->m_create_info.m_rtv_formats[1]);
+				}
+				// Cone of confusion
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::COC)));
+					d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, frame_idx, source_coc->m_create_info.m_rtv_formats[frame_idx]);
+				}
+			}
 
 			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 5, data.out_allocation.GetDescriptorHandle());
 
@@ -124,7 +158,7 @@ namespace wr
 			internal::SetupDoFCompositionTask<T, T1, T2>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteDoFCompositionTask(rs, fg, sg, handle);
+			internal::ExecuteDoFCompositionTask<T, T1, T2>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};

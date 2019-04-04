@@ -88,10 +88,7 @@ namespace fg_manager
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-			// Do some post processing
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
-
-			// Do Depth of field task
+			//// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
 			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
@@ -184,13 +181,10 @@ namespace fg_manager
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-			// Do some post processing
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
-
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
-			wr::AddDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
@@ -208,7 +202,10 @@ namespace fg_manager
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+
+			// Do some post processing
+			//wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);

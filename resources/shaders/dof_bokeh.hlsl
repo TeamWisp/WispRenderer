@@ -40,8 +40,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	//BakingLab kernel gather method credits to MJP and David Neubelt.
 	if (enable_dof > 0)
 	{
-		float far_coc = source_far[screen_coord].w;// [screen_coord + 0.5f].w;
-		float near_coc = source_near[screen_coord].w;// [screen_coord + 0.5f].w;
+		float far_coc = source_far.SampleLevel(s1, uv, 0).w;
+		float near_coc = source_near.SampleLevel(s1, uv, 0).w;
 		float kernel_radius = MAXKERNELSIZE * far_coc;
 
 		[branch]
@@ -65,7 +65,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 		else
 		{
-			bgcolor = source_far[screen_coord];
+			bgcolor = source_far.SampleLevel(s0, uv, 0);
 		}
 
 		float nearMask = SampleTextureBSpline(near_mask, s0, uv).x;
@@ -105,10 +105,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 		else
 		{
-			fgcolor = float4(source_near[screen_coord].rgb, 0.0f);
+			fgcolor = float4(source_near.SampleLevel(s0, uv, 0).rgb, 0.0f);
 		}
-		//fgcolor = source_near.SampleLevel(s0, uv, 0);
-		//bgcolor = source_far.SampleLevel(s0, uv, 0);
 	}
 
 	output_near[int2(dispatch_thread_id.xy)] = fgcolor;

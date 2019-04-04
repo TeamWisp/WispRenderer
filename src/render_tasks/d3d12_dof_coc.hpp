@@ -70,6 +70,7 @@ namespace wr
 			}
 		}
 
+		template<typename T>
 		inline void ExecuteDoFCoCTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -80,8 +81,10 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			const auto viewport = n_render_system.m_viewport;
 
-			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(sg.GetActiveCamera()->m_camera_cb);
+			data.out_source_dsv = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
+			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(sg.GetActiveCamera()->m_camera_cb);
+			
 			DoFProperties_CB cb_data;
 			cb_data.m_projection = sg.GetActiveCamera()->m_projection;
 			cb_data.m_film_size = sg.GetActiveCamera()->m_film_size;
@@ -91,9 +94,22 @@ namespace wr
 			cb_data.m_enable_dof = sg.GetActiveCamera()->m_enable_dof;
 
 			data.cb_handle->m_pool->Update(data.cb_handle, sizeof(DoFProperties_CB), 0, frame_idx, (uint8_t*)&cb_data);
-
-			//d3d12::BindConstantBuffer(cmd_list, data.cb_handle->m_native, 2, frame_idx);
 			
+			auto source_dsv = data.out_source_dsv = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+
+			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			{
+				// Destination
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT)));
+					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+				}
+				// Source
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH)));
+					d3d12::CreateSRVFromDSV(source_dsv, cpu_handle);
+				}
+			}
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
@@ -127,7 +143,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ wr::Format::R32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
@@ -139,7 +155,7 @@ namespace wr
 			internal::SetupDoFCoCTask<T>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteDoFCoCTask(rs, fg, sg, handle);
+			internal::ExecuteDoFCoCTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};
