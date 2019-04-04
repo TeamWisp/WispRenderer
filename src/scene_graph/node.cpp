@@ -5,6 +5,7 @@ namespace wr
 	Node::Node()
 	{
 		SignalTransformChange();
+		m_used_quaternion = false;
 	}
 
 	void Node::SignalChange()
@@ -49,6 +50,13 @@ namespace wr
 		SignalTransformChange();
 	}
 
+	void Node::SetQuaternionRotation( float x, float y, float z, float w )
+	{
+		m_rotation = { x,y,z,w };
+		m_used_quaternion = true;
+		SignalTransformChange();
+	}
+
 	void Node::SetPosition(DirectX::XMVECTOR position)
 	{
 		m_position = position;
@@ -70,7 +78,14 @@ namespace wr
 
 	void Node::UpdateTransform()
 	{
-		m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
+		if( m_used_quaternion )
+		{
+			m_used_quaternion == false; // reset
+		}
+		else
+		{
+			m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
+		}
 		DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslationFromVector(m_position);
 		DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationQuaternion(m_rotation);
 		DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScalingFromVector(m_scale);
