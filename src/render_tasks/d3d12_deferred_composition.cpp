@@ -56,7 +56,7 @@ namespace wr
 
 			constexpr unsigned int brdf_lut_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BRDF_LUT);
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
-			d3d12::TextureResource* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTexture(n_render_system.m_brdf_lut.value().m_id));
+			d3d12::TextureResource* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
 			d3d12::SetShaderSRV(cmd_list, 1, brdf_lut_loc, brdf_lut_text);
 
 			constexpr unsigned int shadow = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
@@ -117,7 +117,7 @@ namespace wr
 				{
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
 					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id + i);
-					
+
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
 					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
 				}
@@ -132,12 +132,12 @@ namespace wr
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
-      
-      if (data.is_hybrid)
-      {
-        // Wait on hybrid task
-        const auto& hybird_data = fg.GetPredecessorData<RTHybridData>();
-      }
+
+			if (data.is_hybrid)
+			{
+				// Wait on hybrid task
+				const auto& hybird_data = fg.GetPredecessorData<RTHybridData>();
+			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -155,7 +155,7 @@ namespace wr
 				camera_data.m_is_hybrid = data.is_hybrid;
 				camera_data.m_is_path_tracer = data.is_path_tracer;
 
-				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*) &camera_data);
+				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&camera_data);
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);
 
 				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
@@ -175,7 +175,7 @@ namespace wr
 				if (skybox != nullptr)
 				{
 					//data.out_skybox = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
-					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTexture(skybox->m_skybox->m_id));
+					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
 					d3d12::CreateSRVFromTexture(data.out_skybox);
 				}
 
@@ -186,20 +186,18 @@ namespace wr
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
 					d3d12::CreateSRVFromSpecificRTV(hybrid_rt, irradiance_handle, 0, hybrid_rt->m_create_info.m_rtv_formats[0]);
 				}
-				
+
 				// Get Irradiance Map
 				if (skybox != nullptr)
 				{
-					//data.out_irradiance = static_cast<d3d12::TextureResource*>(pred_data.out_irradiance.m_pool->GetTexture(pred_data.out_irradiance.m_id));
-					data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTexture(skybox->m_irradiance->m_id));
+					data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
 					d3d12::CreateSRVFromTexture(data.out_irradiance);
 				}
 
 				// Get the prefiltered environment map	
-				if (skybox != nullptr)	
-				{		
-					//data.out_pref_env_map = static_cast<d3d12::TextureResource*>(pred_data.out_pref_env_map.m_pool->GetTexture(pred_data.out_pref_env_map.m_id));
-					data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTexture(skybox->m_prefiltered_env_map->m_id));
+				if (skybox != nullptr)
+				{
+					data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
 					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
 				}
 

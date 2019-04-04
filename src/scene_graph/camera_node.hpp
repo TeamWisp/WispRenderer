@@ -41,7 +41,8 @@ namespace wr
 			m_f_number(32.0f),
 			m_shape_amt(0.5f),
 			m_aperture_blades(5),
-			m_focus_dist(0)
+			m_focus_dist(0),
+			m_override_projection(false)
 		{
 		}
 
@@ -71,6 +72,7 @@ namespace wr
 		float m_shape_amt;
 		int m_aperture_blades;
 		bool m_enable_dof = false;
+		bool m_override_projection;
 
 		FoV m_fov;
 
