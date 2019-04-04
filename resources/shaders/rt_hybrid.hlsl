@@ -188,13 +188,19 @@ void HybridRaygenEntry()
 [shader("raygeneration")]
 void ShadowRaygenEntry()
 {
-	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+	float scaling;
+	#ifdef HALF_RES
+	scaling = 2.0;
+	#else
+	scaling = 1.0;
+	#endif
+	uint rand_seed = initRand(DispatchRaysIndex().x * scaling + DispatchRaysIndex().y * scaling * DispatchRaysDimensions().x * scaling, frame_idx);
 
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
 	// Screen coordinates [0, resolution] (inverted y)
-	int2 screen_co = DispatchRaysIndex().xy;
+	int2 screen_co = DispatchRaysIndex().xy*scaling;
 
 	// Get g-buffer information
 	float4 albedo_roughness = gbuffer_albedo[screen_co];
@@ -213,7 +219,12 @@ void ShadowRaygenEntry()
 	{
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
-		output_refl_shadow[DispatchRaysIndex().xy] = float4(1, 1, 1, 1);
+		output_refl_shadow[screen_co] = float4(1, 1, 1, 1);
+		#ifdef HALF_RES
+		output_refl_shadow[screen_co+int2(1,0)] = float4(1, 1, 1, 1);
+		output_refl_shadow[screen_co+int2(0,1)] = float4(1, 1, 1, 1);
+		output_refl_shadow[screen_co+int2(1,1)] = float4(1, 1, 1, 1);
+		#endif
 		return;
 	}
 
@@ -222,7 +233,12 @@ void ShadowRaygenEntry()
 	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
 
 	// xyz: reflection, a: shadow factor
-	output_refl_shadow[DispatchRaysIndex().xy] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
+	output_refl_shadow[screen_co] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
+	#ifdef HALF_RES
+	output_refl_shadow[screen_co+int2(1,0)] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
+	output_refl_shadow[screen_co+int2(0,1)] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
+	output_refl_shadow[screen_co+int2(1,1)] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
+	#endif
 }
 
 [shader("raygeneration")]

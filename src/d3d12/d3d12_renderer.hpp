@@ -48,6 +48,7 @@ namespace wr
 		struct ShadowDenoiserSettings_CBData
 		{
 			DirectX::XMFLOAT2 m_direction;
+			DirectX::XMINT2 m_kernel_size;
 			float m_depth_contrast;
 		};
 

@@ -65,6 +65,7 @@ namespace wr
 		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::SOURCE),
 		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::DEPTH),
 		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::KERNEL),
+		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::VARIANCE),
 		DESC_RANGE(params::shadow_denoiser, Type::UAV_RANGE, params::ShadowDenoiserE::DEST),
 		);
 
@@ -77,6 +78,22 @@ namespace wr
 		RootSignatureDescription::Samplers({
 			{TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP},
 			{TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP}
+		})
+	});
+
+	DESC_RANGE_ARRAY(temporal_accumulator_ranges,
+		DESC_RANGE(params::temporal_accumulator, Type::SRV_RANGE, params::TemporalAccumulatorE::SOURCE),
+		DESC_RANGE(params::temporal_accumulator, Type::SRV_RANGE, params::TemporalAccumulatorE::ACCUM),
+		DESC_RANGE(params::temporal_accumulator, Type::UAV_RANGE, params::TemporalAccumulatorE::DEST),
+		DESC_RANGE(params::temporal_accumulator, Type::UAV_RANGE, params::TemporalAccumulatorE::VARIANCE),
+		);
+
+	REGISTER(root_signatures::temporal_accumulator, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(temporal_accumulator_ranges, D3D12_SHADER_VISIBILITY_ALL),
+		}),
+		RootSignatureDescription::Samplers({
+			{TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP},
 		})
 	});
 
@@ -199,6 +216,12 @@ namespace wr
 		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
 	});
 
+	REGISTER(shaders::temporal_accumulator_cs, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/temporal_accumulator.hlsl"),
+		ShaderDescription::Entry("temporal_accumulator_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
 	REGISTER(shaders::deferred_composition_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/deferred_composition.hlsl"),
 		ShaderDescription::Entry("main_cs"),
@@ -273,6 +296,21 @@ namespace wr
 		PipelineDescription::RootSignature(root_signatures::shadow_denoiser),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
 		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+	});
+
+	REGISTER(pipelines::temporal_accumulator, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::temporal_accumulator_cs),
+		PipelineDescription::RootSignature(root_signatures::temporal_accumulator),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({Format::R32G32B32A32_FLOAT}),
 		PipelineDescription::NumRTVFormats(1),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),

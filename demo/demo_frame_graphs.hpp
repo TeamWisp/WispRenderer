@@ -27,8 +27,9 @@ namespace fg_manager
 	{
 		DEFERRED = 0,
 		RT_HYBRID = 1,
-		RAYTRACING = 2,
-		PATH_TRACER = 3,
+		RT_HYBRID_DENOISED = 2,
+		RAYTRACING = 3,
+		PATH_TRACER = 4,
 	};
 
 	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
@@ -39,6 +40,8 @@ namespace fg_manager
 			return "Deferred";
 		case PrebuildFrameGraph::RT_HYBRID:
 			return "Hybrid";
+		case PrebuildFrameGraph::RT_HYBRID_DENOISED:
+			return "Hybrid Denoised";
 		case PrebuildFrameGraph::RAYTRACING:
 			return "Full Raytracing";
 		case PrebuildFrameGraph::PATH_TRACER:
@@ -51,7 +54,7 @@ namespace fg_manager
 	static bool is_fallback;
 
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
-	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
+	static std::array<wr::FrameGraph*, 5> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
 	{
@@ -158,6 +161,45 @@ namespace fg_manager
 			//wr::AddRTHybridTask(*fg);
 
 			wr::AddRTReflectionTask(*fg);
+
+			wr::AddRTShadowTask(*fg);
+			
+			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
+
+			// Do some post processing
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+
+			// Copy the raytracing pixel data to the final render target
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+			// Display ImGui
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+
+			// Finalize the frame graph
+			fg->Setup(rs);
+		}
+
+		// Hybrid denoised raytracing
+		{
+			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RT_HYBRID_DENOISED];
+			fg = new wr::FrameGraph(12);
+
+			// Precalculate BRDF Lut
+			wr::AddBrdfLutPrecalculationTask(*fg);
+
+			wr::AddEquirectToCubemapTask(*fg);
+			wr::AddCubemapConvolutionTask(*fg);
+
+			// Construct the G-buffer
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+
+			// Build Acceleration Structure
+			wr::AddBuildAccelerationStructuresTask(*fg);
+
+			// Raytracing task
+			//wr::AddRTHybridTask(*fg);
+
+			//wr::AddRTReflectionTask(*fg);
 
 			wr::AddRTShadowTask(*fg);
 

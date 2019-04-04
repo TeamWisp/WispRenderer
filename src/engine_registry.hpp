@@ -290,18 +290,35 @@ namespace wr
 			SOURCE,
 			DEPTH,
 			KERNEL,
+			VARIANCE,
 			DEST,
 			CAMERA_PROPERTIES,
 			DENOISER_PROPERTIES,
 		};
 
-		constexpr std::array<rs_layout::Entry, 6> shadow_denoiser = {
+		constexpr std::array<rs_layout::Entry, 7> shadow_denoiser = {
 			rs_layout::Entry{(int)ShadowDenoiserE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::DEPTH, 1,rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::KERNEL, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::VARIANCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::DEST, 1,rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::CAMERA_PROPERTIES, 1,rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)ShadowDenoiserE::DENOISER_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
+		enum class TemporalAccumulatorE
+		{
+			SOURCE,
+			ACCUM,
+			DEST,
+			VARIANCE,
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> temporal_accumulator = {
+			rs_layout::Entry{(int)TemporalAccumulatorE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)TemporalAccumulatorE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)TemporalAccumulatorE::DEST, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)TemporalAccumulatorE::VARIANCE, 1, rs_layout::Type::UAV_RANGE},
 		};
 
 		enum class DeferredCompositionE
@@ -527,6 +544,7 @@ namespace wr
 		static RegistryHandle brdf_lut;
 		static RegistryHandle basic;
 		static RegistryHandle shadow_denoiser;
+		static RegistryHandle temporal_accumulator;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle rt_test_global;
 		static RegistryHandle mip_mapping;
@@ -546,6 +564,7 @@ namespace wr
 		static RegistryHandle basic_ps;
 		static RegistryHandle fullscreen_quad_vs;
 		static RegistryHandle shadow_denoiser_cs;
+		static RegistryHandle temporal_accumulator_cs;
 		static RegistryHandle deferred_composition_cs;
 		static RegistryHandle rt_lib;
 		static RegistryHandle rt_hybrid_lib;
@@ -566,6 +585,7 @@ namespace wr
 		static RegistryHandle brdf_lut_precalculation;
 		static RegistryHandle basic_deferred;
 		static RegistryHandle shadow_denoiser;
+		static RegistryHandle temporal_accumulator;
 		static RegistryHandle deferred_composition;
 		static RegistryHandle mip_mapping;
 		static RegistryHandle equirect_to_cubemap;
@@ -586,3 +606,4 @@ namespace wr
 	};
 
 } /* wr */
+
