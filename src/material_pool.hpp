@@ -80,13 +80,17 @@ namespace wr
 
 		void UpdateConstantBuffer();
 
-		struct TextureFlags
+		union TextureFlags
 		{
-			uint32_t m_has_albedo_texture : 1;
-			uint32_t m_has_normal_texture : 1;
-			uint32_t m_has_roughness_texture : 1;
-			uint32_t m_has_metallic_texture : 1;
-			uint32_t m_has_ao_texture : 1;
+			struct {
+				uint32_t m_has_albedo_texture : 1;
+				uint32_t m_has_normal_texture : 1;
+				uint32_t m_has_roughness_texture : 1;
+				uint32_t m_has_metallic_texture : 1;
+				uint32_t m_has_ao_texture : 1;
+			};
+
+			uint32_t m_value;
 		};
 
 		union MaterialData
@@ -107,19 +111,7 @@ namespace wr
 
 		};
 
-		MaterialData GetMaterialData() { 
-
-			//Update material flags
-			m_material_data.m_material_flags = {
-				HasTexture(MaterialTextureType::ALBEDO),
-				HasTexture(MaterialTextureType::NORMAL),
-				HasTexture(MaterialTextureType::ROUGHNESS),
-				HasTexture(MaterialTextureType::METALLIC),
-				HasTexture(MaterialTextureType::AO)
-			};
-
-			return m_material_data; 
-		};
+		MaterialData GetMaterialData() const { return m_material_data; }
 
 	protected:
 

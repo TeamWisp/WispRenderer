@@ -55,12 +55,14 @@ namespace wr
 				m_texture_pool = handle.m_pool;
 			}
 			m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)] = handle;
+			m_material_data.m_material_flags.m_value = uint32_t(m_material_data.m_material_flags.m_value) | (1 << uint32_t(type));
 		}
 	}
 
 
 	void Material::ClearTexture(MaterialTextureType type) {
-		m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)] = { nullptr, 0 }; 
+		m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)] = { nullptr, 0 };
+		m_material_data.m_material_flags.m_value = uint32_t(m_material_data.m_material_flags.m_value) & (~(1 << uint32_t(type)));
 	}
 
 	bool Material::HasTexture(MaterialTextureType type) {
@@ -85,14 +87,13 @@ namespace wr
 
 	void Material::UpdateConstantBuffer()
 	{
+
 		m_constant_buffer_handle->m_pool->Update(
 			m_constant_buffer_handle,
 			sizeof(MaterialData),
 			0,
 			reinterpret_cast<std::uint8_t*>(&m_material_data));
 	}
-
-
 
 	//////////////////////////////
 	//	MATERIAL POOL FUNCTIONS	//
