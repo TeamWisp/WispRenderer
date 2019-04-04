@@ -26,7 +26,13 @@ private:
 	DirectX::XMVECTOR m_initial_position;
 	DirectX::XMVECTOR m_initial_rotation;
 
+#ifdef LOOPING
 	LoopingNaturalSpline<Vector<3>>* m_spline;
+	LoopingNaturalSpline<Vector<4>>* m_quat_spline;
+#else
+	NaturalSpline<Vector<3>>* m_spline;
+	NaturalSpline<Vector<4>>* m_quat_spline;
+#endif
 	std::vector<ControlPoint> m_control_points;
 	float m_speed;
 	float m_time;
