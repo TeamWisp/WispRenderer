@@ -22,6 +22,8 @@ namespace wr
 		//Takes roll, pitch and yaw and converts it to quaternion
 		virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw);
 
+		virtual void SetQuaternionRotation( float x, float y, float z, float w );
+
 		//Sets position
 		virtual void SetPosition(DirectX::XMVECTOR position);
 
@@ -56,6 +58,6 @@ namespace wr
 
 		std::bitset<3> m_requires_update;
 		std::bitset<3> m_requires_transform_update;
-
+		bool used_quaternion;
 	};
 } // namespace wr
