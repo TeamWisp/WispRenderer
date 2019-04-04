@@ -302,16 +302,16 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						albedo = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, srgb, gen_mips);
+						albedo = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						albedo = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, TextureType::RAW, srgb, gen_mips);
+						albedo = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
 				else if (material->m_albedo_texture_location == TextureLocation::EXTERNAL)
 				{
-					albedo = texture_pool->Load(dir + material->m_albedo_texture, srgb, gen_mips);
+					albedo = texture_pool->LoadFromFile(dir + material->m_albedo_texture, true, true);
 				}
 			};
 
