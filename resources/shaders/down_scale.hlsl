@@ -51,11 +51,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float4 out_far = max(0,float4(finalcolor, 1.0f) * max(coc, 0.0f));
 
 	float4 out_bright = float4(0.0f, 0.0f, 0.0f, 1.0f);
+
 	float brightness = dot(finalcolor, float3(0.2126f, 0.7152f, 0.0722f));
 
 	if (brightness > 1.0f)
 	{
-		out_bright = float4(finalcolor, 1.0f);
+		out_bright = saturate(float4(finalcolor, 1.0f));
 	}
 
 	output_bright[int2(dispatch_thread_id.xy)] = out_bright;

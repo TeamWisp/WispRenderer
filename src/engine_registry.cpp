@@ -831,6 +831,45 @@ namespace wr
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 		});
 
+	// bloom composition
+	REGISTER(shaders::bloom_composition, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/bloom_composition.hlsl"),
+		ShaderDescription::Entry("main_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		});
+
+	DESC_RANGE_ARRAY(bloom_comp_r,
+		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_MAIN),
+		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM),
+		DESC_RANGE(params::bloom_composition, Type::UAV_RANGE, params::BloomCompositionE::OUTPUT),
+		);
+
+	REGISTER(root_signatures::bloom_composition, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(bloom_comp_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetConstants(params::bloom_composition, params::BloomCompositionE::BLOOM_PROPERTIES)),
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP},
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
+		})
+		});
+
+	REGISTER(pipelines::bloom_composition, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::bloom_composition),
+		PipelineDescription::RootSignature(root_signatures::bloom_composition),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({d3d12::settings::back_buffer_format }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		});
+
 	/* ### Hybrid Raytracing ### */
 	REGISTER(shaders::rt_hybrid_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/rt_hybrid.hlsl"),

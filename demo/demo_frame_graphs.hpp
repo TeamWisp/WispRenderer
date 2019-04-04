@@ -23,6 +23,9 @@
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten_second_pass.hpp"
+#include "render_tasks/d3d12_bloom_horizontal.hpp"
+#include "render_tasks/d3d12_bloom_vertical.hpp"
+#include "render_tasks/d3d12_bloom_composition.hpp"
 
 namespace fg_manager
 {
@@ -80,7 +83,7 @@ namespace fg_manager
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(17);
+			fg = new wr::FrameGraph(18);
 			
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
@@ -111,11 +114,20 @@ namespace fg_manager
 
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg, 
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
 			//wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::BloomCompostionData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::BloomCompostionData>(imgui_func));
 
 			fg->Setup(rs);
 		}

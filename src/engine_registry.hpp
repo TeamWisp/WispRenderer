@@ -636,6 +636,21 @@ namespace wr
 			rs_layout::Entry{(int)BloomVE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BloomVE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 		};
+
+		enum class BloomCompositionE
+		{
+			BLOOM_PROPERTIES,
+			SOURCE_MAIN,
+			SOURCE_BLOOM,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> bloom_composition = {
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_MAIN, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::BLOOM_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
 	} /* srv */
 
 	struct root_signatures
@@ -662,6 +677,7 @@ namespace wr
 		static RegistryHandle dof_composition;
 		static RegistryHandle bloom_h;
 		static RegistryHandle bloom_v;
+		static RegistryHandle bloom_composition;
 	};
 
 	struct shaders
@@ -691,6 +707,7 @@ namespace wr
 		static RegistryHandle dof_composition;
 		static RegistryHandle bloom_h;
 		static RegistryHandle bloom_v;
+		static RegistryHandle bloom_composition;
 	};
 
 	struct pipelines
@@ -714,6 +731,7 @@ namespace wr
 		static RegistryHandle dof_composition;
 		static RegistryHandle bloom_h;
 		static RegistryHandle bloom_v;
+		static RegistryHandle bloom_composition;
 	};
 
 	struct state_objects

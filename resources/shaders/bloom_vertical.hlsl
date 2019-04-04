@@ -27,8 +27,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		color += s * weight;
 	}
 
-	color /= weightSum;
-
 	//color.x = max(source_near.SampleLevel(s0, uv, 0).x, color.x);
 
 	output[int2(dispatch_thread_id.xy)] = color;
