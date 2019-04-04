@@ -3,6 +3,7 @@
 #include <scene_graph/node.hpp>
 #include "spline_library/splines/natural_spline.h"
 #include "spline_library/vector.h"
+#include <optional>
 
 class SplineNode : public wr::Node
 {
@@ -20,6 +21,11 @@ public:
 
 private:
 	void UpdateNaturalSpline();
+
+	std::optional<std::string> LoadDialog();
+	std::optional<std::string> SaveDialog();
+	void SaveSplineToFile(std::string const & path);
+	void LoadSplineFromFile(std::string const & path);
 
 	bool m_animate;
 
