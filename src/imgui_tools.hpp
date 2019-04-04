@@ -28,7 +28,7 @@ namespace wr::imgui
 		void RootSignatureRegistry();
 		void D3D12HardwareInfo(D3D12RenderSystem& render_system);
 		void D3D12Settings();
-		void EffectEditor(SceneGraph* scene_graph, D3D12RenderSystem& render_system);
+		void EffectEditor(SceneGraph* scene_graph);
 		void SceneGraphEditor(SceneGraph* scene_graph);
 		void Inspector(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
 

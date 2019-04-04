@@ -234,17 +234,6 @@ namespace fg_manager
 		}
 	}
 
-	inline void UpdateIfTasksChanged(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
-	{
-		bool should_update = enabled_effects.ao != rs.m_effects_enabled.m_ao;
-		if (should_update && !wr::settings::use_multithreading) //Currently not working with multithreading, should probably be fixed once we have time
-		{
-			Setup(rs, imgui_func);
-
-			enabled_effects.ao =  rs.m_effects_enabled.m_ao;
-		}
-	}
-
 	void Resize(wr::RenderSystem& render_system, std::uint32_t width, std::uint32_t height)
 	{
 		for (int i = 0; i < frame_graphs.size(); ++i)

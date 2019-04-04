@@ -5,7 +5,6 @@
 #include <sstream>
 #include <optional>
 
-#include "settings.hpp"
 #include "scene_graph/camera_node.hpp"
 #include "shader_registry.hpp"
 #include "pipeline_registry.hpp"
@@ -21,11 +20,8 @@
 #include "d3d12/d3d12_pipeline_registry.hpp"
 #include "imgui/ImGuizmo.h"
 
-
 namespace wr::imgui::internal
 {
-	struct RTAOData;
-
 	template <typename T>
 	inline std::string ConvertPointerToStringAddress(const T* obj)
 	{
@@ -365,7 +361,7 @@ namespace wr::imgui::window
 		},
 	};
 
-	void EffectEditor(SceneGraph* scene_graph, D3D12RenderSystem& render_system)
+	void EffectEditor(SceneGraph* scene_graph)
 	{
 		if (open_effect_editor)
 		{
@@ -373,10 +369,6 @@ namespace wr::imgui::window
 			auto cam = scene_graph->GetActiveCamera();
 			ImGui::Checkbox("Shadows Enabled", &cam->m_shadows_enabled);
 			ImGui::Checkbox("Reflections Enabled", &cam->m_reflections_enabled);
-			if (!wr::settings::use_multithreading)
-			{
-				ImGui::Checkbox("Ambient Occlusion Enabled", &render_system.m_effects_enabled.m_ao);
-			}
 			ImGui::End();
 		}
 	}

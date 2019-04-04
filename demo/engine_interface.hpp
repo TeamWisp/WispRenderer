@@ -141,7 +141,7 @@ namespace engine
 			ImGui::End();
 		}
 
-		wr::imgui::window::EffectEditor(sg, *render_system);
+		wr::imgui::window::EffectEditor(sg);
 		wr::imgui::window::SceneGraphEditor(sg);
 		wr::imgui::window::Inspector(sg, viewport_pos, viewport_size);
 		wr::imgui::window::ShaderRegistry();

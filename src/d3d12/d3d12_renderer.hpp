@@ -63,7 +63,6 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inv_vp;
 
-			//uint32_t m_padding[0];
 			float m_frame_idx;
 			float m_intensity;
 			unsigned int m_shadows_enabled;

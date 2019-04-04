@@ -4,22 +4,29 @@
 
 #define D3DX12_INC d3dx12_rt.h
 
+/*Helper function to get readable error messages from HResults
+code originated from https://docs.microsoft.com/en-us/windows/desktop/cossdk/interpreting-error-codes
+*/
 inline std::string HResultToString(HRESULT hr)
 {
 	if (FACILITY_WINDOWS == HRESULT_FACILITY(hr))
+	{
 		hr = HRESULT_CODE(hr);
-	TCHAR* szErrMsg;
+	}
+	TCHAR* sz_err_msg;
 
 	if (FormatMessage(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 		NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&szErrMsg, 0, NULL) != 0)
+		(LPTSTR)&sz_err_msg, 0, NULL) != 0)
 	{
-		return(szErrMsg);
-		LocalFree(szErrMsg);
+		return(sz_err_msg);
+		LocalFree(sz_err_msg);
 	}
 	else
+	{
 		return(std::string("[Could not find a description for error # %#x.", hr));
+	}
 }
 
 //! Checks whether the d3d12 object exists before releasing it.

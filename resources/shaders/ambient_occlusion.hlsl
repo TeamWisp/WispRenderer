@@ -79,13 +79,13 @@ void AORaygenEntry()
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 
     uint spp = 32;
-    float aoValue = 1.0f;
+    float ao_value = 1.0f;
     for(uint i = 0; i< spp; i++)
     {
-        aoValue -= (1.0f/float(spp)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), 25.f, 0);
+        ao_value -= (1.0f/float(spp)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), 25.f, 0);
     }
 
-    output[DispatchRaysIndex().xy].x = aoValue;
+    output[DispatchRaysIndex().xy].x = ao_value;
 }
 
 [shader("closesthit")]
