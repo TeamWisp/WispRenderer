@@ -38,7 +38,7 @@ namespace wr
 	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
 	LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
 
-	D3D12RenderSystem::~D3D12RenderSystem()
+		D3D12RenderSystem::~D3D12RenderSystem()
 	{
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
 		{
@@ -65,7 +65,10 @@ namespace wr
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
 		d3d12::Destroy(m_compute_queue);
-		if (m_render_window.has_value()) d3d12::Destroy(m_render_window.value());
+		if (m_render_window.has_value())
+		{
+			d3d12::Destroy(m_render_window.value());
+		}
 	}
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)

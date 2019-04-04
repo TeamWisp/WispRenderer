@@ -8,7 +8,6 @@
 
 namespace wr
 {
-
 	struct TextureHandle;
 	struct Model;
 	struct CPUTextures;
@@ -68,13 +67,6 @@ namespace wr
 		virtual void Resize(std::uint32_t width, std::uint32_t height) = 0;
 		
 		std::optional<Window*> m_window;
-		
-		struct EffectsEnabled
-		{
-			bool m_ao;
-		};
-		
-		EffectsEnabled m_effects_enabled = { true };
 
 		enum SimpleShapes : std::size_t
 		{

@@ -37,11 +37,6 @@ namespace fg_manager
 		PATH_TRACER = 3,
 	};
 
-	struct Effects
-	{
-		bool ao = false;
-	};
-
 	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
 	{
 		switch (id)
@@ -61,8 +56,6 @@ namespace fg_manager
 
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
-
-	static Effects enabled_effects = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
 	{
@@ -190,11 +183,7 @@ namespace fg_manager
 			wr::AddRTHybridTask(*fg);
 			
 			//Ambient Occlusion task
-			if (rs.m_effects_enabled.m_ao)
-			{
-				enabled_effects.ao = true;
-				wr::AddAOTask(*fg);
-			}
+			wr::AddAOTask(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
