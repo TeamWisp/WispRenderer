@@ -59,27 +59,21 @@ namespace wr
 		void PostStageClear() final;
 		void ReleaseTemporaryResources() final;
 
-		d3d12::TextureResource* GetTexture(uint64_t texture_id) final;
-
+		d3d12::TextureResource* GetTextureResource(TextureHandle handle) final;
+		[[nodiscard]] TextureHandle LoadFromFile(std::string_view path, bool srgb, bool generate_mips) final;
+		[[nodiscard]] TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips) final;
+		[[nodiscard]] TextureHandle LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips) final;
 		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 		[[nodiscard]] TextureHandle CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 
 		DescriptorAllocator* GetAllocator(DescriptorHeapType type);
 		DescriptorAllocator* GetMipmappingAllocator() { return m_mipmapping_allocator; }
 
-		void Unload(uint64_t texture_id) final;
+		void Unload(TextureHandle& handle) final;
 
 		void GenerateMips_Cubemap(d3d12::TextureResource* texture, CommandList* cmd_list, unsigned int array_slice);
 
 	protected:
-
-		d3d12::TextureResource* LoadPNG(std::string_view path, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadDDS(std::string_view path, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadHDR(std::string_view path, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadPNGFromMemory(char* data, size_t size, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadDDSFromMemory(char* data, size_t size, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadHDRFromMemory(char* data, size_t size, bool srgb, bool generate_mips) final;
-		d3d12::TextureResource* LoadRawFromMemory(char* data, int width, int height, bool srgb, bool generate_mips) final;
 
 		void MoveStagedTextures(unsigned int frame_idx);
 		void GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list);
@@ -87,6 +81,15 @@ namespace wr
 		void GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list);
 		void GenerateMips_BGR(d3d12::TextureResource* texture, CommandList* cmd_list);
 		void GenerateMips_SRGB(d3d12::TextureResource* texture, CommandList* cmd_list);
+
+		//Unstaged textures are stored as pairs in a map. This removes the necessity of having a ScratchImage
+		//pointer in the Texture struct. Once the textures are staged the ScratchImages are deleted.
+		using UnstagedTextures = std::unordered_map<uint64_t, std::pair<Texture*, DirectX::ScratchImage*>>;
+		UnstagedTextures m_unstaged_textures;
+
+		using StagedTextures = std::unordered_map<uint64_t, Texture*>;
+		StagedTextures m_staged_textures;
+		std::vector<StagedTextures> m_staging_textures;
 
 		D3D12RenderSystem& m_render_system;
 

@@ -8,6 +8,7 @@
 
 #include "structs.hpp"
 #include "util/defines.hpp"
+#include "util/strings.hpp"
 #include "platform_independend_structs.hpp"
 #include "id_factory.hpp"
 
@@ -15,10 +16,9 @@ namespace wr
 {
 	enum class TextureType
 	{
-		PNG,
+		WIC,
 		DDS,
-		HDR,
-		RAW
+		HDR
 	};
 
 	class TexturePool
@@ -32,12 +32,13 @@ namespace wr
 		TexturePool(TexturePool&&) = delete;
 		TexturePool& operator=(TexturePool&&) = delete;
 
-		[[nodiscard]] TextureHandle Load(std::string_view path, bool srgb, bool generate_mips);
-		[[nodiscard]] TextureHandle LoadFromMemory(char* data, int width, int height, TextureType type, bool srgb, bool generate_mips);
-		[[nodiscard]] TextureHandle LoadFromMemory(char* data, int width, int height, std::string texture_extension, bool srgb, bool generate_mips);
+		[[nodiscard]] virtual TextureHandle LoadFromFile(std::string_view path, bool srgb, bool generate_mips) = 0;
+		[[nodiscard]] virtual TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips);
+		[[nodiscard]] virtual TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips) = 0;
+		[[nodiscard]] virtual TextureHandle LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips) = 0;
 		[[nodiscard]] virtual TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) = 0;
 		[[nodiscard]] virtual TextureHandle CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) = 0;
-		virtual void Unload(uint64_t texture_id) = 0;
+		virtual void Unload(TextureHandle& handle) = 0;
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;
@@ -45,26 +46,15 @@ namespace wr
 		virtual void PostStageClear() = 0;
 		virtual void ReleaseTemporaryResources() = 0;
 
-		TextureHandle GetDefaultAlbedo();
-		TextureHandle GetDefaultNormal();
-		TextureHandle GetDefaultRoughness();
-		TextureHandle GetDefaultMetalic();
-		TextureHandle GetDefaultAO();
+		TextureHandle GetDefaultAlbedo() const;
+		TextureHandle GetDefaultNormal() const;
+		TextureHandle GetDefaultRoughness() const;
+		TextureHandle GetDefaultMetalic() const;
+		TextureHandle GetDefaultAO() const;
 
-		virtual Texture* GetTexture(uint64_t texture_id) = 0;
+		virtual Texture* GetTextureResource(TextureHandle handle) = 0;
 
 	protected:
-
-		virtual Texture* LoadPNG(std::string_view path, bool srgb, bool generate_mips) = 0;
-		virtual Texture* LoadDDS(std::string_view path, bool srgb, bool generate_mips) = 0;
-		virtual Texture* LoadHDR(std::string_view path, bool srgb, bool generate_mips) = 0;
-		virtual Texture* LoadPNGFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
-		virtual Texture* LoadDDSFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
-		virtual Texture* LoadHDRFromMemory(char* data, size_t size, bool srgb, bool generate_mips) = 0;
-		virtual Texture* LoadRawFromMemory(char* data, int width, int height, bool srgb, bool generate_mips) = 0;
-
-		std::unordered_map<uint64_t, Texture*> m_unstaged_textures, m_staged_textures;
-		std::vector<std::unordered_map<uint64_t, Texture*>> m_staging_textures;
 
 		std::size_t m_loaded_textures = 0;
 
@@ -75,6 +65,10 @@ namespace wr
 		TextureHandle m_default_ao;
 
 		IDFactory m_id_factory;
+
+#ifdef _DEBUG
+		std::string m_name;
+#endif
 	};
 
 

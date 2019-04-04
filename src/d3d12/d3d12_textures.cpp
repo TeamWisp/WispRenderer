@@ -81,7 +81,6 @@ namespace wr::d3d12
 		texture->m_need_mips = (texture->m_mip_levels > 1);
 		texture->m_is_cubemap = description->m_is_cubemap;
 		texture->m_is_staged = false;
-		texture->m_needed_memory = textureUploadBufferSize;
 
 		for (uint32_t i = 0; i < description->m_mip_levels; ++i)
 		{
@@ -147,7 +146,6 @@ namespace wr::d3d12
 		texture->m_need_mips = (texture->m_mip_levels > 1);
 		texture->m_is_cubemap = description->m_is_cubemap;
 		texture->m_is_staged = false;
-		texture->m_needed_memory = 0;
 
 		for (uint32_t i = 0; i < description->m_mip_levels; ++i)
 		{
