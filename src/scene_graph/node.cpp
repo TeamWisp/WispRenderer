@@ -5,7 +5,7 @@ namespace wr
 	Node::Node()
 	{
 		SignalTransformChange();
-		used_quaternion = false;
+		m_used_quaternion = false;
 	}
 
 	void Node::SignalChange()
@@ -53,7 +53,8 @@ namespace wr
 	void Node::SetQuaternionRotation( float x, float y, float z, float w )
 	{
 		m_rotation = { x,y,z,w };
-		used_quaternion = true;
+		m_used_quaternion = true;
+		SignalTransformChange();
 	}
 
 	void Node::SetPosition(DirectX::XMVECTOR position)
@@ -77,9 +78,9 @@ namespace wr
 
 	void Node::UpdateTransform()
 	{
-		if( used_quaternion )
+		if( m_used_quaternion )
 		{
-			used_quaternion == false; // reset
+			m_used_quaternion == false; // reset
 		}
 		else
 		{
