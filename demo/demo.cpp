@@ -14,7 +14,7 @@
 #include "model_loader_assimp.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-#define SCENE viknell_scene
+#define SCENE emibl_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -167,6 +167,36 @@ int WispEntry()
 			SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
 
 			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
+		}
+		if (action == WM_KEYUP && key == VK_RETURN)
+		{
+			SCENE::restart_scene = true;
+		}
+		if (action == WM_KEYUP && key == VK_BACK)
+		{
+			if (SCENE::paused)
+			{
+				SCENE::paused = false;
+				return;
+			}
+			else
+			{
+				SCENE::paused = true;
+				return;
+			}
+		}
+		if (action == WM_KEYUP && key == VK_DOWN)
+		{
+			if (SCENE::camera_follow_bullet)
+			{
+				SCENE::camera_follow_bullet = false;
+				return;
+			}
+			else
+			{
+				SCENE::camera_follow_bullet = true;
+				return;
+			}
 		}
 	});
 
