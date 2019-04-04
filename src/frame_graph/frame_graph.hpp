@@ -252,7 +252,9 @@ namespace wr
 
 				if (!m_rt_properties[i].value().m_is_render_window)
 				{
-					render_system.ResizeRenderTarget(&m_render_targets[i], width, height);
+					render_system.ResizeRenderTarget(&m_render_targets[i],
+						width * m_rt_properties[i].value().m_resolution_scale.Get(),
+						height * m_rt_properties[i].value().m_resolution_scale.Get());
 				}
 
 				m_setup_funcs[i](render_system, *this, i, true);

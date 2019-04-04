@@ -263,14 +263,21 @@ namespace wr
 		return handle;
 	}
 
-	MaterialHandle MaterialPool::Load(aiMaterial* material)
+	Material* MaterialPool::GetMaterial(MaterialHandle handle)
 	{
-		return {nullptr, 0};
+		// Return the material if available.
+		if (auto it = m_materials.find(handle.m_id); it != m_materials.end())
+		{
+			return it->second;
+		}
+
+		LOGE("Failed to obtain a material from pool.");
+		return nullptr;
 	}
 
-	Material* MaterialPool::GetMaterial(uint64_t material_id)
+	bool MaterialPool::HasMaterial(MaterialHandle handle) const
 	{
-		return m_materials[material_id];
+		return m_materials.find(handle.m_id) != m_materials.end();
 	}
 
 } /* wr */

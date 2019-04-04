@@ -1,5 +1,5 @@
 /*
-The mipmapping implementation used in this framework is a ported version of 
+The mipmapping implementation used in this framework is a ported version of
 MiniEngine's implementation.
 */
 /*
@@ -89,7 +89,7 @@ namespace wr
 			//Let the allocation go out of scope to clear it before the texture pool and its allocators are destroyed
 			DescriptorAllocation alloc = std::move(m_default_uav);
 		}
-		
+
 		delete m_mipmapping_allocator;
 
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
@@ -101,8 +101,8 @@ namespace wr
 		{
 			D3D12TexturePool::Unload(m_unstaged_textures.begin()->first);
 		}
-		
-		while(m_staged_textures.size() > 0)
+
+		while (m_staged_textures.size() > 0)
 		{
 			D3D12TexturePool::Unload(m_staged_textures.begin()->first);
 		}
@@ -198,7 +198,7 @@ namespace wr
 
 	void D3D12TexturePool::PostStageClear()
 	{
-		
+
 	}
 
 	void D3D12TexturePool::ReleaseTemporaryResources()
@@ -455,19 +455,7 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -536,19 +524,7 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -614,19 +590,7 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -691,19 +655,7 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -770,19 +722,7 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -846,19 +786,7 @@ namespace wr
 
 		Format adjusted_format;
 
-		if (srgb)
-		{
-			adjusted_format = static_cast<wr::Format>(DirectX::MakeSRGB(metadata.format));
-		}
-		else
-		{
-			adjusted_format = static_cast<wr::Format>(metadata.format);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
-		}
+		adjusted_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
@@ -919,11 +847,6 @@ namespace wr
 		else
 		{
 			adjusted_format = static_cast<wr::Format>(DXGI_FORMAT_R8G8B8A8_UNORM);
-
-			if (d3d12::CheckSRGBFormat(adjusted_format))
-			{
-				adjusted_format = d3d12::RemoveSRGB(adjusted_format);
-			}
 		}
 
 		d3d12::desc::TextureDesc desc;
@@ -1004,7 +927,7 @@ namespace wr
 	void D3D12TexturePool::GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list)
 	{
 		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
-		
+
 		//Create shader resource view for the source texture in the descriptor heap
 		DescriptorAllocation srv_alloc = m_mipmapping_allocator->Allocate();
 		d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
@@ -1037,7 +960,7 @@ namespace wr
 			// The case where either the width or the height is exactly 1 is handled
 			// as a special case (as the dimension does not require reduction).
 			_BitScanForward(&mip_count, (dst_width == 1 ? dst_height : dst_width) |
-										(dst_height == 1 ? dst_width : dst_height));
+				(dst_height == 1 ? dst_width : dst_height));
 
 			// Maximum number of mips to generate is 4.
 			mip_count = std::min<DWORD>(4, mip_count + 1);
@@ -1137,8 +1060,8 @@ namespace wr
 		// Create an alias for which to perform the copy operation.
 		d3d12::desc::TextureDesc alias_desc = copy_desc;
 		alias_desc.m_texture_format = (texture->m_format == Format::B8G8R8X8_UNORM ||
-										texture->m_format == Format::B8G8R8X8_UNORM_SRGB) ?
-											Format::B8G8R8X8_UNORM : Format::B8G8R8A8_UNORM;
+			texture->m_format == Format::B8G8R8X8_UNORM_SRGB) ?
+			Format::B8G8R8X8_UNORM : Format::B8G8R8A8_UNORM;
 
 		d3d12::TextureResource* alias_texture = d3d12::CreatePlacedTexture(device, &alias_desc, true, heap);
 

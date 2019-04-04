@@ -140,7 +140,7 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		uint tid = light.tid & 3;
 
 		//Light direction (constant with directional, position dependent with other)
-		float3 L = (lerp(light.pos - wpos, -light.dir, tid == light_type_directional));
+		float3 L = (lerp(light.pos - wpos, light.dir, tid == light_type_directional));
 		float light_dist = length(L);
 		L /= light_dist;
 

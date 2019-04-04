@@ -44,8 +44,8 @@ namespace engine
 			if (ImGui::BeginMenu("Window"))
 			{
 				ImGui::MenuItem("Viewport", nullptr, &open_viewport);
-				ImGui::MenuItem("Light Editor", nullptr, &wr::imgui::window::open_light_editor);
-				ImGui::MenuItem("Inspector", nullptr, &wr::imgui::window::open_inspect_editor);
+				ImGui::MenuItem("Scene Graph Editor", nullptr, &wr::imgui::window::open_scene_graph_editor);
+				ImGui::MenuItem("Inspector", nullptr, &wr::imgui::window::open_inspector);
 				ImGui::MenuItem("Hardware Info", nullptr, &wr::imgui::window::open_hardware_info);
 				ImGui::MenuItem("DirectX 12 Settings", nullptr, &wr::imgui::window::open_d3d12_settings);
 				ImGui::Separator();
@@ -128,17 +128,26 @@ namespace engine
 				sg->GetActiveCamera()->SignalChange();
 			}
 
+			ImGui::MenuItem("Enable DOF", nullptr, &sg->GetActiveCamera()->m_enable_dof);
+			ImGui::DragFloat("F number", &sg->GetActiveCamera()->m_f_number, 1.f, 1.f, 128.f);
+			ImGui::DragFloat("Film size", &sg->GetActiveCamera()->m_film_size, 1.f, 25.f, 100.f);
+			ImGui::DragFloat("Bokeh Shape amount", &sg->GetActiveCamera()->m_shape_amt, 0.005f, 0.f, 2.f);
+			ImGui::DragInt("Aperture blades", &sg->GetActiveCamera()->m_aperture_blades, 1, 3, 7);
+			ImGui::DragFloat("Focal Length", &sg->GetActiveCamera()->m_focal_length, 1.f, 1.f, 300.f);
+			ImGui::DragFloat("Focal plane distance", &sg->GetActiveCamera()->m_focus_dist, 1.f, 0.f, 1000.f);
+
+			sg->GetActiveCamera()->SetFovFromFocalLength(sg->GetActiveCamera()->m_aspect_ratio, sg->GetActiveCamera()->m_film_size);
+
 			ImGui::End();
 		}
 
-		wr::imgui::window::LightEditor(sg, viewport_pos, viewport_size);
-		wr::imgui::window::ModelEditor(sg, viewport_pos, viewport_size);
+		wr::imgui::window::SceneGraphEditor(sg);
+		wr::imgui::window::Inspector(sg, viewport_pos, viewport_size);
 		wr::imgui::window::ShaderRegistry();
 		wr::imgui::window::PipelineRegistry();
 		wr::imgui::window::RootSignatureRegistry();
 		wr::imgui::window::D3D12HardwareInfo(*render_system);
 		wr::imgui::window::D3D12Settings();
-		wr::imgui::window::Inspect(sg);
 	}
 	
 }
