@@ -282,6 +282,9 @@ namespace wr
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
+						if (!texture_handle.m_pool)
+							return;
+
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTexture(texture_handle.m_id));
 
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
