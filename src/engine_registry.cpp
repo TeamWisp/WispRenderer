@@ -349,13 +349,13 @@ namespace wr
 			ROOT_PARAM(GetConstants(params::post_processing, params::PostProcessingE::HDR_SUPPORT)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER }
 		})
 	});
 
 	DESC_RANGE_ARRAY(accum_r,
-		DESC_RANGE(params::accumulation, Type::SRV_RANGE, params::PostProcessingE::SOURCE),
-		DESC_RANGE(params::accumulation, Type::UAV_RANGE, params::PostProcessingE::DEST),
+		DESC_RANGE(params::accumulation, Type::SRV_RANGE, params::AccumulationE::SOURCE),
+		DESC_RANGE(params::accumulation, Type::UAV_RANGE, params::AccumulationE::DEST),
 	);
 
 	REGISTER(root_signatures::accumulation, RootSignatureRegistry)({

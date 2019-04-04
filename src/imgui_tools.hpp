@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <functional>
+#include <typeindex>
 
 #include "imgui/imgui.hpp"
 #include "scene_graph/light_node.hpp"
@@ -19,12 +20,6 @@ namespace wr::imgui
 	{
 		void Registries();
 	}
-	enum InspectItem
-	{
-		NONE,
-		LIGHT,
-		MODEL
-	};
 
 	namespace window
 	{
@@ -33,10 +28,9 @@ namespace wr::imgui
 		void RootSignatureRegistry();
 		void D3D12HardwareInfo(D3D12RenderSystem& render_system);
 		void D3D12Settings();
-		void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
 		void EffectEditor(SceneGraph* scene_graph, D3D12RenderSystem& render_system);
-		void ModelEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
-		void Inspect(SceneGraph* scene_graph);
+		void SceneGraphEditor(SceneGraph* scene_graph);
+		void Inspector(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size);
 
 		static bool open_hardware_info = true;
 		static bool open_d3d12_settings = true;
@@ -45,15 +39,59 @@ namespace wr::imgui
 		static std::string shader_compiler_error = "No shader error";
 		static bool open_pipeline_registry = false;
 		static bool open_root_signature_registry = false;
-		static bool open_light_editor = true;
 		static bool open_effect_editor = true;
-		static bool open_model_editor = true;
-		static bool open_inspect_editor = true;
+		static bool open_scene_graph_editor = true;
+		static bool open_inspector = true;
 		static wr::LightNode* selected_light = nullptr;
-		static wr::MeshNode* selected_model = nullptr;
 		static bool light_selected = false;
-		static bool model_selected = false;
-		static InspectItem inspect_item = NONE;
+
+		static std::shared_ptr<Node> selected_node = nullptr;
+
+		struct SceneGraphEditorDetails
+		{
+			using name_func_t = std::function<std::string(std::shared_ptr<Node>)>;
+			using inspect_func_t = std::function<void(std::shared_ptr<Node>, SceneGraph*)>;
+			using context_menu_func_t = std::function<bool(std::shared_ptr<Node>, SceneGraph*)>;
+			static const std::unordered_map<std::type_index, name_func_t> sg_editor_type_names;
+			static const std::unordered_map<std::type_index, inspect_func_t> sg_editor_type_inspect;
+			static const std::unordered_map<std::type_index, context_menu_func_t> sg_editor_type_context_menu;
+
+			template<typename T>
+			static void TryUpdateName(std::shared_ptr<Node> node, std::string& out)
+			{
+				if (auto t_node = std::dynamic_pointer_cast<T>(node))
+				{
+					if (auto it = SceneGraphEditorDetails::sg_editor_type_names.find(typeid(T)); it != SceneGraphEditorDetails::sg_editor_type_names.end())
+					{
+						out = it->second(node);
+					}
+				}
+			}
+
+			template<typename T>
+			static void TryUpdateInspectFunction(std::shared_ptr<Node> node, inspect_func_t& out)
+			{
+				if (auto t_node = std::dynamic_pointer_cast<T>(node))
+				{
+					if (auto it = SceneGraphEditorDetails::sg_editor_type_inspect.find(typeid(T)); it != SceneGraphEditorDetails::sg_editor_type_inspect.end())
+					{
+						out = it->second;
+					}
+				}
+			}
+
+			template<typename T>
+			static void TryUpdateContextMenuFunction(std::shared_ptr<Node> node, context_menu_func_t& out)
+			{
+				if (auto t_node = std::dynamic_pointer_cast<T>(node))
+				{
+					if (auto it = SceneGraphEditorDetails::sg_editor_type_context_menu.find(typeid(T)); it != SceneGraphEditorDetails::sg_editor_type_context_menu.end())
+					{
+						out = it->second;
+					}
+				}
+			}
+		};
 	}
 
 	namespace special

@@ -44,8 +44,8 @@ namespace engine
 			if (ImGui::BeginMenu("Window"))
 			{
 				ImGui::MenuItem("Viewport", nullptr, &open_viewport);
-				ImGui::MenuItem("Light Editor", nullptr, &wr::imgui::window::open_light_editor);
-				ImGui::MenuItem("Inspector", nullptr, &wr::imgui::window::open_inspect_editor);
+				ImGui::MenuItem("Scene Graph Editor", nullptr, &wr::imgui::window::open_scene_graph_editor);
+				ImGui::MenuItem("Inspector", nullptr, &wr::imgui::window::open_inspector);
 				ImGui::MenuItem("Hardware Info", nullptr, &wr::imgui::window::open_hardware_info);
 				ImGui::MenuItem("DirectX 12 Settings", nullptr, &wr::imgui::window::open_d3d12_settings);
 				ImGui::Separator();
@@ -141,15 +141,14 @@ namespace engine
 			ImGui::End();
 		}
 
-		wr::imgui::window::LightEditor(sg, viewport_pos, viewport_size);
-		wr::imgui::window::ModelEditor(sg, viewport_pos, viewport_size);
 		wr::imgui::window::EffectEditor(sg, *render_system);
+		wr::imgui::window::SceneGraphEditor(sg);
+		wr::imgui::window::Inspector(sg, viewport_pos, viewport_size);
 		wr::imgui::window::ShaderRegistry();
 		wr::imgui::window::PipelineRegistry();
 		wr::imgui::window::RootSignatureRegistry();
 		wr::imgui::window::D3D12HardwareInfo(*render_system);
 		wr::imgui::window::D3D12Settings();
-		wr::imgui::window::Inspect(sg);
 	}
 	
 }

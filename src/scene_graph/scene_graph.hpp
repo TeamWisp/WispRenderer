@@ -239,8 +239,9 @@ namespace wr
 
 		m_next_light_id = (uint32_t) m_light_nodes.size();
 
-		node.reset();
+		node->m_parent->m_children.erase(std::remove(node->m_parent->m_children.begin(), node->m_parent->m_children.end(), node), node->m_parent->m_children.end());
 
+		node.reset();
 	}
 
 } /* wr */

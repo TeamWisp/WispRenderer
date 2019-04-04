@@ -5,6 +5,7 @@
 #include <sstream>
 #include <optional>
 
+#include "settings.hpp"
 #include "scene_graph/camera_node.hpp"
 #include "shader_registry.hpp"
 #include "pipeline_registry.hpp"
@@ -13,6 +14,7 @@
 #include "scene_graph/scene_graph.hpp"
 #include "scene_graph/light_node.hpp"
 #include "scene_graph/mesh_node.hpp"
+#include "scene_graph/skybox_node.hpp"
 #include "model_pool.hpp"
 #include "d3d12/d3d12_shader_registry.hpp"
 #include "d3d12/d3d12_rt_pipeline_registry.hpp"
@@ -186,96 +188,182 @@ namespace wr::imgui::window
 		}
 	}
 
-	void LightEditor(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
+	decltype(SceneGraphEditorDetails::sg_editor_type_names) SceneGraphEditorDetails::sg_editor_type_names =
 	{
-		if (open_light_editor)
-		{
-			auto& lights = scene_graph->GetLightNodes();
-
-			ImGui::Begin("Light Editor", &open_light_editor);
-
-			if (ImGui::Button("Add Light"))
-			{
-				scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
+		{ typeid(LightNode), [](std::shared_ptr<Node> node) -> std::string
+			{ 
+				auto light_node = std::static_pointer_cast<LightNode>(node);
+				switch (light_node->GetType())
+				{
+					case LightType::DIRECTIONAL: return "Directional Light";
+					case LightType::POINT: return "Point Light";
+					case LightType::SPOT: return "Spot Light";
+					default: return "Light";
+				}
 			}
-
-			ImGui::Separator();
-
-			for (auto i = 0; i < lights.size(); i++)
+		},
+		{ typeid(MeshNode), [](std::shared_ptr<Node> node) -> std::string
 			{
-				auto window_size = ImGui::GetWindowSize();
+				auto mesh_node = std::static_pointer_cast<MeshNode>(node);
+				auto model_path = mesh_node->m_model->m_model_name;
 
-				std::string light_name("Light " + std::to_string(i));
-
-				bool button_selected = false;
-				if (light_selected && lights[i].get() == selected_light) {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(152.f / 255.f, 43.f / 255.f, 91.f / 255.f, 1.0f));
-					button_selected = true;
-					inspect_item = LIGHT;
+				// Remove everything except for the filename.
+				auto last_slash = model_path.find_last_of('/');
+				if (last_slash != std::string::npos)
+				{
+					model_path.erase(0, last_slash + 1);
 				}
 
-				bool pressed_light = ImGui::Button(light_name.c_str(), ImVec2(ImGui::GetWindowSize().x, 20));
+				return "Mesh (" + model_path + ")";
+			}
+		},
+		{ typeid(CameraNode), [](std::shared_ptr<Node> node) -> std::string { return "Camera Node"; } },
+		{ typeid(SkyboxNode), [](std::shared_ptr<Node> node) -> std::string { return "Skybox Node"; } },
+	};
 
-				if (ImGui::BeginPopupContextItem())
+	decltype(SceneGraphEditorDetails::sg_editor_type_inspect) SceneGraphEditorDetails::sg_editor_type_inspect =
+	{
+		{ typeid(LightNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
+				auto light_node = std::static_pointer_cast<LightNode>(node);
+				auto& light = *light_node->m_light;
+
+				const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
+				int type = (int)light.tid & 3;
+				ImGui::Combo("Type", &type, listbox_items, 3);
+				light.tid = type;
+
+				ImGui::ColorEdit3("Color", &light.col.x, 0.25f);
+				ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
+
+				if (type != (uint32_t)LightType::POINT)
 				{
-					if (ImGui::Button(("Remove##" + std::to_string(i)).c_str()))
+					float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
+					DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
+					DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
+					ImGui::DragFloat3("Rotation", rot, 0.01f);
+					light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
+				}
+
+				if (type != (uint32_t)LightType::DIRECTIONAL)
+				{
+					ImGui::DragFloat("Radius", &light.rad, 0.25f);
+				}
+
+				if (type == (uint32_t)LightType::SPOT)
+				{
+					light.ang = light.ang * 180.f / 3.1415926535f;
+					ImGui::DragFloat("Angle", &light.ang);
+					light.ang = light.ang / 180.f * 3.1415926535f;
+				}
+
+				if (ImGui::Button("Take Camera Transform"))
+				{
+					light_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
+					light_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+				}
+
+				light_node->SignalTransformChange();
+				light_node->SignalChange();
+			}
+		},
+		{ typeid(MeshNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
+				auto model_node = std::static_pointer_cast<MeshNode>(node);
+				auto* model = model_node->m_model;
+				auto& materials = model_node->GetMaterials();
+
+				ImGui::Text("Path: %s", model->m_model_name.c_str());
+
+				ImGui::Separator();
+
+				ImGui::DragFloat3("Position", model_node->m_position.m128_f32, 0.25f);
+
+				float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(model_node->m_rotation_radians)),
+				DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(model_node->m_rotation_radians)),
+				DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(model_node->m_rotation_radians)) };
+				ImGui::DragFloat3("Rotation", rot, 0.1f);
+				model_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+
+				float scale[3] = { DirectX::XMVectorGetX(model_node->m_scale),
+				DirectX::XMVectorGetY(model_node->m_scale),
+				DirectX::XMVectorGetZ(model_node->m_scale) };
+				ImGui::DragFloat3("Scale", scale, 0.01f);
+				model_node->SetScale(DirectX::XMVectorSet(scale[0], scale[1], scale[2], 1.f));
+
+				if (ImGui::Button("Take Camera Transform"))
+				{
+					model_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
+					model_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+				}
+
+				// Material Settings
+				if (ImGui::CollapsingHeader("Material Settings", ImGuiTreeNodeFlags_None))
+				{
+					if (ImGui::Button("Add User-defined Material"))
 					{
-						if (selected_light == lights[i].get())
+						materials.emplace_back(model->m_meshes[0].second);
+					}
+
+					for (std::size_t mat_i = 0; mat_i < materials.size(); mat_i++)
+					{
+						auto& material = materials[mat_i];
+						auto prev_material = material;
+
+						ImGui::InputInt(("Remove##" + std::to_string(mat_i)).c_str(), reinterpret_cast<int*>(&material.m_id));
+
+						if (!material.m_pool->HasMaterial(material))
 						{
-							light_selected = false;
-							selected_light = nullptr;
-							inspect_item = NONE;
-							ImGui::PopStyleColor();
+							material = prev_material;
 						}
-						scene_graph->DestroyNode<LightNode>(lights[i]);
-						ImGui::CloseCurrentPopup();
-						ImGui::EndPopup();
-						continue;
-					}
-
-					ImGui::EndPopup();
-				}
-
-				if (pressed_light)
-				{
-
-					if (selected_light != lights[i].get() || inspect_item != LIGHT)
-					{
-						selected_light = lights[i].get();
-						light_selected = true;
-						model_selected = false;
-						inspect_item = LIGHT;
-					}
-					else
-					{
-						light_selected = false;
-						selected_light = nullptr;
-						inspect_item = NONE;
 					}
 				}
-				if (button_selected)
-				{
-					ImGui::PopStyleColor();
-				}
 
-				if (i == 0) 
-				{
-					lights[i]->m_light->tid &= 3;
-					lights[i]->m_light->tid |= (uint32_t)lights.size() << 2;
-				}
+				model_node->SignalTransformChange();
+				model_node->SignalChange();
 			}
+		},
+	};
 
-			ImGui::End();
-
-
-			if (selected_light == nullptr || light_selected == false)
+	decltype(SceneGraphEditorDetails::sg_editor_type_context_menu) SceneGraphEditorDetails::sg_editor_type_context_menu =
+	{
+		{ typeid(LightNode),
+			[](std::shared_ptr<Node> node, SceneGraph * scene_graph)
 			{
-				return;
-			}
+				if (ImGui::Button("Remove"))
+				{
+					scene_graph->DestroyNode(std::static_pointer_cast<LightNode>(node));
 
-			internal::ManipulateNode(selected_light, scene_graph, viewport_pos, viewport_size);
-		}
-	}
+					return true; // close popup.
+				}
+
+				if (ImGui::Button("Teleport To"))
+				{
+					scene_graph->GetActiveCamera()->SetPosition(node->m_position);
+
+					return true; // close popup.
+				}
+
+				return false;
+			}
+		},
+		{ typeid(MeshNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
+				if (ImGui::Button("Remove"))
+				{
+					scene_graph->DestroyNode(std::static_pointer_cast<MeshNode>(node));
+
+					return true; // close popup.
+				}
+
+				return false;
+			}
+		},
+	};
 
 	void EffectEditor(SceneGraph* scene_graph, D3D12RenderSystem& render_system)
 	{
@@ -285,198 +373,132 @@ namespace wr::imgui::window
 			auto cam = scene_graph->GetActiveCamera();
 			ImGui::Checkbox("Shadows Enabled", &cam->m_shadows_enabled);
 			ImGui::Checkbox("Reflections Enabled", &cam->m_reflections_enabled);
-			ImGui::Checkbox("Ambient Occlusion Enabled", &render_system.m_effects_enabled.m_ao);
-
+			if (!wr::settings::use_multithreading)
+			{
+				ImGui::Checkbox("Ambient Occlusion Enabled", &render_system.m_effects_enabled.m_ao);
+			}
 			ImGui::End();
 		}
 	}
-	
-	void ModelEditor(SceneGraph * scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
+
+	void SceneGraphEditor(SceneGraph* scene_graph)
 	{
-		if (open_model_editor)
+		if (open_scene_graph_editor)
 		{
-			auto& models = scene_graph->GetMeshNodes();
+			ImGui::Begin("Scene Graph Editor", &open_scene_graph_editor);
+			auto root = scene_graph->GetRootNode();
+			auto num_children = root->m_children.size();
 
-			ImGui::Begin("Model Editor", &open_model_editor);
+			static ImGuiTextFilter filter;
 
-			std::map<std::string, int> model_counter;
+			//auto size = ImGui::GetContentRegionAvail();
 
-			for (int i = 0; i < models.size(); ++i)
+			ImGui::PushItemWidth(-1.f);
+			filter.Draw("##");
+			ImVec2 size = ImGui::GetContentRegionAvail();
+			size.y -= ImGui::GetItemsLineHeightWithSpacing();
+			if (ImGui::ListBoxHeader("##", size))
 			{
-				auto window_size = ImGui::GetWindowSize();
-
-				std::string model_name;
-
-				if (model_counter.find(models[i]->m_model->m_model_name) != model_counter.end())
+				for (auto child_i = 0; child_i < root->m_children.size(); child_i++)
 				{
-					int count = model_counter[models[i]->m_model->m_model_name];
-					count++;
-					model_counter[models[i]->m_model->m_model_name] = count;
-					model_name = models[i]->m_model->m_model_name + " " + std::to_string(count);
+					auto& node = root->m_children[child_i];
+					std::string node_name_prefix = "Node";
+
+					SceneGraphEditorDetails::TryUpdateName<MeshNode>(node, node_name_prefix);
+					SceneGraphEditorDetails::TryUpdateName<CameraNode>(node, node_name_prefix);
+					SceneGraphEditorDetails::TryUpdateName<LightNode>(node, node_name_prefix);
+					SceneGraphEditorDetails::TryUpdateName<SkyboxNode>(node, node_name_prefix);
+
+					auto node_name = node_name_prefix + "##" + std::to_string(child_i);
+
+					// Skip node if its not part of the filter.
+					if (!filter.PassFilter(node_name.c_str())) continue;
+
+					bool pressed = ImGui::Selectable(node_name.c_str(), selected_node == node);
+
+					// if we don't have that node selected.
+					if (pressed && selected_node != node)
+					{
+						selected_node = node;
+					}
+					// if we already have that node selected.
+					else if (pressed && selected_node == node)
+					{
+						selected_node = nullptr;
+					}
+
+					// Right click menu
+					if (ImGui::BeginPopupContextItem())
+					{
+						SceneGraphEditorDetails::context_menu_func_t node_cm_function;
+						SceneGraphEditorDetails::TryUpdateContextMenuFunction<MeshNode>(selected_node, node_cm_function);
+						SceneGraphEditorDetails::TryUpdateContextMenuFunction<CameraNode>(selected_node, node_cm_function);
+						SceneGraphEditorDetails::TryUpdateContextMenuFunction<LightNode>(selected_node, node_cm_function);
+						SceneGraphEditorDetails::TryUpdateContextMenuFunction<SkyboxNode>(selected_node, node_cm_function);
+
+						if (node_cm_function)
+						{
+							bool close_popup = node_cm_function(selected_node, scene_graph);
+							if (close_popup)
+							{
+								ImGui::CloseCurrentPopup();
+								ImGui::EndPopup();
+								continue;
+							}
+						}
+
+						ImGui::EndPopup();
+					}
+				}
+				ImGui::ListBoxFooter();
+			}
+			ImGui::End();
+		}
+	}
+
+	void Inspector(SceneGraph* scene_graph, ImVec2 viewport_pos, ImVec2 viewport_size)
+	{
+		if (open_inspector)
+		{
+			ImGui::Begin("Inspector", &open_inspector);
+
+			if (selected_node)
+			{
+				SceneGraphEditorDetails::inspect_func_t node_inspect_function;
+				SceneGraphEditorDetails::TryUpdateInspectFunction<MeshNode>(selected_node, node_inspect_function);
+				SceneGraphEditorDetails::TryUpdateInspectFunction<CameraNode>(selected_node, node_inspect_function);
+				SceneGraphEditorDetails::TryUpdateInspectFunction<LightNode>(selected_node, node_inspect_function);
+				SceneGraphEditorDetails::TryUpdateInspectFunction<SkyboxNode>(selected_node, node_inspect_function);
+
+				if (node_inspect_function)
+				{
+					node_inspect_function(selected_node, scene_graph);
 				}
 				else
 				{
-					model_name = models[i]->m_model->m_model_name + " " + "1";
-					model_counter[models[i]->m_model->m_model_name] = 1;
-				}
+					ImGui::DragFloat3("Position", selected_node->m_position.m128_f32, 0.25f);
 
-				bool button_selected = false;
-				if (model_selected && models[i].get() == selected_model) {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(152.f / 255.f, 43.f / 255.f, 91.f / 255.f, 1.0f));
-					button_selected = true;
-					inspect_item = MODEL;
-				}
-
-				bool pressed_model = ImGui::Button(model_name.c_str(), ImVec2(ImGui::GetWindowSize().x, 20));
-
-				if (pressed_model)
-				{
-					if (selected_model != models[i].get() || inspect_item != MODEL)
-					{
-						selected_model = models[i].get();
-						inspect_item = MODEL;
-						model_selected = true;
-						light_selected = false;
-					}
-					else
-					{
-						selected_model = nullptr;
-						inspect_item = NONE;
-						model_selected = false;
-					}
-				}
-
-				if (button_selected)
-				{
-					ImGui::PopStyleColor();
-				}
-			}
-
-			ImGui::End();
-
-			if (selected_model == nullptr || model_selected == false)
-			{
-				return;
-			}
-
-			internal::ManipulateNode(selected_model, scene_graph, viewport_pos, viewport_size);
-		}
-	}
-
-	void Inspect(SceneGraph * scene_graph)
-	{
-		if (open_inspect_editor)
-		{
-			ImGui::Begin("Inspect", &open_inspect_editor);
-			
-			switch (inspect_item)
-			{
-			case LIGHT:
-				if (selected_light != nullptr)
-				{
-					ImGui::Separator();
-
-					auto& light_node = selected_light;
-					auto& light = *light_node->m_light;
-
-					const char* listbox_items[] = { "Point Light", "Directional Light", "Spot Light" };
-					int type = (int)light.tid & 3;
-					ImGui::Combo("Type", &type, listbox_items, 3);
-					light.tid = type;
-
-					ImGui::ColorEdit3("Color", &light.col.x, 0.25f);
-					ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
-
-					if (type != (uint32_t)LightType::POINT)
-					{
-						float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(light_node->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(light_node->m_rotation_radians)),
-						DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(light_node->m_rotation_radians)) };
-						ImGui::DragFloat3("Rotation", rot, 0.01f);
-						light_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
-
-					}
-
-					if (type != (uint32_t)LightType::DIRECTIONAL)
-					{
-						ImGui::DragFloat("Radius", &light.rad, 0.25f);
-					}
-
-					if (type == (uint32_t)LightType::SPOT)
-					{
-						light.ang = light.ang * 180.f / 3.1415926535f;
-						ImGui::DragFloat("Angle", &light.ang);
-						light.ang = light.ang / 180.f * 3.1415926535f;
-					}
-
-					if (ImGui::Button("Take Camera Transform"))
-					{
-						light_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
-						light_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
-					}
-
-					light_node->SignalTransformChange();
-					light_node->SignalChange();
-				}
-				break;
-			case MODEL:
-				if (selected_model != nullptr)
-				{
-					ImGui::Separator();
-
-					auto& model_node = selected_model;
-					auto* model = model_node->m_model;
-					auto& materials = model_node->GetMaterials();
-
-					ImGui::DragFloat3("Position", model_node->m_position.m128_f32, 0.25f);
-
-					float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(model_node->m_rotation_radians)),
-					DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(model_node->m_rotation_radians)),
-					DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(model_node->m_rotation_radians)) };
+					float rot[3] = { DirectX::XMConvertToDegrees(DirectX::XMVectorGetX(selected_node->m_rotation_radians)),
+					DirectX::XMConvertToDegrees(DirectX::XMVectorGetY(selected_node->m_rotation_radians)),
+					DirectX::XMConvertToDegrees(DirectX::XMVectorGetZ(selected_node->m_rotation_radians)) };
 					ImGui::DragFloat3("Rotation", rot, 0.1f);
-					model_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
+					selected_node->SetRotation(DirectX::XMVectorSet(DirectX::XMConvertToRadians(rot[0]), DirectX::XMConvertToRadians(rot[1]), DirectX::XMConvertToRadians(rot[2]), 0));
 
-					float scale[3] = { DirectX::XMVectorGetX(model_node->m_scale),
-					DirectX::XMVectorGetY(model_node->m_scale),
-					DirectX::XMVectorGetZ(model_node->m_scale) };
-					ImGui::DragFloat3("Scale", scale, 0.01f);
-					model_node->SetScale(DirectX::XMVectorSet(scale[0], scale[1], scale[2], 1.f));
+					ImGui::DragFloat3("Scale", selected_node->m_scale.m128_f32, 0.01f);
 
 					if (ImGui::Button("Take Camera Transform"))
 					{
-						model_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
-						model_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
+						selected_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
+						selected_node->SetRotation(scene_graph->GetActiveCamera()->m_rotation_radians);
 					}
 
-					// Material Settings
-					if (ImGui::CollapsingHeader("Material Settings", ImGuiTreeNodeFlags_None))
-					{
-						if (ImGui::Button("Add User-defined Material"))
-						{
-							materials.emplace_back(model->m_meshes[0].second);
-						}
-
-						for (std::size_t mat_i = 0; mat_i < materials.size(); mat_i++)
-						{
-							auto& material = materials[mat_i];
-							auto prev_material = material;
-
-							ImGui::InputInt(("Remove##" + std::to_string(mat_i)).c_str(), reinterpret_cast<int*>(&material.m_id));
-
-							if (!material.m_pool->HasMaterial(material))
-							{
-								material = prev_material;
-							}
-						}
-					}
-
-					model_node->SignalTransformChange();
-					model_node->SignalChange();
+					selected_node->SignalChange();
+					selected_node->SignalTransformChange();
 				}
-				break;
-			default:
-				break;
+
+				internal::ManipulateNode(selected_node.get(), scene_graph, viewport_pos, viewport_size);
 			}
+
 			ImGui::End();
 		}
 	}
