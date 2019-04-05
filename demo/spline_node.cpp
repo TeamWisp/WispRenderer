@@ -3,8 +3,10 @@
 #include <imgui_tools.hpp>
 #include <scene_graph/camera_node.hpp>
 #include <scene_graph/scene_graph.hpp>
+#include <fstream>
+#include <queue>
 
-SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1), m_time(0), m_spline(nullptr)
+SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1), m_time(0), m_spline(nullptr), m_quat_spline(nullptr)
 {
 	wr::imgui::window::SceneGraphEditorDetails::sg_editor_type_names[typeid(SplineNode)] =
 	{
@@ -34,6 +36,36 @@ SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1
 			{
 				scene_graph->GetActiveCamera()->SetPosition(m_initial_position);
 				scene_graph->GetActiveCamera()->SetRotation(m_initial_rotation);
+			}
+
+			if (ImGui::Button("Save Spline"))
+			{
+				auto result = SaveDialog();
+
+				if (result.has_value())
+				{
+					SaveSplineToFile(result.value());
+				}
+				else
+				{
+					LOGW("The Open dialog didn't return a file name.");
+				}
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Load Spline"))
+			{
+				auto result = LoadDialog();
+
+				if (result.has_value())
+				{
+					LoadSplineFromFile(result.value());
+				}
+				else
+				{
+					LOGW("The Open dialog didn't return a file name.");
+				}
 			}
 
 			if (ImGui::Button("Add Control Point"))
@@ -77,11 +109,6 @@ SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1
 			UpdateNaturalSpline();
 		}
 	};
-
-	m_control_points.push_back({ { 0, 0.5, 0.8 }, { 0, 0, 0 } });
-	m_control_points.push_back({ { 0.8, 0.5, 0 }, { 0, 90_deg, 0 } });
-	m_control_points.push_back({ { 0, 0.5, -0.8 }, { 0, 180_deg, 0 } });
-	m_control_points.push_back({ { -0.8, 0.5, 0 }, { 0, -90_deg, 0 } });
 }
 
 SplineNode::~SplineNode()
@@ -129,20 +156,20 @@ void SplineNode::UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node)
 
 void SplineNode::UpdateNaturalSpline()
 {
+	if (m_spline)
+	{
+		delete m_spline;
+		m_spline = nullptr;
+	}
+
+	if (m_quat_spline)
+	{
+		delete m_quat_spline;
+		m_quat_spline = nullptr;
+	}
+
 	if (m_control_points.size() < 3)
 	{
-		if (m_spline)
-		{
-			delete m_spline;
-			m_spline = nullptr;
-		}
-
-		if (m_quat_spline)
-		{
-			delete m_quat_spline;
-			m_quat_spline = nullptr;
-		}
-
 		return;
 	}
 
@@ -162,17 +189,122 @@ void SplineNode::UpdateNaturalSpline()
 	}
 
 	{
-		std::vector<Vector<4>> m_spline_positions;
+		std::vector<Vector<4>> m_spline_rotations;
 
 		for (auto const& cp : m_control_points)
 		{
 			auto quat = DirectX::XMQuaternionRotationRollPitchYawFromVector(cp.m_rotation);
-			m_spline_positions.push_back(Vector<4>({ quat.m128_f32[0], quat.m128_f32[1], quat.m128_f32[2], quat.m128_f32[3] }));
+			m_spline_rotations.push_back(Vector<4>({ quat.m128_f32[0], quat.m128_f32[1], quat.m128_f32[2], quat.m128_f32[3] }));
 		}
 #ifdef LOOPING
 		m_quat_spline = new LoopingNaturalSpline<Vector<4>>(m_spline_positions);
 #else
-		m_quat_spline = new NaturalSpline<Vector<4>>(m_spline_positions);
+		m_quat_spline = new NaturalSpline<Vector<4>>(m_spline_rotations);
 #endif
 	}
+}
+
+std::optional<std::string> SplineNode::LoadDialog()
+{
+	char buffer[MAX_PATH];
+
+	OPENFILENAME dialog_args;
+	ZeroMemory(&dialog_args, sizeof(dialog_args));
+	dialog_args.lStructSize = sizeof(OPENFILENAME);
+	dialog_args.hwndOwner = NULL;
+	dialog_args.lpstrFile = buffer;
+	dialog_args.lpstrFile[0] = '\0';
+	dialog_args.nMaxFile = sizeof(buffer);
+	dialog_args.lpstrFilter = "All\0*.*\0Spline\0*.SPL\0";
+	dialog_args.nFilterIndex = 1;
+	dialog_args.lpstrTitle = "Load Spline";
+	dialog_args.lpstrFileTitle = NULL;
+	dialog_args.nMaxFileTitle = 0;
+	dialog_args.lpstrInitialDir = NULL;
+	dialog_args.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	bool file_selected = GetOpenFileName(&dialog_args);
+
+	if (file_selected)
+	{
+		return std::string(buffer);
+	}
+
+	return std::nullopt;
+}
+
+std::optional<std::string> SplineNode::SaveDialog()
+{
+	char buffer[MAX_PATH] = "spline.spl";;
+
+	OPENFILENAME dialog_args;
+	ZeroMemory(&dialog_args, sizeof(dialog_args));
+	dialog_args.lStructSize = sizeof(OPENFILENAME);
+	dialog_args.hwndOwner = NULL;
+	dialog_args.lpstrFile = buffer;
+	//dialog_args.lpstrFile[0] = '\0';
+	dialog_args.nMaxFile = sizeof(buffer);
+	dialog_args.lpstrFilter = "Spline\0*.SPL\0";
+	dialog_args.nFilterIndex = 1;
+	dialog_args.lpstrFileTitle = NULL;
+	dialog_args.lpstrTitle = "Save Spline";
+	dialog_args.nMaxFileTitle = 0;
+	dialog_args.lpstrInitialDir = NULL;
+	dialog_args.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	bool file_selected = GetSaveFileName(&dialog_args);
+
+	if (file_selected)
+	{
+		return std::string(buffer);
+	}
+
+	return std::nullopt;
+}
+
+void SplineNode::SaveSplineToFile(std::string const & path)
+{
+	std::ofstream file(path);
+	
+	for (auto cp : m_control_points)
+	{
+		file << cp.m_position.m128_f32[0] << "," << cp.m_position.m128_f32[1] << "," << cp.m_position.m128_f32[2] << ",";
+		file << cp.m_rotation.m128_f32[0] << "," << cp.m_rotation.m128_f32[1] << "," << cp.m_rotation.m128_f32[2] << ",\n";
+	}
+
+	file.close();
+}
+
+std::vector<std::string> Split(const std::string& subject)
+{
+	std::istringstream ss{ subject };
+	using StrIt = std::istream_iterator<std::string>;
+	std::vector<std::string> container{ StrIt{ss}, StrIt{} };
+	return container;
+}
+
+void SplineNode::LoadSplineFromFile(std::string const& path)
+{
+	std::ifstream file(path);
+
+	std::string str;
+	std::deque<float> numbers;
+	while (std::getline(file, str, ','))
+	{
+		numbers.push_back(std::atof(str.c_str()));
+	}
+
+	m_control_points.clear();
+
+	while (numbers.size() > 5)
+	{
+		ControlPoint cp;
+		cp.m_position = { numbers[0], numbers[1], numbers[2] };
+		cp.m_rotation = { numbers[3], numbers[4], numbers[5] };
+		m_control_points.push_back(cp);
+		 
+		numbers.erase(numbers.begin(), numbers.begin() + 6);
+	}
+
+	file.close();
 }
