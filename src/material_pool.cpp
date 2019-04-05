@@ -146,6 +146,19 @@ namespace wr
 		return nullptr;
 	}
 
+	void MaterialPool::DestroyMaterial(MaterialHandle handle)
+	{
+		auto it = m_materials.find(handle.m_id);
+
+		if (it == m_materials.end())
+			LOGC("Can't destroy material; it's not part of the material pool");
+
+		auto *ptr = it->second;
+		m_materials.erase(it);
+		delete ptr;
+
+	}
+
 	bool MaterialPool::HasMaterial(MaterialHandle handle) const
 	{
 		return m_materials.find(handle.m_id) != m_materials.end();
