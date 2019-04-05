@@ -158,6 +158,8 @@ namespace wr
 											bool is_alpha_masked = false, 
 											bool is_double_sided = false);
 
+
+
 		virtual void Evict() {}
 		virtual void MakeResident() {}
 
@@ -168,6 +170,8 @@ namespace wr
 		virtual Material* GetMaterial(MaterialHandle handle);
 		/*! Check if the material owns a material with the specified handle */
 		bool HasMaterial(MaterialHandle handle) const;
+
+		void DestroyMaterial(MaterialHandle handle);
 
 	protected:
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
