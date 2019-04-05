@@ -174,7 +174,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(15);
+			fg = new wr::FrameGraph(18);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -216,13 +216,22 @@ namespace fg_manager
 
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
+      wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
+        rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+      wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
+        rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+      wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg,
+        rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
 			// Do some post processing
 			//wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::BloomCompostionData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::BloomCompostionData>(imgui_func));
 
 			// Finalize the frame graph
 			fg->Setup(rs);
