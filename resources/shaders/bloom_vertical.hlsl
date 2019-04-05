@@ -1,4 +1,5 @@
 #include "dof_util.hlsl"
+#include "bloom_util.hlsl"
 
 Texture2D source : register(t0);
 RWTexture2D<float4> output : register(u0);
@@ -15,12 +16,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 
-	float sigma = 11.0f;
 	float4 color = 0;
 	float weightSum = 0.0f;
 	for (int i = -7; i < 7; i++)
 	{
-		float weight = CalcGaussianWeight(i, sigma);
+		float weight = gaussian_weights[i + 7];//CalcGaussianWeight(i, sigma);
 		weightSum += weight;
 		float2 o_uv = (screen_coord + 0.5f + (float2(0.0f, 1.0f * i))) / screen_size;
 		float4 s = source.SampleLevel(s0, o_uv, 0);
