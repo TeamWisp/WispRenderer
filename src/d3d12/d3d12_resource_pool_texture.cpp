@@ -378,7 +378,7 @@ namespace wr
 		return texture_handle;
 	}
 
-	DescriptorAllocator * D3D12TexturePool::GetAllocator(DescriptorHeapType type)
+	DescriptorAllocator* D3D12TexturePool::GetAllocator(DescriptorHeapType type)
 	{
 		return m_allocators[static_cast<size_t>(type)];
 	}

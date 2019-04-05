@@ -45,14 +45,45 @@ namespace wr
 			d3d12::DescHeapCPUHandle lights_handle = data.out_srv_uav_allocation.GetDescriptorHandle(lights);
 			d3d12::SetShaderSRV(cmd_list, 1, lights, lights_handle);
 
-			constexpr unsigned int skybox = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX);
-			d3d12::SetShaderSRV(cmd_list, 1, skybox, data.out_skybox);
+			if (data.out_skybox)
+			{
+				constexpr unsigned int skybox = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX);
+				d3d12::SetShaderSRV(cmd_list, 1, skybox, data.out_skybox);
+			}
+			else
+			{
+				constexpr unsigned int skybox = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SKY_BOX);
+				auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+				d3d12::TextureResource* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+				d3d12::SetShaderSRV(cmd_list, 1, skybox, brdf_lut_text);
+			}
 
-			constexpr unsigned int irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP);
-			d3d12::SetShaderSRV(cmd_list, 1, irradiance, data.out_irradiance);
+			if (data.out_irradiance)
+			{
+				constexpr unsigned int irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP);
+				d3d12::SetShaderSRV(cmd_list, 1, irradiance, data.out_irradiance);
+			}
+			else
+			{
+				constexpr unsigned int irradiance = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::IRRADIANCE_MAP);
+				auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+				d3d12::TextureResource* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+				d3d12::SetShaderSRV(cmd_list, 1, irradiance, brdf_lut_text);
+			}
 
-			constexpr unsigned int pref_env = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::PREF_ENV_MAP);
-			d3d12::SetShaderSRV(cmd_list, 1, pref_env, data.out_pref_env_map);
+			if (data.out_pref_env_map)
+			{
+				constexpr unsigned int pref_env = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::PREF_ENV_MAP);
+				d3d12::SetShaderSRV(cmd_list, 1, pref_env, data.out_pref_env_map);
+
+			}
+			else
+			{
+				constexpr unsigned int pref_env = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::PREF_ENV_MAP);
+				auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+				d3d12::TextureResource* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+				d3d12::SetShaderSRV(cmd_list, 1, pref_env, brdf_lut_text);
+			}
 
 			constexpr unsigned int brdf_lut_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BRDF_LUT);
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
@@ -97,6 +128,7 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+			//data.out_allocator = new DescriptorAllocator(n_render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
 			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(10));
 
@@ -131,7 +163,10 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			if (fg.HasTask<CubemapConvolutionTaskData>())
+			{
+				const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			}
 
 			if (data.is_hybrid)
 			{
@@ -174,9 +209,31 @@ namespace wr
 				auto skybox = scene_graph.GetCurrentSkybox();
 				if (skybox != nullptr)
 				{
-					//data.out_skybox = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
-					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
-					d3d12::CreateSRVFromTexture(data.out_skybox);
+					if (skybox->m_skybox.has_value())
+					{
+						//data.out_skybox = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
+						data.out_skybox = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
+						d3d12::CreateSRVFromTexture(data.out_skybox);
+					}
+				}
+
+				// Get Irradiance Map
+				if (skybox != nullptr)
+				{
+					if (skybox->m_irradiance.has_value())
+					{
+						data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
+						d3d12::CreateSRVFromTexture(data.out_irradiance);
+					}
+				}
+
+				if (skybox != nullptr)
+				{
+					if (skybox->m_prefiltered_env_map.has_value())
+					{
+						data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
+						d3d12::CreateSRVFromTexture(data.out_pref_env_map);
+					}
 				}
 
 				// Get Screen Space Environment Texture
@@ -185,20 +242,6 @@ namespace wr
 					auto irradiance_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE));
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
 					d3d12::CreateSRVFromSpecificRTV(hybrid_rt, irradiance_handle, 0, hybrid_rt->m_create_info.m_rtv_formats[0]);
-				}
-
-				// Get Irradiance Map
-				if (skybox != nullptr)
-				{
-					data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
-					d3d12::CreateSRVFromTexture(data.out_irradiance);
-				}
-
-				// Get the prefiltered environment map	
-				if (skybox != nullptr)
-				{
-					data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
-					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
 				}
 
 				// Output UAV

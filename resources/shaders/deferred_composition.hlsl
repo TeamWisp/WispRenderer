@@ -12,8 +12,8 @@ Texture2D gbuffer_normal_metallic : register(t1);
 Texture2D gbuffer_depth : register(t2);
 //Consider SRV for light buffer in register t3
 TextureCube skybox : register(t4);
-TextureCube irradiance_map   : register(t5);
-TextureCube pref_env_map	 : register(t6);
+TextureCube irradiance_map : register(t5);
+TextureCube pref_env_map     : register(t6);
 Texture2D brdf_lut			 : register(t7);
 Texture2D buffer_refl_shadow : register(t8); // xyz: reflection, a: shadow factor
 Texture2D screen_space_irradiance : register(t9);
@@ -71,7 +71,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
-		
+		//float3 sampled_environment_map = float3(1.0f, 1.0f, 1.0f);
+
 		float3 irradiance = float3(0, 0, 0);
 		if (is_path_tracer)
 		{
@@ -80,6 +81,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		else
 		{
 			irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
+			//irradiance = float3(1.0f, 1.0f, 1.0f);
 		}
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
@@ -104,10 +106,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, sampled_brdf, shadow_factor);
+
+		retval = float3(sampled_brdf.xy, 0.0f);
 	}
 	else
 	{	
 		retval = skybox.SampleLevel(linear_sampler, -V, 0);
+		//retval = float3(1.0f, 0.0f, 0.0f);
 	}
 
 	//Do shading

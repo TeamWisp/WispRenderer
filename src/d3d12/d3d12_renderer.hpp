@@ -8,6 +8,7 @@
 #include "../scene_graph/light_node.hpp"
 #include "../vertex.hpp"
 #include "d3d12_structs.hpp"
+#include "d3d12_descriptors_allocations.hpp"
 
 
 namespace wr
