@@ -69,7 +69,7 @@ namespace viknell_scene
 			bamboo_material_internal->SetMetallic(bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sponza_jacco/sponza.obj");
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 		}
 
@@ -84,9 +84,12 @@ namespace viknell_scene
 
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<SplineNode> camera_spline_node;
+	static std::shared_ptr<SplineNode> light_1_spline_node;
+	static std::shared_ptr<SplineNode> light_2_spline_node;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
 	static std::shared_ptr<wr::MeshNode> test_model;
 	static std::shared_ptr<wr::LightNode> point_light_1;
+	static std::shared_ptr<wr::LightNode> point_light_2;
 	static float t = 0;
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
@@ -95,7 +98,9 @@ namespace viknell_scene
 		camera->SetPosition({0, 0, 2});
 		camera->SetSpeed(10);
 
-		camera_spline_node = scene_graph->CreateChild<SplineNode>(nullptr);
+		camera_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline");
+		light_1_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Light 1 Spline");
+		light_2_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Light 2 Spline");
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
@@ -141,7 +146,7 @@ namespace viknell_scene
 		point_light_1->SetRadius(5.0f);
 		point_light_1->SetPosition({0.5, 0, -0.3});
 
-		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{0, 0, 1});
+		point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{0, 0, 1});
 		point_light_2->SetRadius(5.0f);
 		point_light_2->SetPosition({-0.5, 0.5, -0.3});
 
@@ -157,6 +162,8 @@ namespace viknell_scene
 		//test_model->SetPosition(pos);
 
 		camera->Update(ImGui::GetIO().DeltaTime);
-		camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, point_light_1);
+		camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, camera);
+		light_1_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, point_light_1);
+		light_2_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, point_light_2);
 	}
 } /* cube_scene */

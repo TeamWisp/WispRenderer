@@ -14,7 +14,7 @@ class SplineNode : public wr::Node
 	};
 
 public:
-	SplineNode();
+	SplineNode(std::string name);
 	~SplineNode();
 
 	void UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node);
@@ -42,4 +42,6 @@ private:
 	std::vector<ControlPoint> m_control_points;
 	float m_speed;
 	float m_time;
+
+	std::string m_name;
 };

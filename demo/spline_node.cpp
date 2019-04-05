@@ -6,33 +6,41 @@
 #include <fstream>
 #include <queue>
 
-SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1), m_time(0), m_spline(nullptr), m_quat_spline(nullptr)
+static bool initialized = false;
+
+SplineNode::SplineNode(std::string name) : Node(typeid(SplineNode)), m_name(name), m_animate(false), m_speed(1), m_time(0), m_spline(nullptr), m_quat_spline(nullptr)
 {
+	if (initialized) return;
+	initialized = true;
+
 	wr::imgui::window::SceneGraphEditorDetails::sg_editor_type_names[typeid(SplineNode)] =
 	{
 		[](std::shared_ptr<Node> node) -> std::string {
-			return "Spline Node";
+			auto spline_node = std::static_pointer_cast<SplineNode>(node);
+			return spline_node->m_name;
 		}
 	};
 
 	wr::imgui::window::SceneGraphEditorDetails::sg_editor_type_inspect[typeid(SplineNode)] =
 	{
 		[&](std::shared_ptr<Node> node, wr::SceneGraph* scene_graph) {
-			bool animate = m_animate;
+			auto spline_node = std::static_pointer_cast<SplineNode>(node);
 
-			ImGui::Checkbox("Animate", &m_animate);
-			ImGui::DragFloat("Speed", &m_speed);
-			ImGui::DragFloat("Time	", &m_time);
+			bool animate = spline_node->m_animate;
+
+			ImGui::Checkbox("Animate", &spline_node->m_animate);
+			ImGui::DragFloat("Speed", &spline_node->m_speed);
+			ImGui::DragFloat("Time	", &spline_node->m_time);
 
 			// Started animating
-			if (m_animate && animate != m_animate)
+			if (spline_node->m_animate && animate != spline_node->m_animate)
 			{
 				m_initial_position = scene_graph->GetActiveCamera()->m_position;
 				m_initial_rotation = scene_graph->GetActiveCamera()->m_rotation_radians;
 			}
 
 			// Stopped animating
-			if (!m_animate && animate != m_animate)
+			if (!spline_node->m_animate && animate != spline_node->m_animate)
 			{
 				scene_graph->GetActiveCamera()->SetPosition(m_initial_position);
 				scene_graph->GetActiveCamera()->SetRotation(m_initial_rotation);
@@ -44,7 +52,7 @@ SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1
 
 				if (result.has_value())
 				{
-					SaveSplineToFile(result.value());
+					spline_node->SaveSplineToFile(result.value());
 				}
 				else
 				{
@@ -60,7 +68,7 @@ SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1
 
 				if (result.has_value())
 				{
-					LoadSplineFromFile(result.value());
+					spline_node->LoadSplineFromFile(result.value());
 				}
 				else
 				{
@@ -74,18 +82,18 @@ SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1
 				cp.m_position = scene_graph->GetActiveCamera()->m_position;
 				cp.m_rotation = scene_graph->GetActiveCamera()->m_rotation_radians;
 
-				m_control_points.push_back(cp);
+				spline_node->m_control_points.push_back(cp);
 			}
 
 			ImGui::Separator();
 
-			for (std::size_t i = 0; i < m_control_points.size(); i++)
+			for (std::size_t i = 0; i < spline_node->m_control_points.size(); i++)
 			{
 				auto i_str = std::to_string(i);
 
 				if (ImGui::TreeNode(("Control Point " + i_str).c_str()))
 				{
-					auto& cp = m_control_points[i];
+					auto& cp = spline_node->m_control_points[i];
 					ImGui::DragFloat3(("Pos##" + i_str).c_str(), cp.m_position.m128_f32);
 					ImGui::DragFloat3(("Rot##" + i_str).c_str(), cp.m_rotation.m128_f32);
 
@@ -106,14 +114,14 @@ SplineNode::SplineNode() : Node(typeid(SplineNode)), m_animate(false), m_speed(1
 				}
 			}
 
-			UpdateNaturalSpline();
+			spline_node->UpdateNaturalSpline();
 		}
 	};
 }
 
 SplineNode::~SplineNode()
 {
-	delete m_spline;
+	if (m_spline) delete m_spline;
 }
 
 void SplineNode::UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node)
