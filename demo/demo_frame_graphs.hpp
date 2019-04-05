@@ -244,7 +244,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			//wr::AddRTReflectionTask(*fg);
+			wr::AddRTReflectionTask(*fg);
 
 			wr::AddRTShadowTask(*fg);
 

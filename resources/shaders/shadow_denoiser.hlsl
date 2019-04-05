@@ -25,12 +25,42 @@ cbuffer DenoiserSettings : register(b1)
     float depth_contrast;
 };
 
+const static float2 VARIANCE_CLIPPING_KERNEL = float2(7, 7);
 const static float VARIANCE_CLIPPING_GAMMA = 1.0;
 
 float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
 	const float4 pos = mul( view_inv, mul(proj_inv, ndc));
 	return (pos / pos.w).xyz;
+}
+
+float3 line_box_intersection(float3 box_min, float3 box_max, float3 line_start, float3 line_end)
+{
+    if(line_start.x < box_max.x && line_start.x > box_min.x &&
+     line_start.y < box_max.y && line_start.y > box_min.y &&
+     line_start.z < box_max.z && line_start.z > box_min.z)
+     {
+         return line_start;
+     }
+
+     float3 ray_dir = normalize(line_end - line_start);
+     float3 t = float3(0,0,0);
+
+     for(int i = 0; i< 3; ++i)
+     {
+        if(ray_dir[i] > 0)
+        {
+            t[i] = (box_min[i] - line_start[i]) / ray_dir[i];
+        }
+        else
+        {
+            t[i] = (box_max[i] - line_start[i]) / ray_dir[i];
+        }
+     }
+
+     float mt = max(t.x, max(t.y, t.z));
+
+     return line_start + ray_dir*mt;
 }
 
 [numthreads(16,16,1)]
@@ -56,43 +86,55 @@ void temporal_accumulator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float4 accum_data = accum_texture[int2(q_UV.x * screen_size.x, q_UV.y * screen_size.y)];
 	float4 noise = input_texture[screen_coord];
 
-    float3 shadow1 = input_texture[screen_coord - int2(-1, 0)].xyz;
-    float3 shadow2 = input_texture[screen_coord - int2(1, 0)].xyz;
-    float3 shadow3 = input_texture[screen_coord - int2(0, -1)].xyz;
-    float3 shadow4 = input_texture[screen_coord - int2(0, 1)].xyz;
+    float3 m1 = float3(0,0,0);
+    float3 m2 = float3(0,0,0);
 
-    float3 m1 = noise.xyz + shadow1 + shadow2 + shadow3 + shadow4;
-    float3 m2 = noise.xyz * noise.xyz + shadow1 * shadow1 + shadow2 * shadow2 + shadow3 * shadow3 + shadow4 * shadow4;
+    float2 center = float2(floor(VARIANCE_CLIPPING_KERNEL.x / 2.0), floor(VARIANCE_CLIPPING_KERNEL.y / 2.0));
 
-    float3 mu = m1 / 5.0;
-    float3 sigma = sqrt(m2 / 5.0 - mu * mu);
+    float3 clamp_min = 1.0;
+    float3 clamp_max = 0.0;
 
-    float3 box_min = mu - VARIANCE_CLIPPING_GAMMA * sigma;
+    for(int i = 0; i < VARIANCE_CLIPPING_KERNEL.x; ++i)
+    {
+        for(int j = 0; j < VARIANCE_CLIPPING_KERNEL.y; ++j)
+        {
+            float3 noise_sample = input_texture[int2(screen_coord + int2(i, j) - center)];
+            m1 += noise_sample;
+            m2 += noise_sample*noise_sample;
+            clamp_min = min(noise_sample, clamp_min);
+            clamp_max = max(noise_sample, clamp_max);
+        }
+    }
+
+    float3 mu = m1 / (VARIANCE_CLIPPING_KERNEL.x * VARIANCE_CLIPPING_KERNEL.y);
+    float3 sigma = sqrt(m2 / (VARIANCE_CLIPPING_KERNEL.x * VARIANCE_CLIPPING_KERNEL.y) - mu * mu);
+
+    float3 box_min = max(mu - VARIANCE_CLIPPING_GAMMA * sigma, clamp_min);
     //box_min = min(noise.xyz, min(shadow1, min(shadow2, min(shadow3, shadow4))));
-    float3 box_max = mu + VARIANCE_CLIPPING_GAMMA * sigma;
+    float3 box_max = min(mu + VARIANCE_CLIPPING_GAMMA * sigma, clamp_max);
     //box_max = max(noise.xyz, max(shadow1, max(shadow2, max(shadow3, shadow4))));
 
 	float mean = accum_data.x / accum_data.w;
 
-    float variance = (noise - mean)*(noise - mean) / (accum_data.w);
+    float variance = sigma;
 
 	if(accum_data.w==0.f)
 	{
 		accum_data = float4(1, 1, 1, 0);
 	}
 
+	accum_data.w = clamp(accum_data.w, 1.0, 128.0);
+
+	accum_data.xyz = clamp(accum_data.xyz, box_min, box_max);
+
+    //accum_data.xyz = line_box_intersection(box_min, box_max, accum_data.xyz, noise.xyz);
+
     accum_data = lerp(accum_data, float4(1,1,1,0), q_UV.x < 0 || q_UV.x > 1 || q_UV.y < 0 || q_UV.y > 1);
-
-	//accum_data.w = clamp(accum_data.w, 1.0, 1.0);
-
-	//accum_data.xyz = clamp(accum_data.xyz, box_min, box_max);
-
-    accum_data.w = lerp(accum_data.w, 0, accum_data.xyz < box_min || accum_data.xyz > box_max);
 
 	accum_data = float4(accum_data.xyz*accum_data.w + noise.xyz, accum_data.w + 1);
     accum_data = float4(accum_data.xyz / accum_data.w, accum_data.w);
 
-    bool uv_equal = int2(q_UV.x * screen_size.x,q_UV.y * screen_size.y)==int2(screen_coord.x, screen_coord.y);
+    //bool uv_equal = int2(q_UV.x * screen_size.x,q_UV.y * screen_size.y)==int2(screen_coord.x, screen_coord.y);
     //uv_equal = q_UV.x < 0 || q_UV.x > 1 || q_UV.y < 0 || q_UV.y > 1;
 
     output_texture[screen_coord] = accum_data;
