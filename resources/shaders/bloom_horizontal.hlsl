@@ -1,4 +1,5 @@
 #include "dof_util.hlsl"
+#include "bloom_util.hlsl"
 
 Texture2D source : register(t0);
 RWTexture2D<float4> output : register(u0);
