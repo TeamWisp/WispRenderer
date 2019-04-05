@@ -23,7 +23,7 @@ SplineNode::SplineNode(std::string name) : Node(typeid(SplineNode)), m_name(name
 
 	wr::imgui::window::SceneGraphEditorDetails::sg_editor_type_inspect[typeid(SplineNode)] =
 	{
-		[&](std::shared_ptr<Node> node, wr::SceneGraph* scene_graph) {
+		[](std::shared_ptr<Node> node, wr::SceneGraph* scene_graph) {
 			auto spline_node = std::static_pointer_cast<SplineNode>(node);
 
 			bool animate = spline_node->m_animate;
@@ -33,7 +33,7 @@ SplineNode::SplineNode(std::string name) : Node(typeid(SplineNode)), m_name(name
 			ImGui::DragFloat("Time	", &spline_node->m_time);
 
 			// Started animating
-			if (spline_node->m_animate && animate != spline_node->m_animate)
+			/*if (spline_node->m_animate && animate != spline_node->m_animate)
 			{
 				m_initial_position = scene_graph->GetActiveCamera()->m_position;
 				m_initial_rotation = scene_graph->GetActiveCamera()->m_rotation_radians;
@@ -44,11 +44,11 @@ SplineNode::SplineNode(std::string name) : Node(typeid(SplineNode)), m_name(name
 			{
 				scene_graph->GetActiveCamera()->SetPosition(m_initial_position);
 				scene_graph->GetActiveCamera()->SetRotation(m_initial_rotation);
-			}
+			}*/
 
 			if (ImGui::Button("Save Spline"))
 			{
-				auto result = SaveDialog();
+				auto result = spline_node->SaveDialog();
 
 				if (result.has_value())
 				{
@@ -64,7 +64,7 @@ SplineNode::SplineNode(std::string name) : Node(typeid(SplineNode)), m_name(name
 
 			if (ImGui::Button("Load Spline"))
 			{
-				auto result = LoadDialog();
+				auto result = spline_node->LoadDialog();
 
 				if (result.has_value())
 				{
