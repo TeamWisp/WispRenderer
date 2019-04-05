@@ -89,14 +89,7 @@ namespace wr
 			data.is_hybrid = fg.HasTask<wr::RTHybridData>();
 			data.is_path_tracer = fg.HasTask<wr::PathTracerData>();
 
-			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
-			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
-			if (!texture_pool)
-			{
-				LOGC("Texture pool is nullptr. This shouldn't happen as the render system should always create the first texture pool");
-			}
-
-			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+			data.out_allocator = new DescriptorAllocator(n_render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
 			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(10));
 

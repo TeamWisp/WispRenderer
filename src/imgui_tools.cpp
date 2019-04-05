@@ -366,6 +366,12 @@ namespace wr::imgui::window
 		if (open_scene_graph_editor)
 		{
 			ImGui::Begin("Scene Graph Editor", &open_scene_graph_editor);
+
+			if (ImGui::Button("Add Light"))
+			{
+				scene_graph->CreateChild<LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
+			}
+
 			auto root = scene_graph->GetRootNode();
 			auto num_children = root->m_children.size();
 
