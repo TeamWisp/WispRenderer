@@ -86,8 +86,6 @@ namespace wr
 	{
 		if (!m_use_quat)
 			m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
-		else
-			LOG("Huh?");
 
 		DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslationFromVector(m_position);
 		DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationQuaternion(m_rotation);

@@ -8,7 +8,7 @@
 
 static bool initialized = false;
 
-SplineNode::SplineNode(std::string name) : Node(typeid(SplineNode)), m_name(name), m_animate(false), m_speed(1), m_time(0), m_spline(nullptr), m_quat_spline(nullptr)
+SplineNode::SplineNode(std::string name, bool looping) : Node(typeid(SplineNode)), m_name(name), m_animate(false), m_speed(1), m_time(0), m_spline(nullptr), m_quat_spline(nullptr), m_looping(looping)
 {
 	if (initialized) return;
 	initialized = true;
@@ -110,6 +110,11 @@ SplineNode::SplineNode(std::string name) : Node(typeid(SplineNode)), m_name(name
 						scene_graph->GetActiveCamera()->SetRotation(cp.m_rotation);
 					}
 
+					if (ImGui::Button("Remove"))
+					{
+						spline_node->m_control_points.erase(spline_node->m_control_points.begin() + i);
+					}
+
 					ImGui::TreePop();
 				}
 			}
@@ -130,36 +135,43 @@ void SplineNode::UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node)
 
 	auto num_points = m_control_points.size();
 
-	m_time += delta * m_speed;
-	m_time = std::fmod(m_time, m_spline->getMaxT());
+	auto impl = [&](auto spline, auto quat_spline)
+	{
+		m_time += delta * m_speed;
+		m_time = std::fmod(m_time, spline->getMaxT());
 
-	auto lerp_delta = m_time / m_spline->getMaxT();
-#ifdef LOOPING
-	auto segment_i = lerp_delta * ((float)num_points);
-	auto alpha = (lerp_delta * ((float)num_points)) - floor(segment_i);
-#else
-	auto segment_i = lerp_delta * ((float)num_points - 1.f);
-	auto alpha = (lerp_delta * ((float)num_points - 1.f)) - floor(segment_i);
-#endif
+		auto lerp_delta = m_time / spline->getMaxT();
+		
+		auto mod = m_looping ? 0.f : 1.f;
+		auto segment_i = lerp_delta * ((float)num_points - mod);
+		auto alpha = (lerp_delta * ((float)num_points - mod)) - floor(segment_i);
 
-	float backback = std::fmod((std::fmod(floor(segment_i), num_points) + num_points), num_points);
-	auto back_point = m_control_points[backback];
-	auto prev_point = m_control_points[floor(segment_i)];
-	auto next_point = m_control_points[fmod(ceil(segment_i), num_points)];
-	auto end_point = m_control_points[fmod(ceil(segment_i+1), num_points)];
+		float backback = std::fmod((std::fmod(floor(segment_i), num_points) + num_points), num_points);
+		auto back_point = m_control_points[backback];
+		auto prev_point = m_control_points[floor(segment_i)];
+		auto next_point = m_control_points[fmod(ceil(segment_i), num_points)];
+		auto end_point = m_control_points[fmod(ceil(segment_i + 1), num_points)];
 
-	auto rot_a = DirectX::XMQuaternionRotationRollPitchYawFromVector(prev_point.m_rotation);
-	auto rot_b = DirectX::XMQuaternionRotationRollPitchYawFromVector(next_point.m_rotation);
-	auto interp = DirectX::XMQuaternionSlerp(rot_a, rot_b, alpha);
+		auto rot_a = DirectX::XMQuaternionRotationRollPitchYawFromVector(prev_point.m_rotation);
+		auto rot_b = DirectX::XMQuaternionRotationRollPitchYawFromVector(next_point.m_rotation);
+		auto interp = DirectX::XMQuaternionSlerp(rot_a, rot_b, alpha);
 
-	auto new_pos = m_spline->getPosition(m_time);
-	auto new_rot = m_quat_spline->getPosition(m_time);
+		auto new_pos = spline->getPosition(m_time);
+		auto new_rot = quat_spline->getPosition(m_time);
 
-	LOG("{} -- {}", floor(segment_i), fmod(ceil(segment_i), num_points));
+		node->SetPosition({ new_pos[0], new_pos[1], new_pos[2] });
+		node->SetRotationQuat(interp);
+		node->SetRotationQuat({ new_rot[0], new_rot[1], new_rot[2], new_rot[3] });
+	};
 
-	node->SetPosition({ new_pos[0], new_pos[1], new_pos[2] });
-	node->SetRotationQuat(interp);
-	node->SetRotationQuat({ new_rot[0], new_rot[1], new_rot[2], new_rot[3] });
+	if (m_looping)
+	{
+		impl(reinterpret_cast<LoopingNaturalSpline<Vector<3>>*>(m_spline), reinterpret_cast<LoopingNaturalSpline<Vector<4>>*>(m_quat_spline));
+	}
+	else
+	{
+		impl(reinterpret_cast<NaturalSpline<Vector<3>>*>(m_spline), reinterpret_cast<NaturalSpline<Vector<4>>*>(m_quat_spline));
+	}
 }
 
 void SplineNode::UpdateNaturalSpline()
@@ -176,7 +188,7 @@ void SplineNode::UpdateNaturalSpline()
 		m_quat_spline = nullptr;
 	}
 
-	if (m_control_points.size() < 3)
+	if (m_control_points.size() < (m_looping ? 2 : 3))
 	{
 		return;
 	}
@@ -189,11 +201,14 @@ void SplineNode::UpdateNaturalSpline()
 			m_spline_positions.push_back(Vector<3>({ cp.m_position.m128_f32[0], cp.m_position.m128_f32[1], cp.m_position.m128_f32[2] }));
 		}
 
-#ifdef LOOPING
-		m_spline = new LoopingNaturalSpline<Vector<3>>(m_spline_positions);
-#else
-		m_spline = new NaturalSpline<Vector<3>>(m_spline_positions);
-#endif
+		if (m_looping)
+		{
+			m_spline = new LoopingNaturalSpline<Vector<3>>(m_spline_positions);
+		}
+		else
+		{
+			m_spline = new NaturalSpline<Vector<3>>(m_spline_positions);
+		}
 	}
 
 	{
@@ -204,11 +219,15 @@ void SplineNode::UpdateNaturalSpline()
 			auto quat = DirectX::XMQuaternionRotationRollPitchYawFromVector(cp.m_rotation);
 			m_spline_rotations.push_back(Vector<4>({ quat.m128_f32[0], quat.m128_f32[1], quat.m128_f32[2], quat.m128_f32[3] }));
 		}
-#ifdef LOOPING
-		m_quat_spline = new LoopingNaturalSpline<Vector<4>>(m_spline_positions);
-#else
-		m_quat_spline = new NaturalSpline<Vector<4>>(m_spline_rotations);
-#endif
+
+		if (m_looping)
+		{
+			m_quat_spline = new LoopingNaturalSpline<Vector<4>>(m_spline_rotations);
+		}
+		else
+		{
+			m_quat_spline = new NaturalSpline<Vector<4>>(m_spline_rotations);
+		}
 	}
 }
 

@@ -45,7 +45,7 @@ namespace viknell_scene
 			wr::TextureHandle bamboo_roughness = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 			wr::TextureHandle bamboo_metallic = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
-			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
+			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/SunTemple_Skybox.hdr", false, false);
 
 			// Create Materials
 			mirror_material = material_pool->Create();
@@ -69,7 +69,7 @@ namespace viknell_scene
 			bamboo_material_internal->SetMetallic(bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sponza_jacco/sponza.obj");
+			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/materials/SunTemple.fbx");
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 		}
 
@@ -98,9 +98,9 @@ namespace viknell_scene
 		camera->SetPosition({0, 0, 2});
 		camera->SetSpeed(10);
 
-		camera_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline");
-		light_1_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Light 1 Spline");
-		light_2_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Light 2 Spline");
+		camera_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline", false);
+		light_1_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Light 1 Spline", true);
+		light_2_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Light 2 Spline", true);
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
@@ -137,16 +137,16 @@ namespace viknell_scene
 
 
 		// Lights
-		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{1, 1, 1});
+		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1000 / 255, 1000 / 255, 1000 / 255 });
 		//point_light_0->SetRadius(3.0f);
-		point_light_0->SetRotation({20.950, 0.98, 0});
-		point_light_0->SetPosition({-0.002, 0.080, 1.404});
+		point_light_0->SetPosition({ 0, 2.5, 0 });
+		point_light_0->SetRadius(10000.f);
 
-		point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{1, 0, 0});
+		point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{3000 / 255, 0, 0});
 		point_light_1->SetRadius(5.0f);
 		point_light_1->SetPosition({0.5, 0, -0.3});
 
-		point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{0, 0, 1});
+		point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{0, 0, 3000 / 255});
 		point_light_2->SetRadius(5.0f);
 		point_light_2->SetPosition({-0.5, 0.5, -0.3});
 

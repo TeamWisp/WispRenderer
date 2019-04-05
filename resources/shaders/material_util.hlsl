@@ -49,7 +49,7 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 
 	float4 albedo = lerp(material_albedo.Sample(s0, uv), float4(data.albedo_alpha.xyz, 1.0f), use_albedo_constant != 0 || has_albedo_texture == 0);
 
-	//#define COMPRESSED_PBR
+	#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	float4 roughness = lerp(material_metallic.Sample(s0, uv).y, data.metallic_roughness.w, use_roughness_constant != 0 || has_roughness_texture == 0);
 	float4 metallic = lerp(material_metallic.Sample(s0, uv).z, length(data.metallic_roughness.xyz), use_metallic_constant != 0 || has_metallic_texture == 0);
@@ -86,7 +86,7 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 	uint has_metallic_texture = data.flags & MATERIAL_HAS_METALLIC_TEXTURE;
 	uint use_normal_texture = data.flags & MATERIAL_HAS_NORMAL_TEXTURE;
 
-	//#define COMPRESSED_PBR
+	#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
 	const float3 albedo = lerp(material_albedo.SampleLevel(s0, uv, mip_level).xyz,
 		data.albedo_alpha.xyz,

@@ -14,7 +14,7 @@ class SplineNode : public wr::Node
 	};
 
 public:
-	SplineNode(std::string name);
+	SplineNode(std::string name, bool looping = false);
 	~SplineNode();
 
 	void UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node);
@@ -32,16 +32,14 @@ private:
 	DirectX::XMVECTOR m_initial_position;
 	DirectX::XMVECTOR m_initial_rotation;
 
-#ifdef LOOPING
-	LoopingNaturalSpline<Vector<3>>* m_spline;
-	LoopingNaturalSpline<Vector<4>>* m_quat_spline;
-#else
-	NaturalSpline<Vector<3>>* m_spline;
-	NaturalSpline<Vector<4>>* m_quat_spline;
-#endif
+	void* m_spline;
+	void* m_quat_spline;
+
 	std::vector<ControlPoint> m_control_points;
 	float m_speed;
 	float m_time;
+
+	bool m_looping;
 
 	std::string m_name;
 };

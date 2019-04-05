@@ -79,7 +79,7 @@ namespace wr
 	struct ModelMaterialData 
 	{
 		std::string m_albedo_texture;
-		std::size_t m_albedo_embedded_texture;		
+		std::size_t m_albedo_embedded_texture;
 		TextureLocation m_albedo_texture_location;
 
 		std::string m_metallic_texture;

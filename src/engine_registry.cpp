@@ -723,7 +723,7 @@ namespace wr
 		ShaderDescription::Path("resources/shaders/dof_composition.hlsl"),
 		ShaderDescription::Entry("main_cs"),
 		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
-		});
+	});
 
 	DESC_RANGE_ARRAY(dof_composition_r,
 		DESC_RANGE(params::dof_composition, Type::SRV_RANGE, params::DoFCompositionE::SOURCE),
