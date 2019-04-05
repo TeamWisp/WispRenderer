@@ -105,7 +105,7 @@ namespace wr
 			data.in_radiance = pred_data.out_cubemap;
 			data.out_pref_env_map = pred_data.out_pref_env;
 
-			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R32G32B32A32_FLOAT, true);;
+			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R16G16B16A16_FLOAT, true);;
 
 			data.out_irradiance = skybox_node->m_irradiance.value();
 
