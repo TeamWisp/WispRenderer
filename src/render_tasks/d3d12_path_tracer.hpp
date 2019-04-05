@@ -331,7 +331,7 @@ namespace wr
 				// Get skybox
 				if (scene_graph.m_skybox.has_value())
 				{
-					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTextureResource(scene_graph.m_skybox.value()));
+					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_skybox->m_pool->GetTextureResource(scene_graph.GetCurrentSkybox()->m_skybox.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::SKYBOX)), skybox_t);
 				}
 

@@ -39,7 +39,7 @@ StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
 StructuredBuffer<Offset> g_offsets : register(t5);
 
-Texture2D skybox : register(t6);
+TextureCube skybox : register(t6);
 Texture2D brdf_lut : register(t7);
 TextureCube irradiance_map : register(t8);
 Texture2D g_textures[1000] : register(t9);
@@ -146,7 +146,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 {
 	if (depth >= MAX_RECURSION)
 	{
-		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
+		return skybox.SampleLevel(s0, direction, 0);
 	}
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
@@ -204,7 +204,7 @@ void RaygenEntry()
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
+	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
 }
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
