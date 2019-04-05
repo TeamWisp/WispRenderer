@@ -157,7 +157,8 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RaytracingData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-	
+      const auto& convolution_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+
 			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
@@ -208,7 +209,7 @@ namespace wr
 				// Fill descriptor heap with textures used by the scene
 				for (auto handle : as_build_data.out_material_handles)
 				{
-					auto* material_internal = handle.m_pool->GetMaterial(handle.m_id);
+					auto* material_internal = handle.m_pool->GetMaterial(handle);
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
@@ -249,6 +250,13 @@ namespace wr
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTexture(scene_graph.m_skybox.value().m_id));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX)), skybox_t);
+				}
+
+				// Get brdf lookup texture
+				if (scene_graph.m_skybox.has_value())
+				{
+				  auto brdf_lut_texture = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTexture(n_render_system.m_brdf_lut.value().m_id));
+				  d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::BRDF_LUT)), brdf_lut_texture);
 				}
 
 				// Get Environment Map
@@ -329,8 +337,8 @@ namespace wr
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
 			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::Clear(false),
+			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(name)
 		};
 

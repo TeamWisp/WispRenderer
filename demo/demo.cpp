@@ -8,15 +8,14 @@
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
-#include "resources.hpp"
-#include "scene_cubes.hpp"
 #include "scene_emibl.hpp"
 #include "scene_spheres.hpp"
+#include "scene_sun_temple.hpp"
 
 #include "model_loader_assimp.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-#define SCENE emibl_scene
+#define SCENE sun_temple_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -112,11 +111,11 @@ int WispEntry()
 		}
 		if (action == WM_KEYUP && key == VK_F4)
 		{
-			resources::model_pool->Defragment();
+			SCENE::resources::model_pool->Defragment();
 		}
 		if (action == WM_KEYUP && key == VK_F5)
 		{
-			resources::model_pool->ShrinkToFit();
+			SCENE::resources::model_pool->ShrinkToFit();
 		}
 		if (action == WM_KEYUP && key == VK_F6)
 		{
@@ -140,7 +139,7 @@ int WispEntry()
 
 			memcpy(indices.data(), model->m_meshes[0]->m_indices.data(), indices.size() * sizeof(std::uint32_t));
 
-			resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(resources::test_model->m_meshes[0].first, vertices, indices);
+			SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
 
 			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
 		}
@@ -166,7 +165,7 @@ int WispEntry()
 
 			memcpy(indices.data(), model->m_meshes[0]->m_indices.data(), indices.size() * sizeof(std::uint32_t));
 
-			resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(resources::test_model->m_meshes[0].first, vertices, indices);
+			SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
 
 			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
 		}
@@ -186,16 +185,13 @@ int WispEntry()
 
 	render_system->Init(window.get());	
 
-	resources::CreateResources(render_system.get());
+	SCENE::resources::CreateResources(render_system.get());
 
 	scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
 	SCENE::CreateScene(scene_graph.get(), window.get());
 
 	render_system->InitSceneGraph(*scene_graph.get());
-
-	//Are we on fallback or native
-	fg_manager::is_fallback = render_system->IsFallback();
 
 	fg_manager::Setup(*render_system.get(), &RenderEditor);
 
@@ -233,7 +229,7 @@ int WispEntry()
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 
-	resources::ReleaseResources();
+	SCENE::resources::ReleaseResources();
 
 	fg_manager::Destroy();
 	render_system.reset();

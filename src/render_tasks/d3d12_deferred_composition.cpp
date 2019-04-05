@@ -94,7 +94,7 @@ namespace wr
 
 			// Check if the current frame graph contains the hybrid task to know if it is hybrid or not.
 			data.is_path_tracer = fg.HasTask<wr::PathTracerData>();
-			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTHybridData>() || fg.HasTask<wr::RTReflectionData>();
+			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTHybridData>() || fg.HasTask<wr::RTReflectionData>() || fg.HasTask<wr::ShadowDenoiserData>();
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
@@ -129,16 +129,19 @@ namespace wr
 					{
 						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTReflectionData>());
 						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
+						data.has_rt_reflection = true;
 					}
 					else if (fg.HasTask<wr::RTHybridData>())
 					{
 						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
 						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
+						data.has_rt_hybrid = true;
 					}
 					else
 					{
 						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
 						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
+						data.has_rt_shadows = true;
 					}
 
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SHADOW);
@@ -148,21 +151,25 @@ namespace wr
 					{
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::ShadowDenoiserData>());
 						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+						data.has_rt_shadows_denoiser = true;
 					}
 					else if(fg.HasTask<wr::RTShadowData>())
 					{
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
 						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+						data.has_rt_shadows = true;
 					}
 					else if (fg.HasTask<wr::RTHybridData>())
 					{
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
 						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+						data.has_rt_hybrid = true;
 					}
 					else
 					{
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTReflectionData>());
 						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+						data.has_rt_reflection;
 					}
 				}
 			}
@@ -176,6 +183,30 @@ namespace wr
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+      
+      if (data.is_hybrid)
+      {
+		  if (data.has_rt_hybrid)
+		  {
+			  // Wait on hybrid task
+			  const auto& hybrid_data = fg.GetPredecessorData<RTHybridData>();
+		  }
+		  if (data.has_rt_reflection)
+		  {
+			  // Wait on rt reflection task
+			  const auto& reflection_data = fg.GetPredecessorData<RTReflectionData>();
+		  }
+		  if (data.has_rt_shadows)
+		  {
+			  // Wait on rt shadow task
+			  const auto& shadow_data = fg.GetPredecessorData<RTShadowData>();
+		  }
+		  if (data.has_rt_shadows_denoiser)
+		  {
+			  // Wait on shadow denoiser task
+			  const auto& denoiser_data = fg.GetPredecessorData<ShadowDenoiserData>();
+		  }
+      }
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -244,7 +275,7 @@ namespace wr
 				// Output UAV
 				{
 					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
-					std::vector<Format> formats = { Format::R8G8B8A8_UNORM };
+					std::vector<Format> formats = { Format::R32G32B32A32_FLOAT };
 					d3d12::CreateUAVFromRTV(render_target, rtv_out_uav_handle, 1, formats.data());
 				}
 
@@ -321,10 +352,10 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
+			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::Clear(false),
+			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(name)
 		};
 
@@ -343,7 +374,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<DeferredCompositionTaskData>(desc);
+		fg.AddTask<DeferredCompositionTaskData>(desc, FG_DEPS(2, DeferredMainTaskData, CubemapConvolutionTaskData));
 	}
 
 }

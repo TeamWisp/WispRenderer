@@ -24,14 +24,14 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	uint tid = light.tid & 3;
 
 	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - pos, -light.dir, tid == light_type_directional));
+	float3 L = (lerp(light.pos - pos, light.dir, tid == light_type_directional));
 	float light_dist = length(L);
 	L /= light_dist;
 
 	//Spot intensity (only used with spot; but always calculated)
 	float min_cos = cos(light.ang);
 	float max_cos = lerp(min_cos, 1, 0.5f);
-	float cos_angle = dot(light.dir, -L);
+	float cos_angle = dot(light.dir, L);
 	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
 
 	//Attenuation & spot intensity (only used with point or spot)
@@ -82,14 +82,14 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	uint tid = light.tid & 3;
 
 	//Light direction (constant with directional, position dependent with other)
-	float3 L = (lerp(light.pos - pos, -light.dir, tid == light_type_directional));
+	float3 L = (lerp(light.pos - pos, light.dir, tid == light_type_directional));
 	float light_dist = length(L);
 	L /= light_dist;
 
 	//Spot intensity (only used with spot; but always calculated)
 	float min_cos = cos(light.ang);
 	float max_cos = lerp(min_cos, 1, 0.5f);
-	float cos_angle = dot(light.dir, -L);
+	float cos_angle = dot(light.dir, L);
 	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
 
 	//Attenuation & spot intensity (only used with point or spot)
@@ -140,7 +140,7 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		uint tid = light.tid & 3;
 
 		//Light direction (constant with directional, position dependent with other)
-		float3 L = (lerp(light.pos - wpos, -light.dir, tid == light_type_directional));
+		float3 L = (lerp(light.pos - wpos, light.dir, tid == light_type_directional));
 		float light_dist = length(L);
 		L /= light_dist;
 

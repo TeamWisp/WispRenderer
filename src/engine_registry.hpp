@@ -290,35 +290,24 @@ namespace wr
 			SOURCE,
 			DEPTH,
 			KERNEL,
-			VARIANCE,
+			ACCUM,
+			VARIANCE_IN,
 			DEST,
+			VARIANCE_OUT,
 			CAMERA_PROPERTIES,
 			DENOISER_PROPERTIES,
 		};
 
-		constexpr std::array<rs_layout::Entry, 7> shadow_denoiser = {
+		constexpr std::array<rs_layout::Entry, 9> shadow_denoiser = {
 			rs_layout::Entry{(int)ShadowDenoiserE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::DEPTH, 1,rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::DEPTH, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::KERNEL, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::VARIANCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::DEST, 1,rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::VARIANCE_IN, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::DEST, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::VARIANCE_OUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::CAMERA_PROPERTIES, 1,rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)ShadowDenoiserE::DENOISER_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-		};
-
-		enum class TemporalAccumulatorE
-		{
-			SOURCE,
-			ACCUM,
-			DEST,
-			VARIANCE,
-		};
-
-		constexpr std::array<rs_layout::Entry, 4> temporal_accumulator = {
-			rs_layout::Entry{(int)TemporalAccumulatorE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)TemporalAccumulatorE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)TemporalAccumulatorE::DEST, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)TemporalAccumulatorE::VARIANCE, 1, rs_layout::Type::UAV_RANGE},
 		};
 
 		enum class DeferredCompositionE
@@ -443,12 +432,13 @@ namespace wr
 			MATERIALS,
 			OFFSETS,
 			SKYBOX,
+      BRDF_LUT,
 			IRRADIANCE_MAP,
 			TEXTURES,
 			FALLBACK_PTRS
 		};
 
-		constexpr std::array<rs_layout::Entry, 12> full_raytracing = {
+		constexpr std::array<rs_layout::Entry, 13> full_raytracing = {
 			rs_layout::Entry{(int)FullRaytracingE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)FullRaytracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
@@ -458,7 +448,8 @@ namespace wr
 			rs_layout::Entry{(int)FullRaytracingE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)FullRaytracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
+      rs_layout::Entry{(int)FullRaytracingE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
+      rs_layout::Entry{(int)FullRaytracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
 		};
@@ -537,6 +528,117 @@ namespace wr
 			rs_layout::Entry{(int)PathTracingE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
+		enum class DoFCoCE
+		{
+			CAMERA_PROPERTIES,
+			GDEPTH,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> dof_coc = {
+			rs_layout::Entry{(int)DoFCoCE::GDEPTH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFCoCE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFCoCE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST}
+		};
+
+		enum class DoFDownScaleE
+		{
+			SOURCE,
+			OUTPUT_NEAR,
+			OUTPUT_FAR,
+			COC
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> dof_down_scale = {
+			rs_layout::Entry{(int)DoFDownScaleE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFDownScaleE::OUTPUT_NEAR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFDownScaleE::OUTPUT_FAR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFDownScaleE::COC, 1, rs_layout::Type::SRV_RANGE}
+		};
+
+		enum class DoFDilateE
+		{
+			SOURCE,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 2> dof_dilate = {
+			rs_layout::Entry{(int)DoFDilateE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFDilateE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		};
+
+		enum class DoFDilateFlattenE
+		{
+			SOURCE,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 2> dof_dilate_flatten = {
+			rs_layout::Entry{(int)DoFDilateFlattenE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFDilateFlattenE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		};
+
+		enum class DoFDilateFlattenHE
+		{
+			SOURCE,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 2> dof_dilate_flatten_h = {
+			rs_layout::Entry{(int)DoFDilateFlattenHE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFDilateFlattenHE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		};
+
+		enum class DoFBokehE
+		{
+			CAMERA_PROPERTIES,
+			SOURCE_NEAR,
+			SOURCE_FAR,
+			OUTPUT_NEAR,
+			OUTPUT_FAR,
+			COC
+		};
+
+		constexpr std::array<rs_layout::Entry, 6> dof_bokeh = {
+			rs_layout::Entry{(int)DoFBokehE::SOURCE_NEAR, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::SOURCE_FAR, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::OUTPUT_NEAR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::OUTPUT_FAR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::COC, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
+		enum class DoFBokehPostFilterE
+		{
+			SOURCE_NEAR,
+			SOURCE_FAR,
+			OUTPUT_NEAR,
+			OUTPUT_FAR
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> dof_bokeh_post_filter = {
+			rs_layout::Entry{(int)DoFBokehPostFilterE::SOURCE_NEAR, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehPostFilterE::SOURCE_FAR, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehPostFilterE::OUTPUT_NEAR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFBokehPostFilterE::OUTPUT_FAR, 1, rs_layout::Type::UAV_RANGE}
+		};
+
+		enum class DoFCompositionE
+		{
+			SOURCE,
+			OUTPUT,
+			BOKEH_NEAR,
+			BOKEH_FAR,
+			COC
+		};
+
+		constexpr std::array<rs_layout::Entry, 5> dof_composition = {
+			rs_layout::Entry{(int)DoFCompositionE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DoFCompositionE::BOKEH_NEAR, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFCompositionE::BOKEH_FAR, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFCompositionE::COC, 1, rs_layout::Type::SRV_RANGE},
+		};
 	} /* srv */
 
 	struct root_signatures
@@ -555,6 +657,14 @@ namespace wr
 		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
 		static RegistryHandle accumulation;
+		static RegistryHandle dof_coc;
+		static RegistryHandle dof_down_scale;
+		static RegistryHandle dof_dilate;
+		static RegistryHandle dof_dilate_flatten;
+		static RegistryHandle dof_dilate_flatten_h;
+		static RegistryHandle dof_bokeh;
+		static RegistryHandle dof_bokeh_post_filter;
+		static RegistryHandle dof_composition;
 	};
 
 	struct shaders
@@ -578,6 +688,14 @@ namespace wr
 		static RegistryHandle cubemap_prefiltering_cs;
 		static RegistryHandle post_processing;
 		static RegistryHandle accumulation;
+		static RegistryHandle dof_coc;
+		static RegistryHandle dof_down_scale;
+		static RegistryHandle dof_dilate;
+		static RegistryHandle dof_dilate_flatten;
+		static RegistryHandle dof_dilate_flatten_h;
+		static RegistryHandle dof_bokeh;
+		static RegistryHandle dof_bokeh_post_filter;
+		static RegistryHandle dof_composition;
 	};
 
 	struct pipelines
@@ -593,6 +711,14 @@ namespace wr
 		static RegistryHandle cubemap_prefiltering;
 		static RegistryHandle post_processing;
 		static RegistryHandle accumulation;
+		static RegistryHandle dof_coc;
+		static RegistryHandle dof_down_scale;
+		static RegistryHandle dof_dilate;
+		static RegistryHandle dof_dilate_flatten;
+		static RegistryHandle dof_dilate_flatten_h;
+		static RegistryHandle dof_bokeh;
+		static RegistryHandle dof_bokeh_post_filter;
+		static RegistryHandle dof_composition;
 	};
 
 	struct state_objects

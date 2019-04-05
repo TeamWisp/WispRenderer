@@ -23,10 +23,10 @@ namespace wr
 		d3d12::RenderTarget* m_depth_buffer;
 		d3d12::RenderTarget* m_noisy_buffer;
 		d3d12::RenderTarget* m_output_buffer;
-		d3d12::RenderTarget* m_variance_buffer;
+		d3d12::RenderTarget* m_variance_in_buffer;
+		d3d12::RenderTarget* m_variance_out_buffer;
 
 		d3d12::RenderTarget* m_accum_buffer;
-		d3d12::RenderTarget* m_accum_variance_buffer;
 		
 		wr::D3D12Pipeline* m_pipeline;
 		wr::D3D12Pipeline* m_accum_pipeline;
@@ -40,7 +40,12 @@ namespace wr
 		ConstantBufferHandle* m_denoiser_settings_buffer_horizontal;
 		ConstantBufferHandle* m_denoiser_settings_buffer_vertical;
 
+		ConstantBufferHandle* m_denoiser_camera;
+
 		TextureHandle m_kernel;
+
+		DirectX::XMMATRIX m_prev_view;
+		DirectX::XMMATRIX m_prev_projection;
 	};
 
 	namespace internal
@@ -51,17 +56,6 @@ namespace wr
 			return height * exp(exponent);
 
 		}
-
-		enum class DenoiserDescriptorsE
-		{
-			SOURCE = 0,
-			ACCUM = 1,
-			DEPTH = 2,
-			KERNEL = 3,
-			VARIANCE = 4,
-			DEST = 5,
-			DESCRIPTOR_COUNT,
-		};
 
 		inline void SetupShadowDenoiserTask(RenderSystem& rs, FrameGraph&  fg, RenderTaskHandle handle, bool resize, std::optional<std::string_view> kernel_texture_location)
 		{
@@ -80,7 +74,7 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_allocation = std::move(data.out_allocator->Allocate((int)DenoiserDescriptorsE::DESCRIPTOR_COUNT));
+			data.out_allocation = std::move(data.out_allocator->Allocate(7));
 
 			data.m_noisy_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
 			data.m_output_buffer = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
@@ -111,7 +105,7 @@ namespace wr
 			variance_buffer_desc.m_num_rtv_formats = 1;
 			variance_buffer_desc.m_rtv_formats[0] = Format::R32G32B32A32_FLOAT;
 
-			data.m_accum_variance_buffer = d3d12::CreateRenderTarget(
+			data.m_variance_out_buffer = d3d12::CreateRenderTarget(
 				n_render_system.m_device,
 				n_render_system.m_viewport.m_viewport.Width,
 				n_render_system.m_viewport.m_viewport.Height,
@@ -120,7 +114,7 @@ namespace wr
 
 			variance_buffer_desc.m_initial_state = ResourceState::NON_PIXEL_SHADER_RESOURCE;
 
-			data.m_variance_buffer = d3d12::CreateRenderTarget(
+			data.m_variance_in_buffer = d3d12::CreateRenderTarget(
 				n_render_system.m_device,
 				n_render_system.m_viewport.m_viewport.Width,
 				n_render_system.m_viewport.m_viewport.Height,
@@ -134,7 +128,40 @@ namespace wr
 			}
 
 			{
-				constexpr unsigned int source_idx = (int)DenoiserDescriptorsE::SOURCE;
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::SOURCE);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::CreateSRVFromRTV(data.m_noisy_buffer, cpu_handle, 1, data.m_noisy_buffer->m_create_info.m_rtv_formats.data());
+			}
+
+			if(data.m_has_depth_buffer)
+			{
+				constexpr unsigned int depth_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::DEPTH);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(depth_idx);
+				d3d12::CreateSRVFromDSV(data.m_depth_buffer, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int accum_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::ACCUM);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(accum_idx);
+				d3d12::CreateSRVFromRTV(data.m_accum_buffer, cpu_handle, 1, data.m_accum_buffer->m_create_info.m_rtv_formats.data());
+			}
+
+			{
+				constexpr unsigned int var_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::VARIANCE_IN);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(var_idx);
+				d3d12::CreateSRVFromRTV(data.m_variance_in_buffer, cpu_handle, 1, data.m_variance_in_buffer->m_create_info.m_rtv_formats.data());
+			}
+
+			{
+				constexpr unsigned int out_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::DEST);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(out_idx);
+				d3d12::CreateUAVFromRTV(data.m_output_buffer, cpu_handle, 1, data.m_output_buffer->m_create_info.m_rtv_formats.data());
+			}
+
+			{
+				constexpr unsigned int var_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::VARIANCE_OUT);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(var_idx);
+				d3d12::CreateUAVFromRTV(data.m_variance_out_buffer, cpu_handle, 1, data.m_variance_out_buffer->m_create_info.m_rtv_formats.data());
 			}
 
 			if (kernel_texture_location.has_value())
@@ -165,9 +192,12 @@ namespace wr
 				data.m_kernel = texture_pool->LoadFromMemory(kernel_data.data(), width, height, TextureType::RAW, false, false);
 			}
 
-			data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(SizeAlignTwoPower(sizeof(temp::ShadowDenoiserSettings_CBData), 256)*d3d12::settings::num_back_buffers);
+			data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(
+				SizeAlignTwoPower(sizeof(temp::ShadowDenoiserSettings_CBData), 256)*d3d12::settings::num_back_buffers * 2 +
+				SizeAlignTwoPower(sizeof(temp::DenoiserCamera_CBData), 256)*d3d12::settings::num_back_buffers);
 			data.m_denoiser_settings_buffer_horizontal = data.m_constant_buffer_pool->Create(sizeof(temp::ShadowDenoiserSettings_CBData));
 			data.m_denoiser_settings_buffer_vertical = data.m_constant_buffer_pool->Create(sizeof(temp::ShadowDenoiserSettings_CBData));
+			data.m_denoiser_camera = data.m_constant_buffer_pool->Create(sizeof(temp::DenoiserCamera_CBData));
 
 			data.m_denoiser_settings = {};
 			data.m_denoiser_settings.m_depth_contrast = 4.f;
@@ -175,37 +205,68 @@ namespace wr
 
 		}
 
+		inline void BindResources(D3D12RenderSystem& n_render_system, d3d12::CommandList* cmd_list, ShadowDenoiserData& data, bool is_fallback)
+		{
+			d3d12::BindDescriptorHeaps(cmd_list, n_render_system.GetFrameIdx(), is_fallback);
+
+			{
+				constexpr unsigned int source = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::SOURCE);
+				d3d12::DescHeapCPUHandle source_handle = data.out_allocation.GetDescriptorHandle(source);
+				d3d12::SetShaderSRV(cmd_list, 0, source, source_handle);
+			}
+
+			{
+				constexpr unsigned int depth = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::DEPTH);
+				d3d12::DescHeapCPUHandle depth_handle = data.out_allocation.GetDescriptorHandle(depth);
+				d3d12::SetShaderSRV(cmd_list, 0, depth, depth_handle);
+			}
+
+			{
+				constexpr unsigned int kernel = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::KERNEL);
+				d3d12::DescHeapCPUHandle kernel_handle = data.out_allocation.GetDescriptorHandle(kernel);
+				d3d12::CreateSRVFromTexture(static_cast<D3D12TexturePool*>(data.m_kernel.m_pool)->GetTexture(data.m_kernel.m_id), kernel_handle);
+				d3d12::SetShaderSRV(cmd_list, 0, kernel, kernel_handle);
+			}
+
+			{
+				constexpr unsigned int accum = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::ACCUM);
+				d3d12::DescHeapCPUHandle accum_handle = data.out_allocation.GetDescriptorHandle(accum);
+				d3d12::SetShaderSRV(cmd_list, 0, accum, accum_handle);
+			}
+
+			{
+				constexpr unsigned int var = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::VARIANCE_IN);
+				d3d12::DescHeapCPUHandle var_handle = data.out_allocation.GetDescriptorHandle(var);
+				d3d12::SetShaderSRV(cmd_list, 0, var, var_handle);
+			}
+
+			{
+				constexpr unsigned int dest = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::DEST);
+				d3d12::DescHeapCPUHandle dest_handle = data.out_allocation.GetDescriptorHandle(dest);
+				d3d12::SetShaderUAV(cmd_list, 0, dest, dest_handle);
+			}
+
+			{
+				constexpr unsigned int variance = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::VARIANCE_OUT);
+				d3d12::DescHeapCPUHandle variance_handle = data.out_allocation.GetDescriptorHandle(variance);
+				d3d12::SetShaderUAV(cmd_list, 0, variance, variance_handle);
+			}
+		}
+
 		inline void Accumulate(D3D12RenderSystem& n_render_system, d3d12::CommandList* cmd_list, ShadowDenoiserData& data, bool is_fallback)
 		{
+			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_camera);
+			const auto settings_cb_hor = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer_horizontal);
+			const auto settings_cb_ver = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer_vertical);
+
 			// Prefilter accumulation
 			{
 				d3d12::BindComputePipeline(cmd_list, data.m_accum_pipeline->m_native);
 
-				d3d12::BindDescriptorHeaps(cmd_list, n_render_system.GetFrameIdx(), is_fallback);
+				d3d12::BindComputeConstantBuffer(cmd_list, camera_cb->m_native, 1, n_render_system.GetFrameIdx());
+				d3d12::BindComputeConstantBuffer(cmd_list, settings_cb_hor->m_native, 2, n_render_system.GetFrameIdx());
 
-				{
-					constexpr unsigned int source = rs_layout::GetHeapLoc(params::temporal_accumulator, params::TemporalAccumulatorE::SOURCE);
-					d3d12::DescHeapCPUHandle source_handle = data.out_allocation.GetDescriptorHandle(source + (int)params::ShadowDenoiserE::CAMERA_PROPERTIES);
-					d3d12::SetShaderSRV(cmd_list, 0, source, source_handle);
-				}
-
-				{
-					constexpr unsigned int accum = rs_layout::GetHeapLoc(params::temporal_accumulator, params::TemporalAccumulatorE::ACCUM);
-					d3d12::DescHeapCPUHandle accum_handle = data.out_allocation.GetDescriptorHandle(accum + (int)params::ShadowDenoiserE::CAMERA_PROPERTIES);
-					d3d12::SetShaderSRV(cmd_list, 0, accum, accum_handle);
-				}
-
-				{
-					constexpr unsigned int dest = rs_layout::GetHeapLoc(params::temporal_accumulator, params::TemporalAccumulatorE::DEST);
-					d3d12::DescHeapCPUHandle dest_handle = data.out_allocation.GetDescriptorHandle(dest + (int)params::ShadowDenoiserE::CAMERA_PROPERTIES);
-					d3d12::SetShaderUAV(cmd_list, 0, dest, dest_handle);
-				}
-
-				{
-					constexpr unsigned int variance = rs_layout::GetHeapLoc(params::temporal_accumulator, params::TemporalAccumulatorE::VARIANCE);
-					d3d12::DescHeapCPUHandle variance_handle = data.out_allocation.GetDescriptorHandle(variance + (int)params::ShadowDenoiserE::CAMERA_PROPERTIES);
-					d3d12::SetShaderUAV(cmd_list, 0, variance, variance_handle);
-				}
+				BindResources(n_render_system, cmd_list, data, is_fallback);
 
 				d3d12::Dispatch(cmd_list,
 					static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
@@ -215,7 +276,7 @@ namespace wr
 
 			D3D12_RESOURCE_BARRIER barriers[] = {
 				CD3DX12_RESOURCE_BARRIER::UAV(data.m_output_buffer->m_render_targets[0]),
-				CD3DX12_RESOURCE_BARRIER::UAV(data.m_accum_variance_buffer->m_render_targets[0])
+				CD3DX12_RESOURCE_BARRIER::UAV(data.m_variance_out_buffer->m_render_targets[0])
 			};
 
 			cmd_list->m_native->ResourceBarrier(2, barriers);
@@ -225,45 +286,27 @@ namespace wr
 				d3d12::Transition(cmd_list, data.m_output_buffer, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 				d3d12::Transition(cmd_list, data.m_accum_buffer, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
 				d3d12::Transition(cmd_list, data.m_noisy_buffer, ResourceState::COPY_SOURCE, ResourceState::COPY_DEST);
-				d3d12::Transition(cmd_list, data.m_accum_variance_buffer, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
-				d3d12::Transition(cmd_list, data.m_variance_buffer, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
+				d3d12::Transition(cmd_list, data.m_variance_out_buffer, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+				d3d12::Transition(cmd_list, data.m_variance_in_buffer, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
 
 				cmd_list->m_native->CopyResource(data.m_accum_buffer->m_render_targets[0], data.m_output_buffer->m_render_targets[0]);
 				cmd_list->m_native->CopyResource(data.m_noisy_buffer->m_render_targets[0], data.m_output_buffer->m_render_targets[0]);
-				cmd_list->m_native->CopyResource(data.m_variance_buffer->m_render_targets[0], data.m_accum_variance_buffer->m_render_targets[0]);
+				cmd_list->m_native->CopyResource(data.m_variance_in_buffer->m_render_targets[0], data.m_variance_out_buffer->m_render_targets[0]);
 
 				d3d12::Transition(cmd_list, data.m_output_buffer, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 				d3d12::Transition(cmd_list, data.m_accum_buffer, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 				d3d12::Transition(cmd_list, data.m_noisy_buffer, ResourceState::COPY_DEST, ResourceState::COPY_SOURCE);
-				d3d12::Transition(cmd_list, data.m_accum_variance_buffer, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
-				d3d12::Transition(cmd_list, data.m_variance_buffer, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+				d3d12::Transition(cmd_list, data.m_variance_out_buffer, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+				d3d12::Transition(cmd_list, data.m_variance_in_buffer, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 			}
 		}
 
 		inline void Blur(D3D12RenderSystem& n_render_system, SceneGraph& sg, d3d12::CommandList* cmd_list, ShadowDenoiserData& data, bool is_fallback)
 		{
 			unsigned int frame_idx = n_render_system.GetFrameIdx();
-
-			// Update camera constant buffer pool
-			auto active_camera = sg.GetActiveCamera();
-
-			temp::ProjectionView_CBData camera_data;
-			camera_data.m_projection = active_camera->m_projection;
-			camera_data.m_inverse_projection = active_camera->m_inverse_projection;
-			camera_data.m_view = active_camera->m_view;
-			camera_data.m_inverse_view = active_camera->m_inverse_view;
-			// Set 'is hybrid' to either 1 or 0 depending on the current frame_graph
-			camera_data.m_is_hybrid = true;
-
-			active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&camera_data);
-			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);
-
-			data.m_denoiser_settings.m_direction = { 1.f, 0.f };
-			data.m_constant_buffer_pool->Update(data.m_denoiser_settings_buffer_horizontal, sizeof(temp::ShadowDenoiserSettings_CBData), 0, (uint8_t*)&data.m_denoiser_settings);
+			
+			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_camera);
 			const auto settings_cb_hor = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer_horizontal);
-
-			data.m_denoiser_settings.m_direction = { 0.f, 1.f };
-			data.m_constant_buffer_pool->Update(data.m_denoiser_settings_buffer_vertical, sizeof(temp::ShadowDenoiserSettings_CBData), 0, (uint8_t*)&data.m_denoiser_settings);
 			const auto settings_cb_ver = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer_vertical);
 
 			// 2-pass denoising
@@ -272,48 +315,10 @@ namespace wr
 
 				d3d12::BindViewport(cmd_list, n_render_system.m_viewport);
 
-				d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+				BindResources(n_render_system, cmd_list, data, is_fallback);
 
 				d3d12::BindComputeConstantBuffer(cmd_list, camera_cb->m_native, 1, frame_idx);
 				d3d12::BindComputeConstantBuffer(cmd_list, settings_cb_hor->m_native, 2, frame_idx);
-
-				// Source
-				{
-					constexpr unsigned int source = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::SOURCE);
-					d3d12::DescHeapCPUHandle source_handle = data.out_allocation.GetDescriptorHandle(source);
-					d3d12::SetShaderSRV(cmd_list, 0, source, source_handle);
-				}
-
-				// Dest
-				{
-					constexpr unsigned int dest = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::DEST);
-					d3d12::DescHeapCPUHandle dest_handle = data.out_allocation.GetDescriptorHandle(dest);
-					d3d12::SetShaderUAV(cmd_list, 0, dest, dest_handle);
-				}
-
-				// Depth
-				if (data.m_has_depth_buffer)
-				{
-					constexpr unsigned int depth = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::DEPTH);
-					d3d12::DescHeapCPUHandle depth_handle = data.out_allocation.GetDescriptorHandle(depth);
-					d3d12::SetShaderSRV(cmd_list, 0, depth, depth_handle);
-				}
-
-				// Kernel
-				{
-					constexpr unsigned int kernel_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::KERNEL);
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(kernel_idx);
-					d3d12::CreateSRVFromTexture(static_cast<D3D12TexturePool*>(data.m_kernel.m_pool)->GetTexture(data.m_kernel.m_id), cpu_handle);
-
-					d3d12::SetShaderSRV(cmd_list, 0, kernel_idx, cpu_handle);
-				}
-
-				// Variance
-				{
-					constexpr unsigned int variance_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::VARIANCE);
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(variance_idx);
-					d3d12::SetShaderSRV(cmd_list, 0, variance_idx, cpu_handle);
-				}
 
 				d3d12::Dispatch(cmd_list,
 					static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
@@ -361,7 +366,26 @@ namespace wr
 				std::vector<Format> formats = { render_target->m_create_info.m_rtv_formats[0] };
 				d3d12::CreateUAVFromRTV(render_target, rtv_out_uav_handle, 1, formats.data());
 			}*/
+			auto active_camera = sg.GetActiveCamera();
 
+			temp::DenoiserCamera_CBData camera_data;
+			camera_data.m_projection = active_camera->m_projection;
+			camera_data.m_inverse_projection = active_camera->m_inverse_projection;
+			camera_data.m_view = active_camera->m_view;
+			camera_data.m_inverse_view = active_camera->m_inverse_view;
+			camera_data.m_prev_projection = data.m_prev_projection;
+			camera_data.m_prev_view = data.m_prev_view;
+
+			data.m_constant_buffer_pool->Update(data.m_denoiser_camera, sizeof(temp::DenoiserCamera_CBData), 0, (uint8_t*)&camera_data);
+			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_camera);
+
+			data.m_denoiser_settings.m_direction = { 1.f, 0.f };
+			data.m_constant_buffer_pool->Update(data.m_denoiser_settings_buffer_horizontal, sizeof(temp::ShadowDenoiserSettings_CBData), 0, (uint8_t*)&data.m_denoiser_settings);
+			const auto settings_cb_hor = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer_horizontal);
+
+			data.m_denoiser_settings.m_direction = { 0.f, 1.f };
+			data.m_constant_buffer_pool->Update(data.m_denoiser_settings_buffer_vertical, sizeof(temp::ShadowDenoiserSettings_CBData), 0, (uint8_t*)&data.m_denoiser_settings);
+			const auto settings_cb_ver = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer_vertical);
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -371,12 +395,14 @@ namespace wr
 				d3d12::TransitionDepth(cmd_list, data.m_depth_buffer, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 				
 				d3d12::Transition(cmd_list, render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
-
+				
 				Accumulate(n_render_system, cmd_list, data, is_fallback);
 
 				Blur(n_render_system, sg, cmd_list, data, is_fallback);
 
-				Accumulate(n_render_system, cmd_list, data, is_fallback);
+				//Accumulate(n_render_system, cmd_list, data, is_fallback);
+
+				//Blur(n_render_system, sg, cmd_list, data, is_fallback);
 				
 				d3d12::Transition(cmd_list, render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 
@@ -384,6 +410,9 @@ namespace wr
 
 				cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.m_output_buffer->m_render_targets[0]));
 			}
+
+			data.m_prev_view = active_camera->m_view;
+			data.m_prev_projection = active_camera->m_projection;
 		}
 
 		inline void DestroyShadowDenoiserTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
@@ -391,8 +420,8 @@ namespace wr
 			auto& data = fg.GetData<ShadowDenoiserData>(handle);
 
 			d3d12::Destroy(data.m_accum_buffer);
-			d3d12::Destroy(data.m_variance_buffer);
-			d3d12::Destroy(data.m_accum_variance_buffer);
+			d3d12::Destroy(data.m_variance_in_buffer);
+			d3d12::Destroy(data.m_variance_out_buffer);
 
 			DescriptorAllocation temp1 = std::move(data.out_allocation);
 		}

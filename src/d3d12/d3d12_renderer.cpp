@@ -959,7 +959,8 @@ namespace wr
 		//Render batches
 		for (auto& elem : batches)
 		{
-			Model* model = elem.first;
+			auto model = elem.first.first;
+			auto materials = elem.first.second;
 			temp::MeshBatch& batch = elem.second;
 
 			// Execute Indirect Pipeline
@@ -1028,8 +1029,9 @@ namespace wr
 				}
 
 				//Render meshes
-				for (auto& mesh : model->m_meshes)
+				for (std::size_t mesh_i = 0; mesh_i < model->m_meshes.size(); mesh_i++)
 				{
+					auto mesh = model->m_meshes[mesh_i];
 					auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
 					if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride)
 					{
@@ -1050,7 +1052,12 @@ namespace wr
 
 					d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
 
+					// Pick the standard material or if available a user defined material.
 					auto material_handle = mesh.second;
+					if (materials.size() > mesh_i)
+					{
+						material_handle = materials[mesh_i];
+					}
 
 					if (material_handle != m_last_material)
 					{
@@ -1094,7 +1101,7 @@ namespace wr
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 
-		auto* material_internal = material_handle.m_pool->GetMaterial(material_handle.m_id);
+		auto* material_internal = material_handle.m_pool->GetMaterial(material_handle);
 
 		material_internal->UpdateConstantBuffer();
 
@@ -1192,11 +1199,6 @@ namespace wr
 		}
 
 		return m_simple_shapes[type];
-	}
-
-	bool D3D12RenderSystem::IsFallback()
-	{
-		return d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK;
 	}
 
 	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)

@@ -8,15 +8,32 @@ namespace wr
 
 	struct MeshNode : Node
 	{
-		Model* m_model;
-
-		AABB m_aabb;
-		//std::vector<AABB> m_mesh_aabbs;
-
 		MeshNode(Model* model);
 
 		void Update(uint32_t frame_idx);
+		/*! Add a material */
+		/*!
+			You can add a material for every single sub-mesh.
+		*/
+		void AddMaterial(MaterialHandle handle);
+		/*! Get all materials */
+		std::vector<MaterialHandle>& GetMaterials();
+		/*! Set the materials */
+		void SetMaterials(std::vector<MaterialHandle> const & materials);
+		/*! Remove materials */
+		void ClearMaterials();
 
+		Model* m_model;
+		AABB m_aabb;
+		std::vector<MaterialHandle> m_materials;
+
+	private:
+		/*! Check whether their are more materials than meshes */
+		/*!
+			If there are more materials than meshes.
+			This function will throw a warning.
+		*/
+		void CheckMaterialCount() const;
 	};
 
 } /* wr */

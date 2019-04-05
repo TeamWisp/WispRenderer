@@ -52,6 +52,16 @@ namespace wr
 			float m_depth_contrast;
 		};
 
+		struct DenoiserCamera_CBData
+		{
+			DirectX::XMMATRIX m_view;
+			DirectX::XMMATRIX m_prev_view;
+			DirectX::XMMATRIX m_inverse_view;
+			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_prev_projection;
+			DirectX::XMMATRIX m_inverse_projection;
+		};
+
 		struct ProjectionView_CBData
 		{
 			DirectX::XMMATRIX m_view;
@@ -177,8 +187,6 @@ namespace wr
 
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
 		wr::Model* GetSimpleShape(SimpleShapes type) final;
-
-		bool IsFallback() final;
 
 	public:
 		d3d12::Device* m_device;
