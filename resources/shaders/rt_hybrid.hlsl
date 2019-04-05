@@ -151,7 +151,7 @@ void RaygenEntry()
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
 	// Screen coordinates [0, resolution] (inverted y)
-	int2 screen_co = DispatchRaysIndex().xy;
+	int2 screen_co = DispatchRaysIndex().xy + 0.5f;
 
 	// Get g-buffer information
 	float4 albedo_roughness = gbuffer_albedo[screen_co];

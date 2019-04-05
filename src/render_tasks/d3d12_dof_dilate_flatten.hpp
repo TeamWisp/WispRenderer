@@ -82,7 +82,17 @@ namespace wr
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+			{
+				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::OUTPUT);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
+			}
+
+			{
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::SOURCE);
+				auto handle_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_srv);
+			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 

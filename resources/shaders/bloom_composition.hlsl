@@ -24,15 +24,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float3 finalcolor = float3(0, 0, 0);
 
-	float gamma = 2.2;
-	float exposure = 1;
-
 	if (enable_bloom > 0)
 	{
 		finalcolor += source_bloom.SampleLevel(linear_sampler, uv, 0).rgb;
 	}
 	finalcolor += source_main.SampleLevel(point_sampler, uv, 0).rgb;
 
-	finalcolor = linearToneMapping(finalcolor, exposure, gamma);
 	output[int2(dispatch_thread_id.xy)] = float4(finalcolor, 1.0f);
 }

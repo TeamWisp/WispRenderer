@@ -62,6 +62,7 @@ namespace wr
 			}
 		}
 
+		template<typename T, typename T1>
 		inline void ExecuteBloomCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -74,10 +75,49 @@ namespace wr
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
+			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+			auto bloom_rt = data.out_source_bloom_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
+
+			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			{
+				// Destination near
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::OUTPUT)));
+					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+				}
+				// Source main
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_MAIN)));
+					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+				}
+				// Source bloom
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_BLOOM)));
+					d3d12::CreateSRVFromSpecificRTV(bloom_rt, cpu_handle, 0, bloom_rt->m_create_info.m_rtv_formats[0]);
+				}
+			}
+
 			int enable_dof = sg.GetActiveCamera()->m_enable_bloom;
 			d3d12::BindCompute32BitConstants(cmd_list, &enable_dof, 1, 0, 1);
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 3, data.out_allocation.GetDescriptorHandle());
+			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 3, data.out_allocation.GetDescriptorHandle());
+			{
+				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::OUTPUT);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
+			}
+
+			{
+				constexpr unsigned int source_main_idx = rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_MAIN);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_main_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_main_idx, handle_m_srv);
+			}
+
+			{
+				constexpr unsigned int source_bloom_idx = rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_BLOOM);
+				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_bloom_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_bloom_idx, handle_b_srv);
+			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
@@ -103,7 +143,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ d3d12::settings::back_buffer_format}),
+			RenderTargetProperties::RTVFormats({wr::Format::R16G16B16A16_FLOAT}),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
@@ -116,7 +156,7 @@ namespace wr
 			internal::SetupBloomCompositionTask<T, T1>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteBloomCompositionTask(rs, fg, sg, handle);
+			internal::ExecuteBloomCompositionTask<T, T1>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};

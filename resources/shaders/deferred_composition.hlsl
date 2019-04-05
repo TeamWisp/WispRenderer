@@ -45,9 +45,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
-	float2 uv = float2(dispatch_thread_id.x / screen_size.x, dispatch_thread_id.y / screen_size.y);
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
+	// added offset of 0.5f to select proper pixel to sample from.
+	// screen coords always get floored, therefore if the coords would be (1.9, 1.0),
+	// it would sample (1.0, 1.0) instead of the intended (2.0, 1.0). Adding the offset solves this problem.
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
+
+	float2 uv = screen_coord / screen_size;
 
 	const float depth_f = gbuffer_depth[screen_coord].r;
 

@@ -123,11 +123,11 @@ namespace fg_manager
 			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg, 
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			//wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::BloomCompostionData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::BloomCompostionData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			fg->Setup(rs);
 		}
@@ -174,7 +174,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(15);
+			fg = new wr::FrameGraph(19);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -216,13 +216,20 @@ namespace fg_manager
 
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
-			// Do some post processing
-			//wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			// Finalize the frame graph
 			fg->Setup(rs);

@@ -43,6 +43,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 source3 = source.SampleLevel(s0, uv + offset.zw, 0).rgb;
 
 	float3 finalcolor = (source0 + source1 + source2 + source3) * 0.25f;
+
 	float coc = GetDownSampledCoC(uv, texel_size);
 
 	float4 out_near = max(0,float4(finalcolor, 1.0f) * max(-coc, 0.0f));

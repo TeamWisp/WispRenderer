@@ -112,13 +112,21 @@ namespace wr
 			}
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
-
 			d3d12::BindComputeConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+			{
+				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
+			}
+
+			{
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_m_srv);
+			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_dsv->m_render_targets[frame_idx % versions]));
-
 
 			//TODO: numthreads is currently hardcoded to half resolution, change when dimensions are done properly
 			d3d12::Dispatch(cmd_list,

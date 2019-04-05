@@ -141,8 +141,35 @@ namespace wr
 
 			d3d12::BindComputeConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 5, data.out_allocation.GetDescriptorHandle());
+			{
+				constexpr unsigned int dest_n_idx = rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::OUTPUT_NEAR);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_n_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_n_idx, handle_uav);
+			}
 
+			{
+				constexpr unsigned int dest_f_idx = rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::OUTPUT_FAR);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_f_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_f_idx, handle_uav);
+			}
+
+			{
+				constexpr unsigned int source_near_idx = rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::SOURCE_NEAR);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_near_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_near_idx, handle_m_srv);
+			}
+
+			{
+				constexpr unsigned int source_far_idx = rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::SOURCE_FAR);
+				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_far_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_far_idx, handle_b_srv);
+			}
+
+			{
+				constexpr unsigned int source_coc_idx = rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::COC);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_coc_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_coc_idx, handle_m_srv);
+			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 

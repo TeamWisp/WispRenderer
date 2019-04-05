@@ -53,6 +53,7 @@ namespace wr
 			}
 		}
 
+		template<typename T>
 		inline void ExecuteBloomVerticalTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -65,7 +66,31 @@ namespace wr
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+
+			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			{
+				// Destination near
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_v, params::BloomVE::OUTPUT)));
+					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+				}
+				// Source
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_v, params::BloomVE::SOURCE)));
+					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+				}
+			}
+
+			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+
+			constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::bloom_v, params::BloomVE::OUTPUT);
+			auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_idx);
+			d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
+
+			constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::bloom_v, params::BloomVE::SOURCE);
+			auto handle_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+			d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_srv);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
@@ -107,7 +132,7 @@ namespace wr
 			internal::SetupBloomVerticalTask<T>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteBloomVerticalTask(rs, fg, sg, handle);
+			internal::ExecuteBloomVerticalTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};
