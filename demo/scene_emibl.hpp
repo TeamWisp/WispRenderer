@@ -417,7 +417,7 @@ namespace emibl_scene
       static float light_radius_3 = 0.0f;
       static float light_t = 0.0f;
       static float light_lerp_begin = 0.00f;
-      static float light_lerp_end = 0.15f;
+      static float light_lerp_end = 0.25f;
 
       auto lerp = [](float v0, float v1, float t)->float
       {

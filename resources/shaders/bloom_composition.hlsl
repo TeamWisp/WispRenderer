@@ -33,6 +33,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	}
 	finalcolor += source_main.SampleLevel(point_sampler, uv, 0).rgb;
 
-	finalcolor = linearToneMapping(finalcolor, exposure, gamma);
+	//finalcolor = linearToneMapping(finalcolor, exposure, gamma);
 	output[int2(dispatch_thread_id.xy)] = float4(finalcolor, 1.0f);
 }

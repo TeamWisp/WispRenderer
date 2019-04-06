@@ -123,11 +123,11 @@ namespace fg_manager
 			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg, 
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			//wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::BloomCompostionData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::BloomCompostionData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			fg->Setup(rs);
 		}

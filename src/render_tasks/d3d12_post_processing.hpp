@@ -87,10 +87,10 @@ namespace wr
 
 			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
 
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
-
 			float hdr_type = static_cast<float>(d3d12::settings::output_hdr);
 			d3d12::BindCompute32BitConstants(cmd_list, &hdr_type, 1, 0, 1);
+
+			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
 			d3d12::Dispatch(cmd_list,
 				static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
