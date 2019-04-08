@@ -32,7 +32,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	const uint NUMSAMPLES = NUMDOFSAMPLES * NUMDOFSAMPLES;
 	const float MAXKERNELSIZE = MAXBOKEHSIZE * 0.5f;
-	const float SHAPECURVE = 2.0f;
+	const float SHAPECURVE = 4.0f;
 
 	float4 fgcolor = float4(0, 0, 0, 0);
 	float4 bgcolor = float4(0, 0, 0, 0);

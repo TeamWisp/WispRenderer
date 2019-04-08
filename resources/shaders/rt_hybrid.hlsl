@@ -154,11 +154,11 @@ void RaygenEntry()
 	int2 screen_co = DispatchRaysIndex().xy + 0.5f;
 
 	// Get g-buffer information
-	float4 albedo_roughness = gbuffer_albedo[screen_co];
-	float4 normal_metallic = gbuffer_normal[screen_co];
+	float4 albedo_roughness = gbuffer_albedo.SampleLevel(s0, uv, 0);
+	float4 normal_metallic = gbuffer_normal.SampleLevel(s0, uv, 0);
 
 	// Unpack G-Buffer
-	float depth = gbuffer_depth[screen_co].x;
+	float depth = gbuffer_depth.SampleLevel(s0, uv, 0).x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
