@@ -105,7 +105,7 @@ namespace wr
 			data.in_radiance = pred_data.out_cubemap;
 			data.out_pref_env_map = pred_data.out_pref_env;
 
-			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R32G32B32A32_FLOAT, true);;
+			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R16G16B16A16_FLOAT, true);;
 
 			data.out_irradiance = skybox_node->m_irradiance.value();
 
@@ -210,7 +210,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
 			RenderTargetProperties::CreateDSVBuffer(true),
 			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
-			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
