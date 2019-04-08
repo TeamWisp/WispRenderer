@@ -222,6 +222,8 @@ void RaygenEntry()
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(cpos - wpos);
 
+	normal = lerp(normal, -normal, dot(normal, V) < 0);
+
 	float3 result = float3(0, 0, 0);
 
 	nextRand(rand_seed);
@@ -323,7 +325,7 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 
 	//float3 fN = N;
 	float3 fN = normalize(mul(output_data.normal, TBN));
-	if (dot(fN, V) <= 0.0f) fN = -fN;
+	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
 	// Irradiance
 #ifdef OLDSCHOOL
