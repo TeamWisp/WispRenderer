@@ -64,11 +64,9 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
+	float2 padding;
 	float frame_idx;
 	float intensity;
-
-	uint shadows_enabled;
-	uint reflections_enabled;
 };
 
 struct Ray
@@ -147,6 +145,10 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint d
 [shader("raygeneration")]
 void RaygenEntry()
 {
+
+	const uint shadows_enabled = true;
+	const uint reflections_enabled = true;
+
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Texture UV coordinates [0, 1]
@@ -229,6 +231,9 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 [shader("closesthit")]
 void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 {
+	const uint shadows_enabled = true;
+	const uint reflections_enabled = true;
+
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
 	const Material material = g_materials[offset.material_idx];

@@ -169,7 +169,6 @@ namespace wr
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
 				camera_data.m_is_hybrid = data.is_hybrid;
 				camera_data.m_is_path_tracer = data.is_path_tracer;
-				camera_data.m_ao_enabled = data.ao_enabled;
 
 				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&camera_data);
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);

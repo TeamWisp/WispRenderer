@@ -17,13 +17,9 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float3 padding;
+	float2 padding;
 	float frame_idx;
 	float intensity;
-
-	uint shadows_enabled;
-	uint reflections_enabled;
-	uint ao_enabled;
 };
 
 struct Attributes { };

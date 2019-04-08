@@ -28,11 +28,9 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
 	float4x4 inv_projection;
 	float4x4 inv_view;
-	float3 padding;
 
 	uint is_hybrid;
 	uint is_path_tracer;
-	uint ao_enabled;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -47,6 +45,8 @@ float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_
 [numthreads(16, 16, 1)]
 void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
+	const uint ao_enabled = true;
+
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
 	float2 uv = float2(dispatch_thread_id.x / screen_size.x, dispatch_thread_id.y / screen_size.y);

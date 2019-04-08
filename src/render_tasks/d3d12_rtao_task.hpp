@@ -205,8 +205,6 @@ namespace wr
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cam_data.m_intensity = n_render_system.temp_intensity;
-				cam_data.m_shadows_enabled = camera->m_shadows_enabled;
-				cam_data.m_reflections_enabled = camera->m_reflections_enabled;
 				//TODO: Should use ProjectionView_CBData or not?
 
 				n_render_system.m_camera_pool->Update(data.in_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?

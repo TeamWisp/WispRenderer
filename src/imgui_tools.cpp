@@ -361,18 +361,6 @@ namespace wr::imgui::window
 		},
 	};
 
-	void EffectEditor(SceneGraph* scene_graph)
-	{
-		if (open_effect_editor)
-		{
-			ImGui::Begin("Effect Editor", &open_effect_editor);
-			auto cam = scene_graph->GetActiveCamera();
-			ImGui::Checkbox("Shadows Enabled", &cam->m_shadows_enabled);
-			ImGui::Checkbox("Reflections Enabled", &cam->m_reflections_enabled);
-			ImGui::End();
-		}
-	}
-
 	void SceneGraphEditor(SceneGraph* scene_graph)
 	{
 		if (open_scene_graph_editor)

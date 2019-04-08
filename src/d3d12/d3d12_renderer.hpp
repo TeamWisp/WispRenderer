@@ -51,10 +51,9 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
-			uint32_t padding[3];
+
 			unsigned int m_is_hybrid;
 			unsigned int m_is_path_tracer;
-			unsigned int m_ao_enabled;
 		};
 
 		struct RTHybridCamera_CBData
@@ -63,10 +62,9 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inv_vp;
 
+			uint32_t m_padding[2];
 			float m_frame_idx;
 			float m_intensity;
-			unsigned int m_shadows_enabled;
-			unsigned int m_reflections_enabled;
 		};
 
 		struct RayTracingCamera_CBData
