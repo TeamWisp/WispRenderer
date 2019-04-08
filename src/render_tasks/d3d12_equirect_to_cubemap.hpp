@@ -291,22 +291,6 @@ namespace wr
 	{
 		std::wstring name(L"Equirect To Cubemap");
 
-		RenderTargetProperties rt_properties
-		{
-			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(std::nullopt),
-			RenderTargetProperties::Height(std::nullopt),
-			RenderTargetProperties::ExecuteResourceState(ResourceState::RENDER_TARGET),
-			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
-			RenderTargetProperties::CreateDSVBuffer(true),
-			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
-			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_FLOAT }),
-			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name)
-		};
-
 		RenderTaskDesc desc;
 		desc.m_setup_func = [&](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::SetupEquirectToCubemapTask(rs, fg, handle, resize);
@@ -318,7 +302,7 @@ namespace wr
 			internal::DestroyEquirectToCubemapTask(fg, handle, resize);
 		};
 
-		desc.m_properties = rt_properties;
+		desc.m_properties = std::nullopt;
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
