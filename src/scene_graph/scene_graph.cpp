@@ -207,6 +207,8 @@ namespace wr
 
 		if (should_update)
 		{
+			m_batches.clear();
+
 			constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
 
 			constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
