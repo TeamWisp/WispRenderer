@@ -45,8 +45,6 @@ float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_
 [numthreads(16, 16, 1)]
 void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
-	const uint ao_enabled = true;
-
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
 	float2 uv = float2(dispatch_thread_id.x / screen_size.x, dispatch_thread_id.y / screen_size.y);
@@ -106,14 +104,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
-			// Get ao
-		float3 occluded_irradiance = lerp(
-			// Sample from irradiance if it IS NOT hybrid rendering
-			irradiance,
-			// Irradiance and ao buffer if it IS hybrid rendering
-			irradiance * gbuffer_AO[screen_coord].x,	
-			// Lerp factor (0: no hybrid, 1: hybrid)
-			ao_enabled);
+		// Get ao
+		float3 occluded_irradiance = irradiance * gbuffer_AO[screen_coord].x;
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, occluded_irradiance, reflection, sampled_brdf, shadow_factor);

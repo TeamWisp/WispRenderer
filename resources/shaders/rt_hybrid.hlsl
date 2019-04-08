@@ -145,10 +145,6 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint d
 [shader("raygeneration")]
 void RaygenEntry()
 {
-
-	const uint shadows_enabled = true;
-	const uint reflections_enabled = true;
-
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Texture UV coordinates [0, 1]
@@ -191,24 +187,10 @@ void RaygenEntry()
 	// Compute the initial ray cone from the gbuffers.
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
-	float shadow_result = 1.0f;
-	if (shadows_enabled == 1)
-	{
-		// Get shadow factor
-		shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
-	}
+	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result
-	float3 reflection_result;
-	if (reflections_enabled == 1)
-	{
-		// Get reflection result
-		reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, cone);
-	}
-	else
-	{
-		reflection_result = skybox.SampleLevel(s0, SampleSphericalMap(reflect(-V, normal)), 0);
-	}
+	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, cone);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
@@ -231,9 +213,6 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 [shader("closesthit")]
 void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 {
-	const uint shadows_enabled = true;
-	const uint reflections_enabled = true;
-
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
 	const Material material = g_materials[offset.material_idx];
@@ -329,7 +308,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const float2 sampled_brdf = brdf_lut.SampleLevel(s0, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
 
 	//Lighting
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth, shadows_enabled);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth, true);
 
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, payload.cone);
