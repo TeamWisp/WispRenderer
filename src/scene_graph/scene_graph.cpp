@@ -207,10 +207,7 @@ namespace wr
 
 		if (should_update)
 		{
-			m_batches.clear();
-
 			constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
-
 			constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
 			for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
@@ -230,7 +227,6 @@ namespace wr
 				//Insert new if doesn't exist
 				if (it == m_batches.end())
 				{
-
 					ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
 
 					auto& batch = m_batches[mesh_materials_pair];
@@ -263,11 +259,26 @@ namespace wr
 
 			}
 
-			//Update object data
+			std::vector<wr::temp::BatchKey> m_to_remove;
+
 			for (auto& elem : m_batches)
 			{
+				//Release empty batches
+				if (elem.second.num_global_instances == 0)
+				{
+					m_to_remove.push_back(elem.first);
+					continue;
+				}
+
+				//Update object data
 				temp::MeshBatch& batch = elem.second;
-				m_constant_buffer_pool->Update(batch.batch_buffer, model_size, 0, (uint8_t*)batch.data.objects.data());
+				m_constant_buffer_pool->Update(batch.batch_buffer, sizeof(temp::ObjectData) * elem.second.num_instances, 0, (uint8_t*)batch.data.objects.data());
+			}
+
+			for (auto& elem : m_to_remove)
+			{
+				m_objects.erase(elem);
+				m_batches.erase(elem);
 			}
 
 		}
