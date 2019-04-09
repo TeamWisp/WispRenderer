@@ -168,7 +168,7 @@ void shadow_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
     float2 center = floor(kernel_size/2.0);
 
-    float var = variance_in_texture[screen_coord];
+    float var = variance_in_texture[screen_coord].r;
 
     if(var == 0.0)
     {
@@ -177,12 +177,12 @@ void shadow_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     }
     else
     {
-        float variance_kernel_size = max(var*5.0, 1.0);
+        float variance_kernel_size = max(var*2.0, 1.0);
         for(int i = 0; i < int(kernel_size.x); ++i)
         {
             for(int j = 0; j < int(kernel_size.y); ++j)
             {
-                float2 kernel_location = float2(i, j);
+                float2 kernel_location = float2(i, j) * variance_kernel_size;
                 float2 coord = float2(kernel_location.x - center.x, kernel_location.y - center.y) * variance_kernel_size + screen_coord;
                 if(coord.x < 0 || coord.y < 0 || coord.x > screen_size.x || coord.y > screen_size.y)
                 {
