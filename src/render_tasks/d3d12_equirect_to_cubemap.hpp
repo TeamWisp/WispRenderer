@@ -112,8 +112,8 @@ namespace wr
 			//Get allocator from pool
 			auto allocator = static_cast<D3D12TexturePool*>(src_texture.m_pool)->GetMipmappingAllocator();
 
-			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(src_texture.m_pool->GetTexture(src_texture.m_id));
-			d3d12::TextureResource* envmap_text = static_cast<d3d12::TextureResource*>(dst_texture.m_pool->GetTexture(dst_texture.m_id));
+			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(src_texture.m_pool->GetTextureResource(src_texture));
+			d3d12::TextureResource* envmap_text = static_cast<d3d12::TextureResource*>(dst_texture.m_pool->GetTextureResource(dst_texture));
 
 			for (uint32_t i = 0; i < 6; ++i)
 			{
@@ -187,8 +187,8 @@ namespace wr
 			data.out_cubemap = skybox_node->m_skybox.value();
 			data.out_pref_env = skybox_node->m_prefiltered_env_map.value();
 
-			d3d12::TextureResource* equirect_text = static_cast<d3d12::TextureResource*>(data.in_equirect.m_pool->GetTexture(data.in_equirect.m_id));
-			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(data.out_cubemap.m_pool->GetTexture(data.out_cubemap.m_id));
+			d3d12::TextureResource* equirect_text = static_cast<d3d12::TextureResource*>(data.in_equirect.m_pool->GetTextureResource(data.in_equirect));
+			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(data.out_cubemap.m_pool->GetTextureResource(data.out_cubemap));
 
 			if (n_render_system.m_render_window.has_value())
 			{

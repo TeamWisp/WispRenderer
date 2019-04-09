@@ -136,12 +136,12 @@ namespace wr
 		m_render_meshes_func_impl(m_render_system, m_batches, camera, cmd_list);
 	}
 
-	temp::MeshBatches& SceneGraph::GetBatches() 
+	temp::MeshBatches& SceneGraph::GetBatches()
 	{ 
 		return m_batches;
 	}
 
-	std::unordered_map<Model*, std::vector<temp::ObjectData>>& SceneGraph::GetGlobalBatches()
+	std::unordered_map<temp::BatchKey, std::vector<temp::ObjectData>, util::PairHash>& SceneGraph::GetGlobalBatches()
 	{
 		return m_objects;
 	}
@@ -214,14 +214,16 @@ namespace wr
 			for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
 
 				auto node = m_mesh_nodes[i];
-				auto it = m_batches.find(node->m_model);
+				auto mesh_materials_pair = std::make_pair(node->m_model, node->m_materials);
+
+				auto it = m_batches.find(mesh_materials_pair);
 
 				if (node->m_model == nullptr)
 				{
 					continue;
 				}
 
-				auto obj = m_objects.find(node->m_model);
+				auto obj = m_objects.find(mesh_materials_pair);
 
 				//Insert new if doesn't exist
 				if (it == m_batches.end())
@@ -229,20 +231,22 @@ namespace wr
 
 					ConstantBufferHandle* object_buffer = m_constant_buffer_pool->Create(model_size);
 
-					auto& batch = m_batches[node->m_model];
+					auto& batch = m_batches[mesh_materials_pair];
 					batch.batch_buffer = object_buffer;
+					batch.m_materials = node->GetMaterials();
 					batch.data.objects.resize(d3d12::settings::num_instances_per_batch);
 					
 					if (obj == m_objects.end()) {
-						m_objects[node->m_model] = std::vector<temp::ObjectData>(d3d12::settings::num_instances_per_batch);
-						obj = m_objects.find(node->m_model);
+						m_objects[mesh_materials_pair] = std::vector<temp::ObjectData>(d3d12::settings::num_instances_per_batch);
+						obj = m_objects.find(mesh_materials_pair);
 					}
 
-					it = m_batches.find(node->m_model);
+					it = m_batches.find(mesh_materials_pair);
 				}
 
 				//Replace data in buffer
 				temp::MeshBatch& batch = it->second;
+				batch.m_materials = node->GetMaterials();
 
 				if (GetActiveCamera()->InView(node) || !d3d12::settings::enable_object_culling) 
 				{

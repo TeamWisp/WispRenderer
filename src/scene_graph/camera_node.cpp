@@ -6,13 +6,27 @@ namespace wr
 
 	void CameraNode::SetFov(float deg)
 	{
-		m_fov = deg / 180.0f * 3.1415926535f;
+		m_fov.m_fov = deg / 180.0f * 3.1415926535f;
+		SignalChange();
+	}
+
+	void CameraNode::SetFovFromFocalLength(float aspect_ratio, float filmSize)
+	{
+		float verticalSize = filmSize / aspect_ratio;
+		m_fov.m_fov = 2.0f * std::atan2(verticalSize, 2.0f * m_focal_length);
 		SignalChange();
 	}
 
 	void CameraNode::SetAspectRatio(float ratio)
 	{
 		m_aspect_ratio = ratio;
+		SignalChange();
+	}
+
+	void CameraNode::SetFocalLength(float length)
+	{
+		m_focal_length = length;
+		SetFovFromFocalLength(m_aspect_ratio, m_film_size);
 		SignalChange();
 	}
 
@@ -25,8 +39,12 @@ namespace wr
 		DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
 		m_view = DirectX::XMMatrixLookToRH(pos, forward, up);
+		
+		if (!m_override_projection)
+		{
+			m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov.m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
+		}
 
-		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
 		m_view_projection = m_view * m_projection;
 		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 		m_inverse_view = DirectX::XMMatrixInverse(nullptr, m_view);
@@ -49,7 +67,7 @@ namespace wr
 			m_view_projection.r[1].m128_f32[3] + *m_view_projection.r[1].m128_f32,
 			m_view_projection.r[2].m128_f32[3] + *m_view_projection.r[2].m128_f32,
 			m_view_projection.r[3].m128_f32[3] + *m_view_projection.r[3].m128_f32
-		});
+			});
 
 		//Right plane
 
@@ -58,7 +76,7 @@ namespace wr
 			m_view_projection.r[1].m128_f32[3] - *m_view_projection.r[1].m128_f32,
 			m_view_projection.r[2].m128_f32[3] - *m_view_projection.r[2].m128_f32,
 			m_view_projection.r[3].m128_f32[3] - *m_view_projection.r[3].m128_f32
-		});
+			});
 
 		//Top plane
 
@@ -67,7 +85,7 @@ namespace wr
 			m_view_projection.r[1].m128_f32[3] - m_view_projection.r[1].m128_f32[1],
 			m_view_projection.r[2].m128_f32[3] - m_view_projection.r[2].m128_f32[1],
 			m_view_projection.r[3].m128_f32[3] - m_view_projection.r[3].m128_f32[1]
-		});
+			});
 
 		//Bottom plane
 
@@ -76,7 +94,7 @@ namespace wr
 			m_view_projection.r[1].m128_f32[3] + m_view_projection.r[1].m128_f32[1],
 			m_view_projection.r[2].m128_f32[3] + m_view_projection.r[2].m128_f32[1],
 			m_view_projection.r[3].m128_f32[3] + m_view_projection.r[3].m128_f32[1]
-		});
+			});
 
 		//Near plane
 
@@ -85,7 +103,7 @@ namespace wr
 			m_view_projection.r[1].m128_f32[2],
 			m_view_projection.r[2].m128_f32[2],
 			m_view_projection.r[3].m128_f32[2]
-		});
+			});
 
 		//Far plane
 
@@ -94,7 +112,7 @@ namespace wr
 			m_view_projection.r[1].m128_f32[3] - m_view_projection.r[1].m128_f32[2],
 			m_view_projection.r[2].m128_f32[3] - m_view_projection.r[2].m128_f32[2],
 			m_view_projection.r[3].m128_f32[3] - m_view_projection.r[3].m128_f32[2]
-		});
+			});
 
 	}
 
