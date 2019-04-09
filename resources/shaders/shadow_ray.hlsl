@@ -10,7 +10,7 @@ struct Attributes { };
 
 bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
-//#ifndef NO_SHADOWS
+#ifndef NO_SHADOWS
 	if (depth >= MAX_RECURSION)
 	{
 		return false;
@@ -37,9 +37,9 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 		payload);
 
 	return payload.is_hit;
-//#else
-//	return false;
-//#endif
+#else
+	return false;
+#endif
 }
 
 [shader("closesthit")]
@@ -69,7 +69,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 		offset *= 0.05;
 		float3 shadow_direction = normalize(light_dir + offset);
 
-		bool shadow = TraceShadowRay(1, wpos, shadow_direction, t_max, depth + 1);
+		bool shadow = TraceShadowRay(1, wpos, shadow_direction, t_max, depth);
 
 		shadow_factor += lerp(1.0, 0.0, shadow);
 	}
@@ -78,7 +78,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 
 #else /* ifdef SOFT_SHADOWS */
 
-	bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth + 1);
+	bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth);
 	shadow_factor = !shadow;
 
 #endif
