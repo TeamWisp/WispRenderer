@@ -8,7 +8,7 @@
 
 #ifdef FALLBACK
 	#undef MAX_RECURSION
-	#define MAX_RECURSION 2
+	#define MAX_RECURSION 1
 
 	
 	//#define NO_SHADOWS

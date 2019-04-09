@@ -21,6 +21,7 @@ namespace wr
 	{
 		bool m_has_depth_buffer;
 		d3d12::RenderTarget* m_depth_buffer;
+		d3d12::RenderTarget* m_velocity_buffer;
 		d3d12::RenderTarget* m_noisy_buffer;
 		d3d12::RenderTarget* m_output_buffer;
 		d3d12::RenderTarget* m_variance_in_buffer;
@@ -74,7 +75,7 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_allocation = std::move(data.out_allocator->Allocate(7));
+			data.out_allocation = std::move(data.out_allocator->Allocate(8));
 
 			data.m_noisy_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
 			data.m_output_buffer = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
@@ -103,7 +104,7 @@ namespace wr
 			variance_buffer_desc.m_dsv_format = Format::UNKNOWN;
 			variance_buffer_desc.m_initial_state = ResourceState::UNORDERED_ACCESS;
 			variance_buffer_desc.m_num_rtv_formats = 1;
-			variance_buffer_desc.m_rtv_formats[0] = Format::R32G32B32A32_FLOAT;
+			variance_buffer_desc.m_rtv_formats[0] = Format::R16G16B16A16_FLOAT;
 
 			data.m_variance_out_buffer = d3d12::CreateRenderTarget(
 				n_render_system.m_device,
@@ -125,6 +126,7 @@ namespace wr
 			{
 				data.m_has_depth_buffer = true;
 				data.m_depth_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::DeferredMainTaskData>());
+				data.m_velocity_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::DeferredMainTaskData>());
 			}
 
 			{
@@ -138,6 +140,10 @@ namespace wr
 				constexpr unsigned int depth_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::DEPTH);
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(depth_idx);
 				d3d12::CreateSRVFromDSV(data.m_depth_buffer, cpu_handle);
+
+				constexpr unsigned int velocity_idx = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::VELOCITY);
+				cpu_handle = data.out_allocation.GetDescriptorHandle(velocity_idx);
+				d3d12::CreateSRVFromSpecificRTV(data.m_velocity_buffer, cpu_handle, 2, data.m_velocity_buffer->m_create_info.m_rtv_formats[2]);
 			}
 
 			{
@@ -200,8 +206,8 @@ namespace wr
 			data.m_denoiser_camera = data.m_constant_buffer_pool->Create(sizeof(temp::DenoiserCamera_CBData));
 
 			data.m_denoiser_settings = {};
-			data.m_denoiser_settings.m_depth_contrast = 4.f;
-			data.m_denoiser_settings.m_kernel_size = { 5, 5 };
+			data.m_denoiser_settings.m_depth_contrast = 2.f;
+			data.m_denoiser_settings.m_kernel_size = { 7, 7 };
 
 		}
 
@@ -219,6 +225,12 @@ namespace wr
 				constexpr unsigned int depth = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::DEPTH);
 				d3d12::DescHeapCPUHandle depth_handle = data.out_allocation.GetDescriptorHandle(depth);
 				d3d12::SetShaderSRV(cmd_list, 0, depth, depth_handle);
+			}
+
+			{
+				constexpr unsigned int velocity = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::VELOCITY);
+				d3d12::DescHeapCPUHandle velocity_handle = data.out_allocation.GetDescriptorHandle(velocity);
+				d3d12::SetShaderSRV(cmd_list, 0, velocity, velocity_handle);
 			}
 
 			{

@@ -28,6 +28,8 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
 	float4x4 inv_projection;
 	float4x4 inv_view;
+	float4x4 prev_projection;
+	float4x4 prev_view;
 	uint is_hybrid;
 	uint is_path_tracer;
 };
@@ -108,8 +110,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, sampled_brdf, shadow_factor);
-
-		retval = shadow_info;
 	}
 	else
 	{	

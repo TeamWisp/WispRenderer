@@ -289,6 +289,7 @@ namespace wr
 		{
 			SOURCE,
 			DEPTH,
+			VELOCITY,
 			KERNEL,
 			ACCUM,
 			VARIANCE_IN,
@@ -298,9 +299,10 @@ namespace wr
 			DENOISER_PROPERTIES,
 		};
 
-		constexpr std::array<rs_layout::Entry, 9> shadow_denoiser = {
+		constexpr std::array<rs_layout::Entry, 10> shadow_denoiser = {
 			rs_layout::Entry{(int)ShadowDenoiserE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::DEPTH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ShadowDenoiserE::VELOCITY, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::KERNEL, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)ShadowDenoiserE::VARIANCE_IN, 1, rs_layout::Type::SRV_RANGE},

@@ -69,7 +69,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 		offset *= 0.05;
 		float3 shadow_direction = normalize(light_dir + offset);
 
-		bool shadow = TraceShadowRay(1, wpos, shadow_direction, t_max, depth + 1);
+		bool shadow = TraceShadowRay(1, wpos, shadow_direction, t_max, depth);
 
 		shadow_factor += lerp(1.0, 0.0, shadow);
 	}
@@ -78,7 +78,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 
 #else /* ifdef SOFT_SHADOWS */
 
-	bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth + 1);
+	bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth);
 	shadow_factor = !shadow;
 
 #endif

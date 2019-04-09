@@ -1,8 +1,9 @@
 Texture2D input_texture : register(t0);
 Texture2D depth_texture : register(t1);
-Texture2D kernel_texture : register(t2);
-Texture2D accum_texture : register(t3);
-Texture2D variance_in_texture : register(t4);
+Texture2D velocity_texture : register(t2);
+Texture2D kernel_texture : register(t3);
+Texture2D accum_texture : register(t4);
+Texture2D variance_in_texture : register(t5);
 RWTexture2D<float4> output_texture   : register(u0);
 RWTexture2D<float4> variance_out_texture : register(u1);
 SamplerState point_sampler   : register(s0);
@@ -26,7 +27,7 @@ cbuffer DenoiserSettings : register(b1)
 };
 
 const static float2 VARIANCE_CLIPPING_KERNEL = float2(7, 7);
-const static float VARIANCE_CLIPPING_GAMMA = 1.0;
+const static float VARIANCE_CLIPPING_GAMMA = 0.75;
 
 float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
@@ -73,17 +74,13 @@ void temporal_accumulator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 
-    float depth_f = depth_texture[screen_coord].r;
+    float2 q_UV = uv - velocity_texture.SampleLevel(point_sampler, uv, 0);
 
-    float3 p = unpack_position(float2(uv.x, 1.0 - uv.y), depth_f, inv_projection, inv_view);
+    //q_UV.y = 1.0 - q_UV.y;
 
-    float4x4 VP_prev = mul(prev_projection, prev_view);
+    int2 accum_coord = int2(q_UV.x * screen_size.x, q_UV.y*screen_size.y);
 
-    float4 q_CS = mul(VP_prev, float4(p.x, p.y, p.z, 1.0));
-    float2 q_UV = 0.5 * (q_CS.xy / q_CS.w) + 0.5;
-    q_UV.y = 1.0 - q_UV.y;
-
-	float4 accum_data = accum_texture[int2(q_UV.x * screen_size.x, q_UV.y * screen_size.y)];
+	float4 accum_data = accum_texture[accum_coord];
 	float4 noise = input_texture[screen_coord];
 
     float3 m1 = float3(0,0,0);

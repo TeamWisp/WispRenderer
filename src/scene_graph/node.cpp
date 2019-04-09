@@ -70,6 +70,8 @@ namespace wr
 
 	void Node::UpdateTransform()
 	{
+		m_prev_transform = m_transform;
+
 		m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
 		DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslationFromVector(m_position);
 		DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationQuaternion(m_rotation);

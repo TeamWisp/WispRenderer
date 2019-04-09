@@ -68,6 +68,8 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_inverse_projection;
 			DirectX::XMMATRIX m_inverse_view;
+			DirectX::XMMATRIX m_prev_projection;
+			DirectX::XMMATRIX m_prev_view;
 			unsigned int m_is_hybrid;
 			unsigned int m_is_path_tracer;
 		};

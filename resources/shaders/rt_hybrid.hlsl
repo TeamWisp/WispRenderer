@@ -428,7 +428,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 #endif
 */
 
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth + 1);
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;

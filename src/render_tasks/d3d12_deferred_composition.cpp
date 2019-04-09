@@ -219,8 +219,10 @@ namespace wr
 				temp::ProjectionView_CBData camera_data;
 				camera_data.m_projection = active_camera->m_projection;
 				camera_data.m_inverse_projection = active_camera->m_inverse_projection;
+				camera_data.m_prev_projection = active_camera->m_prev_projection;
 				camera_data.m_view = active_camera->m_view;
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
+				camera_data.m_prev_view = active_camera->m_prev_view;
 				camera_data.m_is_hybrid = data.is_hybrid;
 				camera_data.m_is_path_tracer = data.is_path_tracer;
 

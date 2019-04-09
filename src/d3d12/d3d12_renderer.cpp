@@ -892,8 +892,11 @@ namespace wr
 			temp::ProjectionView_CBData data;
 			data.m_projection = node->m_projection;
 			data.m_inverse_projection = node->m_inverse_projection;
+			data.m_prev_projection = node->m_prev_projection;
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
+			data.m_prev_view = node->m_prev_view;
+			
 			data.m_is_hybrid = 0;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);
