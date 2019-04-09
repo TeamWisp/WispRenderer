@@ -277,6 +277,9 @@ namespace wr
 
 			for (auto& elem : m_to_remove)
 			{
+				if(m_batches[elem].batch_buffer)
+					delete m_batches[elem].batch_buffer;
+
 				m_objects.erase(elem);
 				m_batches.erase(elem);
 			}
