@@ -45,7 +45,7 @@ namespace viknell_scene
 			wr::TextureHandle bamboo_roughness = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 			wr::TextureHandle bamboo_metallic = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
-			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/SunTemple_Skybox.hdr", false, false);
+			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/spruit_sunrise_2k.hdr", false, false);
 
 			// Create Materials
 			mirror_material = material_pool->Create();
@@ -69,7 +69,7 @@ namespace viknell_scene
 			bamboo_material_internal->SetMetallic(bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/materials/SunTemple.fbx");
+			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sponza_jacco/sponza.obj");
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 		}
 
@@ -106,11 +106,11 @@ namespace viknell_scene
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		// Geometry
-		//auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		//auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		//auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		//auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		//auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		/*auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);*/
 		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		//auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
 		/*floor->SetPosition({0, -1, 0});

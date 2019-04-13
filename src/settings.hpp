@@ -3,8 +3,8 @@
 namespace wr::settings
 {
 
-	static const constexpr bool use_multithreading = false;
-	static const constexpr unsigned int num_frame_graph_threads = 4;
+	static const constexpr bool use_multithreading = true;
+	static const constexpr unsigned int num_frame_graph_threads = 5;
 
 	static const constexpr std::uint8_t default_textures_count = 5;
 	static const constexpr std::uint8_t default_textures_size_in_bytes = 4*1024*1024;

@@ -61,6 +61,7 @@ namespace wr
 			}
 		}
 
+		template<typename T>
 		inline void ExecuteAccumulationTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -88,7 +89,7 @@ namespace wr
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % 1 /*versions*/]));
 
-			auto& path_tracer_data = fg.GetPredecessorData<PathTracerData>();
+			auto& path_tracer_data = fg.GetPredecessorData<T>();
 
 			float samples = n_render_system.temp_rough;
 			d3d12::BindCompute32BitConstants(cmd_list, &samples, 1, 0, 1);
@@ -133,7 +134,7 @@ namespace wr
 			internal::SetupAccumulationTask<T>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteAccumulationTask(rs, fg, sg, handle);
+			internal::ExecuteAccumulationTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyAccumulation(fg, handle, resize);

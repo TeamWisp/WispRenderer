@@ -60,30 +60,16 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 	float shadow_factor = 0.0f;
 
 #ifdef SOFT_SHADOWS
-	if (depth == 0)
-	{
-	[unroll(MAX_SHADOW_SAMPLES)]
-	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
-	{
 		// Perhaps change randomness to not be purely random, but algorithm-random?
 		float3 offset = normalize(float3(nextRand(rand_seed), nextRand(rand_seed), nextRand(rand_seed))) - 0.5;
 		// Hard-coded 0.05 is to minimalize the offset a ray gets
 		// Should be determined by the area that the light is emitting from
-		offset *= 0.05;
+		offset *= 0.2;
 		float3 shadow_direction = normalize(light_dir + offset);
 
 		bool shadow = TraceShadowRay(1, wpos, shadow_direction, t_max, 0);
 
-		shadow_factor += lerp(1.0, 0.0, shadow);
-	}
-
-	shadow_factor /= float(MAX_SHADOW_SAMPLES);
-	}
-	else
-	{
-		bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth);
-	shadow_factor = !shadow;
-	}
+		shadow_factor = !shadow;
 
 #else /* ifdef SOFT_SHADOWS */
 

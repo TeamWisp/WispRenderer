@@ -447,7 +447,7 @@ namespace wr
 		StateObjectDescription::Library(rt_full_lib),
 		StateObjectDescription::MaxPayloadSize((sizeof(float)* 7) + sizeof(unsigned int)),
 		StateObjectDescription::MaxAttributeSize(sizeof(float)* 4),
-		StateObjectDescription::MaxRecursionDepth(3),
+		StateObjectDescription::MaxRecursionDepth(6),
 		StateObjectDescription::GlobalRootSignature(root_signatures::rt_test_global),
 		StateObjectDescription::LocalRootSignatures(std::nullopt),
 	});

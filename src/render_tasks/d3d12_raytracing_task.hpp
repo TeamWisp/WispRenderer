@@ -31,6 +31,9 @@ namespace wr
 		d3d12::RootSignature* out_root_signature;
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
 
+		DirectX::XMVECTOR last_cam_pos;
+		DirectX::XMVECTOR last_cam_rot;
+
 		DescriptorAllocation out_uav_from_rtv;
 
 		bool tlas_requires_init;
@@ -275,6 +278,19 @@ namespace wr
 					n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*)as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * as_build_data.out_materials.size(), 0);
 				}
 
+				// Reset accmulation if nessessary
+				if (DirectX::XMVector3Length(DirectX::XMVectorSubtract(scene_graph.GetActiveCamera()->m_position, data.last_cam_pos)).m128_f32[0] > 0.01)
+				{
+					data.last_cam_pos = scene_graph.GetActiveCamera()->m_position;
+					n_render_system.temp_rough = -1;
+				}
+
+				if (DirectX::XMVector3Length(DirectX::XMVectorSubtract(scene_graph.GetActiveCamera()->m_rotation_radians, data.last_cam_rot)).m128_f32[0] > 0.001)
+				{
+					data.last_cam_rot = scene_graph.GetActiveCamera()->m_rotation_radians;
+					n_render_system.temp_rough = -1;
+				}
+
 				// Update camera constant buffer
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RayTracingCamera_CBData cam_data;
@@ -284,6 +300,7 @@ namespace wr
 				cam_data.metal = n_render_system.temp_metal;
 				cam_data.light_radius = n_render_system.light_radius;
 				cam_data.intensity = n_render_system.temp_intensity;
+				cam_data.roughness = ++n_render_system.temp_rough;;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);

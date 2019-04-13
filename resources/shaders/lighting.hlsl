@@ -54,9 +54,8 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]) * shadow_factor;
+		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]);
 	}
-
 
 	// Ambient Lighting using Irradiance for Diffuse
 	float3 kS = F_SchlickRoughness(max(dot(normal, V), 0.0f), metallic, albedo, roughness);

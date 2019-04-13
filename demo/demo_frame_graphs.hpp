@@ -66,7 +66,8 @@ namespace fg_manager
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddRaytracingTask(*fg);
-			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
+			wr::AddAccumulationTask<wr::RaytracingData>(*fg);
+			wr::AddPostProcessingTask<wr::AccumulationData>(*fg);
 			
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);

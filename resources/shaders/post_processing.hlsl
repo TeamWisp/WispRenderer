@@ -20,7 +20,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	float2 uv = (float2(DTid.xy) / resolution);
 
 	float gamma = 2.2;
-	float exposure = 2;
+	float exposure = 1;
 
 	float3 color = input[DTid.xy].rgb;
 	color = SampleFXAA(input, s0, DTid.xy, resolution);
