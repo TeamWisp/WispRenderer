@@ -1,6 +1,7 @@
 #pragma once
 
-#include "scene_graph.hpp"
+#include "node.hpp"
+#include "../model_pool.hpp"
 #include "../util/aabb.hpp"
 
 namespace wr

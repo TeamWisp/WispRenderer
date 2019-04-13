@@ -1,6 +1,8 @@
 #pragma once
 
-#include "scene_graph.hpp"
+#include "node.hpp"
+
+#include "../platform_independend_structs.hpp"
 
 namespace wr
 {

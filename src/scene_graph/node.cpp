@@ -1,4 +1,5 @@
 #include "node.hpp"
+
 #include "../util/log.hpp"
 
 namespace wr

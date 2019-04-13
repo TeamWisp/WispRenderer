@@ -1,4 +1,6 @@
 #include "camera_node.hpp"
+
+#include "../util/aabb.hpp"
 #include "mesh_node.hpp"
 
 namespace wr

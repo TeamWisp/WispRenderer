@@ -1,9 +1,9 @@
 #pragma once
+
 #include <bitset>
 #include <functional>
 #include <memory>
 #include <DirectXMath.h>
-
 
 namespace wr
 {
