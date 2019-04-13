@@ -30,7 +30,7 @@ namespace wr
 		};
 
 		CameraNode(float fov_deg, float aspect_ratio)
-			: Node(),
+			: Node(typeid(CameraNode)),
 			m_active(true),
 			m_frustum_near(0.1f),
 			m_frustum_far(1000.0f),

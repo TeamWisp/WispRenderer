@@ -366,6 +366,12 @@ namespace wr::imgui::window
 		if (open_scene_graph_editor)
 		{
 			ImGui::Begin("Scene Graph Editor", &open_scene_graph_editor);
+
+			if (ImGui::Button("Add Light"))
+			{
+				scene_graph->CreateChild<LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 1, 1 });
+			}
+
 			auto root = scene_graph->GetRootNode();
 			auto num_children = root->m_children.size();
 
@@ -382,14 +388,10 @@ namespace wr::imgui::window
 				for (auto child_i = 0; child_i < root->m_children.size(); child_i++)
 				{
 					auto& node = root->m_children[child_i];
-					std::string node_name_prefix = "Node";
 
-					SceneGraphEditorDetails::TryUpdateName<MeshNode>(node, node_name_prefix);
-					SceneGraphEditorDetails::TryUpdateName<CameraNode>(node, node_name_prefix);
-					SceneGraphEditorDetails::TryUpdateName<LightNode>(node, node_name_prefix);
-					SceneGraphEditorDetails::TryUpdateName<SkyboxNode>(node, node_name_prefix);
+					auto name_prefix = SceneGraphEditorDetails::GetNodeName(node).value_or("Node");
 
-					auto node_name = node_name_prefix + "##" + std::to_string(child_i);
+					auto node_name = name_prefix + "##" + std::to_string(child_i);
 
 					// Skip node if its not part of the filter.
 					if (!filter.PassFilter(node_name.c_str())) continue;
@@ -410,11 +412,7 @@ namespace wr::imgui::window
 					// Right click menu
 					if (ImGui::BeginPopupContextItem())
 					{
-						SceneGraphEditorDetails::context_menu_func_t node_cm_function;
-						SceneGraphEditorDetails::TryUpdateContextMenuFunction<MeshNode>(selected_node, node_cm_function);
-						SceneGraphEditorDetails::TryUpdateContextMenuFunction<CameraNode>(selected_node, node_cm_function);
-						SceneGraphEditorDetails::TryUpdateContextMenuFunction<LightNode>(selected_node, node_cm_function);
-						SceneGraphEditorDetails::TryUpdateContextMenuFunction<SkyboxNode>(selected_node, node_cm_function);
+						auto node_cm_function = SceneGraphEditorDetails::GetNodeContextMenuFunction(selected_node).value_or(nullptr);
 
 						if (node_cm_function)
 						{
@@ -444,11 +442,7 @@ namespace wr::imgui::window
 
 			if (selected_node)
 			{
-				SceneGraphEditorDetails::inspect_func_t node_inspect_function;
-				SceneGraphEditorDetails::TryUpdateInspectFunction<MeshNode>(selected_node, node_inspect_function);
-				SceneGraphEditorDetails::TryUpdateInspectFunction<CameraNode>(selected_node, node_inspect_function);
-				SceneGraphEditorDetails::TryUpdateInspectFunction<LightNode>(selected_node, node_inspect_function);
-				SceneGraphEditorDetails::TryUpdateInspectFunction<SkyboxNode>(selected_node, node_inspect_function);
+				auto node_inspect_function = SceneGraphEditorDetails::GetNodeInspectFunction(selected_node).value_or(nullptr);
 
 				if (node_inspect_function)
 				{
