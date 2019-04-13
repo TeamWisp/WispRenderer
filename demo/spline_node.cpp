@@ -140,28 +140,11 @@ void SplineNode::UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node)
 		m_time += delta * m_speed;
 		m_time = std::fmod(m_time, spline->getMaxT());
 
-		auto lerp_delta = m_time / spline->getMaxT();
-		
-		auto mod = m_looping ? 0.f : 1.f;
-		auto segment_i = lerp_delta * ((float)num_points - mod);
-		auto alpha = (lerp_delta * ((float)num_points - mod)) - floor(segment_i);
-
-		float backback = std::fmod((std::fmod(floor(segment_i), num_points) + num_points), num_points);
-		auto back_point = m_control_points[backback];
-		auto prev_point = m_control_points[floor(segment_i)];
-		auto next_point = m_control_points[fmod(ceil(segment_i), num_points)];
-		auto end_point = m_control_points[fmod(ceil(segment_i + 1), num_points)];
-
-		auto rot_a = DirectX::XMQuaternionRotationRollPitchYawFromVector(prev_point.m_rotation);
-		auto rot_b = DirectX::XMQuaternionRotationRollPitchYawFromVector(next_point.m_rotation);
-		auto interp = DirectX::XMQuaternionSlerp(rot_a, rot_b, alpha);
-
 		auto new_pos = spline->getPosition(m_time);
 		auto new_rot = quat_spline->getPosition(m_time);
 
 		node->SetPosition({ new_pos[0], new_pos[1], new_pos[2] });
-		node->SetRotationQuat(interp);
-		node->SetRotationQuat({ new_rot[0], new_rot[1], new_rot[2], new_rot[3] });
+		node->SetRotationQuaternion({ new_rot[0], new_rot[1], new_rot[2], new_rot[3] });
 	};
 
 	if (m_looping)

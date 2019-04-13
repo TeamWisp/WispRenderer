@@ -19,7 +19,7 @@ public:
 	virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw) override
 	{
 		m_rotation_radians = roll_pitch_yaw;
-		m_use_quat = false;
+		m_use_quaternion = false;
 		m_target_rotation_radians = roll_pitch_yaw;
 	}
 
@@ -40,7 +40,8 @@ public:
 		POINT cursor_pos;
 		GetCursorPos(&cursor_pos);
 
-		if (m_rmb_down) {
+		if (m_rmb_down)
+		{
 			// Translation
 			m_right_axis = std::min(m_right_axis, 1.f);
 			m_right_axis = std::max(m_right_axis, -1.f);

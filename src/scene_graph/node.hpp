@@ -56,9 +56,10 @@ namespace wr
 
 		const std::type_info& m_type_info;
 
-	private:
+	protected:
 		bool m_use_quaternion = false;
 
+	private:
 		std::bitset<3> m_requires_update;
 		std::bitset<3> m_requires_transform_update;
 
