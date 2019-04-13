@@ -36,6 +36,11 @@ namespace wr
 		/*! Requests to close the window */
 		void Stop();
 
+		/*! Give the window a function to call on repaint */
+		void SetRenderLoop(std::function<void()> render_func);
+		/*! Start a loop that runs until the window is closed. */
+		void StartRenderLoop();
+
 		/*! Used to set the key callback function */
 		void SetKeyCallback(KeyCallback callback);
 		/*! Used to set the mouse callback function */
@@ -66,6 +71,8 @@ namespace wr
 		MouseCallback m_mouse_callback;
 		ResizeCallback m_resize_callback;
 		MouseWheelCallback m_mouse_wheel_callback;
+
+		std::function<void()> m_render_func;
 
 		bool m_running;
 		HWND m_handle;
