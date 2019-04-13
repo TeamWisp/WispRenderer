@@ -1,7 +1,9 @@
 #pragma once
 
-#include "scene_graph.hpp"
+#include "node.hpp"
+
 #include "../util/named_type.hpp"
+#include "../constant_buffer_pool.hpp"
 
 namespace wr
 {
