@@ -72,9 +72,9 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	float3 specular = prefiltered_color * (kS * sampled_brdf.x + sampled_brdf.y);
 	//float3 specular = reflection * kS;
 	
-	float3 ambient = ((kD * diffuse) + specular) * 1.0f; //Replace 1.0f with AO, when we have it.
+	float3 ambient = (kD * diffuse + specular) * 1.0f; //Replace 1.0f with AO, when we have it.
 
-	return ambient + (res);
+	return ambient + (res * shadow_factor);
 }
 
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, inout uint rand_seed, uint depth)
@@ -147,18 +147,8 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		// Get maxium ray length (depending on type)
 		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
-		float min_cos = cos(light.ang);
-		float max_cos = lerp(min_cos, 1, 0.5f);
-		float cos_angle = dot(light.dir, L);
-		float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
-
-		//Attenuation & spot intensity (only used with point or spot)
-		float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
-
-		float3 radiance = attenuation;
-
 		// Add shadow factor to final result
-		res += GetShadowFactor(wpos, L, t_max, depth, rand_seed) * length(radiance);
+		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed);
 	}
 
 	// return final res

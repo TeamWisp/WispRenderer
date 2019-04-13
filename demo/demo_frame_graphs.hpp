@@ -92,7 +92,7 @@ namespace fg_manager
 			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Do Depth of field task
-			/*wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
+			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
 			wr::AddDoFDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
@@ -112,12 +112,12 @@ namespace fg_manager
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);*/
+			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
 
 			fg->Setup(rs);
 		}

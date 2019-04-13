@@ -43,7 +43,6 @@ Texture2D gbuffer_albedo : register(t1010);
 Texture2D gbuffer_normal : register(t1011);
 Texture2D gbuffer_depth : register(t1012);
 Texture2D skybox : register(t6);
-TextureCube hackme : register(t7);
 Texture2D brdf_lut : register(t8);
 TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
@@ -93,10 +92,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 
 	if (depth >= MAX_RECURSION)
 	{
-		#ifdef HARD_IRR
-		return IRR;
-		#endif
-		return hackme.SampleLevel(s0, direction, 5).rgb;
+		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0).rgb;
 	}
 
 	origin += norm * EPSILON;
@@ -151,15 +147,11 @@ void RaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
-	float2 gbuffer_size = float2(0.f, 0.f);
-	gbuffer_depth.GetDimensions(gbuffer_size.x, gbuffer_size.y);
-	
 	// Texture UV coordinates [0, 1]
-	float2 uv = float2(DispatchRaysIndex().xy) / float2(gbuffer_size.xy - 1);
-	//uv *= 1.5;
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
 
 	// Screen coordinates [0, resolution] (inverted y)
-	int2 screen_co = DispatchRaysIndex().xy /** 1.5*/;
+	int2 screen_co = DispatchRaysIndex().xy;
 
 	// Get g-buffer information
 	float4 albedo_roughness = gbuffer_albedo[screen_co];
@@ -305,10 +297,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	//Shading
 	float3 flipped_N = fN;
 	flipped_N.y *= -1;
-	float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
-	#ifdef HARD_IRR
-	sampled_irradiance = IRR;
-	#endif
+	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 	// TODO: reflections in reflections
 
@@ -320,7 +309,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const float2 sampled_brdf = brdf_lut.SampleLevel(s0, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
 
 	//Lighting
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth + 1);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
 
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, payload.cone);

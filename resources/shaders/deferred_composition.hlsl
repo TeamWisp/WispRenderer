@@ -1,5 +1,5 @@
 #define LIGHTS_REGISTER register(t3)
-#define MAX_REFLECTION_LOD 4
+#define MAX_REFLECTION_LOD 3
 
 #include "fullscreen_quad.hlsl"
 #include "util.hlsl"
@@ -80,19 +80,14 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		else
 		{
 			irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
-			irradiance /= 2;
 		}
-
-		#ifdef HARD_IRR
-			irradiance = IRR;
-		#endif
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
 			// Do deferred shadow (fully lit for now)
 			1.0,
 			// Shadow buffer if its hybrid rendering
-			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0).w,	
+			buffer_refl_shadow[screen_coord].a,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
@@ -103,13 +98,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Sample from environment if it IS NOT hybrid rendering
 			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
-			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0).xyz,	
+			buffer_refl_shadow[screen_coord].xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, sampled_brdf, shadow_factor);
-		//retval = reflection;
 	}
 	else
 	{	

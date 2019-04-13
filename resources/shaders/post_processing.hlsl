@@ -20,18 +20,18 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	float2 uv = (float2(DTid.xy) / resolution);
 
 	float gamma = 2.2;
-	float exposure = 2;
+	float exposure = 1;
 
 	float3 color = input[DTid.xy].rgb;
-	color = SampleFXAA(input, s0, DTid.xy, resolution);
+	//color = SampleFXAA(input, s0, DTid.xy, resolution);
 	//uv = ZoomUV(uv, 0.75);
 	//float3 color = input.SampleLevel(s0, BarrelDistortUV(uv, 2), 0);
 	//float3 color = ChromaticAberrationV2(input, s0, uv, 0.2, 0.96f).rgb;
 
 	if (hdr == 0)
 	{
-		//color = linearToneMapping(color, exposure, gamma);
-		color = simpleReinhardToneMapping(color, exposure, gamma);
+		color = linearToneMapping(color, exposure, gamma);
+		//color = simpleReinhardToneMapping(color, exposure, gamma);
 		//color = lumaBasedReinhardToneMapping(color, gamma);
 		//color = whitePreservingLumaBasedReinhardToneMapping(color, gamma);
 		//color = RomBinDaHouseToneMapping(color, gamma);
