@@ -26,7 +26,6 @@ namespace wr
 		{
 			child->SignalTransformChange();
 		}
-
 	}
 
 	void Node::SignalUpdate(unsigned int frame_idx)
@@ -52,14 +51,14 @@ namespace wr
 	void Node::SetRotation(DirectX::XMVECTOR roll_pitch_yaw)
 	{
 		m_rotation_radians = roll_pitch_yaw;
-		m_use_quat = false;
+		m_use_quaternion = false;
 		SignalTransformChange();
 	}
 
-	void Node::SetRotationQuat(DirectX::XMVECTOR roll_pitch_yaw)
+	void Node::SetRotationQuaternion(DirectX::XMVECTOR rotation)
 	{
-		m_rotation = roll_pitch_yaw;
-		m_use_quat = true;
+		m_rotation = rotation;
+		m_use_quaternion = true;
 		SignalTransformChange();
 	}
 
@@ -84,8 +83,10 @@ namespace wr
 
 	void Node::UpdateTransform()
 	{
-		if (!m_use_quat)
+		if (!m_use_quaternion)
+		{
 			m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
+		}
 
 		DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslationFromVector(m_position);
 		DirectX::XMMATRIX rotation_mat = DirectX::XMMatrixRotationQuaternion(m_rotation);
@@ -98,4 +99,4 @@ namespace wr
 		SignalChange();
 	}
 
-}
+} /* wr */
