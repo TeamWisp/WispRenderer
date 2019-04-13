@@ -67,7 +67,7 @@ FOR /F "delims=" %%i IN ('dir "C:\Program Files (x86)\Windows Kits\10\Include" /
     GOTO :found
 )
 call :colorEcho %red% No Windows SDK found in location: C:\Program Files (x86)\Windows Kits\10\Include
-EXIT 1
+goto :eof
 :found
 echo Latest installed Windows SDK: %windows_sdk_version%
 echo Windows SDK required: 10.0.17763.0 or newer
@@ -84,7 +84,7 @@ if "%is_remote%" == "1" (
 ) else (
   pause
 )
-EXIT
+goto :eof
 REM ##### MAIN #####
 
 REM ##### DOWNLOAD DEPS #####
