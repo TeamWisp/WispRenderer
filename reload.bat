@@ -35,7 +35,7 @@ if "%is_remote%" == "1" (
 ) else (
   pause
 )
-EXIT
+goto :eof
 REM ##### MAIN #####
 
 REM ##### Update Submodules ####
