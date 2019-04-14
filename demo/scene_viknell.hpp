@@ -38,7 +38,7 @@ namespace viknell_scene
 
 			wr::TextureHandle white = texture_pool->LoadFromFile("resources/materials/white.png", false, true);
 			wr::TextureHandle black = texture_pool->LoadFromFile("resources/materials/black.png", false, true);
-			flat_normal = texture_pool->LoadFromFile("resources/materials/flat_normal.png", false, true);
+			flat_normal = texture_pool->LoadFromFile("resources/materials/bot_normal.png", false, true);
 
 			wr::TextureHandle bamboo_albedo = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
 			wr::TextureHandle bamboo_normal = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
@@ -69,7 +69,7 @@ namespace viknell_scene
 			bamboo_material_internal->SetMetallic(bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sponza_jacco/sponza.obj");
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 		}
 
@@ -100,13 +100,13 @@ namespace viknell_scene
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		// Geometry
-		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		/*auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);*/
 		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
-		auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
+		/*auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
 		floor->SetPosition({0, -1, 0});
 		floor->SetRotation({90_deg, 0, 0});
 		floor->AddMaterial(resources::bamboo_material);
@@ -124,7 +124,7 @@ namespace viknell_scene
 		left_wall->AddMaterial(resources::bamboo_material);
 		right_wall->SetPosition({1, 0, 0});
 		right_wall->SetRotation({0, 90_deg, 0});
-		right_wall->AddMaterial(resources::bamboo_material);
+		right_wall->AddMaterial(resources::bamboo_material);*/
 		test_model->SetPosition({0, -1, 0});
 		test_model->SetRotation({0, 180_deg, 0});
 		test_model->SetScale({0.01f,0.01f,0.01f});

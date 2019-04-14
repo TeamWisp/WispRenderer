@@ -23,6 +23,7 @@
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten_second_pass.hpp"
+#include "render_tasks/d3d12_hbao.hpp"
 
 namespace fg_manager
 {
@@ -86,13 +87,14 @@ namespace fg_manager
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
 			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Do Depth of field task
-			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
+			/*wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
 			wr::AddDoFDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
@@ -112,12 +114,12 @@ namespace fg_manager
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);*/
 
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			fg->Setup(rs);
 		}
@@ -135,6 +137,8 @@ namespace fg_manager
 
 			// Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+
+			wr::AddHBAOTask(*fg);
 
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);
@@ -180,6 +184,8 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
+
+			wr::AddHBAOTask(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
