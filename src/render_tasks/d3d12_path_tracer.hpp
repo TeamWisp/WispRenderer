@@ -329,7 +329,7 @@ namespace wr
 				fg.GetPredecessorData<CubemapConvolutionTaskData>();
 
 				// Get skybox
-				if (SkyboxNode *skybox = scene_graph.GetCurrentSkybox().operator->())
+				if (SkyboxNode *skybox = scene_graph.GetCurrentSkybox().get())
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::SKYBOX)), skybox_t);
