@@ -76,7 +76,7 @@ rem ##### install #####
 call :downloadDeps
 call :lfsCopy
 call :genVS15Win64 
-call :genVS15Win32 
+rem call :genVS15Win32 
 
 call :colorEcho %light_green% "Installation Finished!"
 if "%is_remote%" == "1" ( 
@@ -113,7 +113,7 @@ REM ##### COPY LARGE FILE #####
 
 REM ##### GEN PROJECTS #####
 :genVS15Win64
-call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win64 Project. ####"
+call :colorEcho %header_color% "#### Generating Visual Studio 16 2019 Win64 Project. ####"
 cd "%workspace_path%"
 echo current path: "%cd%"
 if exist "./build_vs2017_win64/" (
@@ -122,18 +122,18 @@ if exist "./build_vs2017_win64/" (
 mkdir build_vs2017_win64
 cd build_vs2017_win64
 if "%ENABLE_UNIT_TEST%" == "1" (
-  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
+  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 16 2019" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 16 2019" -DENABLE_UNIT_TEST:BOOL=ON -A x64 ..
 ) else (
-  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A x64 ..
+  echo cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 16 2019" -A x64 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 16 2019" -A x64 ..
 )
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
 EXIT /B 0
 
 :genVS15Win32
-call :colorEcho %header_color% "#### Generating Visual Studio 15 2017 Win32 Project. ####"
+call :colorEcho %header_color% "#### Generating Visual Studio 15 2019 Win32 Project. ####"
 cd "%workspace_path%"
 echo current path: "%cd%" 
 if exist "./build_vs2017_win32/" (
@@ -142,9 +142,9 @@ if exist "./build_vs2017_win32/" (
 mkdir build_vs2017_win32
 cd build_vs2017_win32
 if "%ENABLE_UNIT_TEST%" == "1" (
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -DENABLE_UNIT_TEST:BOOL=ON -A Win32 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2019" -DENABLE_UNIT_TEST:BOOL=ON -A Win32 ..
 ) else (
-  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2017" -A Win32 ..
+  cmake -DCMAKE_SYSTEM_VERSION=%windows_sdk_version% -G "Visual Studio 15 2019" -A Win32 ..
 )
 if errorlevel 1 call :colorecho %red% "CMake finished with errors"
 cd ..
