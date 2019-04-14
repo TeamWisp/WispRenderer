@@ -94,7 +94,7 @@ namespace wr
 				d3d12::Dispatch(d3d12_cmd_list, ((width + 8 - 1) / 8), ((height + 8 - 1) / 8), 1u);
 
 				//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-				d3d12::UAVBarrier(d3d12_cmd_list, dest_cubemap, 1);
+				d3d12::UAVBarrier(d3d12_cmd_list, { dest_cubemap });
 
 				d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip], ResourceState::PIXEL_SHADER_RESOURCE, src_mip, 1);
 			}

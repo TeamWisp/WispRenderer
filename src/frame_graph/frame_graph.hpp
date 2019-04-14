@@ -6,6 +6,7 @@
 #include <stack>
 #include <deque>
 #include <future>
+#include <any>
 
 #include "../util/thread_pool.hpp"
 #include "../util/delegate.hpp"
@@ -101,7 +102,7 @@ namespace wr
 			This works by calling `std::vector::reserve`.
 			\param num_reserved_tasks Amount of tasks we should reserve space for.
 		*/
-		FrameGraph(std::size_t num_reserved_tasks = 1) : m_num_tasks(0), m_thread_pool(new util::ThreadPool(settings::num_frame_graph_threads)), m_uid(GetFreeUID())
+		FrameGraph(std::size_t num_reserved_tasks = 1) : m_render_system(nullptr), m_num_tasks(0), m_thread_pool(new util::ThreadPool(settings::num_frame_graph_threads)), m_uid(GetFreeUID())
 		{
 			// lambda to simplify reserving space.
 			auto reserve = [num_reserved_tasks](auto v) { v.reserve(num_reserved_tasks); };
@@ -119,6 +120,7 @@ namespace wr
 #endif
 			reserve(m_types);
 			reserve(m_rt_properties);
+			m_settings = decltype(m_settings)(num_reserved_tasks, std::nullopt); // Resizing so I can initialize it with null since this is an optional value.
 			m_futures.resize(num_reserved_tasks); // std::thread doesn't allow me to reserve memory for the vector. Hence I'm resizing.
 		}
 
@@ -152,6 +154,7 @@ namespace wr
 			if (!is_valid)
 			{
 				LOGE("Framegraph validation failed. Aborting setup.");
+				return;
 			}
 
 			// Resize these vectors since we know the end size already.
@@ -293,6 +296,7 @@ namespace wr
 			m_render_targets.clear();
 			m_data.clear();
 			m_data_type_info.clear();
+			m_settings.clear();
 #ifndef FG_MAX_PERFORMANCE
 			m_dependencies.clear();
 #endif
@@ -352,7 +356,7 @@ namespace wr
 			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
 		*/
 		template<typename T = void*>
-		inline auto & GetData(RenderTaskHandle handle) const
+		[[nodiscard]] inline auto & GetData(RenderTaskHandle handle) const
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -371,7 +375,7 @@ namespace wr
 			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
 		*/
 		template<typename T>
-		inline auto const & GetPredecessorData()
+		[[nodiscard]] inline auto const & GetPredecessorData()
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -398,10 +402,9 @@ namespace wr
 		/*!
 			This function loops over all tasks and checks whether it has the same type information as the template variable.
 			If no task is found with the type specified a nullptr will be returned and a error message send to the logging system.
-			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
 		*/
 		template<typename T>
-		inline RenderTarget* GetPredecessorRenderTarget()
+		[[nodiscard]] inline RenderTarget* GetPredecessorRenderTarget()
 		{
 			static_assert(std::is_class<T>::value,
 				"The template variable should be a class or struct.");
@@ -422,13 +425,45 @@ namespace wr
 			return nullptr;
 		}
 
+		/*! Makes sure compute render task has been written to. */
+		/*!
+			This function loops over all tasks and checks whether it has the same type information as the template variable.
+			This is relatively slow. A faster way COULD be to save the render target in the data struct and transition it yourself if you already got the data previously.
+			\param cmd_list The command list that will send the uav barrier command.
+		*/
+		template<typename T>
+		inline void SynchronizeComputeRenderTarget(CommandList* cmd_list)
+		{
+			static_assert(std::is_class<T>::value,
+				"The template variable should be a class or struct.");
+			static_assert(!std::is_pointer<T>::value,
+				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
+
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
+			{
+				if (typeid(T) == m_data_type_info[i])
+				{
+					if (m_types[i] == RenderTaskType::COMPUTE)
+					{
+						LOGC("Tried to UAV barrier a non compute render task.");
+					}
+
+					m_render_system->UAVBarrierRenderTarget(cmd_list, m_render_targets[i]);
+
+					return;
+				}
+			}
+
+			LOGC("Failed to find predecessor render target! Please check your task order.");
+		}
+
 		/*! Get the command list of a task. */
 		/*!
 			The template variable allows you to cast the command list to a "non platform independent" different type. For example a `D3D12CommandList`.
 			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
 		*/
 		template<typename T = CommandList>
-		inline auto GetCommandList(RenderTaskHandle handle) const
+		[[nodiscard]] inline auto GetCommandList(RenderTaskHandle handle) const
 		{
 			static_assert(std::is_class<T>::value || std::is_void<T>::value,
 				"The template variable should be a void, class or struct.");
@@ -445,7 +480,7 @@ namespace wr
 			the heap from the acceleration structure command list.
 		*/
 		template<typename T>
-		inline wr::CommandList* GetPredecessorCommandList()
+		[[nodiscard]] inline wr::CommandList* GetPredecessorCommandList()
 		{
 			static_assert(std::is_class<T>::value,
 				"The template variable should be a void, class or struct.");
@@ -467,7 +502,7 @@ namespace wr
 		}
 
 		template<typename T>
-		std::vector<T*> GetAllCommandLists()
+		[[nodiscard]] std::vector<T*> GetAllCommandLists()
 		{
 			std::vector<T*> retval(m_num_tasks);
 
@@ -487,7 +522,7 @@ namespace wr
 			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
 		*/
 		template<typename T = RenderTarget>
-		inline auto GetRenderTarget(RenderTaskHandle handle) const
+		[[nodiscard]] inline auto GetRenderTarget(RenderTaskHandle handle) const
 		{
 			static_assert(std::is_class<T>::value || std::is_void<T>::value,
 				"The template variable should be a void, class or struct.");
@@ -601,13 +636,13 @@ namespace wr
 		}
 
 		/*! Return the frame graph's unique id.*/
-		const std::uint64_t GetUID() const
+		[[nodiscard]] const std::uint64_t GetUID() const
 		{
 			return m_uid;
 		};
 
 		/*! Return the cpu texture. */
-		const CPUTextures& GetOutputTexture()
+		[[nodiscard]] const CPUTextures& GetOutputTexture()
 		{
 			return m_output_cpu_textures;
 		}
@@ -638,6 +673,83 @@ namespace wr
 				LOGC("Invalid CPU texture type supplied!");
 				break;
 			}
+		}
+
+		/*! Update the settings of a task. */
+		/*!
+			This is used to update settings of a render task.
+			This must ge called BEFORE `FrameGraph::Setup` or `RenderSystem::Render`.
+		*/
+		template<typename T>
+		inline void UpdateSettings(std::any settings)
+		{
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				if (m_data_type_info[i].get() == typeid(T))
+				{
+					m_settings[i] = settings;
+					return;
+				}
+			}
+		}
+
+		/*! Gives you the settings of a task by handle. */
+		/*!
+			This gives you the settings for a render task casted to `R`.
+			Meant to be used for INSIDE the tasks.
+			The return value can be a nullptr.
+			\tparam T The render task data type used for identification.
+			\tparam R The type of the settings object.
+
+		*/
+		template<typename T, typename R>
+		[[nodiscard]] inline R GetSettings() const
+		{
+			static_assert(std::is_class<T>::value ||
+				std::is_floating_point<T>::value ||
+				std::is_integral<T>::value,
+				"The first template variable should be a class, struct, floating point value or a integral value.");
+
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
+			{
+				if (typeid(T) == m_data_type_info[i])
+				{
+					try {
+						return std::any_cast<R>(m_settings[i].value());
+					}
+					catch (const std::bad_any_cast & e) {
+						LOGW("A task settings requested failed to cast to T. ({})", e.what());
+						return R();
+					}
+				}
+			}
+
+			LOGC("Failed to find task settings! Does your frame graph contain this task?");
+			return R();
+		}
+
+		/*! Gives you the settings of a task by handle. */
+		/*!
+			This gives you the settings for a render task casted to `T`.
+			Meant to be used for INSIDE the tasks.
+			The return value can be a nullptr.
+		*/
+		template<typename T>
+		[[nodiscard]] inline T GetSettings(RenderTaskHandle handle) const
+		{
+			static_assert(std::is_class<T>::value ||
+				std::is_floating_point<T>::value ||
+				std::is_integral<T>::value,
+				"The template variable should be a class, struct, floating point value or a integral value.");
+
+			try {
+				return std::any_cast<T>(m_settings[handle].value());
+			}
+			catch (const std::bad_any_cast & e) {
+				LOGW("A task settings requested failed to cast to T. ({})", e.what());
+			}
+			
+			return T();
 		}
 
 		/*! Resets the CPU texture data for this frame. */
@@ -767,6 +879,8 @@ namespace wr
 		/*! Task data and the type information of the original data structure. */
 		std::vector<void*> m_data;
 		std::vector<std::reference_wrapper<const std::type_info>> m_data_type_info;
+		/*! Task settings that can be passed to the frame graph from outside the task. */
+		std::vector<std::optional<std::any>> m_settings;
 		/*! Descriptions of the tasks. */
 #ifndef FG_MAX_PERFORMANCE
 		/*! Stored the dependencies of a task. */

@@ -525,6 +525,20 @@ namespace wr
 		d3d12::End(n_cmd_list);
 	}
 
+	void D3D12RenderSystem::UAVBarrierRenderTarget(CommandList* cmd_list, RenderTarget* render_target)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target);
+
+		std::vector<ID3D12Resource*> native_render_targets;
+		for (auto& rt : n_render_target->m_render_targets)
+		{
+			native_render_targets.push_back(rt);
+		}
+
+		d3d12::UAVBarrier(n_cmd_list, native_render_targets);
+	}
+
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()
 	{
 		auto& registry = RootSignatureRegistry::Get();
