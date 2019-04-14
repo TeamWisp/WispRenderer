@@ -52,7 +52,7 @@ namespace wr
 	{
 		auto device = m_render_system.m_device;
 
-		m_staging_textures.resize(3);
+		m_staging_textures.resize(d3d12::settings::num_back_buffers);
 
 		//Staging heap
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
@@ -217,11 +217,11 @@ namespace wr
 			d3d12::Destroy(h);
 		}
 
-		auto &vec = m_staging_textures[frame_idx];
+		auto& vec = m_staging_textures[frame_idx];
 
-		for (auto &elem : vec)
+		for (auto& elem : vec)
 		{
-			auto *tex = (d3d12::TextureResource*) elem.second;
+			auto* tex = (d3d12::TextureResource*) elem.second;
 
 			if(tex->m_intermediate)
 				SAFE_RELEASE(tex->m_intermediate);
