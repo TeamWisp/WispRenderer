@@ -425,38 +425,6 @@ namespace wr
 			return nullptr;
 		}
 
-		/*! Makes sure compute render task has been written to. */
-		/*!
-			This function loops over all tasks and checks whether it has the same type information as the template variable.
-			This is relatively slow. A faster way COULD be to save the render target in the data struct and transition it yourself if you already got the data previously.
-			\param cmd_list The command list that will send the uav barrier command.
-		*/
-		template<typename T>
-		inline void SynchronizeComputeRenderTarget(CommandList* cmd_list)
-		{
-			static_assert(std::is_class<T>::value,
-				"The template variable should be a class or struct.");
-			static_assert(!std::is_pointer<T>::value,
-				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
-
-			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
-			{
-				if (typeid(T) == m_data_type_info[i])
-				{
-					if (m_types[i] == RenderTaskType::COMPUTE)
-					{
-						LOGC("Tried to UAV barrier a non compute render task.");
-					}
-
-					m_render_system->UAVBarrierRenderTarget(cmd_list, m_render_targets[i]);
-
-					return;
-				}
-			}
-
-			LOGC("Failed to find predecessor render target! Please check your task order.");
-		}
-
 		/*! Get the command list of a task. */
 		/*!
 			The template variable allows you to cast the command list to a "non platform independent" different type. For example a `D3D12CommandList`.
