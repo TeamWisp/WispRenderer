@@ -145,16 +145,13 @@ namespace wr
 
 	std::string Window::GetTitle() const
 	{
-		auto max_title_length = GetWindowTextLength(m_handle);
-		std::string title(max_title_length, ' ');
-		auto title_length = GetWindowTextA(m_handle, LPSTR(title.c_str()), max_title_length);
+		std::string retval;
 
-		if (title_length == 0)
-		{
-			LOGW("Error when querying for the window title: {}", GetLastError());
-		}
+		auto title_length = GetWindowTextLength(m_handle);
+		retval.resize(title_length);
+		GetWindowTextA(m_handle, LPSTR(retval.c_str()), title_length);
 
-		return title;
+		return retval;
 	}
 
 	HWND Window::GetWindowHandle() const
