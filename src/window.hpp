@@ -51,6 +51,8 @@ namespace wr
 		std::int32_t GetWidth() const;
 		/* Returns the client height */
 		std::int32_t GetHeight() const;
+		/* Returns the title of the window. */
+		std::string GetTitle() const;
 		/*! Returns the native window handle (HWND)*/
 		HWND GetWindowHandle() const;
 		/*! Checks whether the window is fullscreen */

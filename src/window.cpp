@@ -143,6 +143,20 @@ namespace wr
 		return static_cast<std::int32_t>(r.bottom - r.top);
 	}
 
+	std::string Window::GetTitle() const
+	{
+		auto max_title_length = GetWindowTextLength(m_handle);
+		std::string title(max_title_length, ' ');
+		auto title_length = GetWindowTextA(m_handle, LPSTR(title.c_str()), max_title_length);
+
+		if (title_length == 0)
+		{
+			LOGW("Error when querying for the window title: {}", GetLastError());
+		}
+
+		return title;
+	}
+
 	HWND Window::GetWindowHandle() const
 	{
 		return m_handle;
