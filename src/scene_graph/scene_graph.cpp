@@ -259,14 +259,14 @@ namespace wr
 
 			}
 
-			std::vector<wr::temp::BatchKey> m_to_remove;
+			std::queue<wr::temp::BatchKey> m_to_remove;
 
 			for (auto& elem : m_batches)
 			{
 				//Release empty batches
 				if (elem.second.num_global_instances == 0)
 				{
-					m_to_remove.push_back(elem.first);
+					m_to_remove.push(elem.first);
 					continue;
 				}
 
@@ -275,13 +275,18 @@ namespace wr
 				m_constant_buffer_pool->Update(batch.batch_buffer, sizeof(temp::ObjectData) * elem.second.num_instances, 0, (uint8_t*)batch.data.objects.data());
 			}
 
-			for (auto& elem : m_to_remove)
+			while(!m_to_remove.empty())
 			{
-				if(m_batches[elem].batch_buffer)
-					delete m_batches[elem].batch_buffer;
+				wr::temp::BatchKey &key = m_to_remove.front();
 
-				m_objects.erase(elem);
-				m_batches.erase(elem);
+				if (m_batches[key].batch_buffer)
+				{
+					delete m_batches[key].batch_buffer;
+				}
+
+				m_objects.erase(key);
+				m_batches.erase(key);
+				m_to_remove.pop();
 			}
 
 		}
