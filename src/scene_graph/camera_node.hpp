@@ -44,7 +44,9 @@ namespace wr
 			m_shape_amt(0.0f),
 			m_aperture_blades(5),
 			m_focus_dist(0),
-			m_override_projection(false)
+			m_override_projection(false),
+			m_projection_offset_x(0),
+			m_projection_offset_y(0)
 		{
 		}
 
@@ -55,6 +57,10 @@ namespace wr
 		void SetAspectRatio(float ratio);
 
 		void SetFocalLength(float length);
+
+		void SetProjectionOffset(float x, float y);
+
+		std::pair<float, float> GetProjectionOffset();
 
 		void UpdateTemp(unsigned int frame_idx);
 
@@ -83,6 +89,8 @@ namespace wr
 		DirectX::XMMATRIX m_view_projection;
 		DirectX::XMMATRIX m_inverse_projection;
 		DirectX::XMMATRIX m_inverse_view;
+		float m_projection_offset_x; // Used By Ansel For Super Resolution
+		float m_projection_offset_y; // Used By Ansel For Super Resolution
 
 		DirectX::XMVECTOR m_planes[6];
 
