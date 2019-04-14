@@ -18,18 +18,16 @@ if(EXISTS  ${CMAKE_SOURCE_DIR}/deps/hbao+)
 	configure_file(${CMAKE_SOURCE_DIR}/deps/hbao+/lib/GFSDK_SSAO_D3D12.win64.lib ${CMAKE_SOURCE_DIR} COPYONLY)
 else()
 	message(STATUS "Failed to find NVIDIA Gameworks HBAO+")
-	set(NVIDIA_GAMEWORKS_HBAOLIB )
 endif()
 
 #Detect whether we have the AnselSDK available.
 if(EXISTS  ${CMAKE_SOURCE_DIR}/deps/ansel)
 	message(STATUS "Found NVIDIA Gameworks Ansel")
-	set(NVIDIA_GAMEWORKS_HBAO_LIB ${CMAKE_SOURCE_DIR}/AnselSDK64.lib)
+	set(NVIDIA_GAMEWORKS_ANSEL_LIB ${CMAKE_SOURCE_DIR}/AnselSDK64.lib)
 	add_definitions(-DNVIDIA_GAMEWORKS_ANSEL)
 	configure_file(${CMAKE_SOURCE_DIR}/deps/ansel/lib/AnselSDK64.lib ${CMAKE_SOURCE_DIR} COPYONLY)
 else()
 	message(STATUS "Failed to find NVIDIA Gameworks Ansel")
-	set(NVIDIA_GAMEWORKS_HBAOLIB )
 endif()
 
 ##### OUTPUT DIRECTORIES #####
@@ -169,7 +167,7 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fallback
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/hbao+/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/ansel/include)
 
-target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB})
+target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB} ${NVIDIA_GAMEWORKS_ANSEL_LIB})
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
