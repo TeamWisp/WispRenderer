@@ -23,6 +23,8 @@
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten_second_pass.hpp"
+#include "render_tasks/d3d12_hbao.hpp"
+#include "render_tasks/d3d12_ansel.hpp"
 
 namespace fg_manager
 {
@@ -82,10 +84,12 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
 			fg = new wr::FrameGraph(15);
 			
+			wr::AddAnselTask(*fg);
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
@@ -135,6 +139,8 @@ namespace fg_manager
 
 			// Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+
+			wr::AddHBAOTask(*fg);
 
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);
