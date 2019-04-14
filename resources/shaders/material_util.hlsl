@@ -57,7 +57,7 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	float4 roughness = lerp(max(0.05f, material_roughness.Sample(s0, uv)), data.metallic_roughness.wwww, use_roughness_constant != 0 || has_roughness_texture == 0);
 	float4 metallic = lerp(material_metallic.Sample(s0, uv), data.metallic_roughness.xyzx, use_metallic_constant != 0 || has_metallic_texture == 0);
 #endif
-	float3 tex_normal = lerp(material_normal.Sample(s0, uv).rgb * 2.0 - float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 1.0), use_normal_texture == 0);
+	float3 tex_normal = lerp((material_normal.Sample(s0, uv).rgb * 2.0) - float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 1.0), use_normal_texture == 0);
 
 	output.albedo = albedo.xyz;
 	output.roughness = roughness.x;
