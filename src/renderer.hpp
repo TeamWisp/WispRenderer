@@ -62,7 +62,6 @@ namespace wr
 		virtual void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 		virtual void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 		virtual void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
-		virtual void UAVBarrierRenderTarget(CommandList* cmd_list, RenderTarget* render_target) = 0;
 
 		virtual void Init(std::optional<Window*> window) = 0;
 		virtual CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;

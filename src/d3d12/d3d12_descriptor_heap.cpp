@@ -23,9 +23,7 @@ namespace wr::d3d12
 			heap_desc.Type = (D3D12_DESCRIPTOR_HEAP_TYPE)descriptor.m_type;
 			heap_desc.Flags = descriptor.m_shader_visible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			heap_desc.NodeMask = 0;
-			HRESULT hr = n_device->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&heap->m_native[i]));
-			if (FAILED(hr))
-				LOGC("cunt");
+			TRY_M(n_device->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&heap->m_native[i])), "Couldn't create descriptor heap");
 
 		}
 
