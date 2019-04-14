@@ -8,5 +8,8 @@
 /.idea/
 perf_framerate.txt
 *.dll
+*.lib
 /resources/models 
 /resources/materials 
+/deps/ansel/
+/deps/hbao+/
