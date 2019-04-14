@@ -75,7 +75,7 @@ namespace wr
 
 		TexturePool* const GetTexturePool() { return m_texture_pool; }
 
-		ConstantBufferHandle* GetConstantBufferHandle() { return m_constant_buffer_handle; };
+		ConstantBufferHandle* const GetConstantBufferHandle() const { return m_constant_buffer_handle; };
 		void SetConstantBufferHandle(ConstantBufferHandle* handle) { m_constant_buffer_handle = handle; };
 
 		void UpdateConstantBuffer();
