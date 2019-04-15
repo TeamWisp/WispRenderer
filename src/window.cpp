@@ -156,6 +156,17 @@ namespace wr
 		return static_cast<std::int32_t>(r.bottom - r.top);
 	}
 
+	std::string Window::GetTitle() const
+	{
+		std::string retval;
+
+		auto title_length = GetWindowTextLength(m_handle);
+		retval.resize(title_length);
+		GetWindowTextA(m_handle, LPSTR(retval.c_str()), title_length);
+
+		return retval;
+	}
+
 	HWND Window::GetWindowHandle() const
 	{
 		return m_handle;

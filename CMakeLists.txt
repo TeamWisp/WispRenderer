@@ -9,6 +9,28 @@ option(ENABLE_UNIT_TEST "enables unit tests." OFF)
 
 option(BUILD_SHARED_LIBS OFF)
 
+#Detect whether we have HBAO+ SDK available.
+if(EXISTS  ${CMAKE_SOURCE_DIR}/deps/hbao+)
+	message(STATUS "Found NVIDIA Gameworks HBAO+")
+	set(NVIDIA_GAMEWORKS_HBAO_LIB ${CMAKE_SOURCE_DIR}/GFSDK_SSAO_D3D12.win64.lib)
+	add_definitions(-DNVIDIA_GAMEWORKS_HBAO)
+	configure_file(${CMAKE_SOURCE_DIR}/deps/hbao+/lib/GFSDK_SSAO_D3D12.win64.dll ${CMAKE_SOURCE_DIR} COPYONLY)
+	configure_file(${CMAKE_SOURCE_DIR}/deps/hbao+/lib/GFSDK_SSAO_D3D12.win64.lib ${CMAKE_SOURCE_DIR} COPYONLY)
+else()
+	message(STATUS "Failed to find NVIDIA Gameworks HBAO+")
+endif()
+
+#Detect whether we have the AnselSDK available.
+if(EXISTS  ${CMAKE_SOURCE_DIR}/deps/ansel)
+	message(STATUS "Found NVIDIA Gameworks Ansel")
+	set(NVIDIA_GAMEWORKS_ANSEL_LIB ${CMAKE_SOURCE_DIR}/AnselSDK64.lib)
+	add_definitions(-DNVIDIA_GAMEWORKS_ANSEL)
+	configure_file(${CMAKE_SOURCE_DIR}/deps/ansel/lib/AnselSDK64.lib ${CMAKE_SOURCE_DIR} COPYONLY)
+	configure_file(${CMAKE_SOURCE_DIR}/deps/ansel/redist/AnselSDK64.dll ${CMAKE_SOURCE_DIR} COPYONLY)
+else()
+	message(STATUS "Failed to find NVIDIA Gameworks Ansel")
+endif()
+
 ##### OUTPUT DIRECTORIES #####
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -143,8 +165,10 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/DirectXT
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fmt/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/assimp/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/fallback/Include)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/hbao+/include)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/ansel/include)
 
-target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp)
+target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB} ${NVIDIA_GAMEWORKS_ANSEL_LIB})
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")

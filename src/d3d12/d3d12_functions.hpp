@@ -68,7 +68,8 @@ namespace wr::d3d12
 	void Transition(CommandList* cmd_list, StagingBuffer* buffer, ResourceState from, ResourceState to);
 	void TransitionDepth(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);
 	void Alias(CommandList* cmd_list, TextureResource* resource_before, TextureResource* resource_after);
-	void UAVBarrier(CommandList* cmd_list, TextureResource* resource, unsigned int number_of_barriers);
+	void UAVBarrier(CommandList* cmd_list, std::vector<TextureResource*> const & resources);
+	void UAVBarrier(CommandList* cmd_list, std::vector<ID3D12Resource*> const & resources);
 	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth, unsigned int frame_idx);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
