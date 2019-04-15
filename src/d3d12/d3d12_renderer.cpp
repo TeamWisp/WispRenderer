@@ -544,7 +544,7 @@ namespace wr
 				}
 				catch(std::exception e)
 				{
-					std::cerr << "Seems like FMT failed to format the error message. Using cout instead." << std::endl;
+					LOGW("Seems like FMT failed to format the error message. Using cout instead.");
 					std::cerr << std::get<std::string>(shader_error) << std::endl;
 				}
 			}
