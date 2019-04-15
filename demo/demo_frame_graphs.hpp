@@ -84,7 +84,6 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
 			fg = new wr::FrameGraph(15);
 			
-			wr::AddAnselTask(*fg);
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
@@ -120,6 +119,7 @@ namespace fg_manager
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
+			wr::AddAnselTask(*fg);
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
 

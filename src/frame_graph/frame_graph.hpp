@@ -582,6 +582,7 @@ namespace wr
 #ifndef FG_MAX_PERFORMANCE
 			m_dependencies.emplace_back(dependencies);
 #endif
+			m_settings.resize(m_num_tasks + 1);
 			m_types.emplace_back(desc.m_type);
 			m_rt_properties.emplace_back(desc.m_properties);
 			m_data.emplace_back(new (std::nothrow) T());
