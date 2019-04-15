@@ -104,6 +104,19 @@ namespace wr
 		DestroyWindow(m_handle);
 	}
 
+	void Window::SetRenderLoop(std::function<void()> render_func)
+	{
+		m_render_func = render_func;
+	}
+
+	void Window::StartRenderLoop()
+	{
+		while (IsRunning())
+		{
+			PollEvents();
+		}
+	}
+
 	void Window::SetKeyCallback(KeyCallback callback)
 	{
 		m_key_callback = callback;
@@ -175,6 +188,12 @@ namespace wr
 	{
 		switch (msg)
 		{
+		case WM_PAINT:
+			if (m_render_func)
+			{
+				m_render_func();
+			}
+			return 0;
 		case WM_DESTROY:
 			m_running = false;
 			PostQuitMessage(0);
