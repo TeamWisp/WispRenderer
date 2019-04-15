@@ -42,7 +42,6 @@ namespace wr::d3d12::settings
 	static const constexpr std::uint32_t num_indirect_draw_commands = 8;		//Allow 8 different meshes non-indexed
 	static const constexpr std::uint32_t num_indirect_index_commands = 32;		//Allow 32 different meshes indexed
 	static const constexpr bool use_bundles = false;
-	static const constexpr bool use_exec_indirect = false;
 	static const constexpr bool force_dxr_fallback = false;
 	static const constexpr bool disable_rtx = false;
 	static const constexpr bool enable_object_culling = true;
