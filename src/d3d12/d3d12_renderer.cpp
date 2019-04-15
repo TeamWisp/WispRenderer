@@ -538,8 +538,15 @@ namespace wr
 			}
 			else
 			{
-				std::cout << std::get<std::string>(shader_error) << std::endl;
-				LOGC(std::get<std::string>(shader_error));
+				try
+				{
+					LOGC(std::get<std::string>(shader_error));
+				}
+				catch(std::exception e)
+				{
+					LOGW("Seems like FMT failed to format the error message. Using cout instead.");
+					std::cerr << std::get<std::string>(shader_error) << std::endl;
+				}
 			}
 		}
 	}
