@@ -6,10 +6,14 @@ add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 project(Wisp)
 
 option(WISP_BUILD_SHARED OFF)
+if (WISP_BUILD_SHARED)
+	set(BUILD_SHARED_LIBS ON)
+else()
+	add_definitions(-DWISPRENDERER_STATIC_DEFINE)
+	set(BUILD_SHARED_LIBS OFF)
+endif()
 
 option(ENABLE_UNIT_TEST "enables unit tests." OFF)
-
-option(BUILD_SHARED_LIBS ON)
 
 #Detect whether we have HBAO+ SDK available.
 if(EXISTS  ${CMAKE_SOURCE_DIR}/deps/hbao+)
