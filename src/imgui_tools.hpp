@@ -5,6 +5,7 @@
 #include <typeindex>
 
 #include "imgui/imgui.hpp"
+#include "wisprenderer_export.hpp"
 #include "scene_graph/light_node.hpp"
 
 namespace wr
@@ -50,11 +51,11 @@ namespace wr::imgui
 			using name_func_t = std::function<std::string(std::shared_ptr<Node>)>;
 			using inspect_func_t = std::function<void(std::shared_ptr<Node>, SceneGraph*)>;
 			using context_menu_func_t = std::function<bool(std::shared_ptr<Node>, SceneGraph*)>;
-			static std::unordered_map<std::type_index, name_func_t> sg_editor_type_names;
-			static std::unordered_map<std::type_index, inspect_func_t> sg_editor_type_inspect;
-			static std::unordered_map<std::type_index, context_menu_func_t> sg_editor_type_context_menu;
+			WISPRENDERER_EXPORT static std::unordered_map<std::type_index, name_func_t> sg_editor_type_names;
+			WISPRENDERER_EXPORT static std::unordered_map<std::type_index, inspect_func_t> sg_editor_type_inspect;
+			WISPRENDERER_EXPORT static std::unordered_map<std::type_index, context_menu_func_t> sg_editor_type_context_menu;
 
-			static std::optional<std::string> GetNodeName(std::shared_ptr<Node> node)
+			WISPRENDERER_EXPORT static std::optional<std::string> GetNodeName(std::shared_ptr<Node> node)
 			{
 				if (auto it = SceneGraphEditorDetails::sg_editor_type_names.find(node->m_type_info); it != SceneGraphEditorDetails::sg_editor_type_names.end())
 				{
@@ -64,7 +65,7 @@ namespace wr::imgui
 				return std::nullopt;
 			}
 
-			static std::optional<inspect_func_t> GetNodeInspectFunction(std::shared_ptr<Node> node)
+			WISPRENDERER_EXPORT static std::optional<inspect_func_t> GetNodeInspectFunction(std::shared_ptr<Node> node)
 			{
 				if (auto it = SceneGraphEditorDetails::sg_editor_type_inspect.find(node->m_type_info); it != SceneGraphEditorDetails::sg_editor_type_inspect.end())
 				{
@@ -74,7 +75,7 @@ namespace wr::imgui
 				return std::nullopt;
 			}
 
-			static std::optional<context_menu_func_t> GetNodeContextMenuFunction(std::shared_ptr<Node> node)
+			WISPRENDERER_EXPORT static std::optional<context_menu_func_t> GetNodeContextMenuFunction(std::shared_ptr<Node> node)
 			{
 				if (auto it = SceneGraphEditorDetails::sg_editor_type_context_menu.find(node->m_type_info); it != SceneGraphEditorDetails::sg_editor_type_context_menu.end())
 				{

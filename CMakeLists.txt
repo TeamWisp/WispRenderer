@@ -5,9 +5,11 @@ add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 
 project(Wisp)
 
+option(WISP_BUILD_SHARED OFF)
+
 option(ENABLE_UNIT_TEST "enables unit tests." OFF)
 
-option(BUILD_SHARED_LIBS OFF)
+option(BUILD_SHARED_LIBS ON)
 
 #Detect whether we have HBAO+ SDK available.
 if(EXISTS  ${CMAKE_SOURCE_DIR}/deps/hbao+)
@@ -153,7 +155,13 @@ set_target_properties(zlibstatic PROPERTIES FOLDER ThirdParty)
 #set_target_properties(unit PROPERTIES FOLDER ThirdParty)
 set_target_properties(uninstall PROPERTIES FOLDER ThirdParty)
 
-add_library(WispRenderer STATIC ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
+if(WISP_BUILD_SHARED)
+	set(WISP_LIB_TYPE SHARED)
+else()
+	set(WISP_LIB_TYPE STATIC)
+endif()
+
+add_library(WispRenderer ${WISP_LIB_TYPE} ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
 set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 17)
 set_target_properties(WispRenderer PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(WispRenderer PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)

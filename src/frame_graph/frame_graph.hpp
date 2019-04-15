@@ -15,6 +15,7 @@
 #include "../settings.hpp"
 #include "../d3d12/d3d12_settings.hpp"
 #include "../structs.hpp"
+#include "../wisprenderer_export.hpp"
 
 #ifndef _DEBUG
 #define FG_MAX_PERFORMANCE
@@ -806,7 +807,7 @@ namespace wr
 		}
 
 		/*! Get a free unique ID. */
-		static std::uint64_t GetFreeUID()
+		WISPRENDERER_EXPORT static std::uint64_t GetFreeUID()
 		{
 			if (m_free_uids.size() > 0)
 			{
@@ -820,7 +821,7 @@ namespace wr
 		}
 
 		/*! Get a release a unique ID for reuse. */
-		static void ReleaseUID(std::uint64_t uid)
+		WISPRENDERER_EXPORT static void ReleaseUID(std::uint64_t uid)
 		{
 			m_free_uids.push(uid);
 		}
@@ -860,8 +861,8 @@ namespace wr
 		std::vector<std::future<void>> m_futures;
 
 		const std::uint64_t m_uid;
-		static std::uint64_t m_largest_uid;
-		static std::stack<std::uint64_t> m_free_uids;
+		WISPRENDERER_EXPORT static std::uint64_t m_largest_uid;
+		WISPRENDERER_EXPORT static std::stack<std::uint64_t> m_free_uids;
 	};
 
 } /* wr */
