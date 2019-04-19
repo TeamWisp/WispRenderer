@@ -9,7 +9,7 @@
 
 ## [What is it?](https://teamwisp.github.io/product/)
 
-Wisp is a general purpose high level rendering library. Specially made for real time raytracing with NVIDIA RTX graphics cards.
+Wisp is a general purpose high level rendering library. Specially made for real time raytracing with NVIDIA RTX graphics cards. Made by a group of students from [Breda University of Applied Sciences](https://www.buas.nl/) specializing in graphics programming.
 
 **Features**
 
@@ -76,9 +76,9 @@ Need help, want to get updates as soon as they happen or just want a chat? Join 
 
 ## Media
 
-![Sponza](http://upload.vzout.com/wisp/sponza.png)
-
-![Sponza](http://upload.vzout.com/wisp/sun_temple.jpg)
+|  |  |
+|-|-|
+|![Sponza](http://upload.vzout.com/wisp/sponza.png)|![Sun Temple](http://upload.vzout.com/wisp/sun_temple.jpg)|
 
 ## [License (Eclipse Public License version 2.0)](https://opensource.org/licenses/EPL-2.0)
 
