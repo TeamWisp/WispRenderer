@@ -76,8 +76,7 @@ Need help, want to get updates as soon as they happen or just want a chat? Join 
 
 ## Media
 
-<img src="http://upload.vzout.com/wisp/sponza.png" width="300" height="300">
-<img src="http://upload.vzout.com/wisp/sun_temple.jpg" width="300" height="300">
+<img src="http://upload.vzout.com/wisp/sponza.png" width="300"><img src="http://upload.vzout.com/wisp/sun_temple.jpg" width="300">
 
 ## [License (Eclipse Public License version 2.0)](https://opensource.org/licenses/EPL-2.0)
 
