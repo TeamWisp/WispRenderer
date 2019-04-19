@@ -75,7 +75,9 @@ Want to help us out? That's definatly possible! Check out our [contribution page
 Need help, want to get updates as soon as they happen or just want a chat? Join our [Discord Server](https://discord.gg/Q3vDfqR)!
 
 ## Media
-![Sponza](http://upload.vzout.com/wisp/sponza.png | width=200) ![Sun Temple](http://upload.vzout.com/wisp/sun_temple.jpg | width=200)
+
+<img src="http://upload.vzout.com/wisp/sponza.png" width="300" height="300">
+<img src="http://upload.vzout.com/wisp/sun_temple.jpg" width="300" height="300">
 
 ## [License (Eclipse Public License version 2.0)](https://opensource.org/licenses/EPL-2.0)
 
