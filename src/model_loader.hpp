@@ -4,6 +4,8 @@
 #include <vector>
 #include <DirectXMath.h>
 
+#include "wisprenderer_export.hpp"
+
 namespace wr
 {
 	struct ModelMeshData;
@@ -154,9 +156,9 @@ namespace wr
 
 		bool SupportsModelFormat(const std::string_view& model_format);
 
-		static ModelLoader* FindFittingModelLoader(const std::string_view& model_format);
+		WISPRENDERER_EXPORT static ModelLoader* FindFittingModelLoader(const std::string_view& model_format);
 
-		static std::vector<ModelLoader*> m_registered_model_loaders;
+		WISPRENDERER_EXPORT static std::vector<ModelLoader*> m_registered_model_loaders;
 
 	protected:
 		virtual ModelData* LoadModel(std::string_view model_path) = 0;
