@@ -74,6 +74,12 @@ Want to help us out? That's definatly possible! Check out our [contribution page
 
 Need help, want to get updates as soon as they happen or just want a chat? Join our [Discord Server](https://discord.gg/Q3vDfqR)!
 
+## Trailer
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=JsqF1jyyz2M" 
+target="_blank"><img src="http://img.youtube.com/vi/JsqF1jyyz2M/0.jpg" 
+alt="Torque 6 Material Editor" border="0" /></a>
+
 ## Media
 
 <img src="http://upload.vzout.com/wisp/sponza.png" width="300"> <img src="http://upload.vzout.com/wisp/sun_temple.jpg" width="300">
