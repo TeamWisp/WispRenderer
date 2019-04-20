@@ -88,6 +88,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 				float sw = 1.0f;  
 
+				//s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.001f), SHAPECURVE) * shape_curve;
+
 				fgcolor.xyz += s.xyz * sw;
 
 				float sampledist = length(kernel_offset) * kernel_radius;
@@ -101,12 +103,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 			fgcolor.xyz /= weightsum;
 			fgcolor.w = saturate(fgcolor.w * (1.0f / NUMSAMPLES));
-			fgcolor.w = max(fgcolor.w, source_near[screen_coord].w);
+			fgcolor.w = max(fgcolor.w, source_near.SampleLevel(s1, uv, 0).w);
 		}
 		else
 		{
 			fgcolor = float4(source_near.SampleLevel(s0, uv, 0).rgb, 0.0f);
 		}
+		fgcolor.w = nearMask;
 	}
 
 	output_near[int2(dispatch_thread_id.xy)] = fgcolor;

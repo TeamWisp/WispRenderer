@@ -21,6 +21,8 @@ float GetDownSampledCoC(float2 uv, float2 texelSize)
 	float cocMax = max(max(max(coc0, coc1), coc2), coc3);
 
 	float coc = cocMax >= -cocMin ? cocMax : cocMin;
+
+	//float coc = (coc0 + coc1 + coc2 + coc3) * 0.25f;
 	return coc;
 }
 

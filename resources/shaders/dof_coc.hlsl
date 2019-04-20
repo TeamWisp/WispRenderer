@@ -57,7 +57,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
 
 	float2 uv = screen_coord / screen_size;
 	

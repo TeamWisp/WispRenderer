@@ -108,8 +108,8 @@ namespace wr
 	template<typename T>
 	inline void AddDoFDilateTask(FrameGraph& frame_graph, int32_t width, int32_t height)
 	{
-		const std::uint32_t m_quarter_width = (uint32_t)width / 4;
-		const std::uint32_t m_quarter_height = (uint32_t)height / 4;
+		const std::uint32_t m_quarter_width = (uint32_t)width / 8;
+		const std::uint32_t m_quarter_height = (uint32_t)height / 8;
 
 		std::wstring name(L"DoF dilate");
 
@@ -127,7 +127,7 @@ namespace wr
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(name),
-			RenderTargetProperties::ResolutionScalar(0.25f)
+			RenderTargetProperties::ResolutionScalar(0.125f)
 		};
 
 		RenderTaskDesc desc;
