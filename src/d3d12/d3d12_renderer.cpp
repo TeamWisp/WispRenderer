@@ -123,6 +123,10 @@ namespace wr
 		size_t rt_offset_align_size = SizeAlignTwoPower((sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials), 65536) * d3d12::settings::num_back_buffers;
 		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(rt_offset_align_size);
 
+		// Offset raytracing surfel pool
+		size_t rt_surfel_align_size = SizeAlignTwoPower((sizeof(temp::RayTracingSurfel_CBData) * d3d12::settings::num_max_surfels), 65536) * d3d12::settings::num_back_buffers;
+		m_raytracing_surfel_pool = CreateStructuredBufferPool(rt_surfel_align_size);
+
 		// Begin Recording
 		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
 		d3d12::Begin(m_direct_cmd_list, frame_idx);

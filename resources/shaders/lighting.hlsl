@@ -50,7 +50,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	for (uint i = 0; i < light_count; i++)
+	for (uint i = 0; i < 1; i++)
 	{
 		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i]) * shadow_factor;
 	}
@@ -68,10 +68,12 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	
 	float3 specular = prefiltered_color * (kS * sampled_brdf.x + sampled_brdf.y);
 	//float3 specular = reflection * kS;
+
 	
 	float3 ambient = (kD * diffuse + specular) * ao; //Replace 1.0f with AO, when we have it.
 
 	return ambient + (res * shadow_factor);
+	return (irradiance + res) * shadow_factor;
 }
 
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, inout uint rand_seed, uint depth)

@@ -1,3 +1,9 @@
+struct Surfel
+{
+	float4 position;
+	float4 color;
+};
+
 // Initialize random seed
 uint initRand(uint val0, uint val1, uint backoff = 16)
 {

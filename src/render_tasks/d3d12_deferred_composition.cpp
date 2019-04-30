@@ -76,6 +76,10 @@ namespace wr
 			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
 			d3d12::SetShaderUAV(cmd_list, 1, output, output_handle);
 
+			constexpr unsigned int surfels = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SURFELS);
+			d3d12::DescHeapCPUHandle surfels_handle = data.out_srv_uav_allocation.GetDescriptorHandle(surfels);
+			d3d12::SetShaderUAV(cmd_list, 1, surfels, surfels_handle);
+
 			d3d12::Dispatch(cmd_list,
 				static_cast<int>(std::ceil(render_system.m_viewport.m_viewport.Width / 16.f)),
 				static_cast<int>(std::ceil(render_system.m_viewport.m_viewport.Height / 16.f)),
@@ -104,7 +108,7 @@ namespace wr
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
-			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(11));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(13));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
@@ -215,9 +219,22 @@ namespace wr
 					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
 				}
 
+				// Surfels
+				if (data.is_path_tracer)
+				{
+					constexpr auto pos = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::SURFELS);
+					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(pos);
+					auto& path_tracer_data = fg.GetPredecessorData<wr::PathTracerData>();
+					d3d12::CreateUAVFromStructuredBuffer(path_tracer_data.out_sb_surfels->m_native, rtv_out_uav_handle, 0);
+
+					D3D12StructuredBufferPool* pool = static_cast<D3D12StructuredBufferPool*>(path_tracer_data.out_sb_surfels->m_pool);
+					cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(pool->m_heap->m_resources[path_tracer_data.out_sb_surfels->m_native->m_heap_vector_location].second[0]));
+				}
+
 				// Output UAV
 				{
-					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT)));
+					auto pos = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT));
+					auto rtv_out_uav_handle = data.out_srv_uav_allocation.GetDescriptorHandle(pos);
 					std::vector<Format> formats = { Format::R32G32B32A32_FLOAT };
 					d3d12::CreateUAVFromRTV(render_target, rtv_out_uav_handle, 1, formats.data());
 				}

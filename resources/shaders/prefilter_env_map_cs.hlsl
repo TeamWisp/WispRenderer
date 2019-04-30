@@ -16,6 +16,8 @@ cbuffer CB : register(b0)
 [numthreads(8, 8, 1)]
 void main_cs(uint3 dt_id : SV_DispatchThreadID)
 {
+#define EMILIO
+#ifdef EMILIO
 	float2 position = float2(dt_id.xy) / texture_size;
 	position.y = 1.0f - position.y;
 	position = (position - 0.5f) * 2.0f;
@@ -50,20 +52,20 @@ void main_cs(uint3 dt_id : SV_DispatchThreadID)
 		float3 H = importanceSample_GGX(Xi, roughness, N);
 		float3 L = normalize(2.0f * dot(V, H) * H - V);
 
-		float NdotL = max(dot(N, L), 0.0f);
+		float NdotL = saturate(dot(N, L));
 		if (NdotL > 0.0f)
 		{
-			float NdotH = max(dot(N, H), 0.0f);
-			float HdotV = max(dot(H, V), 0.0f);
+			float NdotH = saturate(dot(N, H));
+			float HdotV = saturate(dot(H, V));
 
 			float D = D_GGX(NdotH, roughness);
 
 			float pdf = D * NdotH / (4.0f * HdotV) + 0.0001f;
 
 			float sa_texel = 4.0f * PI / (6.0f * skybox_res.x * skybox_res.y);
-			float sa_sample = 1.0f / (float(SAMPLE_COUNT) * pdf + 0.0001f);
+			float sa_sample = 1.0f / (float(SAMPLE_COUNT) * pdf);
 
-			float mip_level = roughness == 0.0f ? 0.0f : 0.5f * log2(sa_sample / sa_texel);
+			float mip_level = roughness == 0.0f ? 0.0f : max(0.5f * log2(sa_sample / sa_texel) + 1.0f, 0.0f);
 
 			prefiltered_color += src_texture.SampleLevel(s0, L, mip_level).rgb * NdotL;
 			total_weight += NdotL;
@@ -74,4 +76,27 @@ void main_cs(uint3 dt_id : SV_DispatchThreadID)
 
 	//Write the final color into the destination texture.
 	dst_texture[dt_id.xy] = float4(prefiltered_color, 1.0f);
+#else
+	uint2 dims;
+	src_texture.GetDimensions(dims.x, dims.y);
+
+	float3 direction = float3(0.0f, 0.0f, 0.0f);
+	float2 position = float2(dt_id.xy) / texture_size;
+	position.y = 1.0f - position.y;
+	position = (position - 0.5f) * 2.0f;
+
+	switch (cubemap_face)
+	{
+		case 0:  direction = float3(1.0f, position.y, -position.x); break;	// +X
+		case 1:  direction = float3(-1.0f, position.y, position.x); break;	// -X
+		case 2:  direction = float3(position.x, 1.0f, -position.y); break;	// +Y
+		case 3:  direction = float3(position.x, -1.0f, position.y); break;	// -Y
+		case 4:  direction = float3(position.x, position.y, 1.0f); break;	// +Z
+		case 5:  direction = float3(-position.x, position.y, -1.0f); break;	// -Z
+	}
+
+	uint numMips = floor(log2(dims.x)) + 1;
+	float roughnessx = (float)cubemap_face / (float)(numMips - 1);
+	dst_texture[dt_id.xy] = float4(prefilterEnvMap(normalize(direction), roughnessx, dims.x, src_texture, s0), 1.0);
+#endif
 }

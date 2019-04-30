@@ -56,7 +56,7 @@ namespace wr
 			ROOT_PARAM(GetCBV(params::basic,params::BasicE::MATERIAL_PROPERTIES,D3D12_SHADER_VISIBILITY_PIXEL)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_WRAP }
 		})
 	});
 
@@ -74,6 +74,7 @@ namespace wr
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_AO),
 		DESC_RANGE(params::deferred_composition, Type::UAV_RANGE, params::DeferredCompositionE::OUTPUT),
+		DESC_RANGE(params::deferred_composition, Type::UAV_RANGE, params::DeferredCompositionE::SURFELS),
 	);
 
 	REGISTER(root_signatures::deferred_composition, RootSignatureRegistry)({
@@ -234,7 +235,7 @@ namespace wr
 		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
 		PipelineDescription::NumRTVFormats(3),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
-		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
 		PipelineDescription::Depth(true),
 		PipelineDescription::CounterClockwise(false),
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
@@ -789,7 +790,7 @@ namespace wr
 			ROOT_PARAM(GetSRV(params::rt_hybrid, params::RTHybridE::VERTICES)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_WRAP }
 		}),
 		RootSignatureDescription::RTXLocal(true)
 	});
@@ -829,6 +830,7 @@ namespace wr
 
 	DESC_RANGE_ARRAY(path_tracer_ranges,
 		DESC_RANGE(params::path_tracing, Type::UAV_RANGE, params::PathTracingE::OUTPUT),
+		DESC_RANGE(params::path_tracing, Type::UAV_RANGE, params::PathTracingE::SURFELS),
 		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::INDICES),
 		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::LIGHTS),
 		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::MATERIALS),
@@ -850,7 +852,7 @@ namespace wr
 			ROOT_PARAM(GetSRV(params::path_tracing, params::PathTracingE::VERTICES)),
 		}),
 		RootSignatureDescription::Samplers({
-			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_WRAP }
 		}),
 		RootSignatureDescription::RTXLocal(true)
 	});

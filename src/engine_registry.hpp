@@ -300,9 +300,10 @@ namespace wr
 			BUFFER_SCREEN_SPACE_IRRADIANCE,
 			BUFFER_SCREEN_SPACE_AO,
 			OUTPUT,
+			SURFELS,
 		};
 
-		constexpr std::array<rs_layout::Entry, 13> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 14> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
@@ -315,7 +316,8 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION_SHADOW, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_AO, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
+			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::SURFELS, 1, rs_layout::Type::UAV_RANGE}
 		};
 
 		enum class MipMappingE
@@ -471,6 +473,7 @@ namespace wr
 			CAMERA_PROPERTIES,
 			ACCELERATION_STRUCTURE,
 			OUTPUT,
+			SURFELS,
 			INDICES,
 			VERTICES,
 			LIGHTS,
@@ -487,7 +490,8 @@ namespace wr
 
 		constexpr std::array<rs_layout::Entry, 20> path_tracing = {
 			rs_layout::Entry{(int)PathTracingE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)PathTracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.
+			rs_layout::Entry{(int)PathTracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::SURFELS, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)PathTracingE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)PathTracingE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)PathTracingE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},

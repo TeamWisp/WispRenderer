@@ -25,4 +25,25 @@ namespace wr::d3d12
 		Offset(handle, 1, increment_size);
 	}
 
+	void CreateUAVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id)
+	{
+		auto& resources = structured_buffer->m_heap_bsbo->m_resources[structured_buffer->m_heap_vector_location];
+		auto& resource = resources.second[id];
+
+		decltype(Device::m_native) n_device;
+		resource->GetDevice(IID_PPV_ARGS(&n_device));
+
+		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
+		uav_desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		uav_desc.Buffer.FirstElement = 0;
+		uav_desc.Buffer.NumElements = structured_buffer->m_unaligned_size / structured_buffer->m_stride;
+		uav_desc.Buffer.StructureByteStride = structured_buffer->m_stride;
+		uav_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+
+		n_device->CreateUnorderedAccessView(resource, nullptr, &uav_desc, handle.m_native);
+		Offset(handle, 1, increment_size);
+	}
+
 }

@@ -19,6 +19,7 @@ Texture2D buffer_refl_shadow : register(t8); // xyz: reflection, a: shadow facto
 Texture2D screen_space_irradiance : register(t9);
 Texture2D screen_space_ao : register(t10);
 RWTexture2D<float4> output   : register(u0);
+RWStructuredBuffer<Surfel> g_surfels   : register(u1);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
 
@@ -63,9 +64,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{
 		// GBuffer contents
 		float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
-		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
+		float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
-		const float metallic = gbuffer_normal_metallic[screen_coord].w;
+		float metallic = gbuffer_normal_metallic[screen_coord].w;
+		#ifdef HARD
+		roughness = RR;
+		metallic = MM;
+		#endif
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
@@ -74,7 +79,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
 		// Get irradiance
-		float irradiance = lerp(
+		float3 irradiance = lerp(
 			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
 			screen_space_irradiance[screen_coord].xyz,
 			// Lerp factor (0: env map, 1: path traced)
@@ -106,9 +111,72 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			buffer_refl_shadow[screen_coord].xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
+	
+		/*if (is_path_tracer)
+		{
+			Surfel closest_surfel_a = g_surfels[2];
+			Surfel closest_surfel_b = g_surfels[1];
+			Surfel closest_surfel_c = g_surfels[2];
+			float closest_dist_a = 999999999999;
+			float closest_dist_b = 999999999999;
+			float closest_dist_c = 999999999999;
+			for (int i = 0; i < 3000; i++)
+			{
+				float dist = length(g_surfels[i].position - pos);
+
+				if (dist < closest_dist_a)
+				{
+					closest_surfel_a = g_surfels[i];
+					closest_dist_a = dist;
+					//continue;
+				}
+
+				else if (dist < closest_dist_b)
+				{
+					closest_surfel_b = g_surfels[i];
+					closest_dist_b = dist;
+					//continue;
+				}
+
+				else if (dist < closest_dist_c)
+				{
+					closest_surfel_c = g_surfels[i];
+					closest_dist_c = dist;
+					//continue;
+				}
+			}
+
+			float3 f = pos;
+			// calculate vectors from point f to vertices p1, p2 and p3:
+			float3 f1 = closest_surfel_a.position.rgb - f;
+			float3 f2 = closest_surfel_b.position.rgb - f;
+			float3 f3 = closest_surfel_c.position.rgb - f;
+			// calculate the areas (parameters order is essential in this case):
+			float3 va = cross(closest_surfel_a.position - closest_surfel_b.position, closest_surfel_a.position - closest_surfel_c.position); // main triangle cross product
+			float3 va1 = cross(f2, f3); // p1's triangle cross product
+			float3 va2 = cross(f3, f1); // p2's triangle cross product
+			float3 va3 = cross(f1, f2); // p3's triangle cross product
+			float a = length(va); // main triangle area
+			// calculate barycentric coordinates with sign:
+			float a1 = length(va1) / a * sign(dot(va, va1));
+			float a2 = length(va2) / a * sign(dot(va, va2));
+			float a3 = length(va3) / a * sign(dot(va, va3));
+
+			float3 bar_color = closest_surfel_a.color.rgb * a1 + closest_surfel_b.color.rgb * a2 + closest_surfel_c.color.rgb * a3;
+
+			float w1 = 1.f / length(closest_surfel_a.position.rgb - f);
+			float w2 = 1.f / length(closest_surfel_b.position.rgb - f);
+			float w3 = 1.f / length(closest_surfel_c.position.rgb - f);
+
+			//irradiance = (a1 * closest_surfel_a.color.rgb + a2 * closest_surfel_b.color.rgb + a3 * closest_surfel_c.color.rgb) / (a1 + a2 + a3);
+			//irradiance = (w1 * closest_surfel_a.color.rgb + w2 * closest_surfel_b.color.rgb + w3 * closest_surfel_c.color.rgb) / (w1 + w2 + w3);
+			irradiance = closest_surfel_a.color.rgb;
+
+		}*/
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
+		retval = irradiance;
 	}
 	else
 	{	

@@ -93,7 +93,7 @@ namespace fg_manager
 
 			// Do some post processing
 			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
-
+				
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
@@ -146,7 +146,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			//wr::AddRTHybridTask(*fg);
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);

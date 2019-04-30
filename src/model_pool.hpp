@@ -293,6 +293,18 @@ namespace wr
 
 			ModelMaterialData* material = data->m_materials[i];
 
+			material->m_albedo_texture_location = TextureLocation::EXTERNAL;
+			material->m_albedo_texture = "textures/plaza_RGBA.png";
+
+			material->m_normal_map_texture_location = TextureLocation::EXTERNAL;
+			material->m_normal_map_texture = "textures/plaza_Norm.jpg";
+
+			material->m_roughness_texture_location = TextureLocation::EXTERNAL;
+			material->m_roughness_texture = "textures/plaza_rough.png";
+
+			material->m_metallic_texture_location = TextureLocation::EXTERNAL;
+			material->m_metallic_texture = "textures/plaza_metal.png";
+
 			// This lambda loads a texture either from memory or from disc.
 			auto load_material_texture = [&](auto texture_location, auto embedded_texture_idx, auto material_texture, bool srgb, bool gen_mips)
 			{

@@ -45,7 +45,7 @@ namespace viknell_scene
 			wr::TextureHandle bamboo_roughness = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-roughness.png", false, true);
 			wr::TextureHandle bamboo_metallic = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-metal.png", false, true);
 
-			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
+			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Arches_E_PineTree_3k.hdr", false, false);
 
 			// Create Materials
 			mirror_material = material_pool->Create();
@@ -69,7 +69,7 @@ namespace viknell_scene
 			bamboo_material_internal->SetMetallic(bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plaza/plaza01_night.fbx");
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 		}
 
@@ -100,13 +100,13 @@ namespace viknell_scene
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		// Geometry
-		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		/*auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);*/
 		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
-		auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
+		/*auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
 		floor->SetPosition({0, -1, 0});
 		floor->SetRotation({90_deg, 0, 0});
 		floor->AddMaterial(resources::bamboo_material);
@@ -124,10 +124,10 @@ namespace viknell_scene
 		left_wall->AddMaterial(resources::bamboo_material);
 		right_wall->SetPosition({1, 0, 0});
 		right_wall->SetRotation({0, 90_deg, 0});
-		right_wall->AddMaterial(resources::bamboo_material);
+		right_wall->AddMaterial(resources::bamboo_material);*/
 		test_model->SetPosition({0, -1, 0});
 		test_model->SetRotation({0, 180_deg, 0});
-		test_model->SetScale({0.01f,0.01f,0.01f});
+		test_model->SetScale({1, 1, 1});
 
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });

@@ -91,6 +91,7 @@ namespace wr::d3d12
 	void CreateUAVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	void CreateSRVFromSpecificRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int id, Format format);
 	void CreateSRVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id); // FIXME: Wrong location
+	void CreateUAVFromStructuredBuffer(HeapResource* structured_buffer, DescHeapCPUHandle& handle, unsigned int id); // FIXME: Wrong location
 	// void CreateUAVFromTexture(Texture* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	// void CreateSRVFromTexture(Texture* tex, DescHeapCPUHandle& handle);
 	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height);

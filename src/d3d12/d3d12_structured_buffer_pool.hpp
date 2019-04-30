@@ -39,7 +39,7 @@ namespace wr
 		void Evict() final;
 		void MakeResident() final;
 
-	protected:
+	public:
 		[[nodiscard]] StructuredBufferHandle* CreateBuffer(std::size_t size, std::size_t stride, bool used_as_uav) final;
 		void DestroyBuffer(StructuredBufferHandle* handle) final;
 		void UpdateBuffer(StructuredBufferHandle* handle, void* data, std::size_t size, std::size_t offset) final;

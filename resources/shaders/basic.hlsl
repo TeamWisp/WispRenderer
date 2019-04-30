@@ -53,12 +53,14 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	//TODO: Use precalculated MVP or at least VP
 	float4x4 vm = mul(view, inst.model);
 	float4x4 mvp = mul(projection, vm);
+
+	//mvp = mul(mul(inst.model, view), projection);
 	
-	output.pos =  mul(mvp, float4(pos, 1.0f));
+	output.pos =  mul(float4(pos, 1.0f), transpose(mvp));
 	output.uv = float2(input.uv.x, 1.0f - input.uv.y);
-	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
-	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
-	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
+	output.tangent = normalize(mul(float4(input.tangent, 0), transpose(inst.model))).xyz;
+	output.bitangent = normalize(mul(float4(input.bitangent, 0), transpose(inst.model))).xyz;
+	output.normal = normalize(mul(float4(input.normal, 0), transpose(inst.model))).xyz;
 	output.color = input.color;
 
 	return output;
@@ -86,6 +88,9 @@ cbuffer MaterialProperties : register(b2)
 PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 {
 	PS_OUTPUT output;
+	input.tangent = normalize(input.tangent - dot(input.tangent, input.normal) * input.normal);
+	input.bitangent = cross(input.normal, input.tangent);
+
 	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
 
 	OutputMaterialData output_data = InterpretMaterialData(data,
@@ -96,7 +101,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 		s0,
 		input.uv);
 
-	float3 normal = normalize(mul(output_data.normal, tbn));
+	float3 normal = normalize(mul(float4(output_data.normal, 1), tbn));
 
 	output.albedo_roughness = float4(pow(output_data.albedo, 2.2f), output_data.roughness);
 	output.normal_metallic = float4(normal, output_data.metallic);

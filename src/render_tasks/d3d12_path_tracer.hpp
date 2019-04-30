@@ -31,6 +31,7 @@ namespace wr
 		d3d12::RootSignature* out_root_signature;
 
 		// Structures and buffers
+		D3D12StructuredBufferHandle* out_sb_surfels;
 		D3D12ConstantBufferHandle* out_cb_camera_handle;
 		d3d12::RenderTarget* out_deferred_main_rt;
 
@@ -128,6 +129,13 @@ namespace wr
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			d3d12::SetName(n_render_target, L"Path Tracing Render Target");
 
+			// Create a buffer for surfels.
+
+			data.out_sb_surfels = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(
+				sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials,
+				sizeof(temp::RayTracingMaterial_CBData),
+				true));
+
 			if (!resize)
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
@@ -135,7 +143,7 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
+				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
 
@@ -151,6 +159,10 @@ namespace wr
 				// Bind output texture
 				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+
+				// Bind surfel buffer
+				d3d12::DescHeapCPUHandle rtv_buffer_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
+				d3d12::CreateUAVFromStructuredBuffer(data.out_sb_surfels->m_native, rtv_handle, 0);
 
 				// Bind g-buffers (albedo, normal, depth)
 				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
@@ -226,8 +238,9 @@ namespace wr
 				// Bind output, indices and materials, offsets, etc
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OUTPUT)), out_uav_handle);
-				//out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
-				//d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OUTPUT)) + 1, out_uav_handle);
+
+				auto out_surfels_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::SURFELS)), out_surfels_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::INDICES)), out_scene_ib_handle);

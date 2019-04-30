@@ -48,6 +48,7 @@ namespace wr::d3d12::settings
 	static const constexpr unsigned int num_max_rt_materials = 3000;
 	static const constexpr unsigned int num_max_rt_textures = 1000;
 	static const constexpr unsigned int fallback_ptrs_offset = 3500;
+	static const constexpr unsigned int num_max_surfels = 92160000;
 	static const constexpr std::uint32_t res_skybox = 1024;
 	static const constexpr std::uint32_t res_envmap = 512;
 	

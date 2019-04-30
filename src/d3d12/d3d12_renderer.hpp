@@ -79,6 +79,13 @@ namespace wr
 			float vertex_offset;
 		};
 
+		struct RayTracingSurfel_CBData
+		{
+			DirectX::XMVECTOR position;
+			DirectX::XMVECTOR color;
+		};
+
+
 		static const constexpr float size = 1.0f;
 		static const constexpr Vertex2D quad_vertices[] = {
 			{ -size, -size },
@@ -177,6 +184,7 @@ namespace wr
 		std::shared_ptr<ConstantBufferPool> m_raytracing_cb_pool;
 		std::shared_ptr<StructuredBufferPool> m_raytracing_material_sb_pool;
 		std::shared_ptr<StructuredBufferPool> m_raytracing_offset_sb_pool;
+		std::shared_ptr<StructuredBufferPool> m_raytracing_surfel_pool;
 
 		std::vector<std::shared_ptr<D3D12StructuredBufferPool>> m_structured_buffer_pools;
 		std::vector<std::shared_ptr<D3D12ModelPool>> m_model_pools;
