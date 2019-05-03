@@ -769,7 +769,7 @@ namespace wr::imgui::special
 		AddCommand("filter",
 			[&](DebugConsole& console, std::string const & str)
 			{
-				filter.SetInputFilter();
+				filter = ImGuiTextFilter(nullptr);
 				AddLog("Cleared Filter");
 			},
 			"Clears the filter.",
@@ -782,7 +782,7 @@ namespace wr::imgui::special
 				auto params = str;
 				params.erase(0, 7);
 
-				filter.SetInputFilter(params.c_str());
+				filter = ImGuiTextFilter(params.c_str());
 
 				AddLog("Set filter to: %s", params.c_str());
 			},

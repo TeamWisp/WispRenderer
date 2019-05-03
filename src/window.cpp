@@ -9,6 +9,7 @@ namespace wr
 {
 
 	Window::Window(HINSTANCE instance, int show_cmd, std::string const & name, std::uint32_t width, std::uint32_t height)
+		: m_title(name)
 	{
 
 		WNDCLASSEX wc;
@@ -158,13 +159,7 @@ namespace wr
 
 	std::string Window::GetTitle() const
 	{
-		std::string retval;
-
-		auto title_length = GetWindowTextLength(m_handle);
-		retval.resize(title_length);
-		GetWindowTextA(m_handle, LPSTR(retval.c_str()), title_length);
-
-		return retval;
+		return m_title;
 	}
 
 	HWND Window::GetWindowHandle() const

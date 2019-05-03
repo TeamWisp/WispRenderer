@@ -76,6 +76,8 @@ namespace wr
 
 		std::function<void()> m_render_func;
 
+		std::string m_title;
+
 		bool m_running;
 		HWND m_handle;
 	};

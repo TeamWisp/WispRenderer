@@ -124,6 +124,11 @@ namespace wr
 		inline void SetupAnselTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 #ifdef NVIDIA_GAMEWORKS_ANSEL
+			if (resize)
+			{
+				return;
+			}
+
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto n_device = n_render_system.m_device;
 			auto& data = fg.GetData<AnselData>(handle);
