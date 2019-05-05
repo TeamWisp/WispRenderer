@@ -66,7 +66,7 @@ namespace wr
 				d3d12::GetCPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native,
 				d3d12::GetGPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native);
 
-			ImGui::StyleCorporateGrey();
+			ImGui::StyleColorsCherry();
 		}
 
 		template<typename T>
