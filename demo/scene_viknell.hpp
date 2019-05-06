@@ -26,7 +26,6 @@ namespace viknell_scene
 		static wr::MaterialHandle bamboo_material;
 		static wr::MaterialHandle mirror_material;
 
-		static wr::TextureHandle flat_normal;
 		static wr::TextureHandle equirectangular_environment_map;
 
 		void CreateResources(wr::RenderSystem* render_system)
@@ -34,10 +33,6 @@ namespace viknell_scene
 			texture_pool = render_system->CreateTexturePool();
 			material_pool = render_system->CreateMaterialPool(256);
 			model_pool = render_system->CreateModelPool(64_mb, 64_mb);
-
-			wr::TextureHandle white = texture_pool->LoadFromFile("resources/materials/white.png", false, true);
-			wr::TextureHandle black = texture_pool->LoadFromFile("resources/materials/black.png", false, true);
-			flat_normal = texture_pool->LoadFromFile("resources/materials/flat_normal.png", false, true);
 
 			wr::TextureHandle bamboo_albedo = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
 			wr::TextureHandle bamboo_normal = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
@@ -47,7 +42,7 @@ namespace viknell_scene
 			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 			// Create Materials
-			mirror_material = material_pool->Create();
+			mirror_material = material_pool->Create(texture_pool.get());
 			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material);
 
 			float red[] = { 1, 0, 0 };
@@ -55,7 +50,7 @@ namespace viknell_scene
 			mirror_internal->SetConstant(wr::MaterialConstantType::METALLIC, 1);
 			mirror_internal->SetConstant(wr::MaterialConstantType::COLOR, red);
 
-			bamboo_material = material_pool->Create();
+			bamboo_material = material_pool->Create(texture_pool.get());
 			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material);
 
 			bamboo_material_internal->SetTexture(wr::MaterialTextureType::ALBEDO, bamboo_albedo);

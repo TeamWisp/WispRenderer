@@ -46,8 +46,9 @@ namespace wr
 	{
 	public:
 
-		Material();
-		Material(TextureHandle albedo, 
+		Material(TexturePool* pool);
+		Material(TexturePool* pool,
+				 TextureHandle albedo, 
 				 TextureHandle normal, 
 				 TextureHandle roughness,
 				 TextureHandle metallic,
@@ -149,8 +150,9 @@ namespace wr
 
 		//Creates an empty material. The user is responsible of filling in the texture handles.
 		//TODO: Give Materials default textures
-		[[nodiscard]] MaterialHandle Create();
-		[[nodiscard]] MaterialHandle Create(TextureHandle& albedo,
+		[[nodiscard]] MaterialHandle Create(TexturePool* pool);
+		[[nodiscard]] MaterialHandle Create(TexturePool* pool,
+											TextureHandle& albedo,
 											TextureHandle& normal,
 											TextureHandle& roughness,
 											TextureHandle& metallic,
@@ -186,7 +188,7 @@ namespace wr
 	template<uint16_t s>
 	void Material::GetConstant(MaterialConstantType type, float(&val)[s])
 	{
-		uint16_t offset = (uint16_t(type) >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
+		uint16_t offset = uint16_t(uint32_t(type) >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
 		uint16_t count = uint16_t(type);
 
 		if (s > count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
@@ -198,7 +200,7 @@ namespace wr
 	template<uint16_t s>
 	void Material::SetConstant(MaterialConstantType type, float(&val)[s])
 	{
-		uint16_t offset = (uint16_t(type) >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
+		uint16_t offset = uint16_t(uint32_t(type) >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
 		uint16_t count = uint16_t(type);
 
 		if (s > count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))

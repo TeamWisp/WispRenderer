@@ -102,7 +102,7 @@ namespace emibl_scene
 
 			{
 				// Create Material
-				rusty_metal_material = material_pool->Create();
+				rusty_metal_material = material_pool->Create(texture_pool.get());
 
 				wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material);
 
@@ -112,7 +112,7 @@ namespace emibl_scene
 				rusty_metal_internal->SetTexture(wr::MaterialTextureType::METALLIC, metal_splotchy_metallic);
 
 				// Create Material
-				material_handles[0] = material_pool->Create();
+				material_handles[0] = material_pool->Create(texture_pool.get());
 
 				wr::Material* mahogfloor_material_internal = material_pool->GetMaterial(material_handles[0]);
 
@@ -122,7 +122,7 @@ namespace emibl_scene
 				mahogfloor_material_internal->SetTexture(wr::MaterialTextureType::METALLIC, mahogfloor_metallic);
 
 				// Create Material
-				material_handles[1] = material_pool->Create();
+				material_handles[1] = material_pool->Create(texture_pool.get());
 
 				wr::Material* red_black_pattern_internal = material_pool->GetMaterial(material_handles[1]);
 
@@ -132,7 +132,7 @@ namespace emibl_scene
 				red_black_pattern_internal->SetTexture(wr::MaterialTextureType::METALLIC, red_black_metallic);
 
 				// Create Material
-				material_handles[2] = material_pool->Create();
+				material_handles[2] = material_pool->Create(texture_pool.get());
 
 				wr::Material* metal_material_internal = material_pool->GetMaterial(material_handles[2]);
 
@@ -141,7 +141,7 @@ namespace emibl_scene
 				metal_material_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, metal_roughness);
 				metal_material_internal->SetTexture(wr::MaterialTextureType::METALLIC, metal_metallic);
 
-				material_handles[3] = material_pool->Create();
+				material_handles[3] = material_pool->Create(texture_pool.get());
 
 				wr::Material* brick_tiles_mat_internal = material_pool->GetMaterial(material_handles[3]);
 
@@ -150,7 +150,7 @@ namespace emibl_scene
 				brick_tiles_mat_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, brick_tiles_roughness);
 				brick_tiles_mat_internal->SetTexture(wr::MaterialTextureType::METALLIC, brick_tiles_metallic);
 
-				material_handles[4] = material_pool->Create();
+				material_handles[4] = material_pool->Create(texture_pool.get());
 
 				wr::Material* leather_material_internal = material_pool->GetMaterial(material_handles[4]);
 
@@ -159,7 +159,7 @@ namespace emibl_scene
 				leather_material_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, leather_roughness);
 				leather_material_internal->SetTexture(wr::MaterialTextureType::METALLIC, leather_metallic);
 
-				material_handles[5] = material_pool->Create();
+				material_handles[5] = material_pool->Create(texture_pool.get());
 
 				wr::Material* blue_tiles_material_internal = material_pool->GetMaterial(material_handles[5]);
 
@@ -168,7 +168,7 @@ namespace emibl_scene
 				blue_tiles_material_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, blue_tiles_roughness);
 				blue_tiles_material_internal->SetTexture(wr::MaterialTextureType::METALLIC, blue_tiles_metallic);
 
-				material_handles[6] = material_pool->Create();
+				material_handles[6] = material_pool->Create(texture_pool.get());
 
 				wr::Material* gold_material_internal = material_pool->GetMaterial(material_handles[6]);
 
@@ -177,7 +177,7 @@ namespace emibl_scene
 				gold_material_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, gold_roughness);
 				gold_material_internal->SetTexture(wr::MaterialTextureType::METALLIC, gold_metallic);
 
-				material_handles[7] = material_pool->Create();
+				material_handles[7] = material_pool->Create(texture_pool.get());
 
 				wr::Material* marble_material_internal = material_pool->GetMaterial(material_handles[7]);
 
@@ -186,7 +186,7 @@ namespace emibl_scene
 				marble_material_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, marble_roughness);
 				marble_material_internal->SetTexture(wr::MaterialTextureType::METALLIC, marble_metallic);
 
-				material_handles[8] = material_pool->Create();
+				material_handles[8] = material_pool->Create(texture_pool.get());
 
 				wr::Material* floreal_tiles_internal = material_pool->GetMaterial(material_handles[8]);
 
@@ -195,7 +195,7 @@ namespace emibl_scene
 				floreal_tiles_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, floreal_tiles_roughness);
 				floreal_tiles_internal->SetTexture(wr::MaterialTextureType::METALLIC, floreal_tiles_metallic);
 
-				material_handles[9] = material_pool->Create();
+				material_handles[9] = material_pool->Create(texture_pool.get());
 
 				wr::Material* bw_tiles_internal = material_pool->GetMaterial(material_handles[9]);
 

@@ -289,12 +289,7 @@ namespace wr
 
 		for (int i = 0; i < data->m_materials.size(); ++i)
 		{
-			TextureHandle
-				albedo = texture_pool->GetDefaultAlbedo(), 
-				normals = texture_pool->GetDefaultNormal(), 
-				metallic = texture_pool->GetDefaultMetalic(), 
-				roughness = texture_pool->GetDefaultRoughness(),
-				ambient_occlusion = texture_pool->GetDefaultAO();
+			TextureHandle albedo, normals, metallic, roughness, ambient_occlusion;
 
 			ModelMaterialData* material = data->m_materials[i];
 
@@ -320,7 +315,7 @@ namespace wr
 				}
 			};
 
-			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, false, true);
+			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, ambient_occlusion, false, true);
 			Material* mat = material_pool->GetMaterial(new_handle);
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)

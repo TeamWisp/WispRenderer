@@ -12,20 +12,20 @@ namespace wr
 	//	  MATERIAL FUNCTIONS	//
 	//////////////////////////////
 
-	Material::Material()
+	Material::Material(TexturePool* pool): m_texture_pool(pool)
 	{
 		memset(&m_material_data, 0, sizeof(m_material_data));
 	}
 
-	Material::Material(TextureHandle albedo,
+	Material::Material(TexturePool *pool,
+					   TextureHandle albedo,
 					   TextureHandle normal,
 					   TextureHandle roughness,
 					   TextureHandle metallic,
 		               TextureHandle ao,
 		               float alpha_constant,
-					   float double_sided): Material()
+					   float double_sided): Material(pool)
 	{
-		m_texture_pool = albedo.m_pool;
 
 		SetTexture(MaterialTextureType::ALBEDO, albedo);
 		SetTexture(MaterialTextureType::NORMAL, normal);
@@ -43,17 +43,13 @@ namespace wr
 
 	void Material::SetTexture(MaterialTextureType type, TextureHandle handle)
 	{
-		if (handle.m_pool != m_texture_pool && m_texture_pool)
+		if (handle.m_pool != m_texture_pool || !m_texture_pool)
 		{
 			ClearTexture(type);
 			LOGW("Textures in a material need to belong to the same texture pool");
 		}
 		else
 		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = handle.m_pool;
-			}
 			m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)] = handle;
 			m_material_data.m_material_flags.m_value = uint32_t(m_material_data.m_material_flags.m_value) | (1 << uint32_t(type));
 		}
@@ -103,13 +99,13 @@ namespace wr
 	{
 	}
 
-	MaterialHandle MaterialPool::Create()
+	MaterialHandle MaterialPool::Create(TexturePool* pool)
 	{
 		MaterialHandle handle;
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material();
+		Material* mat = new Material(pool);
 		mat->SetConstantBufferHandle(m_constant_buffer_pool->Create(sizeof(Material::MaterialData)));
 
 		m_materials.insert(std::make_pair(handle.m_id, mat));
@@ -117,7 +113,7 @@ namespace wr
 		return handle;
 	}
 
-	MaterialHandle MaterialPool::Create(TextureHandle& albedo, TextureHandle& normal,
+	MaterialHandle MaterialPool::Create(TexturePool* pool, TextureHandle& albedo, TextureHandle& normal,
 										TextureHandle& roughness, TextureHandle& metallic,
 										TextureHandle& ao, bool is_alpha_masked, bool is_double_sided)
 	{
@@ -125,7 +121,7 @@ namespace wr
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material(albedo, normal, roughness, metallic, ao, is_alpha_masked, is_double_sided);
+		Material* mat = new Material(pool, albedo, normal, roughness, metallic, ao, is_alpha_masked, is_double_sided);
 		mat->SetConstantBufferHandle(m_constant_buffer_pool->Create(sizeof(Material::MaterialData)));
 		mat->UpdateConstantBuffer();
 

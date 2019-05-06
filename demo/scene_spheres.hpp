@@ -41,7 +41,7 @@ namespace spheres_scene
 			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 			// Create Materials
-			spheres_material = material_pool->Create();
+			spheres_material = material_pool->Create(texture_pool.get());
 
 			wr::Material* spheres_material_internal = material_pool->GetMaterial(spheres_material);
 
