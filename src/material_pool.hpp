@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <d3d12.h>
 #include <DirectXMath.h>
+#include <memory>
 
 #include "structs.hpp"
 #include "util/defines.hpp"

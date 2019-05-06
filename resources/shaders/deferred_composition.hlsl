@@ -17,6 +17,7 @@ TextureCube pref_env_map	 : register(t6);
 Texture2D brdf_lut			 : register(t7);
 Texture2D buffer_refl_shadow : register(t8); // xyz: reflection, a: shadow factor
 Texture2D screen_space_irradiance : register(t9);
+Texture2D screen_space_ao : register(t10);
 RWTexture2D<float4> output   : register(u0);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
@@ -29,6 +30,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_view;
 	uint is_hybrid;
 	uint is_path_tracer;
+	uint is_hbao;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -72,15 +74,18 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
-		float3 irradiance = float3(0, 0, 0);
-		if (is_path_tracer)
-		{
-			irradiance = screen_space_irradiance[screen_coord].xyz;
-		}
-		else
-		{
-			irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
-		}
+		// Get irradiance
+		float irradiance = lerp(
+			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
+			screen_space_irradiance[screen_coord].xyz,
+			is_path_tracer);
+
+		// Get ao
+		float ao = lerp(
+			1,
+			screen_space_ao[screen_coord].xyz,
+			// Lerp factor (0: env map, 1: path traced)
+			is_hbao);
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -103,7 +108,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, sampled_brdf, shadow_factor);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
 	}
 	else
 	{	

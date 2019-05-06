@@ -9,6 +9,7 @@ namespace wr
 {
 
 	Window::Window(HINSTANCE instance, int show_cmd, std::string const & name, std::uint32_t width, std::uint32_t height)
+		: m_title(name)
 	{
 
 		WNDCLASSEX wc;
@@ -104,6 +105,19 @@ namespace wr
 		DestroyWindow(m_handle);
 	}
 
+	void Window::SetRenderLoop(std::function<void()> render_func)
+	{
+		m_render_func = render_func;
+	}
+
+	void Window::StartRenderLoop()
+	{
+		while (IsRunning())
+		{
+			PollEvents();
+		}
+	}
+
 	void Window::SetKeyCallback(KeyCallback callback)
 	{
 		m_key_callback = callback;
@@ -143,6 +157,11 @@ namespace wr
 		return static_cast<std::int32_t>(r.bottom - r.top);
 	}
 
+	std::string Window::GetTitle() const
+	{
+		return m_title;
+	}
+
 	HWND Window::GetWindowHandle() const
 	{
 		return m_handle;
@@ -175,6 +194,12 @@ namespace wr
 	{
 		switch (msg)
 		{
+		case WM_PAINT:
+			if (m_render_func)
+			{
+				m_render_func();
+			}
+			return 0;
 		case WM_DESTROY:
 			m_running = false;
 			PostQuitMessage(0);

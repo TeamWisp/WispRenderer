@@ -2,7 +2,7 @@
 
 namespace wr {
 
-	MeshNode::MeshNode(Model* model) : m_model(model), m_materials()
+	MeshNode::MeshNode(Model* model) : Node(typeid(MeshNode)), m_model(model), m_materials()
 	{
 	}
 

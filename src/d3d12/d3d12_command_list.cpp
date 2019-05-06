@@ -471,9 +471,28 @@ namespace wr::d3d12
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
 
-	void UAVBarrier(CommandList* cmd_list, TextureResource* resource, unsigned int number_of_barriers)
+	void UAVBarrier(CommandList* cmd_list, std::vector<TextureResource*> const & resources)
 	{
-		cmd_list->m_native->ResourceBarrier(number_of_barriers, &CD3DX12_RESOURCE_BARRIER::UAV(resource->m_resource));
+		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
+		barriers.reserve(resources.size());
+		for (auto& resource : resources)
+		{
+			barriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(resource->m_resource));
+		}
+
+		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
+	}
+
+	void UAVBarrier(CommandList* cmd_list, std::vector<ID3D12Resource*> const & resources)
+	{
+		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
+		barriers.reserve(resources.size());
+		for (auto& resource : resources)
+		{
+			barriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(resource));
+		}
+
+		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
 	}
 
 	void Alias(CommandList* cmd_list, TextureResource* resource_before, TextureResource* resource_after)
