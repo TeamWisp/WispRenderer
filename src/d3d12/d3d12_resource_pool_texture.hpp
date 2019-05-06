@@ -75,7 +75,7 @@ namespace wr
 
 	protected:
 
-		void MoveStagedTextures();
+		void MoveStagedTextures(unsigned int frame_idx);
 		void GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list);
 
 		void GenerateMips_UAV(d3d12::TextureResource* texture, CommandList* cmd_list);
@@ -89,6 +89,7 @@ namespace wr
 
 		using StagedTextures = std::unordered_map<uint64_t, Texture*>;
 		StagedTextures m_staged_textures;
+		std::vector<StagedTextures> m_staging_textures;
 
 		D3D12RenderSystem& m_render_system;
 
