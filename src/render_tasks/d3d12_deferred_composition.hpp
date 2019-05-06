@@ -30,6 +30,7 @@ namespace wr
 		bool has_rt_shadows;
 		bool has_rt_shadows_denoiser;
 		bool is_path_tracer;
+		bool is_hbao;
 	};
 
 	namespace internal

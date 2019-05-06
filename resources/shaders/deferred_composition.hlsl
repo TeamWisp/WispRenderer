@@ -18,6 +18,7 @@ Texture2D brdf_lut			 : register(t7);
 Texture2D buffer_reflection	 : register(t8); // xyz: reflection, a: shadow factor
 Texture2D buffer_shadow		 : register(t9);
 Texture2D screen_space_irradiance : register(t10);
+Texture2D screen_space_ao : register(t11);
 RWTexture2D<float4> output   : register(u0);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
@@ -75,15 +76,19 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
-		float3 irradiance = float3(0, 0, 0);
-		if (is_path_tracer)
-		{
-			irradiance = screen_space_irradiance[screen_coord].xyz;
-		}
-		else
-		{
-			irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
-		}
+		// Get irradiance
+		float irradiance = lerp(
+			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
+			screen_space_irradiance[screen_coord].xyz,
+			// Lerp factor (0: env map, 1: path traced)
+			is_path_tracer);
+
+		// Get ao
+		float ao = lerp(
+			1,
+			screen_space_ao[screen_coord].xyz,
+			// Lerp factor (0: env map, 1: path traced)
+			0);
 
 		float4 shadow_info = buffer_shadow[screen_coord];
 
@@ -109,7 +114,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, reflection, sampled_brdf, shadow_factor);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
+		//retval = shadow_info;
 	}
 	else
 	{	

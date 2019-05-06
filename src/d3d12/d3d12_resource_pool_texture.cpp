@@ -508,7 +508,7 @@ namespace wr
 		return texture_handle;
 	}
 	
-	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips)
+	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(unsigned char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -620,48 +620,45 @@ namespace wr
 	TextureHandle D3D12TexturePool::LoadFromRawMemory(unsigned char* data, size_t width, size_t height, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
+		DirectX::ScratchImage* scratch_image = new DirectX::ScratchImage;
+		DirectX::Image image = {};
 
-		DirectX::TexMetadata metadata;
-		DirectX::ScratchImage* image = new DirectX::ScratchImage;
+		image.format = srgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+		image.width = width;
+		image.height = height;
+		image.rowPitch = width * 4;
+		image.slicePitch = width * height * 4;
+		image.pixels = data;
 
-		HRESULT hr;
-
-		unsigned char* bmp;
-
-		//Assuming RGBA8_UNORM for the time being, need to find a solution
-		hr = LoadFromWICMemory(bmp, width * height * 8/*bits*/ * 4/*channels*/,
-			DirectX::WIC_FLAGS_NONE, &metadata, *image);
+		HRESULT hr = scratch_image->InitializeFromImage(image);
 
 		if (FAILED(hr))
 		{
-			_com_error err(hr);
-			LPCTSTR errMsg = err.ErrorMessage();
-
-			LOGC("ERROR: DirectXTex error: {}", errMsg);
+			LOGE("Loading raw texture failed with code " + std::to_string(hr));
 		}
 
 		uint32_t mip_lvls;
 
-		bool mip_generation = (metadata.mipLevels > 1) ? false : generate_mips;
+		bool mip_generation = generate_mips;
 
 		if (mip_generation)
 		{
-			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(metadata.width, metadata.height)))) + 1;
+			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 		}
 		else
 		{
-			mip_lvls = metadata.mipLevels;
+			mip_lvls = 1;
 		}
 
-		Format texture_format = static_cast<wr::Format>(metadata.format);
+		Format texture_format = static_cast<wr::Format>(srgb ? wr::Format::R8G8B8A8_UNORM_SRGB : wr::Format::R8G8B8A8_UNORM);
 
 		d3d12::desc::TextureDesc desc;
 
-		desc.m_width = metadata.width;
-		desc.m_height = metadata.height;
-		desc.m_is_cubemap = metadata.IsCubemap();
-		desc.m_depth = metadata.depth;
-		desc.m_array_size = metadata.arraySize;
+		desc.m_width = width;
+		desc.m_height = height;
+		desc.m_is_cubemap = false;
+		desc.m_depth = 1;
+		desc.m_array_size = 1;
 		desc.m_mip_levels = mip_lvls;
 		desc.m_texture_format = texture_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
@@ -693,7 +690,7 @@ namespace wr
 		texture_handle.m_pool = this;
 		texture_handle.m_id = texture_id;
 
-		m_unstaged_textures.insert(std::make_pair(texture_id, std::make_pair(texture, image)));
+		m_unstaged_textures.insert(std::make_pair(texture_id, std::make_pair(texture, scratch_image)));
 
 		return texture_handle;
 	}
@@ -823,7 +820,7 @@ namespace wr
 			d3d12::Dispatch(d3d12_cmd_list, ((dst_width + 8 - 1) / 8), ((dst_height + 8 - 1) / 8), 1u);
 
 			//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-			d3d12::UAVBarrier(d3d12_cmd_list, texture, 1);
+			d3d12::UAVBarrier(d3d12_cmd_list, { texture });
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
@@ -1013,7 +1010,7 @@ namespace wr
 			d3d12::Dispatch(d3d12_cmd_list, ((dst_width + 8 - 1) / 8), ((dst_height + 8 - 1) / 8), 1u);
 
 			//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-			d3d12::UAVBarrier(d3d12_cmd_list, texture, 1);
+			d3d12::UAVBarrier(d3d12_cmd_list, { texture });
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{

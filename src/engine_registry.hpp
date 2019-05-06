@@ -326,10 +326,11 @@ namespace wr
 			BUFFER_REFLECTION,
 			BUFFER_SHADOW,
 			BUFFER_SCREEN_SPACE_IRRADIANCE,
+			BUFFER_SCREEN_SPACE_AO,
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 13> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 14> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
@@ -342,6 +343,7 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SHADOW, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_AO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 
@@ -645,92 +647,92 @@ namespace wr
 
 	struct root_signatures
 	{
-		static RegistryHandle brdf_lut;
-		static RegistryHandle basic;
-		static RegistryHandle shadow_denoiser;
-		static RegistryHandle temporal_accumulator;
-		static RegistryHandle deferred_composition;
-		static RegistryHandle rt_test_global;
-		static RegistryHandle mip_mapping;
-		static RegistryHandle rt_hybrid_global;
-		static RegistryHandle path_tracing_global;
-		static RegistryHandle cubemap_conversion;
-		static RegistryHandle cubemap_convolution;
-		static RegistryHandle cubemap_prefiltering;
-		static RegistryHandle post_processing;
-		static RegistryHandle accumulation;
-		static RegistryHandle dof_coc;
-		static RegistryHandle dof_down_scale;
-		static RegistryHandle dof_dilate;
-		static RegistryHandle dof_dilate_flatten;
-		static RegistryHandle dof_dilate_flatten_h;
-		static RegistryHandle dof_bokeh;
-		static RegistryHandle dof_bokeh_post_filter;
-		static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle brdf_lut;
+		WISPRENDERER_EXPORT static RegistryHandle basic;
+		WISPRENDERER_EXPORT static RegistryHandle shadow_denoiser;
+		WISPRENDERER_EXPORT static RegistryHandle temporal_accumulator;
+		WISPRENDERER_EXPORT static RegistryHandle deferred_composition;
+		WISPRENDERER_EXPORT static RegistryHandle rt_test_global;
+		WISPRENDERER_EXPORT static RegistryHandle mip_mapping;
+		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_global;
+		WISPRENDERER_EXPORT static RegistryHandle path_tracing_global;
+		WISPRENDERER_EXPORT static RegistryHandle cubemap_conversion;
+		WISPRENDERER_EXPORT static RegistryHandle cubemap_convolution;
+		WISPRENDERER_EXPORT static RegistryHandle cubemap_prefiltering;
+		WISPRENDERER_EXPORT static RegistryHandle post_processing;
+		WISPRENDERER_EXPORT static RegistryHandle accumulation;
+		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
+		WISPRENDERER_EXPORT static RegistryHandle dof_down_scale;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
+		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
+		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
+		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 	};
 
 	struct shaders
 	{
-		static RegistryHandle brdf_lut_cs;
-		static RegistryHandle basic_vs;
-		static RegistryHandle basic_ps;
-		static RegistryHandle fullscreen_quad_vs;
-		static RegistryHandle shadow_denoiser_cs;
-		static RegistryHandle temporal_accumulator_cs;
-		static RegistryHandle deferred_composition_cs;
-		static RegistryHandle rt_lib;
-		static RegistryHandle rt_hybrid_lib;
-		static RegistryHandle path_tracer_lib;
-		static RegistryHandle rt_shadow_lib;
-		static RegistryHandle rt_reflection_lib;
-		static RegistryHandle mip_mapping_cs;
-		static RegistryHandle equirect_to_cubemap_vs;
-		static RegistryHandle equirect_to_cubemap_ps;
-		static RegistryHandle cubemap_convolution_ps;
-		static RegistryHandle cubemap_prefiltering_cs;
-		static RegistryHandle post_processing;
-		static RegistryHandle accumulation;
-		static RegistryHandle dof_coc;
-		static RegistryHandle dof_down_scale;
-		static RegistryHandle dof_dilate;
-		static RegistryHandle dof_dilate_flatten;
-		static RegistryHandle dof_dilate_flatten_h;
-		static RegistryHandle dof_bokeh;
-		static RegistryHandle dof_bokeh_post_filter;
-		static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle brdf_lut_cs;
+		WISPRENDERER_EXPORT static RegistryHandle basic_vs;
+		WISPRENDERER_EXPORT static RegistryHandle basic_ps;
+		WISPRENDERER_EXPORT static RegistryHandle fullscreen_quad_vs;
+		WISPRENDERER_EXPORT static RegistryHandle shadow_denoiser_cs;
+		WISPRENDERER_EXPORT static RegistryHandle temporal_accumulator_cs;
+		WISPRENDERER_EXPORT static RegistryHandle deferred_composition_cs;
+		WISPRENDERER_EXPORT static RegistryHandle rt_lib;
+		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_lib;
+		WISPRENDERER_EXPORT static RegistryHandle path_tracer_lib;
+		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_lib;
+		WISPRENDERER_EXPORT static RegistryHandle rt_reflection_lib;
+		WISPRENDERER_EXPORT static RegistryHandle mip_mapping_cs;
+		WISPRENDERER_EXPORT static RegistryHandle equirect_to_cubemap_vs;
+		WISPRENDERER_EXPORT static RegistryHandle equirect_to_cubemap_ps;
+		WISPRENDERER_EXPORT static RegistryHandle cubemap_convolution_ps;
+		WISPRENDERER_EXPORT static RegistryHandle cubemap_prefiltering_cs;
+		WISPRENDERER_EXPORT static RegistryHandle post_processing;
+		WISPRENDERER_EXPORT static RegistryHandle accumulation;
+		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
+		WISPRENDERER_EXPORT static RegistryHandle dof_down_scale;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
+		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
+		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
+		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 	};
 
 	struct pipelines
 	{
-		static RegistryHandle brdf_lut_precalculation;
-		static RegistryHandle basic_deferred;
-		static RegistryHandle shadow_denoiser;
-		static RegistryHandle temporal_accumulator;
-		static RegistryHandle deferred_composition;
-		static RegistryHandle mip_mapping;
-		static RegistryHandle equirect_to_cubemap;
-		static RegistryHandle cubemap_convolution;
-		static RegistryHandle cubemap_prefiltering;
-		static RegistryHandle post_processing;
-		static RegistryHandle accumulation;
-		static RegistryHandle dof_coc;
-		static RegistryHandle dof_down_scale;
-		static RegistryHandle dof_dilate;
-		static RegistryHandle dof_dilate_flatten;
-		static RegistryHandle dof_dilate_flatten_h;
-		static RegistryHandle dof_bokeh;
-		static RegistryHandle dof_bokeh_post_filter;
-		static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle brdf_lut_precalculation;
+		WISPRENDERER_EXPORT static RegistryHandle basic_deferred;
+		WISPRENDERER_EXPORT static RegistryHandle shadow_denoiser;
+		WISPRENDERER_EXPORT static RegistryHandle temporal_accumulator;
+		WISPRENDERER_EXPORT static RegistryHandle deferred_composition;
+		WISPRENDERER_EXPORT static RegistryHandle mip_mapping;
+		WISPRENDERER_EXPORT static RegistryHandle equirect_to_cubemap;
+		WISPRENDERER_EXPORT static RegistryHandle cubemap_convolution;
+		WISPRENDERER_EXPORT static RegistryHandle cubemap_prefiltering;
+		WISPRENDERER_EXPORT static RegistryHandle post_processing;
+		WISPRENDERER_EXPORT static RegistryHandle accumulation;
+		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
+		WISPRENDERER_EXPORT static RegistryHandle dof_down_scale;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
+		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
+		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
+		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
+		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 	};
 
 	struct state_objects
 	{
-		static RegistryHandle state_object;
-		static RegistryHandle rt_hybrid_state_object;
-		static RegistryHandle path_tracing_state_object;
-		static RegistryHandle path_tracer_state_object;
-		static RegistryHandle rt_shadow_state_object;
-		static RegistryHandle rt_reflection_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle path_tracing_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_reflection_state_object;
 	};
 
 } /* wr */

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../wisprenderer_export.hpp"
+
 #define LOG_PRINT_TIME
 //#define LOG_PRINT_THREAD
 #define LOG_CALLBACK
@@ -29,7 +31,7 @@ namespace util
 {
 	struct log_callback
 	{
-		static std::function<void(std::string const &)> impl;
+		WISPRENDERER_EXPORT static std::function<void(std::string const &)> impl;
 	};
 };
 #endif

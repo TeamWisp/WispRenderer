@@ -26,6 +26,8 @@
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten_second_pass.hpp"
+#include "render_tasks/d3d12_hbao.hpp"
+#include "render_tasks/d3d12_ansel.hpp"
 
 namespace fg_manager
 {
@@ -92,6 +94,7 @@ namespace fg_manager
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do some post processing
@@ -122,6 +125,7 @@ namespace fg_manager
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
+			wr::AddAnselTask(*fg);
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
 
@@ -141,6 +145,8 @@ namespace fg_manager
 
 			// Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+
+			wr::AddHBAOTask(*fg);
 
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);
@@ -170,7 +176,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(15);
+			fg = new wr::FrameGraph(18);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -185,7 +191,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTReflectionTask(*fg);
+			//wr::AddRTReflectionTask(*fg);
 
 			wr::AddRTShadowTask(*fg);
 
@@ -229,7 +235,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RT_HYBRID_DENOISED];
-			fg = new wr::FrameGraph(15);
+			fg = new wr::FrameGraph(19);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -244,7 +250,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTReflectionTask(*fg);
+			//wr::AddRTReflectionTask(*fg);
 
 			wr::AddRTShadowTask(*fg);
 

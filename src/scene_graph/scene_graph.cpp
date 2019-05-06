@@ -8,6 +8,7 @@
 #include "camera_node.hpp"
 #include "mesh_node.hpp"
 #include "skybox_node.hpp"
+#include "light_node.hpp"
 
 //TODO: Make platform independent
 #include "../d3d12/d3d12_defines.hpp"

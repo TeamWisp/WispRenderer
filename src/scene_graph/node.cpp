@@ -1,8 +1,15 @@
 #include "node.hpp"
 
+#include "../util/log.hpp"
+
 namespace wr
 {
-	Node::Node()
+	Node::Node() : m_type_info(typeid(Node))
+	{
+		SignalTransformChange();
+	}
+
+	Node::Node(std::type_info const & type_info) : m_type_info(type_info)
 	{
 		SignalTransformChange();
 		m_used_quaternion = false;
@@ -21,7 +28,6 @@ namespace wr
 		{
 			child->SignalTransformChange();
 		}
-
 	}
 
 	void Node::SignalUpdate(unsigned int frame_idx)
@@ -47,6 +53,14 @@ namespace wr
 	void Node::SetRotation(DirectX::XMVECTOR roll_pitch_yaw)
 	{
 		m_rotation_radians = roll_pitch_yaw;
+		m_use_quaternion = false;
+		SignalTransformChange();
+	}
+
+	void Node::SetRotationQuaternion(DirectX::XMVECTOR rotation)
+	{
+		m_rotation = rotation;
+		m_use_quaternion = true;
 		SignalTransformChange();
 	}
 
@@ -78,11 +92,7 @@ namespace wr
 
 	void Node::UpdateTransform()
 	{
-		if( m_used_quaternion )
-		{
-			m_used_quaternion == false; // reset
-		}
-		else
+		if (!m_use_quaternion)
 		{
 			m_rotation = DirectX::XMQuaternionRotationRollPitchYawFromVector(m_rotation_radians);
 		}
@@ -99,4 +109,4 @@ namespace wr
 		SignalChange();
 	}
 
-}
+} /* wr */

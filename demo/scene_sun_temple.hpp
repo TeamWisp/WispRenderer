@@ -33,7 +33,7 @@ namespace sun_temple_scene
 			// Load Texture.
 
 			{
-				equirectangular_environment_map = texture_pool->Load("resources/materials/sun_temple/SunTemple_Skybox.hdr", false, false);
+				equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/sun_temple/SunTemple_Skybox.hdr", false, false);
 			}
 
 			model_pool = render_system->CreateModelPool(64_mb, 64_mb);

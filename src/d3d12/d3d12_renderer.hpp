@@ -29,20 +29,16 @@ namespace wr
 
 	namespace temp
 	{
-		struct IndirectCommand
+		struct ProjectionView_CBData
 		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
-			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
-			D3D12_VERTEX_BUFFER_VIEW vb_view;
-			D3D12_DRAW_ARGUMENTS draw_arguments;
-		};
-
-		struct IndirectCommandIndexed
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
-			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
-			D3D12_VERTEX_BUFFER_VIEW vb_view;
-			D3D12_DRAW_INDEXED_ARGUMENTS draw_arguments;
+			DirectX::XMMATRIX m_view;
+			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_inverse_projection;
+			DirectX::XMMATRIX m_inverse_view;
+			DirectX::XMMATRIX m_prev_projection;
+			DirectX::XMMATRIX m_prev_view;
+			unsigned int m_is_hybrid;
+			unsigned int m_is_path_tracer;
 		};
 
 		struct ShadowDenoiserSettings_CBData
@@ -60,18 +56,6 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_prev_projection;
 			DirectX::XMMATRIX m_inverse_projection;
-		};
-
-		struct ProjectionView_CBData
-		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_projection;
-			DirectX::XMMATRIX m_inverse_projection;
-			DirectX::XMMATRIX m_inverse_view;
-			DirectX::XMMATRIX m_prev_projection;
-			DirectX::XMMATRIX m_prev_view;
-			unsigned int m_is_hybrid;
-			unsigned int m_is_path_tracer;
 		};
 
 		struct RTHybridCamera_CBData
@@ -113,6 +97,8 @@ namespace wr
 			float idx_offset;
 			float vertex_offset;
 		};
+
+
 
 		static const constexpr float size = 1.0f;
 		static const constexpr Vertex2D quad_vertices[] = {
@@ -232,8 +218,6 @@ namespace wr
 		void ResetBatches(SceneGraph& sg);
 		void LoadPrimitiveShapes();
 
-		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
-		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
 		d3d12::CommandSignature* m_cmd_signature;
 		d3d12::CommandSignature* m_cmd_signature_indexed;
 

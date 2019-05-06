@@ -16,7 +16,7 @@ namespace wr
 #endif
 	}
 
-	TextureHandle TexturePool::LoadFromCompressedMemory(char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips)
+	TextureHandle TexturePool::LoadFromCompressedMemory(unsigned char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips)
 	{
 		std::string new_str = texture_extension;
 

@@ -195,7 +195,7 @@ namespace wr
 					}
 				}
 
-				data.m_kernel = texture_pool->LoadFromRawMemory(kernel_data.data(), width, height, TextureType::RAW, false, false);
+				data.m_kernel = texture_pool->LoadFromRawMemory(kernel_data.data(), width, height, false, false);
 			}
 
 			data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(
@@ -236,7 +236,7 @@ namespace wr
 			{
 				constexpr unsigned int kernel = rs_layout::GetHeapLoc(params::shadow_denoiser, params::ShadowDenoiserE::KERNEL);
 				d3d12::DescHeapCPUHandle kernel_handle = data.out_allocation.GetDescriptorHandle(kernel);
-				d3d12::CreateSRVFromTexture(static_cast<D3D12TexturePool*>(data.m_kernel.m_pool)->GetTexture(data.m_kernel.m_id), kernel_handle);
+				d3d12::CreateSRVFromTexture(static_cast<D3D12TexturePool*>(data.m_kernel.m_pool)->GetTextureResource(data.m_kernel), kernel_handle);
 				d3d12::SetShaderSRV(cmd_list, 0, kernel, kernel_handle);
 			}
 
