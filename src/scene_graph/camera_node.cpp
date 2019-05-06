@@ -1,4 +1,6 @@
 #include "camera_node.hpp"
+
+#include "../util/aabb.hpp"
 #include "mesh_node.hpp"
 
 namespace wr
@@ -30,6 +32,17 @@ namespace wr
 		SignalChange();
 	}
 
+	void CameraNode::SetProjectionOffset(float x, float y)
+	{
+		m_projection_offset_x = x;
+		m_projection_offset_y = y;
+	}
+
+	std::pair<float, float> CameraNode::GetProjectionOffset()
+	{
+		return std::pair<float, float>(m_projection_offset_x, m_projection_offset_y);
+	}
+
 	void CameraNode::UpdateTemp(unsigned int frame_idx)
 	{
 		DirectX::XMVECTOR pos = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };
@@ -39,8 +52,15 @@ namespace wr
 		DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
 		m_view = DirectX::XMMatrixLookToRH(pos, forward, up);
+		
+		if (!m_override_projection)
+		{
+			m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov.m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
 
-		m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov.m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
+			m_projection.r[2].m128_f32[0] += m_projection_offset_x;
+			m_projection.r[2].m128_f32[1] += m_projection_offset_y;
+		}
+
 		m_view_projection = m_view * m_projection;
 		m_inverse_projection = DirectX::XMMatrixInverse(nullptr, m_projection);
 		m_inverse_view = DirectX::XMMatrixInverse(nullptr, m_view);
@@ -108,7 +128,7 @@ namespace wr
 			m_view_projection.r[1].m128_f32[3] - m_view_projection.r[1].m128_f32[2],
 			m_view_projection.r[2].m128_f32[3] - m_view_projection.r[2].m128_f32[2],
 			m_view_projection.r[3].m128_f32[3] - m_view_projection.r[3].m128_f32[2]
-			});
+		});
 
 	}
 

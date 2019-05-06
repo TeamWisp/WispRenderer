@@ -1,7 +1,9 @@
 #pragma once
 
-#include "scene_graph.hpp"
+#include "node.hpp"
+
 #include "../util/named_type.hpp"
+#include "../constant_buffer_pool.hpp"
 
 namespace wr
 {
@@ -30,7 +32,7 @@ namespace wr
 		};
 
 		CameraNode(float fov_deg, float aspect_ratio)
-			: Node(),
+			: Node(typeid(CameraNode)),
 			m_active(true),
 			m_frustum_near(0.1f),
 			m_frustum_far(1000.0f),
@@ -41,7 +43,10 @@ namespace wr
 			m_f_number(32.0f),
 			m_shape_amt(0.0f),
 			m_aperture_blades(5),
-			m_focus_dist(0)
+			m_focus_dist(0),
+			m_override_projection(false),
+			m_projection_offset_x(0),
+			m_projection_offset_y(0)
 		{
 		}
 
@@ -52,6 +57,10 @@ namespace wr
 		void SetAspectRatio(float ratio);
 
 		void SetFocalLength(float length);
+
+		void SetProjectionOffset(float x, float y);
+
+		std::pair<float, float> GetProjectionOffset();
 
 		void UpdateTemp(unsigned int frame_idx);
 
@@ -71,6 +80,7 @@ namespace wr
 		float m_shape_amt;
 		int m_aperture_blades;
 		bool m_enable_dof = false;
+		bool m_override_projection;
 
 		FoV m_fov;
 
@@ -79,6 +89,8 @@ namespace wr
 		DirectX::XMMATRIX m_view_projection;
 		DirectX::XMMATRIX m_inverse_projection;
 		DirectX::XMMATRIX m_inverse_view;
+		float m_projection_offset_x; // Used By Ansel For Super Resolution
+		float m_projection_offset_y; // Used By Ansel For Super Resolution
 
 		DirectX::XMVECTOR m_planes[6];
 

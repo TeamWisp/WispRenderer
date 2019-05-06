@@ -42,12 +42,13 @@ namespace wr::d3d12::settings
 	static const constexpr std::uint32_t num_indirect_draw_commands = 8;		//Allow 8 different meshes non-indexed
 	static const constexpr std::uint32_t num_indirect_index_commands = 32;		//Allow 32 different meshes indexed
 	static const constexpr bool use_bundles = false;
-	static const constexpr bool use_exec_indirect = false;
 	static const constexpr bool force_dxr_fallback = false;
 	static const constexpr bool disable_rtx = false;
 	static const constexpr bool enable_object_culling = true;
 	static const constexpr unsigned int num_max_rt_materials = 3000;
 	static const constexpr unsigned int num_max_rt_textures = 1000;
 	static const constexpr unsigned int fallback_ptrs_offset = 3500;
+	static const constexpr std::uint32_t res_skybox = 1024;
+	static const constexpr std::uint32_t res_envmap = 512;
 	
 } /* wr::d3d12::settings */

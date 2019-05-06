@@ -769,7 +769,7 @@ namespace wr
 			d3d12::Dispatch(d3d12_cmd_list, ((dst_width + 8 - 1) / 8), ((dst_height + 8 - 1) / 8), 1u);
 
 			//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-			d3d12::UAVBarrier(d3d12_cmd_list, texture, 1);
+			d3d12::UAVBarrier(d3d12_cmd_list, { texture });
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
@@ -959,7 +959,7 @@ namespace wr
 			d3d12::Dispatch(d3d12_cmd_list, ((dst_width + 8 - 1) / 8), ((dst_height + 8 - 1) / 8), 1u);
 
 			//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-			d3d12::UAVBarrier(d3d12_cmd_list, texture, 1);
+			d3d12::UAVBarrier(d3d12_cmd_list, { texture });
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{

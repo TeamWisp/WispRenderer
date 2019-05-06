@@ -294,7 +294,7 @@ namespace wr
 			ModelMaterialData* material = data->m_materials[i];
 
 			// This lambda loads a texture either from memory or from disc.
-			auto load_material_texture = [&](auto texture_location, auto embedded_texture_idx, bool srgb, bool gen_mips)
+			auto load_material_texture = [&](auto texture_location, auto embedded_texture_idx, auto material_texture, bool srgb, bool gen_mips)
 			{
 				if (texture_location == TextureLocation::EMBEDDED)
 				{
@@ -302,22 +302,22 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						albedo = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+						return texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						albedo = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
+						return texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
-				else if (material->m_albedo_texture_location == TextureLocation::EXTERNAL)
+				else if (texture_location == TextureLocation::EXTERNAL)
 				{
-					albedo = texture_pool->LoadFromFile(dir + material->m_albedo_texture, true, true);
+					return texture_pool->LoadFromFile(dir + material_texture, true, true);
 				}
 			};
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
 			{
-				load_material_texture(material->m_albedo_texture_location, material->m_albedo_embedded_texture, true, true);
+				albedo = load_material_texture(material->m_albedo_texture_location, material->m_albedo_embedded_texture, material->m_albedo_texture, true, true);
 			}
 			else
 			{
@@ -326,7 +326,7 @@ namespace wr
 
 			if (material->m_normal_map_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				load_material_texture(material->m_normal_map_texture_location, material->m_normal_map_embedded_texture, false, true);
+				normals = load_material_texture(material->m_normal_map_texture_location, material->m_normal_map_embedded_texture, material->m_normal_map_texture, false, true);
 			}
 			else
 			{
@@ -335,7 +335,7 @@ namespace wr
 
 			if (material->m_metallic_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				load_material_texture(material->m_metallic_texture_location, material->m_metallic_embedded_texture, false, true);
+				metallic = load_material_texture(material->m_metallic_texture_location, material->m_metallic_embedded_texture, material->m_metallic_texture, false, true);
 			}
 			else
 			{
@@ -344,7 +344,7 @@ namespace wr
 
 			if (material->m_roughness_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				load_material_texture(material->m_roughness_texture_location, material->m_roughness_embedded_texture, false, true);
+				roughness = load_material_texture(material->m_roughness_texture_location, material->m_roughness_embedded_texture, material->m_roughness_texture, false, true);
 			}
 			else
 			{
@@ -353,7 +353,7 @@ namespace wr
 
 			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, false, true);
+				ambient_occlusion = load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, material->m_ambient_occlusion_texture, false, true);
 			}
 			else
 			{

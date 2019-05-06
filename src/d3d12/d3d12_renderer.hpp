@@ -29,22 +29,6 @@ namespace wr
 
 	namespace temp
 	{
-		struct IndirectCommand
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
-			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
-			D3D12_VERTEX_BUFFER_VIEW vb_view;
-			D3D12_DRAW_ARGUMENTS draw_arguments;
-		};
-
-		struct IndirectCommandIndexed
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbv_camera;
-			D3D12_GPU_VIRTUAL_ADDRESS cbv_object;
-			D3D12_VERTEX_BUFFER_VIEW vb_view;
-			D3D12_DRAW_INDEXED_ARGUMENTS draw_arguments;
-		};
-
 		struct ProjectionView_CBData
 		{
 			DirectX::XMMATRIX m_view;
@@ -53,6 +37,7 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_view;
 			unsigned int m_is_hybrid;
 			unsigned int m_is_path_tracer;
+			unsigned int m_is_hbao;
 		};
 
 		struct RTHybridCamera_CBData
@@ -213,8 +198,6 @@ namespace wr
 		void ResetBatches(SceneGraph& sg);
 		void LoadPrimitiveShapes();
 
-		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer;
-		d3d12::IndirectCommandBuffer* m_indirect_cmd_buffer_indexed;
 		d3d12::CommandSignature* m_cmd_signature;
 		d3d12::CommandSignature* m_cmd_signature_indexed;
 
