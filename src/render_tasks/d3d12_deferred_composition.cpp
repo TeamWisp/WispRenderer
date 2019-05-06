@@ -138,14 +138,6 @@ namespace wr
 						d3d12::CreateSRVFromRTV(ao_buffer, ao_handle, 1, ao_buffer->m_create_info.m_rtv_formats.data());
 						data.is_hbao = false; //We won't have two versions of AO aplied simultaneously
 					} 
-					else if (data.is_hbao) // Get HBAO+ Texture
-					{
-						constexpr auto ao_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_AO);
-						auto ao_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(ao_id + (2 * i));
-						
-						auto ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
-						d3d12::CreateSRVFromSpecificRTV(ao_rt, ao_handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
-					}
 				}			
 			}				
 		}
@@ -216,6 +208,14 @@ namespace wr
 					auto irradiance_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE));
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
 					d3d12::CreateSRVFromSpecificRTV(hybrid_rt, irradiance_handle, 0, hybrid_rt->m_create_info.m_rtv_formats[0]);
+				}
+
+				// Get HBAO+ Texture
+				if (data.is_hbao)
+				{
+					auto handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_AO));
+					auto ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
+					d3d12::CreateSRVFromSpecificRTV(ao_rt, handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
 				}
 
 				// Get Irradiance Map

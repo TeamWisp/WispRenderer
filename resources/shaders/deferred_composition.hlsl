@@ -81,12 +81,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			screen_space_irradiance[screen_coord].xyz,
 			is_path_tracer);
 
-		// Get ao
-		float ao = lerp(
-			1,
-			screen_space_ao[screen_coord].xyz,
-			// Lerp factor (0: env map, 1: path traced)
-			is_hbao);
+//TODO: Check AO Type
+		// // Get ao
+		// float ao = lerp(
+		// 	1,
+		// 	gbuffer_AO[screen_coord].xyz,
+		// 	// Lerp factor (0: env map, 1: path traced)
+		// 	is_hbao);
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -109,7 +110,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Get ao
-		float3 occluded_irradiance = irradiance * gbuffer_AO[screen_coord].x; //Todo: Apply correctly once fixed
+		float ao = gbuffer_AO[screen_coord].x;
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
