@@ -2,7 +2,7 @@
 
 namespace wr
 {
-	std::vector<ModelLoader*> ModelLoader::m_registered_model_loaders = std::vector<ModelLoader*>();
+	WISPRENDERER_EXPORT std::vector<ModelLoader*> ModelLoader::m_registered_model_loaders = std::vector<ModelLoader*>();
 
 	ModelLoader::ModelLoader()
 	{

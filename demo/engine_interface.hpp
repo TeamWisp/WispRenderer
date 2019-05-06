@@ -12,6 +12,8 @@ namespace engine
 {
 
 	static bool main_menu = true;
+	static bool keep_aspect_ratio = false;
+	static float custom_aspect_ratio = 1280.f/720.f;
 	static bool open0 = true;
 	static bool open1 = true;
 	static bool open_viewport = true;
@@ -64,7 +66,7 @@ namespace engine
 			ImGui::EndMainMenuBar();
 		}
 		
-		ImGui::DockSpaceOverViewport(main_menu, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruDockspace);
+		ImGui::DockSpaceOverViewport(main_menu, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 		auto& io = ImGui::GetIO();
 
@@ -74,11 +76,23 @@ namespace engine
 		if (open_viewport)
 		{
 			ImGui::Begin("Viewport");
-			
+
+			ImGui::SetNextItemWidth(80);
+			ImGui::Checkbox("Force Aspect Ratio", &keep_aspect_ratio);
+			ImGui::SameLine();
+			ImGui::InputFloat("##", &custom_aspect_ratio);
+
 			viewport_size = ImGui::GetContentRegionAvail();
 			viewport_pos = ImGui::GetCursorScreenPos();
 
-			sg->GetActiveCamera()->SetAspectRatio(viewport_size.x / viewport_size.y);
+			if (keep_aspect_ratio)
+			{
+				sg->GetActiveCamera()->SetAspectRatio(custom_aspect_ratio);
+			}
+			else
+			{
+				sg->GetActiveCamera()->SetAspectRatio(viewport_size.x / viewport_size.y);
+			}
 
 			ImGui::Image(output, viewport_size);
 			ImGui::End();
@@ -93,6 +107,7 @@ namespace engine
 			if (ImGui::Button("Light")) ImGui::StyleColorsLight();
 			if (ImGui::Button("Dark")) ImGui::StyleColorsDark();
 			if (ImGui::Button("Dark2")) ImGui::StyleColorsDarkCodz1();
+			if (ImGui::Button("Corporate Grey")) ImGui::StyleCorporateGrey();
 			ImGui::End();
 		}
 
