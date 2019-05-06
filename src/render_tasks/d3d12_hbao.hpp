@@ -49,7 +49,7 @@ namespace wr
 	namespace internal
 	{
 
-		inline void SetupHBAOTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void SetupHBAOTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 #ifdef NVIDIA_GAMEWORKS_HBAO
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -142,12 +142,12 @@ namespace wr
 
 			// Set the viewport
 			data.ssao_input_data.DepthData.Viewport.Enable = true;
-			data.ssao_input_data.DepthData.Viewport.Height = static_cast<UINT>(viewport.m_viewport.Height);
-			data.ssao_input_data.DepthData.Viewport.Width = static_cast<UINT>(viewport.m_viewport.Width);
-			data.ssao_input_data.DepthData.Viewport.TopLeftX = static_cast<UINT>(viewport.m_viewport.TopLeftX);
-			data.ssao_input_data.DepthData.Viewport.TopLeftY = static_cast<UINT>(viewport.m_viewport.TopLeftY);
-			data.ssao_input_data.DepthData.Viewport.MinDepth = static_cast<UINT>(viewport.m_viewport.MinDepth);
-			data.ssao_input_data.DepthData.Viewport.MaxDepth = static_cast<UINT>(viewport.m_viewport.MaxDepth);
+			data.ssao_input_data.DepthData.Viewport.Height = static_cast<GFSDK_SSAO_UINT>(viewport.m_viewport.Height);
+			data.ssao_input_data.DepthData.Viewport.Width = static_cast<GFSDK_SSAO_UINT>(viewport.m_viewport.Width);
+			data.ssao_input_data.DepthData.Viewport.TopLeftX = static_cast<GFSDK_SSAO_UINT>(viewport.m_viewport.TopLeftX);
+			data.ssao_input_data.DepthData.Viewport.TopLeftY = static_cast<GFSDK_SSAO_UINT>(viewport.m_viewport.TopLeftY);
+			data.ssao_input_data.DepthData.Viewport.MinDepth = static_cast<GFSDK_SSAO_FLOAT>(viewport.m_viewport.MinDepth);
+			data.ssao_input_data.DepthData.Viewport.MaxDepth = static_cast<GFSDK_SSAO_FLOAT>(viewport.m_viewport.MaxDepth);
 
 			GFSDK_SSAO_Parameters ao_parameters = {};
 			ao_parameters.Radius = settings.m_runtime.m_radius;

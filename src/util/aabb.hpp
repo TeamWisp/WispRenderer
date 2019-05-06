@@ -2,6 +2,7 @@
 #include <DirectXMath.h>
 #include <limits>
 #include <algorithm>
+#include <array>
 
 namespace wr
 {
@@ -54,7 +55,7 @@ namespace wr
 		void Expand(DirectX::XMVECTOR pos);
 
 		//Check if the frustum planes intersect with the AABB
-		bool InFrustum(DirectX::XMVECTOR(&planes)[6]);
+		bool InFrustum(std::array<DirectX::XMVECTOR, 6> planes);
 
 		//Generates AABB from transform and box
 		static AABB FromTransform(Box box, DirectX::XMMATRIX transform);

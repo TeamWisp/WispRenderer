@@ -78,7 +78,7 @@ namespace spheres_scene
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
-		wr::Model* spheres[49];
+		//wr::Model* spheres[49];
 
 		//for (uint32_t i = 0; i <= 6; ++i)
 		//{

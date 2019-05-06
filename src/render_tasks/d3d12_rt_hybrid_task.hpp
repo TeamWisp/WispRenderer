@@ -124,8 +124,6 @@ namespace wr
 
 			if (!resize)
 			{
-				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
@@ -186,12 +184,15 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-      const auto& convolution_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			fg.GetPredecessorData<CubemapConvolutionTaskData>();
 
 			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
 
 			// Wait for AS to be built
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
+			{
+				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
+			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -247,20 +248,20 @@ namespace wr
 
 					for (size_t i = 0; i < num_textures_in_heap; ++i)
 					{
-						d3d12::SetRTShaderSRV(cmd_list, 0, heap_loc_start + i, texture_resource);
+						d3d12::SetRTShaderSRV(cmd_list, 0, static_cast<std::uint32_t>(heap_loc_start + i), texture_resource);
 					}
 				}
 
 				// Fill descriptor heap with textures used by the scene
-				for (auto handle : as_build_data.out_material_handles)
+				for (auto material_handle : as_build_data.out_material_handles)
 				{
-					auto* material_internal = handle.m_pool->GetMaterial(handle);
+					auto* material_internal = material_handle.m_pool->GetMaterial(material_handle);
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
-						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
+						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
 					if(!material_internal->UsesConstantAlbedo())
@@ -305,7 +306,7 @@ namespace wr
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cam_data.m_intensity = n_render_system.temp_intensity;
-				cam_data.m_frame_idx = ++data.frame_idx;
+				cam_data.m_frame_idx = static_cast<float>(++data.frame_idx);
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				// Make sure the convolution pass wrote to the skybox.

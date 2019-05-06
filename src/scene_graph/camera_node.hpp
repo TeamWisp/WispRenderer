@@ -2,6 +2,8 @@
 
 #include "node.hpp"
 
+#include <array>
+
 #include "../util/named_type.hpp"
 #include "../constant_buffer_pool.hpp"
 
@@ -99,7 +101,7 @@ namespace wr
 		float m_projection_offset_x; // Used By Ansel For Super Resolution
 		float m_projection_offset_y; // Used By Ansel For Super Resolution
 
-		DirectX::XMVECTOR m_planes[6];
+		std::array<DirectX::XMVECTOR, 6> m_planes;
 
 		ConstantBufferHandle* m_camera_cb;
 	};

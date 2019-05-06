@@ -152,7 +152,7 @@ namespace wr
 		ExpandFromVector(DirectX::XMVECTOR{ pos[0], pos[1], pos[2], 1 });
 	}
 
-	bool AABB::InFrustum(DirectX::XMVECTOR(&planes)[6])
+	bool AABB::InFrustum(std::array<DirectX::XMVECTOR, 6> planes)
 	{
 		for (DirectX::XMVECTOR& plane : planes)
 		{

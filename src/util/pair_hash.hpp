@@ -9,7 +9,7 @@ namespace util
 		{
 			std::uint64_t hash = 0;
 			for(int i=0;i<pair.second.size();i++) {
-				hash += pair.second[i].m_id + (int)pair.second[i].m_pool; // Can be anything
+				hash += pair.second[i].m_id + (std::intptr_t)pair.second[i].m_pool; // Can be anything
 			}
 
 			return std::hash<T1>()(pair.first) ^ hash;

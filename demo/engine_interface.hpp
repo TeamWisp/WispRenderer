@@ -71,7 +71,7 @@ namespace engine
 					ImGui::EndMenu();
 				}
 
-				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 0.4));
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.4f));
 				ImGui::Text("Current Frame Graph: %s", fg_manager::GetFrameGraphName(fg_manager::current).c_str());
 				ImGui::PopStyleColor();
 

@@ -317,7 +317,7 @@ namespace wr::d3d12
 		cmd_list->m_native->IASetPrimitiveTopology(topology);
 	}
 
-	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count, unsigned int vertex_start)
+	void Draw(CommandList* cmd_list, std::uint32_t vertex_count, std::uint32_t inst_count, std::uint32_t vertex_start)
 	{
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
@@ -327,7 +327,7 @@ namespace wr::d3d12
 		cmd_list->m_native->DrawInstanced(vertex_count, inst_count, vertex_start, 0);
 	}
 
-	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count, unsigned int idx_start, unsigned int vertex_start)
+	void DrawIndexed(CommandList* cmd_list, std::uint32_t idx_count, std::uint32_t inst_count, std::uint32_t idx_start, std::uint32_t vertex_start)
 	{
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{

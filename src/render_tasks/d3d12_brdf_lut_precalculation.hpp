@@ -42,7 +42,7 @@ namespace wr
 			}
 		}
 
-		inline void ExecuteBrdfLutPrecalculationTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
+		inline void ExecuteBrdfLutPrecalculationTask(RenderSystem& rs, FrameGraph& fg, SceneGraph&, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<BrdfLutTaskData>(handle);
@@ -65,10 +65,6 @@ namespace wr
 
 				n_render_system.m_brdf_lut_generated = true;
 			}
-		}
-
-		inline void DestroyBrdfLutPrecalculationTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
 		}
 	}
 
@@ -99,8 +95,7 @@ namespace wr
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteBrdfLutPrecalculationTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyBrdfLutPrecalculationTask(fg, handle, resize);
+		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 		};
 
 		desc.m_properties = rt_properties;

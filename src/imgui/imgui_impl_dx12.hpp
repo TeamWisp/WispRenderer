@@ -12,7 +12,9 @@
 
 #pragma once
 
-enum DXGI_FORMAT;
+#include <cstdint>
+
+enum DXGI_FORMAT : std::int32_t;
 struct ID3D12Device;
 struct ID3D12GraphicsCommandList;
 struct D3D12_CPU_DESCRIPTOR_HANDLE;

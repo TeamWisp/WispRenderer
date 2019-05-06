@@ -50,7 +50,6 @@ namespace wr
 				return;
 			}
 
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<CubemapConvolutionTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -115,10 +114,7 @@ namespace wr
 				if (n_render_system.m_render_window.has_value())
 				{
 					auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-					auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-
-					const auto viewport = d3d12::CreateViewport(irradiance->m_width, irradiance->m_height);
-
+					const auto viewport = d3d12::CreateViewport(static_cast<int>(irradiance->m_width), static_cast<int>(irradiance->m_height));
 					const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 
 					d3d12::BindViewport(cmd_list, viewport);
@@ -168,11 +164,11 @@ namespace wr
 
 							if (n_mesh->m_index_count != 0)
 							{
-								d3d12::DrawIndexed(cmd_list, n_mesh->m_index_count, 1, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
+								d3d12::DrawIndexed(cmd_list, static_cast<std::uint32_t>(n_mesh->m_index_count), 1, static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset), static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 							}
 							else
 							{
-								d3d12::Draw(cmd_list, n_mesh->m_vertex_count, 1, n_mesh->m_vertex_staging_buffer_offset);
+								d3d12::Draw(cmd_list, static_cast<std::uint32_t>(n_mesh->m_vertex_count), 1, static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 							}
 						}
 					}
@@ -214,7 +210,7 @@ namespace wr
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteCubemapConvolutionTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 		};
 
 		desc.m_properties = rt_properties;

@@ -66,16 +66,13 @@ namespace wr
 
 			for (uint32_t src_mip = 0; src_mip < dest_cubemap->m_mip_levels; ++src_mip)
 			{
-				uint32_t width = dest_cubemap->m_width >> src_mip;
-				uint32_t height = dest_cubemap->m_height >> src_mip;
+				uint32_t width = static_cast<std::uint32_t>(dest_cubemap->m_width) >> src_mip;
+				uint32_t height = static_cast<std::uint32_t>(dest_cubemap->m_height) >> src_mip;
 
-				prefilter_env_cb.texture_size = DirectX::XMFLOAT2((float)width, (float)height);
-				prefilter_env_cb.skybox_res = DirectX::XMFLOAT2((float)source_cubemap->m_width, (float)source_cubemap->m_height);
-				prefilter_env_cb.roughness = (float)(src_mip) / (float)(dest_cubemap->m_mip_levels);
+				prefilter_env_cb.texture_size = DirectX::XMFLOAT2(static_cast<float>(width), static_cast<float>(height));
+				prefilter_env_cb.skybox_res = DirectX::XMFLOAT2(static_cast<float>(source_cubemap->m_width), static_cast<float>(source_cubemap->m_height));
+				prefilter_env_cb.roughness = static_cast<float>(src_mip) / static_cast<float>(dest_cubemap->m_mip_levels);
 				prefilter_env_cb.cubemap_face = array_slice;
-
-				//Create views
-				//d3d12::CreateSRVFromCubemapFace(texture, srv_handle, 1, src_mip, array_slice);
 
 				DescriptorAllocation uav_alloc = alloc->Allocate();
 				d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
@@ -129,7 +126,6 @@ namespace wr
 				return;
 			}
 
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -193,7 +189,7 @@ namespace wr
 			if (n_render_system.m_render_window.has_value())
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				const auto viewport = d3d12::CreateViewport(cubemap_text->m_width, cubemap_text->m_height);
+				const auto viewport = d3d12::CreateViewport(static_cast<int>(cubemap_text->m_width), static_cast<int>(cubemap_text->m_height));
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 
 				d3d12::BindViewport(cmd_list, viewport);
@@ -243,11 +239,11 @@ namespace wr
 
 						if (n_mesh->m_index_count != 0)
 						{
-							d3d12::DrawIndexed(cmd_list, n_mesh->m_index_count, 1, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
+							d3d12::DrawIndexed(cmd_list, static_cast<std::uint32_t>(n_mesh->m_index_count), 1, static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset), static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 						}
 						else
 						{
-							d3d12::Draw(cmd_list, n_mesh->m_vertex_count, 1, n_mesh->m_vertex_staging_buffer_offset);
+							d3d12::Draw(cmd_list, static_cast<std::uint32_t>(n_mesh->m_vertex_count), 1, static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 						}
 					}
 				}
@@ -303,7 +299,7 @@ namespace wr
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 		};
 
 		desc.m_properties = rt_properties;

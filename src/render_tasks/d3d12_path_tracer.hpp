@@ -128,8 +128,6 @@ namespace wr
 
 			if (!resize)
 			{
-				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
@@ -139,9 +137,6 @@ namespace wr
 
 				data.tlas_requires_init = true;
 			}
-
-			// Get AS build data
-			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 			// Versioning
 			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
@@ -153,8 +148,6 @@ namespace wr
 				// Bind g-buffers (albedo, normal, depth)
 				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
 				d3d12::DescHeapCPUHandle depth_buffer_handle = data.out_depthbuffer.GetDescriptorHandle();
-
-				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 				d3d12::CreateSRVFromRTV(deferred_main_rt, gbuffers_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
@@ -208,7 +201,10 @@ namespace wr
 			}
 
 			// Wait for AS to be built
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
+			{
+				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
+			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -265,7 +261,7 @@ namespace wr
 
 					for (size_t i = 0; i < num_textures_in_heap; ++i)
 					{
-						d3d12::SetRTShaderSRV(cmd_list, 0, heap_loc_start + i, texture_resource);
+						d3d12::SetRTShaderSRV(cmd_list, 0, static_cast<std::uint32_t>(heap_loc_start + i), texture_resource);
 					}
 				}
 
@@ -278,7 +274,7 @@ namespace wr
 					{
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
-						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
+						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
 					set_srv(material_internal->GetAlbedo());

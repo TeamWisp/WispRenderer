@@ -22,10 +22,9 @@ namespace wr
 	namespace internal
 	{
 
-		inline void SetupImGuiTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void SetupImGuiTask(RenderSystem& rs, FrameGraph&, RenderTaskHandle, bool resize)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& data = fg.GetData<ImGuiTaskData>(handle);
 
 			if (!n_render_system.m_window.has_value())
 			{
@@ -121,7 +120,7 @@ namespace wr
 			}
 		}
 
-		inline void DestroyImGuiTask(FrameGraph& fg, RenderTaskHandle, bool resize)
+		inline void DestroyImGuiTask(FrameGraph&, RenderTaskHandle, bool resize)
 		{
 			if (resize)
 			{
