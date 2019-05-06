@@ -35,33 +35,24 @@ float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_
 	return (pos / pos.w).xyz;
 }
 
-float3 line_box_intersection(float3 box_min, float3 box_max, float3 line_start, float3 line_end)
+float4 line_box_intersection(float3 box_min, float3 box_max, float4 c_in, float4 c_hist)
 {
-    if(line_start.x < box_max.x && line_start.x > box_min.x &&
-     line_start.y < box_max.y && line_start.y > box_min.y &&
-     line_start.z < box_max.z && line_start.z > box_min.z)
-     {
-         return line_start;
-     }
+    float3 p_clip = 0.5 * (box_max + box_min);
+    float3 e_clip = 0.5 * (box_max - box_min);
 
-     float3 ray_dir = normalize(line_end - line_start);
-     float3 t = float3(0,0,0);
+    float4 v_clip = c_hist - float4(p_clip, c_in.w);
+    float3 v_unit = v_clip.xyz / e_clip;
+    float3 a_unit = abs(v_unit);
+    float ma_unit = max(a_unit.x, max(a_unit.y, a_unit.z));
 
-     for(int i = 0; i< 3; ++i)
-     {
-        if(ray_dir[i] > 0)
-        {
-            t[i] = (box_min[i] - line_start[i]) / ray_dir[i];
-        }
-        else
-        {
-            t[i] = (box_max[i] - line_start[i]) / ray_dir[i];
-        }
-     }
-
-     float mt = max(t.x, max(t.y, t.z));
-
-     return line_start + ray_dir*mt;
+    if(ma_unit > 1.0)
+    {
+        return float4(p_clip, c_in.w) + v_clip / ma_unit;
+    }
+    else
+    {
+        return c_hist;
+    }
 }
 
 [numthreads(16,16,1)]
@@ -122,9 +113,9 @@ void temporal_accumulator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	accum_data.w = clamp(accum_data.w, 1.0, 128.0);
 
-	accum_data.xyz = clamp(accum_data.xyz, box_min, box_max);
+	//accum_data.xyz = clamp(accum_data.xyz, box_min, box_max);
 
-    //accum_data.xyz = line_box_intersection(box_min, box_max, accum_data.xyz, noise.xyz);
+    accum_data.xyz = line_box_intersection(box_min, box_max, noise, accum_data);
 
     accum_data = lerp(accum_data, float4(1,1,1,0), q_UV.x < 0 || q_UV.x > 1 || q_UV.y < 0 || q_UV.y > 1);
 

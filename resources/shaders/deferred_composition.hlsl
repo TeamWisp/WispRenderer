@@ -1,5 +1,5 @@
 #define LIGHTS_REGISTER register(t3)
-#define MAX_REFLECTION_LOD 3
+#define MAX_REFLECTION_LOD 4
 
 #include "fullscreen_quad.hlsl"
 #include "util.hlsl"

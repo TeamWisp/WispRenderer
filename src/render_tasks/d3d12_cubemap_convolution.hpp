@@ -109,8 +109,8 @@ namespace wr
 
 			data.out_irradiance = skybox_node->m_irradiance.value();
 
-			d3d12::TextureResource* radiance = static_cast<d3d12::TextureResource*>(data.in_radiance.m_pool->GetTexture(data.in_radiance.m_id));
-			d3d12::TextureResource* irradiance = static_cast<d3d12::TextureResource*>(data.out_irradiance.m_pool->GetTexture(data.out_irradiance.m_id));
+			d3d12::TextureResource* radiance = static_cast<d3d12::TextureResource*>(data.in_radiance.m_pool->GetTextureResource(data.in_radiance));
+			d3d12::TextureResource* irradiance = static_cast<d3d12::TextureResource*>(data.out_irradiance.m_pool->GetTextureResource(data.out_irradiance));
 
 			if (data.should_run && radiance->m_is_staged)
 			{

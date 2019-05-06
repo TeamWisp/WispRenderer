@@ -172,7 +172,7 @@ namespace wr
 
 			if (kernel_texture_location.has_value())
 			{
-				data.m_kernel = texture_pool->Load(kernel_texture_location.value(), false, false);
+				data.m_kernel = texture_pool->LoadFromFile(kernel_texture_location.value(), false, false);
 			}
 			else
 			{
@@ -195,7 +195,7 @@ namespace wr
 					}
 				}
 
-				data.m_kernel = texture_pool->LoadFromMemory(kernel_data.data(), width, height, TextureType::RAW, false, false);
+				data.m_kernel = texture_pool->LoadFromRawMemory(kernel_data.data(), width, height, TextureType::RAW, false, false);
 			}
 
 			data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(

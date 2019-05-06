@@ -7,135 +7,65 @@ namespace wr
 
 	TexturePool::TexturePool()
 	{
+#ifdef _DEBUG
+		static uint16_t pool_count = 0u;
+		
+		m_name = "TexturePool_" + std::to_string(pool_count);
+
+		pool_count++;
+#endif
 	}
 
-	//! Loads a texture
-	TextureHandle TexturePool::Load(std::string_view path, bool srgb, bool generate_mips)
+	TextureHandle TexturePool::LoadFromCompressedMemory(char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips)
 	{
-		std::optional<std::string_view> extension = util::GetFileExtension(path);
+		std::string new_str = texture_extension;
 
-		if (std::string_view ext_int = extension.value(); extension.has_value())
-		{
-			Texture* texture;
-
-			if (ext_int.find("png") != std::string_view::npos)
-			{
-				texture = LoadPNG(path, srgb, generate_mips);
-			}
-			else if (ext_int.find("dds") != std::string_view::npos)
-			{
-				texture = LoadDDS(path, srgb, generate_mips);
-			}
-			else if (ext_int.find("hdr") != std::string_view::npos)
-			{
-				texture = LoadHDR(path, srgb, generate_mips);
-			}
-			else
-			{
-				LOGC("Texture {} not loaded. Format not supported.", path);
-			}
-
-			LOG("[TEXTURE LOADED] {}", path);
-
-			uint64_t texture_id = m_id_factory.GetUnusedID();
-
-			TextureHandle texture_handle;
-			texture_handle.m_pool = this;
-			texture_handle.m_id = texture_id;
-
-			m_unstaged_textures.insert(std::make_pair(texture_id, texture));
-
-			return texture_handle;
-		}
-		else
-		{
-			LOGC("Invalid path used as argument. Path: {}", path);
-		}
-	}
-
-	TextureHandle TexturePool::LoadFromMemory(unsigned char * data, int width, int height, TextureType type, bool srgb, bool generate_mips)
-	{
-		Texture* texture;
-		switch (type) {
-		case TextureType::DDS:
-			texture = LoadDDSFromMemory(data, width, srgb, generate_mips);
-			break;
-		case TextureType::PNG:
-			texture = LoadPNGFromMemory(data, width, srgb, generate_mips);
-			break;
-		case TextureType::HDR:
-			texture = LoadHDRFromMemory(data, width, srgb, generate_mips);
-			break;
-		case TextureType::RAW:
-			texture = LoadRawFromMemory(data, width, height, srgb, generate_mips);
-			break;
-		default:
-			LOGC("Texture {} not loaded. Format not supported.", "EMBEDDED");
-		}
-
-		uint64_t texture_id = m_id_factory.GetUnusedID();
-
-		TextureHandle texture_handle;
-		texture_handle.m_pool = this;
-		texture_handle.m_id = texture_id;
-
-		m_unstaged_textures.insert(std::make_pair(texture_id, texture));
-
-		return texture_handle;
-	}
-
-	TextureHandle TexturePool::LoadFromMemory(unsigned char * data, int width, int height, std::string texture_extension, bool srgb, bool generate_mips)
-	{
-		std::for_each(texture_extension.begin(), texture_extension.end(), [](char & c) {
-			c = ::tolower(c);
-		});
+		std::transform(texture_extension.begin(), texture_extension.end(), new_str.begin(), ::tolower);
 
 		TextureType type;
-		if (texture_extension.size() == 0 || height > 1)
+
+		if (new_str == "png"|| new_str == "jpg"
+			|| new_str == "jpeg" || new_str == "bmp")
 		{
-			type = TextureType::RAW;
+			type = TextureType::WIC;
 		}
-		else if (texture_extension.compare("png") == 0)
-		{
-			type = TextureType::PNG;
-		}
-		else if (texture_extension.compare("dds") == 0)
+		else if (new_str.compare("dds") == 0)
 		{
 			type = TextureType::DDS;
 		}
-		else if (texture_extension.compare("hdr") == 0)
+		else if (new_str.compare("hdr") == 0)
 		{
 			type = TextureType::HDR;
 		}
 		else
 		{
-			type = TextureType::PNG;
+			LOGC("[ERROR]: Texture format not supported.");
 		}
 
-		return LoadFromMemory(data, width, height, type, srgb, generate_mips);
+		return LoadFromCompressedMemory(data, width, height, type, srgb, generate_mips);
 	}
 
-	TextureHandle TexturePool::GetDefaultAlbedo()
+	TextureHandle TexturePool::GetDefaultAlbedo() const
 	{
 		return m_default_albedo;
 	}
 
-	TextureHandle TexturePool::GetDefaultNormal()
+	TextureHandle TexturePool::GetDefaultNormal() const
 	{
 		return m_default_normal;
 	}
 
-	TextureHandle TexturePool::GetDefaultRoughness()
+	TextureHandle TexturePool::GetDefaultRoughness() const
 	{
 		return m_default_roughness;
 	}
 
-	TextureHandle TexturePool::GetDefaultMetalic()
+	TextureHandle TexturePool::GetDefaultMetalic() const
 	{
 		return m_default_metalic;
 	}
 
-	TextureHandle TexturePool::GetDefaultAO()
+	TextureHandle TexturePool::GetDefaultAO() const
 	{
 		return m_default_ao;
 	}
