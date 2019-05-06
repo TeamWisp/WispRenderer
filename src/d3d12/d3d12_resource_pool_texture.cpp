@@ -52,6 +52,8 @@ namespace wr
 	{
 		auto device = m_render_system.m_device;
 
+		m_staging_textures.resize(d3d12::settings::num_back_buffers);
+
 		//Staging heap
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
@@ -181,7 +183,7 @@ namespace wr
 				GenerateMips(t, cmd_list);
 			}
 
-			MoveStagedTextures();
+			MoveStagedTextures(m_render_system.GetFrameIdx());
 		}
 	}
 
@@ -215,6 +217,19 @@ namespace wr
 			d3d12::Destroy(h);
 		}
 
+		auto& vec = m_staging_textures[frame_idx];
+
+		for (auto& elem : vec)
+		{
+			auto* tex = (d3d12::TextureResource*) elem.second;
+
+			if(tex->m_intermediate)
+				SAFE_RELEASE(tex->m_intermediate);
+
+			((d3d12::TextureResource*)m_staged_textures[elem.first])->m_intermediate = nullptr;
+		}
+
+		vec.clear();
 		m_temporary_heaps[frame_idx].clear();
 	}
 
@@ -391,7 +406,9 @@ namespace wr
 		m_staged_textures.erase(texture_id);
 
 		SAFE_RELEASE(texture->m_resource);
-		SAFE_RELEASE(texture->m_intermediate);
+
+		if(texture->m_intermediate)
+			SAFE_RELEASE(texture->m_intermediate);
 
 		delete texture;
 
@@ -626,11 +643,12 @@ namespace wr
 		return handle;
 	}
 
-	void D3D12TexturePool::MoveStagedTextures()
+	void D3D12TexturePool::MoveStagedTextures(unsigned int frame_idx)
 	{
 		for (auto itr = m_unstaged_textures.begin(); itr != m_unstaged_textures.end(); ++itr)
 		{
 			m_staged_textures.insert(std::make_pair(itr->first, itr->second.first));
+			m_staging_textures[frame_idx].insert(std::make_pair(itr->first, itr->second.first));
 
 			//Free the ScratchImage as it's not needed anymore after staging
 			delete itr->second.second;
