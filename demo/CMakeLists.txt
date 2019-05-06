@@ -1,6 +1,6 @@
 
-file(GLOB SOURCES CONFIGURE_DEPENDS "*.cpp")
-file(GLOB HEADERS CONFIGURE_DEPENDS "*.hpp")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "*.hpp")
 
 add_executable(WispDemo WIN32 ${HEADERS} ${SOURCES})
 target_include_directories(WispDemo PUBLIC ../src/)

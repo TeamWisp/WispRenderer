@@ -26,6 +26,9 @@
 #include "render_tasks/d3d12_bloom_horizontal.hpp"
 #include "render_tasks/d3d12_bloom_vertical.hpp"
 #include "render_tasks/d3d12_bloom_composition.hpp"
+#include "render_tasks/d3d12_hbao.hpp"
+#include "render_tasks/d3d12_ansel.hpp"
+
 
 namespace fg_manager
 {
@@ -89,6 +92,7 @@ namespace fg_manager
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			//// Do Depth of field task
@@ -125,7 +129,11 @@ namespace fg_manager
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 			// Copy the scene render pixel data to the final render target
+
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+			wr::AddAnselTask(*fg);
+
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
@@ -145,6 +153,8 @@ namespace fg_manager
 
 			// Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+
+			wr::AddHBAOTask(*fg);
 
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);
