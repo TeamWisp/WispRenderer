@@ -41,7 +41,7 @@ namespace wr
 
 	struct AnselData
 	{
-		bool out_ansel_support;
+		bool out_ansel_support = false;
 #ifdef NVIDIA_GAMEWORKS_ANSEL
 		std::optional<ansel::Camera> out_original_camera; // Used to restore the camera to the original settings when exiting Ansel.
 #endif
@@ -93,11 +93,11 @@ namespace wr
 		}
 
 
-		ansel::Camera NativeToAnselCamera(std::shared_ptr<CameraNode> const camera)
+		ansel::Camera NativeToAnselCamera(std::shared_ptr<CameraNode> const & camera)
 		{
 			auto proj_offset = camera->GetProjectionOffset();
 
-			ansel::Camera ansel_camera;
+			ansel::Camera ansel_camera{};
 			ansel_camera.aspectRatio = camera->m_aspect_ratio;
 			ansel_camera.fov = DirectX::XMConvertToDegrees(camera->m_fov.m_fov);
 			ansel_camera.position = { camera->m_position.m128_f32[0], camera->m_position.m128_f32[1], camera->m_position.m128_f32[2] };
@@ -110,7 +110,7 @@ namespace wr
 			return ansel_camera;
 		}
 
-		void AnselToNativeCamera(ansel::Camera const & ansel_camera, std::shared_ptr<CameraNode> camera)
+		void AnselToNativeCamera(ansel::Camera const & ansel_camera, std::shared_ptr<CameraNode> & camera)
 		{
 			camera->SetProjectionOffset(ansel_camera.projectionOffsetX, ansel_camera.projectionOffsetY);
 			camera->SetPosition({ ansel_camera.position.x, ansel_camera.position.y, ansel_camera.position.z });
@@ -130,9 +130,7 @@ namespace wr
 			}
 
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto n_device = n_render_system.m_device;
 			auto& data = fg.GetData<AnselData>(handle);
-			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			ansel_settings = fg.GetSettings<AnselSettings>(handle);
 
 			if (!n_render_system.m_window.has_value())

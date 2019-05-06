@@ -7,7 +7,6 @@
 #include "../d3d12/d3d12_rt_descriptor_heap.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../engine_registry.hpp"
-#include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../imgui_tools.hpp"
@@ -16,14 +15,14 @@ namespace wr
 {
 	struct ASBuildData
 	{
-		DescriptorAllocator* out_allocator;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_scene_ib_alloc;
 		DescriptorAllocation out_scene_mat_alloc;
 		DescriptorAllocation out_scene_offset_alloc;
 
-		d3d12::AccelerationStructure out_tlas;
-		D3D12StructuredBufferHandle* out_sb_material_handle;
-		D3D12StructuredBufferHandle* out_sb_offset_handle;
+		d3d12::AccelerationStructure out_tlas = {};
+		D3D12StructuredBufferHandle* out_sb_material_handle = nullptr;
+		D3D12StructuredBufferHandle* out_sb_offset_handle = nullptr;
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> out_blas_list;
 		std::vector<temp::RayTracingMaterial_CBData> out_materials;
 		std::vector<temp::RayTracingOffset_CBData> out_offsets;
@@ -37,11 +36,11 @@ namespace wr
 		std::vector<std::vector<d3d12::AccelerationStructure>> old_blasses;
 		std::vector<d3d12::AccelerationStructure> old_tlas;
 
-		unsigned int previous_frame_index;
-		unsigned int current_frame_index;
+		unsigned int previous_frame_index = 0;
+		unsigned int current_frame_index = 0;
 
-		bool out_init;
-		bool out_materials_require_update;
+		bool out_init = true;
+		bool out_materials_require_update = true;
 	};
 
 	namespace internal
@@ -104,9 +103,6 @@ namespace wr
 					material.roughness_id = material_internal->GetRoughness().m_id;
 					material.metallicness_id = material_internal->GetMetallic().m_id;
 					material.material_data = material_internal->GetMaterialData();
-					int x = sizeof(wr::temp::RayTracingMaterial_CBData);
-					int y = sizeof(DirectX::XMVECTOR);
-					int z = sizeof(Material::MaterialData);
 					data.out_materials.push_back(material);
 					data.out_parsed_materials[material_handle.m_id] = material_id;
 
@@ -124,7 +120,7 @@ namespace wr
 			inline void AppendOffset(ASBuildData& data, wr::internal::D3D12MeshInternal* mesh, unsigned int material_id)
 			{
 				wr::temp::RayTracingOffset_CBData offset;
-				offset.material_idx = material_id;
+				offset.material_idx = static_cast<float>(material_id);
 				offset.idx_offset = mesh->m_index_staging_buffer_offset;
 				offset.vertex_offset = mesh->m_vertex_staging_buffer_offset;
 				data.out_offsets.push_back(offset);

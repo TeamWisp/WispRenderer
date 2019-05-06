@@ -4,6 +4,7 @@
 
 namespace wr
 {
+
 	class IDFactory
 	{
 	public:
@@ -24,4 +25,5 @@ namespace wr
 		std::uint64_t m_id;
 		std::vector<uint64_t> m_unused_ids;
 	};
-}
+
+} /* wr */

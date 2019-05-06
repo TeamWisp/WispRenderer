@@ -48,7 +48,7 @@ namespace wr
 
 	enum class LightType : int
 	{
-		POINT, DIRECTIONAL, SPOT, FREE /* MAX LighType value; but unused */
+		POINT, DIRECTIONAL, SPOT, FREE
 	};
 
 	struct Light

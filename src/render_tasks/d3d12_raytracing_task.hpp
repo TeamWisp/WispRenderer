@@ -11,7 +11,6 @@
 
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../engine_registry.hpp"
-#include "../util/math.hpp"
 
 #include "../scene_graph/skybox_node.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"

@@ -21,7 +21,6 @@ namespace spheres_scene
 		static std::shared_ptr<wr::MaterialPool> material_pool;
 
 		static wr::Model* sphere_model;
-		static wr::Model* test_model;
 
 		static wr::TextureHandle equirectangular_environment_map;
 
@@ -51,8 +50,6 @@ namespace spheres_scene
 			spheres_material_internal->SetMetallic(spheres_metallic);
 
 			// Create Models
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 			for (auto& m : sphere_model->m_meshes)
 			{
@@ -71,7 +68,6 @@ namespace spheres_scene
 
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
-	static std::shared_ptr<wr::MeshNode> test_model;
 
 	static float t = 0;
 

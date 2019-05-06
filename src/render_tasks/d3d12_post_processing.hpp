@@ -10,11 +10,10 @@ namespace wr
 {
 	struct PostProcessingData
 	{
-		d3d12::RenderTarget* out_source_rt;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
+		d3d12::RenderTarget* out_source_rt = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
 
-		DescriptorAllocator* out_allocator;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 	};
 
@@ -24,7 +23,7 @@ namespace wr
 	{
 
 		template<typename T>
-		inline void SetupPostProcessingTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void SetupPostProcessingTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<PostProcessingData>(handle);
@@ -67,10 +66,8 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<PostProcessingData>(handle);
-			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			const auto viewport = n_render_system.m_viewport;
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
@@ -89,7 +86,7 @@ namespace wr
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
-			float hdr_type = static_cast<float>(d3d12::settings::output_hdr);
+			auto hdr_type = static_cast<float>(d3d12::settings::output_hdr);
 			d3d12::BindCompute32BitConstants(cmd_list, &hdr_type, 1, 0, 1);
 
 			d3d12::Dispatch(cmd_list,
@@ -98,7 +95,7 @@ namespace wr
 				1);
 		}
 
-		inline void DestroyPostProcessing(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void DestroyPostProcessing(FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 			auto& data = fg.GetData<PostProcessingData>(handle);
 
