@@ -169,7 +169,7 @@ namespace wr::d3d12
 	struct CommandList
 	{
 		std::vector<ID3D12CommandAllocator*> m_allocators;
-		ID3D12GraphicsCommandList5* m_native;
+		ID3D12GraphicsCommandList4* m_native;
 		ID3D12RaytracingFallbackCommandList* m_native_fallback;
 
 		// Dynamic descriptor heap where staging happens

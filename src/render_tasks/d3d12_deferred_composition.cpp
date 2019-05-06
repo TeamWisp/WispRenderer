@@ -14,6 +14,7 @@
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "../render_tasks/d3d12_path_tracer.hpp"
 #include "../render_tasks/d3d12_accumulation.hpp"
+#include "d3d12_hbao.hpp"
 
 namespace wr
 {
@@ -67,6 +68,10 @@ namespace wr
 			d3d12::DescHeapCPUHandle sp_irradiance_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(sp_irradiance);
 			d3d12::SetShaderSRV(cmd_list, 1, sp_irradiance, sp_irradiance_handle);
 
+			constexpr unsigned int hbao = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_AO);
+			d3d12::DescHeapCPUHandle hbao_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(hbao);
+			d3d12::SetShaderSRV(cmd_list, 1, hbao, hbao_handle);
+
 			constexpr unsigned int output = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
 			d3d12::DescHeapCPUHandle output_handle = data.out_srv_uav_allocation.GetDescriptorHandle(output);
 			d3d12::SetShaderUAV(cmd_list, 1, output, output_handle);
@@ -88,6 +93,7 @@ namespace wr
 			// Check if the current frame graph contains the hybrid task to know if it is hybrid or not.
 			data.is_hybrid = fg.HasTask<wr::RTHybridData>();
 			data.is_path_tracer = fg.HasTask<wr::PathTracerData>();
+			data.is_hbao = fg.HasTask<wr::HBAOData>();
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
@@ -98,7 +104,7 @@ namespace wr
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_rtv_srv_allocation = std::move(data.out_allocator->Allocate(4 * d3d12::settings::num_back_buffers));
-			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(10));
+			data.out_srv_uav_allocation = std::move(data.out_allocator->Allocate(11));
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
@@ -154,6 +160,11 @@ namespace wr
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
 				camera_data.m_is_hybrid = data.is_hybrid;
 				camera_data.m_is_path_tracer = data.is_path_tracer;
+#ifdef NVIDIA_GAMEWORKS_HBAO
+				camera_data.m_is_hbao = data.is_hbao;
+#else
+				camera_data.m_is_hbao = false;
+#endif
 
 				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&camera_data);
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);
@@ -185,6 +196,14 @@ namespace wr
 					auto irradiance_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE));
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
 					d3d12::CreateSRVFromSpecificRTV(hybrid_rt, irradiance_handle, 0, hybrid_rt->m_create_info.m_rtv_formats[0]);
+				}
+
+				// Get HBAO+ Texture
+				if (data.is_hbao)
+				{
+					auto handle = data.out_rtv_srv_allocation.GetDescriptorHandle(rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_AO));
+					auto ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
+					d3d12::CreateSRVFromSpecificRTV(ao_rt, handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
 				}
 
 				// Get Irradiance Map

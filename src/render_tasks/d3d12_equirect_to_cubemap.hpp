@@ -96,7 +96,7 @@ namespace wr
 				d3d12::Dispatch(d3d12_cmd_list, ((width + 8 - 1) / 8), ((height + 8 - 1) / 8), 1u);
 
 				//Wait for all accesses to the destination texture UAV to be finished before generating the next mipmap, as it will be the source texture for the next mipmap
-				d3d12::UAVBarrier(d3d12_cmd_list, dest_cubemap, 1);
+				d3d12::UAVBarrier(d3d12_cmd_list, { dest_cubemap });
 
 				d3d12::Transition(d3d12_cmd_list, dest_cubemap, dest_cubemap->m_subresource_states[src_mip], ResourceState::PIXEL_SHADER_RESOURCE, src_mip, 1);
 			}
@@ -190,9 +190,9 @@ namespace wr
 
 			data.in_equirect = skybox_node->m_hdr;
 			
-			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", 3840, 3840, 0, wr::Format::R32G32B32A32_FLOAT, true);
+			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", d3d12::settings::res_skybox, d3d12::settings::res_skybox, 0, wr::Format::R32G32B32A32_FLOAT, true);
 
-			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", 512, 512, 5, wr::Format::R32G32B32A32_FLOAT, true);
+			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", d3d12::settings::res_envmap, d3d12::settings::res_envmap, 5, wr::Format::R32G32B32A32_FLOAT, true);
 
 			data.out_cubemap = skybox_node->m_skybox.value();
 			data.out_pref_env = skybox_node->m_prefiltered_env_map.value();

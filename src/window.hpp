@@ -36,6 +36,11 @@ namespace wr
 		/*! Requests to close the window */
 		void Stop();
 
+		/*! Give the window a function to call on repaint */
+		void SetRenderLoop(std::function<void()> render_func);
+		/*! Start a loop that runs until the window is closed. */
+		void StartRenderLoop();
+
 		/*! Used to set the key callback function */
 		void SetKeyCallback(KeyCallback callback);
 		/*! Used to set the mouse callback function */
@@ -51,6 +56,8 @@ namespace wr
 		std::int32_t GetWidth() const;
 		/* Returns the client height */
 		std::int32_t GetHeight() const;
+		/* Returns the title of the window. */
+		std::string GetTitle() const;
 		/*! Returns the native window handle (HWND)*/
 		HWND GetWindowHandle() const;
 		/*! Checks whether the window is fullscreen */
@@ -66,6 +73,10 @@ namespace wr
 		MouseCallback m_mouse_callback;
 		ResizeCallback m_resize_callback;
 		MouseWheelCallback m_mouse_wheel_callback;
+
+		std::function<void()> m_render_func;
+
+		std::string m_title;
 
 		bool m_running;
 		HWND m_handle;
