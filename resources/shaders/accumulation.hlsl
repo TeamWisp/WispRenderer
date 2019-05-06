@@ -21,7 +21,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	float gamma = 2.2;
 	float exposure = 1;
 
-	float3 color = input[DTid.xy].rgb / (frame_idx);
+	float3 color = input.SampleLevel(s0, uv, 0).rgb / (frame_idx);
 
 	output[DTid.xy] = float4(color, 1);
 }

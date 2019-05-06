@@ -22,7 +22,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	float gamma = 2.2;
 	float exposure = 1;
 
-	float3 color = input[DTid.xy + 0.5f].rgb;
+	float3 color = input.SampleLevel(s0, uv, 0).rgb;
 	color = SampleFXAA(input, s0, DTid.xy + 0.5f, resolution);
 	//uv = ZoomUV(uv, 0.75);
 	//float3 color = input.SampleLevel(s0, BarrelDistortUV(uv, 2), 0);
@@ -43,6 +43,4 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	}
 
 	output[DTid.xy] = float4(color, 1);
-
-
 }

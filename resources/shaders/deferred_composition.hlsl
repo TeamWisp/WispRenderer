@@ -81,13 +81,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		// Get irradiance
 		float3 irradiance = lerp(
 			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
-			screen_space_irradiance[screen_coord].xyz,
+			screen_space_irradiance.SampleLevel(linear_sampler, uv, 0).xyz,
 			is_path_tracer);
 
 		// Get ao
 		float ao = lerp(
 			1,
-			screen_space_ao[screen_coord].xyz,
+			screen_space_ao.SampleLevel(point_sampler, uv, 0).xyz,
 			// Lerp factor (0: env map, 1: path traced)
 			is_hbao);
 
