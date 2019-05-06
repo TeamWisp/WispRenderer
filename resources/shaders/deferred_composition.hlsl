@@ -36,7 +36,7 @@ cbuffer CameraProperties : register(b0)
 static uint min_depth = 0xFFFFFFFF;
 static uint max_depth = 0x0;
 
-float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv, float2 screen_size) {
+float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
 	const float4 ndc = float4(uv * 2.0f - 1.f, depth, 1.0);
 	float4 pos = mul( view_inv, mul(proj_inv, ndc));
 	return (pos / pos.w).xyz;
