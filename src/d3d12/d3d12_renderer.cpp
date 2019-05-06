@@ -1094,7 +1094,7 @@ namespace wr
 			LOGC("Nice try boiii! That's not a shape.");
 		}
 
-		return m_simple_shapes[type];
+		return m_simple_shapes[static_cast<std::size_t>(type)];
 	}
 
 	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)
@@ -1152,7 +1152,7 @@ namespace wr
 				{ -1, 1, 1,		0, 0,		0, 1, 0,		0, 0, 0,	0, 0, 0,	0, 0, 0  },
 			};
 
-			m_simple_shapes[SimpleShapes::CUBE] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
+			m_simple_shapes[static_cast<std::size_t>(SimpleShapes::CUBE)] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
 		}
 
 		{
@@ -1170,7 +1170,7 @@ namespace wr
 				{ -1,  1,  0,		0, 1,		0, 0, -1,			0, 0, 1,		0, 1, 0,		0, 0, 0 },
 			};
 
-			m_simple_shapes[SimpleShapes::PLANE] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
+			m_simple_shapes[static_cast<std::size_t>(SimpleShapes::PLANE)] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
 		}
 	}
 

@@ -26,25 +26,9 @@ SplineNode::SplineNode(std::string name, bool looping) : Node(typeid(SplineNode)
 		[](std::shared_ptr<Node> node, wr::SceneGraph* scene_graph) {
 			auto spline_node = std::static_pointer_cast<SplineNode>(node);
 
-			bool animate = spline_node->m_animate;
-
 			ImGui::Checkbox("Animate", &spline_node->m_animate);
 			ImGui::DragFloat("Speed", &spline_node->m_speed);
 			ImGui::DragFloat("Time	", &spline_node->m_time);
-
-			// Started animating
-			/*if (spline_node->m_animate && animate != spline_node->m_animate)
-			{
-				m_initial_position = scene_graph->GetActiveCamera()->m_position;
-				m_initial_rotation = scene_graph->GetActiveCamera()->m_rotation_radians;
-			}
-
-			// Stopped animating
-			if (!spline_node->m_animate && animate != spline_node->m_animate)
-			{
-				scene_graph->GetActiveCamera()->SetPosition(m_initial_position);
-				scene_graph->GetActiveCamera()->SetRotation(m_initial_rotation);
-			}*/
 
 			if (ImGui::Button("Save Spline"))
 			{
@@ -78,7 +62,7 @@ SplineNode::SplineNode(std::string name, bool looping) : Node(typeid(SplineNode)
 
 			if (ImGui::Button("Add Control Point"))
 			{
-				ControlPoint cp;
+				ControlPoint cp{};
 				cp.m_position = scene_graph->GetActiveCamera()->m_position;
 				cp.m_rotation = scene_graph->GetActiveCamera()->m_rotation_radians;
 
@@ -126,14 +110,12 @@ SplineNode::SplineNode(std::string name, bool looping) : Node(typeid(SplineNode)
 
 SplineNode::~SplineNode()
 {
-	if (m_spline) delete m_spline;
+	delete m_spline;
 }
 
 void SplineNode::UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node)
 {
 	if (!m_spline || !m_quat_spline || !m_animate) return; // Don't try to run this code if we don't have a spline.
-
-	auto num_points = m_control_points.size();
 
 	auto impl = [&](auto spline, auto quat_spline)
 	{
@@ -159,17 +141,11 @@ void SplineNode::UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node)
 
 void SplineNode::UpdateNaturalSpline()
 {
-	if (m_spline)
-	{
-		delete m_spline;
-		m_spline = nullptr;
-	}
+    delete m_spline;
+    m_spline = nullptr;
 
-	if (m_quat_spline)
-	{
-		delete m_quat_spline;
-		m_quat_spline = nullptr;
-	}
+    delete m_quat_spline;
+    m_quat_spline = nullptr;
 
 	if (m_control_points.size() < (m_looping ? 2 : 3))
 	{
@@ -221,16 +197,16 @@ std::optional<std::string> SplineNode::LoadDialog()
 	OPENFILENAME dialog_args;
 	ZeroMemory(&dialog_args, sizeof(dialog_args));
 	dialog_args.lStructSize = sizeof(OPENFILENAME);
-	dialog_args.hwndOwner = NULL;
+	dialog_args.hwndOwner = nullptr;
 	dialog_args.lpstrFile = buffer;
 	dialog_args.lpstrFile[0] = '\0';
 	dialog_args.nMaxFile = sizeof(buffer);
 	dialog_args.lpstrFilter = "All\0*.*\0Spline\0*.SPL\0";
 	dialog_args.nFilterIndex = 1;
 	dialog_args.lpstrTitle = "Load Spline";
-	dialog_args.lpstrFileTitle = NULL;
+	dialog_args.lpstrFileTitle = nullptr;
 	dialog_args.nMaxFileTitle = 0;
-	dialog_args.lpstrInitialDir = NULL;
+	dialog_args.lpstrInitialDir = nullptr;
 	dialog_args.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
 	bool file_selected = GetOpenFileName(&dialog_args);
@@ -250,16 +226,16 @@ std::optional<std::string> SplineNode::SaveDialog()
 	OPENFILENAME dialog_args;
 	ZeroMemory(&dialog_args, sizeof(dialog_args));
 	dialog_args.lStructSize = sizeof(OPENFILENAME);
-	dialog_args.hwndOwner = NULL;
+	dialog_args.hwndOwner = nullptr;
 	dialog_args.lpstrFile = buffer;
 	//dialog_args.lpstrFile[0] = '\0';
 	dialog_args.nMaxFile = sizeof(buffer);
 	dialog_args.lpstrFilter = "Spline\0*.SPL\0";
 	dialog_args.nFilterIndex = 1;
-	dialog_args.lpstrFileTitle = NULL;
+	dialog_args.lpstrFileTitle = nullptr;
 	dialog_args.lpstrTitle = "Save Spline";
 	dialog_args.nMaxFileTitle = 0;
-	dialog_args.lpstrInitialDir = NULL;
+	dialog_args.lpstrInitialDir = nullptr;
 	dialog_args.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
 	bool file_selected = GetSaveFileName(&dialog_args);
@@ -308,7 +284,7 @@ void SplineNode::LoadSplineFromFile(std::string const& path)
 
 	while (numbers.size() > 5)
 	{
-		ControlPoint cp;
+		ControlPoint cp{};
 		cp.m_position = { numbers[0], numbers[1], numbers[2] };
 		cp.m_rotation = { numbers[3], numbers[4], numbers[5] };
 		m_control_points.push_back(cp);

@@ -10,7 +10,6 @@
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
-#include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
@@ -20,7 +19,7 @@ namespace wr
 {
 	struct RTHybridData
 	{
-		d3d12::AccelerationStructure out_tlas;
+		d3d12::AccelerationStructure out_tlas = {};
 
 		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
@@ -28,20 +27,20 @@ namespace wr
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
 
 		// Pipeline objects
-		d3d12::StateObject* out_state_object;
-		d3d12::RootSignature* out_root_signature;
+		d3d12::StateObject* out_state_object = nullptr;
+		d3d12::RootSignature* out_root_signature = nullptr;
 
 		// Structures and buffers
-		D3D12ConstantBufferHandle* out_cb_camera_handle;
-		d3d12::RenderTarget* out_deferred_main_rt;
+		D3D12ConstantBufferHandle* out_cb_camera_handle = nullptr;
+		d3d12::RenderTarget* out_deferred_main_rt = nullptr;
 
-		unsigned int frame_idx;
+		unsigned int frame_idx = 0;
 
 		DescriptorAllocation out_uav_from_rtv;
 		DescriptorAllocation out_gbuffers;
 		DescriptorAllocation out_depthbuffer;
 
-		bool tlas_requires_init;
+		bool tlas_requires_init = false;
 	};
 
 	namespace internal

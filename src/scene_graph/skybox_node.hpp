@@ -5,7 +5,7 @@ namespace wr {
 
 	struct SkyboxNode : Node
 	{
-		SkyboxNode(wr::TextureHandle hdr_texture, std::optional<wr::TextureHandle> cubemap = std::nullopt, std::optional<wr::TextureHandle> irradiance = std::nullopt)
+		explicit SkyboxNode(wr::TextureHandle hdr_texture, std::optional<wr::TextureHandle> cubemap = std::nullopt, std::optional<wr::TextureHandle> irradiance = std::nullopt)
 			: Node::Node(typeid(SkyboxNode))
 			, m_hdr(hdr_texture) 
 			, m_skybox(cubemap)

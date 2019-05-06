@@ -21,17 +21,16 @@ namespace wr
 {
 	struct CubemapConvolutionTaskData
 	{
-		D3D12Pipeline* in_pipeline;
+		D3D12Pipeline* in_pipeline = nullptr;
 
-		TextureHandle in_radiance;
-		TextureHandle out_irradiance;
-		TextureHandle out_pref_env_map;
+		TextureHandle in_radiance = {};
+		TextureHandle out_irradiance = {};
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
 		D3D12ConstantBufferHandle* cb_handle;
 
-		DirectX::XMMATRIX proj_mat;
-		DirectX::XMMATRIX view_mat[6];
+		DirectX::XMMATRIX proj_mat = { DirectX::XMMatrixIdentity() };
+		DirectX::XMMATRIX view_mat[6] = { };
 
 		bool should_run = true;
 	};
@@ -103,7 +102,6 @@ namespace wr
 			}
 
 			data.in_radiance = pred_data.out_cubemap;
-			data.out_pref_env_map = pred_data.out_pref_env;
 
 			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R32G32B32A32_FLOAT, true);;
 
@@ -187,14 +185,6 @@ namespace wr
 			//if (data.should_run)
 		}
 
-		inline void DestroyCubemapConvolutionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			if (resize)
-			{
-				return;
-			}
-		}
-
 	} /* internal */
 
 	inline void AddCubemapConvolutionTask(FrameGraph& fg)
@@ -225,7 +215,6 @@ namespace wr
 			internal::ExecuteCubemapConvolutionTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyCubemapConvolutionTask(fg, handle, resize);
 		};
 
 		desc.m_properties = rt_properties;

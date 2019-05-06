@@ -21,17 +21,17 @@ namespace wr
 {
 	struct EquirectToCubemapTaskData
 	{
-		D3D12Pipeline* in_pipeline;
+		D3D12Pipeline* in_pipeline = nullptr;
 
-		TextureHandle in_equirect;
-		TextureHandle out_cubemap;
-		TextureHandle out_pref_env;
+		TextureHandle in_equirect = {};
+		TextureHandle out_cubemap = {};
+		TextureHandle out_pref_env = {};
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
-		D3D12ConstantBufferHandle* cb_handle;
+		D3D12ConstantBufferHandle* cb_handle = nullptr;
 
-		DirectX::XMMATRIX proj_mat;
-		DirectX::XMMATRIX view_mat[6];
+		DirectX::XMMATRIX proj_mat = { DirectX::XMMatrixIdentity() };
+		DirectX::XMMATRIX view_mat[6] = {};
 
 		bool should_run = true;
 	};
@@ -193,10 +193,7 @@ namespace wr
 			if (n_render_system.m_render_window.has_value())
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-
 				const auto viewport = d3d12::CreateViewport(cubemap_text->m_width, cubemap_text->m_height);
-
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 
 				d3d12::BindViewport(cmd_list, viewport);
@@ -277,14 +274,6 @@ namespace wr
 			}
 		}
 
-		inline void DestroyEquirectToCubemapTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			if (resize)
-			{
-				return;
-			}
-		}
-
 	} /* internal */
 
 	inline void AddEquirectToCubemapTask(FrameGraph& fg)
@@ -315,7 +304,6 @@ namespace wr
 			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyEquirectToCubemapTask(fg, handle, resize);
 		};
 
 		desc.m_properties = rt_properties;

@@ -69,7 +69,7 @@ namespace wr
 		
 		std::optional<Window*> m_window;
 
-		enum SimpleShapes : std::size_t
+		enum class SimpleShapes : std::size_t
 		{
 			CUBE,
 			PLANE,
@@ -81,7 +81,7 @@ namespace wr
 		virtual wr::Model* GetSimpleShape(SimpleShapes type) = 0;
 
 		std::shared_ptr<ModelPool> m_shapes_pool;
-		wr::Model* m_simple_shapes[COUNT];
+		std::array<wr::Model*, static_cast<std::size_t>(SimpleShapes::COUNT)> m_simple_shapes;
 	};
 
 } /* wr */

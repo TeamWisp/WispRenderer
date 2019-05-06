@@ -19,7 +19,7 @@ namespace wr
 
 		struct FoV
 		{
-			FoV(FovDefault deg) : m_fov(deg.Get() / 180.0f * 3.1415926535f)
+			explicit FoV(FovDefault deg) : m_fov(deg.Get() / 180.0f * 3.1415926535f)
 			{
 			}
 
@@ -31,7 +31,7 @@ namespace wr
 			float m_fov;
 		};
 
-		CameraNode(float fov_deg, float aspect_ratio)
+		CameraNode(float aspect_ratio)
 			: Node(typeid(CameraNode)),
 			m_active(true),
 			m_frustum_near(0.1f),
@@ -46,7 +46,14 @@ namespace wr
 			m_focus_dist(0),
 			m_override_projection(false),
 			m_projection_offset_x(0),
-			m_projection_offset_y(0)
+			m_projection_offset_y(0),
+			m_view(),
+			m_inverse_view(),
+			m_projection(),
+			m_inverse_projection(),
+			m_view_projection(),
+			m_camera_cb(),
+			m_planes()
 		{
 		}
 
