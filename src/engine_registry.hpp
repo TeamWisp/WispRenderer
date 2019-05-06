@@ -272,16 +272,20 @@ namespace wr
 			NORMAL,
 			ROUGHNESS,
 			METALLIC,
+			AMBIENT_OCCLUSION,
+			EMISSIVE,
 			MATERIAL_PROPERTIES,
 		};
 
-		constexpr std::array<rs_layout::Entry, 7> basic = {
+		constexpr std::array<rs_layout::Entry, 9> basic = {
 			rs_layout::Entry{(int)BasicE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)BasicE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)BasicE::ALBEDO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::METALLIC, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BasicE::AMBIENT_OCCLUSION, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BasicE::EMISSIVE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BasicE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
@@ -290,6 +294,7 @@ namespace wr
 			CAMERA_PROPERTIES,
 			GBUFFER_ALBEDO_ROUGHNESS,
 			GBUFFER_NORMAL_METALLIC,
+			GBUFFER_EMISSIVE_AO,
 			GBUFFER_DEPTH,
 			LIGHT_BUFFER,
 			SKY_BOX,
@@ -302,10 +307,11 @@ namespace wr
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 13> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 14> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},			
+			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_EMISSIVE_AO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_DEPTH, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::LIGHT_BUFFER, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::SKY_BOX, 1, rs_layout::Type::SRV_RANGE},

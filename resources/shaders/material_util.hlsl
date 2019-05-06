@@ -9,14 +9,16 @@
 #define MATERIAL_HAS_METALLIC_CONSTANT 1<<8;
 #define MATERIAL_USE_METALLIC_CONSTANT 1<<9;
 #define MATERIAL_HAS_AO_TEXTURE 1<<10;
-#define MATERIAL_HAS_ALPHA_MASK 1<<11;
-#define MATERIAL_HAS_ALPHA_CONSTANT 1<<12;
-#define MATERIAL_IS_DOUBLE_SIDED 1<<13;
+#define MATERIAL_HAS_EMISSIVE_TEXTURE 1<<11;
+#define MATERIAL_HAS_ALPHA_MASK 1<<12;
+#define MATERIAL_HAS_ALPHA_CONSTANT 1<<13;
+#define MATERIAL_IS_DOUBLE_SIDED 1<<14;
 
 struct MaterialData
 {
 	float4 albedo_alpha;
 	float4 metallic_roughness;
+	float4 emissive_ao;
 	uint flags;
 	uint3 padding;
 };
@@ -27,12 +29,17 @@ struct OutputMaterialData
 	float roughness;
 	float3 normal;
 	float metallic;
+	float3 emissive;
+	float ao;
 };
-OutputMaterialData InterpretMaterialData(MaterialData data, 
+
+OutputMaterialData InterpretMaterialData(MaterialData data,
 	Texture2D material_albedo,
 	Texture2D material_normal,
 	Texture2D material_roughness,
 	Texture2D material_metallic,
+	Texture2D material_ambient_occlusion,
+	Texture2D material_emissive,
 	SamplerState s0,
 	float2 uv
 	) 
@@ -46,6 +53,8 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	uint use_metallic_constant = data.flags & MATERIAL_USE_METALLIC_CONSTANT;
 	uint has_metallic_texture = data.flags & MATERIAL_HAS_METALLIC_TEXTURE;
 	uint use_normal_texture = data.flags & MATERIAL_HAS_NORMAL_TEXTURE;
+	uint has_ao_texture = data.flags & MATERIAL_HAS_AO_TEXTURE;
+	uint has_emissive_texture = data.flags & MATERIAL_HAS_EMISSIVE_TEXTURE;
 
 	float4 albedo = lerp(material_albedo.Sample(s0, uv), float4(data.albedo_alpha.xyz, 1.0f), use_albedo_constant != 0 || has_albedo_texture == 0);
 
@@ -59,10 +68,20 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 #endif
 	float3 tex_normal = lerp((material_normal.Sample(s0, uv).rgb * 2.0) - float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 1.0), use_normal_texture == 0);
 
+	float ao = lerp(material_ambient_occlusion.Sample(s0, uv).r, 1.0f, has_ao_texture == 0);
+	float3 emissive = lerp(material_emissive.Sample(s0, uv).xyz, float3(0.0f, 0.0f, 0.0f), has_emissive_texture == 0);
+
+
+	//roughness = max(0.05f, material_roughness.Sample(s0, uv));
+	//metallic = material_metallic.Sample(s0, uv);
+	//tex_normal = (material_normal.Sample(s0, uv).rgb * 2.0) - float3(1.0, 1.0, 1.0);
+
 	output.albedo = albedo.xyz;
 	output.roughness = roughness.x;
 	output.normal = tex_normal;
 	output.metallic = metallic.x;
+	output.emissive = emissive;
+	output.ao = ao;
 
 	return output;
 }

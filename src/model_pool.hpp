@@ -289,7 +289,7 @@ namespace wr
 
 		for (int i = 0; i < data->m_materials.size(); ++i)
 		{
-			TextureHandle albedo, normals, metallic, roughness, ambient_occlusion;
+			TextureHandle albedo, normals, metallic, roughness, ambient_occlusion, emissive;
 
 			ModelMaterialData* material = data->m_materials[i];
 
@@ -360,11 +360,20 @@ namespace wr
 				ambient_occlusion = texture_pool->GetDefaultAO();
 			}
 
+			if (material->m_emissive_texture_location != TextureLocation::NON_EXISTENT)
+			{
+				emissive = load_material_texture(material->m_emissive_texture_location, material->m_emissive_embedded_texture, material->m_emissive_texture, true, true);
+			}
+			else
+			{
+				emissive = texture_pool->GetDefaultEmissive();
+			}
+
 			bool two_sided = material->m_two_sided;
 
 			float opacity = material->m_base_transparency;
 
-			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, false, true);
+			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, emissive, false, true);
 			Material* mat = material_pool->GetMaterial(new_handle);
 
 			mat->SetConstantAlbedo(material->m_base_color);
@@ -394,6 +403,10 @@ namespace wr
 			if (material->m_ambient_occlusion_texture_location == TextureLocation::NON_EXISTENT)
 			{
 				mat->UseAOTexture(false);
+			}
+			if (material->m_emissive_texture_location == TextureLocation::NON_EXISTENT)
+			{
+				mat->UseEmissiveTexture(false);
 			}
 
 			material_handles.push_back(new_handle);

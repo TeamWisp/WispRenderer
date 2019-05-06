@@ -21,6 +21,7 @@ namespace wr
 		m_rougness = { nullptr,0 };
 		m_metallic = { nullptr,0 };
 		m_ao = { nullptr,0 };
+		m_emissive = { nullptr,0 };
 	}
 
 	Material::Material(TextureHandle albedo,
@@ -28,10 +29,13 @@ namespace wr
 					   TextureHandle roughness,
 					   TextureHandle metallic,
 		               TextureHandle ao,
+					   TextureHandle emissive,
 		               bool alpha_masked,
 					   bool double_sided)
 	{
 		m_texture_pool = albedo.m_pool;
+	
+		
 		memset(&m_material_data, 0, sizeof(m_material_data));
 
 		SetAlbedo(albedo);
@@ -39,6 +43,7 @@ namespace wr
 		SetRoughness(roughness);
 		SetMetallic(metallic);
 		SetAmbientOcclusion(ao);
+		SetEmissive(emissive);
 
 		SetAlphaMasked(alpha_masked);
 		SetDoubleSided(double_sided);
@@ -177,6 +182,31 @@ namespace wr
 		m_material_data.m_material_flags.m_has_ao_texture = use_ao;
 	}
 
+	void Material::SetEmissive(TextureHandle emissive)
+	{
+		if (emissive.m_pool != m_texture_pool
+			&& m_texture_pool)
+		{
+			m_emissive = m_texture_pool->GetDefaultEmissive();
+			LOGW("Textures in a material need to belong to the same texture pool");
+			m_material_data.m_material_flags.m_has_emissive_texture = false;
+		}
+		else
+		{
+			if (!m_texture_pool)
+			{
+				m_texture_pool = emissive.m_pool;
+			}
+			m_emissive = emissive;
+			m_material_data.m_material_flags.m_has_emissive_texture = true;
+		}
+	}
+
+	void Material::UseEmissiveTexture(bool use_emissive)
+	{
+		m_material_data.m_material_flags.m_has_emissive_texture = use_emissive;
+	}
+
 	void Material::SetConstantAlbedo(DirectX::XMFLOAT3 color)
 	{
 		m_material_data.m_color = DirectX::XMVectorSet(color.x, color.y, color.z, GetConstantAlpha());
@@ -223,7 +253,6 @@ namespace wr
 	}
 
 
-
 	//////////////////////////////
 	//	MATERIAL POOL FUNCTIONS	//
 	//////////////////////////////
@@ -248,13 +277,13 @@ namespace wr
 
 	MaterialHandle MaterialPool::Create(TextureHandle& albedo, TextureHandle& normal,
 										TextureHandle& roughness, TextureHandle& metallic,
-										TextureHandle& ao, bool is_alpha_masked, bool is_double_sided)
+										TextureHandle& ao, TextureHandle& emissive, bool is_alpha_masked, bool is_double_sided)
 	{
 		MaterialHandle handle = {};
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material(albedo, normal, roughness, metallic, ao, is_alpha_masked, is_double_sided);
+		Material* mat = new Material(albedo, normal, roughness, metallic, ao, emissive, is_alpha_masked, is_double_sided);
 		mat->SetConstantBufferHandle(m_constant_buffer_pool->Create(sizeof(Material::MaterialData)));
 		mat->UpdateConstantBuffer();
 

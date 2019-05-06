@@ -285,6 +285,28 @@ namespace wr
 				material_data->m_normal_map_texture_location = TextureLocation::NON_EXISTENT;
 			}
 
+			if (material->GetTextureCount(aiTextureType_EMISSIVE) > 0)
+			{
+				aiString path;
+				material->GetTexture(aiTextureType_EMISSIVE, 0, &path);
+
+				if (path.data[0] == '*')
+				{
+					uint32_t index = atoi(path.C_Str() + 1);
+					material_data->m_emissive_embedded_texture = index;
+					material_data->m_emissive_texture_location = TextureLocation::EMBEDDED;
+				}
+				else
+				{
+					material_data->m_emissive_texture = std::string(path.C_Str());
+					material_data->m_emissive_texture_location = TextureLocation::EXTERNAL;
+				}
+			}
+			else
+			{
+				material_data->m_emissive_texture_location = TextureLocation::NON_EXISTENT;
+			}
+
 			aiColor3D color;
 			material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
 

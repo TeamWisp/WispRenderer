@@ -45,7 +45,9 @@ namespace wr
 		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ALBEDO),
 		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::NORMAL),
 		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ROUGHNESS),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::METALLIC),
+		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::METALLIC), 
+		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::AMBIENT_OCCLUSION),
+		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::EMISSIVE),
 	);
 
 	REGISTER(root_signatures::basic, RootSignatureRegistry)({
@@ -53,7 +55,7 @@ namespace wr
 			ROOT_PARAM(GetCBV(params::basic, params::BasicE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
 			ROOT_PARAM(GetCBV(params::basic, params::BasicE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
 			ROOT_PARAM_DESC_TABLE(ranges_basic, D3D12_SHADER_VISIBILITY_PIXEL),
-			ROOT_PARAM(GetCBV(params::basic,params::BasicE::MATERIAL_PROPERTIES,D3D12_SHADER_VISIBILITY_PIXEL)),
+			ROOT_PARAM(GetCBV(params::basic, params::BasicE::MATERIAL_PROPERTIES, D3D12_SHADER_VISIBILITY_PIXEL)),
 		}),
 		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
@@ -64,6 +66,7 @@ namespace wr
 	DESC_RANGE_ARRAY(srv_ranges,
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_NORMAL_METALLIC),
+		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_EMISSIVE_AO),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_DEPTH),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::LIGHT_BUFFER),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::SKY_BOX),
@@ -231,7 +234,7 @@ namespace wr
 		PipelineDescription::ComputeShader(std::nullopt),
 		PipelineDescription::RootSignature(root_signatures::basic),
 		PipelineDescription::DSVFormat(Format::D32_FLOAT),
-		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
+		PipelineDescription::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
 		PipelineDescription::NumRTVFormats(3),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_NONE),

@@ -37,7 +37,8 @@ namespace wr
 				 TextureHandle normal, 
 				 TextureHandle roughness,
 				 TextureHandle metallic,
-				 TextureHandle ao, 
+				 TextureHandle ao,
+				 TextureHandle emissive,
 				 bool alpha_masked = false, 
 				 bool double_sided = false);
 
@@ -69,6 +70,11 @@ namespace wr
 		void SetAmbientOcclusion(TextureHandle ao);
 
 		void UseAOTexture(bool use_ao);
+
+		TextureHandle GetEmissive() { return m_emissive; }
+		void SetEmissive(TextureHandle emissive);
+
+		void UseEmissiveTexture(bool use_emissive);
 
 		DirectX::XMFLOAT3 GetConstantAlbedo()
 		{
@@ -135,11 +141,11 @@ namespace wr
 			unsigned m_has_metallic_constant : 1;
 			unsigned m_use_metallic_constant : 1;
 			unsigned m_has_ao_texture : 1;
+			unsigned m_has_emissive_texture : 1;
 			unsigned m_has_alpha_mask : 1;
 			unsigned m_has_constant_alpha : 1;
 			unsigned m_is_double_sided : 1;
-			unsigned m_placeholder : 18;
-
+			unsigned m_placeholder : 17;
 		};
 
 		struct MaterialData
@@ -158,6 +164,7 @@ namespace wr
 		TextureHandle m_rougness;
 		TextureHandle m_metallic;
 		TextureHandle m_ao;
+		TextureHandle m_emissive;
 
 		bool m_alpha_masked = false;
 		bool m_double_sided = false;
@@ -188,6 +195,7 @@ namespace wr
 											TextureHandle& roughness,
 											TextureHandle& metallic,
 											TextureHandle& ao, 
+											TextureHandle& emissive,
 											bool is_alpha_masked = false, 
 											bool is_double_sided = false);
 

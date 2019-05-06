@@ -1,4 +1,4 @@
-#define LIGHTS_REGISTER register(t3)
+#define LIGHTS_REGISTER register(t4)
 #define MAX_REFLECTION_LOD 4
 
 #include "fullscreen_quad.hlsl"
@@ -9,15 +9,16 @@
 
 Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
-Texture2D gbuffer_depth : register(t2);
-//Consider SRV for light buffer in register t3
-TextureCube skybox : register(t4);
-TextureCube irradiance_map   : register(t5);
-TextureCube pref_env_map	 : register(t6);
-Texture2D brdf_lut			 : register(t7);
-Texture2D buffer_refl_shadow : register(t8); // xyz: reflection, a: shadow factor
-Texture2D screen_space_irradiance : register(t9);
-Texture2D screen_space_ao : register(t10);
+Texture2D gbuffer_emissive_ao : register(t2);
+Texture2D gbuffer_depth : register(t3);
+//Consider SRV for light buffer in register t4
+TextureCube skybox : register(t5);
+TextureCube irradiance_map   : register(t6);
+TextureCube pref_env_map	 : register(t7);
+Texture2D brdf_lut			 : register(t8);
+Texture2D buffer_refl_shadow : register(t9); // xyz: reflection, a: shadow factor
+Texture2D screen_space_irradiance : register(t10);
+Texture2D screen_space_ao : register(t11);
 RWTexture2D<float4> output   : register(u0);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
@@ -109,6 +110,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
+		retval = albedo;
 	}
 	else
 	{	

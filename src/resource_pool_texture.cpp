@@ -62,11 +62,16 @@ namespace wr
 
 	TextureHandle TexturePool::GetDefaultMetalic() const
 	{
-		return m_default_metalic;
+		return m_default_metallic;
 	}
 
 	TextureHandle TexturePool::GetDefaultAO() const
 	{
 		return m_default_ao;
+	}
+
+	TextureHandle TexturePool::GetDefaultEmissive() const
+	{
+		return m_default_emissive;
 	}
 }

@@ -14,8 +14,16 @@ namespace wr
 		d3d12::RenderTarget* out_deferred_main_rt;
 
 		DescriptorAllocator* out_allocator;
-		DescriptorAllocation out_rtv_srv_allocation;
-		DescriptorAllocation out_srv_uav_allocation;
+
+		DescriptorAllocation out_gbuffer_albedo_alloc;
+		DescriptorAllocation out_gbuffer_normal_alloc;
+		DescriptorAllocation out_gbuffer_emissive_alloc;
+		DescriptorAllocation out_gbuffer_depth_alloc;
+		DescriptorAllocation out_lights_alloc;
+		DescriptorAllocation out_buffer_refl_shadow_alloc;
+		DescriptorAllocation out_screen_space_irradiance_alloc;
+		DescriptorAllocation out_screen_space_ao_alloc;
+		DescriptorAllocation out_output_alloc;
 
 		d3d12::TextureResource* out_skybox;
 		d3d12::TextureResource* out_irradiance;
