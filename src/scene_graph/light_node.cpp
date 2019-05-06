@@ -3,28 +3,28 @@
 namespace wr
 {
 
-	LightNode::LightNode(LightType tid, DirectX::XMVECTOR col) : Node(), m_light(&m_temp)
+	LightNode::LightNode(LightType tid, DirectX::XMVECTOR col) : Node(typeid(LightNode)), m_light(&m_temp)
 	{
 		SetType(tid);
 		SetColor(col);
 	}
 
-	LightNode::LightNode(DirectX::XMVECTOR dir, DirectX::XMVECTOR col) : Node(), m_light(&m_temp)
+	LightNode::LightNode(DirectX::XMVECTOR dir, DirectX::XMVECTOR col) : Node(typeid(LightNode)), m_light(&m_temp)
 	{
 		SetDirectional(dir, col);
 	}
 
-	LightNode::LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR col) : Node(), m_light(&m_temp)
+	LightNode::LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR col) : Node(typeid(LightNode)), m_light(&m_temp)
 	{
 		SetPoint(pos, rad, col);
 	}
 
-	LightNode::LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR dir, float ang, DirectX::XMVECTOR col) : Node(), m_light(&m_temp)
+	LightNode::LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR dir, float ang, DirectX::XMVECTOR col) : Node(typeid(LightNode)), m_light(&m_temp)
 	{
 		SetSpot(pos, rad, dir, ang, col);
 	}
 
-	LightNode::LightNode(const LightNode& old)
+	LightNode::LightNode(const LightNode& old) : Node(typeid(LightNode))
 	{
 		m_temp = old.m_temp;
 		m_temp.tid &= 0x3;

@@ -16,9 +16,9 @@ namespace wr
 	struct ImGuiTaskData
 	{
 		std::function<void(ImTextureID)> in_imgui_func;
-		d3d12::DescriptorHeap* out_descriptor_heap;
+		inline static d3d12::DescriptorHeap* out_descriptor_heap = nullptr;
 	};
-	
+
 	namespace internal
 	{
 
@@ -40,7 +40,6 @@ namespace wr
 
 			if (ImGui_ImplDX12_IsInitialized())
 			{
-				data.out_descriptor_heap = ImGui_ImplDX12_GetDescriptorHeap();
 				return;
 			}
 
@@ -56,7 +55,8 @@ namespace wr
 			ImGuiIO& io = ImGui::GetIO(); (void)io;
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows (FIXME: Currently broken in DX12 back-end, need some work!)
+			io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;		// Enable Gamepad Controls
+			//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows (FIXME: Currently broken in DX12 back-end, need some work!)
 			io.ConfigDockingWithShift = true;
 
 			ImGui_ImplWin32_Init(n_render_system.m_window.value()->GetWindowHandle());
@@ -64,10 +64,9 @@ namespace wr
 				d3d12::settings::num_back_buffers,
 				(DXGI_FORMAT)d3d12::settings::back_buffer_format,
 				d3d12::GetCPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native,
-				d3d12::GetGPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native,
-				data.out_descriptor_heap);
+				d3d12::GetGPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native);
 
-			ImGui::StyleColorsCherry();
+			ImGui::StyleCorporateGrey();
 		}
 
 		template<typename T>
@@ -117,12 +116,10 @@ namespace wr
 				if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 				{
 					ImGui::UpdatePlatformWindows();
-					ImGui::RenderPlatformWindowsDefault();
+					ImGui::RenderPlatformWindowsDefault(NULL, (void*)cmd_list->m_native);
 				}
 
-
 				d3d12::Transition(cmd_list, display_rt, wr::ResourceState::PIXEL_SHADER_RESOURCE, wr::ResourceState::COPY_SOURCE);
-
 			}
 		}
 

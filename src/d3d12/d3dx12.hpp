@@ -2732,7 +2732,6 @@ public:
     }
 	~CD3DX12_STATE_OBJECT_DESC()
 	{
-		volatile int x = 0;
 	}
     CD3DX12_STATE_OBJECT_DESC(D3D12_STATE_OBJECT_TYPE Type)
     {

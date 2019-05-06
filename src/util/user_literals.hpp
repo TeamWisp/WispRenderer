@@ -1,4 +1,5 @@
 #pragma once
+
 constexpr float operator"" _deg(long double deg)
 {
 	return DirectX::XMConvertToRadians(static_cast<float>(deg));
