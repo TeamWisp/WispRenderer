@@ -5,6 +5,7 @@
 
 #include "wisp.hpp"
 #include "demo_frame_graphs.hpp"
+#include "util/file_watcher.hpp"
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
@@ -24,56 +25,25 @@ void RenderEditor(ImTextureID output)
 	engine::RenderEngine(output, render_system.get(), scene_graph.get());
 }
 
-void SetupShaderDirWatcher()
+void ShaderDirChangeDetected(std::string path, util::FileWatcher::FileStatus status)
 {
-	auto handle = FindFirstChangeNotificationA("resources/shaders/", false,
-		FILE_NOTIFY_CHANGE_FILE_NAME |
-		FILE_NOTIFY_CHANGE_DIR_NAME |
-		FILE_NOTIFY_CHANGE_ATTRIBUTES |
-		FILE_NOTIFY_CHANGE_LAST_WRITE |
-		FILE_NOTIFY_CHANGE_SECURITY
-	);
+	auto& registry = wr::PipelineRegistry::Get();
+	auto& rt_registry = wr::RTPipelineRegistry::Get();
 
-	auto thread = std::thread([handle]()
+	if (status == util::FileWatcher::FileStatus::MODIFIED)
 	{
-		while (true)
+		LOG("Change detected in the shader directory. Reloading pipelines and shaders.");
+
+		for (auto it : registry.m_objects)
 		{
-			auto wait_status = WaitForSingleObject(handle, INFINITE);
-			auto& registry = wr::PipelineRegistry::Get();
-			auto& rt_registry = wr::RTPipelineRegistry::Get();
-
-			switch (wait_status)
-			{
-			case WAIT_OBJECT_0:
-				LOG("Change detected in the shader directory. Reloading pipelines and shaders.");
-
-				for (auto it : registry.m_objects)
-				{
-					registry.RequestReload(it.first);
-				}
-
-				for (auto it : rt_registry.m_objects)
-				{
-					rt_registry.RequestReload(it.first);
-				}
-
-				if (FindNextChangeNotification(handle) == FALSE)
-				{
-					LOGW("FindNextChangeNotification function failed.");
-				}
-
-				using namespace std::chrono_literals;
-				std::this_thread::sleep_for(1s);
-
-				break;
-			default:
-				LOGW("Unhandled wait status.");
-				break;
-			}
+			registry.RequestReload(it.first);
 		}
-	});
 
-	thread.detach();
+		for (auto it : rt_registry.m_objects)
+		{
+			rt_registry.RequestReload(it.first);
+		}
+	}
 }
 
 int WispEntry()
@@ -204,27 +174,16 @@ int WispEntry()
 		fg_manager::Resize(*render_system.get(), width, height);
 	});
 
-	SetupShaderDirWatcher();
+	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
+	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
-	while (window->IsRunning())
-	{
-		window->PollEvents();
-
+	window->SetRenderLoop([&]() {
 		SCENE::UpdateScene();
 
 		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
+	});
 
-		// Example usage of the render function output:
-		if (texture.pixel_data != std::nullopt)
-		{
-			// Use pixel data here
-		}
-
-		if (texture.depth_data != std::nullopt)
-		{
-			// Use depth data here
-		}
-	}
+	window->StartRenderLoop();
 
 	delete assimp_model_loader;
 

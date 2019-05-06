@@ -31,6 +31,7 @@ cbuffer CameraProperties : register(b0)
 
 	uint is_hybrid;
 	uint is_path_tracer;
+	uint is_hbao;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -74,15 +75,18 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
-		float3 irradiance = float3(0, 0, 0);
-		if (is_path_tracer)
-		{
-			irradiance = screen_space_irradiance[screen_coord].xyz;
-		}
-		else
-		{
-			irradiance = irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz;
-		}
+		// Get irradiance
+		float irradiance = lerp(
+			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
+			screen_space_irradiance[screen_coord].xyz,
+			is_path_tracer);
+
+		// Get ao
+		float ao = lerp(
+			1,
+			screen_space_ao[screen_coord].xyz,
+			// Lerp factor (0: env map, 1: path traced)
+			is_hbao);
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -105,10 +109,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Get ao
-		float3 occluded_irradiance = irradiance * gbuffer_AO[screen_coord].x;
+		float3 occluded_irradiance = irradiance * gbuffer_AO[screen_coord].x; //Todo: Apply correctly once fixed
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, occluded_irradiance, reflection, sampled_brdf, shadow_factor);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
 	}
 	else
 	{	

@@ -2,9 +2,11 @@
 
 #include <optional>
 #include <array>
+#include <DirectXMath.h>
 
 #include "d3d12/d3d12_enums.hpp"
 #include "util/named_type.hpp"
+#include "util/user_literals.hpp"
 
 namespace wr
 {
@@ -42,6 +44,23 @@ namespace wr
 
 		ResourceName m_name = ResourceName(std::wstring());
 		ResolutionScalar m_resolution_scale = ResolutionScalar(1.0f);
+	};
+
+	enum class LightType : int
+	{
+		POINT, DIRECTIONAL, SPOT, FREE /* MAX LighType value; but unused */
+	};
+
+	struct Light
+	{
+		DirectX::XMFLOAT3 pos = { 0, 0, 0 };			//Position in world space for spot & point
+		float rad = 5.f;								//Radius for point, height for spot
+
+		DirectX::XMFLOAT3 col = { 1, 1, 1 };			//Color (and strength)
+		uint32_t tid = (uint32_t)LightType::FREE;		//Type id; LightType::x
+
+		DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
+		float ang = 40._deg;		//Angle for spot; in radians
 	};
 
 } /* wr */
