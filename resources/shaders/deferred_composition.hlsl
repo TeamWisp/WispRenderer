@@ -30,6 +30,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_view;
 	uint is_hybrid;
 	uint is_path_tracer;
+	uint is_hbao;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -77,7 +78,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float irradiance = lerp(
 			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
 			screen_space_irradiance[screen_coord].xyz,
-			// Lerp factor (0: env map, 1: path traced)
 			is_path_tracer);
 
 		// Get ao
@@ -85,7 +85,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			1,
 			screen_space_ao[screen_coord].xyz,
 			// Lerp factor (0: env map, 1: path traced)
-			true);
+			is_hbao);
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
