@@ -38,9 +38,9 @@ namespace util
 		~FileWatcher();
 
 		//! Launches the file watcher. This will stall the current thread.
-		void Start(util::Delegate<void(std::string path, FileStatus)> const & callback);
+		void Start(util::Delegate<void(std::string, FileStatus)> const & callback);
 		//! Launches the file watcher asynchrounously. When the file watcher goes out of scope the thread gets killed.
-		void StartAsync(util::Delegate<void(std::string path, FileStatus)> const & callback);
+		void StartAsync(util::Delegate<void(std::string, FileStatus)> const & callback);
 
 	private:
 		//! C++20's path::contains function.

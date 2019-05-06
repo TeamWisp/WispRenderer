@@ -1,6 +1,10 @@
 #pragma once
+
+#include <string>
 #include <vector>
 #include <DirectXMath.h>
+
+#include "wisprenderer_export.hpp"
 
 namespace wr
 {
@@ -79,7 +83,7 @@ namespace wr
 	struct ModelMaterialData 
 	{
 		std::string m_albedo_texture;
-		std::size_t m_albedo_embedded_texture;		
+		std::size_t m_albedo_embedded_texture;
 		TextureLocation m_albedo_texture_location;
 
 		std::string m_metallic_texture;
@@ -152,9 +156,9 @@ namespace wr
 
 		bool SupportsModelFormat(const std::string_view& model_format);
 
-		static ModelLoader* FindFittingModelLoader(const std::string_view& model_format);
+		WISPRENDERER_EXPORT static ModelLoader* FindFittingModelLoader(const std::string_view& model_format);
 
-		static std::vector<ModelLoader*> m_registered_model_loaders;
+		WISPRENDERER_EXPORT static std::vector<ModelLoader*> m_registered_model_loaders;
 
 	protected:
 		virtual ModelData* LoadModel(std::string_view model_path) = 0;
