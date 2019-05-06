@@ -96,7 +96,6 @@ namespace viknell_scene
 
 		camera_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline", false);
 
-		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		// Geometry
