@@ -187,7 +187,7 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
-			wr::AddAOTask(*fg);
+
 			//Ambient Occlusion task, but only when running on RTX hardware
 			if (!is_fallback)
 			{
