@@ -130,14 +130,65 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint depth, RayCone cone)
+// Brian Karis, Epic Games "Real Shading in Unreal Engine 4"
+// Modified version to do pdf and tangent to world conversions
+float3 importanceSamplePdf(float2 xi, float a, float3 N, inout float pdf)
 {
-	// Calculate ray info
-	float3 reflected = reflect(-V, normal);
+	float m = a * a;
+	float m2 = m * m;
 
-	// Shoot reflection ray
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, depth, cone);
+	float phi = 2 * PI * xi.x;
+	float cosTheta = sqrt((1.0 - xi.y) / (1.0 + (m2 - 1.0) * xi.y));
+	float sinTheta = sqrt(max(1e-5, 1.0 - cosTheta * cosTheta));
+
+	float3 H;
+	H.x = sinTheta * cos(phi);
+	H.y = sinTheta * sin(phi);
+	H.z = cosTheta;
+
+	float d = (cosTheta * m2 - cosTheta) * cosTheta + 1;
+	float D = m2 / (PI * d * d);
+	pdf = D * cosTheta;
+
+	float3 up = lerp(float3(1.0, 0.0, 0.0), float3(0.0, 0.0, 1.0), float(abs(N.z) < 0.999));
+	float3 T = normalize(cross(up, N));
+	float3 B = cross(N, T);
+
+	return normalize(T * H.x + B * H.y + N * H.z);
+}
+
+float3 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, RayCone cone)
+{
+
+	// Calculate ray info
+	float3 reflected = reflect(-V, N);
+
+	// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
+
+	#ifndef PERFECT_MIRROR_REFLECTIONS
+	if(depth > 0 || roughness < 0.05)
+	#endif
+
+		return TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone);
+
+	// Shoot an importance sampled ray
+
+	#ifndef PERFECT_MIRROR_REFLECTIONS
+
+	float2 xi = hammersley2d(rand_seed, 8192);
+	float pdf = 0;
+	float3 H = importanceSamplePdf(xi, roughness, N, pdf);
+	float3 L = reflect(-V, H);
+
+	float NdotL = max(dot(N, L), 0);
+
+	float3 reflection = float3(0, 0, 0);
+	
+	if (NdotL > 0)
+		reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone);
+
 	return reflection;
+	#endif
 }
 
 #define M_PI 3.14159265358979
@@ -193,7 +244,7 @@ void RaygenEntry()
 	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, cone);
+	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
@@ -314,7 +365,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
 
 	//Reflection in reflections
-	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, payload.cone);
+	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, roughness, payload.cone);
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
