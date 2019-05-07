@@ -7,7 +7,6 @@
 #include "../d3d12/d3d12_rt_descriptor_heap.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../engine_registry.hpp"
-#include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../imgui_tools.hpp"
@@ -16,18 +15,18 @@ namespace wr
 {
 	struct ASBuildData
 	{
-		DescriptorAllocator* out_allocator;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_scene_ib_alloc;
 		DescriptorAllocation out_scene_mat_alloc;
 		DescriptorAllocation out_scene_offset_alloc;
 
-		d3d12::AccelerationStructure out_tlas;
-		D3D12StructuredBufferHandle* out_sb_material_handle;
-		D3D12StructuredBufferHandle* out_sb_offset_handle;
+		d3d12::AccelerationStructure out_tlas = {};
+		D3D12StructuredBufferHandle* out_sb_material_handle = nullptr;
+		D3D12StructuredBufferHandle* out_sb_offset_handle = nullptr;
 		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> out_blas_list;
 		std::vector<temp::RayTracingMaterial_CBData> out_materials;
 		std::vector<temp::RayTracingOffset_CBData> out_offsets;
-		std::unordered_map<unsigned int, unsigned int> out_parsed_materials;
+		std::unordered_map<std::uint64_t, std::uint64_t> out_parsed_materials;
 		std::vector<MaterialHandle> out_material_handles;
 		d3d12::StagingBuffer* out_scene_ib;
 		d3d12::StagingBuffer* out_scene_vb;
@@ -37,11 +36,11 @@ namespace wr
 		std::vector<std::vector<d3d12::AccelerationStructure>> old_blasses;
 		std::vector<d3d12::AccelerationStructure> old_tlas;
 
-		unsigned int previous_frame_index;
-		unsigned int current_frame_index;
+		unsigned int previous_frame_index = 0;
+		unsigned int current_frame_index = 0;
 
-		bool out_init;
-		bool out_materials_require_update;
+		bool out_init = true;
+		bool out_materials_require_update = true;
 	};
 
 	namespace internal
@@ -52,7 +51,6 @@ namespace wr
 			if (resize) return;
 
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<ASBuildData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			d3d12::SetName(n_render_target, L"Raytracing Target");
@@ -90,7 +88,7 @@ namespace wr
 			//! Get a material id from a mesh.
 			inline unsigned int ExtractMaterialFromMesh(ASBuildData& data, MaterialHandle material_handle)
 			{
-				unsigned int material_id = 0;
+				std::size_t material_id = 0;
 				if (data.out_parsed_materials.find(material_handle.m_id) == data.out_parsed_materials.end())
 				{
 					material_id = data.out_materials.size();
@@ -99,14 +97,11 @@ namespace wr
 
 					// Build material
 					wr::temp::RayTracingMaterial_CBData material;
-					material.albedo_id = material_internal->GetAlbedo().m_id;
-					material.normal_id = material_internal->GetNormal().m_id;
-					material.roughness_id = material_internal->GetRoughness().m_id;
-					material.metallicness_id = material_internal->GetMetallic().m_id;
+					material.albedo_id = static_cast<float>(material_internal->GetAlbedo().m_id);
+					material.normal_id = static_cast<float>(material_internal->GetNormal().m_id);
+					material.roughness_id = static_cast<float>(material_internal->GetRoughness().m_id);
+					material.metallicness_id = static_cast<float>(material_internal->GetMetallic().m_id);
 					material.material_data = material_internal->GetMaterialData();
-					int x = sizeof(wr::temp::RayTracingMaterial_CBData);
-					int y = sizeof(DirectX::XMVECTOR);
-					int z = sizeof(Material::MaterialData);
 					data.out_materials.push_back(material);
 					data.out_parsed_materials[material_handle.m_id] = material_id;
 
@@ -117,16 +112,16 @@ namespace wr
 					material_id = data.out_parsed_materials[material_handle.m_id];
 				}
 
-				return material_id;
+				return static_cast<std::uint32_t>(material_id);
 			}
 
 			//! Add a data struct describing the mesh data offset and the material idx to `out_offsets`
 			inline void AppendOffset(ASBuildData& data, wr::internal::D3D12MeshInternal* mesh, unsigned int material_id)
 			{
 				wr::temp::RayTracingOffset_CBData offset;
-				offset.material_idx = material_id;
-				offset.idx_offset = mesh->m_index_staging_buffer_offset;
-				offset.vertex_offset = mesh->m_vertex_staging_buffer_offset;
+				offset.material_idx = static_cast<float>(material_id);
+				offset.idx_offset = static_cast<float>(mesh->m_index_staging_buffer_offset);
+				offset.vertex_offset = static_cast<float>(mesh->m_vertex_staging_buffer_offset);
 				data.out_offsets.push_back(offset);
 			}
 
@@ -155,7 +150,10 @@ namespace wr
 
 				// Build Bottom level BVH
 				auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
-				cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
+				{
+					auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native);
+					cmd_list->m_native->ResourceBarrier(1, &barrier);
+				}
 				blas.m_native->SetName(L"Bottomlevelaccel");
 
 				data.blasses.insert({ mesh_material.first->id, blas });
@@ -224,7 +222,10 @@ namespace wr
 
 						// Build Bottom level BVH
 						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
-						cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native));
+						{
+							auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native);
+							cmd_list->m_native->ResourceBarrier(1, &barrier);
+						}
 						blas.m_native->SetName(L"Bottomlevelaccel");
 
 						data.blasses.insert({ mesh.first->id, blas });
@@ -235,12 +236,12 @@ namespace wr
 
 						AppendOffset(data, n_mesh, material_id);
 
-						auto it = batchInfo.find({ model, materials });
+						auto batch_it = batchInfo.find({ model, materials });
 
-						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
+						assert(batch_it != batchInfo.end() && "Batch was found in global array, but not in local");
 
 						// Push instances into a array for later use.
-						for (uint32_t i = 0U, j = (uint32_t)it->second.num_global_instances; i < j; i++)
+						for (uint32_t i = 0U, j = (uint32_t)batch_it->second.num_global_instances; i < j; i++)
 						{
 							auto transform = batch.second[i].m_model;
 
@@ -262,7 +263,7 @@ namespace wr
 				}
 			}
 
-			inline void CreateSRVs(d3d12::CommandList* cmd_list, ASBuildData& data)
+			inline void CreateSRVs(ASBuildData& data)
 			{
 				for (auto i = 0; i < d3d12::settings::num_back_buffers; i++)
 				{
@@ -343,7 +344,7 @@ namespace wr
 						d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
 					}
 
-					CreateSRVs(cmd_list, data);
+					CreateSRVs(data);
 				}
 
 
@@ -392,7 +393,7 @@ namespace wr
 							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 							d3d12::Transition(cmd_list, n_model_pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
 
-							CreateSRVs(cmd_list, data);
+							CreateSRVs(data);
 
 							blas_iterator = data.blasses.find(mesh.first->id);
 						}
@@ -405,7 +406,7 @@ namespace wr
 
 						auto it = batchInfo.find({ model, materials });
 
-						assert(it != batchInfo.end(), "Batch was found in global array, but not in local");
+						assert(it != batchInfo.end() && "Batch was found in global array, but not in local");
 
 						// Push instances into a array for later use.
 						for (uint32_t i = 0U, j = (uint32_t)it->second.num_global_instances; i < j; i++)
@@ -469,7 +470,7 @@ namespace wr
 					d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
 				}
 
-				internal::CreateSRVs(cmd_list, data);
+				internal::CreateSRVs(data);
 
 				data.out_init = false;
 			}

@@ -55,8 +55,8 @@ namespace wr::d3d12
 	//void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> const & heaps);
 	void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size, std::size_t m_stride);
 	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset, unsigned int size);
-	void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count, unsigned int vertex_start);
-	void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count, unsigned int idx_start, unsigned int vertex_start);
+	void Draw(CommandList* cmd_list, std::uint32_t vertex_count, std::uint32_t inst_count, std::uint32_t vertex_start);
+	void DrawIndexed(CommandList* cmd_list, std::uint32_t idx_count, std::uint32_t inst_count, std::uint32_t idx_start, std::uint32_t vertex_start);
 	void Dispatch(CommandList* cmd_list, unsigned int thread_group_count_x, unsigned int thread_group_count_y, unsigned int thread_group_count_z);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 	void Transition(CommandList* cmd_list, RenderTarget* render_target, ResourceState from, ResourceState to);

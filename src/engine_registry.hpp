@@ -108,7 +108,7 @@ namespace wr
 			unsigned int size = 0;
 
 			// Find its range equivelant or visa versa
-			Type other_type = Type::SRV;
+            Type other_type = Type::SRV;
 			switch (type)
 			{
 			case Type::SRV:
@@ -171,9 +171,7 @@ namespace wr
 		template<typename T, typename E>
 		constexpr CD3DX12_ROOT_PARAMETER GetCBV(const T data, const E name, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
 		{
-			const Type type = Type::CBV_OR_CONST;
 			unsigned int start = 0;
-			unsigned int size = 0;
 
 			// Find Start & Size
 			for (std::size_t i = 0; i < data.size(); i++)
@@ -181,7 +179,6 @@ namespace wr
 				auto entry = data[i];
 				if (static_cast<E>(entry.name) == name)
 				{
-					size = entry.size;
 					break;
 				}
 				else if (entry.type == Type::CBV_OR_CONST || entry.type == Type::CBV_RANGE)
@@ -200,7 +197,6 @@ namespace wr
 		constexpr CD3DX12_ROOT_PARAMETER GetSRV(const T data, const E name, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
 		{
 			unsigned int start = 0;
-			unsigned int size = 0;
 
 			// Find Start & Size
 			for (std::size_t i = 0; i < data.size(); i++)
@@ -208,7 +204,6 @@ namespace wr
 				auto entry = data[i];
 				if (static_cast<E>(entry.name) == name)
 				{
-					size = entry.size;
 					break;
 				}
 				else if (entry.type == Type::SRV || entry.type == Type::SRV_RANGE)

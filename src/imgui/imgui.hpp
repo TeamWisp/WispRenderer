@@ -28,6 +28,8 @@ Index of this file:
 
 #pragma once
 
+#pragma warning(push, 0)
+
 // Configuration file with compile-time options (edit imconfig.h or define IMGUI_USER_CONFIG to your own filename)
 #ifdef IMGUI_USER_CONFIG
 #include IMGUI_USER_CONFIG
@@ -2387,5 +2389,7 @@ struct ImGuiViewport
 
 // Include imgui_user.h at the end of imgui.h (convenient for user to only explicitly include vanilla imgui.h)
 #ifdef IMGUI_INCLUDE_IMGUI_USER_H
-#include "imgui_user.h"
+#include "imgui_user.hpp"
 #endif
+
+#pragma warning(pop)

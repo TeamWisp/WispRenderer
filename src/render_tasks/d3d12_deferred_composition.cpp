@@ -58,7 +58,7 @@ namespace wr
 
 			constexpr unsigned int brdf_lut_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BRDF_LUT);
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
-			d3d12::TextureResource* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+			auto* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
 			d3d12::SetShaderSRV(cmd_list, 1, brdf_lut_loc, brdf_lut_text);
 
 			constexpr unsigned int shadow = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
@@ -164,7 +164,7 @@ namespace wr
 				// Update camera constant buffer pool
 				auto active_camera = scene_graph.GetActiveCamera();
 
-				temp::ProjectionView_CBData camera_data;
+				temp::ProjectionView_CBData camera_data{};
 				camera_data.m_projection = active_camera->m_projection;
 				camera_data.m_inverse_projection = active_camera->m_inverse_projection;
 				camera_data.m_view = active_camera->m_view;

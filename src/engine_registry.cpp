@@ -18,8 +18,6 @@
 #define DESC_RANGE_H(...) [] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(__VA_ARGS__); return r; }()
 // Root parameter
 #define ROOT_PARAM(func) [] { return func; }()
-// Root paramter hard coded
-#define ROOT_PARAM_H(func) [] { CD3DX12_ROOT_PARAMETER d; d.func; return d; }()
 // Root Parameter for descriptor tables
 #define ROOT_PARAM_DESC_TABLE(arr, visibility) [] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(arr.size(), arr.data(), visibility); return d; }()
 

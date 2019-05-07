@@ -31,7 +31,7 @@
 namespace fg_manager
 {
 
-	enum class PrebuildFrameGraph
+	enum class PrebuildFrameGraph : std::uint32_t
 	{
 		DEFERRED = 0,
 		RT_HYBRID = 1,
@@ -59,7 +59,7 @@ namespace fg_manager
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
 
-	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func, bool is_fallback)
+	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> const& imgui_func, bool is_fallback)
 	{
 		// Raytracing
 		{
@@ -247,12 +247,12 @@ namespace fg_manager
 
 	inline void Next()
 	{
-		current = (PrebuildFrameGraph)(((int)current + 1) % frame_graphs.size());
+		current = (PrebuildFrameGraph)((static_cast<std::uint32_t>(current) + 1ull) % frame_graphs.size());
 	}
 
 	inline void Prev()
 	{
-		current = (PrebuildFrameGraph)(((int)current - 1) % frame_graphs.size());
+		current = (PrebuildFrameGraph)((static_cast<std::uint32_t>(current) - 1ull) % frame_graphs.size());
 	}
 
 	inline void Set(PrebuildFrameGraph value)

@@ -309,10 +309,8 @@ namespace wr
 						return texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
-				else if (texture_location == TextureLocation::EXTERNAL)
-				{
-					return texture_pool->LoadFromFile(dir + material_texture, true, true);
-				}
+				
+				return texture_pool->LoadFromFile(dir + material_texture, true, true);
 			};
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)

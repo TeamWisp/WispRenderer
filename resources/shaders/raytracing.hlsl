@@ -285,7 +285,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(output_data.normal, TBN));
-	if (dot(fN, V) <= 0.0f) fN = -fN;
+	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
 	// Irradiance
 	float3 flipped_N = fN;

@@ -122,6 +122,39 @@ namespace wr::imgui::menu
 namespace wr::imgui::window
 {
 
+	void Stats::Draw(D3D12RenderSystem& render_system, ImVec2 viewport_pos)
+	{
+		if (m_open)
+		{
+			auto& io = ImGui::GetIO();
+			auto os_info = render_system.m_device->m_sys_info;
+			auto dx_info = render_system.m_device->m_adapter_info;
+
+			std::wstring wdesc(dx_info.Description);
+			std::string desc(wdesc.begin(), wdesc.end());
+
+			ImGui::SetNextWindowPos({ viewport_pos.x + 10, viewport_pos.y + 10 });
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.5));
+			ImGui::Begin("Stats", &m_open, ImGuiWindowFlags_AlwaysAutoResize |
+				ImGuiWindowFlags_NoResize |
+				ImGuiWindowFlags_NoSavedSettings |
+				ImGuiWindowFlags_NoInputs |
+				ImGuiWindowFlags_NoNav |
+				ImGuiWindowFlags_NoDocking |
+				ImGuiWindowFlags_NoCollapse |
+				ImGuiWindowFlags_NoDecoration |
+				ImGuiWindowFlags_NoMove
+			);
+			ImGui::Text(desc.c_str());
+			ImGui::Separator();
+			ImGui::Text("Framerate: %.1f", io.Framerate);
+			ImGui::Text("Delta: %f", io.DeltaTime);
+			ImGui::Text("Display Size: (%.0f, %.0f)", io.DisplaySize.x, io.DisplaySize.y);
+			ImGui::End();
+			ImGui::PopStyleColor();
+		}
+	}
+
 	void D3D12HardwareInfo(D3D12RenderSystem& render_system)
 	{
 		auto os_info = render_system.m_device->m_sys_info;
