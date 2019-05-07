@@ -23,7 +23,12 @@ namespace util
 		}
 
 	public:
-		Delegate() = default;
+		Delegate() :
+			m_object_ptr(),
+			m_deleter(),
+			m_store_size()
+		{
+		}
 
 		Delegate(Delegate const&) = default;
 
@@ -117,7 +122,8 @@ namespace util
 				{
 					using functor_type = typename ::std::decay<T>::type;
 
-					if ((sizeof(functor_type) > m_store_size) || !m_store.unique())
+					// Note that use_count is an approximation in multithreaded environments.
+					if ((sizeof(functor_type) > m_store_size) || m_store.use_count() != 1)
 					{
 						m_store.reset(operator new(sizeof(functor_type)),
 							functor_deleter<functor_type>);

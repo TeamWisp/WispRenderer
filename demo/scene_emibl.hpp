@@ -21,7 +21,6 @@ namespace emibl_scene
 
 		static wr::Model* cube_model;
 		static wr::Model* plane_model;
-		static wr::Model* test_model;
 		static wr::Model* material_knob;
 
 		static wr::MaterialHandle rusty_metal_material;
@@ -30,18 +29,12 @@ namespace emibl_scene
 
 		static wr::TextureHandle equirectangular_environment_map;
 
-		static wr::TextureHandle flat_normal;
-
 		void CreateResources(wr::RenderSystem* render_system)
 		{
 			texture_pool = render_system->CreateTexturePool();
 			material_pool = render_system->CreateMaterialPool(256);
 
 			// Load Texture.
-			wr::TextureHandle white = texture_pool->LoadFromFile("resources/materials/white.png", false, true);
-			wr::TextureHandle black = texture_pool->LoadFromFile("resources/materials/black.png", false, true);
-			flat_normal = texture_pool->LoadFromFile("resources/materials/flat_normal.png", false, true);
-
 			wr::TextureHandle metal_splotchy_albedo = texture_pool->LoadFromFile("resources/materials/metal-splotchy-albedo.png", true, true);
 			wr::TextureHandle metal_splotchy_normal = texture_pool->LoadFromFile("resources/materials/metal-splotchy-normal-dx.png", false, true);
 			wr::TextureHandle metal_splotchy_roughness = texture_pool->LoadFromFile("resources/materials/metal-splotchy-rough.png", false, true);
@@ -232,8 +225,6 @@ namespace emibl_scene
 
 			{
 				{
-					test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-
 					cube_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/cube.fbx");
 					for (auto& m : cube_model->m_meshes)
 					{
@@ -257,23 +248,18 @@ namespace emibl_scene
 			model_pool.reset();
 			texture_pool.reset();
 			material_pool.reset();
-		};
-
+		}
 	}
 
 
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
-	static std::shared_ptr<wr::MeshNode> test_model;
-	static std::shared_ptr<wr::MeshNode> cube_node;
 	static float t = 0;
-	static float lerp_t = 0.0f;
 
 	std::shared_ptr<wr::MeshNode> models[10];
 	std::shared_ptr<wr::MeshNode> platforms[10];
 
 	static DirectX::XMVECTOR camera_start_pos = { 500.0f, 60.0f, 260.0f };
-	static DirectX::XMVECTOR camera_end_pos = { -500.0f, 60.0f, 260.0f };
 
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
@@ -328,10 +314,9 @@ namespace emibl_scene
 		models[0]->SetPosition({ +500,		0	,	160 });
 		platforms[0]->SetPosition({ +500,		-3	,	160 });
 
-		for (uint32_t i = 0; i < 10; ++i)
+		for (auto& model : models)
 		{
-			//models[i]->SetScale({ 0.5f, 0.5f, 0.5f });
-			models[i]->SetRotation({ 90_deg, 0, 0 });
+			model->SetRotation({ 90_deg, 0, 0 });
 		}
 
 		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 0, 1, 0 });
@@ -340,36 +325,12 @@ namespace emibl_scene
 
 	void UpdateScene()
 	{
-		static float waiting = 0.0f;
-		static bool start_lerp = false;
-
 		float deltaTime = ImGui::GetIO().DeltaTime;
 
-		//waiting += deltaTime;
 
-		//if (waiting > 20.0f)
-		//{
-		//	start_lerp = true;
-		//}
-
-		//t += 5.f * deltaTime;
-
-		//if (lerp_t < 1.0f && start_lerp)
-		//{
-		//	lerp_t += deltaTime * 0.05f;
-
-		//	if (lerp_t > 1.0f)
-		//	{
-		//		lerp_t = 1.0f;
-		//	}
-
-		//	DirectX::XMVECTOR new_cam_pos = DirectX::XMVectorLerp(camera_start_pos, camera_end_pos, lerp_t);
-		//	camera->SetPosition(new_cam_pos);
-		//}
-
-		for (uint32_t i = 0; i < 10; ++i)
+		for (auto& model : models)
 		{
-			models[i]->SetRotation({ 0, DirectX::XMConvertToRadians(t), 0 });
+			model->SetRotation({ 0, DirectX::XMConvertToRadians(t), 0 });
 		}
 
 		camera->Update(deltaTime);

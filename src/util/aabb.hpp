@@ -2,23 +2,21 @@
 #include <DirectXMath.h>
 #include <limits>
 #include <algorithm>
+#include <array>
 
 namespace wr
 {
-
 	struct Box
 	{
+		struct Corners
+		{
+			DirectX::XMVECTOR m_xmin, m_xmax, m_ymin, m_ymax, m_zmin, m_zmax;
+		};
 
 		union
 		{
-
-			struct
-			{
-				DirectX::XMVECTOR m_xmin, m_xmax, m_ymin, m_ymax, m_zmin, m_zmax;
-			};
-
-			DirectX::XMVECTOR m_corners[6];
-
+			Corners m_corners;
+			DirectX::XMVECTOR m_data[6];
 		};
 
 		//Max bounds on each corner
@@ -37,17 +35,15 @@ namespace wr
 
 	struct AABB
 	{
+		struct Corners
+		{
+			DirectX::XMVECTOR m_min, m_max;
+		};
 		
 		union
 		{
-
-			struct
-			{
-				DirectX::XMVECTOR m_min, m_max;
-			};
-
-			DirectX::XMVECTOR m_bounds[2];
-
+			Corners m_corners;
+			DirectX::XMVECTOR m_data[6];
 		};
 
 		AABB();
@@ -59,7 +55,7 @@ namespace wr
 		void Expand(DirectX::XMVECTOR pos);
 
 		//Check if the frustum planes intersect with the AABB
-		bool InFrustum(DirectX::XMVECTOR(&planes)[6]);
+		bool InFrustum(std::array<DirectX::XMVECTOR, 6> planes);
 
 		//Generates AABB from transform and box
 		static AABB FromTransform(Box box, DirectX::XMMATRIX transform);

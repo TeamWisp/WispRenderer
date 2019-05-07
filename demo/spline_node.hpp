@@ -14,7 +14,7 @@ class SplineNode : public wr::Node
 	};
 
 public:
-	SplineNode(std::string name, bool looping = false);
+	explicit SplineNode(std::string name, bool looping = false);
 	~SplineNode();
 
 	void UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node);
@@ -22,15 +22,12 @@ public:
 private:
 	void UpdateNaturalSpline();
 
-	std::optional<std::string> LoadDialog();
-	std::optional<std::string> SaveDialog();
+	static std::optional<std::string> LoadDialog();
+	static std::optional<std::string> SaveDialog();
 	void SaveSplineToFile(std::string const & path);
 	void LoadSplineFromFile(std::string const & path);
 
 	bool m_animate;
-
-	DirectX::XMVECTOR m_initial_position;
-	DirectX::XMVECTOR m_initial_rotation;
 
 	void* m_spline;
 	void* m_quat_spline;

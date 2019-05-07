@@ -311,7 +311,7 @@ namespace wr
 				}
 				else if (texture_location == TextureLocation::EXTERNAL)
 				{
-					handle = texture_pool->LoadFromFile(dir + material->m_albedo_texture, true, true);
+					handle = texture_pool->LoadFromFile(texture_path, true, true);
 				}
 			};
 

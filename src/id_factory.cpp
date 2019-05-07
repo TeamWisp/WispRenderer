@@ -2,6 +2,7 @@
 
 namespace wr
 {
+
 	IDFactory::IDFactory()
 		: m_id(0)
 	{
@@ -30,6 +31,4 @@ namespace wr
 		return ret_id;
 	}
 
-
-
-}
+} /* wr */

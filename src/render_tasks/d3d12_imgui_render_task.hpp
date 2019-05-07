@@ -22,10 +22,9 @@ namespace wr
 	namespace internal
 	{
 
-		inline void SetupImGuiTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void SetupImGuiTask(RenderSystem& rs, FrameGraph&, RenderTaskHandle, bool resize)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& data = fg.GetData<ImGuiTaskData>(handle);
 
 			if (!n_render_system.m_window.has_value())
 			{
@@ -47,8 +46,8 @@ namespace wr
 			heap_desc.m_num_descriptors = 2;
 			heap_desc.m_shader_visible = true;
 			heap_desc.m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-			data.out_descriptor_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
-			SetName(data.out_descriptor_heap, L"ImGui Descriptor Heap");
+            ImGuiTaskData::out_descriptor_heap = d3d12::CreateDescriptorHeap(n_render_system.m_device, heap_desc);
+			SetName(ImGuiTaskData::out_descriptor_heap, L"ImGui Descriptor Heap");
 
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
@@ -63,10 +62,10 @@ namespace wr
 			ImGui_ImplDX12_Init(n_render_system.m_device->m_native,
 				d3d12::settings::num_back_buffers,
 				(DXGI_FORMAT)d3d12::settings::back_buffer_format,
-				d3d12::GetCPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native,
-				d3d12::GetGPUHandle(data.out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native);
+				d3d12::GetCPUHandle(ImGuiTaskData::out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native,
+				d3d12::GetGPUHandle(ImGuiTaskData::out_descriptor_heap, 0 /* TODO: Solve versioning for ImGui */).m_native);
 
-			ImGui::StyleCorporateGrey();
+			ImGui::StyleColorsCherry();
 		}
 
 		template<typename T>
@@ -75,7 +74,6 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<ImGuiTaskData>(handle);
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			// Temp rendering
 			if (n_render_system.m_render_window.has_value())
@@ -84,7 +82,6 @@ namespace wr
 
 				// Create handle to the render target you want to display. and put it in descriptor slot 2.
 				auto display_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
-				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
 				auto cpu_handle = d3d12::GetCPUHandle(data.out_descriptor_heap, frame_idx, 1);
 				d3d12::CreateSRVFromSpecificRTV(display_rt, cpu_handle, 0, display_rt->m_create_info.m_rtv_formats[frame_idx]);
 
@@ -123,7 +120,7 @@ namespace wr
 			}
 		}
 
-		inline void DestroyImGuiTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void DestroyImGuiTask(FrameGraph&, RenderTaskHandle, bool resize)
 		{
 			if (resize)
 			{

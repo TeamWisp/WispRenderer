@@ -40,7 +40,7 @@ SOFTWARE.
 #include "../d3d12/d3d12_pipeline_registry.hpp"
 #include "d3d12_descriptors_allocations.hpp"
 
-#include "DirectXTex.h"
+#include <DirectXTex.h>
 #include <comdef.h>
 
 

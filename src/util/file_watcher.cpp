@@ -28,7 +28,7 @@ namespace util
 		}
 	}
 
-	void FileWatcher::Start(util::Delegate<void(std::string, FileWatcher::FileStatus)> const & callback)
+	void FileWatcher::Start(util::Delegate<void(std::string const &, FileWatcher::FileStatus)> const & callback)
 	{
 		if (m_running)
 		{
@@ -90,7 +90,7 @@ namespace util
 		}
 	}
 
-	void FileWatcher::StartAsync(util::Delegate<void(std::string path, FileStatus)> const & callback)
+	void FileWatcher::StartAsync(util::Delegate<void(std::string const & path, FileStatus)> const & callback)
 	{
 		if (m_running)
 		{
