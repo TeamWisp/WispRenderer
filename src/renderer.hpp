@@ -8,6 +8,7 @@
 
 namespace wr
 {
+
 	struct TextureHandle;
 	struct Model;
 	struct CPUTextures;

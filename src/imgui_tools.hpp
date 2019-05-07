@@ -39,7 +39,6 @@ namespace wr::imgui
 		static std::string shader_compiler_error = "No shader error";
 		static bool open_pipeline_registry = false;
 		static bool open_root_signature_registry = false;
-		static bool open_effect_editor = true;
 		static bool open_scene_graph_editor = true;
 		static bool open_inspector = true;
 		static wr::LightNode* selected_light = nullptr;

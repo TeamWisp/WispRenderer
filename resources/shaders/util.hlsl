@@ -31,6 +31,7 @@ float3 getPerpendicularVector(float3 u)
 	uint zm = 1 ^ (xm | ym);
 	return cross(u, float3(xm, ym, zm));
 }
+
 // Get a cosine-weighted random vector centered around a specified normal direction.
 float3 getCosHemisphereSample(inout uint randSeed, float3 hitNorm)
 {

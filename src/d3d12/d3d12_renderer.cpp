@@ -38,7 +38,7 @@ namespace wr
 	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
 	LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
 
-		D3D12RenderSystem::~D3D12RenderSystem()
+	D3D12RenderSystem::~D3D12RenderSystem()
 	{
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
 		{

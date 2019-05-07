@@ -141,10 +141,8 @@ namespace wr
 			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
-
 				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-
 
 				// Bind g-buffers (albedo, normal, depth)
 				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
@@ -309,7 +307,6 @@ namespace wr
 				cam_data.m_frame_idx = ++data.frame_idx;
 
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
-
 				// Make sure the convolution pass wrote to the skybox.
 				fg.GetPredecessorData<CubemapConvolutionTaskData>();
 

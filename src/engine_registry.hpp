@@ -502,7 +502,6 @@ namespace wr
 			FALLBACK_PTRS
 		};
 
-		
 		constexpr std::array<rs_layout::Entry, 20> path_tracing = {
 			rs_layout::Entry{(int)PathTracingE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)PathTracingE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.

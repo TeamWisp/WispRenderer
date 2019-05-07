@@ -92,10 +92,6 @@ namespace wr
 		float m_projection_offset_x; // Used By Ansel For Super Resolution
 		float m_projection_offset_y; // Used By Ansel For Super Resolution
 
-		bool m_shadows_enabled = true;
-		bool m_reflections_enabled = true;
-		bool m_ao_enabled = true;
-
 		DirectX::XMVECTOR m_planes[6];
 
 		ConstantBufferHandle* m_camera_cb;
