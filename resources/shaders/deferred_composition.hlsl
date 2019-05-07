@@ -92,7 +92,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Do deferred shadow (fully lit for now)
 			1.0,
 			// Shadow buffer if its hybrid rendering
-			buffer_refl_shadow[screen_coord].a,
+			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0).w,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
@@ -103,7 +103,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Sample from environment if it IS NOT hybrid rendering
 			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
-			buffer_refl_shadow[screen_coord].xyz,	
+			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0).xyz,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 

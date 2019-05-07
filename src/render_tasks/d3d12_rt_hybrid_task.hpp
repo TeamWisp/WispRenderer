@@ -363,7 +363,7 @@ namespace wr
 //#endif
 
 				// Dispatch hybrid ray tracing rays
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
+				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth() / 2, window->GetHeight() / 2, 1, frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
@@ -385,15 +385,15 @@ namespace wr
 
 	} /* internal */
 
-	inline void AddRTHybridTask(FrameGraph& fg)
+	inline void AddRTHybridTask(FrameGraph& fg, int32_t w, int32_t h)
 	{
 		std::wstring name(L"Hybrid raytracing");
 
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(std::nullopt),
-			RenderTargetProperties::Height(std::nullopt),
+			RenderTargetProperties::Width(w / 2),
+			RenderTargetProperties::Height(h / 2),
 			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
@@ -402,7 +402,8 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ResourceName(name),
+			RenderTargetProperties::ResolutionScalar(0.5f)
 		};
 
 		RenderTaskDesc desc;

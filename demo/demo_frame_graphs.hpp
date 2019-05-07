@@ -146,7 +146,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			wr::AddRTHybridTask(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
@@ -185,7 +185,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			wr::AddRTHybridTask(*fg, rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
