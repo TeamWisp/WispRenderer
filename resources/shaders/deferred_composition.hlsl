@@ -76,7 +76,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
 		// Get irradiance
-		float irradiance = lerp(
+		float3 irradiance = lerp(
 			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
 			screen_space_irradiance[screen_coord].xyz,
 			is_path_tracer);
