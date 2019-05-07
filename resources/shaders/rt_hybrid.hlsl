@@ -97,7 +97,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, 0, rand_seed, depth, cone};
+	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, depth, cone};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
