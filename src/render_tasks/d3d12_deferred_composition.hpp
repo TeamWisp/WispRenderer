@@ -26,7 +26,7 @@ namespace wr
 
 		bool is_hybrid;
 		bool is_path_tracer;
-		bool rtao_enabled;
+		bool is_rtao;
 		bool is_hbao;
 	};
 

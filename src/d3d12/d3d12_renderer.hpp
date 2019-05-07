@@ -37,7 +37,7 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_view;
 			unsigned int m_is_hybrid;
 			unsigned int m_is_path_tracer;
-			unsigned int m_is_hbao;
+			unsigned int m_is_ao;
 		};
 
 		struct RTHybridCamera_CBData

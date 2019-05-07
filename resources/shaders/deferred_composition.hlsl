@@ -31,7 +31,7 @@ cbuffer CameraProperties : register(b0)
 
 	uint is_hybrid;
 	uint is_path_tracer;
-	uint is_hbao;
+	uint is_ao;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -81,13 +81,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			screen_space_irradiance[screen_coord].xyz,
 			is_path_tracer);
 
-//TODO: Check AO Type
-		// // Get ao
-		// float ao = lerp(
-		// 	1,
-		// 	gbuffer_AO[screen_coord].xyz,
-		// 	// Lerp factor (0: env map, 1: path traced)
-		// 	is_hbao);
+		// Get ao
+		float ao = lerp(
+			1,
+			gbuffer_AO[screen_coord].xyz,
+			// Lerp factor (0: fully lit, 1: AO active)
+			is_ao);
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -108,9 +107,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			buffer_refl_shadow[screen_coord].xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
-
-		// Get ao
-		float ao = gbuffer_AO[screen_coord].x;
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
