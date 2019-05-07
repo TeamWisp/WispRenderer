@@ -1,9 +1,10 @@
 Texture2D input_texture : register(t0);
 Texture2D depth_texture : register(t1);
-Texture2D velocity_texture : register(t2);
-Texture2D kernel_texture : register(t3);
-Texture2D accum_texture : register(t4);
-Texture2D variance_in_texture : register(t5);
+Texture2D normal_texture : register(t2);
+Texture2D velocity_texture : register(t3);
+Texture2D kernel_texture : register(t4);
+Texture2D accum_texture : register(t5);
+Texture2D variance_in_texture : register(t6);
 RWTexture2D<float4> output_texture   : register(u0);
 RWTexture2D<float4> variance_out_texture : register(u1);
 SamplerState point_sampler   : register(s0);
@@ -24,10 +25,16 @@ cbuffer DenoiserSettings : register(b1)
     float2 direction;
     int2 kernel_size;
     float depth_contrast;
+    float c_phi;
+    float p_phi;
+    float n_phi;
+    float step_distance;
 };
 
 const static float2 VARIANCE_CLIPPING_KERNEL = float2(7, 7);
 const static float VARIANCE_CLIPPING_GAMMA = 0.75;
+
+const static float WEIGHTS[5] = {0.0625, 0.25, 0.375, 0.25, 0.0625};
 
 float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
@@ -125,8 +132,8 @@ void temporal_accumulator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     //bool uv_equal = int2(q_UV.x * screen_size.x,q_UV.y * screen_size.y)==int2(screen_coord.x, screen_coord.y);
     //uv_equal = q_UV.x < 0 || q_UV.x > 1 || q_UV.y < 0 || q_UV.y > 1;
 
-    output_texture[screen_coord] = accum_data;
-	variance_out_texture[screen_coord] = variance;
+    output_texture[screen_coord] = noise;
+	variance_out_texture[screen_coord] = 1.0;
 }
 
 [numthreads(16,16,1)]
@@ -144,6 +151,56 @@ void shadow_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
     const float depth_f = depth_texture[screen_coord].r;
 
+    const float3 normal_f = normal_texture[screen_coord].xyz;
+
+    const float3 position_f = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
+
+    const float3 color_f = input_texture[screen_coord].xyz;
+
+    float2 center = floor(kernel_size/2.0);
+
+    float4 accum = float4(0, 0, 0, 0);
+
+    [unroll]
+    for(int i = 0; i < 5; ++i)
+    {
+        [unroll]
+        for(int j = 0; j < 5; ++j)
+        {
+            float2 offset = (float2(i,j) - center)*step_distance;
+            float2 t_uv = float2((screen_coord.x + offset.x) / screen_size.x, (screen_coord.y + offset.y) / screen_size.y);
+
+            float3 cTemp = input_texture[offset + screen_coord].xyz;
+            float3 t = color_f - cTemp;
+            float dist2 = dot(t, t);
+            float c_w = min(exp(-(dist2)/(c_phi)), 1.0);
+
+            float3 nTemp = normal_texture[offset + screen_coord];
+            t = normal_f - nTemp;
+            dist2 = max(dot(t,t)/(step_distance*step_distance),0.0);
+            float n_w = min(exp(-(dist2)/0.1), 1.0);
+
+            float t_depth = depth_texture[offset + screen_coord];
+
+            float3 pTemp = unpack_position(float2(t_uv.x, 1.0 - t_uv.y), t_depth, inv_projection, inv_view);
+            t = position_f - pTemp;
+            dist2 = dot(t, t);
+            float p_w = min(exp(-(dist2)/p_phi), 1.0);
+
+            float weight =  c_w * n_w * p_w;
+            float kernel = WEIGHTS[i] * WEIGHTS[j];
+            accum.xyz += cTemp * kernel * weight;
+            accum.w += kernel * weight;
+              
+        }
+    }
+    
+    output_texture[screen_coord] = accum/accum.w;
+}
+
+void bilateral_placeholder()
+{
+    /*
     // We are only interested in the depth here
     float4 ndcCoords = float4(0, 0, depth_f, 1.0f);
 
@@ -159,7 +216,7 @@ void shadow_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
     float2 center = floor(kernel_size/2.0);
 
-    float var = variance_in_texture[screen_coord].r;
+    float var = 0.5;
 
     if(var == 0.0)
     {
@@ -185,11 +242,11 @@ void shadow_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
                     float depth_data = depth_texture[int2(coord.x, coord.y)].r;
                     float4 ndcCoords = float4(0, 0, depth_data, 1.0f);
                     float4 viewCoords = mul(inv_projection, ndcCoords);
-                    depth_data = viewCoords.z / viewCoords.w;
+                    //depth_data = viewCoords.z / viewCoords.w;
                     float weight = lerp(
                         kernel_texture.SampleLevel(linear_sampler, float2(kernel_location.x / kernel_size.x, kernel_location.y / kernel_size.y), 0), 
                         0.0,
-                        clamp(abs(linearDepth - depth_data)/depth_contrast, 0.0, 1.0));
+                        clamp(abs(depth_f - depth_data)*depth_contrast, 0.0, 1.0));
                     accum += shadow_data*weight;
                     weights += weight;
                 }            
@@ -200,4 +257,5 @@ void shadow_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     accum /= weights;
 
     output_texture[screen_coord] = accum;
+    */
 }

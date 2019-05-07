@@ -231,6 +231,11 @@ namespace wr
 				camera_data.m_prev_view = active_camera->m_prev_view;
 				camera_data.m_is_hybrid = data.is_hybrid;
 				camera_data.m_is_path_tracer = data.is_path_tracer;
+#ifdef NVIDIA_GAMEWORKS_HBAO
+				camera_data.m_is_hbao = data.is_hbao;
+#else
+				camera_data.m_is_hbao = false;
+#endif
 
 				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&camera_data);
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);

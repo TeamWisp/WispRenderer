@@ -39,13 +39,18 @@ namespace wr
 			DirectX::XMMATRIX m_prev_view;
 			unsigned int m_is_hybrid;
 			unsigned int m_is_path_tracer;
+			unsigned int m_is_hbao;
 		};
 
 		struct ShadowDenoiserSettings_CBData
 		{
 			DirectX::XMFLOAT2 m_direction;
-			DirectX::XMINT2 m_kernel_size;
+			DirectX::XMINT2 m_kernel_size; 
 			float m_depth_contrast;
+			float m_c_phi;
+			float m_p_phi;
+			float m_n_phi;
+			float m_step_distance;
 		};
 
 		struct DenoiserCamera_CBData

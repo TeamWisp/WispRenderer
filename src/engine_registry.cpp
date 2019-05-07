@@ -64,6 +64,7 @@ namespace wr
 	DESC_RANGE_ARRAY(shadow_denoiser_ranges,
 		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::SOURCE),
 		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::DEPTH),
+		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::NORMAL),
 		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::VELOCITY),
 		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::KERNEL),
 		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::ACCUM),
@@ -975,7 +976,7 @@ namespace wr
 			StateObjectDescription::Library(rt_shadow_so_library),
 			StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2)),
 			StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
-			StateObjectDescription::MaxRecursionDepth(3),
+			StateObjectDescription::MaxRecursionDepth(1),
 			StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
 			StateObjectDescription::LocalRootSignatures(std::nullopt),
 		});
