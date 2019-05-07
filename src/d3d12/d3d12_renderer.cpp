@@ -151,6 +151,14 @@ namespace wr
 			m_requested_fullscreen_state = std::nullopt;
 		}
 
+		// Perform render target save requests
+		while (!m_requested_rt_saves.empty())
+		{
+			auto back = m_requested_rt_saves.back();
+			SaveRenderTargetToDisc(back.first, back.second);
+			m_requested_rt_saves.pop();
+		}
+
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
 		//Signal to the texture pool that we waited for the previous frame 
@@ -497,6 +505,83 @@ namespace wr
 		}
 
 		d3d12::End(n_cmd_list);
+	}
+
+	void D3D12RenderSystem::SaveRenderTargetToDisc(RenderTarget* render_target, unsigned int index)
+	{
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target);
+		auto format = static_cast<Format>(n_render_target->m_render_targets[index]->GetDesc().Format);
+		
+		auto rt_resource = n_render_target->m_render_targets[index];
+		auto n_device = m_device->m_native;
+		auto width = d3d12::GetRenderTargetWidth(n_render_target);
+		auto height = d3d12::GetRenderTargetHeight(n_render_target);
+
+		auto queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
+		SetName(queue, L"Screenshot Command Queue");
+
+		auto cmd_list = d3d12::CreateCommandList(m_device, 1, CmdListType::CMD_LIST_DIRECT);
+		SetName(cmd_list, L"Screenshot Command List");
+
+		auto fence = d3d12::CreateFence(m_device);
+
+		d3d12::Begin(cmd_list, 0);
+
+		// Readback
+		auto format_size = d3d12::SizeOfFormat(format);
+		auto bytes_per_row = width * format_size;
+		std::size_t texture_size = bytes_per_row * height;
+		ID3D12Resource* readback_buffer;
+
+		HRESULT hr = n_device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(texture_size),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			nullptr,
+			IID_PPV_ARGS(&readback_buffer));
+		readback_buffer->SetName(L"Texture ReadBack Buffer (Used for saving to disc)");
+
+		// Copy data to cpu
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+		n_device->GetCopyableFootprints(&rt_resource->GetDesc(), 0, 1, 0, &footprint, nullptr, nullptr, (std::uint64_t*) & texture_size);
+
+		CD3DX12_TEXTURE_COPY_LOCATION dest_loc(readback_buffer, footprint);
+		CD3DX12_TEXTURE_COPY_LOCATION src_loc(rt_resource, 0);
+		cmd_list->m_native->CopyTextureRegion(&dest_loc, 0, 0, 0, &src_loc, nullptr);
+
+		d3d12::End(cmd_list);
+
+		// Execute
+		Execute(queue, { cmd_list }, fence);
+		fence->m_fence_value++;
+		Signal(fence, queue);
+		WaitFor(fence);
+
+		// Store data
+		BYTE* data;
+		D3D12_RANGE range{ 0, texture_size };
+		readback_buffer->Map(0, nullptr, reinterpret_cast<void**>(&data));
+
+		std::uint8_t* pixels = data;
+
+		readback_buffer->Unmap(0, nullptr);
+
+		readback_buffer->Release();
+
+		DirectX::Image img;
+		img.format = static_cast<DXGI_FORMAT>(format);
+		img.width = width;
+		img.height = height;
+		img.rowPitch = bytes_per_row;
+		img.slicePitch = bytes_per_row * height;
+		img.pixels = pixels;
+
+		TRY_M(DirectX::SaveToTGAFile(img, L"image.tga"), "Failed to save image to disc");
+
+		d3d12::Destroy(cmd_list);
+		d3d12::Destroy(fence);
+		d3d12::Destroy(queue);
 	}
 
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()

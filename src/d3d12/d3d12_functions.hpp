@@ -83,6 +83,8 @@ namespace wr::d3d12
 	[[nodiscard]] RenderTarget* CreateRenderTarget(Device* device, unsigned int width, unsigned int height, desc::RenderTargetDesc descriptor);
 	void SetName(RenderTarget* render_target, std::wstring name);
 	void SetName(RenderTarget* render_target, std::string name);
+	unsigned int GetRenderTargetWidth(RenderTarget* render_target);
+	unsigned int GetRenderTargetHeight(RenderTarget* render_target);
 	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
 	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
 	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle);
@@ -132,6 +134,7 @@ namespace wr::d3d12
 	bool IsOptionalFormatSupported(Device* device, Format format);
 	Format RemoveSRGB(Format format);
 	Format BGRtoRGB(Format format);
+	std::size_t SizeOfFormat(Format format);
 
 	// Read-back buffer
 	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);

@@ -508,14 +508,7 @@ namespace wr
 		template<typename T>
 		inline bool HasTask() const
 		{
-			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
-			{
-				if (m_data_type_info[i].get() == typeid(T))
-				{
-					return true;
-				}
-			}
-			return false;
+			return GetHandleFromType<T>().has_value();
 		}
 
 		/*! Validates the frame graph for correctness */
@@ -612,9 +605,29 @@ namespace wr
 		};
 
 		/*! Return the cpu texture. */
-		[[nodiscard]] const CPUTextures& GetOutputTexture()
+		[[nodiscard]] CPUTextures const & GetOutputTexture() const
 		{
 			return m_output_cpu_textures;
+		}
+
+		/*! Save a render target to disc */
+		/*
+			Tells the render system to save a render target to disc as a image.
+			\param index The index of the render target from the task you want to save.
+		*/
+		template<typename T>
+		void SaveTaskToDisc(unsigned int index = 0)
+		{
+			auto handle = GetHandleFromType<T>();
+
+			if (handle.has_value())
+			{
+				m_render_system->RequestRenderTargetSaveToDisc(m_render_targets[handle.value()], index);
+			}
+			else
+			{
+				LOGW("Failed to save render task to disc, Task was not found.");
+			}
 		}
 
 		/*! Set the cpu texture's data. */
@@ -653,13 +666,15 @@ namespace wr
 		template<typename T>
 		inline void UpdateSettings(std::any settings)
 		{
-			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			auto handle = GetHandleFromType<T>();
+
+			if (handle.has_value())
 			{
-				if (m_data_type_info[i].get() == typeid(T))
-				{
-					m_settings[i] = settings;
-					return;
-				}
+				m_settings[handle.value()] = settings;
+			}
+			else
+			{
+				LOGW("Failed to update settings, Could not find render task");
 			}
 		}
 
@@ -731,6 +746,22 @@ namespace wr
 		}
 
 	private:
+
+		/*! Get the handle from a task by data type */
+		/* This function is zero overhead with GCC-8.2, -03 */
+		template<typename T>
+		inline std::optional<RenderTaskHandle> GetHandleFromType() const
+		{
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				if (m_data_type_info[i].get() == typeid(T))
+				{
+					return i;
+				}
+			}
+
+			return std::nullopt;
+		}
 
 		/*! Setup tasks multi threaded */
 		inline void Setup_MT_Impl(RenderSystem& render_system)
@@ -861,8 +892,8 @@ namespace wr
 		std::vector<std::future<void>> m_futures;
 
 		const std::uint64_t m_uid;
-		WISPRENDERER_EXPORT static std::uint64_t m_largest_uid;
-		WISPRENDERER_EXPORT static std::stack<std::uint64_t> m_free_uids;
+		WISPRENDERER_EXPORT static inline std::uint64_t m_largest_uid = 0;
+		WISPRENDERER_EXPORT static inline std::stack<std::uint64_t> m_free_uids = {};
 	};
 
 } /* wr */
