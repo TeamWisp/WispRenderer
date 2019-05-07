@@ -3,6 +3,7 @@
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
+#include "gi_util.hlsl"
 
 struct Vertex
 {
@@ -47,14 +48,6 @@ SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 
-struct HitInfo
-{
-	float3 color;
-	unsigned int seed;
-	float3 origin;
-	unsigned int depth;
-};
-
 cbuffer CameraProperties : register(b0)
 {
 	float4x4 inv_view;
@@ -84,115 +77,12 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
-{
-	if (depth >= MAX_RECURSION)
-	{
-		//return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
-		return float4(0, 0, 0, 0);
-	}
-
-	// Define a ray, consisting of origin, direction, and the min-max distance values
-	RayDesc ray;
-	ray.Origin = origin;
-	ray.Direction = direction;
-	ray.TMin = EPSILON;
-	ray.TMax = 1.0e38f;
-
-	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
-
-	// Trace the ray
-	TraceRay(
-		Scene,
-		RAY_FLAG_NONE,
-		~0, // InstanceInclusionMask
-		0, // RayContributionToHitGroupIndex
-		0, // MultiplierForGeometryContributionToHitGroupIndex
-		0, // miss shader index
-		ray,
-		payload);
-
-	return float4(payload.color, 1);
-}
-
 float3 unpack_position(float2 uv, float depth)
 {
 	// Get world space position
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
 	float4 wpos = mul(inv_vp, ndc);
 	return (wpos.xyz / wpos.w).xyz;
-}
-
-#define M_PI 3.14159265358979
-
-// NVIDIA's luminance function
-inline float luminance(float3 rgb)
-{
-    return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f));
-}
-
-// NVIDIA's probability function
-float probabilityToSampleDiffuse(float3 difColor, float3 specColor)
-{
-	float lumDiffuse = max(0.01f, luminance(difColor.rgb));
-	float lumSpecular = max(0.01f, luminance(specColor.rgb));
-	return lumDiffuse / (lumDiffuse + lumSpecular);
-}
-
-float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
-{
-	// #################### GGX #####################
-	float diffuse_probability = probabilityToSampleDiffuse(albedo, metal);
-	float choose_diffuse = (nextRand(seed) < diffuse_probability);
-
-	// Diffuse lobe
-	if (choose_diffuse)
-	{
-		nextRand(seed);
-		const float3 rand_dir = getUniformHemisphereSample(seed, N);
-		float3 irradiance = TraceColorRay(hit_pos, rand_dir, depth, seed);
-
-		float3 lighting = shade_pixel(hit_pos, V, 
-			albedo, 
-			metal, 
-			roughness, 
-			fN, 
-			seed, 
-			depth+1);
-
-		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
-
-		return (lighting + (irradiance * albedo)) / diffuse_probability;
-	}
-	else
-	{
-		nextRand(seed);
-		float3 H = getGGXMicrofacet(seed, roughness, N);
-
-		// ### BRDF ###
-		float3 L = normalize(2.f * dot(V, H) * H - V);
-
-		float3 irradiance = TraceColorRay(hit_pos, L, depth, seed);
-		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
-
-		// Compute some dot products needed for shading
-		float NdotV = saturate(dot(N, V));
-		float NdotL = saturate(dot(N, L));
-		float NdotH = saturate(dot(N, H));
-		float LdotH = saturate(dot(L, H));
-
-		// D = Normal distribution (Distribution of the microfacets)
-		float D = D_GGX(NdotH, roughness); 
-		// G = Geometric shadowing term (Microfacets shadowing)
-		float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);
-		// F = Fresnel factor (Reflectance depending on angle of incidence)
-		float3 F = F_Schlick(NdotH, metal, albedo);
- 
-		float3 spec = (D * F * G) / ((4.0 * NdotL * NdotV + 0.001f));
-		float  ggx_probability = D * NdotH / (4 * LdotH);
-
-		return NdotL * irradiance * spec / (ggx_probability * (1.0f - diffuse_probability));
-	}
 }
 
 [shader("raygeneration")]
@@ -229,8 +119,9 @@ void RaygenEntry()
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos, rand_dir, 0, rand_seed);
-	//result = ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
+	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 
 	result = clamp(result, 0, 100);
 	
@@ -327,46 +218,10 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float3 fN = normalize(mul(output_data.normal, TBN));
 	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
-	// Irradiance
-#ifdef OLDSCHOOL
-	nextRand(payload.seed);
-	const float3 rand_dir = getUniformHemisphereSample(payload.seed, N);
-	const float cos_theta = cos(dot(rand_dir, normal));
-	//float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed);
-	//float3 irradiance = (TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
-	float3 irradiance = (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed) * M_PI) * (1.0f / (2.0f * M_PI));
-
-	// Direct
-	float3 reflect_dir = reflect(-V, fN);
-	float3 reflection = TraceColorRay(hit_pos, reflect_dir, payload.depth + 1, payload.seed);
-
-	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), 
-		metal, 
-		albedo, 
-		roughness);
-	float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metal;
-
-	float3 lighting = shade_pixel(hit_pos, V, 
-		albedo, 
-		metal, 
-		roughness, 
-		fN, 
-		payload.seed, 
-		payload.depth+1);
-	float3 specular = (reflection) * F;
-	float3 diffuse = albedo * irradiance;
-	float3 ambient = (kD * diffuse + specular);
-
-	payload.color = ambient + lighting;
-#else
-
 	// #################### GGX #####################
 	nextRand(payload.seed);
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
-
-#endif
+	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 }
 
 //Reflection skybox
