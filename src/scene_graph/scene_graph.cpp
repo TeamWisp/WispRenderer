@@ -19,8 +19,10 @@
 namespace wr
 {
 
-	SceneGraph::SceneGraph(RenderSystem* render_system)
-		: m_render_system(render_system), m_root(std::make_shared<Node>())
+	SceneGraph::SceneGraph(RenderSystem* render_system) :
+	    m_render_system(render_system),
+		m_root(std::make_shared<Node>()),
+		m_light_buffer()
 	{
 		m_lights.resize(d3d12::settings::num_lights);
 	}
@@ -106,9 +108,9 @@ namespace wr
 
 		// Create Light Buffer
 
-		uint64_t light_count = (uint64_t) m_lights.size();
-		uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * light_count;
-		uint64_t light_buffer_aligned_size = SizeAlignTwoPower(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
+		std::uint64_t light_count = (std::uint64_t) m_lights.size();
+        std::uint64_t light_buffer_stride = sizeof(Light), light_buffer_size = light_buffer_stride * light_count;
+        std::uint64_t light_buffer_aligned_size = SizeAlignTwoPower(light_buffer_size, 65536) * d3d12::settings::num_back_buffers;
 
 		m_structured_buffer = m_render_system->CreateStructuredBufferPool((size_t)light_buffer_aligned_size );
 		m_light_buffer = m_structured_buffer->Create(light_buffer_size, light_buffer_stride, false);
@@ -175,12 +177,12 @@ namespace wr
 
 		//Update light count
 
-		if (m_lights.size() != 0)
+		if (!m_lights.empty())
 		{
 			m_lights[0].tid &= 0x3;											//Keep id
 			m_lights[0].tid |= uint32_t(m_light_nodes.size() + 1) << 2;		//Set lights
 
-			if (m_light_nodes.size() != 0)
+			if (!m_light_nodes.empty())
 			{
 				m_light_nodes[0]->SignalChange();
 			}
@@ -195,7 +197,7 @@ namespace wr
 	{
 		//Update batches
 
-		bool should_update = m_batches.size() == 0;
+		bool should_update = m_batches.empty();
 
 		for (auto& elem : m_batches)
 		{
@@ -212,9 +214,8 @@ namespace wr
 
 			constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
-			for (unsigned int i = 0; i < m_mesh_nodes.size(); ++i) {
+			for (auto& node : m_mesh_nodes) {
 
-				auto node = m_mesh_nodes[i];
 				auto mesh_materials_pair = std::make_pair(node->m_model, node->m_materials);
 
 				auto it = m_batches.find(mesh_materials_pair);

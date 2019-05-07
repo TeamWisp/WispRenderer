@@ -76,7 +76,6 @@ namespace wr
 	//Frustum culling code;
 	//optimized and refactored version of
 	//https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
-
 	void CameraNode::CalculatePlanes()
 	{
 		//Left plane

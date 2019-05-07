@@ -7,7 +7,7 @@
 
 #include "d3d12_descriptors_allocations.hpp"
 
-#include "DirectXTex.h"
+#include <DirectXTex.h>
 
 namespace wr::d3d12
 {

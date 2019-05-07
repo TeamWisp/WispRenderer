@@ -69,7 +69,7 @@ namespace wr
 		using destroy_func_t = util::Delegate<void(FrameGraph&, RenderTaskHandle, bool)>;
 
 		/*! The type of the render task.*/
-		RenderTaskType m_type;
+		RenderTaskType m_type = RenderTaskType::DIRECT;
 		/*! The function pointers for the task.*/
 		setup_func_t m_setup_func;
 		execute_func_t m_execute_func;
@@ -78,7 +78,7 @@ namespace wr
 		/*! The properties for the render target this task renders to. If this is `std::nullopt` no render target will be created. */
 		std::optional<RenderTargetProperties> m_properties;
 
-		bool m_allow_multithreading;
+		bool m_allow_multithreading = true;
 	};
 
 	//!  Frame Graph 
@@ -257,8 +257,8 @@ namespace wr
 				if (!m_rt_properties[i].value().m_is_render_window)
 				{
 					render_system.ResizeRenderTarget(&m_render_targets[i],
-						width * m_rt_properties[i].value().m_resolution_scale.Get(),
-						height * m_rt_properties[i].value().m_resolution_scale.Get());
+						static_cast<std::uint32_t>(width * m_rt_properties[i].value().m_resolution_scale.Get()),
+						static_cast<std::uint32_t>(height * m_rt_properties[i].value().m_resolution_scale.Get()));
 				}
 
 				m_setup_funcs[i](render_system, *this, i, true);
@@ -395,7 +395,7 @@ namespace wr
 				}
 			}
 
-			LOGC("Failed to find predecessor data! Please check your task order.");
+			LOGC("Failed to find predecessor data! Please check your task order.")
 			return *static_cast<T*>(nullptr);
 		}
 
@@ -583,7 +583,7 @@ namespace wr
 #ifndef FG_MAX_PERFORMANCE
 			m_dependencies.emplace_back(dependencies);
 #endif
-			m_settings.resize(m_num_tasks + 1);
+			m_settings.resize(m_num_tasks + 1ull);
 			m_types.emplace_back(desc.m_type);
 			m_rt_properties.emplace_back(desc.m_properties);
 			m_data.emplace_back(new (std::nothrow) T());
@@ -624,7 +624,7 @@ namespace wr
 			{
 			case wr::CPUTextureType::PIXEL_DATA:
 				if (m_output_cpu_textures.pixel_data != std::nullopt)
-					LOGW("Warning: CPU texture pixel data is written to more than once a frame!");
+					LOGW("Warning: CPU texture pixel data is written to more than once a frame!")
 
 				// Save the pixel data
 				m_output_cpu_textures.pixel_data = output_texture;
@@ -632,7 +632,7 @@ namespace wr
 
 			case wr::CPUTextureType::DEPTH_DATA:
 				if (m_output_cpu_textures.depth_data != std::nullopt)
-					LOGW("Warning: CPU texture depth data is written to more than once a frame!");
+					LOGW("Warning: CPU texture depth data is written to more than once a frame!")
 
 				// Save the depth data
 				m_output_cpu_textures.depth_data = output_texture;
@@ -640,7 +640,7 @@ namespace wr
 
 			default:
 				// Should never happen
-				LOGC("Invalid CPU texture type supplied!");
+				LOGC("Invalid CPU texture type supplied!")
 				break;
 			}
 		}
@@ -809,7 +809,7 @@ namespace wr
 		/*! Get a free unique ID. */
 		WISPRENDERER_EXPORT static std::uint64_t GetFreeUID()
 		{
-			if (m_free_uids.size() > 0)
+			if (!m_free_uids.empty())
 			{
 				std::uint64_t uid = m_free_uids.top();
 				m_free_uids.pop();

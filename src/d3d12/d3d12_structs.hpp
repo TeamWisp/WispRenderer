@@ -47,15 +47,15 @@ namespace wr::d3d12
 		struct TextureDesc
 		{
 			ResourceState m_initial_state = ResourceState::COPY_DEST;
-			Format m_texture_format;
+			Format m_texture_format = Format::UNKNOWN;
 
-			unsigned int m_width;
-			unsigned int m_height;
-			unsigned int m_depth;
-			unsigned int m_array_size;
-			unsigned int m_mip_levels;
+			unsigned int m_width = 0;
+			unsigned int m_height = 0;;
+			unsigned int m_depth = 0;;
+			unsigned int m_array_size = 0;;
+			unsigned int m_mip_levels = 0;;
 
-			bool m_is_cubemap;
+			bool m_is_cubemap = false;
 		};
 
 		struct ReadbackDesc
@@ -97,23 +97,23 @@ namespace wr::d3d12
 
 		struct DescriptorHeapDesc
 		{
-			unsigned int m_num_descriptors;
-			DescriptorHeapType m_type;
+			unsigned int m_num_descriptors = 1;
+			DescriptorHeapType m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			bool m_shader_visible = true;
 			uint32_t m_versions = 1;
 		};
 
 		struct GeometryDesc
 		{
-			StagingBuffer* vertex_buffer;
+			StagingBuffer* vertex_buffer = nullptr;
 			std::optional<StagingBuffer*> index_buffer;
 
-			std::uint64_t m_num_vertices;
-			std::uint64_t m_num_indices;
-			std::uint64_t m_vertices_offset;
-			std::uint64_t m_indices_offset;
+			std::uint64_t m_num_vertices = 0;
+			std::uint64_t m_num_indices = 0;
+			std::uint64_t m_vertices_offset = 0;
+			std::uint64_t m_indices_offset = 0;
 
-			std::uint64_t m_vertex_stride;
+			std::uint64_t m_vertex_stride = 0;
 		};
 
 		struct StateObjectDesc

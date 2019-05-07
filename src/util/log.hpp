@@ -17,8 +17,8 @@
 #include <sstream>
 #endif
 
-#include "fmt/format.h"
-#include "fmt/chrono.h"
+#include <fmt/format.h>
+#include <fmt/chrono.h>
 
 #ifdef LOG_CALLBACK
 #include <functional>
@@ -36,21 +36,18 @@ namespace util
 };
 #endif
 
+#pragma warning(push)
+#pragma warning(disable : 4244)
+#pragma warning(disable : 4100)
+
 namespace util::internal
 {
-#ifdef LOG_CALLBACK
-	//struct callback
-	//{
-		
-	//};
-#endif
-
 	enum class MSGB_ICON
 	{
-		CRITICAL_ERROR = MB_OK | MB_ICONERROR
+		CRITICAL_ERROR = (unsigned)MB_OK | (unsigned)MB_ICONERROR
 	};
 
-	template <typename S, typename... Args>
+    template <typename S, typename... Args>
 	inline void log_impl(int color, char type, std::string file, std::string func, int line, S const & format, Args const &... args)
 	{
 		std::string str = "";
@@ -146,8 +143,9 @@ namespace util::internal
 			break;
 		}
 	}
-
 } /* internal */
+
+#pragma warning( pop )
 
 #define LOG(csr, ...)  { util::internal::log_impl(7, 'I', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }
 #define LOGW(csr, ...) { util::internal::log_impl(6, 'W', __FILE__, __func__, __LINE__, csr, ##__VA_ARGS__); }

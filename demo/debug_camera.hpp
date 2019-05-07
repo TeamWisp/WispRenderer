@@ -8,7 +8,7 @@ class DebugCamera : public wr::CameraNode
 {
 public:
 	DebugCamera(float fov, float aspect_ratio)
-		: wr::CameraNode(fov, aspect_ratio), m_forward_axis(0), m_right_axis(0), m_up_axis(0), m_rmb_down(false), m_speed(1), m_sensitivity(0.01), m_position_lerp_speed(10.f), m_rotation_lerp_speed(5.f)
+		: wr::CameraNode(aspect_ratio), m_forward_axis(0), m_right_axis(0), m_up_axis(0), m_rmb_down(false), m_speed(1), m_sensitivity(0.01f), m_position_lerp_speed(10.f), m_rotation_lerp_speed(5.f)
 	{
 		GetCursorPos(&m_last_cursor_pos);
 		m_target_rotation_radians = m_rotation_radians;
@@ -16,7 +16,7 @@ public:
 	}
 
 	//Takes roll, pitch and yaw and converts it to quaternion
-	virtual void SetRotation(DirectX::XMVECTOR roll_pitch_yaw) override
+	void SetRotation(DirectX::XMVECTOR roll_pitch_yaw) override
 	{
 		m_rotation_radians = roll_pitch_yaw;
 		m_use_quaternion = false;
@@ -24,7 +24,7 @@ public:
 	}
 
 	//Sets position
-	virtual void SetPosition(DirectX::XMVECTOR position) override
+	void SetPosition(DirectX::XMVECTOR position) override
 	{
 		m_position = position;
 		m_target_position = position;
@@ -61,7 +61,7 @@ public:
 			m_target_position = DirectX::XMVectorAdd(m_target_position, DirectX::XMVectorScale(right, delta * m_speed * m_right_axis));
 
 			// Rotation
-			DirectX::XMVECTOR new_rot{ cursor_pos.y - m_last_cursor_pos.y, cursor_pos.x - m_last_cursor_pos.x };
+			DirectX::XMVECTOR new_rot{ static_cast<float>(cursor_pos.y - m_last_cursor_pos.y), static_cast<float>(cursor_pos.x - m_last_cursor_pos.x) };
 			SetRotation(DirectX::XMVectorSubtract(m_target_rotation_radians, DirectX::XMVectorScale(new_rot, m_sensitivity)));
 		}
 		else

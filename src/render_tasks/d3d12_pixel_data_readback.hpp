@@ -10,12 +10,12 @@ namespace wr
 	struct PixelReadbackTaskData
 	{
 		// Render target of the previous render task (should be the output from the composition task
-		d3d12::RenderTarget* predecessor_render_target;
+		d3d12::RenderTarget* predecessor_render_target = nullptr;
 
 		// Read back buffer used to retrieve the depth data on the GPU
-		d3d12::ReadbackBufferResource* readback_buffer;
+		d3d12::ReadbackBufferResource* readback_buffer = nullptr;
 
-		d3d12::desc::ReadbackDesc readback_buffer_desc;
+		d3d12::desc::ReadbackDesc readback_buffer_desc = {};
 
 		// Stores the final depth data
 		CPUTexture cpu_texture_output;
@@ -69,8 +69,8 @@ namespace wr
 			destination.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 			destination.SubresourceIndex = 0;
 			destination.PlacedFootprint.Footprint.Format = static_cast<DXGI_FORMAT>(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
-			destination.PlacedFootprint.Footprint.Width = dx12_render_system.m_viewport.m_viewport.Width;
-			destination.PlacedFootprint.Footprint.Height = dx12_render_system.m_viewport.m_viewport.Height;
+			destination.PlacedFootprint.Footprint.Width = static_cast<UINT>(dx12_render_system.m_viewport.m_viewport.Width);
+			destination.PlacedFootprint.Footprint.Height = static_cast<UINT>(dx12_render_system.m_viewport.m_viewport.Height);
 			destination.PlacedFootprint.Footprint.Depth = 1;
 
 			std::uint32_t row_pitch = destination.PlacedFootprint.Footprint.Width * BytesPerPixel(data.predecessor_render_target->m_create_info.m_rtv_formats[0]);
