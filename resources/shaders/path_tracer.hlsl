@@ -96,7 +96,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = EPSILON;
+	ray.TMin = 0;
 	ray.TMax = 1.0e38f;
 
 	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
@@ -139,6 +139,66 @@ float probabilityToSampleDiffuse(float3 difColor, float3 specColor)
 	return lumDiffuse / (lumDiffuse + lumSpecular);
 }
 
+float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
+{
+	// #################### GGX #####################
+	uint light_count = lights[0].tid >> 2;
+	int light_to_sample = min(int(nextRand(seed) * light_count), light_count - 1);
+	Light light = lights[light_to_sample];
+
+	float3 L = 0;
+	float max_light_dist = 0;
+	float3 light_intensity = 0;
+	{
+		// Calculate light properties
+		uint tid = light.tid & 3;
+
+		//Light direction (constant with directional, position dependent with other)
+		L = (lerp(light.pos - hit_pos, light.dir, tid == light_type_directional));
+		float light_dist = length(L);
+		L /= light_dist;
+
+		//Spot intensity (only used with spot; but always calculated)
+		float min_cos = cos(light.ang);
+		float max_cos = lerp(min_cos, 1, 0.5f);
+		float cos_angle = dot(light.dir, L);
+		float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
+
+		//Attenuation & spot intensity (only used with point or spot)
+		float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
+
+		light_intensity = (light.col * spot_intensity) * attenuation;
+		max_light_dist = lerp(light_dist, 100000, tid == light_type_directional);
+	}
+
+	float3 H = normalize(V + L);
+
+	// Shadow
+	float shadow_mult = float(light_count) * GetShadowFactor(hit_pos + (L * EPSILON), L, max_light_dist, depth, seed);
+
+	// Compute some dot products needed for shading
+	float NdotV = saturate(dot(fN, V));
+	float NdotL = saturate(dot(fN, L));
+	float NdotH = saturate(dot(fN, H));
+	float LdotH = saturate(dot(L, H));
+
+	// D = Normal distribution (Distribution of the microfacets)
+	float D = D_GGX(NdotH, max(0.05, roughness)); 
+	// G = Geometric shadowing term (Microfacets shadowing)
+	float G = G_SchlicksmithGGX(NdotL, NdotV, max(0.05, roughness));
+	// F = Fresnel factor (Reflectance depending on angle of incidence)
+	float3 F = F_Schlick(LdotH, metal, albedo);
+	//float3 F = F_ShlickSimple(metal, LdotH);
+
+	float3 kS = F_SchlickRoughness(NdotV, metal, albedo, roughness);
+	float3 kD = (1.f - kS) * (1.0 - metal);
+	float3 spec = (D * F * G) / (4.0 * NdotV * NdotL + 0.001f);
+
+	//prefiltered_color * (kS * sampled_brdf.x + sampled_brdf.y);
+	return shadow_mult * (light_intensity * (NdotL * spec + NdotL * albedo / M_PI));
+	return shadow_mult * (kD * albedo / PI + spec) * light_intensity * NdotL;
+}
+
 float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
 {
 	// #################### GGX #####################
@@ -150,7 +210,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 	{
 		nextRand(seed);
 		const float3 rand_dir = getUniformHemisphereSample(seed, N);
-		float3 irradiance = TraceColorRay(hit_pos, rand_dir, depth, seed);
+		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
 
 		float3 lighting = shade_pixel(hit_pos, V, 
 			albedo, 
@@ -172,7 +232,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		// ### BRDF ###
 		float3 L = normalize(2.f * dot(V, H) * H - V);
 
-		float3 irradiance = TraceColorRay(hit_pos, L, depth, seed);
+		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), L, depth, seed);
 		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
 
 		// Compute some dot products needed for shading
@@ -182,9 +242,9 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		float LdotH = saturate(dot(L, H));
 
 		// D = Normal distribution (Distribution of the microfacets)
-		float D = D_GGX(NdotH, roughness); 
+		float D = D_GGX(NdotH, max(0.05, roughness)); 
 		// G = Geometric shadowing term (Microfacets shadowing)
-		float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);
+		float G = G_SchlicksmithGGX(NdotL, NdotV, max(0.05, roughness));
 		// F = Fresnel factor (Reflectance depending on angle of incidence)
 		float3 F = F_Schlick(NdotH, metal, albedo);
  
@@ -229,8 +289,9 @@ void RaygenEntry()
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos, rand_dir, 0, rand_seed);
-	//result = ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
+	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 
 	result = clamp(result, 0, 100);
 	
@@ -327,46 +388,10 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float3 fN = normalize(mul(output_data.normal, TBN));
 	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
-	// Irradiance
-#ifdef OLDSCHOOL
-	nextRand(payload.seed);
-	const float3 rand_dir = getUniformHemisphereSample(payload.seed, N);
-	const float cos_theta = cos(dot(rand_dir, normal));
-	//float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed);
-	//float3 irradiance = (TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
-	float3 irradiance = (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed) * M_PI) * (1.0f / (2.0f * M_PI));
-
-	// Direct
-	float3 reflect_dir = reflect(-V, fN);
-	float3 reflection = TraceColorRay(hit_pos, reflect_dir, payload.depth + 1, payload.seed);
-
-	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), 
-		metal, 
-		albedo, 
-		roughness);
-	float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metal;
-
-	float3 lighting = shade_pixel(hit_pos, V, 
-		albedo, 
-		metal, 
-		roughness, 
-		fN, 
-		payload.seed, 
-		payload.depth+1);
-	float3 specular = (reflection) * F;
-	float3 diffuse = albedo * irradiance;
-	float3 ambient = (kD * diffuse + specular);
-
-	payload.color = ambient + lighting;
-#else
-
 	// #################### GGX #####################
 	nextRand(payload.seed);
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
-
-#endif
+	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 }
 
 //Reflection skybox
