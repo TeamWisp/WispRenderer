@@ -69,6 +69,9 @@ namespace wr
 			float normal_id;
 			float roughness_id;
 			float metallicness_id;
+			float emissive_id;
+			float ao_id;
+			DirectX::XMFLOAT2 padding;
 
 			Material::MaterialData material_data;
 		};

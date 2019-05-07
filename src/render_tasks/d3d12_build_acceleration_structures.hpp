@@ -103,6 +103,8 @@ namespace wr
 					material.normal_id = material_internal->GetNormal().m_id;
 					material.roughness_id = material_internal->GetRoughness().m_id;
 					material.metallicness_id = material_internal->GetMetallic().m_id;
+					material.emissive_id = material_internal->GetEmissive().m_id;
+					material.ao_id = material_internal->GetAmbientOcclusion().m_id;
 					material.material_data = material_internal->GetMaterialData();
 					int x = sizeof(wr::temp::RayTracingMaterial_CBData);
 					int y = sizeof(DirectX::XMVECTOR);

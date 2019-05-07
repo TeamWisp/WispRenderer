@@ -26,7 +26,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	//color = SampleFXAA(input, s0, DTid.xy, resolution);
 	//uv = ZoomUV(uv, 0.75);
 	//float3 color = input.SampleLevel(s0, BarrelDistortUV(uv, 2), 0);
-	//float3 color = ChromaticAberrationV2(input, s0, uv, 0.2, 0.96f).rgb;
+	//color = ChromaticAberrationV2(input, s0, uv, 0.2, 0.96f).rgb;
 
 	if (hdr == 0)
 	{

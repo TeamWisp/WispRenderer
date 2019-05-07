@@ -3,6 +3,7 @@
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
+#include "gi_util.hlsl"
 
 struct Vertex
 {
@@ -20,15 +21,18 @@ struct Material
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
+	float emissive_id;
+	float ao_id;
+	float2 padding;
 
 	MaterialData data;
 };
 
 struct Offset
 {
-    float material_idx;
-    float idx_offset;
-    float vertex_offset;
+	float material_idx;
+	float idx_offset;
+	float vertex_offset;
 };
 
 RWTexture2D<float4> output : register(u0); // xyz: reflection, a: shadow factor
@@ -46,14 +50,6 @@ TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
-
-struct HitInfo
-{
-	float3 color;
-	unsigned int seed;
-	float3 origin;
-	unsigned int depth;
-};
 
 cbuffer CameraProperties : register(b0)
 {
@@ -84,115 +80,12 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
-{
-	if (depth >= MAX_RECURSION)
-	{
-		//return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
-		return float4(0, 0, 0, 0);
-	}
-
-	// Define a ray, consisting of origin, direction, and the min-max distance values
-	RayDesc ray;
-	ray.Origin = origin;
-	ray.Direction = direction;
-	ray.TMin = EPSILON;
-	ray.TMax = 1.0e38f;
-
-	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
-
-	// Trace the ray
-	TraceRay(
-		Scene,
-		RAY_FLAG_NONE,
-		~0, // InstanceInclusionMask
-		0, // RayContributionToHitGroupIndex
-		0, // MultiplierForGeometryContributionToHitGroupIndex
-		0, // miss shader index
-		ray,
-		payload);
-
-	return float4(payload.color, 1);
-}
-
 float3 unpack_position(float2 uv, float depth)
 {
 	// Get world space position
 	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
 	float4 wpos = mul(inv_vp, ndc);
 	return (wpos.xyz / wpos.w).xyz;
-}
-
-#define M_PI 3.14159265358979
-
-// NVIDIA's luminance function
-inline float luminance(float3 rgb)
-{
-    return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f));
-}
-
-// NVIDIA's probability function
-float probabilityToSampleDiffuse(float3 difColor, float3 specColor)
-{
-	float lumDiffuse = max(0.01f, luminance(difColor.rgb));
-	float lumSpecular = max(0.01f, luminance(specColor.rgb));
-	return lumDiffuse / (lumDiffuse + lumSpecular);
-}
-
-float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
-{
-	// #################### GGX #####################
-	float diffuse_probability = probabilityToSampleDiffuse(albedo, metal);
-	float choose_diffuse = (nextRand(seed) < diffuse_probability);
-
-	// Diffuse lobe
-	if (choose_diffuse)
-	{
-		nextRand(seed);
-		const float3 rand_dir = getUniformHemisphereSample(seed, N);
-		float3 irradiance = TraceColorRay(hit_pos, rand_dir, depth, seed);
-
-		float3 lighting = shade_pixel(hit_pos, V, 
-			albedo, 
-			metal, 
-			roughness, 
-			fN, 
-			seed, 
-			depth+1);
-
-		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
-
-		return (lighting + (irradiance * albedo)) / diffuse_probability;
-	}
-	else
-	{
-		nextRand(seed);
-		float3 H = getGGXMicrofacet(seed, roughness, N);
-
-		// ### BRDF ###
-		float3 L = normalize(2.f * dot(V, H) * H - V);
-
-		float3 irradiance = TraceColorRay(hit_pos, L, depth, seed);
-		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
-
-		// Compute some dot products needed for shading
-		float NdotV = saturate(dot(N, V));
-		float NdotL = saturate(dot(N, L));
-		float NdotH = saturate(dot(N, H));
-		float LdotH = saturate(dot(L, H));
-
-		// D = Normal distribution (Distribution of the microfacets)
-		float D = D_GGX(NdotH, roughness); 
-		// G = Geometric shadowing term (Microfacets shadowing)
-		float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);
-		// F = Fresnel factor (Reflectance depending on angle of incidence)
-		float3 F = F_Schlick(NdotH, metal, albedo);
- 
-		float3 spec = (D * F * G) / ((4.0 * NdotL * NdotV + 0.001f));
-		float  ggx_probability = D * NdotH / (4 * LdotH);
-
-		return NdotL * irradiance * spec / (ggx_probability * (1.0f - diffuse_probability));
-	}
 }
 
 [shader("raygeneration")]
@@ -222,16 +115,19 @@ void RaygenEntry()
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(cpos - wpos);
 
+	normal = lerp(normal, -normal, dot(normal, V) < 0);
+
 	float3 result = float3(0, 0, 0);
 
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos, rand_dir, 0, rand_seed);
-	//result = ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
+	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 
 	result = clamp(result, 0, 100);
-	
+
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
 	{
@@ -269,10 +165,10 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 
 	// Find first index location
 	const uint index_size = 4;
-    const uint indices_per_triangle = 3;
-    const uint triangle_idx_stride = indices_per_triangle * index_size;
+	const uint indices_per_triangle = 3;
+	const uint triangle_idx_stride = indices_per_triangle * index_size;
 
-    uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
 	base_idx += index_offset * 4; // offset the start
 
 	uint3 indices = Load3x32BitIndices(base_idx);
@@ -295,13 +191,15 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float mip_level = payload.depth+1;
+	float mip_level = payload.depth + 1;
 
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
 		g_textures[material.normal_id],
 		g_textures[material.roughness_id],
 		g_textures[material.metalicness_id],
+		g_textures[material.ao_id],
+		g_textures[material.emissive_id],
 		mip_level,
 		s0,
 		uv);
@@ -309,7 +207,9 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float3 albedo = output_data.albedo;
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
-	
+	float3 emissive = pow(output_data.emissive, 2.2f);
+	float ao = output_data.ao;
+
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 #define CALC_B
@@ -323,53 +223,19 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 
 	//float3 fN = N;
 	float3 fN = normalize(mul(output_data.normal, TBN));
-	if (dot(fN, V) <= 0.0f) fN = -fN;
-
-	// Irradiance
-#ifdef OLDSCHOOL
-	nextRand(payload.seed);
-	const float3 rand_dir = getUniformHemisphereSample(payload.seed, N);
-	const float cos_theta = cos(dot(rand_dir, normal));
-	//float3 irradiance = TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed);
-	//float3 irradiance = (TraceColorRay(hit_pos + (N * EPSILON), rand_dir, payload.depth + 1, payload.seed) * cos_theta) * (albedo / PI);
-	float3 irradiance = (TraceColorRay(hit_pos, rand_dir, payload.depth + 1, payload.seed) * M_PI) * (1.0f / (2.0f * M_PI));
-
-	// Direct
-	float3 reflect_dir = reflect(-V, fN);
-	float3 reflection = TraceColorRay(hit_pos, reflect_dir, payload.depth + 1, payload.seed);
-
-	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), 
-		metal, 
-		albedo, 
-		roughness);
-	float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metal;
-
-	float3 lighting = shade_pixel(hit_pos, V, 
-		albedo, 
-		metal, 
-		roughness, 
-		fN, 
-		payload.seed, 
-		payload.depth+1);
-	float3 specular = (reflection) * F;
-	float3 diffuse = albedo * irradiance;
-	float3 ambient = (kD * diffuse + specular);
-
-	payload.color = ambient + lighting;
-#else
+	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
 	// #################### GGX #####################
 	nextRand(payload.seed);
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
-
-#endif
+	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	payload.color += emissive;
 }
 
 //Reflection skybox
 [shader("miss")]
 void ReflectionMiss(inout HitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
+	//payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
+	payload.color = 0;
 }

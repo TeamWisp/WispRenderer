@@ -228,6 +228,12 @@ namespace wr
 
 					if (!material_internal->UsesConstantRoughness())
 						set_srv(material_internal->GetRoughness());
+
+					if (material_internal->HasEmissiveTexture())
+						set_srv(material_internal->GetEmissive());
+
+					if (material_internal->HasAOTexture())
+						set_srv(material_internal->GetAmbientOcclusion());
 				}
 
 				// Get light buffer

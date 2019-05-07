@@ -70,11 +70,13 @@ namespace wr
 		void SetAmbientOcclusion(TextureHandle ao);
 
 		void UseAOTexture(bool use_ao);
+		bool HasAOTexture() { return m_material_data.m_material_flags.m_has_ao_texture; }
 
 		TextureHandle GetEmissive() { return m_emissive; }
 		void SetEmissive(TextureHandle emissive);
 
 		void UseEmissiveTexture(bool use_emissive);
+		bool HasEmissiveTexture() { return m_material_data.m_material_flags.m_has_emissive_texture; }
 
 		DirectX::XMFLOAT3 GetConstantAlbedo()
 		{

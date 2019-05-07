@@ -69,7 +69,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	float3 specular = prefiltered_color * (kS * sampled_brdf.x + sampled_brdf.y);
 	//float3 specular = reflection * kS;
 	
-	float3 ambient = (kD * diffuse + specular) * ao; //Replace 1.0f with AO, when we have it.
+	float3 ambient = (kD * diffuse + specular) * ao;
 
 	return ambient + (res * shadow_factor);
 }

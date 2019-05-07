@@ -18,7 +18,6 @@ struct MaterialData
 {
 	float4 albedo_alpha;
 	float4 metallic_roughness;
-	float4 emissive_ao;
 	uint flags;
 	uint3 padding;
 };
@@ -42,7 +41,7 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	Texture2D material_emissive,
 	SamplerState s0,
 	float2 uv
-	) 
+)
 {
 	OutputMaterialData output;
 
@@ -68,13 +67,8 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 #endif
 	float3 tex_normal = lerp((material_normal.Sample(s0, uv).rgb * 2.0) - float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 1.0), use_normal_texture == 0);
 
-	float ao = lerp(material_ambient_occlusion.Sample(s0, uv).r, 1.0f, has_ao_texture == 0);
+	float ao = lerp(material_ambient_occlusion.Sample(s0, uv).x, 1.0f, has_ao_texture == 0);
 	float3 emissive = lerp(material_emissive.Sample(s0, uv).xyz, float3(0.0f, 0.0f, 0.0f), has_emissive_texture == 0);
-
-
-	//roughness = max(0.05f, material_roughness.Sample(s0, uv));
-	//metallic = material_metallic.Sample(s0, uv);
-	//tex_normal = (material_normal.Sample(s0, uv).rgb * 2.0) - float3(1.0, 1.0, 1.0);
 
 	output.albedo = albedo.xyz;
 	output.roughness = roughness.x;
@@ -91,6 +85,8 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 	Texture2D material_normal,
 	Texture2D material_roughness,
 	Texture2D material_metallic,
+	Texture2D material_ambient_occlusion,
+	Texture2D material_emissive,
 	float mip_level,
 	SamplerState s0,
 	float2 uv)
@@ -104,6 +100,8 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 	uint use_metallic_constant = data.flags & MATERIAL_USE_METALLIC_CONSTANT;
 	uint has_metallic_texture = data.flags & MATERIAL_HAS_METALLIC_TEXTURE;
 	uint use_normal_texture = data.flags & MATERIAL_HAS_NORMAL_TEXTURE;
+	uint has_ao_texture = data.flags & MATERIAL_HAS_AO_TEXTURE;
+	uint has_emissive_texture = data.flags & MATERIAL_HAS_EMISSIVE_TEXTURE;
 
 	//#define COMPRESSED_PBR
 #ifdef COMPRESSED_PBR
@@ -135,9 +133,15 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 		use_normal_texture == 0);
 #endif
 
+	float ao = lerp(material_ambient_occlusion.SampleLevel(s0, uv, mip_level).x, 1.0f, has_ao_texture == 0);
+	float3 emissive = lerp(material_emissive.SampleLevel(s0, uv, mip_level).xyz, float3(0.0f, 0.0f, 0.0f), has_emissive_texture == 0);
+
 	output.albedo = albedo;
 	output.roughness = roughness;
 	output.normal = normal_t;
 	output.metallic = metal;
+	output.emissive = emissive;
+	output.ao = ao;
+
 	return output;
 }

@@ -68,6 +68,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
 		float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
 		const float metallic = gbuffer_normal_metallic[screen_coord].w;
+		float3 emissive = gbuffer_emissive_ao[screen_coord].rgb;
+		float gbuffer_ao = gbuffer_emissive_ao[screen_coord].w;
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
@@ -76,7 +78,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
 		// Get irradiance
-		float irradiance = lerp(
+		float3 irradiance = lerp(
 			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
 			screen_space_irradiance[screen_coord].xyz,
 			is_path_tracer);
@@ -87,6 +89,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			screen_space_ao[screen_coord].xyz,
 			// Lerp factor (0: env map, 1: path traced)
 			is_hbao);
+
+		//Ao is multiplied with material texture ao, if present
+		ao *= gbuffer_ao;
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -109,8 +114,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
-		retval = albedo;
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor) + emissive;
 	}
 	else
 	{	
