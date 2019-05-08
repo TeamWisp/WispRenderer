@@ -22,8 +22,9 @@ inline std::string HResultToString(HRESULT hr)
 		NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		(LPTSTR)&sz_err_msg, 0, NULL) != 0)
 	{
-		return(sz_err_msg);
+		std::string retval = sz_err_msg;
 		LocalFree(sz_err_msg);
+		return(retval);
 	}
 	else
 	{
@@ -38,7 +39,7 @@ inline std::string HResultToString(HRESULT hr)
 #define TRY(result) if (FAILED(result)) { LOGC("An hresult returned a error!. File: " + std::string(__FILE__) + " Line: " + std::to_string(__LINE__) + " HRResult: " +  HResultToString(result)); }
 
 //! Handles a hresult and outputs a specific message.
-#define TRY_M(result, msg) if (FAILED(result)) { LOGC(msg); }
+#define TRY_M(result, msg) if (FAILED(result)) { LOGC(static_cast<std::string>(msg) + " HRResult: " + HResultToString(result)); }
 
 //! This macro is used to name d3d12 resources.
 #define NAME_D3D12RESOURCE(r, n) { auto temp = std::string(__FILE__); \
