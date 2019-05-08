@@ -134,7 +134,6 @@ namespace wr::d3d12
 	bool IsOptionalFormatSupported(Device* device, Format format);
 	Format RemoveSRGB(Format format);
 	Format BGRtoRGB(Format format);
-	std::size_t SizeOfFormat(Format format);
 
 	// Read-back buffer
 	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);

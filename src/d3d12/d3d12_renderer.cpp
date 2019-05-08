@@ -142,6 +142,14 @@ namespace wr
 
 	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
+		// Perform render target save requests
+		while (!m_requested_rt_saves.empty())
+		{
+			WaitForAllPreviousWork();
+			auto back = m_requested_rt_saves.back();
+			SaveRenderTargetToDisc(back.m_path, back.m_render_target, back.m_index);
+			m_requested_rt_saves.pop();
+		}
 
 		if (m_requested_fullscreen_state.has_value())
 		{
@@ -151,16 +159,9 @@ namespace wr
 			m_requested_fullscreen_state = std::nullopt;
 		}
 
-		// Perform render target save requests
-		while (!m_requested_rt_saves.empty())
-		{
-			auto back = m_requested_rt_saves.back();
-			SaveRenderTargetToDisc(back.first, back.second);
-			m_requested_rt_saves.pop();
-		}
-
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
+
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -507,7 +508,7 @@ namespace wr
 		d3d12::End(n_cmd_list);
 	}
 
-	void D3D12RenderSystem::SaveRenderTargetToDisc(RenderTarget* render_target, unsigned int index)
+	void D3D12RenderSystem::SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index)
 	{
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target);
 		auto format = static_cast<Format>(n_render_target->m_render_targets[index]->GetDesc().Format);
@@ -516,6 +517,9 @@ namespace wr
 		auto n_device = m_device->m_native;
 		auto width = d3d12::GetRenderTargetWidth(n_render_target);
 		auto height = d3d12::GetRenderTargetHeight(n_render_target);
+		auto bytes_per_pixel = BytesPerPixel(format);
+		std::uint64_t bytes_per_row = static_cast<std::uint64_t>(width) * static_cast<std::uint64_t>(bytes_per_pixel);
+		std::uint64_t texture_size = (bytes_per_row * static_cast<std::uint64_t>(height));
 
 		auto queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
 		SetName(queue, L"Screenshot Command Queue");
@@ -528,25 +532,20 @@ namespace wr
 		d3d12::Begin(cmd_list, 0);
 
 		// Readback
-		auto format_size = d3d12::SizeOfFormat(format);
-		auto bytes_per_row = width * format_size;
-		std::size_t texture_size = bytes_per_row * height;
-		ID3D12Resource* readback_buffer;
+		d3d12::desc::ReadbackDesc readback_buffer_desc = {};
+		readback_buffer_desc.m_buffer_width = width;
+		readback_buffer_desc.m_buffer_height = height;
+		readback_buffer_desc.m_bytes_per_pixel = bytes_per_pixel;
 
-		HRESULT hr = n_device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(texture_size),
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			nullptr,
-			IID_PPV_ARGS(&readback_buffer));
-		readback_buffer->SetName(L"Texture ReadBack Buffer (Used for saving to disc)");
+		// Create the actual read back buffer
+		auto readback_buffer = d3d12::CreateReadbackBuffer(m_device, &readback_buffer_desc);
+		d3d12::SetName(readback_buffer, L"Texture ReadBack Buffer (Used for saving to disc)");
 
 		// Copy data to cpu
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
-		n_device->GetCopyableFootprints(&rt_resource->GetDesc(), 0, 1, 0, &footprint, nullptr, nullptr, (std::uint64_t*) & texture_size);
+		n_device->GetCopyableFootprints(&rt_resource->GetDesc(), 0, 1, 0, &footprint, nullptr, nullptr, (std::uint64_t*)&texture_size);
 
-		CD3DX12_TEXTURE_COPY_LOCATION dest_loc(readback_buffer, footprint);
+		CD3DX12_TEXTURE_COPY_LOCATION dest_loc(readback_buffer->m_resource, footprint);
 		CD3DX12_TEXTURE_COPY_LOCATION src_loc(rt_resource, 0);
 		cmd_list->m_native->CopyTextureRegion(&dest_loc, 0, 0, 0, &src_loc, nullptr);
 
@@ -559,26 +558,21 @@ namespace wr
 		WaitFor(fence);
 
 		// Store data
-		BYTE* data;
-		D3D12_RANGE range{ 0, texture_size };
-		readback_buffer->Map(0, nullptr, reinterpret_cast<void**>(&data));
-
-		std::uint8_t* pixels = data;
-
-		readback_buffer->Unmap(0, nullptr);
-
-		readback_buffer->Release();
+		auto pixels = static_cast<std::uint8_t*>(d3d12::MapReadbackBuffer(readback_buffer, texture_size));
+		d3d12::UnmapReadbackBuffer(readback_buffer);
 
 		DirectX::Image img;
 		img.format = static_cast<DXGI_FORMAT>(format);
 		img.width = width;
 		img.height = height;
 		img.rowPitch = bytes_per_row;
-		img.slicePitch = bytes_per_row * height;
+		img.slicePitch = texture_size;
 		img.pixels = pixels;
 
-		TRY_M(DirectX::SaveToTGAFile(img, L"image.tga"), "Failed to save image to disc");
+		auto wpath = std::wstring(path.begin(), path.end());
+		TRY_M(DirectX::SaveToTGAFile(img, wpath.c_str()), "Failed to save image to disc");
 
+		d3d12::Destroy(readback_buffer);
 		d3d12::Destroy(cmd_list);
 		d3d12::Destroy(fence);
 		d3d12::Destroy(queue);

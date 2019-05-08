@@ -194,7 +194,7 @@ namespace wr
 		float temp_intensity = 1;
 
 	protected:
-		void SaveRenderTargetToDisc(RenderTarget* render_target, unsigned int index) final;
+		void SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index) final;
 
 	private:
 		void ResetBatches(SceneGraph& sg);

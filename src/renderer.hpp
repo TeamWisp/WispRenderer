@@ -67,7 +67,7 @@ namespace wr
 		virtual void Init(std::optional<Window*> window) = 0;
 		virtual CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
 		virtual void Resize(std::uint32_t width, std::uint32_t height) = 0;
-		void RequestRenderTargetSaveToDisc(RenderTarget* render_target, unsigned int index);
+		void RequestRenderTargetSaveToDisc(std::string const& path, RenderTarget* render_target, unsigned int index);
 		
 		std::optional<Window*> m_window;
 
@@ -86,9 +86,16 @@ namespace wr
 		std::array<wr::Model*, static_cast<std::size_t>(SimpleShapes::COUNT)> m_simple_shapes;
 
 	protected:
-		virtual void SaveRenderTargetToDisc(RenderTarget* render_target, unsigned int index) = 0;
+		struct SaveRenderTargetRequest
+		{
+			std::string m_path;
+			RenderTarget* m_render_target;
+			unsigned int m_index;
+		};
 
-		std::queue<std::pair<RenderTarget*, unsigned int>> m_requested_rt_saves;
+		virtual void SaveRenderTargetToDisc(std::string const & path, RenderTarget* render_target, unsigned int index) = 0;
+
+		std::queue<SaveRenderTargetRequest> m_requested_rt_saves;
 	};
 
 } /* wr */

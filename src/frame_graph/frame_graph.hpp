@@ -616,13 +616,13 @@ namespace wr
 			\param index The index of the render target from the task you want to save.
 		*/
 		template<typename T>
-		void SaveTaskToDisc(unsigned int index = 0)
+		void SaveTaskToDisc(std::string const & path, int index = 0)
 		{
 			auto handle = GetHandleFromType<T>();
 
 			if (handle.has_value())
 			{
-				m_render_system->RequestRenderTargetSaveToDisc(m_render_targets[handle.value()], index);
+				m_render_system->RequestRenderTargetSaveToDisc(path, m_render_targets[handle.value()], index);
 			}
 			else
 			{
