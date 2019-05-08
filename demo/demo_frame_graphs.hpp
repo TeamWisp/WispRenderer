@@ -59,7 +59,7 @@ namespace fg_manager
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
 
-	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> const& imgui_func, bool is_fallback)
+	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> const& imgui_func)
 	{
 		// Raytracing
 		{
@@ -189,7 +189,7 @@ namespace fg_manager
 			wr::AddRTHybridTask(*fg);
 
 			//Ambient Occlusion task, but only when running on RTX hardware
-			if (!is_fallback)
+			if (wr::d3d12::GetRaytracingType(static_cast<wr::D3D12RenderSystem&>(rs).m_device) != wr::RaytracingType::FALLBACK)
 			{
 				wr::AddAOTask(*fg);
 			}

@@ -162,9 +162,7 @@ int WispEntry()
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
-	bool is_fallback = wr::d3d12::GetRaytracingType(render_system->m_device) == wr::RaytracingType::FALLBACK;
-
-	fg_manager::Setup(*render_system, &RenderEditor, is_fallback);
+	fg_manager::Setup(*render_system, &RenderEditor);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
