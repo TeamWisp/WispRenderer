@@ -192,6 +192,8 @@ namespace wr::d3d12
 		desc::RenderTargetDesc m_create_info;
 		unsigned int m_frame_idx;
 		unsigned int m_num_render_targets;
+		unsigned int m_width;
+		unsigned int m_height;
 
 		std::vector<ID3D12Resource*> m_render_targets;
 		ID3D12DescriptorHeap* m_rtv_descriptor_heap;

@@ -15,6 +15,8 @@ namespace wr::d3d12
 		render_target->m_render_targets.resize(descriptor.m_num_rtv_formats);
 		render_target->m_create_info = descriptor;
 		render_target->m_num_render_targets = descriptor.m_num_rtv_formats;
+		render_target->m_width = width;
+		render_target->m_height = height;
 
 		for (auto i = 0; i < descriptor.m_num_rtv_formats; i++)
 		{
@@ -64,6 +66,16 @@ namespace wr::d3d12
 	void SetName(RenderTarget* render_target, std::string name)
 	{
 		SetName(render_target, std::wstring(name.begin(), name.end()));
+	}
+
+	unsigned int GetRenderTargetWidth(RenderTarget* render_target)
+	{
+		return render_target->m_width;
+	}
+
+	unsigned int GetRenderTargetHeight(RenderTarget* render_target)
+	{
+		return render_target->m_height;
 	}
 
 	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height)
@@ -220,6 +232,9 @@ namespace wr::d3d12
 
 	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height)
 	{
+		(*render_target)->m_width = width;
+		(*render_target)->m_height = height;
+
 		if ((*render_target)->m_create_info.m_dsv_format == Format::UNKNOWN && (*render_target)->m_create_info.m_create_dsv_buffer)
 		{
 			DestroyDepthStencilBuffer((*render_target));
