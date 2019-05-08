@@ -30,13 +30,27 @@ using frame_graph_setup_func_t = std::function<std::shared_ptr<wr::FrameGraph>(w
 
 enum class FGType : std::int32_t
 {
-	PBR,
+	PBR_BASIC,
+	PBR_RT_REF_SHADOWS,
+	PBR_RT_REF_SHADOWS_PATH_TRACING,
 	COUNT
 };
 
+inline std::string GetFrameGraphName(FGType id)
+{
+	switch (id)
+	{
+	case FGType::PBR_BASIC: return "PBR Basic";
+	case FGType::PBR_RT_REF_SHADOWS: return "PBR RT Reflections and Shadows";
+	case FGType::PBR_RT_REF_SHADOWS_PATH_TRACING: return "PBR RT Reflections Shadows and Path Tracing";
+	default:
+		return "Unknown";
+	}
+}
+
 static std::array<frame_graph_setup_func_t, static_cast<std::size_t>(FGType::COUNT)> frame_graph_setup_functions =
 {
-	// PBR
+	// PBR Basic
 	[] (wr::D3D12RenderSystem & rs)
 	{
 		auto fg = std::make_shared<wr::FrameGraph>(7);
@@ -45,6 +59,48 @@ static std::array<frame_graph_setup_func_t, static_cast<std::size_t>(FGType::COU
 		wr::AddEquirectToCubemapTask(*fg);
 		wr::AddCubemapConvolutionTask(*fg);
 		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+		wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
+		wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+		wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+		fg->Validate();
+		fg->Setup(rs);
+		return fg;
+	},
+
+	// PBR RT Reflections and shadows
+	[](wr::D3D12RenderSystem& rs)
+	{
+		auto fg = std::make_shared<wr::FrameGraph>(7);
+
+		wr::AddBrdfLutPrecalculationTask(*fg);
+		wr::AddEquirectToCubemapTask(*fg);
+		wr::AddCubemapConvolutionTask(*fg);
+		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+		wr::AddBuildAccelerationStructuresTask(*fg);
+		wr::AddRTHybridTask(*fg);
+		wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
+		wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+		wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+		fg->Validate();
+		fg->Setup(rs);
+		return fg;
+	},
+
+	// PBR RT Reflections shadows and path tracing
+	[](wr::D3D12RenderSystem& rs)
+	{
+		auto fg = std::make_shared<wr::FrameGraph>(7);
+
+		wr::AddBrdfLutPrecalculationTask(*fg);
+		wr::AddEquirectToCubemapTask(*fg);
+		wr::AddCubemapConvolutionTask(*fg);
+		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+		wr::AddBuildAccelerationStructuresTask(*fg);
+		wr::AddRTHybridTask(*fg);
+		wr::AddPathTracerTask(*fg);
+		wr::AddAccumulationTask<wr::PathTracerData>(*fg);
 		wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 		wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 		wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);

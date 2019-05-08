@@ -520,8 +520,8 @@ namespace wr
 		auto width = d3d12::GetRenderTargetWidth(n_render_target);
 		auto height = d3d12::GetRenderTargetHeight(n_render_target);
 		auto bytes_per_pixel = BytesPerPixel(format);
-		std::uint64_t bytes_per_row = static_cast<std::uint64_t>(width) * static_cast<std::uint64_t>(bytes_per_pixel);
-		std::uint64_t texture_size = (bytes_per_row * static_cast<std::uint64_t>(height));
+		std::uint64_t bytes_per_row = SizeAlignTwoPower(static_cast<std::uint64_t>(width) * static_cast<std::uint64_t>(bytes_per_pixel), 256);
+		std::uint64_t texture_size = bytes_per_row * static_cast<std::uint64_t>(height);
 
 		auto queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
 		SetName(queue, L"Screenshot Command Queue");
