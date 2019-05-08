@@ -9,9 +9,8 @@ namespace wr
 {
 
 	Window::Window(HINSTANCE instance, int show_cmd, std::string const & name, std::uint32_t width, std::uint32_t height)
-		: m_title(name)
+		: m_title(name), m_instance(instance)
 	{
-
 		WNDCLASSEX wc;
 		wc.cbSize = sizeof(WNDCLASSEX);
 		wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -80,6 +79,7 @@ namespace wr
 	Window::~Window()
 	{
 		Stop();
+		UnregisterClassA(m_title.c_str(), m_instance);
 	}
 
 	void Window::PollEvents()
@@ -116,6 +116,8 @@ namespace wr
 		{
 			PollEvents();
 		}
+
+		UnregisterClassA(m_title.c_str(), m_instance);
 	}
 
 	void Window::SetKeyCallback(KeyCallback callback)

@@ -184,10 +184,10 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/ansel/in
 
 target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB} ${NVIDIA_GAMEWORKS_ANSEL_LIB})
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 
-add_subdirectory(demo ${CMAKE_BINARY_DIR}/WispDemo)
+add_subdirectory(tests ${CMAKE_BINARY_DIR}/tests)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Demo)
 
 ## Unit Test ##
 if(ENABLE_UNIT_TEST)
