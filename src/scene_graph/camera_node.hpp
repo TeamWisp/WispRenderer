@@ -35,7 +35,7 @@ namespace wr
 			: Node(typeid(CameraNode)),
 			m_active(true),
 			m_frustum_near(0.1f),
-			m_frustum_far(1000.0f),
+			m_frustum_far(10000.0f),
 			m_aspect_ratio(aspect_ratio),
 			m_focal_length(35.0f),
 			m_film_size(45.0f),

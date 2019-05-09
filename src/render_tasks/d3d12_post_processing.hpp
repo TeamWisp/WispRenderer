@@ -77,20 +77,21 @@ namespace wr
 
 			auto source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-
-			// Destination
+			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
 			{
-				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(dest_idx);
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+				// Destination
+				{
+					constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(dest_idx);
+					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+				}
+				// Source
+				{
+					constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(source_idx);
+					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+				}
 			}
-			// Source
-			{
-				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(source_idx);
-				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
-			}
-
 
 
 			float hdr_type = static_cast<float>(d3d12::settings::output_hdr);
