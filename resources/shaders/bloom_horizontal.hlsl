@@ -16,11 +16,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 
+	float sigma = 4.0f;
+
 	float4 color = 0;
 	float weightSum = 0.0f;
 	for (int i = -7; i < 7; i++)
 	{
-		float weight = gaussian_weights[i + 7];
+		float weight = CalcGaussianWeight(i, sigma);
 		weightSum += weight;
 		float2 o_uv = (screen_coord + 0.5f + (float2(1.0f * i, 0.0f))) / screen_size;
 		float4 s = source.SampleLevel(s0, o_uv, 0);

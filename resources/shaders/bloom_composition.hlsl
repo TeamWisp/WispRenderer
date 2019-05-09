@@ -23,7 +23,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 
 	float3 finalcolor = float3(0, 0, 0);
-	float bloom_intensity = 0.5f;
+	float bloom_intensity = 1.f;
 
 	if (enable_bloom > 0)
 	{
