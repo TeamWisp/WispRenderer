@@ -70,7 +70,6 @@ void PerformBenchmark(FGType fg_type, unsigned int width = default_window_width,
 		// Capture screenshot
 		if (frame == frames_till_capture)
 		{
-			Sleep(300);
 			std::string path = output_dir + "wisp_img_" + std::to_string(benchmark_number) + "_" + scene_name + "_" + fg_name + "_" + rt_name + ".tga";
 			frame_graph->SaveTaskToDisc<O>(path, output_render_target_index);
 			LOGW("Saving output to: {}", output_dir);
