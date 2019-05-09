@@ -6,4 +6,5 @@ std::stack<std::uint64_t> FrameGraph::m_free_uids = {};
 
 FrameGraph::FrameGraph(std::size_t num_reserved_tasks)
 	: m_uid(GetFreeUID())
+	, m_num_tasks(num_reserved_tasks)
 {}
