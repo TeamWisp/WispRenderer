@@ -5,8 +5,8 @@ add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 
 project(Wisp)
 
-option(WISP_BUILD_TESTS ON)
-option(WISP_BUILD_SHARED OFF)
+option(WISP_BUILD_TESTS "Enable Wisp Tests" ON)
+option(WISP_BUILD_SHARED "Build Wisp as a shared library" OFF)
 if (WISP_BUILD_SHARED)
 	set(BUILD_SHARED_LIBS ON)
 	message(STATUS "Building wisp as a SHARED library")
