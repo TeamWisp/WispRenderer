@@ -5,7 +5,7 @@ add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 
 project(Wisp)
 
-option(WISP_BUILD_TESTSD ON)
+option(WISP_BUILD_TESTS ON)
 option(WISP_BUILD_SHARED OFF)
 if (WISP_BUILD_SHARED)
 	set(BUILD_SHARED_LIBS ON)
@@ -186,8 +186,8 @@ target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3d
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 
 if (WISP_BUILD_TESTS)
-add_subdirectory(tests ${CMAKE_BINARY_DIR}/tests)
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Demo)
+	add_subdirectory(tests ${CMAKE_BINARY_DIR}/tests)
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Demo)
 endif()
 
 ## Generate Include Directory
