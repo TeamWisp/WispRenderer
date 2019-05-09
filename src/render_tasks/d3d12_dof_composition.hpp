@@ -44,6 +44,51 @@ namespace wr
 			auto source_rt_bokeh_filtered = data.out_source_bokeh_filtered = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
 			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T2>());
 
+			// Destination
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+			}
+			// Source
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::SOURCE)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt_comp, cpu_handle, 0, source_rt_comp->m_create_info.m_rtv_formats[0]);
+			}
+			// Bokeh near
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::BOKEH_NEAR)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt_bokeh_filtered, cpu_handle, 0, source_rt_bokeh_filtered->m_create_info.m_rtv_formats[0]);
+			}
+			// Bokeh far
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::BOKEH_FAR)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt_bokeh_filtered, cpu_handle, 1, source_rt_bokeh_filtered->m_create_info.m_rtv_formats[1]);
+			}
+			// Cone of confusion
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::COC)));
+				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
+			}
+			
+		}
+
+		template<typename T, typename T1, typename T2>
+		inline void ExecuteDoFCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
+		{
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& device = n_render_system.m_device;
+			auto& data = fg.GetData<DoFCompositionData>(handle);
+			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
+			auto frame_idx = n_render_system.GetFrameIdx();
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+			const auto viewport = n_render_system.m_viewport;
+
+			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
+
+			auto source_rt_comp = data.out_source_rt_comp = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+			auto source_rt_bokeh_filtered = data.out_source_bokeh_filtered = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
+			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T2>());
+
 			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
 			{
 				// Destination
@@ -54,7 +99,7 @@ namespace wr
 				// Source
 				{
 					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::SOURCE)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt_comp, cpu_handle, frame_idx, source_rt_comp->m_create_info.m_rtv_formats[frame_idx]);
+					d3d12::CreateSRVFromSpecificRTV(source_rt_comp, cpu_handle, 0, source_rt_comp->m_create_info.m_rtv_formats[0]);
 				}
 				// Bokeh near
 				{
@@ -72,21 +117,37 @@ namespace wr
 					d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, frame_idx, source_coc->m_create_info.m_rtv_formats[frame_idx]);
 				}
 			}
-		}
 
-		inline void ExecuteDoFCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
-		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& device = n_render_system.m_device;
-			auto& data = fg.GetData<DoFCompositionData>(handle);
-			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-			auto frame_idx = n_render_system.GetFrameIdx();
-			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			const auto viewport = n_render_system.m_viewport;
+			{
+				constexpr unsigned int dest_n_idx = rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::OUTPUT);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_n_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_n_idx, handle_uav);
+			}
 
-			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
+			{
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::SOURCE);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_m_srv);
+			}
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 5, data.out_allocation.GetDescriptorHandle());
+			{
+				constexpr unsigned int source_near_idx = rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::BOKEH_NEAR);
+				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_near_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_near_idx, handle_b_srv);
+			}
+
+			{
+				constexpr unsigned int source_far_idx = rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::BOKEH_FAR);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_far_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_far_idx, handle_m_srv);
+			}
+
+			{
+				constexpr unsigned int source_coc_idx = rs_layout::GetHeapLoc(params::dof_composition, params::DoFCompositionE::COC);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_coc_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_coc_idx, handle_m_srv);
+			}
+			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 5, data.out_allocation.GetDescriptorHandle());
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt_comp->m_render_targets[frame_idx % versions]));
 
@@ -112,7 +173,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ d3d12::settings::back_buffer_format}),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT}),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
@@ -124,7 +185,7 @@ namespace wr
 			internal::SetupDoFCompositionTask<T, T1, T2>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteDoFCompositionTask(rs, fg, sg, handle);
+			internal::ExecuteDoFCompositionTask<T, T1, T2>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};

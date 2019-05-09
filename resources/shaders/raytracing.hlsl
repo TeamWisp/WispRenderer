@@ -90,7 +90,7 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 	float3 cameraW = float3(0, 0, 1);
 
 	float2 xy = (index + offset + pixelOff) + 0.5f; // center in the middle of the pixel.
-	float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+	float2 screenPos = xy / DispatchRaysDimensions().xy;
 
 	// Invert Y for DirectX-style coordinates.
 	screenPos.y = -screenPos.y;

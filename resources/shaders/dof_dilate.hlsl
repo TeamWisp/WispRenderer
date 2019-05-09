@@ -11,11 +11,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_size = float2(0.f, 0.f);
 	output_near.GetDimensions(screen_size.x, screen_size.y);
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
 	float2 texel_size = 1.0f / screen_size;
-	float2 uv = (screen_coord + 0.5f) / screen_size;
-	static const int SampleRadius = 2;
-	static const int SampleDiameter = SampleRadius * 2;
+	float2 uv = (screen_coord) / screen_size;
+	static const int SampleRadius = 1;
+	static const int SampleDiameter = SampleRadius * 2 + 1;
 
 	float output = source_near.SampleLevel(s0, uv , 0).a;
 
