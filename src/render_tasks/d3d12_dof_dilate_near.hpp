@@ -38,21 +38,20 @@ namespace wr
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination
 			{
-				// Destination
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate, params::DoFDilateE::OUTPUT)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				}
-				// Source near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate, params::DoFDilateE::SOURCE)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate, params::DoFDilateE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Source near
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate, params::DoFDilateE::SOURCE)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+			
 		}
 
+		template<typename T>
 		inline void ExecuteDoFDilateTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -63,9 +62,32 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			const auto viewport = n_render_system.m_viewport;
 
+			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
+
+			// Destination
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate, params::DoFDilateE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+			}
+			// Source near
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate, params::DoFDilateE::SOURCE)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+			
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+			{
+				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::dof_dilate, params::DoFDilateE::OUTPUT);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
+			}
+
+			{
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::dof_dilate, params::DoFDilateE::SOURCE);
+				auto handle_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_srv);
+			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
@@ -81,8 +103,8 @@ namespace wr
 	template<typename T>
 	inline void AddDoFDilateTask(FrameGraph& frame_graph, int32_t width, int32_t height)
 	{
-		const std::uint32_t m_quarter_width = (uint32_t)width / 4;
-		const std::uint32_t m_quarter_height = (uint32_t)height / 4;
+		const std::uint32_t m_quarter_width = (uint32_t)width / 8;
+		const std::uint32_t m_quarter_height = (uint32_t)height / 8;
 
 		std::wstring name(L"DoF dilate");
 
@@ -95,12 +117,12 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({wr::Format::R32_FLOAT}),
+			RenderTargetProperties::RTVFormats({wr::Format::R16_FLOAT}),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(name),
-			RenderTargetProperties::ResolutionScalar(0.25f)
+			RenderTargetProperties::ResolutionScalar(0.125f)
 		};
 
 		RenderTaskDesc desc;
@@ -108,7 +130,7 @@ namespace wr
 			internal::SetupDoFDilateTask<T>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteDoFDilateTask(rs, fg, sg, handle);
+			internal::ExecuteDoFDilateTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};

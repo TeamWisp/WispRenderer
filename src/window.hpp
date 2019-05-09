@@ -80,6 +80,7 @@ namespace wr
 
 		bool m_running;
 		HWND m_handle;
+		HINSTANCE m_instance;
 	};
 
 } /* wr */

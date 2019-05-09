@@ -40,14 +40,14 @@ namespace spheres_scene
 			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 			// Create Materials
-			spheres_material = material_pool->Create();
+			spheres_material = material_pool->Create(texture_pool.get());
 
 			wr::Material* spheres_material_internal = material_pool->GetMaterial(spheres_material);
 
-			spheres_material_internal->SetAlbedo(spheres_albedo);
-			spheres_material_internal->SetNormal(spheres_normal);
-			spheres_material_internal->SetRoughness(spheres_roughness);
-			spheres_material_internal->SetMetallic(spheres_metallic);
+			spheres_material_internal->SetTexture(wr::TextureType::ALBEDO, spheres_albedo);
+			spheres_material_internal->SetTexture(wr::TextureType::NORMAL, spheres_normal);
+			spheres_material_internal->SetTexture(wr::TextureType::ROUGHNESS, spheres_roughness);
+			spheres_material_internal->SetTexture(wr::TextureType::METALLIC, spheres_metallic);
 
 			// Create Models
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");

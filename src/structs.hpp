@@ -12,8 +12,8 @@ namespace wr
 
 	struct TextureHandle
 	{
-		TexturePool* m_pool;
-		uint64_t m_id;
+		TexturePool* m_pool = nullptr;
+		uint64_t m_id = 0;
 	};
 
 	struct CPUTexture

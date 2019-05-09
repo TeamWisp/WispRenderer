@@ -14,7 +14,7 @@
 
 namespace wr
 {
-	enum class TextureType
+	enum class TextureFormat
 	{
 		WIC,
 		DDS,

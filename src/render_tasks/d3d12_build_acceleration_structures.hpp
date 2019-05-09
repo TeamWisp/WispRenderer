@@ -97,10 +97,10 @@ namespace wr
 
 					// Build material
 					wr::temp::RayTracingMaterial_CBData material;
-					material.albedo_id = static_cast<float>(material_internal->GetAlbedo().m_id);
-					material.normal_id = static_cast<float>(material_internal->GetNormal().m_id);
-					material.roughness_id = static_cast<float>(material_internal->GetRoughness().m_id);
-					material.metallicness_id = static_cast<float>(material_internal->GetMetallic().m_id);
+					material.albedo_id = material_internal->GetTexture(wr::TextureType::ALBEDO).m_id;
+					material.normal_id = material_internal->GetTexture(wr::TextureType::NORMAL).m_id;
+					material.roughness_id = material_internal->GetTexture(wr::TextureType::ROUGHNESS).m_id;
+					material.metallicness_id = material_internal->GetTexture(wr::TextureType::METALLIC).m_id;
 					material.material_data = material_internal->GetMaterialData();
 					data.out_materials.push_back(material);
 					data.out_parsed_materials[material_handle.m_id] = material_id;
