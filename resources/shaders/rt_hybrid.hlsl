@@ -193,7 +193,7 @@ void RaygenEntry()
 	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, depth, cone);
+	float3 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, depth, cone), 0, 100000);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);

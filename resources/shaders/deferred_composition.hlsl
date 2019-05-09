@@ -76,7 +76,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		flipped_N.y *= -1;
 		
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
-		float3 sampled_environment_map = pref_env_map.SampleLevel(point_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
+		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
 		// Get irradiance
 		float3 irradiance = lerp(
