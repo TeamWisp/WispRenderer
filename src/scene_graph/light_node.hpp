@@ -9,8 +9,8 @@ namespace wr
 
 	struct LightNode : Node
 	{
-		LightNode(LightType tid, DirectX::XMVECTOR col = { 1, 1, 1 });
-		LightNode(DirectX::XMVECTOR rot, DirectX::XMVECTOR col = { 1, 1, 1 });
+		explicit LightNode(LightType tid, DirectX::XMVECTOR col = { 1, 1, 1 });
+		explicit LightNode(DirectX::XMVECTOR rot, DirectX::XMVECTOR col = { 1, 1, 1 });
 		LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR col = { 1, 1, 1 });
 		LightNode(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR rot, float ang, DirectX::XMVECTOR col = { 1, 1, 1 });
 

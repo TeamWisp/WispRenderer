@@ -9,7 +9,7 @@ namespace wr
 
 	struct MeshNode : Node
 	{
-		MeshNode(Model* model);
+		explicit MeshNode(Model* model);
 
 		void Update(uint32_t frame_idx);
 		/*! Add a material */

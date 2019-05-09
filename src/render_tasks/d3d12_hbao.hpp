@@ -30,12 +30,12 @@ namespace wr
 
 	struct HBAOData
 	{
-		d3d12::RenderTarget* out_deferred_main_rt;
-		d3d12::DescriptorHeap* out_descriptor_heap_srv;
-		d3d12::DescriptorHeap* out_descriptor_heap_rtv;
+		d3d12::RenderTarget* out_deferred_main_rt = nullptr;
+		d3d12::DescriptorHeap* out_descriptor_heap_srv = nullptr;
+		d3d12::DescriptorHeap* out_descriptor_heap_rtv = nullptr;
 
 #ifdef NVIDIA_GAMEWORKS_HBAO
-		GFSDK_SSAO_Context_D3D12* ssao_context;
+		GFSDK_SSAO_Context_D3D12* ssao_context = nullptr;
 		GFSDK_SSAO_InputData_D3D12 ssao_input_data;
 #endif
 
@@ -44,14 +44,12 @@ namespace wr
 		d3d12::DescHeapCPUHandle cpu_normal_handle;
 		d3d12::DescHeapGPUHandle gpu_normal_handle;
 		d3d12::DescHeapCPUHandle cpu_target_handle;
-		d3d12::DescHeapGPUHandle gpu_target_handle;
-
 	};
 
 	namespace internal
 	{
 
-		inline void SetupHBAOTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void SetupHBAOTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 #ifdef NVIDIA_GAMEWORKS_HBAO
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -82,7 +80,6 @@ namespace wr
 				heap_desc.m_versions = 1;
 				data.out_descriptor_heap_rtv = d3d12::CreateDescriptorHeap(n_device, heap_desc);
 
-				data.gpu_target_handle = d3d12::GetGPUHandle(data.out_descriptor_heap_rtv, 0);
 				data.cpu_target_handle = d3d12::GetCPUHandle(data.out_descriptor_heap_rtv, 0);
 			}
 
@@ -122,7 +119,7 @@ namespace wr
 			GFSDK_SSAO_Status status = GFSDK_SSAO_CreateContext_D3D12(n_device->m_native, 1, DescriptorHeaps, &data.ssao_context, &custom_heap);
 			if (status != GFSDK_SSAO_Status::GFSDK_SSAO_OK)
 			{
-				LOGW("Failed to initialize the NVIDIA HBAO+ context.");
+				LOGW("Failed to initialize the NVIDIA HBAO+ context.")
 			}
 #endif
 		}
@@ -145,12 +142,12 @@ namespace wr
 
 			// Set the viewport
 			data.ssao_input_data.DepthData.Viewport.Enable = true;
-			data.ssao_input_data.DepthData.Viewport.Height = viewport.m_viewport.Height;
-			data.ssao_input_data.DepthData.Viewport.Width = viewport.m_viewport.Width;
-			data.ssao_input_data.DepthData.Viewport.TopLeftX = viewport.m_viewport.TopLeftX;
-			data.ssao_input_data.DepthData.Viewport.TopLeftY = viewport.m_viewport.TopLeftY;
-			data.ssao_input_data.DepthData.Viewport.MinDepth = viewport.m_viewport.MinDepth;
-			data.ssao_input_data.DepthData.Viewport.MaxDepth = viewport.m_viewport.MaxDepth;
+			data.ssao_input_data.DepthData.Viewport.Height = static_cast<GFSDK_SSAO_UINT>(viewport.m_viewport.Height);
+			data.ssao_input_data.DepthData.Viewport.Width = static_cast<GFSDK_SSAO_UINT>(viewport.m_viewport.Width);
+			data.ssao_input_data.DepthData.Viewport.TopLeftX = static_cast<GFSDK_SSAO_UINT>(viewport.m_viewport.TopLeftX);
+			data.ssao_input_data.DepthData.Viewport.TopLeftY = static_cast<GFSDK_SSAO_UINT>(viewport.m_viewport.TopLeftY);
+			data.ssao_input_data.DepthData.Viewport.MinDepth = static_cast<GFSDK_SSAO_FLOAT>(viewport.m_viewport.MinDepth);
+			data.ssao_input_data.DepthData.Viewport.MaxDepth = static_cast<GFSDK_SSAO_FLOAT>(viewport.m_viewport.MaxDepth);
 
 			GFSDK_SSAO_Parameters ao_parameters = {};
 			ao_parameters.Radius = settings.m_runtime.m_radius;
@@ -180,14 +177,14 @@ namespace wr
 #endif
 		}
 
-		inline void DestroyHBAOTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void DestroyHBAOTask(FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 #ifdef NVIDIA_GAMEWORKS_HBAO
 			auto& data = fg.GetData<HBAOData>(handle);
 			d3d12::Destroy(data.out_descriptor_heap_srv);
 			d3d12::Destroy(data.out_descriptor_heap_rtv);
 
-			if (data.ssao_context) delete data.ssao_context;
+			delete data.ssao_context;
 #endif
 		}
 

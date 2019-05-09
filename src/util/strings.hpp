@@ -32,6 +32,6 @@ namespace util
 		if (last_occurrence_pos == std::string_view::npos)
 			return false;
 
-		return (last_occurrence_pos >= dot_position) ? true : false;
+		return last_occurrence_pos >= dot_position;
 	}
 }

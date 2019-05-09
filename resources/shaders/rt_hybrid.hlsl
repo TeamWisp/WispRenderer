@@ -177,6 +177,8 @@ void RaygenEntry()
 		return;
 	}
 
+	normal = lerp(normal, -normal, dot(normal, V) < 0);
+
 	// Describe the surface for mip level generation
 	SurfaceHit sfhit;
 	sfhit.pos = wpos;
@@ -292,7 +294,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(output_data.normal, TBN));
-	if (dot(fN, V) <= 0.0f) fN = -fN;
+	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
 	//Shading
 	float3 flipped_N = fN;

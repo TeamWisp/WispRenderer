@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <memory>
+#include <queue>
 
 #include "engine_registry.hpp"
 #include "platform_independend_structs.hpp"
@@ -66,10 +67,11 @@ namespace wr
 		virtual void Init(std::optional<Window*> window) = 0;
 		virtual CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
 		virtual void Resize(std::uint32_t width, std::uint32_t height) = 0;
+		void RequestRenderTargetSaveToDisc(std::string const& path, RenderTarget* render_target, unsigned int index);
 		
 		std::optional<Window*> m_window;
 
-		enum SimpleShapes : std::size_t
+		enum class SimpleShapes : std::size_t
 		{
 			CUBE,
 			PLANE,
@@ -81,7 +83,19 @@ namespace wr
 		virtual wr::Model* GetSimpleShape(SimpleShapes type) = 0;
 
 		std::shared_ptr<ModelPool> m_shapes_pool;
-		wr::Model* m_simple_shapes[COUNT];
+		std::array<wr::Model*, static_cast<std::size_t>(SimpleShapes::COUNT)> m_simple_shapes;
+
+	protected:
+		struct SaveRenderTargetRequest
+		{
+			std::string m_path;
+			RenderTarget* m_render_target;
+			unsigned int m_index;
+		};
+
+		virtual void SaveRenderTargetToDisc(std::string const & path, RenderTarget* render_target, unsigned int index) = 0;
+
+		std::queue<SaveRenderTargetRequest> m_requested_rt_saves;
 	};
 
 } /* wr */

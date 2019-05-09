@@ -25,7 +25,7 @@ void RenderEditor(ImTextureID output)
 	engine::RenderEngine(output, render_system.get(), scene_graph.get());
 }
 
-void ShaderDirChangeDetected(std::string path, util::FileWatcher::FileStatus status)
+void ShaderDirChangeDetected(std::string const & path, util::FileWatcher::FileStatus status)
 {
 	auto& registry = wr::PipelineRegistry::Get();
 	auto& rt_registry = wr::RTPipelineRegistry::Get();
@@ -162,14 +162,14 @@ int WispEntry()
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
-	fg_manager::Setup(*render_system.get(), &RenderEditor);
+	fg_manager::Setup(*render_system, &RenderEditor);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
 		SCENE::camera->SetAspectRatio((float)width / (float)height);
-		fg_manager::Resize(*render_system.get(), width, height);
+		fg_manager::Resize(*render_system, width, height);
 	});
 
 	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
