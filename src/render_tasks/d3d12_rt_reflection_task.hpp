@@ -11,7 +11,6 @@
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
-#include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"

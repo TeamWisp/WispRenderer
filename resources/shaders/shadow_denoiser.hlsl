@@ -132,8 +132,8 @@ void temporal_accumulator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     //bool uv_equal = int2(q_UV.x * screen_size.x,q_UV.y * screen_size.y)==int2(screen_coord.x, screen_coord.y);
     //uv_equal = q_UV.x < 0 || q_UV.x > 1 || q_UV.y < 0 || q_UV.y > 1;
 
-    output_texture[screen_coord] = noise;
-	variance_out_texture[screen_coord] = 1.0;
+    output_texture[screen_coord] = accum_data;
+	variance_out_texture[screen_coord] = variance;
 }
 
 [numthreads(16,16,1)]
@@ -141,9 +141,6 @@ void shadow_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
     float2 screen_size = float2(0.f, 0.f);
 	output_texture.GetDimensions(screen_size.x, screen_size.y);
-
-    float2 kernel_image_size = float2(0.f, 0.f);
-    kernel_texture.GetDimensions(kernel_image_size.x, kernel_image_size.y);
 
 	float2 uv = float2(dispatch_thread_id.x / screen_size.x, dispatch_thread_id.y / screen_size.y);
 
@@ -160,6 +157,14 @@ void shadow_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     float2 center = floor(kernel_size/2.0);
 
     float4 accum = float4(0, 0, 0, 0);
+
+    float variance = variance_in_texture[screen_coord].r;
+
+    if(variance<0.05)
+    {
+        output_texture[screen_coord] = float4(color_f.xyz, 1.0);
+        return;
+    }
 
     [unroll]
     for(int i = 0; i < 5; ++i)

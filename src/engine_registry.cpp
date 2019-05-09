@@ -83,6 +83,39 @@ namespace wr
 		})
 	});
 
+	DESC_RANGE_ARRAY(svgf_denoiser_ranges,
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::INPUT),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::MOTION),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::NORMAL),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::DEPTH),
+
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::IN_HIST_LENGTH),
+
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::IN_VARIANCE),
+
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_INPUT),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_MOMENTS),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_NORMAL),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_DEPTH),
+
+		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_COLOR),
+		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_MOMENTS),
+		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_HIST_LENGTH),
+		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_VARIANCE),
+		);
+
+	REGISTER(root_signatures::svgf_denoiser, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(svgf_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::svgf_denoiser, params::SVGFDenoiserE::CAMERA_PROPERTIES)),
+			ROOT_PARAM(GetCBV(params::svgf_denoiser, params::SVGFDenoiserE::SVGF_PROPERTIES)),
+		}),
+		RootSignatureDescription::Samplers({
+			{TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP},
+			{TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP}
+		})
+	});
+
 	//Deferred Composition Root Signature
 	DESC_RANGE_ARRAY(srv_ranges,
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS),
@@ -209,6 +242,24 @@ namespace wr
 		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
 	});
 
+	REGISTER(shaders::svgf_denoiser_reprojection_cs, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/SVGF.hlsl"),
+		ShaderDescription::Entry("reprojection_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
+	REGISTER(shaders::svgf_denoiser_filter_moments_cs, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/SVGF.hlsl"),
+		ShaderDescription::Entry("filter_moments_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
+	REGISTER(shaders::svgf_denoiser_wavelet_filter_cs, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/SVGF.hlsl"),
+		ShaderDescription::Entry("wavelet_filter_cs"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
 	REGISTER(shaders::deferred_composition_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/deferred_composition.hlsl"),
 		ShaderDescription::Entry("main_cs"),
@@ -298,6 +349,51 @@ namespace wr
 		PipelineDescription::RootSignature(root_signatures::shadow_denoiser),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
 		PipelineDescription::RTVFormats({Format::R32G32B32A32_FLOAT}),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+	});
+
+	REGISTER(pipelines::svgf_denoiser_reprojection, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::svgf_denoiser_reprojection_cs),
+		PipelineDescription::RootSignature(root_signatures::svgf_denoiser),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({Format::R16G16B16A16_FLOAT}),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+	});
+
+	REGISTER(pipelines::svgf_denoiser_filter_moments, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::svgf_denoiser_filter_moments_cs),
+		PipelineDescription::RootSignature(root_signatures::svgf_denoiser),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({Format::R16G16B16A16_FLOAT}),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+	});
+
+	REGISTER(pipelines::svgf_denoiser_wavelet_filter, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::svgf_denoiser_wavelet_filter_cs),
+		PipelineDescription::RootSignature(root_signatures::svgf_denoiser),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({Format::R16G16B16A16_FLOAT}),
 		PipelineDescription::NumRTVFormats(1),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),

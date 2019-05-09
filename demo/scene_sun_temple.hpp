@@ -68,8 +68,8 @@ namespace sun_temple_scene
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
-		camera->SetPosition(camera_start_pos);
-		camera->SetRotation({ -16._deg, 0._deg, 0._deg });
+		camera->SetPosition({ 600.f, 700.f, 250.f });
+		camera->SetRotation({ -30._deg, 120._deg, 0._deg });
 		camera->SetSpeed(100.0f);
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;

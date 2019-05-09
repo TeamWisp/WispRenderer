@@ -232,7 +232,7 @@ namespace fg_manager
 			fg->Setup(rs);
 		}
 
-		// Hybrid raytracing
+		// Hybrid denoised raytracing
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RT_HYBRID_DENOISED];
 			fg = new wr::FrameGraph(19);
@@ -254,7 +254,7 @@ namespace fg_manager
 
 			wr::AddRTShadowTask(*fg);
 
-			wr::AddShadowDenoiserTask(*fg, std::nullopt);
+			wr::AddShadowDenoiserTask(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
