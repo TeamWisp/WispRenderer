@@ -11,7 +11,7 @@ struct MaterialData
 
 	float roughness;
 	float is_double_sided;
-	float use_alpha_constant;
+	float use_alpha_masking;
 	uint flags;
 };
 

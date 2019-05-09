@@ -40,7 +40,7 @@ namespace wr
 		METALLIC = (3 << 16) | 0,
 		ROUGHNESS = (4 << 16) | 0,
 		IS_DOUBLE_SIDED = (5 << 16) | 0,
-		USE_ALPHA_CONSTANT = (6 << 16) | 0,
+		IS_ALPHA_MASKED = (6 << 16) | 0,
 		MAX_OFFSET = 7
 	};
 
@@ -87,8 +87,8 @@ namespace wr
 				 TextureHandle roughness,
 				 TextureHandle metallic,
 				 TextureHandle ao, 
-				 float alpha_constant = false,
-				 float double_sided = false);
+				 bool alpha_masked = false,
+				 bool double_sided = false);
 
 		Material(const Material& rhs) = default;
 

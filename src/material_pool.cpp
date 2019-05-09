@@ -23,8 +23,8 @@ namespace wr
 					   TextureHandle roughness,
 					   TextureHandle metallic,
 		               TextureHandle ao,
-		               float alpha_constant,
-					   float double_sided): Material(pool)
+		               bool alpha_masked,
+					   bool double_sided): Material(pool)
 	{
 
 		SetTexture(MaterialTextureType::ALBEDO, albedo);
@@ -33,7 +33,7 @@ namespace wr
 		SetTexture(MaterialTextureType::METALLIC, metallic);
 		SetTexture(MaterialTextureType::AO, ao);
 
-		SetConstant<MaterialConstantType::USE_ALPHA_CONSTANT>(alpha_constant);
+		SetConstant<MaterialConstantType::IS_ALPHA_MASKED>(alpha_masked);
 		SetConstant<MaterialConstantType::IS_DOUBLE_SIDED>(double_sided);
 	}
 
