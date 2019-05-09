@@ -46,20 +46,13 @@ void SpheresScene::BuildScene(unsigned int width, unsigned int height)
 			float metallic = Lerp(1.0f, 0.0f, (float)j / 6);
 
 			//Create new material
-			wr::MaterialHandle mat = m_material_pool->Create();
+			wr::MaterialHandle mat = m_material_pool->Create(m_texture_pool.get());
 			auto mat_internal = mat.m_pool->GetMaterial(mat);
 
-			mat_internal->UseAlbedoTexture(false);
-			mat_internal->SetUseConstantAlbedo(true);
-			mat_internal->SetConstantAlbedo(DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f));
-			
-			mat_internal->SetNormal(m_flat_normal);
-
-			mat_internal->SetUseConstantMetallic(true);
-			mat_internal->SetConstantMetallic(DirectX::XMFLOAT3(metallic, metallic, metallic));
-
-			mat_internal->SetUseConstantRoughness(true);
-			mat_internal->SetConstantRoughness(roughness);
+			mat_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1, 0, 0 });
+			mat_internal->SetTexture<wr::TextureType::NORMAL>(m_flat_normal);
+			mat_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(roughness);
+			mat_internal->SetConstant<wr::MaterialConstant::METALLIC>(metallic);
 
 			spheres[i * 7 + j]->SetMaterials({ mat });
 		}
