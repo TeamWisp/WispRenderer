@@ -46,17 +46,17 @@ namespace viknell_scene
 			mirror_material = material_pool->Create(texture_pool.get());
 			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material);
 
-			mirror_internal->SetConstant<wr::MaterialConstantType::ROUGHNESS>(0);
-			mirror_internal->SetConstant<wr::MaterialConstantType::METALLIC>(1);
-			mirror_internal->SetConstant<wr::MaterialConstantType::COLOR>({ 1, 1, 1 });
+			mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0);
+			mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1);
+			mirror_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1, 1, 1 });
 
 			bamboo_material = material_pool->Create(texture_pool.get());
 			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material);
 
-			bamboo_material_internal->SetTexture(wr::MaterialTextureType::ALBEDO, bamboo_albedo);
-			bamboo_material_internal->SetTexture(wr::MaterialTextureType::NORMAL, bamboo_normal);
-			bamboo_material_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, bamboo_roughness);
-			bamboo_material_internal->SetTexture(wr::MaterialTextureType::METALLIC, bamboo_metallic);
+			bamboo_material_internal->SetTexture(wr::TextureType::ALBEDO, bamboo_albedo);
+			bamboo_material_internal->SetTexture(wr::TextureType::NORMAL, bamboo_normal);
+			bamboo_material_internal->SetTexture(wr::TextureType::ROUGHNESS, bamboo_roughness);
+			bamboo_material_internal->SetTexture(wr::TextureType::METALLIC, bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");

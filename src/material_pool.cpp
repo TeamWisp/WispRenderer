@@ -27,21 +27,21 @@ namespace wr
 					   bool double_sided): Material(pool)
 	{
 
-		SetTexture(MaterialTextureType::ALBEDO, albedo);
-		SetTexture(MaterialTextureType::NORMAL, normal);
-		SetTexture(MaterialTextureType::ROUGHNESS, roughness);
-		SetTexture(MaterialTextureType::METALLIC, metallic);
-		SetTexture(MaterialTextureType::AO, ao);
+		SetTexture(TextureType::ALBEDO, albedo);
+		SetTexture(TextureType::NORMAL, normal);
+		SetTexture(TextureType::ROUGHNESS, roughness);
+		SetTexture(TextureType::METALLIC, metallic);
+		SetTexture(TextureType::AO, ao);
 
-		SetConstant<MaterialConstantType::IS_ALPHA_MASKED>(alpha_masked);
-		SetConstant<MaterialConstantType::IS_DOUBLE_SIDED>(double_sided);
+		SetConstant<MaterialConstant::IS_ALPHA_MASKED>(alpha_masked);
+		SetConstant<MaterialConstant::IS_DOUBLE_SIDED>(double_sided);
 	}
 
-	TextureHandle Material::GetTexture(MaterialTextureType type) { 
-		return m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)]; 
+	TextureHandle Material::GetTexture(TextureType type) { 
+		return m_textures[size_t(type) % size_t(TextureType::COUNT)]; 
 	}
 
-	void Material::SetTexture(MaterialTextureType type, TextureHandle handle)
+	void Material::SetTexture(TextureType type, TextureHandle handle)
 	{
 		if (handle.m_pool != m_texture_pool || !m_texture_pool)
 		{
@@ -50,19 +50,19 @@ namespace wr
 		}
 		else
 		{
-			m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)] = handle;
+			m_textures[size_t(type) % size_t(TextureType::COUNT)] = handle;
 			m_material_data.m_material_flags.m_value = uint32_t(m_material_data.m_material_flags.m_value) | (1 << uint32_t(type));
 		}
 	}
 
 
-	void Material::ClearTexture(MaterialTextureType type) {
-		m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)] = { nullptr, 0 };
+	void Material::ClearTexture(TextureType type) {
+		m_textures[size_t(type) % size_t(TextureType::COUNT)] = { nullptr, 0 };
 		m_material_data.m_material_flags.m_value = uint32_t(m_material_data.m_material_flags.m_value) & (~(1 << uint32_t(type)));
 	}
 
-	bool Material::HasTexture(MaterialTextureType type) {
-		return m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)].m_pool;
+	bool Material::HasTexture(TextureType type) {
+		return m_textures[size_t(type) % size_t(TextureType::COUNT)].m_pool;
 	}
 
 	Material::~Material()

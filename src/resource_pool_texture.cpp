@@ -22,20 +22,20 @@ namespace wr
 
 		std::transform(texture_extension.begin(), texture_extension.end(), new_str.begin(), ::tolower);
 
-		TextureType type;
+		TextureFormat type;
 
 		if (new_str == "png"|| new_str == "jpg"
 			|| new_str == "jpeg" || new_str == "bmp")
 		{
-			type = TextureType::WIC;
+			type = TextureFormat::WIC;
 		}
 		else if (new_str.compare("dds") == 0)
 		{
-			type = TextureType::DDS;
+			type = TextureFormat::DDS;
 		}
 		else if (new_str.compare("hdr") == 0)
 		{
-			type = TextureType::HDR;
+			type = TextureFormat::HDR;
 		}
 		else
 		{

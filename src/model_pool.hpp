@@ -321,40 +321,40 @@ namespace wr
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_albedo_texture_location, material->m_albedo_embedded_texture, material->m_albedo_texture, albedo, true, true);
-				mat->SetTexture(MaterialTextureType::ALBEDO, albedo);
+				mat->SetTexture(TextureType::ALBEDO, albedo);
 			}
 
 			if (material->m_normal_map_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_normal_map_texture_location, material->m_normal_map_embedded_texture, material->m_normal_map_texture, normals, false, true);
-				mat->SetTexture(MaterialTextureType::NORMAL, normals);
+				mat->SetTexture(TextureType::NORMAL, normals);
 			}
 
 			if (material->m_metallic_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_metallic_texture_location, material->m_metallic_embedded_texture, material->m_metallic_texture, metallic, false, true);
-				mat->SetTexture(MaterialTextureType::METALLIC, metallic);
+				mat->SetTexture(TextureType::METALLIC, metallic);
 			}
 
 			if (material->m_roughness_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_roughness_texture_location, material->m_roughness_embedded_texture, material->m_roughness_texture, roughness, false, true);
-				mat->SetTexture(MaterialTextureType::ROUGHNESS, roughness);
+				mat->SetTexture(TextureType::ROUGHNESS, roughness);
 			}
 
 			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, material->m_ambient_occlusion_texture, ambient_occlusion, false, true);
-				mat->SetTexture(MaterialTextureType::AO, ambient_occlusion);
+				mat->SetTexture(TextureType::AO, ambient_occlusion);
 			}
 
 			bool two_sided = material->m_two_sided;
 
 			float opacity = material->m_base_transparency;
 
-			mat->SetConstant<MaterialConstantType::COLOR>({ material->m_base_color[0], material->m_base_color[1], material->m_base_color[2] });
-			mat->SetConstant<MaterialConstantType::METALLIC>(material->m_base_metallic);
-			mat->SetConstant<MaterialConstantType::ROUGHNESS>(std::min(1.f, std::max(material->m_base_roughness, 0.f)));
+			mat->SetConstant<MaterialConstant::COLOR>({ material->m_base_color[0], material->m_base_color[1], material->m_base_color[2] });
+			mat->SetConstant<MaterialConstant::METALLIC>(material->m_base_metallic);
+			mat->SetConstant<MaterialConstant::ROUGHNESS>(std::min(1.f, std::max(material->m_base_roughness, 0.f)));
 
 			material_handles.push_back(new_handle);
 		}

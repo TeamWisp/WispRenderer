@@ -20,7 +20,7 @@ struct aiMaterial;
 
 namespace wr
 {
-	enum class MaterialTextureType : size_t
+	enum class TextureType : size_t
 	{
 		ALBEDO,
 		NORMAL,
@@ -31,7 +31,7 @@ namespace wr
 	};
 
 	//u32 type = { u16 offset (in floats), u16 isArray (0 = a constant, 1 = an array) }
-	enum class MaterialConstantType : uint32_t
+	enum class MaterialConstant : uint32_t
 	{
 		COLOR = (0 << 16) | 1,
 		R = (0 << 16) | 0, 
@@ -62,29 +62,29 @@ namespace wr
 
 		~Material();
 
-		TextureHandle GetTexture(MaterialTextureType type);
-		void SetTexture(MaterialTextureType type, TextureHandle handle);
-		void ClearTexture(MaterialTextureType type);
-		bool HasTexture(MaterialTextureType type);
+		TextureHandle GetTexture(TextureType type);
+		void SetTexture(TextureType type, TextureHandle handle);
+		void ClearTexture(TextureType type);
+		bool HasTexture(TextureType type);
 
-		template<MaterialConstantType type>
+		template<MaterialConstant type>
 		typename std::enable_if<uint16_t(type) == 0, float>::type GetConstant() {
 			return m_material_data.m_constant_data[uint32_t(type) >> 16];
 		}
 
-		template<MaterialConstantType type>
+		template<MaterialConstant type>
 		typename std::enable_if<uint16_t(type) != 0, std::array<float, 3>>::type GetConstant() {
 			float* arr = m_material_data.m_constant_data;
 			uint32_t i = uint32_t(type) >> 16;
 			return { arr[i], arr[i + 1], arr[i + 2] };
 		}
 
-		template<MaterialConstantType type>
+		template<MaterialConstant type>
 		void SetConstant(typename std::enable_if<uint16_t(type) == 0, float>::type x) {
 			m_material_data.m_constant_data[uint32_t(type) >> 16] = x;
 		}
 
-		template<MaterialConstantType type>
+		template<MaterialConstant type>
 		void SetConstant(const typename std::enable_if<uint16_t(type) != 0, std::array<float, 3>>::type& val) {
 			float* arr = m_material_data.m_constant_data;
 			uint32_t i = uint32_t(type) >> 16;
@@ -125,7 +125,7 @@ namespace wr
 
 			};
 
-			float m_constant_data[size_t(MaterialConstantType::MAX_OFFSET) + 1]{};
+			float m_constant_data[size_t(MaterialConstant::MAX_OFFSET) + 1]{};
 
 		};
 
@@ -135,7 +135,7 @@ namespace wr
 
 		union {
 
-			TextureHandle m_textures[size_t(MaterialTextureType::COUNT)]{};
+			TextureHandle m_textures[size_t(TextureType::COUNT)]{};
 
 			struct {
 				TextureHandle m_albedo;

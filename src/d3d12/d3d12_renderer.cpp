@@ -1010,7 +1010,7 @@ namespace wr
 			texture_pool = static_cast<D3D12TexturePool*>(m_texture_pools[0].get());
 		}
 
-		auto albedo_handle = material_internal->GetTexture(MaterialTextureType::ALBEDO);
+		auto albedo_handle = material_internal->GetTexture(TextureType::ALBEDO);
 		wr::d3d12::TextureResource* albedo_internal;
 		if (albedo_handle.m_pool == nullptr)
 		{
@@ -1021,7 +1021,7 @@ namespace wr
 			albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTextureResource(albedo_handle));
 		}
 
-		auto normal_handle = material_internal->GetTexture(MaterialTextureType::NORMAL);
+		auto normal_handle = material_internal->GetTexture(TextureType::NORMAL);
 		wr::d3d12::TextureResource* normal_internal;
 		if (normal_handle.m_pool == nullptr)
 		{
@@ -1032,7 +1032,7 @@ namespace wr
 			normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTextureResource(normal_handle));
 		}
 
-		auto roughness_handle = material_internal->GetTexture(MaterialTextureType::ROUGHNESS);
+		auto roughness_handle = material_internal->GetTexture(TextureType::ROUGHNESS);
 		wr::d3d12::TextureResource* roughness_internal;
 		if (roughness_handle.m_pool == nullptr)
 		{
@@ -1043,7 +1043,7 @@ namespace wr
 			roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTextureResource(roughness_handle));
 		}
 
-		auto metallic_handle = material_internal->GetTexture(MaterialTextureType::METALLIC);
+		auto metallic_handle = material_internal->GetTexture(TextureType::METALLIC);
 		wr::d3d12::TextureResource* metallic_internal;
 		if (metallic_handle.m_pool == nullptr)
 		{

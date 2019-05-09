@@ -44,10 +44,10 @@ namespace spheres_scene
 
 			wr::Material* spheres_material_internal = material_pool->GetMaterial(spheres_material);
 
-			spheres_material_internal->SetTexture(wr::MaterialTextureType::ALBEDO, spheres_albedo);
-			spheres_material_internal->SetTexture(wr::MaterialTextureType::NORMAL, spheres_normal);
-			spheres_material_internal->SetTexture(wr::MaterialTextureType::ROUGHNESS, spheres_roughness);
-			spheres_material_internal->SetTexture(wr::MaterialTextureType::METALLIC, spheres_metallic);
+			spheres_material_internal->SetTexture(wr::TextureType::ALBEDO, spheres_albedo);
+			spheres_material_internal->SetTexture(wr::TextureType::NORMAL, spheres_normal);
+			spheres_material_internal->SetTexture(wr::TextureType::ROUGHNESS, spheres_roughness);
+			spheres_material_internal->SetTexture(wr::TextureType::METALLIC, spheres_metallic);
 
 			// Create Models
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
