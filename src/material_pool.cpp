@@ -33,8 +33,8 @@ namespace wr
 		SetTexture(MaterialTextureType::METALLIC, metallic);
 		SetTexture(MaterialTextureType::AO, ao);
 
-		SetConstant(MaterialConstantType::USE_ALPHA_CONSTANT, alpha_constant);
-		SetConstant(MaterialConstantType::IS_DOUBLE_SIDED, double_sided);
+		SetConstant<MaterialConstantType::USE_ALPHA_CONSTANT>(alpha_constant);
+		SetConstant<MaterialConstantType::IS_DOUBLE_SIDED>(double_sided);
 	}
 
 	TextureHandle Material::GetTexture(MaterialTextureType type) { 
@@ -63,17 +63,6 @@ namespace wr
 
 	bool Material::HasTexture(MaterialTextureType type) {
 		return m_textures[size_t(type) % size_t(MaterialTextureType::COUNT)].m_pool;
-	}
-
-	void Material::SetConstant(MaterialConstantType type, float val) {
-		float arr[1] = { val };
-		SetConstant(type, arr);
-	}
-
-	void Material::GetConstant(MaterialConstantType type, float &val) {
-		float arr[1];
-		GetConstant(type, arr);
-		val = *arr;
 	}
 
 	Material::~Material()

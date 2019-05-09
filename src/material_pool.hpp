@@ -8,6 +8,7 @@
 #include <d3d12.h>
 #include <DirectXMath.h>
 #include <memory>
+#include <array>
 
 #include "structs.hpp"
 #include "util/defines.hpp"
@@ -29,18 +30,50 @@ namespace wr
 		COUNT
 	};
 
-	//u32 type = { u16 offset (in floats), u16 size (in floats) }
+	//u32 type = { u16 offset (in floats), u16 isArray (0 = a constant, 1 = an array) }
 	enum class MaterialConstantType : uint32_t
 	{
-		COLOR = (0 << 16) | 3,
-		R = (0 << 16) | 1, 
-		G = (1 << 16) | 1,
-		B = (2 << 16) | 1,
-		METALLIC = (3 << 16) | 1,
-		ROUGHNESS = (4 << 16) | 1,
-		IS_DOUBLE_SIDED = (5 << 16) | 1,
-		USE_ALPHA_CONSTANT = (6 << 16) | 1,
+		COLOR = (0 << 16) | 1,
+		R = (0 << 16) | 0, 
+		G = (1 << 16) | 0,
+		B = (2 << 16) | 0,
+		METALLIC = (3 << 16) | 0,
+		ROUGHNESS = (4 << 16) | 0,
+		IS_DOUBLE_SIDED = (5 << 16) | 0,
+		USE_ALPHA_CONSTANT = (6 << 16) | 0,
 		MAX_OFFSET = 7
+	};
+
+
+	template<MaterialConstantType type, bool b = uint32_t(type) & 0x1>
+	struct MaterialConstantHelper
+	{
+		using Type = std::array<float, 3>;
+
+		static Type get_value(float* v)
+		{
+			return Type{ v[0], v[1], v[2] };
+		}
+
+		static void set_value(float* v, const Type& t)
+		{
+			memcpy(v, t.data(), sizeof(t));
+		}
+	};
+
+	template<MaterialConstantType type>
+	struct MaterialConstantHelper<type, false>
+	{
+		using Type = float;
+
+		static Type get_value(float* v)
+		{
+			return *v;
+		}
+
+		static void set_value(float* v, const Type& t) {
+			*v = t;
+		}
 	};
 
 	class Material
@@ -66,14 +99,15 @@ namespace wr
 		void ClearTexture(MaterialTextureType type);
 		bool HasTexture(MaterialTextureType type);
 
-		template<uint16_t s>
-		void GetConstant(MaterialConstantType type, float(&val)[s]);
-		
-		template<uint16_t s>
-		void SetConstant(MaterialConstantType type, float(&val)[s]);
+		template<MaterialConstantType type>
+		typename MaterialConstantHelper<type>::Type GetConstant(){
+			return MaterialConstantHelper<type>::get_value(m_material_data.m_constant_data + (uint32_t(type) >> 16));
+		}
 
-		void SetConstant(MaterialConstantType type, float val);
-		void GetConstant(MaterialConstantType type, float &val);
+		template<MaterialConstantType type>
+		void SetConstant(const typename MaterialConstantHelper<type>::Type& value) {
+			MaterialConstantHelper<type>::set_value(m_material_data.m_constant_data + (uint32_t(type) >> 16), value);
+		}
 
 		TexturePool* const GetTexturePool() { return m_texture_pool; }
 
@@ -184,30 +218,5 @@ namespace wr
 		IDFactory m_id_factory;
 	};
 
-	//Material template functions
-
-	template<uint16_t s>
-	void Material::GetConstant(MaterialConstantType type, float(&val)[s])
-	{
-		uint16_t offset = uint16_t(uint32_t(type) >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
-		uint16_t count = uint16_t(type);
-
-		if (s > count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
-			LOGC("Material constant out of bounds");
-
-		memcpy(val, m_material_data.m_constant_data + offset, count * sizeof(float));
-	}
-
-	template<uint16_t s>
-	void Material::SetConstant(MaterialConstantType type, float(&val)[s])
-	{
-		uint16_t offset = uint16_t(uint32_t(type) >> 16) % uint16_t(MaterialConstantType::MAX_OFFSET);
-		uint16_t count = uint16_t(type);
-
-		if (s > count || offset + s > uint16_t(MaterialConstantType::MAX_OFFSET))
-			LOGC("Material constant out of bounds");
-
-		memcpy(m_material_data.m_constant_data + offset, val, count * sizeof(float));
-	}
 
 } /* wr */

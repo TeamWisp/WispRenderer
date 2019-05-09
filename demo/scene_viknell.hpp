@@ -46,10 +46,9 @@ namespace viknell_scene
 			mirror_material = material_pool->Create(texture_pool.get());
 			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material);
 
-			float not_red[] = { 1, 1, 1 };
-			mirror_internal->SetConstant(wr::MaterialConstantType::ROUGHNESS, 0);
-			mirror_internal->SetConstant(wr::MaterialConstantType::METALLIC, 1);
-			mirror_internal->SetConstant(wr::MaterialConstantType::COLOR, not_red);
+			mirror_internal->SetConstant<wr::MaterialConstantType::ROUGHNESS>(0);
+			mirror_internal->SetConstant<wr::MaterialConstantType::METALLIC>(1);
+			mirror_internal->SetConstant<wr::MaterialConstantType::COLOR>({ 1, 1, 1 });
 
 			bamboo_material = material_pool->Create(texture_pool.get());
 			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material);

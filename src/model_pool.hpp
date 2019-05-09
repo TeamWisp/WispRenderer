@@ -352,9 +352,9 @@ namespace wr
 
 			float opacity = material->m_base_transparency;
 
-			mat->SetConstant(MaterialConstantType::COLOR, material->m_base_color);
-			mat->SetConstant(MaterialConstantType::METALLIC, material->m_base_metallic);
-			mat->SetConstant(MaterialConstantType::ROUGHNESS, std::min(1.f, std::max(material->m_base_roughness, 0.f)));
+			mat->SetConstant<MaterialConstantType::COLOR>({ material->m_base_color[0], material->m_base_color[1], material->m_base_color[2] });
+			mat->SetConstant<MaterialConstantType::METALLIC>(material->m_base_metallic);
+			mat->SetConstant<MaterialConstantType::ROUGHNESS>(std::min(1.f, std::max(material->m_base_roughness, 0.f)));
 
 			material_handles.push_back(new_handle);
 		}
