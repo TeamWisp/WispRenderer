@@ -618,6 +618,43 @@ namespace wr
 			rs_layout::Entry{(int)DoFCompositionE::COC, 1, rs_layout::Type::SRV_RANGE},
 		};
 
+		enum class BloomHE
+		{
+			SOURCE,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 2> bloom_h = {
+			rs_layout::Entry{(int)BloomHE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomHE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		};
+
+		enum class BloomVE
+		{
+			SOURCE,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 2> bloom_v = {
+			rs_layout::Entry{(int)BloomVE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomVE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		};
+
+		enum class BloomCompositionE
+		{
+			BLOOM_PROPERTIES,
+			SOURCE_MAIN,
+			SOURCE_BLOOM,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> bloom_composition = {
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_MAIN, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::BLOOM_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
 	} /* srv */
 
 	struct root_signatures
@@ -642,6 +679,9 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
 	struct shaders
@@ -669,6 +709,9 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
 	struct pipelines
@@ -690,6 +733,9 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
 	struct state_objects

@@ -25,6 +25,9 @@
 #include "render_tasks/d3d12_dof_dilate_flatten_second_pass.hpp"
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
+#include "render_tasks/d3d12_bloom_composition.hpp"
+#include "render_tasks/d3d12_bloom_horizontal.hpp"
+#include "render_tasks/d3d12_bloom_vertical.hpp"
 
 
 namespace fg_manager
@@ -115,9 +118,22 @@ namespace fg_manager
 
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
-			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
-			// Copy the scene render pixel data to the final render target
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			//initialize default settings
+			wr::BloomSettings defaultSettings;
+			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+
+			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			wr::AddAnselTask(*fg);
@@ -216,7 +232,21 @@ namespace fg_manager
 
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
-			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			//initialize default settings
+			wr::BloomSettings defaultSettings;
+			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg,
+				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
