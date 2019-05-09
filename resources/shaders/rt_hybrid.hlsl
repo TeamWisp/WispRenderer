@@ -95,10 +95,9 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0).rgb;
 	}
 
-	//origin += norm * EPSILON;
-	float3 colorz = float3(0, 0, 0);
+	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, colorz, rand_seed, depth, cone};
+	ReflectionHitInfo payload = {origin, float3(0,0,1), rand_seed, depth, cone};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -189,7 +188,7 @@ void RaygenEntry()
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
 	// Get shadow factor
-	float shadow_result = max(0,DoShadowAllLights(wpos, 0, rand_seed));
+	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
 
 	// Get reflection result
 	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, depth, cone);

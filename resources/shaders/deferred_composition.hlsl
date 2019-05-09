@@ -36,7 +36,7 @@ cbuffer CameraProperties : register(b0)
 static uint min_depth = 0xFFFFFFFF;
 static uint max_depth = 0x0;
 
-float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv, float2 screen_size) {
+float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
 	const float4 ndc = float4(uv * 2.0f - 1.f, depth, 1.0);
 	float4 pos = mul( view_inv, mul(proj_inv, ndc));
 	return (pos / pos.w).xyz;
@@ -58,7 +58,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float depth_f = gbuffer_depth.SampleLevel(point_sampler, uv, 0).r;
 
 	// View position and camera position
-	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view, screen_size);
+	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
 	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(camera_pos - pos);
 	
