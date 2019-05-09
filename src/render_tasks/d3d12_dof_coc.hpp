@@ -55,21 +55,20 @@ namespace wr
 
 			auto source_dsv = data.out_source_dsv = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination
 			{
-				// Destination
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
-				}
-				// Source
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH)));
-					d3d12::CreateSRVFromDSV(source_dsv, cpu_handle);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Source
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH)));
+				d3d12::CreateSRVFromDSV(source_dsv, cpu_handle);
+			}
+			
 		}
 
+		template<typename T>
 		inline void ExecuteDoFCoCTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -80,8 +79,10 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			const auto viewport = n_render_system.m_viewport;
 
-			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(sg.GetActiveCamera()->m_camera_cb);
+			data.out_source_dsv = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
+			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(sg.GetActiveCamera()->m_camera_cb);
+			
 			DoFProperties_CB cb_data;
 			cb_data.m_projection = sg.GetActiveCamera()->m_projection;
 			cb_data.m_film_size = sg.GetActiveCamera()->m_film_size;
@@ -91,18 +92,37 @@ namespace wr
 			cb_data.m_enable_dof = sg.GetActiveCamera()->m_enable_dof;
 
 			data.cb_handle->m_pool->Update(data.cb_handle, sizeof(DoFProperties_CB), 0, frame_idx, (uint8_t*)&cb_data);
+			
+			auto source_dsv = data.out_source_dsv = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			//d3d12::BindConstantBuffer(cmd_list, data.cb_handle->m_native, 2, frame_idx);
+			// Destination
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+			}
+			// Source
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH)));
+				d3d12::CreateSRVFromDSV(source_dsv, cpu_handle);
+			}
 			
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
-
 			d3d12::BindComputeConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);
 
-			cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+			{
+				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
+			}
+
+			{
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_m_srv);
+			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_dsv->m_render_targets[frame_idx % versions]));
-
 
 			//TODO: numthreads is currently hardcoded to half resolution, change when dimensions are done properly
 			d3d12::Dispatch(cmd_list,
@@ -127,7 +147,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ wr::Format::R32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
@@ -139,7 +159,7 @@ namespace wr
 			internal::SetupDoFCoCTask<T>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteDoFCoCTask(rs, fg, sg, handle);
+			internal::ExecuteDoFCoCTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};

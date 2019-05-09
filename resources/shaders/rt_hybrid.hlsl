@@ -97,7 +97,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, depth, cone};
+	ReflectionHitInfo payload = {origin, float3(0,0,1), rand_seed, depth, cone};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -111,8 +111,8 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		Scene,
 		RAY_FLAG_NONE,
 		//RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH
-		// RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
-		~0, // InstanceInclusionMask
+		//RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
+		0xFF, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		1, // MultiplierForGeometryContributionToHitGroupIndex
 		0, // miss shader index
@@ -133,7 +133,7 @@ float3 unpack_position(float2 uv, float depth)
 float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint depth, RayCone cone)
 {
 	// Calculate ray info
-	float3 reflected = reflect(-V, normal);
+	float3 reflected = normalize(reflect(-V, normal));
 
 	// Shoot reflection ray
 	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, depth, cone);
@@ -148,17 +148,17 @@ void RaygenEntry()
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Texture UV coordinates [0, 1]
-	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+	float2 uv = float2(DispatchRaysIndex().xy + 0.5f) / float2(DispatchRaysDimensions().xy);
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
 
 	// Get g-buffer information
-	float4 albedo_roughness = gbuffer_albedo[screen_co];
-	float4 normal_metallic = gbuffer_normal[screen_co];
+	float4 albedo_roughness = gbuffer_albedo.SampleLevel(s0, uv, 0);
+	float4 normal_metallic = gbuffer_normal.SampleLevel(s0, uv, 0);
 
 	// Unpack G-Buffer
-	float depth = gbuffer_depth[screen_co].x;
+	float depth = gbuffer_depth.SampleLevel(s0, uv, 0).x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
@@ -193,7 +193,7 @@ void RaygenEntry()
 	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, cone);
+	float3 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, depth, cone), 0, 100000);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
