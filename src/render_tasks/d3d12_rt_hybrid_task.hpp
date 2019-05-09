@@ -266,16 +266,17 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
-					if(!material_internal->UsesConstantAlbedo())
-						set_srv(material_internal->GetAlbedo());
+					if (material_internal->HasTexture(TextureType::ALBEDO))
+						set_srv(material_internal->GetTexture(TextureType::ALBEDO));
 
-					set_srv(material_internal->GetNormal());
-					
-					if (!material_internal->UsesConstantMetallic())
-						set_srv(material_internal->GetMetallic());
-					
-					if (!material_internal->UsesConstantRoughness())
-						set_srv(material_internal->GetRoughness());
+					if (material_internal->HasTexture(TextureType::NORMAL))
+						set_srv(material_internal->GetTexture(TextureType::NORMAL));
+
+					if (material_internal->HasTexture(TextureType::METALLIC))
+						set_srv(material_internal->GetTexture(TextureType::METALLIC));
+
+					if (material_internal->HasTexture(TextureType::ROUGHNESS))
+						set_srv(material_internal->GetTexture(TextureType::ROUGHNESS));
 				}
 
 				// Get light buffer

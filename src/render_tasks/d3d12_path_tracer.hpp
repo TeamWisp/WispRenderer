@@ -270,21 +270,24 @@ namespace wr
 				}
 
 				// Fill descriptor heap with textures used by the scene
-				for (auto material_handle : as_build_data.out_material_handles)
+				for (auto handle : as_build_data.out_material_handles)
 				{
-					auto* material_internal = material_handle.m_pool->GetMaterial(material_handle);
+					auto* material_internal = handle.m_pool->GetMaterial(handle);
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
+						if (!texture_handle.m_pool)
+							return;
+
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
-					set_srv(material_internal->GetAlbedo());
-					set_srv(material_internal->GetMetallic());
-					set_srv(material_internal->GetNormal());
-					set_srv(material_internal->GetRoughness());
+					set_srv(material_internal->GetTexture(wr::TextureType::ALBEDO));
+					set_srv(material_internal->GetTexture(wr::TextureType::METALLIC));
+					set_srv(material_internal->GetTexture(wr::TextureType::NORMAL));
+					set_srv(material_internal->GetTexture(wr::TextureType::ROUGHNESS));
 				}
 
 				// Get light buffer
