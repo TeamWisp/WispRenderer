@@ -50,7 +50,7 @@ void SpheresScene::BuildScene(unsigned int width, unsigned int height)
 			auto mat_internal = mat.m_pool->GetMaterial(mat);
 
 			mat_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1, 0, 0 });
-			mat_internal->SetTexture<wr::TextureType::NORMAL>(m_flat_normal);
+			mat_internal->SetTexture(wr::TextureType::NORMAL, m_flat_normal);
 			mat_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(roughness);
 			mat_internal->SetConstant<wr::MaterialConstant::METALLIC>(metallic);
 
