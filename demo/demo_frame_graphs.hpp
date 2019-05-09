@@ -23,9 +23,6 @@
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten_second_pass.hpp"
-#include "render_tasks/d3d12_bloom_horizontal.hpp"
-#include "render_tasks/d3d12_bloom_vertical.hpp"
-#include "render_tasks/d3d12_bloom_composition.hpp"
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
 
@@ -118,16 +115,7 @@ namespace fg_manager
 
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
-			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg, 
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 			// Copy the scene render pixel data to the final render target
 
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
@@ -226,16 +214,7 @@ namespace fg_manager
 
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
-			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
