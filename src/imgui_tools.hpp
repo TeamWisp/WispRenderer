@@ -24,6 +24,12 @@ namespace wr::imgui
 
 	namespace window
 	{
+		struct Stats
+		{
+			void Draw(D3D12RenderSystem& render_system, ImVec2 viewport_pos);
+			bool m_open;
+		};
+
 		void ShaderRegistry();
 		void PipelineRegistry();
 		void RootSignatureRegistry();

@@ -27,7 +27,6 @@ namespace viknell_scene
 		static wr::MaterialHandle bamboo_material;
 		static wr::MaterialHandle mirror_material;
 
-		static wr::TextureHandle flat_normal;
 		static wr::TextureHandle equirectangular_environment_map;
 
 		void CreateResources(wr::RenderSystem* render_system)
@@ -35,10 +34,6 @@ namespace viknell_scene
 			texture_pool = render_system->CreateTexturePool();
 			material_pool = render_system->CreateMaterialPool(256);
 			model_pool = render_system->CreateModelPool(64_mb, 64_mb);
-
-			wr::TextureHandle white = texture_pool->LoadFromFile("resources/materials/white.png", false, true);
-			wr::TextureHandle black = texture_pool->LoadFromFile("resources/materials/black.png", false, true);
-			flat_normal = texture_pool->LoadFromFile("resources/materials/flat_normal.png", false, true);
 
 			wr::TextureHandle bamboo_albedo = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-albedo.png", true, true);
 			wr::TextureHandle bamboo_normal = texture_pool->LoadFromFile("resources/materials/bamboo/bamboo-wood-semigloss-normal.png", false, true);
@@ -48,25 +43,20 @@ namespace viknell_scene
 			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 			// Create Materials
-			mirror_material = material_pool->Create();
+			mirror_material = material_pool->Create(texture_pool.get());
 			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material);
 
-			mirror_internal->SetAlbedo(white);
-			mirror_internal->SetNormal(flat_normal);
-			mirror_internal->SetRoughness(black);
-			mirror_internal->UseRoughnessTexture(false);
-			mirror_internal->SetConstantRoughness(0.0f);
-			mirror_internal->SetMetallic(white);
-			mirror_internal->UseMetallicTexture(false);
-			mirror_internal->SetConstantMetallic(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
+			mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0);
+			mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1);
+			mirror_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1, 1, 1 });
 
-			bamboo_material = material_pool->Create();
+			bamboo_material = material_pool->Create(texture_pool.get());
 			wr::Material* bamboo_material_internal = material_pool->GetMaterial(bamboo_material);
 
-			bamboo_material_internal->SetAlbedo(bamboo_albedo);
-			bamboo_material_internal->SetNormal(bamboo_normal);
-			bamboo_material_internal->SetRoughness(bamboo_roughness);
-			bamboo_material_internal->SetMetallic(bamboo_metallic);
+			bamboo_material_internal->SetTexture(wr::TextureType::ALBEDO, bamboo_albedo);
+			bamboo_material_internal->SetTexture(wr::TextureType::NORMAL, bamboo_normal);
+			bamboo_material_internal->SetTexture(wr::TextureType::ROUGHNESS, bamboo_roughness);
+			bamboo_material_internal->SetTexture(wr::TextureType::METALLIC, bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
@@ -131,16 +121,16 @@ namespace viknell_scene
 
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
-		point_light_0->SetRotation({20.950, 0.98, 0});
-		point_light_0->SetPosition({-0.002, 0.080, 1.404});
+		point_light_0->SetRotation({ 20.950f, 0.98f, 0.f });
+		point_light_0->SetPosition({ -0.002f, 0.080f, 1.404f });
 
 		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{1, 0, 0});
 		point_light_1->SetRadius(5.0f);
-		point_light_1->SetPosition({0.5, 0, -0.3});
+		point_light_1->SetPosition({ 0.5f, 0.f, -0.3f });
 
 		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{0, 0, 1});
 		point_light_2->SetRadius(5.0f);
-		point_light_2->SetPosition({-0.5, 0.5, -0.3});
+		point_light_2->SetPosition({ -0.5f, 0.5f, -0.3f });
 
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	}

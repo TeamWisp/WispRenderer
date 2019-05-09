@@ -10,11 +10,10 @@ namespace wr
 {
 	struct PostProcessingData
 	{
-		d3d12::RenderTarget* out_source_rt;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
+		d3d12::RenderTarget* out_source_rt = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
 
-		DescriptorAllocator* out_allocator;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 	};
 
@@ -24,7 +23,7 @@ namespace wr
 	{
 
 		template<typename T>
-		inline void SetupPostProcessingTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void SetupPostProcessingTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<PostProcessingData>(handle);
@@ -45,52 +44,60 @@ namespace wr
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination
 			{
-				// Destination
-				{
-					constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(dest_idx);
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
-				}
-				// Source
-				{
-					constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(source_idx);
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, frame_idx, source_rt->m_create_info.m_rtv_formats[frame_idx]);
-				}
+				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(dest_idx);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Source
+			{
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+
 		}
 
+		template<typename T>
 		inline void ExecutePostProcessingTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<PostProcessingData>(handle);
-			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			const auto viewport = n_render_system.m_viewport;
+			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
-			constexpr unsigned int uav_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
-			d3d12::DescHeapCPUHandle uav_handle = data.out_allocation.GetDescriptorHandle(uav_idx);
-			d3d12::SetShaderUAV(cmd_list, 0, uav_idx, uav_handle);
+			auto source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			constexpr unsigned int srv_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
-			d3d12::DescHeapCPUHandle srv_handle = data.out_allocation.GetDescriptorHandle(srv_idx);
-			d3d12::SetShaderSRV(cmd_list, 0, srv_idx, srv_handle);
+			// Destination
+			{
+				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(dest_idx);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+			}
+			// Source
+			{
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+			
+			auto hdr_type = static_cast<float>(d3d12::settings::output_hdr);
+			d3d12::BindCompute32BitConstants(cmd_list, &hdr_type, 1, 0, 1);
 
-			bool is_fallback = d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK;
-			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+			constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::DEST);
+			auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_idx);
+			d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
 
-			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+			constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::post_processing, params::PostProcessingE::SOURCE);
+			auto handle_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+			d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_srv);
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
-
-			float hdr_type = static_cast<float>(d3d12::settings::output_hdr);
-			d3d12::BindCompute32BitConstants(cmd_list, &hdr_type, 1, 0, 1);
 
 			d3d12::Dispatch(cmd_list,
 				static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
@@ -98,7 +105,7 @@ namespace wr
 				1);
 		}
 
-		inline void DestroyPostProcessing(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void DestroyPostProcessing(FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 			auto& data = fg.GetData<PostProcessingData>(handle);
 
@@ -122,7 +129,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ d3d12::settings::back_buffer_format }),
+			RenderTargetProperties::RTVFormats({d3d12::settings::back_buffer_format}),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
@@ -134,7 +141,7 @@ namespace wr
 			internal::SetupPostProcessingTask<T>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecutePostProcessingTask(rs, fg, sg, handle);
+			internal::ExecutePostProcessingTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyPostProcessing(fg, handle, resize);
@@ -144,7 +151,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<PostProcessingData>(desc, FG_DEPS(1, T));
+		frame_graph.AddTask<PostProcessingData>(desc);
 	}
 
 } /* wr */

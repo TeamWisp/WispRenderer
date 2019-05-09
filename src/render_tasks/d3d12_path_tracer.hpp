@@ -9,7 +9,6 @@
 #include "../d3d12/d3d12_rt_pipeline_registry.hpp"
 #include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
-#include "../util/math.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
@@ -19,7 +18,7 @@ namespace wr
 {
 	struct PathTracerData
 	{
-		d3d12::AccelerationStructure out_tlas;
+		d3d12::AccelerationStructure out_tlas = {};
 
 		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
@@ -27,21 +26,21 @@ namespace wr
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
 
 		// Pipeline objects
-		d3d12::StateObject* out_state_object;
-		d3d12::RootSignature* out_root_signature;
+		d3d12::StateObject* out_state_object = nullptr;
 
 		// Structures and buffers
-		D3D12ConstantBufferHandle* out_cb_camera_handle;
-		d3d12::RenderTarget* out_deferred_main_rt;
+		D3D12ConstantBufferHandle* out_cb_camera_handle = nullptr;
+		d3d12::RenderTarget* out_deferred_main_rt = nullptr;
 
-		DirectX::XMVECTOR last_cam_pos;
-		DirectX::XMVECTOR last_cam_rot;
+		DirectX::XMVECTOR last_cam_pos = {};
+		DirectX::XMVECTOR last_cam_rot = {};
 
-		DescriptorAllocation out_uav_from_rtv;
-		DescriptorAllocation out_gbuffers;
-		DescriptorAllocation out_depthbuffer;
+		DescriptorAllocation out_output_alloc;
+		DescriptorAllocation out_gbuffer_albedo_alloc;
+		DescriptorAllocation out_gbuffer_normal_alloc;
+		DescriptorAllocation out_gbuffer_depth_alloc;
 
-		bool tlas_requires_init;
+		bool tlas_requires_init = true;
 	};
 
 	namespace internal
@@ -130,37 +129,35 @@ namespace wr
 
 			if (!resize)
 			{
-				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
-				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
-				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
 			}
-
-			// Get AS build data
-			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 			// Versioning
 			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
-				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 
 				// Bind g-buffers (albedo, normal, depth)
-				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
-				d3d12::DescHeapCPUHandle depth_buffer_handle = data.out_depthbuffer.GetDescriptorHandle();
-
-				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
+				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-				d3d12::CreateSRVFromRTV(deferred_main_rt, gbuffers_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
-				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
+
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+
+				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 			}
 
 			if (!resize)
@@ -171,10 +168,6 @@ namespace wr
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
 				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object))->m_native;
-
-				// Root Signature
-				auto& rs_registry = RootSignatureRegistry::Get();
-				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::path_tracing_global))->m_native;
 			}
 
 			// Create Shader Tables
@@ -214,7 +207,10 @@ namespace wr
 			}
 
 			// Wait for AS to be built
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
+			{
+				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
+			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -224,10 +220,8 @@ namespace wr
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
-				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				auto out_uav_handle = data.out_output_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OUTPUT)), out_uav_handle);
-				//out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
-				//d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OUTPUT)) + 1, out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::INDICES)), out_scene_ib_handle);
@@ -238,13 +232,13 @@ namespace wr
 				auto out_scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OFFSETS)), out_scene_offset_handle);
 
-				auto out_scene_gbuffers_handle1 = data.out_gbuffers.GetDescriptorHandle(0);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 0, out_scene_gbuffers_handle1);
+				auto out_albedo_gbuffer_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 0, out_albedo_gbuffer_handle);
 
-				auto out_scene_gbuffers_handle2 = data.out_gbuffers.GetDescriptorHandle(1);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 1, out_scene_gbuffers_handle2);
+				auto out_normal_gbuffer_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 1, out_normal_gbuffer_handle);
 
-				auto out_scene_depth_handle = data.out_depthbuffer.GetDescriptorHandle();
+				auto out_scene_depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 2, out_scene_depth_handle);
 
 				/*
@@ -271,7 +265,7 @@ namespace wr
 
 					for (size_t i = 0; i < num_textures_in_heap; ++i)
 					{
-						d3d12::SetRTShaderSRV(cmd_list, 0, heap_loc_start + i, texture_resource);
+						d3d12::SetRTShaderSRV(cmd_list, 0, static_cast<std::uint32_t>(heap_loc_start + i), texture_resource);
 					}
 				}
 
@@ -282,27 +276,31 @@ namespace wr
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
+						if (!texture_handle.m_pool)
+							return;
+
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
-						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
+						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
-					if (!material_internal->UsesConstantAlbedo())
-						set_srv(material_internal->GetAlbedo());
+					if (material_internal->HasTexture(TextureType::ALBEDO))
+						set_srv(material_internal->GetTexture(TextureType::ALBEDO));
+					
+					if (material_internal->HasTexture(TextureType::NORMAL))
+						set_srv(material_internal->GetTexture(TextureType::NORMAL));
 
-					set_srv(material_internal->GetNormal());
+					if (material_internal->HasTexture(TextureType::METALLIC))
+						set_srv(material_internal->GetTexture(TextureType::METALLIC));
 
-					if (!material_internal->UsesConstantMetallic())
-						set_srv(material_internal->GetMetallic());
+					if (material_internal->HasTexture(TextureType::ROUGHNESS))
+						set_srv(material_internal->GetTexture(TextureType::ROUGHNESS));
 
-					if (!material_internal->UsesConstantRoughness())
-						set_srv(material_internal->GetRoughness());
+					if (material_internal->HasTexture(TextureType::EMISSIVE))
+						set_srv(material_internal->GetTexture(TextureType::EMISSIVE));
 
-					if (material_internal->HasEmissiveTexture())
-						set_srv(material_internal->GetEmissive());
-
-					if (material_internal->HasAOTexture())
-						set_srv(material_internal->GetAmbientOcclusion());
+					if (material_internal->HasTexture(TextureType::AO))
+						set_srv(material_internal->GetTexture(TextureType::AO));
 				}
 
 				// Get light buffer
@@ -329,7 +327,7 @@ namespace wr
 
 				// Update camera constant buffer
 				auto camera = scene_graph.GetActiveCamera();
-				temp::RTHybridCamera_CBData cam_data;
+				temp::RTHybridCamera_CBData cam_data{};
 				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
@@ -390,13 +388,28 @@ namespace wr
 				CreateShaderTables(device, data, frame_idx);
 				//#endif
 
-								// Dispatch hybrid ray tracing rays
+				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}
 		}
+
+		inline void DestroyPathTracerTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			if (!resize)
+			{
+				auto& data = fg.GetData<PathTracerData>(handle);
+
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				std::move(data.out_output_alloc);
+				std::move(data.out_gbuffer_albedo_alloc);
+				std::move(data.out_gbuffer_normal_alloc);
+				std::move(data.out_gbuffer_depth_alloc);
+			}
+		}
+
 
 	} /* internal */
 
@@ -411,7 +424,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
@@ -427,9 +440,9 @@ namespace wr
 		{
 			internal::ExecutePathTracerTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool)
+		desc.m_destroy_func = [](FrameGraph & fg, RenderTaskHandle handle, bool resize)
 		{
-			// Nothing to destroy
+			internal::DestroyPathTracerTask(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;

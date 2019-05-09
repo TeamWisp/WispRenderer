@@ -115,7 +115,7 @@ namespace util
 			}
 
 			//Have we found enough free pages? If so, break
-			if (found == true)
+			if (found)
 			{
 				break;
 			}

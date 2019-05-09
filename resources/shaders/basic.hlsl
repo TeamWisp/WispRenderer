@@ -96,8 +96,8 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 		material_normal,
 		material_roughness,
 		material_metallic,
-		material_ao,
 		material_emissive,
+		material_ao,
 		s0,
 		input.uv);
 

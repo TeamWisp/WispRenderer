@@ -21,17 +21,17 @@ namespace wr
 {
 	struct EquirectToCubemapTaskData
 	{
-		D3D12Pipeline* in_pipeline;
+		D3D12Pipeline* in_pipeline = nullptr;
 
-		TextureHandle in_equirect;
-		TextureHandle out_cubemap;
-		TextureHandle out_pref_env;
+		TextureHandle in_equirect = {};
+		TextureHandle out_cubemap = {};
+		TextureHandle out_pref_env = {};
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
-		D3D12ConstantBufferHandle* cb_handle;
+		D3D12ConstantBufferHandle* cb_handle = nullptr;
 
-		DirectX::XMMATRIX proj_mat;
-		DirectX::XMMATRIX view_mat[6];
+		DirectX::XMMATRIX proj_mat = { DirectX::XMMatrixIdentity() };
+		DirectX::XMMATRIX view_mat[6] = {};
 
 		bool should_run = true;
 	};
@@ -66,16 +66,13 @@ namespace wr
 
 			for (uint32_t src_mip = 0; src_mip < dest_cubemap->m_mip_levels; ++src_mip)
 			{
-				uint32_t width = dest_cubemap->m_width >> src_mip;
-				uint32_t height = dest_cubemap->m_height >> src_mip;
+				uint32_t width = static_cast<std::uint32_t>(dest_cubemap->m_width) >> src_mip;
+				uint32_t height = static_cast<std::uint32_t>(dest_cubemap->m_height) >> src_mip;
 
-				prefilter_env_cb.texture_size = DirectX::XMFLOAT2((float)width, (float)height);
-				prefilter_env_cb.skybox_res = DirectX::XMFLOAT2((float)source_cubemap->m_width, (float)source_cubemap->m_height);
-				prefilter_env_cb.roughness = (float)(src_mip) / (float)(dest_cubemap->m_mip_levels);
+				prefilter_env_cb.texture_size = DirectX::XMFLOAT2(static_cast<float>(width), static_cast<float>(height));
+				prefilter_env_cb.skybox_res = DirectX::XMFLOAT2(static_cast<float>(source_cubemap->m_width), static_cast<float>(source_cubemap->m_height));
+				prefilter_env_cb.roughness = static_cast<float>(src_mip) / static_cast<float>(dest_cubemap->m_mip_levels);
 				prefilter_env_cb.cubemap_face = array_slice;
-
-				//Create views
-				//d3d12::CreateSRVFromCubemapFace(texture, srv_handle, 1, src_mip, array_slice);
 
 				DescriptorAllocation uav_alloc = alloc->Allocate();
 				d3d12::DescHeapCPUHandle uav_handle = uav_alloc.GetDescriptorHandle();
@@ -129,7 +126,6 @@ namespace wr
 				return;
 			}
 
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -180,9 +176,10 @@ namespace wr
 
 			data.in_equirect = skybox_node->m_hdr;
 			
-			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", d3d12::settings::res_skybox, d3d12::settings::res_skybox, 0, wr::Format::R32G32B32A32_FLOAT, true);
+			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", d3d12::settings::res_skybox, d3d12::settings::res_skybox, 0, wr::Format::R16G16B16A16_FLOAT, true);
 
-			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", d3d12::settings::res_envmap, d3d12::settings::res_envmap, 5, wr::Format::R32G32B32A32_FLOAT, true);
+			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", d3d12::settings::res_envmap, d3d12::settings::res_envmap, 5, wr::Format::R16G16B16A16_FLOAT, true);
+
 
 			data.out_cubemap = skybox_node->m_skybox.value();
 			data.out_pref_env = skybox_node->m_prefiltered_env_map.value();
@@ -193,10 +190,7 @@ namespace wr
 			if (n_render_system.m_render_window.has_value())
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-
-				const auto viewport = d3d12::CreateViewport(cubemap_text->m_width, cubemap_text->m_height);
-
+				const auto viewport = d3d12::CreateViewport(static_cast<int>(cubemap_text->m_width), static_cast<int>(cubemap_text->m_height));
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 
 				d3d12::BindViewport(cmd_list, viewport);
@@ -246,11 +240,11 @@ namespace wr
 
 						if (n_mesh->m_index_count != 0)
 						{
-							d3d12::DrawIndexed(cmd_list, n_mesh->m_index_count, 1, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
+							d3d12::DrawIndexed(cmd_list, static_cast<std::uint32_t>(n_mesh->m_index_count), 1, static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset), static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 						}
 						else
 						{
-							d3d12::Draw(cmd_list, n_mesh->m_vertex_count, 1, n_mesh->m_vertex_staging_buffer_offset);
+							d3d12::Draw(cmd_list, static_cast<std::uint32_t>(n_mesh->m_vertex_count), 1, static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 						}
 					}
 				}
@@ -277,14 +271,6 @@ namespace wr
 			}
 		}
 
-		inline void DestroyEquirectToCubemapTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			if (resize)
-			{
-				return;
-			}
-		}
-
 	} /* internal */
 
 	inline void AddEquirectToCubemapTask(FrameGraph& fg)
@@ -300,7 +286,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
 			RenderTargetProperties::CreateDSVBuffer(true),
 			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
-			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
@@ -314,8 +300,7 @@ namespace wr
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyEquirectToCubemapTask(fg, handle, resize);
+		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 		};
 
 		desc.m_properties = rt_properties;

@@ -18,7 +18,7 @@
 #include "render_tasks/d3d12_dof_bokeh.hpp"
 #include "render_tasks/d3d12_dof_bokeh_postfilter.hpp"
 #include "render_tasks/d3d12_dof_coc.hpp"
-#include "render_tasks/d3d12_dof_down_scale.hpp"
+#include "render_tasks/d3d12_down_scale.hpp"
 #include "render_tasks/d3d12_dof_composition.hpp"
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
 #include "render_tasks/d3d12_dof_dilate_flatten.hpp"
@@ -26,10 +26,11 @@
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
 
+
 namespace fg_manager
 {
 
-	enum class PrebuildFrameGraph
+	enum class PrebuildFrameGraph : std::uint32_t
 	{
 		DEFERRED = 0,
 		RT_HYBRID = 1,
@@ -57,7 +58,7 @@ namespace fg_manager
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
 
-	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> imgui_func)
+	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> const & imgui_func)
 	{
 		// Raytracing
 		{
@@ -82,7 +83,7 @@ namespace fg_manager
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(15);
+			fg = new wr::FrameGraph(18);
 			
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
@@ -91,16 +92,13 @@ namespace fg_manager
 			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-			// Do some post processing
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
-
-			// Do Depth of field task
+			//// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
-			wr::AddDoFDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFDilateTask<wr::DoFDownScaleData>(*fg,
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
@@ -109,19 +107,23 @@ namespace fg_manager
 			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFBokehTask<wr::DoFDownScaleData, wr::DoFDilateFlattenHData>(*fg,
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
+			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
+
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
 			wr::AddAnselTask(*fg);
+
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			fg->Setup(rs);
 		}
@@ -172,7 +174,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(15);
+			fg = new wr::FrameGraph(19);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -191,16 +193,13 @@ namespace fg_manager
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-			// Do some post processing
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
-
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 
-			wr::AddDoFDownScaleTask<wr::PostProcessingData, wr::DoFCoCData>(*fg,
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFDilateTask<wr::DoFDownScaleData>(*fg,
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
@@ -209,18 +208,19 @@ namespace fg_manager
 			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFBokehTask<wr::DoFDownScaleData, wr::DoFDilateFlattenHData>(*fg,
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
 				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
 
-			wr::AddDoFCompositionTask<wr::PostProcessingData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
+			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::DoFCompositionData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DoFCompositionData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
 
 			// Finalize the frame graph
 			fg->Setup(rs);
@@ -242,12 +242,12 @@ namespace fg_manager
 
 	inline void Next()
 	{
-		current = (PrebuildFrameGraph)(((int)current + 1) % frame_graphs.size());
+		current = (PrebuildFrameGraph)((static_cast<std::uint32_t>(current) + 1ull) % frame_graphs.size());
 	}
 
 	inline void Prev()
 	{
-		current = (PrebuildFrameGraph)(((int)current - 1) % frame_graphs.size());
+		current = (PrebuildFrameGraph)((static_cast<std::uint32_t>(current) - 1ull) % frame_graphs.size());
 	}
 
 	inline void Set(PrebuildFrameGraph value)

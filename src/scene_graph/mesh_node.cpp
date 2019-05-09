@@ -41,7 +41,7 @@ namespace wr {
 	{
 		if (m_materials.size() > m_model->m_meshes.size())
 		{
-			LOGW("A mesh node has more materials than meshes.");
+			LOGW("A mesh node has more materials than meshes.")
 		}
 	}
 

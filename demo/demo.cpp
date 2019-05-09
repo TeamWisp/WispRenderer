@@ -15,7 +15,7 @@
 #include "model_loader_assimp.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-#define SCENE viknell_scene
+#define SCENE emibl_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -25,7 +25,7 @@ void RenderEditor(ImTextureID output)
 	engine::RenderEngine(output, render_system.get(), scene_graph.get());
 }
 
-void ShaderDirChangeDetected(std::string path, util::FileWatcher::FileStatus status)
+void ShaderDirChangeDetected(std::string const & path, util::FileWatcher::FileStatus status)
 {
 	auto& registry = wr::PipelineRegistry::Get();
 	auto& rt_registry = wr::RTPipelineRegistry::Get();
@@ -108,7 +108,7 @@ int WispEntry()
 
 			memcpy(indices.data(), model->m_meshes[0]->m_indices.data(), indices.size() * sizeof(std::uint32_t));
 
-			SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
+			//SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
 
 			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
 		}
@@ -134,7 +134,7 @@ int WispEntry()
 
 			memcpy(indices.data(), model->m_meshes[0]->m_indices.data(), indices.size() * sizeof(std::uint32_t));
 
-			SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
+			//SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
 
 			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
 		}
@@ -162,14 +162,14 @@ int WispEntry()
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
-	fg_manager::Setup(*render_system.get(), &RenderEditor);
+	fg_manager::Setup(*render_system, &RenderEditor);
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
 		SCENE::camera->SetAspectRatio((float)width / (float)height);
-		fg_manager::Resize(*render_system.get(), width, height);
+		fg_manager::Resize(*render_system, width, height);
 	});
 
 	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));

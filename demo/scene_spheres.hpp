@@ -21,7 +21,6 @@ namespace spheres_scene
 		static std::shared_ptr<wr::MaterialPool> material_pool;
 
 		static wr::Model* sphere_model;
-		static wr::Model* test_model;
 
 		static wr::TextureHandle equirectangular_environment_map;
 
@@ -41,18 +40,16 @@ namespace spheres_scene
 			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);
 
 			// Create Materials
-			spheres_material = material_pool->Create();
+			spheres_material = material_pool->Create(texture_pool.get());
 
 			wr::Material* spheres_material_internal = material_pool->GetMaterial(spheres_material);
 
-			spheres_material_internal->SetAlbedo(spheres_albedo);
-			spheres_material_internal->SetNormal(spheres_normal);
-			spheres_material_internal->SetRoughness(spheres_roughness);
-			spheres_material_internal->SetMetallic(spheres_metallic);
+			spheres_material_internal->SetTexture(wr::TextureType::ALBEDO, spheres_albedo);
+			spheres_material_internal->SetTexture(wr::TextureType::NORMAL, spheres_normal);
+			spheres_material_internal->SetTexture(wr::TextureType::ROUGHNESS, spheres_roughness);
+			spheres_material_internal->SetTexture(wr::TextureType::METALLIC, spheres_metallic);
 
 			// Create Models
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 			for (auto& m : sphere_model->m_meshes)
 			{
@@ -71,7 +68,6 @@ namespace spheres_scene
 
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
-	static std::shared_ptr<wr::MeshNode> test_model;
 
 	static float t = 0;
 
@@ -82,7 +78,7 @@ namespace spheres_scene
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
-		wr::Model* spheres[49];
+		//wr::Model* spheres[49];
 
 		//for (uint32_t i = 0; i <= 6; ++i)
 		//{

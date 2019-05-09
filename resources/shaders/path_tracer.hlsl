@@ -198,8 +198,8 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 		g_textures[material.normal_id],
 		g_textures[material.roughness_id],
 		g_textures[material.metalicness_id],
-		g_textures[material.ao_id],
 		g_textures[material.emissive_id],
+		g_textures[material.ao_id],
 		mip_level,
 		s0,
 		uv);
