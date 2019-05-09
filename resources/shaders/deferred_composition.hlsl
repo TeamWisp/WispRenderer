@@ -70,18 +70,18 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float3 albedo = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0).xyz;
 		const float roughness = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0).w;
 		float3 normal = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0).xyz;
-		const float metallic = gbuffer_normal_metallic.SampleLevel(linear_sampler, uv, 0).w;
+		const float metallic = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0).w;
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
 		
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
-		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
+		float3 sampled_environment_map = pref_env_map.SampleLevel(point_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
 		// Get irradiance
 		float3 irradiance = lerp(
-			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
-			screen_space_irradiance.SampleLevel(linear_sampler, uv, 0).xyz,
+			irradiance_map.SampleLevel(point_sampler, flipped_N, 0).xyz,
+			screen_space_irradiance.SampleLevel(point_sampler, uv, 0).xyz,
 			is_path_tracer);
 
 		// Get ao
@@ -96,7 +96,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Do deferred shadow (fully lit for now)
 			1.0,
 			// Shadow buffer if its hybrid rendering
-			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0).a,
+			buffer_refl_shadow.SampleLevel(point_sampler, uv, 0).a,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
@@ -107,7 +107,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Sample from environment if it IS NOT hybrid rendering
 			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
-			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0).xyz,
+			buffer_refl_shadow.SampleLevel(point_sampler, uv, 0).xyz,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
