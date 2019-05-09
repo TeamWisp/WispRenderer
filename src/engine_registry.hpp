@@ -46,7 +46,7 @@ namespace wr
 					type = entry.type;
 				}
 			}
-			
+
 			// Find Start
 			for (std::size_t i = 0; i < data.size(); i++)
 			{
@@ -108,7 +108,7 @@ namespace wr
 			unsigned int size = 0;
 
 			// Find its range equivelant or visa versa
-			Type other_type = Type::SRV;
+            Type other_type = Type::SRV;
 			switch (type)
 			{
 			case Type::SRV:
@@ -171,9 +171,7 @@ namespace wr
 		template<typename T, typename E>
 		constexpr CD3DX12_ROOT_PARAMETER GetCBV(const T data, const E name, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
 		{
-			const Type type = Type::CBV_OR_CONST;
 			unsigned int start = 0;
-			unsigned int size = 0;
 
 			// Find Start & Size
 			for (std::size_t i = 0; i < data.size(); i++)
@@ -181,7 +179,6 @@ namespace wr
 				auto entry = data[i];
 				if (static_cast<E>(entry.name) == name)
 				{
-					size = entry.size;
 					break;
 				}
 				else if (entry.type == Type::CBV_OR_CONST || entry.type == Type::CBV_RANGE)
@@ -200,7 +197,6 @@ namespace wr
 		constexpr CD3DX12_ROOT_PARAMETER GetSRV(const T data, const E name, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
 		{
 			unsigned int start = 0;
-			unsigned int size = 0;
 
 			// Find Start & Size
 			for (std::size_t i = 0; i < data.size(); i++)
@@ -208,7 +204,6 @@ namespace wr
 				auto entry = data[i];
 				if (static_cast<E>(entry.name) == name)
 				{
-					size = entry.size;
 					break;
 				}
 				else if (entry.type == Type::SRV || entry.type == Type::SRV_RANGE)
@@ -407,7 +402,7 @@ namespace wr
 			MATERIALS,
 			OFFSETS,
 			SKYBOX,
-      BRDF_LUT,
+			BRDF_LUT,
 			IRRADIANCE_MAP,
 			TEXTURES,
 			FALLBACK_PTRS
@@ -423,8 +418,8 @@ namespace wr
 			rs_layout::Entry{(int)FullRaytracingE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
-      rs_layout::Entry{(int)FullRaytracingE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
-      rs_layout::Entry{(int)FullRaytracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
+	  rs_layout::Entry{(int)FullRaytracingE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
+	  rs_layout::Entry{(int)FullRaytracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
 		};
@@ -516,19 +511,21 @@ namespace wr
 			rs_layout::Entry{(int)DoFCoCE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST}
 		};
 
-		enum class DoFDownScaleE
+		enum class DownScaleE
 		{
 			SOURCE,
 			OUTPUT_NEAR,
 			OUTPUT_FAR,
+			OUTPUT_BRIGHT,
 			COC
 		};
 
-		constexpr std::array<rs_layout::Entry, 4> dof_down_scale = {
-			rs_layout::Entry{(int)DoFDownScaleE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DoFDownScaleE::OUTPUT_NEAR, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)DoFDownScaleE::OUTPUT_FAR, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)DoFDownScaleE::COC, 1, rs_layout::Type::SRV_RANGE}
+		constexpr std::array<rs_layout::Entry, 5> down_scale = {
+			rs_layout::Entry{(int)DownScaleE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DownScaleE::OUTPUT_NEAR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DownScaleE::OUTPUT_FAR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DownScaleE::OUTPUT_BRIGHT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)DownScaleE::COC, 1, rs_layout::Type::SRV_RANGE}
 		};
 
 		enum class DoFDilateE
@@ -614,6 +611,7 @@ namespace wr
 			rs_layout::Entry{(int)DoFCompositionE::BOKEH_FAR, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DoFCompositionE::COC, 1, rs_layout::Type::SRV_RANGE},
 		};
+
 	} /* srv */
 
 	struct root_signatures
@@ -631,7 +629,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle post_processing;
 		WISPRENDERER_EXPORT static RegistryHandle accumulation;
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
-		WISPRENDERER_EXPORT static RegistryHandle dof_down_scale;
+		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
@@ -658,7 +656,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle post_processing;
 		WISPRENDERER_EXPORT static RegistryHandle accumulation;
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
-		WISPRENDERER_EXPORT static RegistryHandle dof_down_scale;
+		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
@@ -679,7 +677,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle post_processing;
 		WISPRENDERER_EXPORT static RegistryHandle accumulation;
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
-		WISPRENDERER_EXPORT static RegistryHandle dof_down_scale;
+		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;

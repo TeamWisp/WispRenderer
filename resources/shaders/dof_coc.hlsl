@@ -28,7 +28,7 @@ float GetCoC(float lineardepth, float focusdist)
 	coc = (coc / film_size) * screen_size.x;
 
 	coc = clamp(coc / MAXBOKEHSIZE, -1.f, 1.f);
-	return coc * enable_dof;
+	return coc;
 }
 
 
@@ -73,6 +73,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		focus_depth = GetLinearDepth(focus_depth) * FFAR;
 		coc = GetCoC(sample_depth, focus_depth);
 	}
-	
+	if (enable_dof == 0)
+	{
+		coc = 0.0f;
+	}
 	output[int2(dispatch_thread_id.xy)] = coc;
 }

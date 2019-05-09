@@ -11,11 +11,10 @@ namespace wr
 {
 	struct AccumulationData
 	{
-		d3d12::RenderTarget* out_source_rt;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
+		d3d12::RenderTarget* out_source_rt = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
 
-		DescriptorAllocator* out_allocator;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 	};
 
@@ -61,15 +60,13 @@ namespace wr
 			}
 		}
 
-		inline void ExecuteAccumulationTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
+		inline void ExecuteAccumulationTask(RenderSystem& rs, FrameGraph& fg, SceneGraph&, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<AccumulationData>(handle);
-			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			const auto viewport = n_render_system.m_viewport;
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
@@ -84,11 +81,12 @@ namespace wr
 			bool is_fallback = d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK;
 			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
 
-			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 2, data.out_allocation.GetDescriptorHandle());
+			{
+				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % 1 /*versions*/]);
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
+			}
 
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % 1 /*versions*/]));
-
-			auto& path_tracer_data = fg.GetPredecessorData<PathTracerData>();
+			fg.GetPredecessorData<PathTracerData>();
 
 			float samples = n_render_system.temp_rough;
 			d3d12::BindCompute32BitConstants(cmd_list, &samples, 1, 0, 1);
@@ -99,7 +97,7 @@ namespace wr
 				1);
 		}
 
-		inline void DestroyAccumulation(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void DestroyAccumulation(FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 			auto& data = fg.GetData<AccumulationData>(handle);
 

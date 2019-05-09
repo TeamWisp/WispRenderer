@@ -193,8 +193,10 @@ namespace wr
 		float light_radius = 50;
 		float temp_intensity = 1;
 
-	private:
+	protected:
+		void SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index) final;
 
+	private:
 		void ResetBatches(SceneGraph& sg);
 		void LoadPrimitiveShapes();
 
@@ -204,6 +206,7 @@ namespace wr
 		std::optional<bool> m_requested_fullscreen_state;
 
 		MaterialHandle m_last_material = { nullptr, 0 };
+
 	};
 
 } /* wr */
