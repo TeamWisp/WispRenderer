@@ -145,8 +145,6 @@ namespace engine
 				}
 
 				ImGui::MenuItem("Enable DOF", nullptr, &sg->GetActiveCamera()->m_enable_dof);
-				//Will be enabled once bloom is implemented.
-				//ImGui::MenuItem("Enable Bloom", nullptr, &sg->GetActiveCamera()->m_enable_bloom);
 				ImGui::DragFloat("F number", &sg->GetActiveCamera()->m_f_number, 1.f, 1.f, 128.f);
 				ImGui::DragFloat("Film size", &sg->GetActiveCamera()->m_film_size, 1.f, 25.f, 100.f);
 				ImGui::DragFloat("Bokeh Shape amount", &sg->GetActiveCamera()->m_shape_amt, 0.005f, 0.f, 1.f);

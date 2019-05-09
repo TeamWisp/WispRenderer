@@ -89,7 +89,6 @@ namespace wr
 		float m_shape_amt;
 		int m_aperture_blades;
 		bool m_enable_dof = false;
-		bool m_enable_bloom = false;
 		bool m_override_projection;
 
 		FoV m_fov;
