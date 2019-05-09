@@ -126,6 +126,9 @@ namespace wr::d3d12
 		unsigned int width = static_cast<decltype(width)>(r.right - r.left);
 		unsigned int height = static_cast<decltype(height)>(r.bottom - r.top);
 
+		render_window->m_width = width;
+		render_window->m_height = height;
+
 		const auto swap_chain_desc = internal::GetSwapChainDesc(width, height, num_back_buffers);
 
 		IDXGISwapChain1* temp_swap_chain;
@@ -216,6 +219,8 @@ namespace wr::d3d12
 		DestroyDepthStencilBuffer(render_window);
 		DestroyRenderTargetViews(render_window);
 
+		render_window->m_width = width;
+		render_window->m_height = height;
 		render_window->m_swap_chain->ResizeBuffers(render_window->m_num_render_targets, width, height, DXGI_FORMAT_UNKNOWN, 0);
 
 		render_window->m_render_targets.resize(render_window->m_num_render_targets);

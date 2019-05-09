@@ -2,6 +2,8 @@
 
 #include "../util/log.hpp"
 
+#pragma warning(push, 0)
+
 #define D3DX12_INC d3dx12_rt.h
 
 //! Checks whether the d3d12 object exists before releasing it.
@@ -34,3 +36,5 @@ constexpr inline T SizeAlignAnyAlignment(T size, A alignment)
 {
 	return (size / alignment + (size%alignment > 0))*alignment;
 }
+
+#pragma warning(pop)

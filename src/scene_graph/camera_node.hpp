@@ -2,6 +2,8 @@
 
 #include "node.hpp"
 
+#include <array>
+
 #include "../util/named_type.hpp"
 #include "../constant_buffer_pool.hpp"
 
@@ -19,7 +21,7 @@ namespace wr
 
 		struct FoV
 		{
-			FoV(FovDefault deg) : m_fov(deg.Get() / 180.0f * 3.1415926535f)
+			explicit FoV(FovDefault deg) : m_fov(deg.Get() / 180.0f * 3.1415926535f)
 			{
 			}
 
@@ -31,7 +33,7 @@ namespace wr
 			float m_fov;
 		};
 
-		CameraNode(float fov_deg, float aspect_ratio)
+		CameraNode(float aspect_ratio)
 			: Node(typeid(CameraNode)),
 			m_active(true),
 			m_frustum_near(0.1f),
@@ -41,12 +43,19 @@ namespace wr
 			m_film_size(45.0f),
 			m_fov(FovFocalLength(m_focal_length), FovAspectRatio(aspect_ratio), FovFilmSize(m_film_size)),
 			m_f_number(32.0f),
-			m_shape_amt(0.0f),
+			m_shape_amt(0.5f),
 			m_aperture_blades(5),
 			m_focus_dist(0),
 			m_override_projection(false),
 			m_projection_offset_x(0),
-			m_projection_offset_y(0)
+			m_projection_offset_y(0),
+			m_view(),
+			m_inverse_view(),
+			m_projection(),
+			m_inverse_projection(),
+			m_view_projection(),
+			m_camera_cb(),
+			m_planes()
 		{
 		}
 
@@ -92,7 +101,7 @@ namespace wr
 		float m_projection_offset_x; // Used By Ansel For Super Resolution
 		float m_projection_offset_y; // Used By Ansel For Super Resolution
 
-		DirectX::XMVECTOR m_planes[6];
+		std::array<DirectX::XMVECTOR, 6> m_planes;
 
 		ConstantBufferHandle* m_camera_cb;
 	};

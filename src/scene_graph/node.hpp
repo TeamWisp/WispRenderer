@@ -10,7 +10,7 @@ namespace wr
 	struct Node : std::enable_shared_from_this<Node>
 	{
 		Node();
-		Node(std::type_info const & type_info);
+		explicit Node(std::type_info const & type_info);
 
 		void SignalChange();
 		void SignalUpdate(unsigned int frame_idx);

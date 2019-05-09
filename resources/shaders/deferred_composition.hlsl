@@ -37,7 +37,7 @@ static uint min_depth = 0xFFFFFFFF;
 static uint max_depth = 0x0;
 
 float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
-	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
+	const float4 ndc = float4(uv * 2.0f - 1.f, depth, 1.0);
 	const float4 pos = mul( view_inv, mul(proj_inv, ndc));
 	return (pos / pos.w).xyz;
 }
@@ -47,11 +47,15 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
-	float2 uv = float2(dispatch_thread_id.x / screen_size.x, dispatch_thread_id.y / screen_size.y);
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
+	// added offset of 0.5f to select proper pixel to sample from.
+	// screen coords always get floored, therefore if the coords would be (1.9, 1.0),
+	// it would sample (1.0, 1.0) instead of the intended (2.0, 1.0). Adding the offset solves this problem.
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
 
-	const float depth_f = gbuffer_depth[screen_coord].r;
+	float2 uv = screen_coord / screen_size;
+
+	const float depth_f = gbuffer_depth.SampleLevel(point_sampler, uv, 0).r;
 
 	// View position and camera position
 	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
@@ -63,10 +67,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	if(depth_f != 1.0f)
 	{
 		// GBuffer contents
-		float3 albedo = gbuffer_albedo_roughness[screen_coord].xyz;
-		const float roughness = gbuffer_albedo_roughness[screen_coord].w;
-		float3 normal = gbuffer_normal_metallic[screen_coord].xyz;
-		const float metallic = gbuffer_normal_metallic[screen_coord].w;
+		float3 albedo = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0).xyz;
+		const float roughness = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0).w;
+		float3 normal = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0).xyz;
+		const float metallic = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0).w;
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
@@ -75,15 +79,15 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
 		// Get irradiance
-		float irradiance = lerp(
-			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
-			screen_space_irradiance[screen_coord].xyz,
+		float3 irradiance = lerp(
+			irradiance_map.SampleLevel(point_sampler, flipped_N, 0).xyz,
+			screen_space_irradiance.SampleLevel(point_sampler, uv, 0).xyz,
 			is_path_tracer);
 
 		// Get ao
 		float ao = lerp(
 			1,
-			screen_space_ao[screen_coord].xyz,
+			screen_space_ao.SampleLevel(point_sampler, uv, 0).xyz,
 			// Lerp factor (0: env map, 1: path traced)
 			is_hbao);
 
@@ -92,7 +96,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Do deferred shadow (fully lit for now)
 			1.0,
 			// Shadow buffer if its hybrid rendering
-			buffer_refl_shadow[screen_coord].a,
+			buffer_refl_shadow.SampleLevel(point_sampler, uv, 0).a,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
@@ -103,7 +107,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Sample from environment if it IS NOT hybrid rendering
 			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
-			buffer_refl_shadow[screen_coord].xyz,	
+			buffer_refl_shadow.SampleLevel(point_sampler, uv, 0).xyz,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 

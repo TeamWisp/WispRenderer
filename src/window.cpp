@@ -9,9 +9,8 @@ namespace wr
 {
 
 	Window::Window(HINSTANCE instance, int show_cmd, std::string const & name, std::uint32_t width, std::uint32_t height)
-		: m_title(name)
+		: m_title(name), m_instance(instance)
 	{
-
 		WNDCLASSEX wc;
 		wc.cbSize = sizeof(WNDCLASSEX);
 		wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -19,8 +18,8 @@ namespace wr
 		wc.cbClsExtra = NULL;
 		wc.cbWndExtra = NULL;
 		wc.hInstance = instance;
-		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+		wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 		wc.hbrBackground = (HBRUSH)(COLOR_WINDOW);
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = name.c_str();
@@ -60,7 +59,7 @@ namespace wr
 
 		if (!m_handle)
 		{
-			LOGC("Failed to create window." + GetLastError());
+			LOGC("Failed to create window." + GetLastError())
 		}
 
 		SetWindowLongPtr(m_handle, GWLP_USERDATA, (LONG_PTR)this);
@@ -80,6 +79,7 @@ namespace wr
 	Window::~Window()
 	{
 		Stop();
+		UnregisterClassA(m_title.c_str(), m_instance);
 	}
 
 	void Window::PollEvents()
@@ -107,7 +107,7 @@ namespace wr
 
 	void Window::SetRenderLoop(std::function<void()> render_func)
 	{
-		m_render_func = render_func;
+		m_render_func = std::move(render_func);
 	}
 
 	void Window::StartRenderLoop()
@@ -116,26 +116,28 @@ namespace wr
 		{
 			PollEvents();
 		}
+
+		UnregisterClassA(m_title.c_str(), m_instance);
 	}
 
 	void Window::SetKeyCallback(KeyCallback callback)
 	{
-		m_key_callback = callback;
+		m_key_callback = std::move(callback);
 	}
 
 	void Window::SetMouseCallback(MouseCallback callback)
 	{
-		m_mouse_callback = callback;
+		m_mouse_callback = std::move(callback);
 	}
 
 	void Window::SetMouseWheelCallback(MouseWheelCallback callback)
 	{
-		m_mouse_wheel_callback = callback;
+		m_mouse_wheel_callback = std::move(callback);
 	}
 
 	void Window::SetResizeCallback(ResizeCallback callback)
 	{
-		m_resize_callback = callback;
+		m_resize_callback = std::move(callback);
 	}
 
 	bool Window::IsRunning() const
@@ -184,7 +186,7 @@ namespace wr
 		if (ImGui_ImplWin32_WndProcHandler(handle, msg, w_param, l_param))
 			return true;
 
-		Window* window = (Window*)GetWindowLongPtr(handle, GWLP_USERDATA);
+		auto window = (Window*)GetWindowLongPtr(handle, GWLP_USERDATA);
 		if (window) return window->WindowProc_Impl(handle, msg, w_param, l_param);
 
 		return DefWindowProc(handle, msg, w_param, l_param);

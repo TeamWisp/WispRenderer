@@ -21,7 +21,6 @@ namespace emibl_scene
 
 		static wr::Model* cube_model;
 		static wr::Model* plane_model;
-		static wr::Model* test_model;
 		static wr::Model* material_knob;
 
 		static wr::MaterialHandle rusty_metal_material;
@@ -30,18 +29,12 @@ namespace emibl_scene
 
 		static wr::TextureHandle equirectangular_environment_map;
 
-		static wr::TextureHandle flat_normal;
-
 		void CreateResources(wr::RenderSystem* render_system)
 		{
 			texture_pool = render_system->CreateTexturePool();
 			material_pool = render_system->CreateMaterialPool(256);
 
 			// Load Texture.
-			wr::TextureHandle white = texture_pool->LoadFromFile("resources/materials/white.png", false, true);
-			wr::TextureHandle black = texture_pool->LoadFromFile("resources/materials/black.png", false, true);
-			flat_normal = texture_pool->LoadFromFile("resources/materials/flat_normal.png", false, true);
-
 			wr::TextureHandle metal_splotchy_albedo = texture_pool->LoadFromFile("resources/materials/metal-splotchy-albedo.png", true, true);
 			wr::TextureHandle metal_splotchy_normal = texture_pool->LoadFromFile("resources/materials/metal-splotchy-normal-dx.png", false, true);
 			wr::TextureHandle metal_splotchy_roughness = texture_pool->LoadFromFile("resources/materials/metal-splotchy-rough.png", false, true);
@@ -102,107 +95,107 @@ namespace emibl_scene
 
 			{
 				// Create Material
-				rusty_metal_material = material_pool->Create();
+				rusty_metal_material = material_pool->Create(texture_pool.get());
 
 				wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material);
 
-				rusty_metal_internal->SetAlbedo(metal_splotchy_albedo);
-				rusty_metal_internal->SetNormal(metal_splotchy_normal);
-				rusty_metal_internal->SetRoughness(metal_splotchy_roughness);
-				rusty_metal_internal->SetMetallic(metal_splotchy_metallic);
+				rusty_metal_internal->SetTexture(wr::TextureType::ALBEDO, metal_splotchy_albedo);
+				rusty_metal_internal->SetTexture(wr::TextureType::NORMAL, metal_splotchy_normal);
+				rusty_metal_internal->SetTexture(wr::TextureType::ROUGHNESS, metal_splotchy_roughness);
+				rusty_metal_internal->SetTexture(wr::TextureType::METALLIC, metal_splotchy_metallic);
 
 				// Create Material
-				material_handles[0] = material_pool->Create();
+				material_handles[0] = material_pool->Create(texture_pool.get());
 
 				wr::Material* mahogfloor_material_internal = material_pool->GetMaterial(material_handles[0]);
 
-				mahogfloor_material_internal->SetAlbedo(mahogfloor_albedo);
-				mahogfloor_material_internal->SetNormal(mahogfloor_normal);
-				mahogfloor_material_internal->SetRoughness(mahogfloor_roughness);
-				mahogfloor_material_internal->SetMetallic(mahogfloor_metallic);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::ALBEDO, mahogfloor_albedo);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::NORMAL, mahogfloor_normal);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::ROUGHNESS, mahogfloor_roughness);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::METALLIC, mahogfloor_metallic);
 
 				// Create Material
-				material_handles[1] = material_pool->Create();
+				material_handles[1] = material_pool->Create(texture_pool.get());
 
 				wr::Material* red_black_pattern_internal = material_pool->GetMaterial(material_handles[1]);
 
-				red_black_pattern_internal->SetAlbedo(red_black_albedo);
-				red_black_pattern_internal->SetNormal(red_black_normal);
-				red_black_pattern_internal->SetRoughness(red_black_roughness);
-				red_black_pattern_internal->SetMetallic(red_black_metallic);
+				red_black_pattern_internal->SetTexture(wr::TextureType::ALBEDO, red_black_albedo);
+				red_black_pattern_internal->SetTexture(wr::TextureType::NORMAL, red_black_normal);
+				red_black_pattern_internal->SetTexture(wr::TextureType::ROUGHNESS, red_black_roughness);
+				red_black_pattern_internal->SetTexture(wr::TextureType::METALLIC, red_black_metallic);
 
 				// Create Material
-				material_handles[2] = material_pool->Create();
+				material_handles[2] = material_pool->Create(texture_pool.get());
 
 				wr::Material* metal_material_internal = material_pool->GetMaterial(material_handles[2]);
 
-				metal_material_internal->SetAlbedo(metal_albedo);
-				metal_material_internal->SetNormal(metal_normal);
-				metal_material_internal->SetRoughness(metal_roughness);
-				metal_material_internal->SetMetallic(metal_metallic);
+				metal_material_internal->SetTexture(wr::TextureType::ALBEDO, metal_albedo);
+				metal_material_internal->SetTexture(wr::TextureType::NORMAL, metal_normal);
+				metal_material_internal->SetTexture(wr::TextureType::ROUGHNESS, metal_roughness);
+				metal_material_internal->SetTexture(wr::TextureType::METALLIC, metal_metallic);
 
-				material_handles[3] = material_pool->Create();
+				material_handles[3] = material_pool->Create(texture_pool.get());
 
 				wr::Material* brick_tiles_mat_internal = material_pool->GetMaterial(material_handles[3]);
 
-				brick_tiles_mat_internal->SetAlbedo(brick_tiles_albedo);
-				brick_tiles_mat_internal->SetNormal(brick_tiles_normal);
-				brick_tiles_mat_internal->SetRoughness(brick_tiles_roughness);
-				brick_tiles_mat_internal->SetMetallic(brick_tiles_metallic);
+				brick_tiles_mat_internal->SetTexture(wr::TextureType::ALBEDO, brick_tiles_albedo);
+				brick_tiles_mat_internal->SetTexture(wr::TextureType::NORMAL, brick_tiles_normal);
+				brick_tiles_mat_internal->SetTexture(wr::TextureType::ROUGHNESS, brick_tiles_roughness);
+				brick_tiles_mat_internal->SetTexture(wr::TextureType::METALLIC, brick_tiles_metallic);
 
-				material_handles[4] = material_pool->Create();
+				material_handles[4] = material_pool->Create(texture_pool.get());
 
 				wr::Material* leather_material_internal = material_pool->GetMaterial(material_handles[4]);
 
-				leather_material_internal->SetAlbedo(leather_albedo);
-				leather_material_internal->SetNormal(leather_normal);
-				leather_material_internal->SetRoughness(leather_roughness);
-				leather_material_internal->SetMetallic(leather_metallic);
+				leather_material_internal->SetTexture(wr::TextureType::ALBEDO, leather_albedo);
+				leather_material_internal->SetTexture(wr::TextureType::NORMAL, leather_normal);
+				leather_material_internal->SetTexture(wr::TextureType::ROUGHNESS, leather_roughness);
+				leather_material_internal->SetTexture(wr::TextureType::METALLIC, leather_metallic);
 
-				material_handles[5] = material_pool->Create();
+				material_handles[5] = material_pool->Create(texture_pool.get());
 
 				wr::Material* blue_tiles_material_internal = material_pool->GetMaterial(material_handles[5]);
 
-				blue_tiles_material_internal->SetAlbedo(blue_tiles_albedo);
-				blue_tiles_material_internal->SetNormal(blue_tiles_normal);
-				blue_tiles_material_internal->SetRoughness(blue_tiles_roughness);
-				blue_tiles_material_internal->SetMetallic(blue_tiles_metallic);
+				blue_tiles_material_internal->SetTexture(wr::TextureType::ALBEDO, blue_tiles_albedo);
+				blue_tiles_material_internal->SetTexture(wr::TextureType::NORMAL, blue_tiles_normal);
+				blue_tiles_material_internal->SetTexture(wr::TextureType::ROUGHNESS, blue_tiles_roughness);
+				blue_tiles_material_internal->SetTexture(wr::TextureType::METALLIC, blue_tiles_metallic);
 
-				material_handles[6] = material_pool->Create();
+				material_handles[6] = material_pool->Create(texture_pool.get());
 
 				wr::Material* gold_material_internal = material_pool->GetMaterial(material_handles[6]);
 
-				gold_material_internal->SetAlbedo(gold_albedo);
-				gold_material_internal->SetNormal(gold_normal);
-				gold_material_internal->SetRoughness(gold_roughness);
-				gold_material_internal->SetMetallic(gold_metallic);
+				gold_material_internal->SetTexture(wr::TextureType::ALBEDO, gold_albedo);
+				gold_material_internal->SetTexture(wr::TextureType::NORMAL, gold_normal);
+				gold_material_internal->SetTexture(wr::TextureType::ROUGHNESS, gold_roughness);
+				gold_material_internal->SetTexture(wr::TextureType::METALLIC, gold_metallic);
 
-				material_handles[7] = material_pool->Create();
+				material_handles[7] = material_pool->Create(texture_pool.get());
 
 				wr::Material* marble_material_internal = material_pool->GetMaterial(material_handles[7]);
 
-				marble_material_internal->SetAlbedo(marble_albedo);
-				marble_material_internal->SetNormal(marble_normal);
-				marble_material_internal->SetRoughness(marble_roughness);
-				marble_material_internal->SetMetallic(marble_metallic);
+				marble_material_internal->SetTexture(wr::TextureType::ALBEDO, marble_albedo);
+				marble_material_internal->SetTexture(wr::TextureType::NORMAL, marble_normal);
+				marble_material_internal->SetTexture(wr::TextureType::ROUGHNESS, marble_roughness);
+				marble_material_internal->SetTexture(wr::TextureType::METALLIC, marble_metallic);
 
-				material_handles[8] = material_pool->Create();
+				material_handles[8] = material_pool->Create(texture_pool.get());
 
 				wr::Material* floreal_tiles_internal = material_pool->GetMaterial(material_handles[8]);
 
-				floreal_tiles_internal->SetAlbedo(floreal_tiles_albedo);
-				floreal_tiles_internal->SetNormal(floreal_tiles_normal);
-				floreal_tiles_internal->SetRoughness(floreal_tiles_roughness);
-				floreal_tiles_internal->SetMetallic(floreal_tiles_metallic);
+				floreal_tiles_internal->SetTexture(wr::TextureType::ALBEDO, floreal_tiles_albedo);
+				floreal_tiles_internal->SetTexture(wr::TextureType::NORMAL, floreal_tiles_normal);
+				floreal_tiles_internal->SetTexture(wr::TextureType::ROUGHNESS, floreal_tiles_roughness);
+				floreal_tiles_internal->SetTexture(wr::TextureType::METALLIC, floreal_tiles_metallic);
 
-				material_handles[9] = material_pool->Create();
+				material_handles[9] = material_pool->Create(texture_pool.get());
 
 				wr::Material* bw_tiles_internal = material_pool->GetMaterial(material_handles[9]);
 
-				bw_tiles_internal->SetAlbedo(bw_tiles_albedo);
-				bw_tiles_internal->SetNormal(bw_tiles_normal);
-				bw_tiles_internal->SetRoughness(bw_tiles_roughness);
-				bw_tiles_internal->SetMetallic(bw_tiles_metallic);
+				bw_tiles_internal->SetTexture(wr::TextureType::ALBEDO, bw_tiles_albedo);
+				bw_tiles_internal->SetTexture(wr::TextureType::NORMAL, bw_tiles_normal);
+				bw_tiles_internal->SetTexture(wr::TextureType::ROUGHNESS, bw_tiles_roughness);
+				bw_tiles_internal->SetTexture(wr::TextureType::METALLIC, bw_tiles_metallic);
 			}
 
 			model_pool = render_system->CreateModelPool(64_mb, 64_mb);
@@ -232,8 +225,6 @@ namespace emibl_scene
 
 			{
 				{
-					test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-
 					cube_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/cube.fbx");
 					for (auto& m : cube_model->m_meshes)
 					{
@@ -257,23 +248,18 @@ namespace emibl_scene
 			model_pool.reset();
 			texture_pool.reset();
 			material_pool.reset();
-		};
-
+		}
 	}
 
 
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
-	static std::shared_ptr<wr::MeshNode> test_model;
-	static std::shared_ptr<wr::MeshNode> cube_node;
 	static float t = 0;
-	static float lerp_t = 0.0f;
 
 	std::shared_ptr<wr::MeshNode> models[10];
 	std::shared_ptr<wr::MeshNode> platforms[10];
 
 	static DirectX::XMVECTOR camera_start_pos = { 500.0f, 60.0f, 260.0f };
-	static DirectX::XMVECTOR camera_end_pos = { -500.0f, 60.0f, 260.0f };
 
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
@@ -327,10 +313,9 @@ namespace emibl_scene
 		models[0]->SetPosition({ +500,		0	,	160 });
 		platforms[0]->SetPosition({ +500,		-3	,	160 });
 
-		for (uint32_t i = 0; i < 10; ++i)
+		for (auto& model : models)
 		{
-			//models[i]->SetScale({ 0.5f, 0.5f, 0.5f });
-			models[i]->SetRotation({ 90_deg, 0, 0 });
+			model->SetRotation({ 90_deg, 0, 0 });
 		}
 
 		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 0, 1, 0 });
@@ -339,36 +324,12 @@ namespace emibl_scene
 
 	void UpdateScene()
 	{
-		static float waiting = 0.0f;
-		static bool start_lerp = false;
-
 		float deltaTime = ImGui::GetIO().DeltaTime;
 
-		//waiting += deltaTime;
 
-		//if (waiting > 20.0f)
-		//{
-		//	start_lerp = true;
-		//}
-
-		//t += 5.f * deltaTime;
-
-		//if (lerp_t < 1.0f && start_lerp)
-		//{
-		//	lerp_t += deltaTime * 0.05f;
-
-		//	if (lerp_t > 1.0f)
-		//	{
-		//		lerp_t = 1.0f;
-		//	}
-
-		//	DirectX::XMVECTOR new_cam_pos = DirectX::XMVectorLerp(camera_start_pos, camera_end_pos, lerp_t);
-		//	camera->SetPosition(new_cam_pos);
-		//}
-
-		for (uint32_t i = 0; i < 10; ++i)
+		for (auto& model : models)
 		{
-			models[i]->SetRotation({ 0, DirectX::XMConvertToRadians(t), 0 });
+			model->SetRotation({ 0, DirectX::XMConvertToRadians(t), 0 });
 		}
 
 		camera->Update(deltaTime);
