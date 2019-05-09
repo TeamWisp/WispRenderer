@@ -28,6 +28,7 @@ inline void ReplaceAll(std::string& str, std::string const & original_delimiter,
 template<typename S, typename O>
 void PerformBenchmark(FGType fg_type, unsigned int width = default_window_width, unsigned int height = default_window_height, unsigned int output_render_target_index = 0)
 {
+	// Get benchmark information
 	std::string scene_name = std::string(typeid(S).name());
 	scene_name.erase(0, 6); // Remove "class " from the name.
 	std::transform(scene_name.begin(), scene_name.end(), scene_name.begin(), ::tolower);
@@ -48,7 +49,7 @@ void PerformBenchmark(FGType fg_type, unsigned int width = default_window_width,
 	// Initialize
 	auto render_system = std::make_unique<wr::D3D12RenderSystem>();
 	std::string window_title = "Benchmark (Scene: " + scene_name + " Fg:" + fg_name + " Rt:" + rt_name + ")";
-	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), window_title, width, height, false);
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), window_title, width, height, true);
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
 
@@ -82,8 +83,6 @@ void PerformBenchmark(FGType fg_type, unsigned int width = default_window_width,
 
 		frame++;
 	}
-
-	//window->StartRenderLoop();
 
 	// Shutdown
 	render_system->WaitForAllPreviousWork();

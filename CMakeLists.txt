@@ -15,8 +15,6 @@ else()
 	set(BUILD_SHARED_LIBS OFF)
 endif()
 
-option(ENABLE_UNIT_TEST "enables unit tests." OFF)
-
 #Detect whether we have HBAO+ SDK available.
 if(EXISTS  ${CMAKE_SOURCE_DIR}/deps/hbao+)
 	message(STATUS "Found NVIDIA Gameworks HBAO+")
@@ -168,7 +166,7 @@ else()
 endif()
 
 add_library(WispRenderer ${WISP_LIB_TYPE} ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
-set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 17)
+set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 20)
 set_target_properties(WispRenderer PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(WispRenderer PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)
 if (MSVC)
@@ -188,14 +186,6 @@ set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${C
 
 add_subdirectory(tests ${CMAKE_BINARY_DIR}/tests)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Demo)
-
-## Unit Test ##
-if(ENABLE_UNIT_TEST)
-    set(BUILD_GMOCK 0)
-    set(INSTALL_GTEST 0)
-    add_subdirectory(${CMAKE_SOURCE_DIR}/deps/googletest/googletest ${CMAKE_BINARY_DIR}/googletest)
-    add_subdirectory(test ${CMAKE_BINARY_DIR}/Wisptest)
-endif(ENABLE_UNIT_TEST)
 
 ## Generate Include Directory
 macro(configure_files srcDir destDir)
