@@ -44,38 +44,6 @@ namespace wr
 		MAX_OFFSET = 7
 	};
 
-
-	template<MaterialConstantType type, bool b = uint32_t(type) & 0x1>
-	struct MaterialConstantHelper
-	{
-		using Type = std::array<float, 3>;
-
-		static Type get_value(float* v)
-		{
-			return Type{ v[0], v[1], v[2] };
-		}
-
-		static void set_value(float* v, const Type& t)
-		{
-			memcpy(v, t.data(), sizeof(t));
-		}
-	};
-
-	template<MaterialConstantType type>
-	struct MaterialConstantHelper<type, false>
-	{
-		using Type = float;
-
-		static Type get_value(float* v)
-		{
-			return *v;
-		}
-
-		static void set_value(float* v, const Type& t) {
-			*v = t;
-		}
-	};
-
 	class Material
 	{
 	public:
@@ -100,13 +68,27 @@ namespace wr
 		bool HasTexture(MaterialTextureType type);
 
 		template<MaterialConstantType type>
-		typename MaterialConstantHelper<type>::Type GetConstant(){
-			return MaterialConstantHelper<type>::get_value(m_material_data.m_constant_data + (uint32_t(type) >> 16));
+		typename std::enable_if<uint16_t(type) == 0, float>::type GetConstant() {
+			return m_material_data.m_constant_data[uint32_t(type) >> 16];
 		}
 
 		template<MaterialConstantType type>
-		void SetConstant(const typename MaterialConstantHelper<type>::Type& value) {
-			MaterialConstantHelper<type>::set_value(m_material_data.m_constant_data + (uint32_t(type) >> 16), value);
+		typename std::enable_if<uint16_t(type) != 0, std::array<float, 3>>::type GetConstant() {
+			float* arr = m_material_data.m_constant_data;
+			uint32_t i = uint32_t(type) >> 16;
+			return { arr[i], arr[i + 1], arr[i + 2] };
+		}
+
+		template<MaterialConstantType type>
+		void SetConstant(typename std::enable_if<uint16_t(type) == 0, float>::type x) {
+			m_material_data.m_constant_data[uint32_t(type) >> 16] = x;
+		}
+
+		template<MaterialConstantType type>
+		void SetConstant(const typename std::enable_if<uint16_t(type) != 0, std::array<float, 3>>::type& val) {
+			float* arr = m_material_data.m_constant_data;
+			uint32_t i = uint32_t(type) >> 16;
+			memcpy(arr, val.data(), sizeof(val));
 		}
 
 		TexturePool* const GetTexturePool() { return m_texture_pool; }
