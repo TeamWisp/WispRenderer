@@ -838,7 +838,7 @@ namespace wr
 		}
 
 		/*! Get a free unique ID. */
-		WISPRENDERER_EXPORT static std::uint64_t GetFreeUID()
+		static std::uint64_t GetFreeUID()
 		{
 			if (!m_free_uids.empty())
 			{
@@ -892,8 +892,8 @@ namespace wr
 		std::vector<std::future<void>> m_futures;
 
 		const std::uint64_t m_uid;
-		WISPRENDERER_EXPORT static inline std::uint64_t m_largest_uid = 0;
-		WISPRENDERER_EXPORT static inline std::stack<std::uint64_t> m_free_uids = {};
+		static inline std::uint64_t m_largest_uid = 0;
+		static inline std::stack<std::uint64_t> m_free_uids = {};
 	};
 
 } /* wr */
