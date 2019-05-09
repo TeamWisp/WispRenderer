@@ -19,8 +19,8 @@ namespace wr
 		wc.cbClsExtra = NULL;
 		wc.cbWndExtra = NULL;
 		wc.hInstance = instance;
-		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+		wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 		wc.hbrBackground = (HBRUSH)(COLOR_WINDOW);
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = name.c_str();
@@ -60,7 +60,7 @@ namespace wr
 
 		if (!m_handle)
 		{
-			LOGC("Failed to create window." + GetLastError());
+			LOGC("Failed to create window." + GetLastError())
 		}
 
 		SetWindowLongPtr(m_handle, GWLP_USERDATA, (LONG_PTR)this);
@@ -107,7 +107,7 @@ namespace wr
 
 	void Window::SetRenderLoop(std::function<void()> render_func)
 	{
-		m_render_func = render_func;
+		m_render_func = std::move(render_func);
 	}
 
 	void Window::StartRenderLoop()
@@ -120,22 +120,22 @@ namespace wr
 
 	void Window::SetKeyCallback(KeyCallback callback)
 	{
-		m_key_callback = callback;
+		m_key_callback = std::move(callback);
 	}
 
 	void Window::SetMouseCallback(MouseCallback callback)
 	{
-		m_mouse_callback = callback;
+		m_mouse_callback = std::move(callback);
 	}
 
 	void Window::SetMouseWheelCallback(MouseWheelCallback callback)
 	{
-		m_mouse_wheel_callback = callback;
+		m_mouse_wheel_callback = std::move(callback);
 	}
 
 	void Window::SetResizeCallback(ResizeCallback callback)
 	{
-		m_resize_callback = callback;
+		m_resize_callback = std::move(callback);
 	}
 
 	bool Window::IsRunning() const
@@ -184,7 +184,7 @@ namespace wr
 		if (ImGui_ImplWin32_WndProcHandler(handle, msg, w_param, l_param))
 			return true;
 
-		Window* window = (Window*)GetWindowLongPtr(handle, GWLP_USERDATA);
+		auto window = (Window*)GetWindowLongPtr(handle, GWLP_USERDATA);
 		if (window) return window->WindowProc_Impl(handle, msg, w_param, l_param);
 
 		return DefWindowProc(handle, msg, w_param, l_param);

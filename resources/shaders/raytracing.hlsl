@@ -93,7 +93,7 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 	float3 cameraW = float3(0, 0, 1);
 
 	float2 xy = (index + offset + pixelOff) + 0.5f; // center in the middle of the pixel.
-	float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+	float2 screenPos = xy / DispatchRaysDimensions().xy;
 
 	// Invert Y for DirectX-style coordinates.
 	screenPos.y = -screenPos.y;
@@ -267,8 +267,8 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		g_textures[material.normal_id],
 		g_textures[material.roughness_id],
 		g_textures[material.metalicness_id],
-		g_textures[material.ao_id],
 		g_textures[material.emissive_id],
+		g_textures[material.ao_id],
 		mip_level,
 		s0,
 		uv);
@@ -292,7 +292,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	const float3x3 TBN = float3x3(T, B, N);
 
 	float3 fN = normalize(mul(output_data.normal, TBN));
-	if (dot(fN, V) <= 0.0f) fN = -fN;
+	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
 	// Irradiance
 	float3 flipped_N = fN;

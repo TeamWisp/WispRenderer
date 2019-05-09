@@ -78,7 +78,7 @@ namespace wr
 		template<typename T, typename... Args>
 		std::shared_ptr<T> CreateChild(std::shared_ptr<Node> const & parent = nullptr, Args... args);
 		std::vector<std::shared_ptr<Node>> GetChildren(std::shared_ptr<Node> const & parent = nullptr);
-		void RemoveChildren(std::shared_ptr<Node> const & parent);
+		static void RemoveChildren(std::shared_ptr<Node> const & parent);
 		std::shared_ptr<CameraNode> GetActiveCamera();
 
 		std::vector<std::shared_ptr<LightNode>>& GetLightNodes();
@@ -107,7 +107,6 @@ namespace wr
 	protected:
 
 		void RegisterLight(std::shared_ptr<LightNode>& light_node);
-		void UpdateTransforms(std::shared_ptr<Node>& node);
 
 	private:
 

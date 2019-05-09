@@ -42,7 +42,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 // NVIDIA's luminance function
 inline float luminance(float3 rgb)
 {
-	return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f));
+    return dot(rgb, float3(0.2126f, 0.7152f, 0.0722f));
 }
 
 // NVIDIA's probability function
@@ -99,7 +99,7 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 	float LdotH = saturate(dot(L, H));
 
 	// D = Normal distribution (Distribution of the microfacets)
-	float D = D_GGX(NdotH, max(0.05, roughness));
+	float D = D_GGX(NdotH, max(0.05, roughness)); 
 	// G = Geometric shadowing term (Microfacets shadowing)
 	float G = G_SchlicksmithGGX(NdotL, NdotV, max(0.05, roughness));
 	// F = Fresnel factor (Reflectance depending on angle of incidence)
@@ -126,13 +126,13 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		const float3 rand_dir = getUniformHemisphereSample(seed, N);
 		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
 
-		float3 lighting = shade_pixel(hit_pos, V,
-			albedo,
-			metal,
-			roughness,
-			fN,
-			seed,
-			depth + 1);
+		float3 lighting = shade_pixel(hit_pos, V, 
+			albedo, 
+			metal, 
+			roughness, 
+			fN, 
+			seed, 
+			depth+1);
 
 		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
 
@@ -156,12 +156,12 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		float LdotH = saturate(dot(L, H));
 
 		// D = Normal distribution (Distribution of the microfacets)
-		float D = D_GGX(NdotH, max(0.05, roughness));
+		float D = D_GGX(NdotH, max(0.05, roughness)); 
 		// G = Geometric shadowing term (Microfacets shadowing)
 		float G = G_SchlicksmithGGX(NdotL, NdotV, max(0.05, roughness));
 		// F = Fresnel factor (Reflectance depending on angle of incidence)
 		float3 F = F_Schlick(NdotH, metal, albedo);
-
+ 
 		float3 spec = (D * F * G) / ((4.0 * NdotL * NdotV + 0.001f));
 		float  ggx_probability = D * NdotH / (4 * LdotH);
 

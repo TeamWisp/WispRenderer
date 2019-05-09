@@ -8,9 +8,11 @@
 #include <d3d12.h>
 #include <DirectXMath.h>
 #include <memory>
+#include <array>
 
 #include "structs.hpp"
 #include "util/defines.hpp"
+#include "util/log.hpp"
 #include "id_factory.hpp"
 #include "constant_buffer_pool.hpp"
 
@@ -18,158 +20,140 @@ struct aiMaterial;
 
 namespace wr
 {
-	enum class MaterialPBR : unsigned int
+	enum class TextureType : size_t
 	{
-		ALBEDO = 0,
+		ALBEDO,
 		NORMAL,
 		ROUGHNESS,
 		METALLIC,
-
+		EMISSIVE,
+		AO,
 		COUNT
+	};
+
+	//u32 type = { u16 offset (in floats), u16 isArray (0 = a constant, 1 = an array) }
+	enum class MaterialConstant : uint32_t
+	{
+		COLOR = (0 << 16) | 1,
+		R = (0 << 16) | 0,
+		G = (1 << 16) | 0,
+		B = (2 << 16) | 0,
+		METALLIC = (3 << 16) | 0,
+		ROUGHNESS = (4 << 16) | 0,
+		EMISSIVE_MULTIPLIER = (5 << 16) | 0,
+		IS_DOUBLE_SIDED = (6 << 16) | 0,
+		IS_ALPHA_MASKED = (7 << 16) | 0,
+		MAX_OFFSET = 8
 	};
 
 	class Material
 	{
 	public:
 
-		Material();
-		Material(TextureHandle albedo, 
+		Material(TexturePool* pool);
+		Material(TexturePool* pool,
+				 TextureHandle albedo, 
 				 TextureHandle normal, 
 				 TextureHandle roughness,
 				 TextureHandle metallic,
-				 TextureHandle ao,
 				 TextureHandle emissive,
-				 bool alpha_masked = false, 
+				 TextureHandle ao, 
+				 bool alpha_masked = false,
 				 bool double_sided = false);
 
 		Material(const Material& rhs) = default;
 
 		~Material();
 
-		TextureHandle GetAlbedo() { return m_albedo; }
-		void SetAlbedo(TextureHandle albedo);
+		TextureHandle GetTexture(TextureType type);
+		void SetTexture(TextureType type, TextureHandle handle);
+		void ClearTexture(TextureType type);
+		bool HasTexture(TextureType type);
 
-		void UseAlbedoTexture(bool use_albedo);
+		template<MaterialConstant type>
+		typename std::enable_if<uint16_t(type) == 0, float>::type GetConstant() {
+			return m_material_data.m_constant_data[uint32_t(type) >> 16];
+		}
 
-		TextureHandle GetNormal() { return m_normal; }
-		void SetNormal(TextureHandle normal);
+		template<MaterialConstant type>
+		typename std::enable_if<uint16_t(type) != 0, std::array<float, 3>>::type GetConstant() {
+			float* arr = m_material_data.m_constant_data;
+			uint32_t i = uint32_t(type) >> 16;
+			return { arr[i], arr[i + 1], arr[i + 2] };
+		}
 
-		void UseNormalTexture(bool use_normal);
+		template<MaterialConstant type>
+		void SetConstant(typename std::enable_if<uint16_t(type) == 0, float>::type x) {
+			m_material_data.m_constant_data[uint32_t(type) >> 16] = x;
+		}
 
-		TextureHandle GetRoughness() { return m_rougness; }
-		void SetRoughness(TextureHandle roughness);
-
-		void UseRoughnessTexture(bool use_roughness);
-
-		TextureHandle GetMetallic() { return m_metallic; }
-		void SetMetallic(TextureHandle metallic);
-
-		void UseMetallicTexture(bool use_metallic);
-
-		TextureHandle GetAmbientOcclusion() { return m_ao; }
-		void SetAmbientOcclusion(TextureHandle ao);
-
-		void UseAOTexture(bool use_ao);
-		bool HasAOTexture() { return m_material_data.m_material_flags.m_has_ao_texture; }
-
-		TextureHandle GetEmissive() { return m_emissive; }
-		void SetEmissive(TextureHandle emissive);
-
-		void UseEmissiveTexture(bool use_emissive);
-		bool HasEmissiveTexture() { return m_material_data.m_material_flags.m_has_emissive_texture; }
-
-		DirectX::XMFLOAT3 GetConstantAlbedo()
-		{
-			return
-			{
-				DirectX::XMVectorGetX(m_material_data.m_color),
-				DirectX::XMVectorGetY(m_material_data.m_color),
-				DirectX::XMVectorGetZ(m_material_data.m_color)
-			};
-		};
-
-		void SetConstantAlbedo(DirectX::XMFLOAT3 color);
-
-		bool UsesConstantAlbedo() { return m_material_data.m_material_flags.m_use_albedo_constant; };
-		void SetUseConstantAlbedo(bool use_constant_albedo) { m_material_data.m_material_flags.m_use_albedo_constant = use_constant_albedo; };
-
-		float GetConstantAlpha() { return DirectX::XMVectorGetW(m_material_data.m_color); };
-		void SetConstantAlpha(float alpha);
-
-		DirectX::XMFLOAT3 GetConstantMetallic()
-		{
-			return
-			{
-				DirectX::XMVectorGetX(m_material_data.m_metallic_roughness),
-				DirectX::XMVectorGetY(m_material_data.m_metallic_roughness),
-				DirectX::XMVectorGetZ(m_material_data.m_metallic_roughness)
-			};
-		};
-
-		void SetConstantMetallic(DirectX::XMFLOAT3 metallic);
-
-		bool UsesConstantMetallic() { return m_material_data.m_material_flags.m_use_metallic_constant; };
-		void SetUseConstantMetallic(bool use_constant_metallic) { m_material_data.m_material_flags.m_use_metallic_constant = use_constant_metallic; };
-
-		float GetConstantRoughness() { return DirectX::XMVectorGetW(m_material_data.m_metallic_roughness); };
-		void SetConstantRoughness(float roughness);
-
-		bool UsesConstantRoughness() { return m_material_data.m_material_flags.m_use_roughness_constant; };
-		void SetUseConstantRoughness(bool use_constant_roughness) { m_material_data.m_material_flags.m_use_roughness_constant = use_constant_roughness; };
-
-		bool IsAlphaMasked() { return m_alpha_masked; };
-		void SetAlphaMasked(bool alpha_masked);
-
-		bool IsDoubleSided() { return m_double_sided; };
-		void SetDoubleSided(bool double_sided);
+		template<MaterialConstant type>
+		void SetConstant(const typename std::enable_if<uint16_t(type) != 0, std::array<float, 3>>::type& val) {
+			float* arr = m_material_data.m_constant_data;
+			uint32_t i = uint32_t(type) >> 16;
+			memcpy(arr, val.data(), sizeof(val));
+		}
 
 		TexturePool* const GetTexturePool() { return m_texture_pool; }
 
-		ConstantBufferHandle* GetConstantBufferHandle() { return m_constant_buffer_handle; };
+		ConstantBufferHandle* const GetConstantBufferHandle() const { return m_constant_buffer_handle; };
 		void SetConstantBufferHandle(ConstantBufferHandle* handle) { m_constant_buffer_handle = handle; };
 
 		void UpdateConstantBuffer();
 
-		struct MaterialFlags
+		union TextureFlags
 		{
-			unsigned m_has_albedo_texture : 1;
-			unsigned m_has_albedo_constant : 1;
-			unsigned m_use_albedo_constant : 1;
-			unsigned m_has_normal_texture : 1;
-			unsigned m_has_roughness_texture : 1;
-			unsigned m_has_roughness_constant : 1;
-			unsigned m_use_roughness_constant : 1;
-			unsigned m_has_metallic_texture : 1;
-			unsigned m_has_metallic_constant : 1;
-			unsigned m_use_metallic_constant : 1;
-			unsigned m_has_ao_texture : 1;
-			unsigned m_has_emissive_texture : 1;
-			unsigned m_has_alpha_mask : 1;
-			unsigned m_has_constant_alpha : 1;
-			unsigned m_is_double_sided : 1;
-			unsigned m_placeholder : 17;
+			struct {
+				uint32_t m_has_albedo_texture : 1;
+				uint32_t m_has_normal_texture : 1;
+				uint32_t m_has_roughness_texture : 1;
+				uint32_t m_has_metallic_texture : 1;
+				uint32_t m_has_emissive_texture : 1;
+				uint32_t m_has_ao_texture : 1;
+			};
+
+			uint32_t m_value;
 		};
 
-		struct MaterialData
+		union MaterialData
 		{
-			DirectX::XMVECTOR m_color;
-			DirectX::XMVECTOR m_metallic_roughness;
-			MaterialFlags m_material_flags;
-			std::uint32_t padding[3];
+			struct {
+
+				float m_color[3];
+				float m_metallic;
+
+				float m_roughness;
+				float m_emissive_multiplier;
+				float m_is_double_sided;
+				float m_use_alpha_constant;
+
+				float m_padding[3];
+				TextureFlags m_material_flags;
+
+			};
+
+			float m_constant_data[size_t(MaterialConstant::MAX_OFFSET) + 1]{};
+
 		};
 
-		MaterialData GetMaterialData() { return m_material_data; };
+		MaterialData GetMaterialData() const { return m_material_data; }
 
 	protected:
-		TextureHandle m_albedo;
-		TextureHandle m_normal;
-		TextureHandle m_rougness;
-		TextureHandle m_metallic;
-		TextureHandle m_ao;
-		TextureHandle m_emissive;
 
-		bool m_alpha_masked = false;
-		bool m_double_sided = false;
+		union {
+
+			TextureHandle m_textures[size_t(TextureType::COUNT)]{};
+
+			struct {
+				TextureHandle m_albedo;
+				TextureHandle m_normal;
+				TextureHandle m_roughness;
+				TextureHandle m_metallic;
+				TextureHandle m_emissive;
+				TextureHandle m_ao;
+			};
+
+		};
 
 		TexturePool* m_texture_pool = nullptr;
 
@@ -191,15 +175,18 @@ namespace wr
 
 		//Creates an empty material. The user is responsible of filling in the texture handles.
 		//TODO: Give Materials default textures
-		[[nodiscard]] MaterialHandle Create();
-		[[nodiscard]] MaterialHandle Create(TextureHandle& albedo,
+		[[nodiscard]] MaterialHandle Create(TexturePool* pool);
+		[[nodiscard]] MaterialHandle Create(TexturePool* pool,
+											TextureHandle& albedo,
 											TextureHandle& normal,
 											TextureHandle& roughness,
 											TextureHandle& metallic,
-											TextureHandle& ao, 
 											TextureHandle& emissive,
+											TextureHandle& ao, 
 											bool is_alpha_masked = false, 
 											bool is_double_sided = false);
+
+
 
 		virtual void Evict() {}
 		virtual void MakeResident() {}
@@ -212,6 +199,8 @@ namespace wr
 		/*! Check if the material owns a material with the specified handle */
 		bool HasMaterial(MaterialHandle handle) const;
 
+		void DestroyMaterial(MaterialHandle handle);
+
 	protected:
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
 
@@ -219,5 +208,6 @@ namespace wr
 
 		IDFactory m_id_factory;
 	};
+
 
 } /* wr */

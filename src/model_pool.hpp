@@ -289,12 +289,12 @@ namespace wr
 
 		for (int i = 0; i < data->m_materials.size(); ++i)
 		{
-			TextureHandle albedo, normals, metallic, roughness, ambient_occlusion, emissive;
+			TextureHandle albedo, normals, metallic, roughness, emissive, ambient_occlusion;
 
 			ModelMaterialData* material = data->m_materials[i];
 
 			// This lambda loads a texture either from memory or from disc.
-			auto load_material_texture = [&](auto texture_location, auto embedded_texture_idx, auto material_texture, bool srgb, bool gen_mips)
+			auto load_material_texture = [&](auto texture_location, auto embedded_texture_idx, std::string &texture_path, TextureHandle &handle, bool srgb, bool gen_mips)
 			{
 				if (texture_location == TextureLocation::EMBEDDED)
 				{
@@ -302,112 +302,66 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						return texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+						handle = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
 					}
 					else
 					{
-						return texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
+						handle = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
 					}
 				}
 				else if (texture_location == TextureLocation::EXTERNAL)
 				{
-					return texture_pool->LoadFromFile(dir + material_texture, true, true);
+					handle = texture_pool->LoadFromFile(texture_path, true, true);
 				}
 			};
 
+			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, false, true);
+			Material* mat = material_pool->GetMaterial(new_handle);
+
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
 			{
-				albedo = load_material_texture(material->m_albedo_texture_location, material->m_albedo_embedded_texture, material->m_albedo_texture, true, true);
-			}
-			else
-			{
-				albedo = texture_pool->GetDefaultAlbedo();
+				load_material_texture(material->m_albedo_texture_location, material->m_albedo_embedded_texture, material->m_albedo_texture, albedo, true, true);
+				mat->SetTexture(TextureType::ALBEDO, albedo);
 			}
 
 			if (material->m_normal_map_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				normals = load_material_texture(material->m_normal_map_texture_location, material->m_normal_map_embedded_texture, material->m_normal_map_texture, false, true);
-			}
-			else
-			{
-				normals = texture_pool->GetDefaultNormal();
+				load_material_texture(material->m_normal_map_texture_location, material->m_normal_map_embedded_texture, material->m_normal_map_texture, normals, false, true);
+				mat->SetTexture(TextureType::NORMAL, normals);
 			}
 
 			if (material->m_metallic_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				metallic = load_material_texture(material->m_metallic_texture_location, material->m_metallic_embedded_texture, material->m_metallic_texture, false, true);
-			}
-			else
-			{
-				metallic = texture_pool->GetDefaultMetalic();
+				load_material_texture(material->m_metallic_texture_location, material->m_metallic_embedded_texture, material->m_metallic_texture, metallic, false, true);
+				mat->SetTexture(TextureType::METALLIC, metallic);
 			}
 
 			if (material->m_roughness_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				roughness = load_material_texture(material->m_roughness_texture_location, material->m_roughness_embedded_texture, material->m_roughness_texture, false, true);
-			}
-			else
-			{
-				roughness = texture_pool->GetDefaultRoughness();
-			}
-
-			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
-			{
-				ambient_occlusion = load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, material->m_ambient_occlusion_texture, false, true);
-			}
-			else
-			{
-				ambient_occlusion = texture_pool->GetDefaultAO();
+				load_material_texture(material->m_roughness_texture_location, material->m_roughness_embedded_texture, material->m_roughness_texture, roughness, false, true);
+				mat->SetTexture(TextureType::ROUGHNESS, roughness);
 			}
 
 			if (material->m_emissive_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				emissive = load_material_texture(material->m_emissive_texture_location, material->m_emissive_embedded_texture, material->m_emissive_texture, true, true);
+				load_material_texture(material->m_emissive_texture_location, material->m_emissive_embedded_texture, material->m_emissive_texture, emissive, true, true);
+				mat->SetTexture(TextureType::EMISSIVE, emissive);
 			}
-			else
+
+			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
 			{
-				emissive = texture_pool->GetDefaultEmissive();
+				load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, material->m_ambient_occlusion_texture, ambient_occlusion, false, true);
+				mat->SetTexture(TextureType::AO, ambient_occlusion);
 			}
 
 			bool two_sided = material->m_two_sided;
 
 			float opacity = material->m_base_transparency;
 
-			auto new_handle = material_pool->Create(albedo, normals, roughness, metallic, ambient_occlusion, emissive, false, true);
-			Material* mat = material_pool->GetMaterial(new_handle);
+			mat->SetConstant<MaterialConstant::COLOR>({ material->m_base_color[0], material->m_base_color[1], material->m_base_color[2] });
+			mat->SetConstant<MaterialConstant::METALLIC>(material->m_base_metallic);
+			mat->SetConstant<MaterialConstant::ROUGHNESS>(std::min(1.f, std::max(material->m_base_roughness, 0.f)));
 
-			mat->SetConstantAlbedo(material->m_base_color);
-			mat->SetConstantAlpha(material->m_base_transparency);
-			mat->SetConstantMetallic(material->m_base_metallic);
-			mat->SetConstantRoughness(std::min(1.f, std::max(material->m_base_roughness, 0.f)));
-
-			if (material->m_albedo_texture_location == TextureLocation::NON_EXISTENT)
-			{
-				mat->SetUseConstantAlbedo(true);
-				mat->UseAlbedoTexture(false);
-			}
-			if (material->m_normal_map_texture_location == TextureLocation::NON_EXISTENT)
-			{
-				mat->UseNormalTexture(false);
-			}
-			if (material->m_metallic_texture_location == TextureLocation::NON_EXISTENT)
-			{
-				mat->SetUseConstantMetallic(true);
-				mat->UseMetallicTexture(false);
-			}
-			if (material->m_roughness_texture_location == TextureLocation::NON_EXISTENT)
-			{
-				mat->SetUseConstantRoughness(true);
-				mat->UseRoughnessTexture(false);
-			}
-			if (material->m_ambient_occlusion_texture_location == TextureLocation::NON_EXISTENT)
-			{
-				mat->UseAOTexture(false);
-			}
-			if (material->m_emissive_texture_location == TextureLocation::NON_EXISTENT)
-			{
-				mat->UseEmissiveTexture(false);
-			}
 
 			material_handles.push_back(new_handle);
 		}

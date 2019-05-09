@@ -26,9 +26,8 @@ namespace wr
 	namespace internal
 	{
 
-		inline void SetupDeferredTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle)
+		inline void SetupDeferredTask(RenderSystem&, FrameGraph& fg, RenderTaskHandle handle)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<DeferredMainTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -40,7 +39,6 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<DeferredMainTaskData>(handle);
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -73,7 +71,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
 			RenderTargetProperties::CreateDSVBuffer(true),
 			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
-			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT, Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
