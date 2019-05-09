@@ -70,7 +70,7 @@ namespace wr
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
-		TRY_M(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED), "Failed to CoInitialize");
+		//TRY_M(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED), "Failed to CoInitialize");
 
 		m_window = window;
 		m_device = d3d12::CreateDevice();
