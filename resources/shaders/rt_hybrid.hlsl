@@ -55,6 +55,7 @@ struct ReflectionHitInfo
 	float3 color;
 	unsigned int seed;
 	unsigned int depth;
+	float hitT;
 	RayCone cone;
 };
 
@@ -87,7 +88,7 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone, inout float3 dirT)
 {
 
 	if (depth >= MAX_RECURSION)
@@ -97,7 +98,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0, 0, 1), rand_seed, depth, cone};
+	ReflectionHitInfo payload = { origin, float3(0, 0, 1), rand_seed, depth, 0, cone };
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -119,6 +120,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		ray,
 		payload);
 
+	dirT = direction * payload.hitT;
 	return payload.color;
 }
 
@@ -157,7 +159,7 @@ float3 importanceSamplePdf(float2 xi, float a, float3 N, inout float pdf)
 	return normalize(T * H.x + B * H.y + N * H.z);
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, RayCone cone)
+float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, RayCone cone, inout float3 dirT)
 {
 
 	// Calculate ray info
@@ -169,7 +171,7 @@ float3 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 	if(depth > 0 || roughness < 0.05)
 	#endif
 
-		return TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone);
+		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), 1);
 
 	// Shoot an importance sampled ray
 
@@ -185,9 +187,9 @@ float3 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 	float3 reflection = float3(0, 0, 0);
 	
 	if (NdotL > 0)
-		reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone);
+		reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dirT);
 
-	return reflection;
+	return float4(reflection, pdf);
 	#endif
 }
 
@@ -244,7 +246,8 @@ void RaygenEntry()
 	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone);
+	float3 dirT = float3(0, 0, 0);
+	float4 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
@@ -308,7 +311,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	payload.cone = Propagate(payload.cone, 0, length(payload.origin - hit_pos));
 
 	// Calculate the texture LOD level 
-	float mip_level = ComputeTextureLOD(
+	float mip_level = 0; /*ComputeTextureLOD(			Mipmapping
 		payload.cone,
 		V,
 		normalize(mul(model_matrix, float4(normal, 0))),
@@ -318,7 +321,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 		v0.uv,
 		v1.uv,
 		v2.uv,
-		g_textures[material.albedo_id]);
+		g_textures[material.albedo_id]);*/
 
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
@@ -365,7 +368,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
 
 	//Reflection in reflections
-	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, roughness, payload.cone);
+	float3 dirT = float3(0, 0, 0);
+	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, roughness, payload.cone, dirT).xyz;
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
@@ -373,6 +377,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 
 	// Output the final reflections here
 	payload.color = ambient + lighting;
+	payload.hitT = RayTCurrent();
 }
 
 //Reflection skybox
