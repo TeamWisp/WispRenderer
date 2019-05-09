@@ -112,8 +112,8 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		Scene,
 		RAY_FLAG_NONE,
 		//RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH
-		// RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
-		~0, // InstanceInclusionMask
+		//RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
+		0xFF, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		1, // MultiplierForGeometryContributionToHitGroupIndex
 		0, // miss shader index
@@ -201,7 +201,7 @@ void RaygenEntry()
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Texture UV coordinates [0, 1]
-	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+	float2 uv = float2(DispatchRaysIndex().xy + 0.5f) / float2(DispatchRaysDimensions().xy);
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
@@ -247,7 +247,7 @@ void RaygenEntry()
 
 	// Get reflection result
 	float3 dirT = float3(0, 0, 0);
-	float4 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT);
+	float4 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT), 0, 100000);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);

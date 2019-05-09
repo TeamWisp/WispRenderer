@@ -5,7 +5,8 @@ add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
 
 project(Wisp)
 
-option(WISP_BUILD_SHARED OFF)
+option(WISP_BUILD_TESTS "Enable Wisp Tests" ON)
+option(WISP_BUILD_SHARED "Build Wisp as a shared library" OFF)
 if (WISP_BUILD_SHARED)
 	set(BUILD_SHARED_LIBS ON)
 	message(STATUS "Building wisp as a SHARED library")
@@ -14,8 +15,6 @@ else()
 	message(STATUS "Building wisp as a STATIC library")
 	set(BUILD_SHARED_LIBS OFF)
 endif()
-
-option(ENABLE_UNIT_TEST "enables unit tests." OFF)
 
 #Detect whether we have HBAO+ SDK available.
 if(EXISTS  ${CMAKE_SOURCE_DIR}/deps/hbao+)
@@ -168,7 +167,7 @@ else()
 endif()
 
 add_library(WispRenderer ${WISP_LIB_TYPE} ${HEADERS} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${UTIL_HEADERS} ${UTIL_SOURCES} ${RT_HEADERS} ${RT_SOURCES} ${FG_HEADERS} ${FG_SOURCES} ${SG_HEADERS} ${SG_SOURCES} ${D3D12_SOURCES} ${D3D12_HEADERS})
-set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 17)
+set_target_properties(WispRenderer PROPERTIES CXX_STANDARD 20)
 set_target_properties(WispRenderer PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(WispRenderer PROPERTIES CMAKE_CXX_STANDARD_REQUIRED ON)
 if (MSVC)
@@ -184,18 +183,12 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/ansel/in
 
 target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB} ${NVIDIA_GAMEWORKS_ANSEL_LIB})
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WispDemo)
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 
-add_subdirectory(demo ${CMAKE_BINARY_DIR}/WispDemo)
-
-## Unit Test ##
-if(ENABLE_UNIT_TEST)
-    set(BUILD_GMOCK 0)
-    set(INSTALL_GTEST 0)
-    add_subdirectory(${CMAKE_SOURCE_DIR}/deps/googletest/googletest ${CMAKE_BINARY_DIR}/googletest)
-    add_subdirectory(test ${CMAKE_BINARY_DIR}/Wisptest)
-endif(ENABLE_UNIT_TEST)
+if (WISP_BUILD_TESTS)
+	add_subdirectory(tests ${CMAKE_BINARY_DIR}/tests)
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Demo)
+endif()
 
 ## Generate Include Directory
 macro(configure_files srcDir destDir)

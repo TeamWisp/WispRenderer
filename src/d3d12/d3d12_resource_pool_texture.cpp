@@ -525,7 +525,7 @@ namespace wr
 		return texture_handle;
 	}
 	
-	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips)
+	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -536,7 +536,7 @@ namespace wr
 
 		switch (type)
 		{
-		case wr::TextureType::WIC:
+		case wr::TextureFormat::WIC:
 		{
 			//Assuming RGBA8_UNORM for the time being, need to find a solution
 			hr = LoadFromWICMemory(data, width * height * 8/*bits*/ * 4/*channels*/,
@@ -544,7 +544,7 @@ namespace wr
 
 			break;
 		}
-		case wr::TextureType::DDS:
+		case wr::TextureFormat::DDS:
 		{
 			//Assuming RGBA8_UNORM for the time being, need to find a solution
 			hr = LoadFromDDSMemory(data, width * height * 8/*bits*/ * 4/*channels*/,
@@ -553,7 +553,7 @@ namespace wr
 			break;
 		}
 
-		case wr::TextureType::HDR:
+		case wr::TextureFormat::HDR:
 		{
 			//Assuming RGBA16_FLOAT for the time being, need to find a solution
 			hr = LoadFromHDRMemory(data, width * height * 16/*bits*/ * 4/*channels*/,

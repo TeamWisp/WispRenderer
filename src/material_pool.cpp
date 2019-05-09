@@ -12,36 +12,57 @@ namespace wr
 	//	  MATERIAL FUNCTIONS	//
 	//////////////////////////////
 
-	Material::Material()
+	Material::Material(TexturePool* pool): m_texture_pool(pool)
 	{
 		memset(&m_material_data, 0, sizeof(m_material_data));
-
-		m_albedo = { nullptr,0 };
-		m_normal = { nullptr,0 };
-		m_rougness = { nullptr,0 };
-		m_metallic = { nullptr,0 };
-		m_ao = { nullptr,0 };
 	}
 
-	Material::Material(TextureHandle albedo,
+	Material::Material(TexturePool *pool,
+					   TextureHandle albedo,
 					   TextureHandle normal,
 					   TextureHandle roughness,
 					   TextureHandle metallic,
 		               TextureHandle ao,
 		               bool alpha_masked,
-					   bool double_sided)
+					   bool double_sided): Material(pool)
 	{
-		m_texture_pool = albedo.m_pool;
-		memset(&m_material_data, 0, sizeof(m_material_data));
 
-		SetAlbedo(albedo);
-		SetNormal(normal);
-		SetRoughness(roughness);
-		SetMetallic(metallic);
-		SetAmbientOcclusion(ao);
+		SetTexture(TextureType::ALBEDO, albedo);
+		SetTexture(TextureType::NORMAL, normal);
+		SetTexture(TextureType::ROUGHNESS, roughness);
+		SetTexture(TextureType::METALLIC, metallic);
+		SetTexture(TextureType::AO, ao);
 
-		SetAlphaMasked(alpha_masked);
-		SetDoubleSided(double_sided);
+		SetConstant<MaterialConstant::IS_ALPHA_MASKED>(alpha_masked);
+		SetConstant<MaterialConstant::IS_DOUBLE_SIDED>(double_sided);
+	}
+
+	TextureHandle Material::GetTexture(TextureType type) { 
+		return m_textures[size_t(type) % size_t(TextureType::COUNT)]; 
+	}
+
+	void Material::SetTexture(TextureType type, TextureHandle handle)
+	{
+		if (handle.m_pool != m_texture_pool || !m_texture_pool)
+		{
+			ClearTexture(type);
+			LOGW("Textures in a material need to belong to the same texture pool");
+		}
+		else
+		{
+			m_textures[size_t(type) % size_t(TextureType::COUNT)] = handle;
+			m_material_data.m_material_flags.m_value = uint32_t(m_material_data.m_material_flags.m_value) | (1 << uint32_t(type));
+		}
+	}
+
+
+	void Material::ClearTexture(TextureType type) {
+		m_textures[size_t(type) % size_t(TextureType::COUNT)] = { nullptr, 0 };
+		m_material_data.m_material_flags.m_value = uint32_t(m_material_data.m_material_flags.m_value) & (~(1 << uint32_t(type)));
+	}
+
+	bool Material::HasTexture(TextureType type) {
+		return m_textures[size_t(type) % size_t(TextureType::COUNT)].m_pool;
 	}
 
 	Material::~Material()
@@ -49,180 +70,15 @@ namespace wr
 		m_constant_buffer_handle->m_pool->Destroy(m_constant_buffer_handle);
 	}
 
-	void Material::SetAlbedo(TextureHandle albedo)
-	{
-		if (albedo.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_albedo = m_texture_pool->GetDefaultAlbedo();
-			m_material_data.m_material_flags.m_has_albedo_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = albedo.m_pool;
-			}
-			m_albedo = albedo;
-			m_material_data.m_material_flags.m_has_albedo_texture = true;
-			
-		}
-	}
-
-	void Material::UseAlbedoTexture(bool use_albedo)
-	{
-		m_material_data.m_material_flags.m_has_albedo_texture = use_albedo;
-	}
-
-
-	void Material::SetNormal(TextureHandle normal)
-	{
-		if (normal.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			m_normal = m_texture_pool->GetDefaultNormal();
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_material_data.m_material_flags.m_has_normal_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = normal.m_pool;
-			}
-			m_normal = normal;
-			m_material_data.m_material_flags.m_has_normal_texture = true;
-			
-		}
-	}
-
-	void Material::UseNormalTexture(bool use_normal)
-	{
-		m_material_data.m_material_flags.m_has_normal_texture = use_normal;
-	}
-
-	void Material::SetRoughness(TextureHandle roughness)
-	{
-		if (roughness.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			m_rougness = m_texture_pool->GetDefaultRoughness();
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_material_data.m_material_flags.m_has_roughness_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = roughness.m_pool;
-			}
-			m_rougness = roughness;
-			m_material_data.m_material_flags.m_has_roughness_texture = true;
-		}
-	}
-
-	void Material::UseRoughnessTexture(bool use_roughness)
-	{
-		m_material_data.m_material_flags.m_has_roughness_texture = use_roughness;
-	}
-
-	void Material::SetMetallic(TextureHandle metallic)
-	{
-		if (metallic.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			m_metallic = m_texture_pool->GetDefaultMetalic();
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_material_data.m_material_flags.m_has_metallic_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = metallic.m_pool;
-			}
-			m_metallic = metallic;
-			m_material_data.m_material_flags.m_has_metallic_texture = true;
-		}
-	}
-
-	void Material::UseMetallicTexture(bool use_metallic)
-	{
-		m_material_data.m_material_flags.m_has_metallic_texture = use_metallic;
-	}
-
-	void Material::SetAmbientOcclusion(TextureHandle ao)
-	{
-		if (ao.m_pool != m_texture_pool
-			&& m_texture_pool)
-		{
-			m_ao = m_texture_pool->GetDefaultAO();
-			LOGW("Textures in a material need to belong to the same texture pool");
-			m_material_data.m_material_flags.m_has_ao_texture = false;
-		}
-		else
-		{
-			if (!m_texture_pool)
-			{
-				m_texture_pool = ao.m_pool;
-			}
-			m_ao = ao;
-			m_material_data.m_material_flags.m_has_ao_texture = true;
-		}
-	}
-
-	void Material::UseAOTexture(bool use_ao)
-	{
-		m_material_data.m_material_flags.m_has_ao_texture = use_ao;
-	}
-
-	void Material::SetConstantAlbedo(DirectX::XMFLOAT3 color)
-	{
-		m_material_data.m_color = DirectX::XMVectorSet(color.x, color.y, color.z, GetConstantAlpha());
-		m_material_data.m_material_flags.m_has_albedo_constant = true;
-	}
-
-	void Material::SetConstantAlpha(float alpha)
-	{
-		m_material_data.m_color = DirectX::XMVectorSetW(m_material_data.m_color, alpha);
-		m_material_data.m_material_flags.m_has_constant_alpha = true;
-	}
-
-	void Material::SetConstantMetallic(DirectX::XMFLOAT3 metallic)
-	{
-		m_material_data.m_metallic_roughness = DirectX::XMVectorSet(metallic.x, metallic.y, metallic.z, GetConstantRoughness());
-		m_material_data.m_material_flags.m_has_metallic_constant = true;
-	}
-
-	void Material::SetConstantRoughness(float roughness)
-	{
-		m_material_data.m_metallic_roughness = DirectX::XMVectorSetW(m_material_data.m_metallic_roughness, roughness);
-		m_material_data.m_material_flags.m_has_roughness_constant = true;
-	}
-
-	void Material::SetAlphaMasked(bool alpha_masked)
-	{
-		m_alpha_masked = alpha_masked;
-		m_material_data.m_material_flags.m_has_alpha_mask = alpha_masked;
-	}
-
-	void Material::SetDoubleSided(bool double_sided)
-	{
-		m_double_sided = double_sided;
-		m_material_data.m_material_flags.m_is_double_sided = double_sided;
-	}
-
 	void Material::UpdateConstantBuffer()
 	{
+
 		m_constant_buffer_handle->m_pool->Update(
 			m_constant_buffer_handle,
 			sizeof(MaterialData),
 			0,
 			reinterpret_cast<std::uint8_t*>(&m_material_data));
 	}
-
-
 
 	//////////////////////////////
 	//	MATERIAL POOL FUNCTIONS	//
@@ -232,13 +88,13 @@ namespace wr
 	{
 	}
 
-	MaterialHandle MaterialPool::Create()
+	MaterialHandle MaterialPool::Create(TexturePool* pool)
 	{
 		MaterialHandle handle;
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material();
+		Material* mat = new Material(pool);
 		mat->SetConstantBufferHandle(m_constant_buffer_pool->Create(sizeof(Material::MaterialData)));
 
 		m_materials.insert(std::make_pair(handle.m_id, mat));
@@ -246,7 +102,7 @@ namespace wr
 		return handle;
 	}
 
-	MaterialHandle MaterialPool::Create(TextureHandle& albedo, TextureHandle& normal,
+	MaterialHandle MaterialPool::Create(TexturePool* pool, TextureHandle& albedo, TextureHandle& normal,
 										TextureHandle& roughness, TextureHandle& metallic,
 										TextureHandle& ao, bool is_alpha_masked, bool is_double_sided)
 	{
@@ -254,7 +110,7 @@ namespace wr
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material(albedo, normal, roughness, metallic, ao, is_alpha_masked, is_double_sided);
+		Material* mat = new Material(pool, albedo, normal, roughness, metallic, ao, is_alpha_masked, is_double_sided);
 		mat->SetConstantBufferHandle(m_constant_buffer_pool->Create(sizeof(Material::MaterialData)));
 		mat->UpdateConstantBuffer();
 
@@ -273,6 +129,19 @@ namespace wr
 
 		LOGE("Failed to obtain a material from pool.");
 		return nullptr;
+	}
+
+	void MaterialPool::DestroyMaterial(MaterialHandle handle)
+	{
+		auto it = m_materials.find(handle.m_id);
+
+		if (it == m_materials.end())
+			LOGC("Can't destroy material; it's not part of the material pool");
+
+		auto *ptr = it->second;
+		m_materials.erase(it);
+		delete ptr;
+
 	}
 
 	bool MaterialPool::HasMaterial(MaterialHandle handle) const
