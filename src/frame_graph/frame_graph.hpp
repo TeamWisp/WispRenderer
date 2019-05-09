@@ -873,7 +873,7 @@ namespace wr
 
 		const std::uint64_t m_uid;
 		WISPRENDERER_EXPORT static inline std::uint64_t m_largest_uid = 0;
-		WISPRENDERER_EXPORT static inline std::stack<std::uint64_t> m_free_uids = {};
+		WISPRENDERER_EXPORT static std::stack<std::uint64_t> m_free_uids;
 	};
 
 } /* wr */
