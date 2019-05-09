@@ -38,19 +38,17 @@ namespace wr
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination
 			{
-				// Destination
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::OUTPUT)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				}
-				// Source near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::SOURCE)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Source near
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::SOURCE)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+			
 		}
 
 		template<typename T>
@@ -66,19 +64,17 @@ namespace wr
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination
 			{
-				// Destination
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::OUTPUT)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				}
-				// Source near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::SOURCE)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Source near
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_dilate_flatten, params::DoFDilateFlattenE::SOURCE)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+			
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 

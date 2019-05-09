@@ -103,8 +103,8 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = EPSILON;
-	ray.TMax = 1000.0;
+	ray.TMin = 0;
+	ray.TMax = 10000.0;
 
 	// Trace the ray
 	TraceRay(
@@ -190,7 +190,7 @@ void RaygenEntry()
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
 	// Get shadow factor
-	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result
 	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, depth, cone);

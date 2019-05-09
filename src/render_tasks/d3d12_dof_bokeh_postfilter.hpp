@@ -37,29 +37,27 @@ namespace wr
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Source near
 			{
-				// Source near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::SOURCE_NEAR)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
-				}
-				// Source far
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::SOURCE_FAR)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 1, source_rt->m_create_info.m_rtv_formats[1]);
-				}
-				// Destination near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::OUTPUT_NEAR)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				}
-				// Destination far
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::OUTPUT_FAR)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::SOURCE_NEAR)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
 			}
+			// Source far
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::SOURCE_FAR)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 1, source_rt->m_create_info.m_rtv_formats[1]);
+			}
+			// Destination near
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::OUTPUT_NEAR)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+			}
+			// Destination far
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::OUTPUT_FAR)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
+			}
+		
 		}
 
 		template<typename T>
@@ -75,28 +73,25 @@ namespace wr
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Source near
 			{
-				// Source near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::SOURCE_NEAR)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
-				}
-				// Source far
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::SOURCE_FAR)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 1, source_rt->m_create_info.m_rtv_formats[1]);
-				}
-				// Destination near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::OUTPUT_NEAR)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				}
-				// Destination far
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::OUTPUT_FAR)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::SOURCE_NEAR)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+			// Source far
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::SOURCE_FAR)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 1, source_rt->m_create_info.m_rtv_formats[1]);
+			}
+			// Destination near
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::OUTPUT_NEAR)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+			}
+			// Destination far
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh_post_filter, params::DoFBokehPostFilterE::OUTPUT_FAR)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
 			}
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);

@@ -35,7 +35,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 	float2 uvc = (screen_coord) / screen_size;
 
-	//float coc = GetDownSampledCoC(uv, texel_size);
 	float coc = coc_buffer.SampleLevel(s0, uv, 0);
 	
 	float3 original_sample = source.SampleLevel(s0, uv, 0).rgb;
@@ -58,5 +57,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float near_blend = saturate(near_sample.w);
 	result = lerp(result, near.rgb, smoothstep(0.0f, 1.0f, near_blend));
 
-	output[int2(dispatch_thread_id.xy)] = float4(result, 1.0f);//near_sample.w, near_sample.w, near_sample.w, 1.0f);
+	output[int2(dispatch_thread_id.xy)] = float4(result, 1.0f);
 }

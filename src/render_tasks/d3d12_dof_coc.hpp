@@ -55,19 +55,17 @@ namespace wr
 
 			auto source_dsv = data.out_source_dsv = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination
 			{
-				// Destination
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
-				}
-				// Source
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH)));
-					d3d12::CreateSRVFromDSV(source_dsv, cpu_handle);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Source
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH)));
+				d3d12::CreateSRVFromDSV(source_dsv, cpu_handle);
+			}
+			
 		}
 
 		template<typename T>
@@ -97,19 +95,17 @@ namespace wr
 			
 			auto source_dsv = data.out_source_dsv = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination
 			{
-				// Destination
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
-				}
-				// Source
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH)));
-					d3d12::CreateSRVFromDSV(source_dsv, cpu_handle);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::OUTPUT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Source
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_coc, params::DoFCoCE::GDEPTH)));
+				d3d12::CreateSRVFromDSV(source_dsv, cpu_handle);
+			}
+			
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 			d3d12::BindComputeConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);

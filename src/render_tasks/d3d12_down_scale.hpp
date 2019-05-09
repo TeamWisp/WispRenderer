@@ -40,34 +40,32 @@ namespace wr
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination near
 			{
-				// Destination near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_NEAR)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				}
-				// Destination far
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
-				}
-				// Bright output for bloom
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_BRIGHT)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 2, n_render_target->m_create_info.m_rtv_formats[2]);
-				}
-				// Source
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, frame_idx, source_rt->m_create_info.m_rtv_formats[frame_idx]);
-				}
-				// Cone of confusion
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
-					d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, frame_idx, source_coc->m_create_info.m_rtv_formats[frame_idx]);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_NEAR)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Destination far
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
+			}
+			// Bright output for bloom
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_BRIGHT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 2, n_render_target->m_create_info.m_rtv_formats[2]);
+			}
+			// Source
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+			// Cone of confusion
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
+				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
+			}
+			
 		}
 
 		template<typename T, typename T1>
@@ -84,34 +82,32 @@ namespace wr
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
 
-			for (auto frame_idx = 0; frame_idx < versions; frame_idx++)
+			// Destination near
 			{
-				// Destination near
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_NEAR)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-				}
-				// Destination far
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
-				}
-				// Bright output for bloom
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_BRIGHT)));
-					d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 2, n_render_target->m_create_info.m_rtv_formats[2]);
-				}
-				// Source
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
-					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, frame_idx, source_rt->m_create_info.m_rtv_formats[frame_idx]);
-				}
-				// Cone of confusion
-				{
-					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
-					d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, frame_idx, source_coc->m_create_info.m_rtv_formats[frame_idx]);
-				}
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_NEAR)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
+			// Destination far
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
+			}
+			// Bright output for bloom
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_BRIGHT)));
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 2, n_render_target->m_create_info.m_rtv_formats[2]);
+			}
+			// Source
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
+			}
+			// Cone of confusion
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
+				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
+			}
+			
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
