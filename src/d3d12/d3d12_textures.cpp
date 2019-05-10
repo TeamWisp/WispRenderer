@@ -25,7 +25,7 @@ namespace wr::d3d12
 		D3D12_RESOURCE_DESC desc = {};
 		desc.Width = description->m_width;
 		desc.Height = description->m_height;
-		desc.MipLevels = static_cast<UINT16>(description->m_mip_levels);
+		desc.MipLevels = static_cast<std::uint16_t>(description->m_mip_levels);
 		desc.DepthOrArraySize = (description->m_depth > 1) ? description->m_depth : description->m_array_size;
 		desc.Format = static_cast<DXGI_FORMAT>(description->m_texture_format);
 		desc.SampleDesc.Count = 1;
@@ -107,7 +107,7 @@ namespace wr::d3d12
 		D3D12_RESOURCE_DESC desc = {};
 		desc.Width = description->m_width;
 		desc.Height = description->m_height;
-		desc.MipLevels = static_cast<UINT16>(description->m_mip_levels);
+		desc.MipLevels = static_cast<std::uint16_t>(description->m_mip_levels);
 		desc.DepthOrArraySize = (description->m_depth > 1) ? description->m_depth : description->m_array_size;
 		desc.Format = static_cast<DXGI_FORMAT>(description->m_texture_format);
 		desc.SampleDesc.Count = 1;

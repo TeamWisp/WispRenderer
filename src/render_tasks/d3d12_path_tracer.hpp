@@ -66,7 +66,7 @@ namespace wr
 			// Set up Raygen Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 1;
+				std::uint32_t shader_record_count = 1;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
 
@@ -80,7 +80,7 @@ namespace wr
 			// Set up Miss Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 2;
+				std::uint32_t shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMissEntry");
@@ -98,7 +98,7 @@ namespace wr
 			// Set up Hit Group Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 2;
+				std::uint32_t shader_record_count = 2;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowHitGroup");

@@ -33,7 +33,7 @@ namespace wr::d3d12
 			DXGI_SAMPLE_DESC sample_desc = { 1, 0 };
 
 			D3D12_INPUT_LAYOUT_DESC input_layout_desc = {};
-			input_layout_desc.NumElements = static_cast<UINT>(input_layout.size());
+			input_layout_desc.NumElements = static_cast<std::uint32_t>(input_layout.size());
 			input_layout_desc.pInputElementDescs = input_layout.data();
 
 			D3D12_SHADER_BYTECODE vs_bytecode = {};
