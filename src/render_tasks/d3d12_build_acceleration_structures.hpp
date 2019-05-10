@@ -101,6 +101,8 @@ namespace wr
 					material.normal_id = material_internal->GetTexture(wr::TextureType::NORMAL).m_id;
 					material.roughness_id = material_internal->GetTexture(wr::TextureType::ROUGHNESS).m_id;
 					material.metallicness_id = material_internal->GetTexture(wr::TextureType::METALLIC).m_id;
+					material.emissive_id = material_internal->GetTexture(wr::TextureType::EMISSIVE).m_id;
+					material.ao_id = material_internal->GetTexture(wr::TextureType::AO).m_id;
 					material.material_data = material_internal->GetMaterialData();
 					data.out_materials.push_back(material);
 					data.out_parsed_materials[material_handle.m_id] = material_id;

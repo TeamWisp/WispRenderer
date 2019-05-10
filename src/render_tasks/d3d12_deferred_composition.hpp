@@ -17,6 +17,7 @@ namespace wr
 
 		DescriptorAllocation out_gbuffer_albedo_alloc;
 		DescriptorAllocation out_gbuffer_normal_alloc;
+		DescriptorAllocation out_gbuffer_emissive_alloc;
 		DescriptorAllocation out_gbuffer_depth_alloc;
 		DescriptorAllocation out_lights_alloc;
 		DescriptorAllocation out_buffer_refl_shadow_alloc;

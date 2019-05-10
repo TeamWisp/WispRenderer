@@ -289,7 +289,7 @@ namespace wr
 
 		for (int i = 0; i < data->m_materials.size(); ++i)
 		{
-			TextureHandle albedo, normals, metallic, roughness, ambient_occlusion;
+			TextureHandle albedo, normals, metallic, roughness, emissive, ambient_occlusion;
 
 			ModelMaterialData* material = data->m_materials[i];
 
@@ -315,7 +315,7 @@ namespace wr
 				}
 			};
 
-			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, ambient_occlusion, false, true);
+			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, false, true);
 			Material* mat = material_pool->GetMaterial(new_handle);
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
@@ -342,6 +342,12 @@ namespace wr
 				mat->SetTexture(TextureType::ROUGHNESS, roughness);
 			}
 
+			if (material->m_emissive_texture_location != TextureLocation::NON_EXISTENT)
+			{
+				load_material_texture(material->m_emissive_texture_location, material->m_emissive_embedded_texture, material->m_emissive_texture, emissive, true, true);
+				mat->SetTexture(TextureType::EMISSIVE, emissive);
+			}
+
 			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, material->m_ambient_occlusion_texture, ambient_occlusion, false, true);
@@ -355,6 +361,7 @@ namespace wr
 			mat->SetConstant<MaterialConstant::COLOR>({ material->m_base_color[0], material->m_base_color[1], material->m_base_color[2] });
 			mat->SetConstant<MaterialConstant::METALLIC>(material->m_base_metallic);
 			mat->SetConstant<MaterialConstant::ROUGHNESS>(std::min(1.f, std::max(material->m_base_roughness, 0.f)));
+
 
 			material_handles.push_back(new_handle);
 		}

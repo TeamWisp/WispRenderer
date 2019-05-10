@@ -1135,10 +1135,35 @@ namespace wr
 			metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTextureResource(metallic_handle));
 		}
 
+		auto emissive_handle = material_internal->GetTexture(TextureType::EMISSIVE);
+		wr::d3d12::TextureResource* emissive_internal;
+		if (emissive_handle.m_pool == nullptr)
+		{
+			emissive_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultEmissive());
+		}
+		else
+		{
+			emissive_internal = static_cast<wr::d3d12::TextureResource*>(emissive_handle.m_pool->GetTextureResource(emissive_handle));
+		}
+
+		auto ao_handle = material_internal->GetTexture(TextureType::AO);
+		wr::d3d12::TextureResource* ao_internal;
+		if (ao_handle.m_pool == nullptr)
+		{
+			ao_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultAO());
+		}
+		else
+		{
+			ao_internal = static_cast<wr::d3d12::TextureResource*>(ao_handle.m_pool->GetTextureResource(ao_handle));
+		}
+
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ALBEDO)), albedo_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::NORMAL)), normal_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ROUGHNESS)), roughness_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::METALLIC)), metallic_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::EMISSIVE)), emissive_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::AMBIENT_OCCLUSION)), ao_internal);
+
 		d3d12::BindConstantBuffer(n_cmd_list, handle->m_native, 3, GetFrameIdx());
 	}
 

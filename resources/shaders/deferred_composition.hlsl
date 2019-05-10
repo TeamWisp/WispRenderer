@@ -1,4 +1,4 @@
-#define LIGHTS_REGISTER register(t3)
+#define LIGHTS_REGISTER register(t4)
 #define MAX_REFLECTION_LOD 4
 
 #include "fullscreen_quad.hlsl"
@@ -9,15 +9,16 @@
 
 Texture2D gbuffer_albedo_roughness : register(t0);
 Texture2D gbuffer_normal_metallic : register(t1);
-Texture2D gbuffer_depth : register(t2);
-//Consider SRV for light buffer in register t3
-TextureCube skybox : register(t4);
-TextureCube irradiance_map   : register(t5);
-TextureCube pref_env_map	 : register(t6);
-Texture2D brdf_lut			 : register(t7);
-Texture2D buffer_refl_shadow : register(t8); // xyz: reflection, a: shadow factor
-Texture2D screen_space_irradiance : register(t9);
-Texture2D screen_space_ao : register(t10);
+Texture2D gbuffer_emissive_ao : register(t2);
+Texture2D gbuffer_depth : register(t3);
+//Consider SRV for light buffer in register t4
+TextureCube skybox : register(t5);
+TextureCube irradiance_map   : register(t6);
+TextureCube pref_env_map	 : register(t7);
+Texture2D brdf_lut			 : register(t8);
+Texture2D buffer_refl_shadow : register(t9); // xyz: reflection, a: shadow factor
+Texture2D screen_space_irradiance : register(t10);
+Texture2D screen_space_ao : register(t11);
 RWTexture2D<float4> output   : register(u0);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
@@ -67,10 +68,17 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	if(depth_f != 1.0f)
 	{
 		// GBuffer contents
-		float3 albedo = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0).xyz;
-		const float roughness = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0).w;
-		float3 normal = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0).xyz;
-		const float metallic = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0).w;
+		float4 albedo_roughness = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0);
+		float3 albedo = albedo_roughness.xyz;
+		const float roughness = albedo_roughness.w;
+
+		float4 normal_metallic = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0);
+		float3 normal = normal_metallic.xyz;
+		const float metallic = normal_metallic.w;
+
+		float4 emissive_ao = gbuffer_emissive_ao.SampleLevel(point_sampler, uv, 0);
+		float3 emissive = emissive_ao.xyz;
+		float gbuffer_ao = emissive_ao.w;
 
 		float3 flipped_N = normal;
 		flipped_N.y *= -1;
@@ -80,7 +88,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		
 		// Get irradiance
 		float3 irradiance = lerp(
-			irradiance_map.SampleLevel(point_sampler, flipped_N, 0).xyz,
+			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
 			screen_space_irradiance.SampleLevel(point_sampler, uv, 0).xyz,
 			is_path_tracer);
 
@@ -90,6 +98,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			screen_space_ao.SampleLevel(point_sampler, uv, 0).xyz,
 			// Lerp factor (0: env map, 1: path traced)
 			is_hbao);
+
+		//Ao is multiplied with material texture ao, if present
+		ao *= gbuffer_ao;
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -112,7 +123,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
 	}
 	else
 	{	

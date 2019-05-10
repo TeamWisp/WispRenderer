@@ -21,6 +21,9 @@ struct Material
 	float normal_id;
 	float roughness_id;
 	float metalicness_id;
+	float emissive_id;
+	float ao_id;
+	float2 padding;
 
 	MaterialData data;
 };
@@ -274,13 +277,17 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 		g_textures[material.normal_id],
 		g_textures[material.roughness_id],
 		g_textures[material.metalicness_id],
+		g_textures[material.emissive_id],
+		g_textures[material.ao_id],
 		mip_level,
 		s0,
 		uv);
 
-	float3 albedo = pow(output_data.albedo, 2.2f);
+	float3 albedo = output_data.albedo;
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
+	float3 emissive = output_data.emissive;
+	float ao = output_data.ao;
 
 	float3 N = normalize(mul(model_matrix, float4(-normal, 0)));
 	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
@@ -311,14 +318,14 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	const float2 sampled_brdf = brdf_lut.SampleLevel(s0, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
 
 	//Lighting
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth);
 
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, payload.cone);
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
-	float3 ambient = kD * diffuse + specular;
+	float3 ambient = (kD * diffuse + specular) * ao;
 
 	// Output the final reflections here
 	payload.color = ambient + lighting;
