@@ -73,7 +73,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		const float roughness = albedo_roughness.w;
 
 		float4 normal_metallic = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0);
-		float3 normal = normal_metallic.xyz;
+		float3 normal = normalize(normal_metallic.xyz);
 		const float metallic = normal_metallic.w;
 
 		float4 emissive_ao = gbuffer_emissive_ao.SampleLevel(point_sampler, uv, 0);

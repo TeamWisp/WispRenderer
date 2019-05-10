@@ -165,7 +165,7 @@ void RaygenEntry()
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
-	float3 normal = normal_metallic.xyz;
+	float3 normal = normalize(normal_metallic.xyz);
 	float metallic = normal_metallic.w;
 
 	// Do lighting

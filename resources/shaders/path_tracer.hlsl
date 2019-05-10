@@ -109,7 +109,7 @@ void RaygenEntry()
 	float depth = gbuffer_depth[screen_co].x;
 	float3 albedo = albedo_roughness.rgb;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
-	float3 normal = normal_metallic.xyz;
+	float3 normal = normalize(normal_metallic.xyz);
 	float metallic = normal_metallic.w;
 	float roughness = albedo_roughness.w;
 	float3 emissive = emissive_ao.xyz;
