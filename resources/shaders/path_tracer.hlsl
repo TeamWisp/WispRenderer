@@ -128,7 +128,7 @@ void RaygenEntry()
 	const float cos_theta = cos(dot(rand_dir, normal));
 	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
 	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
-	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
+	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 	//result += emissive;
 
 	result = clamp(result, 0, 100);
@@ -233,7 +233,7 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	// #################### GGX #####################
 	nextRand(payload.seed);
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
-	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
+	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 	payload.color += emissive;
 }
 

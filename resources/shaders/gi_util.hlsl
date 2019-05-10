@@ -53,7 +53,7 @@ float probabilityToSampleDiffuse(float3 difColor, float3 specColor)
 	return lumDiffuse / (lumDiffuse + lumSpecular);
 }
 
-float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, float ao, unsigned int seed, unsigned int depth)
+float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
 {
 	// #################### GGX #####################
 	uint light_count = lights[0].tid >> 2;
