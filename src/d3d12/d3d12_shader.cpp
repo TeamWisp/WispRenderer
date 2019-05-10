@@ -87,7 +87,7 @@ namespace wr::d3d12
 #else
 			d3d12::settings::release_shader_args.data(), d3d12::settings::release_shader_args.size(),
 #endif
-			defines.data(), defines.size(),       // name/value defines and their count
+			defines.data(), static_cast<std::uint32_t>(defines.size()),       // name/value defines and their count
 			include_handler,          // handler for #include directives
 			&result);
 

@@ -83,10 +83,10 @@ namespace wr
 				data.cpu_target_handle = d3d12::GetCPUHandle(data.out_descriptor_heap_rtv, 0);
 			}
 
-			// depth
+			// depth & normal
 			{
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, data.cpu_normal_handle, 1, Format::R32G32B32A32_FLOAT);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, data.cpu_normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
 				d3d12::CreateSRVFromDSV(deferred_main_rt, data.cpu_depth_handle);
 			}
 

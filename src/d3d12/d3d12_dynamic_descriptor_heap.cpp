@@ -176,14 +176,14 @@ namespace wr
 			// Scan from LSB to MSB for a bit set in staleDescriptorsBitMask
 			while (_BitScanForward(&root_idx, m_stale_descriptor_table_bit_mask))
 			{
-				UINT num_src_desc = m_descriptor_table_cache[root_idx].m_num_descriptors;
+				std::uint32_t num_src_desc = m_descriptor_table_cache[root_idx].m_num_descriptors;
 				D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorHandles = m_descriptor_table_cache[root_idx].m_base_descriptor;
 
 				D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
 				{
 					m_current_cpu_desc_handle.m_native
 				};
-				UINT pDestDescriptorRangeSizes[] =
+				std::uint32_t pDestDescriptorRangeSizes[] =
 				{
 					num_src_desc
 				};
@@ -210,7 +210,7 @@ namespace wr
 	void DynamicDescriptorHeap::CommitStagedDescriptorsForDispatch(d3d12::CommandList& cmd_list)
 	{
 		// Compute the number of descriptors that need to be copied 
-		uint32_t num_descriptors_to_commit = ComputeStaleDescriptorCount();
+		std::uint32_t num_descriptors_to_commit = ComputeStaleDescriptorCount();
 
 		if (num_descriptors_to_commit > 0)
 		{
@@ -233,14 +233,14 @@ namespace wr
 			// Scan from LSB to MSB for a bit set in staleDescriptorsBitMask
 			while (_BitScanForward(&root_idx, m_stale_descriptor_table_bit_mask))
 			{
-				UINT num_src_desc = m_descriptor_table_cache[root_idx].m_num_descriptors;
+				std::uint32_t num_src_desc = m_descriptor_table_cache[root_idx].m_num_descriptors;
 				D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorHandles = m_descriptor_table_cache[root_idx].m_base_descriptor;
 
 				D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] =
 				{
 					m_current_cpu_desc_handle.m_native
 				};
-				UINT pDestDescriptorRangeSizes[] =
+				std::uint32_t pDestDescriptorRangeSizes[] =
 				{
 					num_src_desc
 				};

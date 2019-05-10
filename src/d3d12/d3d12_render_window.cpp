@@ -126,6 +126,9 @@ namespace wr::d3d12
 		unsigned int width = static_cast<decltype(width)>(r.right - r.left);
 		unsigned int height = static_cast<decltype(height)>(r.bottom - r.top);
 
+		render_window->m_width = width;
+		render_window->m_height = height;
+
 		const auto swap_chain_desc = internal::GetSwapChainDesc(width, height, num_back_buffers);
 
 		IDXGISwapChain1* temp_swap_chain;
@@ -169,7 +172,7 @@ namespace wr::d3d12
 				"Failed to get swap chain buffer.");
 		}
 
-		CreateRenderTargetViews(render_window, device, width, height);
+		CreateRenderTargetViews(render_window, device);
 		CreateDepthStencilBuffer(render_window, device, width, height);
 
 		return render_window;
@@ -205,31 +208,33 @@ namespace wr::d3d12
 				"Failed to get swap chain buffer.");
 		}
 
-		CreateRenderTargetViews(render_window, device, width, height);
+		CreateRenderTargetViews(render_window, device);
 		CreateDepthStencilBuffer(render_window, device, width, height);
 
 		return render_window;
 	}
 
-	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height, bool fullscreen)
+	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height)
 	{
 		DestroyDepthStencilBuffer(render_window);
 		DestroyRenderTargetViews(render_window);
 
+		render_window->m_width = width;
+		render_window->m_height = height;
 		render_window->m_swap_chain->ResizeBuffers(render_window->m_num_render_targets, width, height, DXGI_FORMAT_UNKNOWN, 0);
 
 		render_window->m_render_targets.resize(render_window->m_num_render_targets);
-		for (auto i = 0; i < render_window->m_num_render_targets; i++)
+		for (auto i = 0u; i < render_window->m_num_render_targets; i++)
 		{
 			TRY_M(render_window->m_swap_chain->GetBuffer(i, IID_PPV_ARGS(&render_window->m_render_targets[i])),
 				"Failed to get swap chain buffer.");
 		}
 
-		CreateRenderTargetViews(render_window, device, width, height);
+		CreateRenderTargetViews(render_window, device);
 		CreateDepthStencilBuffer(render_window, device, width, height);
 	}
 
-	void Present(RenderWindow* render_window, Device* device)
+	void Present(RenderWindow* render_window)
 	{
 		render_window->m_swap_chain->Present(0, 0);
 		render_window->m_frame_idx = render_window->m_swap_chain->GetCurrentBackBufferIndex();

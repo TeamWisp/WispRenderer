@@ -17,13 +17,13 @@ namespace wr
 		IDFactory(IDFactory&&) = delete;
 		IDFactory& operator=(IDFactory&&) = delete;
 
-		void MakeIDAvailable(uint64_t unused_id);
-		uint64_t GetUnusedID();
+		void MakeIDAvailable(std::uint32_t unused_id);
+		std::uint32_t GetUnusedID();
 
 	protected:
 
-		std::uint64_t m_id;
-		std::vector<uint64_t> m_unused_ids;
+		std::uint32_t m_id;
+		std::vector<uint32_t> m_unused_ids;
 	};
 
 } /* wr */

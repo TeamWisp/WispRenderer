@@ -40,10 +40,11 @@ namespace emibl_scene
 			wr::TextureHandle metal_splotchy_roughness = texture_pool->LoadFromFile("resources/materials/metal-splotchy-rough.png", false, true);
 			wr::TextureHandle metal_splotchy_metallic = texture_pool->LoadFromFile("resources/materials/metal-splotchy-metal.png", false, true);
 
-			wr::TextureHandle mahogfloor_albedo = texture_pool->LoadFromFile("resources/materials/mahogfloor/albedo.png", true, true);
-			wr::TextureHandle mahogfloor_normal = texture_pool->LoadFromFile("resources/materials/mahogfloor/normal.png", false, true);
-			wr::TextureHandle mahogfloor_roughness = texture_pool->LoadFromFile("resources/materials/mahogfloor/roughness.png", false, true);
-			wr::TextureHandle mahogfloor_metallic = texture_pool->LoadFromFile("resources/materials/mahogfloor/metallic.png", false, true);
+			wr::TextureHandle mahogfloor_albedo = texture_pool->LoadFromFile("resources/materials/harsh_bricks/albedo.png", true, true);
+			wr::TextureHandle mahogfloor_normal = texture_pool->LoadFromFile("resources/materials/harsh_bricks/normal.png", false, true);
+			wr::TextureHandle mahogfloor_roughness = texture_pool->LoadFromFile("resources/materials/harsh_bricks/roughness.png", false, true);
+			wr::TextureHandle mahogfloor_metallic = texture_pool->LoadFromFile("resources/materials/harsh_bricks/metallic.png", false, true);
+			wr::TextureHandle mahogfloor_ao = texture_pool->LoadFromFile("resources/materials/harsh_bricks/ao.png", false, true);
 
 			wr::TextureHandle red_black_albedo = texture_pool->LoadFromFile("resources/materials/dragon_egg/albedo.png", true, true);
 			wr::TextureHandle red_black_normal = texture_pool->LoadFromFile("resources/materials/dragon_egg/normal.png", false, true);
@@ -90,112 +91,115 @@ namespace emibl_scene
 			wr::TextureHandle bw_tiles_normal = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/normal.png", false, true);
 			wr::TextureHandle bw_tiles_roughness = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/roughness.png", false, true);
 			wr::TextureHandle bw_tiles_metallic = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/metallic.png", false, true);
+			wr::TextureHandle bw_tiles_emissive = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/emissive.png", true, true);
 
 			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/artist_workshop_4k.hdr", false, false);
 
 			{
 				// Create Material
-				rusty_metal_material = material_pool->Create();
+				rusty_metal_material = material_pool->Create(texture_pool.get());
 
 				wr::Material* rusty_metal_internal = material_pool->GetMaterial(rusty_metal_material);
 
-				rusty_metal_internal->SetAlbedo(metal_splotchy_albedo);
-				rusty_metal_internal->SetNormal(metal_splotchy_normal);
-				rusty_metal_internal->SetRoughness(metal_splotchy_roughness);
-				rusty_metal_internal->SetMetallic(metal_splotchy_metallic);
+				rusty_metal_internal->SetTexture(wr::TextureType::ALBEDO, metal_splotchy_albedo);
+				rusty_metal_internal->SetTexture(wr::TextureType::NORMAL, metal_splotchy_normal);
+				rusty_metal_internal->SetTexture(wr::TextureType::ROUGHNESS, metal_splotchy_roughness);
+				rusty_metal_internal->SetTexture(wr::TextureType::METALLIC, metal_splotchy_metallic);
 
 				// Create Material
-				material_handles[0] = material_pool->Create();
+				material_handles[0] = material_pool->Create(texture_pool.get());
 
 				wr::Material* mahogfloor_material_internal = material_pool->GetMaterial(material_handles[0]);
 
-				mahogfloor_material_internal->SetAlbedo(mahogfloor_albedo);
-				mahogfloor_material_internal->SetNormal(mahogfloor_normal);
-				mahogfloor_material_internal->SetRoughness(mahogfloor_roughness);
-				mahogfloor_material_internal->SetMetallic(mahogfloor_metallic);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::ALBEDO, mahogfloor_albedo);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::NORMAL, mahogfloor_normal);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::ROUGHNESS, mahogfloor_roughness);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::METALLIC, mahogfloor_metallic);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::AO, mahogfloor_ao);
 
 				// Create Material
-				material_handles[1] = material_pool->Create();
+				material_handles[1] = material_pool->Create(texture_pool.get());
 
 				wr::Material* red_black_pattern_internal = material_pool->GetMaterial(material_handles[1]);
 
-				red_black_pattern_internal->SetAlbedo(red_black_albedo);
-				red_black_pattern_internal->SetNormal(red_black_normal);
-				red_black_pattern_internal->SetRoughness(red_black_roughness);
-				red_black_pattern_internal->SetMetallic(red_black_metallic);
+				red_black_pattern_internal->SetTexture(wr::TextureType::ALBEDO, red_black_albedo);
+				red_black_pattern_internal->SetTexture(wr::TextureType::NORMAL, red_black_normal);
+				red_black_pattern_internal->SetTexture(wr::TextureType::ROUGHNESS, red_black_roughness);
+				red_black_pattern_internal->SetTexture(wr::TextureType::METALLIC, red_black_metallic);
 
 				// Create Material
-				material_handles[2] = material_pool->Create();
+				material_handles[2] = material_pool->Create(texture_pool.get());
 
 				wr::Material* metal_material_internal = material_pool->GetMaterial(material_handles[2]);
 
-				metal_material_internal->SetAlbedo(metal_albedo);
-				metal_material_internal->SetNormal(metal_normal);
-				metal_material_internal->SetRoughness(metal_roughness);
-				metal_material_internal->SetMetallic(metal_metallic);
+				metal_material_internal->SetTexture(wr::TextureType::ALBEDO, metal_albedo);
+				metal_material_internal->SetTexture(wr::TextureType::NORMAL, metal_normal);
+				metal_material_internal->SetTexture(wr::TextureType::ROUGHNESS, metal_roughness);
+				metal_material_internal->SetTexture(wr::TextureType::METALLIC, metal_metallic);
 
-				material_handles[3] = material_pool->Create();
+				material_handles[3] = material_pool->Create(texture_pool.get());
 
 				wr::Material* brick_tiles_mat_internal = material_pool->GetMaterial(material_handles[3]);
 
-				brick_tiles_mat_internal->SetAlbedo(brick_tiles_albedo);
-				brick_tiles_mat_internal->SetNormal(brick_tiles_normal);
-				brick_tiles_mat_internal->SetRoughness(brick_tiles_roughness);
-				brick_tiles_mat_internal->SetMetallic(brick_tiles_metallic);
+				brick_tiles_mat_internal->SetTexture(wr::TextureType::ALBEDO, brick_tiles_albedo);
+				brick_tiles_mat_internal->SetTexture(wr::TextureType::NORMAL, brick_tiles_normal);
+				brick_tiles_mat_internal->SetTexture(wr::TextureType::ROUGHNESS, brick_tiles_roughness);
+				brick_tiles_mat_internal->SetTexture(wr::TextureType::METALLIC, brick_tiles_metallic);
 
-				material_handles[4] = material_pool->Create();
+				material_handles[4] = material_pool->Create(texture_pool.get());
 
 				wr::Material* leather_material_internal = material_pool->GetMaterial(material_handles[4]);
 
-				leather_material_internal->SetAlbedo(leather_albedo);
-				leather_material_internal->SetNormal(leather_normal);
-				leather_material_internal->SetRoughness(leather_roughness);
-				leather_material_internal->SetMetallic(leather_metallic);
+				leather_material_internal->SetTexture(wr::TextureType::ALBEDO, leather_albedo);
+				leather_material_internal->SetTexture(wr::TextureType::NORMAL, leather_normal);
+				leather_material_internal->SetTexture(wr::TextureType::ROUGHNESS, leather_roughness);
+				leather_material_internal->SetTexture(wr::TextureType::METALLIC, leather_metallic);
 
-				material_handles[5] = material_pool->Create();
+				material_handles[5] = material_pool->Create(texture_pool.get());
 
 				wr::Material* blue_tiles_material_internal = material_pool->GetMaterial(material_handles[5]);
 
-				blue_tiles_material_internal->SetAlbedo(blue_tiles_albedo);
-				blue_tiles_material_internal->SetNormal(blue_tiles_normal);
-				blue_tiles_material_internal->SetRoughness(blue_tiles_roughness);
-				blue_tiles_material_internal->SetMetallic(blue_tiles_metallic);
+				blue_tiles_material_internal->SetTexture(wr::TextureType::ALBEDO, blue_tiles_albedo);
+				blue_tiles_material_internal->SetTexture(wr::TextureType::NORMAL, blue_tiles_normal);
+				blue_tiles_material_internal->SetTexture(wr::TextureType::ROUGHNESS, blue_tiles_roughness);
+				blue_tiles_material_internal->SetTexture(wr::TextureType::METALLIC, blue_tiles_metallic);
 
-				material_handles[6] = material_pool->Create();
+				material_handles[6] = material_pool->Create(texture_pool.get());
 
 				wr::Material* gold_material_internal = material_pool->GetMaterial(material_handles[6]);
 
-				gold_material_internal->SetAlbedo(gold_albedo);
-				gold_material_internal->SetNormal(gold_normal);
-				gold_material_internal->SetRoughness(gold_roughness);
-				gold_material_internal->SetMetallic(gold_metallic);
+				gold_material_internal->SetTexture(wr::TextureType::ALBEDO, gold_albedo);
+				gold_material_internal->SetTexture(wr::TextureType::NORMAL, gold_normal);
+				gold_material_internal->SetTexture(wr::TextureType::ROUGHNESS, gold_roughness);
+				gold_material_internal->SetTexture(wr::TextureType::METALLIC, gold_metallic);
 
-				material_handles[7] = material_pool->Create();
+				material_handles[7] = material_pool->Create(texture_pool.get());
 
 				wr::Material* marble_material_internal = material_pool->GetMaterial(material_handles[7]);
 
-				marble_material_internal->SetAlbedo(marble_albedo);
-				marble_material_internal->SetNormal(marble_normal);
-				marble_material_internal->SetRoughness(marble_roughness);
-				marble_material_internal->SetMetallic(marble_metallic);
+				marble_material_internal->SetTexture(wr::TextureType::ALBEDO, marble_albedo);
+				marble_material_internal->SetTexture(wr::TextureType::NORMAL, marble_normal);
+				marble_material_internal->SetTexture(wr::TextureType::ROUGHNESS, marble_roughness);
+				marble_material_internal->SetTexture(wr::TextureType::METALLIC, marble_metallic);
 
-				material_handles[8] = material_pool->Create();
+				material_handles[8] = material_pool->Create(texture_pool.get());
 
 				wr::Material* floreal_tiles_internal = material_pool->GetMaterial(material_handles[8]);
 
-				floreal_tiles_internal->SetAlbedo(floreal_tiles_albedo);
-				floreal_tiles_internal->SetNormal(floreal_tiles_normal);
-				floreal_tiles_internal->SetRoughness(floreal_tiles_roughness);
-				floreal_tiles_internal->SetMetallic(floreal_tiles_metallic);
+				floreal_tiles_internal->SetTexture(wr::TextureType::ALBEDO, floreal_tiles_albedo);
+				floreal_tiles_internal->SetTexture(wr::TextureType::NORMAL, floreal_tiles_normal);
+				floreal_tiles_internal->SetTexture(wr::TextureType::ROUGHNESS, floreal_tiles_roughness);
+				floreal_tiles_internal->SetTexture(wr::TextureType::METALLIC, floreal_tiles_metallic);
 
-				material_handles[9] = material_pool->Create();
+				material_handles[9] = material_pool->Create(texture_pool.get());
 
 				wr::Material* bw_tiles_internal = material_pool->GetMaterial(material_handles[9]);
 
-				bw_tiles_internal->SetAlbedo(bw_tiles_albedo);
-				bw_tiles_internal->SetNormal(bw_tiles_normal);
-				bw_tiles_internal->SetRoughness(bw_tiles_roughness);
-				bw_tiles_internal->SetMetallic(bw_tiles_metallic);
+				bw_tiles_internal->SetTexture(wr::TextureType::ALBEDO, bw_tiles_albedo);
+				bw_tiles_internal->SetTexture(wr::TextureType::NORMAL, bw_tiles_normal);
+				bw_tiles_internal->SetTexture(wr::TextureType::ROUGHNESS, bw_tiles_roughness);
+				bw_tiles_internal->SetTexture(wr::TextureType::METALLIC, bw_tiles_metallic);
+				bw_tiles_internal->SetTexture(wr::TextureType::EMISSIVE, bw_tiles_emissive);
 			}
 
 			model_pool = render_system->CreateModelPool(64_mb, 64_mb);
@@ -326,7 +330,6 @@ namespace emibl_scene
 	void UpdateScene()
 	{
 		float deltaTime = ImGui::GetIO().DeltaTime;
-
 
 		for (auto& model : models)
 		{

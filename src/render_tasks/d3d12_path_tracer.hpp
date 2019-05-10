@@ -35,9 +35,11 @@ namespace wr
 		DirectX::XMVECTOR last_cam_pos = {};
 		DirectX::XMVECTOR last_cam_rot = {};
 
-		DescriptorAllocation out_uav_from_rtv;
-		DescriptorAllocation out_gbuffers;
-		DescriptorAllocation out_depthbuffer;
+		DescriptorAllocation out_output_alloc;
+		DescriptorAllocation out_gbuffer_albedo_alloc;
+		DescriptorAllocation out_gbuffer_normal_alloc;
+		DescriptorAllocation out_gbuffer_emissive_alloc;
+		DescriptorAllocation out_gbuffer_depth_alloc;
 
 		bool tlas_requires_init = true;
 	};
@@ -64,8 +66,8 @@ namespace wr
 			// Set up Raygen Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
@@ -78,8 +80,8 @@ namespace wr
 			// Set up Miss Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 2;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 2;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMissEntry");
 				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
@@ -96,8 +98,8 @@ namespace wr
 			// Set up Hit Group Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 2;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 2;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowHitGroup");
 				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
@@ -131,9 +133,11 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
-				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
-				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_emissive_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
 			}
@@ -142,16 +146,22 @@ namespace wr
 			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
-				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 
 				// Bind g-buffers (albedo, normal, depth)
-				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
-				d3d12::DescHeapCPUHandle depth_buffer_handle = data.out_depthbuffer.GetDescriptorHandle();
+				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				auto emissive_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle();
+				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-				d3d12::CreateSRVFromRTV(deferred_main_rt, gbuffers_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
-				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
+
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, emissive_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats[2]);
+
+				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 			}
 
 			if (!resize)
@@ -214,10 +224,8 @@ namespace wr
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
-				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				auto out_uav_handle = data.out_output_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OUTPUT)), out_uav_handle);
-				//out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle(1);
-				//d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OUTPUT)) + 1, out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::INDICES)), out_scene_ib_handle);
@@ -228,14 +236,17 @@ namespace wr
 				auto out_scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::OFFSETS)), out_scene_offset_handle);
 
-				auto out_scene_gbuffers_handle1 = data.out_gbuffers.GetDescriptorHandle(0);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 0, out_scene_gbuffers_handle1);
+				auto out_albedo_gbuffer_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 0, out_albedo_gbuffer_handle);
 
-				auto out_scene_gbuffers_handle2 = data.out_gbuffers.GetDescriptorHandle(1);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 1, out_scene_gbuffers_handle2);
+				auto out_normal_gbuffer_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 1, out_normal_gbuffer_handle);
 
-				auto out_scene_depth_handle = data.out_depthbuffer.GetDescriptorHandle();
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 2, out_scene_depth_handle);
+				auto out_emissive_gbuffer_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 2, out_emissive_gbuffer_handle);
+
+				auto out_scene_depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 3, out_scene_depth_handle);
 
 				/*
 				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
@@ -272,15 +283,25 @@ namespace wr
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
+						if (!texture_handle.m_pool)
+							return;
+
 						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
-					set_srv(material_internal->GetAlbedo());
-					set_srv(material_internal->GetMetallic());
-					set_srv(material_internal->GetNormal());
-					set_srv(material_internal->GetRoughness());
+					std::array<TextureType, static_cast<size_t>(TextureType::COUNT)> types = { TextureType::ALBEDO, TextureType::NORMAL, 
+																							   TextureType::ROUGHNESS, TextureType::METALLIC, 
+																							   TextureType::EMISSIVE, TextureType::AO };
+
+					for (auto t : types)
+					{
+						if (material_internal->HasTexture(t))
+							set_srv(material_internal->GetTexture(t));
+					}
+
+
 				}
 
 				// Get light buffer
@@ -350,7 +371,7 @@ namespace wr
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-				d3d12::BindDescriptorHeaps(cmd_list, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindDescriptorHeaps(cmd_list, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
@@ -376,6 +397,21 @@ namespace wr
 			}
 		}
 
+		inline void DestroyPathTracerTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			if (!resize)
+			{
+				auto& data = fg.GetData<PathTracerData>(handle);
+
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				std::move(data.out_output_alloc);
+				std::move(data.out_gbuffer_albedo_alloc);
+				std::move(data.out_gbuffer_normal_alloc);
+				std::move(data.out_gbuffer_depth_alloc);
+			}
+		}
+
+
 	} /* internal */
 
 	inline void AddPathTracerTask(FrameGraph& fg)
@@ -389,7 +425,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
@@ -405,9 +441,9 @@ namespace wr
 		{
 			internal::ExecutePathTracerTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool)
+		desc.m_destroy_func = [](FrameGraph & fg, RenderTaskHandle handle, bool resize)
 		{
-			// Nothing to destroy
+			internal::DestroyPathTracerTask(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;

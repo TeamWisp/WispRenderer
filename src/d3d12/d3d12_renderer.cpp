@@ -73,6 +73,8 @@ namespace wr
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
+		TRY_M(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED), "Failed to CoInitialize");
+
 		m_window = window;
 		m_device = d3d12::CreateDevice();
 		SetName(m_device, L"Default D3D12 Device");
@@ -145,6 +147,14 @@ namespace wr
 
 	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
 	{
+		// Perform render target save requests
+		while (!m_requested_rt_saves.empty())
+		{
+			WaitForAllPreviousWork();
+			auto back = m_requested_rt_saves.back();
+			SaveRenderTargetToDisc(back.m_path, back.m_render_target, back.m_index);
+			m_requested_rt_saves.pop();
+		}
 
 		if (m_requested_fullscreen_state.has_value())
 		{
@@ -156,6 +166,7 @@ namespace wr
 
 		auto frame_idx = GetFrameIdx();
 		d3d12::WaitFor(m_fences[frame_idx]);
+
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
 		for (auto pool : m_texture_pools)
@@ -239,7 +250,7 @@ namespace wr
 
 		if (m_render_window.has_value())
 		{
-			d3d12::Present(m_render_window.value(), m_device);
+			d3d12::Present(m_render_window.value());
 		}
 
 		m_bound_model_pool = nullptr;
@@ -258,11 +269,10 @@ namespace wr
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
 	{
-
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
 		if (m_render_window.has_value())
 		{
-			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
+			d3d12::Resize(m_render_window.value(), m_device, width, height);
 		}
 	}
 
@@ -451,7 +461,6 @@ namespace wr
 	void D3D12RenderSystem::StartComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 
 		d3d12::Begin(n_cmd_list, frame_idx);
@@ -460,8 +469,6 @@ namespace wr
 	void D3D12RenderSystem::StopComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
-		auto frame_idx = GetFrameIdx();
 
 		d3d12::End(n_cmd_list);
 	}
@@ -500,6 +507,77 @@ namespace wr
 		}
 
 		d3d12::End(n_cmd_list);
+	}
+
+	void D3D12RenderSystem::SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index)
+	{
+		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target);
+		auto format = static_cast<Format>(n_render_target->m_render_targets[index]->GetDesc().Format);
+		
+		auto rt_resource = n_render_target->m_render_targets[index];
+		auto n_device = m_device->m_native;
+		auto width = d3d12::GetRenderTargetWidth(n_render_target);
+		auto height = d3d12::GetRenderTargetHeight(n_render_target);
+		auto bytes_per_pixel = BytesPerPixel(format);
+		std::uint64_t bytes_per_row = SizeAlignTwoPower(static_cast<std::uint64_t>(width) * static_cast<std::uint64_t>(bytes_per_pixel), 256);
+		std::uint64_t texture_size = bytes_per_row * static_cast<std::uint64_t>(height);
+
+		auto queue = d3d12::CreateCommandQueue(m_device, CmdListType::CMD_LIST_DIRECT);
+		SetName(queue, L"Screenshot Command Queue");
+
+		auto cmd_list = d3d12::CreateCommandList(m_device, 1, CmdListType::CMD_LIST_DIRECT);
+		SetName(cmd_list, L"Screenshot Command List");
+
+		auto fence = d3d12::CreateFence(m_device);
+
+		d3d12::Begin(cmd_list, 0);
+
+		// Readback
+		d3d12::desc::ReadbackDesc readback_buffer_desc = {};
+		readback_buffer_desc.m_buffer_width = width;
+		readback_buffer_desc.m_buffer_height = height;
+		readback_buffer_desc.m_bytes_per_pixel = bytes_per_pixel;
+
+		// Create the actual read back buffer
+		auto readback_buffer = d3d12::CreateReadbackBuffer(m_device, &readback_buffer_desc);
+		d3d12::SetName(readback_buffer, L"Texture ReadBack Buffer (Used for saving to disc)");
+
+		// Copy data to cpu
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+		auto rt_desc = rt_resource->GetDesc();
+		n_device->GetCopyableFootprints(&rt_desc, 0, 1, 0, &footprint, nullptr, nullptr, (std::uint64_t*)&texture_size);
+
+		CD3DX12_TEXTURE_COPY_LOCATION dest_loc(readback_buffer->m_resource, footprint);
+		CD3DX12_TEXTURE_COPY_LOCATION src_loc(rt_resource, 0);
+		cmd_list->m_native->CopyTextureRegion(&dest_loc, 0, 0, 0, &src_loc, nullptr);
+
+		d3d12::End(cmd_list);
+
+		// Execute
+		Execute(queue, { cmd_list }, fence);
+		fence->m_fence_value++;
+		Signal(fence, queue);
+		WaitFor(fence);
+
+		// Store data
+		auto pixels = static_cast<std::uint8_t*>(d3d12::MapReadbackBuffer(readback_buffer, texture_size));
+		d3d12::UnmapReadbackBuffer(readback_buffer);
+
+		DirectX::Image img;
+		img.format = static_cast<DXGI_FORMAT>(format);
+		img.width = width;
+		img.height = height;
+		img.rowPitch = bytes_per_row;
+		img.slicePitch = texture_size;
+		img.pixels = pixels;
+
+		auto wpath = std::wstring(path.begin(), path.end());
+		TRY_M(DirectX::SaveToTGAFile(img, wpath.c_str()), "Failed to save image to disc");
+
+		d3d12::Destroy(readback_buffer);
+		d3d12::Destroy(cmd_list);
+		d3d12::Destroy(fence);
+		d3d12::Destroy(queue);
 	}
 
 	void D3D12RenderSystem::PrepareRootSignatureRegistry()
@@ -754,8 +832,8 @@ namespace wr
 				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
 				for (auto rt_handle : desc.local_root_signatures.Get().value())
 				{
-					auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
-					n_desc.local_root_signatures.value().push_back(library->m_native);
+					auto rs = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+					n_desc.local_root_signatures.value().push_back(rs->m_native);
 				}
 			}
 
@@ -968,7 +1046,7 @@ namespace wr
 					m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 				}
 
-				d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
+				d3d12::BindDescriptorHeaps(n_cmd_list);
 
 				// Pick the standard material or if available a user defined material.
 				auto material_handle = mesh.second;
@@ -986,7 +1064,11 @@ namespace wr
 
 				if (n_mesh->m_index_count != 0)
 				{
-					d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
+					d3d12::DrawIndexed(n_cmd_list,
+						static_cast<std::uint32_t>(n_mesh->m_index_count),
+						batch.num_instances,
+						static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset),
+						static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 				}
 				else
 				{
@@ -1013,7 +1095,7 @@ namespace wr
 			texture_pool = static_cast<D3D12TexturePool*>(m_texture_pools[0].get());
 		}
 
-		auto albedo_handle = material_internal->GetAlbedo();
+		auto albedo_handle = material_internal->GetTexture(TextureType::ALBEDO);
 		wr::d3d12::TextureResource* albedo_internal;
 		if (albedo_handle.m_pool == nullptr)
 		{
@@ -1024,7 +1106,7 @@ namespace wr
 			albedo_internal = static_cast<wr::d3d12::TextureResource*>(albedo_handle.m_pool->GetTextureResource(albedo_handle));
 		}
 
-		auto normal_handle = material_internal->GetNormal();
+		auto normal_handle = material_internal->GetTexture(TextureType::NORMAL);
 		wr::d3d12::TextureResource* normal_internal;
 		if (normal_handle.m_pool == nullptr)
 		{
@@ -1035,7 +1117,7 @@ namespace wr
 			normal_internal = static_cast<wr::d3d12::TextureResource*>(normal_handle.m_pool->GetTextureResource(normal_handle));
 		}
 
-		auto roughness_handle = material_internal->GetRoughness();
+		auto roughness_handle = material_internal->GetTexture(TextureType::ROUGHNESS);
 		wr::d3d12::TextureResource* roughness_internal;
 		if (roughness_handle.m_pool == nullptr)
 		{
@@ -1046,7 +1128,7 @@ namespace wr
 			roughness_internal = static_cast<wr::d3d12::TextureResource*>(roughness_handle.m_pool->GetTextureResource(roughness_handle));
 		}
 
-		auto metallic_handle = material_internal->GetMetallic();
+		auto metallic_handle = material_internal->GetTexture(TextureType::METALLIC);
 		wr::d3d12::TextureResource* metallic_internal;
 		if (metallic_handle.m_pool == nullptr)
 		{
@@ -1057,10 +1139,35 @@ namespace wr
 			metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTextureResource(metallic_handle));
 		}
 
+		auto emissive_handle = material_internal->GetTexture(TextureType::EMISSIVE);
+		wr::d3d12::TextureResource* emissive_internal;
+		if (emissive_handle.m_pool == nullptr)
+		{
+			emissive_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultEmissive());
+		}
+		else
+		{
+			emissive_internal = static_cast<wr::d3d12::TextureResource*>(emissive_handle.m_pool->GetTextureResource(emissive_handle));
+		}
+
+		auto ao_handle = material_internal->GetTexture(TextureType::AO);
+		wr::d3d12::TextureResource* ao_internal;
+		if (ao_handle.m_pool == nullptr)
+		{
+			ao_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultAO());
+		}
+		else
+		{
+			ao_internal = static_cast<wr::d3d12::TextureResource*>(ao_handle.m_pool->GetTextureResource(ao_handle));
+		}
+
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ALBEDO)), albedo_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::NORMAL)), normal_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ROUGHNESS)), roughness_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::METALLIC)), metallic_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::EMISSIVE)), emissive_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::AMBIENT_OCCLUSION)), ao_internal);
+
 		d3d12::BindConstantBuffer(n_cmd_list, handle->m_native, 3, GetFrameIdx());
 	}
 

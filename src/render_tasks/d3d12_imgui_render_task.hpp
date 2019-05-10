@@ -98,7 +98,7 @@ namespace wr
 
 				//EXCEPTION CODE START
 				d3d12::BindDescriptorHeap(cmd_list, data.out_descriptor_heap, data.out_descriptor_heap->m_create_info.m_type, n_render_system.GetFrameIdx());
-				d3d12::BindDescriptorHeaps(cmd_list, n_render_system.GetFrameIdx());
+				d3d12::BindDescriptorHeaps(cmd_list);
 
 				for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 				{
@@ -150,7 +150,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(std::nullopt),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_UNORM }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),

@@ -102,8 +102,12 @@ namespace wr
 		std::size_t m_normal_map_embedded_texture;
 		TextureLocation m_normal_map_texture_location;
 
-		DirectX::XMFLOAT3 m_base_color;
-		DirectX::XMFLOAT3 m_base_metallic;
+		std::string m_emissive_texture;
+		std::size_t m_emissive_embedded_texture;
+		TextureLocation m_emissive_texture_location;
+
+		float m_base_color[3];
+		float m_base_metallic;
 		float m_base_roughness;
 		float m_base_transparency;
 		

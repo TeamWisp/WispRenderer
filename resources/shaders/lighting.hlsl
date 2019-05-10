@@ -44,7 +44,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	return lighting;
 }
 
-float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, float3 irradiance, float ao, float3 reflection, float2 brdf, float shadow_factor)
+float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 emissive, float3 normal, float3 irradiance, float ao, float3 reflection, float2 brdf, float shadow_factor)
 {
 	float3 res = float3(0.0f, 0.0f, 0.0f);
 
@@ -69,9 +69,9 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	float3 specular = prefiltered_color * (kS * sampled_brdf.x + sampled_brdf.y);
 	//float3 specular = reflection * kS;
 	
-	float3 ambient = (kD * diffuse + specular) * ao; //Replace 1.0f with AO, when we have it.
+	float3 ambient = (kD * diffuse + specular) * ao;
 
-	return ambient + (res * shadow_factor);
+	return ambient + (res * shadow_factor) + emissive;
 }
 
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, inout uint rand_seed, uint depth)
@@ -109,7 +109,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	return lighting;
 }
 
-float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 normal, inout uint rand_seed, uint depth)
+float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 emissive, float3 normal, inout uint rand_seed, uint depth)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
@@ -121,7 +121,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i], rand_seed, depth);
 	}
 
-	return res;
+	return res + emissive;
 }
 
 float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)

@@ -176,9 +176,10 @@ namespace wr
 
 			data.in_equirect = skybox_node->m_hdr;
 			
-			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", d3d12::settings::res_skybox, d3d12::settings::res_skybox, 0, wr::Format::R32G32B32A32_FLOAT, true);
+			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", d3d12::settings::res_skybox, d3d12::settings::res_skybox, 0, wr::Format::R16G16B16A16_FLOAT, true);
 
-			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", d3d12::settings::res_envmap, d3d12::settings::res_envmap, 5, wr::Format::R32G32B32A32_FLOAT, true);
+			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", d3d12::settings::res_envmap, d3d12::settings::res_envmap, 5, wr::Format::R16G16B16A16_FLOAT, true);
+
 
 			data.out_cubemap = skybox_node->m_skybox.value();
 			data.out_pref_env = skybox_node->m_prefiltered_env_map.value();
@@ -235,7 +236,7 @@ namespace wr
 						constexpr unsigned int srv_idx = rs_layout::GetHeapLoc(params::cubemap_conversion, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE);
 						d3d12::SetShaderSRV(cmd_list, 2, srv_idx, equirect_text);
 
-						d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
+						d3d12::BindDescriptorHeaps(cmd_list);
 
 						if (n_mesh->m_index_count != 0)
 						{
@@ -285,7 +286,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
 			RenderTargetProperties::CreateDSVBuffer(true),
 			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
-			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),

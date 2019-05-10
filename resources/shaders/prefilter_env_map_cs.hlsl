@@ -16,7 +16,7 @@ cbuffer CB : register(b0)
 [numthreads(8, 8, 1)]
 void main_cs(uint3 dt_id : SV_DispatchThreadID)
 {
-	float2 position = float2(dt_id.xy) / texture_size;
+	float2 position = float2(dt_id.xy + 0.5f) / texture_size;
 	position.y = 1.0f - position.y;
 	position = (position - 0.5f) * 2.0f;
 
