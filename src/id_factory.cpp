@@ -8,14 +8,14 @@ namespace wr
 	{
 	}
 
-	void IDFactory::MakeIDAvailable(uint64_t unused_id)
+	void IDFactory::MakeIDAvailable(std::uint32_t unused_id)
 	{
 		m_unused_ids.push_back(unused_id);
 	}
 
-	uint64_t IDFactory::GetUnusedID()
+	std::uint32_t IDFactory::GetUnusedID()
 	{
-		uint64_t ret_id;
+		std::uint32_t ret_id;
 
 		if (m_unused_ids.empty())
 		{

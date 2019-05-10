@@ -55,7 +55,7 @@ namespace wr
 
 		Box m_box;
 
-		void Expand(float (&pos)[3], Mesh *mesh);
+		void Expand(float (&pos)[3]);
 
 	};
 
@@ -132,7 +132,7 @@ namespace wr
 		int LoadNodeMeshesWithMaterials(ModelData* data, Model* model, std::vector<MaterialHandle> materials);
 
 		template<typename TV>
-		void UpdateModelBoundingBoxes(Model* model, Mesh* mesh, std::vector<TV> vertices_data);
+		void UpdateModelBoundingBoxes(Model* model, std::vector<TV> vertices_data);
 
 		std::size_t m_vertex_buffer_pool_size_in_bytes;
 		std::size_t m_index_buffer_pool_size_in_bytes;

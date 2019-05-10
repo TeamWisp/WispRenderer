@@ -40,6 +40,7 @@ namespace wr
 		else
 		{
 			LOGC("[ERROR]: Texture format not supported.");
+			return {};
 		}
 
 		return LoadFromCompressedMemory(data, width, height, type, srgb, generate_mips);

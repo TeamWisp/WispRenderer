@@ -79,7 +79,7 @@ namespace wr
 			d3d12::SetShaderSRV(cmd_list, 0, srv_idx, srv_handle);
 
 			bool is_fallback = d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK;
-			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+			d3d12::BindDescriptorHeaps(cmd_list);
 
 			{
 				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % 1 /*versions*/]);

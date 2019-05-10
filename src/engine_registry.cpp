@@ -15,11 +15,11 @@
 // Descriptor Range
 #define DESC_RANGE(...) [] { return GetRange(__VA_ARGS__); }()
 // Descriptor Range Hardcoded
-#define DESC_RANGE_H(...) [] { CD3DX12_DESCRIPTOR_RANGE r; r.Init(__VA_ARGS__); return r; }()
+#define DESC_RANGE_H(...) [] { CD3DX12_DESCRIPTOR_RANGE macro_range; macro_range.Init(__VA_ARGS__); return macro_range; }()
 // Root parameter
 #define ROOT_PARAM(func) [] { return func; }()
 // Root Parameter for descriptor tables
-#define ROOT_PARAM_DESC_TABLE(arr, visibility) [] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(arr.size(), arr.data(), visibility); return d; }()
+#define ROOT_PARAM_DESC_TABLE(arr, visibility) [] { CD3DX12_ROOT_PARAMETER d; d.InitAsDescriptorTable(static_cast<unsigned int>(arr.size()), arr.data(), visibility); return d; }()
 
 namespace wr
 {
@@ -401,7 +401,7 @@ namespace wr
 			PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 		});
 
-	DESC_RANGE_ARRAY(r,
+	DESC_RANGE_ARRAY(r_full_rt,
 		DESC_RANGE(params::full_raytracing, Type::UAV_RANGE, params::FullRaytracingE::OUTPUT),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::INDICES),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::LIGHTS),
@@ -412,11 +412,11 @@ namespace wr
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::IRRADIANCE_MAP),
 		DESC_RANGE(params::full_raytracing, Type::SRV_RANGE, params::FullRaytracingE::TEXTURES),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, d3d12::settings::fallback_ptrs_offset),
-		);
+	);
 
 	REGISTER(root_signatures::rt_test_global, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({
-			ROOT_PARAM_DESC_TABLE(r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM_DESC_TABLE(r_full_rt, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetSRV(params::full_raytracing, params::FullRaytracingE::ACCELERATION_STRUCTURE)),
 			ROOT_PARAM(GetCBV(params::full_raytracing, params::FullRaytracingE::CAMERA_PROPERTIES)),
 			ROOT_PARAM(GetSRV(params::full_raytracing, params::FullRaytracingE::VERTICES)),
@@ -893,7 +893,7 @@ namespace wr
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::TEXTURES),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::GBUFFERS),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset),
-		);
+	);
 
 	REGISTER(root_signatures::rt_hybrid_global, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({
@@ -954,7 +954,7 @@ namespace wr
 		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::TEXTURES),
 		DESC_RANGE(params::path_tracing, Type::SRV_RANGE, params::PathTracingE::GBUFFERS),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset),
-		);
+	);
 
 	REGISTER(root_signatures::path_tracing_global, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({

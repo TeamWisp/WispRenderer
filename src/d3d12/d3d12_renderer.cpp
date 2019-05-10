@@ -247,7 +247,7 @@ namespace wr
 
 		if (m_render_window.has_value())
 		{
-			d3d12::Present(m_render_window.value(), m_device);
+			d3d12::Present(m_render_window.value());
 		}
 
 		m_bound_model_pool = nullptr;
@@ -266,11 +266,10 @@ namespace wr
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
 	{
-
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
 		if (m_render_window.has_value())
 		{
-			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
+			d3d12::Resize(m_render_window.value(), m_device, width, height);
 		}
 	}
 
@@ -459,7 +458,6 @@ namespace wr
 	void D3D12RenderSystem::StartComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
 
 		d3d12::Begin(n_cmd_list, frame_idx);
@@ -468,8 +466,6 @@ namespace wr
 	void D3D12RenderSystem::StopComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
-		auto frame_idx = GetFrameIdx();
 
 		d3d12::End(n_cmd_list);
 	}
@@ -545,7 +541,8 @@ namespace wr
 
 		// Copy data to cpu
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
-		n_device->GetCopyableFootprints(&rt_resource->GetDesc(), 0, 1, 0, &footprint, nullptr, nullptr, (std::uint64_t*)&texture_size);
+		auto rt_desc = rt_resource->GetDesc();
+		n_device->GetCopyableFootprints(&rt_desc, 0, 1, 0, &footprint, nullptr, nullptr, (std::uint64_t*)&texture_size);
 
 		CD3DX12_TEXTURE_COPY_LOCATION dest_loc(readback_buffer->m_resource, footprint);
 		CD3DX12_TEXTURE_COPY_LOCATION src_loc(rt_resource, 0);
@@ -832,8 +829,8 @@ namespace wr
 				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
 				for (auto rt_handle : desc.local_root_signatures.Get().value())
 				{
-					auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
-					n_desc.local_root_signatures.value().push_back(library->m_native);
+					auto rs = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+					n_desc.local_root_signatures.value().push_back(rs->m_native);
 				}
 			}
 
@@ -1046,7 +1043,7 @@ namespace wr
 					m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 				}
 
-				d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
+				d3d12::BindDescriptorHeaps(n_cmd_list);
 
 				// Pick the standard material or if available a user defined material.
 				auto material_handle = mesh.second;
@@ -1064,7 +1061,11 @@ namespace wr
 
 				if (n_mesh->m_index_count != 0)
 				{
-					d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
+					d3d12::DrawIndexed(n_cmd_list,
+						static_cast<std::uint32_t>(n_mesh->m_index_count),
+						batch.num_instances,
+						static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset),
+						static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 				}
 				else
 				{

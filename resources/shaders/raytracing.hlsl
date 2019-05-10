@@ -18,12 +18,12 @@ struct Vertex
 
 struct Material
 {
-	float albedo_id;
-	float normal_id;
-	float roughness_id;
-	float metalicness_id;
-	float emissive_id;
-	float ao_id;
+	uint albedo_id;
+	uint normal_id;
+	uint roughness_id;
+	uint metalicness_id;
+	uint emissive_id;
+	uint ao_id;
 	float2 padding;
 
 	MaterialData data;
@@ -31,9 +31,9 @@ struct Material
 
 struct Offset
 {
-	float material_idx;
-	float idx_offset;
-	float vertex_offset;
+	uint material_idx;
+	uint idx_offset;
+	uint vertex_offset;
 };
 
 RWTexture2D<float4> gOutput : register(u0);

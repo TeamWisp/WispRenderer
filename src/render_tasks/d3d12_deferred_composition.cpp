@@ -28,7 +28,7 @@ namespace wr
 			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
 
 			bool is_fallback = d3d12::GetRaytracingType(render_system.m_device) == RaytracingType::FALLBACK;
-			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+			d3d12::BindDescriptorHeaps(cmd_list, is_fallback);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
@@ -88,7 +88,7 @@ namespace wr
 				1);
 		}
 
-		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
@@ -154,12 +154,12 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			fg.GetPredecessorData<CubemapConvolutionTaskData>();
 
 			if (data.is_hybrid)
 			{
 				// Wait on hybrid task
-				const auto& hybird_data = fg.GetPredecessorData<RTHybridData>();
+				fg.GetPredecessorData<RTHybridData>();
 			}
 
 			if (n_render_system.m_render_window.has_value())
@@ -218,9 +218,9 @@ namespace wr
 				// Get HBAO+ Texture
 				if (data.is_hbao)
 				{
-					auto handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
+					auto hbao_handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
 					auto ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
-					d3d12::CreateSRVFromSpecificRTV(ao_rt, handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
+					d3d12::CreateSRVFromSpecificRTV(ao_rt, hbao_handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
 				}
 
 				// Get Irradiance Map
@@ -273,7 +273,7 @@ namespace wr
 				if constexpr (d3d12::settings::use_bundles)
 				{
 					bool is_fallback = d3d12::GetRaytracingType(n_render_system.m_device) == RaytracingType::FALLBACK;
-					d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+					d3d12::BindDescriptorHeaps(cmd_list, is_fallback);
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
