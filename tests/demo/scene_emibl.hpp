@@ -15,8 +15,6 @@ namespace emibl_scene
 		// RESOURCES
 		//////////////////////////
 
-		static float emissive_multiplier = 1.0f;
-
 		static std::shared_ptr<wr::ModelPool> model_pool;
 		static std::shared_ptr<wr::TexturePool> texture_pool;
 		static std::shared_ptr<wr::MaterialPool> material_pool;
@@ -332,9 +330,6 @@ namespace emibl_scene
 	void UpdateScene()
 	{
 		float deltaTime = ImGui::GetIO().DeltaTime;
-
-		wr::Material* bw_tiles_internal = resources::material_pool->GetMaterial(resources::material_handles[9]);
-		bw_tiles_internal->SetConstant<wr::MaterialConstant::EMISSIVE_MULTIPLIER>(resources::emissive_multiplier);
 
 		for (auto& model : models)
 		{

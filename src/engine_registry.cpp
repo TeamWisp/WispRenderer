@@ -524,7 +524,7 @@ namespace wr
 		PipelineDescription::ComputeShader(shaders::down_scale),
 		PipelineDescription::RootSignature(root_signatures::down_scale),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT,wr::Format::R16G16B16A16_FLOAT,wr::Format::R8G8B8A8_UNORM }),
+		PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT,wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT }),
 		PipelineDescription::NumRTVFormats(3),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),
