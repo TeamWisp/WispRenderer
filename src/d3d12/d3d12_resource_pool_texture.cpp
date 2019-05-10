@@ -434,7 +434,7 @@ namespace wr
 
 		if (std::string_view ext_int = extension.value(); extension.has_value())
 		{
-			HRESULT hr;
+			HRESULT hr = S_OK;
 
 			if (ext_int.find("png") != std::string_view::npos
 				|| ext_int.find("jpeg") != std::string_view::npos
@@ -460,6 +460,7 @@ namespace wr
 			else
 			{
 				LOGC("Texture {} not loaded. Format not supported.", path);
+				return {};
 			}
 
 			if (FAILED(hr))

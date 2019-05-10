@@ -160,7 +160,7 @@ namespace wr::d3d12
 		// Get prebuild info bottom level
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS bottom_level_inputs;
 		bottom_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-		bottom_level_inputs.NumDescs = geometry.size();
+		bottom_level_inputs.NumDescs = static_cast<UINT>(geometry.size());
 		bottom_level_inputs.pGeometryDescs = geometry_descs.data();
 		bottom_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		bottom_level_inputs.Flags = build_flags;
@@ -177,12 +177,8 @@ namespace wr::d3d12
 
 		// Allocate resources for acceleration structures.
 		{
-			D3D12_RESOURCE_STATES initial_resource_state;
-			if (GetRaytracingType(device) == RaytracingType::NATIVE)
-			{
-				initial_resource_state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-			}
-			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+			D3D12_RESOURCE_STATES initial_resource_state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
 				initial_resource_state = device->m_fallback_native->GetAccelerationStructureResourceState();
 			}
@@ -231,7 +227,7 @@ namespace wr::d3d12
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		top_level_inputs.Flags = build_flags;
-		top_level_inputs.NumDescs = blas_list.size();
+		top_level_inputs.NumDescs = static_cast<UINT>(blas_list.size());
 		top_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 
 		// Get prebuild info top level
@@ -247,12 +243,8 @@ namespace wr::d3d12
 
 		// Allocate acceleration structure buffer
 		{
-			D3D12_RESOURCE_STATES initial_resoruce_state;
-			if (GetRaytracingType(device) == RaytracingType::NATIVE)
-			{
-				initial_resoruce_state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-			}
-			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+			D3D12_RESOURCE_STATES initial_resoruce_state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
 				initial_resoruce_state = device->m_fallback_native->GetAccelerationStructureResourceState();
 			}
@@ -365,7 +357,7 @@ namespace wr::d3d12
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		top_level_inputs.Flags = build_flags;
-		top_level_inputs.NumDescs = blas_list.size();
+		top_level_inputs.NumDescs = static_cast<UINT>(blas_list.size());
 		top_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO old_prebuild_info = tlas.m_prebuild_info;
@@ -456,7 +448,8 @@ namespace wr::d3d12
 			// Top Level Acceleration Structure desc
 			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
 			{
-				cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(tlas.m_native));
+				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(tlas.m_native);
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
 
 				top_level_inputs.InstanceDescs = tlas.m_instance_desc->GetGPUVirtualAddress();
 				top_level_build_desc.Inputs = top_level_inputs;

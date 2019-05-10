@@ -339,6 +339,7 @@ namespace wr::d3d12
 		else
 		{
 			LOGC("[ERROR]: Texture is not a cubemap");
+			return;
 		}
 
 		srv_desc.ViewDimension = dimension;
@@ -358,8 +359,6 @@ namespace wr::d3d12
 		decltype(Device::m_native) n_device;
 
 		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
-
-		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
 		
@@ -432,8 +431,6 @@ namespace wr::d3d12
 		decltype(Device::m_native) n_device;
 
 		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
-
-		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
 

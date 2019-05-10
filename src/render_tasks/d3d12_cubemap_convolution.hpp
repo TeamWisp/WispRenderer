@@ -160,7 +160,7 @@ namespace wr
 
 							constexpr unsigned int env_idx = rs_layout::GetHeapLoc(params::cubemap_convolution, params::CubemapConvolutionE::ENVIRONMENT_CUBEMAP);
 							d3d12::SetShaderSRV(cmd_list, 2, env_idx, radiance);
-							d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
+							d3d12::BindDescriptorHeaps(cmd_list);
 
 							if (n_mesh->m_index_count != 0)
 							{

@@ -33,7 +33,7 @@ namespace wr::d3d12
 			DXGI_SAMPLE_DESC sample_desc = { 1, 0 };
 
 			D3D12_INPUT_LAYOUT_DESC input_layout_desc = {};
-			input_layout_desc.NumElements = input_layout.size();
+			input_layout_desc.NumElements = static_cast<UINT>(input_layout.size());
 			input_layout_desc.pInputElementDescs = input_layout.data();
 
 			D3D12_SHADER_BYTECODE vs_bytecode = {};
@@ -46,7 +46,7 @@ namespace wr::d3d12
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
 			pso_desc.PrimitiveTopologyType = (D3D12_PRIMITIVE_TOPOLOGY_TYPE)descriptor.m_topology_type;
-			for (auto i = 0; i < descriptor.m_num_rtv_formats; i++)
+			for (auto i = 0u; i < descriptor.m_num_rtv_formats; i++)
 			{ // FIXME: memcpy
 				pso_desc.RTVFormats[i] = (DXGI_FORMAT)descriptor.m_rtv_formats[i];
 			}

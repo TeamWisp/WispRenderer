@@ -121,9 +121,9 @@ namespace wr
 			inline void AppendOffset(ASBuildData& data, wr::internal::D3D12MeshInternal* mesh, unsigned int material_id)
 			{
 				wr::temp::RayTracingOffset_CBData offset;
-				offset.material_idx = static_cast<float>(material_id);
-				offset.idx_offset = static_cast<float>(mesh->m_index_staging_buffer_offset);
-				offset.vertex_offset = static_cast<float>(mesh->m_vertex_staging_buffer_offset);
+				offset.material_idx = material_id;
+				offset.idx_offset = static_cast<std::uint32_t>(mesh->m_index_staging_buffer_offset);
+				offset.vertex_offset = static_cast<std::uint32_t>(mesh->m_vertex_staging_buffer_offset);
 				data.out_offsets.push_back(offset);
 			}
 
@@ -144,11 +144,11 @@ namespace wr
 				obj.index_buffer = ib;
 				obj.vertex_buffer = vb;
 
-				obj.m_indices_offset = n_mesh->m_index_staging_buffer_offset;
-				obj.m_num_indices = n_mesh->m_index_count;
-				obj.m_vertices_offset = n_mesh->m_vertex_staging_buffer_offset;
-				obj.m_num_vertices = n_mesh->m_vertex_count;
-				obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
+				obj.m_indices_offset = static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset);
+				obj.m_num_indices = static_cast<std::uint32_t>(n_mesh->m_index_count);
+				obj.m_vertices_offset = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset);
+				obj.m_num_vertices = static_cast<std::uint32_t>(n_mesh->m_vertex_count);
+				obj.m_vertex_stride = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_stride);
 
 				// Build Bottom level BVH
 				auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
@@ -216,11 +216,11 @@ namespace wr
 						obj.index_buffer = ib;
 						obj.vertex_buffer = vb;
 
-						obj.m_indices_offset = n_mesh->m_index_staging_buffer_offset;
-						obj.m_num_indices = n_mesh->m_index_count;
-						obj.m_vertices_offset = n_mesh->m_vertex_staging_buffer_offset;
-						obj.m_num_vertices = n_mesh->m_vertex_count;
-						obj.m_vertex_stride = n_mesh->m_vertex_staging_buffer_stride;
+						obj.m_indices_offset = static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset);
+						obj.m_num_indices = static_cast<std::uint32_t>(n_mesh->m_index_count);
+						obj.m_vertices_offset = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset);
+						obj.m_num_vertices = static_cast<std::uint32_t>(n_mesh->m_vertex_count);
+						obj.m_vertex_stride = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_stride);
 
 						// Build Bottom level BVH
 						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
@@ -272,7 +272,7 @@ namespace wr
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
 					{
 						auto cpu_handle = data.out_scene_ib_alloc.GetDescriptorHandle();
-						d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, 0, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
+						d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
 					}
 
 					// Create material structured buffer view
