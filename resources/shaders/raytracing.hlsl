@@ -273,11 +273,10 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		s0,
 		uv);
 
-	float3 albedo = pow(output_data.albedo, 2.2f);
-	//float3 albedo = output_data.albedo;
+	float3 albedo = output_data.albedo;
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
-	float3 emissive = pow(output_data.emissive, 2.2f);
+	float3 emissive = output_data.emissive;
 	float ao = output_data.ao;
 
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
@@ -318,6 +317,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		albedo,
 		metal,
 		roughness,
+		emissive,
 		fN,
 		payload.seed,
 		payload.depth);
@@ -326,5 +326,5 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular) * ao;
 
-	payload.color = ambient + lighting + emissive;
+	payload.color = ambient + lighting;
 }

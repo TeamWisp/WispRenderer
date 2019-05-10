@@ -7,7 +7,6 @@
 #include "d3d12/d3d12_renderer.hpp"
 #include "imgui/ImGuizmo.h"
 #include "demo_frame_graphs.hpp"
-#include "scene_emibl.hpp"
 
 namespace engine
 {

@@ -22,7 +22,7 @@ namespace wr
 {
 	enum class TextureType : size_t
 	{
-		ALBEDO,
+		ALBEDO = 0,
 		NORMAL,
 		ROUGHNESS,
 		METALLIC,

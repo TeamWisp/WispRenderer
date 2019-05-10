@@ -218,23 +218,15 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
-					if (material_internal->HasTexture(TextureType::ALBEDO))
-						set_srv(material_internal->GetTexture(TextureType::ALBEDO));
-					
-					if (material_internal->HasTexture(TextureType::NORMAL))
-						set_srv(material_internal->GetTexture(TextureType::NORMAL));
+					std::array<TextureType, static_cast<size_t>(TextureType::COUNT)> types = { TextureType::ALBEDO, TextureType::NORMAL,
+																							   TextureType::ROUGHNESS, TextureType::METALLIC,
+																							   TextureType::EMISSIVE, TextureType::AO };
 
-					if (material_internal->HasTexture(TextureType::METALLIC))
-						set_srv(material_internal->GetTexture(TextureType::METALLIC));
-
-					if (material_internal->HasTexture(TextureType::ROUGHNESS))
-						set_srv(material_internal->GetTexture(TextureType::ROUGHNESS));
-
-					if (material_internal->HasTexture(TextureType::EMISSIVE))
-						set_srv(material_internal->GetTexture(TextureType::EMISSIVE));
-
-					if (material_internal->HasTexture(TextureType::AO))
-						set_srv(material_internal->GetTexture(TextureType::AO));
+					for (auto t : types)
+					{
+						if (material_internal->HasTexture(t))
+							set_srv(material_internal->GetTexture(t));
+					}
 				}
 
 				// Get light buffer

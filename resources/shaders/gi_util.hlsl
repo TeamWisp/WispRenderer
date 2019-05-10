@@ -113,7 +113,7 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 	return shadow_mult * (light_intensity * (NdotL * spec + NdotL * albedo / M_PI));
 }
 
-float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
+float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, float3 emissive, float ao, unsigned int seed, unsigned int depth)
 {
 	// #################### GGX #####################
 	float diffuse_probability = probabilityToSampleDiffuse(albedo, metal);
@@ -130,6 +130,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 			albedo, 
 			metal, 
 			roughness, 
+			emissive,
 			fN, 
 			seed, 
 			depth+1);
@@ -165,6 +166,6 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		float3 spec = (D * F * G) / ((4.0 * NdotL * NdotV + 0.001f));
 		float  ggx_probability = D * NdotH / (4 * LdotH);
 
-		return NdotL * irradiance * spec / (ggx_probability * (1.0f - diffuse_probability));
+		return (NdotL * irradiance * spec / (ggx_probability * (1.0f - diffuse_probability))) * ao;
 	}
 }

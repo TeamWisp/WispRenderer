@@ -65,11 +65,11 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	float3 emissive = lerp(float3(0.0f, 0.0f, 0.0f), material_emissive.Sample(s0, uv).xyz, use_emissive_texture);
 	float ao = lerp(1.0f, material_ambient_occlusion.Sample(s0, uv).x, use_ao_texture);
 
-	output.albedo = albedo;
+	output.albedo = pow(albedo, 2.2f);
 	output.roughness = roughness;
 	output.normal = tex_normal;
 	output.metallic = metallic;
-	output.emissive = emissive * data.emissive_multiplier;
+	output.emissive = pow(emissive,2.2f) * data.emissive_multiplier;
 	output.ao = ao;
 
 	return output;
@@ -135,11 +135,11 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 	float3 emissive = lerp(float3(0.0f, 0.0f, 0.0f), material_emissive.SampleLevel(s0, uv, mip_level).xyz, use_emissive_texture);
 	float ao = lerp(1.0f, material_ambient_occlusion.SampleLevel(s0, uv, mip_level).x, use_ao_texture);
 
-	output.albedo = albedo;
+	output.albedo = pow(albedo, 2.2f);
 	output.roughness = roughness;
 	output.normal = normal_t;
 	output.metallic = metallic;
-	output.emissive = emissive * data.emissive_multiplier;
+	output.emissive = pow(emissive, 2.2f) * data.emissive_multiplier;
 	output.ao = ao;
 
 	return output;

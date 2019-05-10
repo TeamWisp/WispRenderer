@@ -44,7 +44,8 @@ StructuredBuffer<Offset> g_offsets : register(t5);
 Texture2D g_textures[1000] : register(t10);
 Texture2D gbuffer_albedo : register(t1010);
 Texture2D gbuffer_normal : register(t1011);
-Texture2D gbuffer_depth : register(t1012);
+Texture2D gbuffer_emissive : register(t1012);
+Texture2D gbuffer_depth : register(t1013);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
@@ -102,6 +103,7 @@ void RaygenEntry()
 	// Get g-buffer information
 	float4 albedo_roughness = gbuffer_albedo[screen_co];
 	float4 normal_metallic = gbuffer_normal[screen_co];
+	float4 emissive_ao = gbuffer_emissive[screen_co];
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
@@ -110,6 +112,8 @@ void RaygenEntry()
 	float3 normal = normal_metallic.xyz;
 	float metallic = normal_metallic.w;
 	float roughness = albedo_roughness.w;
+	float3 emissive = emissive_ao.xyz;
+	float ao = emissive_ao.w;
 
 	// Do lighting
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
@@ -123,7 +127,7 @@ void RaygenEntry()
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
 	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
-	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, emissive, ao, rand_seed, 0);
 	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 
 	result = clamp(result, 0, 100);
@@ -207,7 +211,7 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float3 albedo = output_data.albedo;
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
-	float3 emissive = pow(output_data.emissive, 2.2f);
+	float3 emissive = output_data.emissive;
 	float ao = output_data.ao;
 
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
@@ -227,15 +231,13 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 
 	// #################### GGX #####################
 	nextRand(payload.seed);
-	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, emissive, ao, payload.seed, payload.depth + 1);
 	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
-	payload.color += emissive;
 }
 
 //Reflection skybox
 [shader("miss")]
 void ReflectionMiss(inout HitInfo payload)
 {
-	//payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
-	payload.color = 0;
+	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
 }

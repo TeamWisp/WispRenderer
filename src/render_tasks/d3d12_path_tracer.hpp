@@ -38,6 +38,7 @@ namespace wr
 		DescriptorAllocation out_output_alloc;
 		DescriptorAllocation out_gbuffer_albedo_alloc;
 		DescriptorAllocation out_gbuffer_normal_alloc;
+		DescriptorAllocation out_gbuffer_emissive_alloc;
 		DescriptorAllocation out_gbuffer_depth_alloc;
 
 		bool tlas_requires_init = true;
@@ -135,6 +136,7 @@ namespace wr
 				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_emissive_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
@@ -150,12 +152,14 @@ namespace wr
 				// Bind g-buffers (albedo, normal, depth)
 				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
 				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				auto emissive_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle();
 				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, emissive_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats[2]);
 
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 			}
@@ -238,8 +242,11 @@ namespace wr
 				auto out_normal_gbuffer_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 1, out_normal_gbuffer_handle);
 
+				auto out_emissive_gbuffer_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 2, out_emissive_gbuffer_handle);
+
 				auto out_scene_depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 2, out_scene_depth_handle);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 3, out_scene_depth_handle);
 
 				/*
 				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
@@ -284,23 +291,17 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
-					if (material_internal->HasTexture(TextureType::ALBEDO))
-						set_srv(material_internal->GetTexture(TextureType::ALBEDO));
-					
-					if (material_internal->HasTexture(TextureType::NORMAL))
-						set_srv(material_internal->GetTexture(TextureType::NORMAL));
+					std::array<TextureType, static_cast<size_t>(TextureType::COUNT)> types = { TextureType::ALBEDO, TextureType::NORMAL, 
+																							   TextureType::ROUGHNESS, TextureType::METALLIC, 
+																							   TextureType::EMISSIVE, TextureType::AO };
 
-					if (material_internal->HasTexture(TextureType::METALLIC))
-						set_srv(material_internal->GetTexture(TextureType::METALLIC));
+					for (auto t : types)
+					{
+						if (material_internal->HasTexture(t))
+							set_srv(material_internal->GetTexture(t));
+					}
 
-					if (material_internal->HasTexture(TextureType::ROUGHNESS))
-						set_srv(material_internal->GetTexture(TextureType::ROUGHNESS));
 
-					if (material_internal->HasTexture(TextureType::EMISSIVE))
-						set_srv(material_internal->GetTexture(TextureType::EMISSIVE));
-
-					if (material_internal->HasTexture(TextureType::AO))
-						set_srv(material_internal->GetTexture(TextureType::AO));
 				}
 
 				// Get light buffer

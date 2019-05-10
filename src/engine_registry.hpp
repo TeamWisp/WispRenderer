@@ -500,7 +500,7 @@ namespace wr
 			rs_layout::Entry{(int)PathTracingE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)PathTracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)PathTracingE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)PathTracingE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)PathTracingE::GBUFFERS, 4, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)PathTracingE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
