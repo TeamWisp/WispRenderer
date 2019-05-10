@@ -96,15 +96,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		// Get ao
 		float ao = lerp(
 			1,
-<<<<<<< HEAD
-			gbuffer_AO[screen_coord].xyz,
-			// Lerp factor (0: fully lit, 1: AO active)
-			is_ao);
-=======
 			screen_space_ao.SampleLevel(point_sampler, uv, 0).xyz,
 			// Lerp factor (0: env map, 1: path traced)
-			is_hbao);
->>>>>>> origin/master
+			is_ao);
 
 		//Ao is multiplied with material texture ao, if present
 		ao *= gbuffer_ao;

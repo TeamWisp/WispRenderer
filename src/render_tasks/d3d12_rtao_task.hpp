@@ -57,7 +57,7 @@ namespace wr
 			{
 				// Create Record(s)
 				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.in_state_object);
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.in_state_object, "AORaygenEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
@@ -71,7 +71,7 @@ namespace wr
 			{
 				// Create Record(s)
 				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.in_state_object);
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto miss_identifier = d3d12::GetShaderIdentifier(device, data.in_state_object, "MissEntry");
 				auto miss_record = d3d12::CreateShaderRecord(miss_identifier, shader_identifier_size);
@@ -85,7 +85,7 @@ namespace wr
 			{
 				// Create Record(s)
 				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.in_state_object);
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto hit_identifier = d3d12::GetShaderIdentifier(device, data.in_state_object, "AOHitGroup");
 				auto hit_record = d3d12::CreateShaderRecord(hit_identifier, shader_identifier_size);
@@ -212,7 +212,7 @@ namespace wr
 				d3d12::TransitionDepth(cmd_list, data.in_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-				d3d12::BindDescriptorHeaps(cmd_list, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindDescriptorHeaps(cmd_list, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.in_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
