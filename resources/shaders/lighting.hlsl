@@ -18,6 +18,16 @@ static uint light_type_point = 0;
 static uint light_type_directional = 1;
 static uint light_type_spot = 2;
 
+float3 calc_attenuation(Light light, float3 L, float3 light_dist)
+{
+	uint tid = light.tid & 3;
+
+	float min_cos = cos(light.ang);
+	float max_cos = lerp(min_cos, 1, 0.5f);
+	float cos_angle = dot(light.dir, L);
+	return lerp(smoothstep(min_cos, max_cos, cos_angle), 1.0f - smoothstep(0, light.rad, light_dist), tid != light_type_spot);
+}
+
 //Copied version for testing stuff
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light)
 {
@@ -28,16 +38,9 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float light_dist = length(L);
 	L /= light_dist;
 
-	//Spot intensity (only used with spot; but always calculated)
-	float min_cos = cos(light.ang);
-	float max_cos = lerp(min_cos, 1, 0.5f);
-	float cos_angle = dot(light.dir, L);
-	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
+	float attenuation = calc_attenuation(light, L, light_dist);
 
-	//Attenuation & spot intensity (only used with point or spot)
-	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
-
-	float3 radiance = (light.col * spot_intensity) * attenuation;
+	float3 radiance = light.col * attenuation;
 
 	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance);
 
@@ -83,19 +86,12 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float light_dist = length(L);
 	L /= light_dist;
 
-	//Spot intensity (only used with spot; but always calculated)
-	float min_cos = cos(light.ang);
-	float max_cos = lerp(min_cos, 1, 0.5f);
-	float cos_angle = dot(light.dir, L);
-	float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
-
-	//Attenuation & spot intensity (only used with point or spot)
-	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
+	float attenuation = calc_attenuation(light, L, light_dist);
 
 	// Maybe change hard-coded 100000 to be dynamic according to the scene size?
 	float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
-	float3 radiance = (light.col * spot_intensity) * attenuation;
+	float3 radiance = light.col * attenuation;
 
 	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance);
 
@@ -141,19 +137,13 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		float light_dist = length(L);
 		L /= light_dist;
 
-		//Spot intensity (only used with spot; but always calculated)
-		float min_cos = cos(light.ang);
-		float max_cos = lerp(min_cos, 1, 0.5f);
-		float cos_angle = dot(light.dir, L);
-		float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
-		// Directional and spot light attenuation
-		float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
+		float attenuation = calc_attenuation(light, L, light_dist);
 
 		// Get maxium ray length (depending on type)
 		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
 		// Add shadow factor to final result
-		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed) * (attenuation * spot_intensity);
+		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed) * attenuation;
 	}
 
 	// return final res
