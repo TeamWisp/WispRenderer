@@ -154,12 +154,12 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 			if (data.is_hybrid)
 			{
 				// Wait on hybrid task
-				fg.GetPredecessorData<RTHybridData>();
+				fg.WaitForPredecessorTask<RTHybridData>();
 			}
 
 			if (n_render_system.m_render_window.has_value())
