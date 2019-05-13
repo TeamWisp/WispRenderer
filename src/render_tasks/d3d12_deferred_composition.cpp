@@ -136,7 +136,7 @@ namespace wr
 					auto shadow_handle = data.out_buffer_refl_shadow_alloc.GetDescriptorHandle();
 
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
-					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, hybrid_rt->m_create_info.m_num_rtv_formats, hybrid_rt->m_create_info.m_rtv_formats.data());
+					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 2, hybrid_rt->m_create_info.m_rtv_formats.data());
 				}
 			}
 		}

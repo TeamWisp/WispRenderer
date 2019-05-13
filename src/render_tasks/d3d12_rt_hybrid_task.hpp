@@ -401,12 +401,11 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R8_UNORM }),
-			RenderTargetProperties::NumRTVFormats(2),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R8_UNORM, wr::Format::R16G16B16A16_FLOAT }),
+			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name),
-			RenderTargetProperties::ResolutionScalar(0.5f)
+			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
