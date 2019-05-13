@@ -23,7 +23,7 @@ namespace wr
 		d3d12::AccelerationStructure out_tlas = {};
 		D3D12StructuredBufferHandle* out_sb_material_handle = nullptr;
 		D3D12StructuredBufferHandle* out_sb_offset_handle = nullptr;
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> out_blas_list;
+		std::vector<d3d12::desc::BlasDesc> out_blas_list;
 		std::vector<temp::RayTracingMaterial_CBData> out_materials;
 		std::vector<temp::RayTracingOffset_CBData> out_offsets;
 		std::unordered_map<std::uint64_t, std::uint64_t> out_parsed_materials;
@@ -288,18 +288,10 @@ namespace wr
 					}
 				}
 			}
-
-			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			
+			inline bool ReconstructBLASsIfNeeded(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
-				data.out_materials.clear();
-				data.out_offsets.clear();
-				data.out_parsed_materials.clear();
-
-				d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
-
-				auto& batches = scene_graph.GetGlobalBatches();
-				const auto& batchInfo = scene_graph.GetBatches();
-
+				auto batches = scene_graph.GetGlobalBatches();
 				bool needs_reconstruction = false;
 
 				std::vector<D3D12ModelPool*> model_pools;
@@ -349,7 +341,19 @@ namespace wr
 					CreateSRVs(data);
 				}
 
+				return needs_reconstruction;
+			}
 
+			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			{
+				data.out_materials.clear();
+				data.out_offsets.clear();
+				data.out_parsed_materials.clear();
+
+				d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+
+				auto& batches = scene_graph.GetGlobalBatches();
+				const auto& batchInfo = scene_graph.GetBatches();
 
 				auto prev_size = data.out_blas_list.size();
 				data.out_blas_list.clear();
@@ -357,7 +361,9 @@ namespace wr
 
 				unsigned int offset_id = 0;
 
-				// Update transformations
+				ReconstructBLASsIfNeeded(device, cmd_list, scene_graph, data);
+
+				// Update transformations // TODO: This might be unnessessary if reconstrblasifneeded return true.
 				for (auto& batch : batches)
 				{
 					auto model = batch.first.first;
