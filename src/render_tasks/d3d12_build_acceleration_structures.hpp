@@ -23,7 +23,7 @@ namespace wr
 		d3d12::AccelerationStructure out_tlas = {};
 		D3D12StructuredBufferHandle* out_sb_material_handle = nullptr;
 		D3D12StructuredBufferHandle* out_sb_offset_handle = nullptr;
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> out_blas_list;
+		std::vector<d3d12::desc::BlasDesc> out_blas_list;
 		std::vector<temp::RayTracingMaterial_CBData> out_materials;
 		std::vector<temp::RayTracingOffset_CBData> out_offsets;
 		std::unordered_map<std::uint64_t, std::uint64_t> out_parsed_materials;
@@ -127,6 +127,21 @@ namespace wr
 				data.out_offsets.push_back(offset);
 			}
 
+			inline d3d12::desc::GeometryDesc CreateGeometryDescFromMesh(D3D12MeshInternal* mesh, d3d12::StagingBuffer* vb, d3d12::StagingBuffer* ib)
+			{
+				d3d12::desc::GeometryDesc obj;
+				obj.index_buffer = ib;
+				obj.vertex_buffer = vb;
+
+				obj.m_indices_offset = static_cast<std::uint32_t>(mesh->m_index_staging_buffer_offset);
+				obj.m_num_indices = static_cast<std::uint32_t>(mesh->m_index_count);
+				obj.m_vertices_offset = static_cast<std::uint32_t>(mesh->m_vertex_staging_buffer_offset);
+				obj.m_num_vertices = static_cast<std::uint32_t>(mesh->m_vertex_count);
+				obj.m_vertex_stride = static_cast<std::uint32_t>(mesh->m_vertex_staging_buffer_stride);
+
+				return obj;
+			}
+
 			inline void BuildBLASSingle(d3d12::Device* device, d3d12::CommandList* cmd_list, Model* model, std::pair<Mesh*, MaterialHandle> mesh_material, ASBuildData& data)
 			{
 				auto n_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
@@ -140,15 +155,7 @@ namespace wr
 
 				auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh_material.first->id);
 
-				d3d12::desc::GeometryDesc obj;
-				obj.index_buffer = ib;
-				obj.vertex_buffer = vb;
-
-				obj.m_indices_offset = static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset);
-				obj.m_num_indices = static_cast<std::uint32_t>(n_mesh->m_index_count);
-				obj.m_vertices_offset = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset);
-				obj.m_num_vertices = static_cast<std::uint32_t>(n_mesh->m_vertex_count);
-				obj.m_vertex_stride = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_stride);
+				d3d12::desc::GeometryDesc obj = CreateGeometryDescFromMesh(n_mesh, vb, ib);
 
 				// Build Bottom level BVH
 				auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
@@ -176,8 +183,7 @@ namespace wr
 
 				d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
-				std::unordered_map<uint64_t, wr::d3d12::AccelerationStructure>::iterator it;
-				for (it = data.blasses.begin(); it != data.blasses.end(); ++it)
+				for (auto it = data.blasses.begin(); it != data.blasses.end(); ++it)
 				{
 					data.old_blasses[data.current_frame_index].push_back((*it).second);
 				}
@@ -212,15 +218,7 @@ namespace wr
 							material_handle = materials[mesh_i];
 						}
 
-						d3d12::desc::GeometryDesc obj;
-						obj.index_buffer = ib;
-						obj.vertex_buffer = vb;
-
-						obj.m_indices_offset = static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset);
-						obj.m_num_indices = static_cast<std::uint32_t>(n_mesh->m_index_count);
-						obj.m_vertices_offset = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset);
-						obj.m_num_vertices = static_cast<std::uint32_t>(n_mesh->m_vertex_count);
-						obj.m_vertex_stride = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_stride);
+						d3d12::desc::GeometryDesc obj = CreateGeometryDescFromMesh(n_mesh, vb, ib);
 
 						// Build Bottom level BVH
 						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
@@ -288,18 +286,10 @@ namespace wr
 					}
 				}
 			}
-
-			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			
+			/*inline bool ReconstructBLASsIfNeeded(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
-				data.out_materials.clear();
-				data.out_offsets.clear();
-				data.out_parsed_materials.clear();
-
-				d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
-
-				auto& batches = scene_graph.GetGlobalBatches();
-				const auto& batchInfo = scene_graph.GetBatches();
-
+				auto batches = scene_graph.GetGlobalBatches();
 				bool needs_reconstruction = false;
 
 				std::vector<D3D12ModelPool*> model_pools;
@@ -349,7 +339,19 @@ namespace wr
 					CreateSRVs(data);
 				}
 
+				return needs_reconstruction;
+			}*/
 
+			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			{
+				data.out_materials.clear();
+				data.out_offsets.clear();
+				data.out_parsed_materials.clear();
+
+				d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+
+				auto& batches = scene_graph.GetGlobalBatches();
+				const auto& batchInfo = scene_graph.GetBatches();
 
 				auto prev_size = data.out_blas_list.size();
 				data.out_blas_list.clear();
@@ -357,7 +359,9 @@ namespace wr
 
 				unsigned int offset_id = 0;
 
-				// Update transformations
+				//ReconstructBLASsIfNeeded(device, cmd_list, scene_graph, data);
+
+				// Update transformations // TODO: This might be unnessessary if reconstrblasifneeded return true.
 				for (auto& batch : batches)
 				{
 					auto model = batch.first.first;

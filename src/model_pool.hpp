@@ -404,7 +404,7 @@ namespace wr
 			{
 				if (mesh_material.first->id == mesh->id)
 				{
-					UpdateModelBoundingBoxes<TV>(model, mesh, vertices);
+					UpdateModelBoundingBoxes<TV>(model, vertices);
 				}
 			}
 		}
