@@ -154,7 +154,7 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RaytracingData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-			fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
 

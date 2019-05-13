@@ -143,7 +143,6 @@ namespace wr::d3d12
 		};
 
 		// Get shader identifiers.
-		std::uint64_t retval;
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
 			return GetShaderIdentifiers(obj->m_properties);
