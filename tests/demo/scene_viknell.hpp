@@ -139,9 +139,9 @@ namespace viknell_scene
 	{
 		t += 10.f * ImGui::GetIO().DeltaTime;
 
-		auto pos = test_model->m_position;
-		pos.m128_f32[0] = sin(t * 0.1) * 0.5;
-		test_model->SetPosition(pos);
+		//auto pos = test_model->m_position;
+		//pos.m128_f32[0] = sin(t * 0.1) * 0.5;
+		//test_model->SetPosition(pos);
 
 		camera->Update(ImGui::GetIO().DeltaTime);
 		camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, camera);

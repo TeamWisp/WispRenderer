@@ -127,6 +127,21 @@ namespace wr
 				data.out_offsets.push_back(offset);
 			}
 
+			inline d3d12::desc::GeometryDesc CreateGeometryDescFromMesh(D3D12MeshInternal* mesh, d3d12::StagingBuffer* vb, d3d12::StagingBuffer* ib)
+			{
+				d3d12::desc::GeometryDesc obj;
+				obj.index_buffer = ib;
+				obj.vertex_buffer = vb;
+
+				obj.m_indices_offset = static_cast<std::uint32_t>(mesh->m_index_staging_buffer_offset);
+				obj.m_num_indices = static_cast<std::uint32_t>(mesh->m_index_count);
+				obj.m_vertices_offset = static_cast<std::uint32_t>(mesh->m_vertex_staging_buffer_offset);
+				obj.m_num_vertices = static_cast<std::uint32_t>(mesh->m_vertex_count);
+				obj.m_vertex_stride = static_cast<std::uint32_t>(mesh->m_vertex_staging_buffer_stride);
+
+				return obj;
+			}
+
 			inline void BuildBLASSingle(d3d12::Device* device, d3d12::CommandList* cmd_list, Model* model, std::pair<Mesh*, MaterialHandle> mesh_material, ASBuildData& data)
 			{
 				auto n_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
@@ -140,15 +155,7 @@ namespace wr
 
 				auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh_material.first->id);
 
-				d3d12::desc::GeometryDesc obj;
-				obj.index_buffer = ib;
-				obj.vertex_buffer = vb;
-
-				obj.m_indices_offset = static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset);
-				obj.m_num_indices = static_cast<std::uint32_t>(n_mesh->m_index_count);
-				obj.m_vertices_offset = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset);
-				obj.m_num_vertices = static_cast<std::uint32_t>(n_mesh->m_vertex_count);
-				obj.m_vertex_stride = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_stride);
+				d3d12::desc::GeometryDesc obj = CreateGeometryDescFromMesh(n_mesh, vb, ib);
 
 				// Build Bottom level BVH
 				auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
@@ -176,8 +183,7 @@ namespace wr
 
 				d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
-				std::unordered_map<uint64_t, wr::d3d12::AccelerationStructure>::iterator it;
-				for (it = data.blasses.begin(); it != data.blasses.end(); ++it)
+				for (auto it = data.blasses.begin(); it != data.blasses.end(); ++it)
 				{
 					data.old_blasses[data.current_frame_index].push_back((*it).second);
 				}
@@ -212,15 +218,7 @@ namespace wr
 							material_handle = materials[mesh_i];
 						}
 
-						d3d12::desc::GeometryDesc obj;
-						obj.index_buffer = ib;
-						obj.vertex_buffer = vb;
-
-						obj.m_indices_offset = static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset);
-						obj.m_num_indices = static_cast<std::uint32_t>(n_mesh->m_index_count);
-						obj.m_vertices_offset = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset);
-						obj.m_num_vertices = static_cast<std::uint32_t>(n_mesh->m_vertex_count);
-						obj.m_vertex_stride = static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_stride);
+						d3d12::desc::GeometryDesc obj = CreateGeometryDescFromMesh(n_mesh, vb, ib);
 
 						// Build Bottom level BVH
 						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
@@ -289,7 +287,7 @@ namespace wr
 				}
 			}
 			
-			inline bool ReconstructBLASsIfNeeded(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			/*inline bool ReconstructBLASsIfNeeded(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
 				auto batches = scene_graph.GetGlobalBatches();
 				bool needs_reconstruction = false;
@@ -342,7 +340,7 @@ namespace wr
 				}
 
 				return needs_reconstruction;
-			}
+			}*/
 
 			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
 			{
@@ -361,7 +359,7 @@ namespace wr
 
 				unsigned int offset_id = 0;
 
-				ReconstructBLASsIfNeeded(device, cmd_list, scene_graph, data);
+				//ReconstructBLASsIfNeeded(device, cmd_list, scene_graph, data);
 
 				// Update transformations // TODO: This might be unnessessary if reconstrblasifneeded return true.
 				for (auto& batch : batches)

@@ -58,7 +58,7 @@ namespace fg_manager
 		}
 	}
 
-	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::RAYTRACING;
+	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> const & imgui_func)
