@@ -15,9 +15,10 @@ TextureCube skybox : register(t4);
 TextureCube irradiance_map   : register(t5);
 TextureCube pref_env_map	 : register(t6);
 Texture2D brdf_lut			 : register(t7);
-Texture2D buffer_refl_shadow : register(t8); // xyz: reflection, a: shadow factor
-Texture2D screen_space_irradiance : register(t9);
-Texture2D screen_space_ao : register(t10);
+Texture2D buffer_reflection : register(t8); // rgb: reflection, a: shadow factor
+Texture2D buffer_shadow : register(t9);		// r: shadow factor
+Texture2D screen_space_irradiance : register(t10);
+Texture2D screen_space_ao : register(t11);
 RWTexture2D<float4> output   : register(u0);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
@@ -96,7 +97,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Do deferred shadow (fully lit for now)
 			1.0,
 			// Shadow buffer if its hybrid rendering
-			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0).w,
+			buffer_reflection.SampleLevel(linear_sampler, uv, 0).w,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
@@ -107,7 +108,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Sample from environment if it IS NOT hybrid rendering
 			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
-			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0).xyz,
+			buffer_reflection.SampleLevel(linear_sampler, uv, 0).xyz,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 

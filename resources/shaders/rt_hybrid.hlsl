@@ -32,7 +32,8 @@ struct Offset
     float vertex_offset;
 };
 
-RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
+RWTexture2D<float4> output_reflection : register(u0); // rgb: reflection, a: pdf
+RWTexture2D<unorm float> output_shadow : register(u1); // r: shadow factor
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -226,7 +227,8 @@ void RaygenEntry()
 	{
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
-		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+		output_reflection[screen_co] = float4(0, 0, 0, 0);
+		output_reflection[screen_co] = 0;
 		return;
 	}
 
@@ -249,8 +251,9 @@ void RaygenEntry()
 	float3 dirT = float3(0, 0, 0);
 	float4 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT), 0, 100000);
 
-	// xyz: reflection, a: shadow factor
-	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, shadow_result);
+	// Output data
+	output_reflection[screen_co] = float4(reflection_result.rgb, shadow_result);
+	output_shadow[screen_co] = shadow_result;
 }
 
 //Reflections

@@ -128,7 +128,7 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate(2));
 				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
@@ -136,25 +136,22 @@ namespace wr
 				data.tlas_requires_init = true;
 			}
 
-			// Versioning
-			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
-			{
-				// Bind output texture
-				d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+			// Bind output texture
+			d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
+			d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+			d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
 
-				// Bind g-buffers (albedo, normal, depth)
-				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
-				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
-				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
+			// Bind g-buffers (albedo, normal, depth)
+			auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+			auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+			auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 
-				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
+			auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+			d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
+			d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
 
-				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
-			}
+			d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 
 			if (!resize)
 			{
@@ -207,6 +204,8 @@ namespace wr
 				// Bind output, indices and materials, offsets, etc
 				auto out_uav_handle = data.out_output_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
+				out_uav_handle = data.out_output_alloc.GetDescriptorHandle(1);
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
@@ -402,8 +401,8 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
-			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R8_UNORM }),
+			RenderTargetProperties::NumRTVFormats(2),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(name),
