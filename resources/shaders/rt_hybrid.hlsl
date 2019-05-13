@@ -249,8 +249,7 @@ void RaygenEntry()
 
 	// Get reflection result
 	float3 dirT = float3(0, 0, 0);
-	float4 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT), 0, 100000);
-	reflection_result.w = lerp(1 / reflection_result.a, 1, reflection_result.a == 0);
+	float4 reflection_result = max(clamp(DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT), 0, 100000), 1e-5);
 
 	// Output data
 	output_reflection[screen_co] = reflection_result;
