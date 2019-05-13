@@ -37,7 +37,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	//Attenuation & spot intensity (only used with point or spot)
 	float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
 
-	float3 radiance = (light.col * spot_intensity) * attenuation;
+	float3 radiance = (light.col * 1) * 1;
 
 	float3 lighting = BRDF(L, V, normal, metallic, roughness, albedo, radiance);
 
@@ -71,7 +71,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	
 	float3 ambient = (kD * diffuse + specular) * ao;
 
-	return ambient + (res * shadow_factor) + emissive;
+	return ambient + (res) + emissive;
 }
 
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, inout uint rand_seed, uint depth)
@@ -141,11 +141,19 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		float light_dist = length(L);
 		L /= light_dist;
 
+		//Spot intensity (only used with spot; but always calculated)
+		float min_cos = cos(light.ang);
+		float max_cos = lerp(min_cos, 1, 0.5f);
+		float cos_angle = dot(light.dir, L);
+		float spot_intensity = lerp(smoothstep(min_cos, max_cos, cos_angle), 1, tid != light_type_spot);
+		// Directional and spot light attenuation
+		float attenuation = lerp(1.0f - smoothstep(0, light.rad, light_dist), 1, tid == light_type_directional);
+
 		// Get maxium ray length (depending on type)
 		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
 		// Add shadow factor to final result
-		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed);
+		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed) * (attenuation * spot_intensity);
 	}
 
 	// return final res
