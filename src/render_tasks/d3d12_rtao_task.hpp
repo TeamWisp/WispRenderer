@@ -18,6 +18,9 @@ namespace wr
 {
 	struct RTAOData
 	{
+
+		d3d12::AccelerationStructure out_tlas = {};
+
 		// Shader tables
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_miss_shader_table = { nullptr, nullptr, nullptr };
@@ -33,6 +36,8 @@ namespace wr
 		DescriptorAllocation out_uav_from_rtv;
 		DescriptorAllocation in_gbuffers;
 		DescriptorAllocation in_depthbuffer;
+
+		bool tlas_requires_init = false;
 	};
 	
 	namespace internal
@@ -107,12 +112,6 @@ namespace wr
 
 			if (!resize)
 			{
-				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-				auto pred_cmd_list = fg.GetPredecessorCommandList<wr::ASBuildData>();
-
-				cmd_list->m_rt_descriptor_heap = static_cast<d3d12::CommandList*>(pred_cmd_list)->m_rt_descriptor_heap;
-
-				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
@@ -167,7 +166,13 @@ namespace wr
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			fg.GetPredecessorData<wr::RTHybridData>(); //Wait for RTHybrid to avoid hyper threading issues.
 
-			d3d12::DescriptorHeap* desc_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
+			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
+
+			// Wait for AS to be built
+			{
+				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
+			}
 
 			// Wait for AS to be built
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
