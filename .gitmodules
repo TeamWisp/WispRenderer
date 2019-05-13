@@ -17,3 +17,6 @@
 [submodule "crashpad"]
 	path = crashpad
 	url = https://github.com/TeamWisp/Crashpad.git
+[submodule "deps/crashpad"]
+	path = deps/crashpad
+	url = https://github.com/TeamWisp/Crashpad.git
