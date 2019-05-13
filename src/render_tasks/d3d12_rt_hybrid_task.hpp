@@ -408,7 +408,8 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ResourceName(name),
+			RenderTargetProperties::ResolutionScalar(0.5f)
 		};
 
 		RenderTaskDesc desc;
