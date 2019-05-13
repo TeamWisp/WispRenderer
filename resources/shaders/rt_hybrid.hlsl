@@ -34,6 +34,7 @@ struct Offset
 
 RWTexture2D<float4> output_reflection : register(u0); // rgb: reflection, a: pdf
 RWTexture2D<unorm float> output_shadow : register(u1); // r: shadow factor
+RWTexture2D<float4> output_dirT_buffer : register(u2); // xyz: direction, w: hitT; dirT to calculate hit position
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -89,7 +90,7 @@ float3 HitWorldPosition()
 	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone, inout float3 dirT)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone, inout float4 dirT)
 {
 
 	if (depth >= MAX_RECURSION)
@@ -121,7 +122,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		ray,
 		payload);
 
-	dirT = direction * payload.hitT;
+	dirT = float4(direction, payload.hitT);
 	return payload.color;
 }
 
@@ -160,7 +161,7 @@ float3 importanceSamplePdf(float2 xi, float a, float3 N, inout float pdf)
 	return normalize(T * H.x + B * H.y + N * H.z);
 }
 
-float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, RayCone cone, inout float3 dirT)
+float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, RayCone cone, inout float4 dirT)
 {
 
 	// Calculate ray info
@@ -229,6 +230,7 @@ void RaygenEntry()
 		// So, the far plane pixels are set to 0
 		output_reflection[screen_co] = float4(0, 0, 0, 0);
 		output_reflection[screen_co] = 0;
+		output_dirT_buffer[screen_co] = float4(0, 0, 0, 0);
 		return;
 	}
 
@@ -248,12 +250,13 @@ void RaygenEntry()
 	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result
-	float3 dirT = float3(0, 0, 0);
+	float4 dirT = float4(0, 0, 0, 0);
 	float4 reflection_result = max(clamp(DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT), 0, 100000), 1e-5);
 
 	// Output data
 	output_reflection[screen_co] = reflection_result;
 	output_shadow[screen_co] = shadow_result;
+	output_dirT_buffer[screen_co] = dirT;
 }
 
 //Reflections
@@ -371,7 +374,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, fN, payload.seed, payload.depth);
 
 	//Reflection in reflections
-	float3 dirT = float3(0, 0, 0);
+	float4 dirT = float4(0, 0, 0, 0);
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, roughness, payload.cone, dirT).xyz;
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);

@@ -128,7 +128,7 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate(2));
+				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate(3));
 				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
@@ -140,6 +140,7 @@ namespace wr
 			d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
 			d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
+			d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 2, n_render_target->m_create_info.m_rtv_formats[2]);
 
 			// Bind g-buffers (albedo, normal, depth)
 			auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
@@ -206,6 +207,8 @@ namespace wr
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
 				out_uav_handle = data.out_output_alloc.GetDescriptorHandle(1);
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle);
+				out_uav_handle = data.out_output_alloc.GetDescriptorHandle(2);
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 2, out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
