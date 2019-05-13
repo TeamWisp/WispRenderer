@@ -71,7 +71,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	
 	float3 ambient = (kD * diffuse + specular) * ao;
 
-	return ambient + (res) + emissive;
+	return ambient + res + emissive;
 }
 
 float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, inout uint rand_seed, uint depth)
