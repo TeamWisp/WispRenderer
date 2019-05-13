@@ -54,7 +54,8 @@ void ShaderDirChangeDetected(std::string const & path, util::FileWatcher::FileSt
 	}
 }
 
-void startCrashpad() {
+void startCrashpad() 
+{
 	// Cache directory that will store crashpad information and minidumps
 	base::FilePath database(L"CrashPadDB");
 	// Path to the out-of-process handler executable
@@ -69,7 +70,8 @@ void startCrashpad() {
 	std::unique_ptr<crashpad::CrashReportDatabase> db =
 		crashpad::CrashReportDatabase::Initialize(database);
 
-	if (db != nullptr && db->GetSettings() != nullptr) {
+	if (db != nullptr && db->GetSettings() != nullptr) 
+	{
 		db->GetSettings()->SetUploadsEnabled(true);
 	}
 
@@ -87,7 +89,8 @@ void startCrashpad() {
 		/* asynchronous_start */ true
 	);
 
-	if (success) {
+	if (success) 
+	{
 		success = client.WaitForHandlerStart(INFINITE);
 	}
 }
