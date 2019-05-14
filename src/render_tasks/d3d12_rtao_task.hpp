@@ -202,7 +202,6 @@ namespace wr
 				cb_data.radius = 1.f;
 				cb_data.power = 1.f;
 				cb_data.sample_count = 8u;
-				cb_data.frame_idx = frame_idx;
 
 				//TODO: Should use ProjectionView_CBData or not?
 
