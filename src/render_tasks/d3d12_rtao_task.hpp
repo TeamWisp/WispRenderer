@@ -166,22 +166,11 @@ namespace wr
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			fg.GetPredecessorData<wr::RTHybridData>(); //Wait for RTHybrid to avoid hyper threading issues.
 
-			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
-
-			// Wait for AS to be built
-			{
-				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
-				cmd_list->m_native->ResourceBarrier(1, &barrier);
-			}
-
-			// Wait for AS to be built
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native));
-
 			if (n_render_system.m_render_window.has_value())
 			{
 				auto frame_idx = n_render_system.GetFrameIdx();
 
-				d3d12::BindRaytracingPipeline(cmd_list, data.in_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindRaytracingPipeline(cmd_list, data.in_state_object, false);
 
 				// Bind output, indices and materials, offsets, etc
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
@@ -216,19 +205,12 @@ namespace wr
 				// Transition depth to NON_PIXEL_RESOURCE
 				d3d12::TransitionDepth(cmd_list, data.in_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
-				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-				d3d12::BindDescriptorHeaps(cmd_list, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, false);
+				d3d12::BindDescriptorHeaps(cmd_list, false);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.in_cb_camera_handle->m_native, 2, frame_idx);
 
-				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
-				{
-					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_native, 1);
-				}
-				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
-				{
-					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(1, as_build_data.out_tlas.m_fallback_tlas_ptr);
-				}
-
+				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_native, 1);
+				
 #ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
 #endif // _DEBUG
@@ -254,44 +236,50 @@ namespace wr
 			}
 		}
 	}
-	inline void AddAOTask(FrameGraph& fg)
+	inline void AddRTAOTask(FrameGraph& fg, d3d12::Device* device)
 	{
-		std::wstring name(L"Ambient Oclussion");
-		RenderTargetProperties rt_properties
+		if (wr::d3d12::GetRaytracingType(device) == wr::RaytracingType::NATIVE)//We do not support fallback layer for shadow rays.
 		{
-			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(std::nullopt),
-			RenderTargetProperties::Height(std::nullopt),
-			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
-			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
-			RenderTargetProperties::CreateDSVBuffer(false),
-			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R8_UNORM}),
-			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name)
-		};
+			std::wstring name(L"Ambient Oclussion");
+			RenderTargetProperties rt_properties
+			{
+				RenderTargetProperties::IsRenderWindow(false),
+				RenderTargetProperties::Width(std::nullopt),
+				RenderTargetProperties::Height(std::nullopt),
+				RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
+				RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
+				RenderTargetProperties::CreateDSVBuffer(false),
+				RenderTargetProperties::DSVFormat(Format::UNKNOWN),
+				RenderTargetProperties::RTVFormats({ Format::R8_UNORM}),
+				RenderTargetProperties::NumRTVFormats(1),
+				RenderTargetProperties::Clear(true),
+				RenderTargetProperties::ClearDepth(true),
+				RenderTargetProperties::ResourceName(name)
+			};
 
-		RenderTaskDesc desc;
-		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			internal::SetupAOTask(rs, fg, handle, resize);
-		};
-		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
-		{
-			internal::ExecuteAOTask(rs, fg, sg, handle);
-		};
-		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize)
-		{
-			internal::DestroyAOTask(fg, handle, resize);
-		};
+			RenderTaskDesc desc;
+			desc.m_setup_func = [](RenderSystem & rs, FrameGraph & fg, RenderTaskHandle handle, bool resize)
+			{
+				internal::SetupAOTask(rs, fg, handle, resize);
+			};
+			desc.m_execute_func = [](RenderSystem & rs, FrameGraph & fg, SceneGraph & sg, RenderTaskHandle handle)
+			{
+				internal::ExecuteAOTask(rs, fg, sg, handle);
+			};
+			desc.m_destroy_func = [](FrameGraph & fg, RenderTaskHandle handle, bool resize)
+			{
+				internal::DestroyAOTask(fg, handle, resize);
+			};
 
-		desc.m_properties = rt_properties;
-		desc.m_type = RenderTaskType::COMPUTE;
-		desc.m_allow_multithreading = true;
+			desc.m_properties = rt_properties;
+			desc.m_type = RenderTaskType::COMPUTE;
+			desc.m_allow_multithreading = true;
 
-		fg.AddTask<RTAOData>(desc);
-		
+			fg.AddTask<RTAOData>(desc);
+		}
+		else
+		{
+			LOG("RTAO task was not added since the fallback layer is not supported for RTAO. Consider using HBAO+ instead.")
+		}
 	}
 }// namespace wr

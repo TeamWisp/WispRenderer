@@ -208,11 +208,8 @@ namespace fg_manager
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
 
-			//Ambient Occlusion task, but only when running on RTX supporting hardware
-			if (wr::d3d12::GetRaytracingType(static_cast<wr::D3D12RenderSystem&>(rs).m_device) != wr::RaytracingType::FALLBACK)
-			{
-				wr::AddAOTask(*fg);
-			}
+			//Raytraced Ambient Occlusion task
+			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
