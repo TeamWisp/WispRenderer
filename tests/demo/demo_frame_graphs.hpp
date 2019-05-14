@@ -97,41 +97,23 @@ namespace fg_manager
 			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-			//// Do Depth of field task
+			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
+			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
+			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
-
-			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
 			//initialize default settings
 			wr::BloomSettings defaultSettings;
 			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 
@@ -215,39 +197,21 @@ namespace fg_manager
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
+			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
+			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
-
-			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddBloomVerticalTask<wr::BloomHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
 			//initialize default settings
 			wr::BloomSettings defaultSettings;
 			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 
