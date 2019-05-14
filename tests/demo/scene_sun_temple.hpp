@@ -71,6 +71,7 @@ namespace sun_temple_scene
 		camera->SetPosition({ 600.f, 700.f, 250.f });
 		camera->SetRotation({ -30._deg, 120._deg, 0._deg });
 		camera->SetSpeed(100.0f);
+		camera->m_frustum_near = 0.5;
 
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);

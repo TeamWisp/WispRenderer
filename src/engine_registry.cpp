@@ -91,8 +91,6 @@ namespace wr
 
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::IN_HIST_LENGTH),
 
-		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::IN_VARIANCE),
-
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_INPUT),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_MOMENTS),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_NORMAL),
@@ -101,7 +99,6 @@ namespace wr
 		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_COLOR),
 		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_MOMENTS),
 		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_HIST_LENGTH),
-		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_VARIANCE),
 		);
 
 	REGISTER(root_signatures::svgf_denoiser, RootSignatureRegistry)({
@@ -318,8 +315,8 @@ namespace wr
 		PipelineDescription::ComputeShader(std::nullopt),
 		PipelineDescription::RootSignature(root_signatures::basic),
 		PipelineDescription::DSVFormat(Format::D32_FLOAT),
-		PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT }),
-		PipelineDescription::NumRTVFormats(3),
+		PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT }),
+		PipelineDescription::NumRTVFormats(4),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_NONE),
 		PipelineDescription::Depth(true),

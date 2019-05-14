@@ -64,11 +64,11 @@ namespace wr
 			d3d12::SetShaderSRV(cmd_list, 1, brdf_lut_loc, brdf_lut_text);
 
 			constexpr unsigned int reflection = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION);
-			d3d12::DescHeapCPUHandle reflection_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(reflection);
+			d3d12::DescHeapCPUHandle reflection_handle = data.out_buffer_refl_alloc.GetDescriptorHandle();
 			d3d12::SetShaderSRV(cmd_list, 1, reflection, reflection_handle);
 			
 			constexpr unsigned int shadow = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SHADOW);
-			d3d12::DescHeapCPUHandle shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow);
+			d3d12::DescHeapCPUHandle shadow_handle = data.out_buffer_shadow_alloc.GetDescriptorHandle();
 			d3d12::SetShaderSRV(cmd_list, 1, shadow, shadow_handle);
 
 			constexpr unsigned int sp_irradiance_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE);
@@ -116,12 +116,13 @@ namespace wr
 			data.out_gbuffer_normal_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
 			data.out_gbuffer_depth_alloc = std::move(data.out_allocator->Allocate());
 			data.out_lights_alloc = std::move(data.out_allocator->Allocate());
-			data.out_buffer_refl_shadow_alloc = std::move(data.out_allocator->Allocate());
+			data.out_buffer_refl_alloc = std::move(data.out_allocator->Allocate());
+			data.out_buffer_shadow_alloc = std::move(data.out_allocator->Allocate());
 			data.out_screen_space_irradiance_alloc = std::move(data.out_allocator->Allocate());
 			data.out_screen_space_ao_alloc = std::move(data.out_allocator->Allocate());
 			data.out_output_alloc = std::move(data.out_allocator->Allocate());
 
-			//for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
+			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
 				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle(i);
 				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle(i);
@@ -138,7 +139,7 @@ namespace wr
 				if (data.is_hybrid)
 				{
 					constexpr auto reflection_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION);
-					auto reflection_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(reflection_id/* + i*/);
+					auto reflection_handle = data.out_buffer_refl_alloc.GetDescriptorHandle();
 					
 					if (fg.HasTask<wr::RTReflectionData>())
 					{
@@ -160,7 +161,7 @@ namespace wr
 					}
 
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SHADOW);
-					auto shadow_handle = data.out_rtv_srv_allocation.GetDescriptorHandle(shadow_id /*+ i*/);
+					auto shadow_handle = data.out_buffer_shadow_alloc.GetDescriptorHandle();
 
 					if (fg.HasTask<wr::ShadowDenoiserData>())
 					{
@@ -364,7 +365,8 @@ namespace wr
 				std::move(data.out_gbuffer_normal_alloc);
 				std::move(data.out_gbuffer_depth_alloc);
 				std::move(data.out_lights_alloc);
-				std::move(data.out_buffer_refl_shadow_alloc);
+				std::move(data.out_buffer_refl_alloc);
+				std::move(data.out_buffer_shadow_alloc);
 				std::move(data.out_screen_space_irradiance_alloc);
 				std::move(data.out_screen_space_ao_alloc);
 				std::move(data.out_output_alloc);

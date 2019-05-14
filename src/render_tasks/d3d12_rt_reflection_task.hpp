@@ -36,9 +36,10 @@ namespace wr
 
 		unsigned int frame_idx;
 
-		DescriptorAllocation out_uav_from_rtv;
-		DescriptorAllocation out_gbuffers;
-		DescriptorAllocation out_depthbuffer;
+		DescriptorAllocation out_output_alloc;
+		DescriptorAllocation out_gbuffer_albedo_alloc;
+		DescriptorAllocation out_gbuffer_normal_alloc;
+		DescriptorAllocation out_gbuffer_depth_alloc;
 
 		bool tlas_requires_init;
 	};
@@ -129,29 +130,32 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
-				data.out_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
-				data.out_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
 			}
 
 			// Versioning
-			//for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
+			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
-				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
-				d3d12::CreateUAVFromRTV(n_render_target, rtv_handle, 1, n_render_target->m_create_info.m_rtv_formats.data());
+				d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 
 				// Bind g-buffers (albedo, normal, depth)
-				d3d12::DescHeapCPUHandle gbuffers_handle = data.out_gbuffers.GetDescriptorHandle();
-				d3d12::DescHeapCPUHandle depth_buffer_handle = data.out_depthbuffer.GetDescriptorHandle();
-
-				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
+				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-				d3d12::CreateSRVFromRTV(deferred_main_rt, gbuffers_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats.data());
-				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
+
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+
+				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 			}
 
 			if (!resize)
@@ -199,7 +203,7 @@ namespace wr
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
-				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				auto out_uav_handle = data.out_output_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
@@ -211,13 +215,13 @@ namespace wr
 				auto out_scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OFFSETS)), out_scene_offset_handle);
 
-				auto out_scene_gbuffers_handle1 = data.out_gbuffers.GetDescriptorHandle(0);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 0, out_scene_gbuffers_handle1);
+				auto out_albedo_gbuffer_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 0, out_albedo_gbuffer_handle);
 
-				auto out_scene_gbuffers_handle2 = data.out_gbuffers.GetDescriptorHandle(1);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, out_scene_gbuffers_handle2);
+				auto out_normal_gbuffer_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, out_normal_gbuffer_handle);
 
-				auto out_scene_depth_handle = data.out_depthbuffer.GetDescriptorHandle();
+				auto out_scene_depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, out_scene_depth_handle);
 
 				/*
@@ -260,16 +264,17 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
 					};
 
-					if (!material_internal->UsesConstantAlbedo())
-						set_srv(material_internal->GetAlbedo());
+					if (material_internal->HasTexture(TextureType::ALBEDO))
+						set_srv(material_internal->GetTexture(TextureType::ALBEDO));
 
-					set_srv(material_internal->GetNormal());
+					if (material_internal->HasTexture(TextureType::NORMAL))
+						set_srv(material_internal->GetTexture(TextureType::NORMAL));
 
-					if (!material_internal->UsesConstantMetallic())
-						set_srv(material_internal->GetMetallic());
+					if (material_internal->HasTexture(TextureType::METALLIC))
+						set_srv(material_internal->GetTexture(TextureType::METALLIC));
 
-					if (!material_internal->UsesConstantRoughness())
-						set_srv(material_internal->GetRoughness());
+					if (material_internal->HasTexture(TextureType::ROUGHNESS))
+						set_srv(material_internal->GetTexture(TextureType::ROUGHNESS));
 				}
 
 				// Get light buffer
@@ -372,9 +377,10 @@ namespace wr
 			if (!resize)
 			{
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
-				DescriptorAllocation temp2 = std::move(data.out_gbuffers);
-				DescriptorAllocation temp3 = std::move(data.out_depthbuffer);
+				std::move(data.out_output_alloc);
+				std::move(data.out_gbuffer_albedo_alloc);
+				std::move(data.out_gbuffer_normal_alloc);
+				std::move(data.out_gbuffer_depth_alloc);
 			}
 		}
 

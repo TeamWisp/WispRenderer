@@ -19,7 +19,8 @@ namespace wr
 		DescriptorAllocation out_gbuffer_normal_alloc;
 		DescriptorAllocation out_gbuffer_depth_alloc;
 		DescriptorAllocation out_lights_alloc;
-		DescriptorAllocation out_buffer_refl_shadow_alloc;
+		DescriptorAllocation out_buffer_refl_alloc;
+		DescriptorAllocation out_buffer_shadow_alloc;
 		DescriptorAllocation out_screen_space_irradiance_alloc;
 		DescriptorAllocation out_screen_space_ao_alloc;
 		DescriptorAllocation out_output_alloc;

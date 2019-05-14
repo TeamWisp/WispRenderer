@@ -525,7 +525,7 @@ namespace wr
 		return texture_handle;
 	}
 	
-	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(unsigned char* data, size_t width, size_t height, TextureType type, bool srgb, bool generate_mips)
+	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(unsigned char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 

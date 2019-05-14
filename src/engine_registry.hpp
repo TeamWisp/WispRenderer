@@ -322,8 +322,6 @@ namespace wr
 
 			IN_HIST_LENGTH,
 
-			IN_VARIANCE,
-
 			PREV_INPUT,
 			PREV_MOMENTS,
 			PREV_NORMAL,
@@ -332,24 +330,22 @@ namespace wr
 			OUT_COLOR,
 			OUT_MOMENTS,
 			OUT_HIST_LENGTH,
-			OUT_VARIANCE,
 
 			CAMERA_PROPERTIES,
 			SVGF_PROPERTIES,
 
-			INPUT_UAV,
+			PING_PONG_UAV,
+			PING_PONG_SRV,
 			OUTPUT_SRV,
 		};
 
-		constexpr std::array<rs_layout::Entry, 18> svgf_denoiser = {
+		constexpr std::array<rs_layout::Entry, 17> svgf_denoiser = {
 			rs_layout::Entry{(int)SVGFDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::MOTION, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::DEPTH, 1, rs_layout::Type::SRV_RANGE},
 
 			rs_layout::Entry{(int)SVGFDenoiserE::IN_HIST_LENGTH, 1, rs_layout::Type::SRV_RANGE},
-
-			rs_layout::Entry{(int)SVGFDenoiserE::IN_VARIANCE, 1, rs_layout::Type::SRV_RANGE},
 
 			rs_layout::Entry{(int)SVGFDenoiserE::PREV_INPUT, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::PREV_MOMENTS, 1, rs_layout::Type::SRV_RANGE},
@@ -359,12 +355,12 @@ namespace wr
 			rs_layout::Entry{(int)SVGFDenoiserE::OUT_COLOR, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::OUT_MOMENTS, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::OUT_HIST_LENGTH, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)SVGFDenoiserE::OUT_VARIANCE, 1, rs_layout::Type::UAV_RANGE},
 
 			rs_layout::Entry{(int)SVGFDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)SVGFDenoiserE::SVGF_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 
-			rs_layout::Entry{(int)SVGFDenoiserE::INPUT_UAV, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::PING_PONG_UAV, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::PING_PONG_SRV, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::OUTPUT_SRV, 1, rs_layout::Type::SRV_RANGE},
 		};
 

@@ -93,7 +93,7 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 		use_metallic_texture);
 
 	metallic = metallic * roughness;
-	const float3 normal_t = lerp(,
+	const float3 normal_t = lerp(
 		float3(0.0, 0.0, 1.0),
 		material_normal.SampleLevel(s0, uv, mip_level).xyz * 2 - 1,
 		use_normal_texture);
