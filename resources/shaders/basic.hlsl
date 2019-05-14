@@ -74,8 +74,8 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	output.uv = float2(input.uv.x, 1.0f - input.uv.y);
 	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
 	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
-	output.normal = normalize(mul(inst.model, float4(input.normal * -1.0, 0))).xyz;
-	output.obj_normal = input.normal.xyz * -1.0;
+	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
+	output.obj_normal = input.normal.xyz;
 	output.obj_tangent = input.tangent.xyz;
 	output.obj_bitangent = input.bitangent.xyz;
 	output.color = input.color;
