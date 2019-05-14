@@ -279,7 +279,7 @@ namespace wr
 		}
 		else
 		{
-			LOG("RTAO task was not added since the fallback layer is not supported for RTAO. Consider using HBAO+ instead.")
+			LOGW("RTAO task was not added since the fallback layer is not supported for RTAO. Consider using HBAO+ instead.")
 		}
 	}
 }// namespace wr
