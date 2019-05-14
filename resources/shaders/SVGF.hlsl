@@ -39,6 +39,8 @@ cbuffer DenoiserSettings : register(b1)
     float step_distance;
 };
 
+const static float VARIANCE_CLIPPING_GAMMA = 4.0;
+
 float3 OctToDir(uint octo)
 {
 	float2 e = float2( f16tof32(octo & 0xFFFF), f16tof32((octo>>16) & 0xFFFF) ); 
@@ -113,7 +115,7 @@ bool IsReprojectionValid(int2 coord, float z, float z_prev, float fwidth_z, floa
 
 	bool ret = (coord.x > -1 && coord.x < screen_size.x && coord.y > -1 && coord.y < screen_size.y);
 
-	ret = ret && ((abs(NormalizeDepth(z_prev) - NormalizeDepth(z)) / (fwidth_z + 1e-4)) < 2.0);
+	ret = ret && ((abs(z_prev - z) / (fwidth_z + 1e-4)) < 2.0);
 
 	ret = ret && ((distance(normal, normal_prev) / (fwidth_normal + 1e-2)) < 16.0);
 
@@ -250,6 +252,26 @@ float ComputeVarianceCenter(int2 center)
 	return sum;
 }
 
+float4 LineBoxIntersection(float3 box_min, float3 box_max, float3 c_in, float3 c_hist)
+{
+    float3 p_clip = 0.5 * (box_max + box_min);
+    float3 e_clip = 0.5 * (box_max - box_min);
+
+    float3 v_clip = c_hist - p_clip;
+    float3 v_unit = v_clip.xyz / e_clip;
+    float3 a_unit = abs(v_unit);
+    float ma_unit = max(a_unit.x, max(a_unit.y, a_unit.z));
+
+    if(ma_unit > 1.0)
+    {
+        return float4((p_clip + v_clip / ma_unit).xyz, ma_unit);
+    }
+    else
+    {
+        return float4(c_hist.xyz, ma_unit);
+    }
+}
+
 [numthreads(16,16,1)]
 void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
@@ -267,6 +289,39 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float history_length = 0.0;
 
 	bool success = LoadPrevData(screen_coord, prev_direct, prev_moments, history_length);
+
+	float3 moment_1 = float3(0.0, 0.0, 0.0);
+	float3 moment_2 = float3(0.0, 0.0, 0.0);
+
+	float3 clamp_min = 1.0;
+	float3 clamp_max = 0.0;
+
+	[unroll]
+	for(int y = -2; y <= 2; ++y)
+	{
+		[unroll]
+		for(int x = -2; x <= 2; ++x)
+		{
+			float3 color = input_texture[screen_coord + int2(x, y)].xyz;
+			moment_1 += color;
+			moment_2 += color * color;
+			clamp_min = min(color, clamp_min);
+			clamp_max = max(color, clamp_max);
+		}
+	}
+
+	float3 mu = moment_1 / 25.0;
+	float3 sigma = sqrt(moment_2 / 25.0 - mu*mu);
+
+	float3 box_min = max(mu - VARIANCE_CLIPPING_GAMMA * sigma, clamp_min);
+	float3 box_max = min(mu + VARIANCE_CLIPPING_GAMMA * sigma, clamp_max);
+
+	float4 clipped = LineBoxIntersection(box_min, box_max, direct.xyz, prev_direct.xyz);
+
+	//success = clipped.w > 1.0;
+
+	prev_direct = float4(clipped.xyz, prev_direct.w);
+
 	history_length = min(32.0, success ? (history_length + 1.0) : 1.0);
 
 	const float alpha = lerp(1.0, max(blending_alpha, 1.0/history_length), success);
