@@ -280,14 +280,15 @@ namespace wr::d3d12
 		std::vector<desc::BlasDesc> blas_list);
 
 	void DestroyAccelerationStructure(AccelerationStructure& structure);
+	void UAVBarrierAS(CommandList* cmd_list, AccelerationStructure structure, std::uint32_t frame_idx);
 
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<desc::BlasDesc> blas_list);
+		std::vector<desc::BlasDesc> blas_list, std::uint32_t frame_idx);
 
 	void CreateOrUpdateTLAS(Device* device, CommandList* cmd_list, bool& requires_init, d3d12::AccelerationStructure& out_tlas,
-		std::vector<desc::BlasDesc> blas_list);
+		std::vector<desc::BlasDesc> blas_list, std::uint32_t frame_idx);
 
 	// Shader Record
 	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);
@@ -298,7 +299,7 @@ namespace wr::d3d12
 			std::uint64_t num_shader_records,
 			std::uint64_t shader_record_size);
 	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
-	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name);
+	void SetName(AccelerationStructure& acceleration_structure, std::wstring name);
 	void Destroy(ShaderTable* table);
 
 } /* wr::d3d12 */
