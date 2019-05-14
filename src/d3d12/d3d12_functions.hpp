@@ -280,7 +280,7 @@ namespace wr::d3d12
 		std::vector<desc::BlasDesc> blas_list);
 
 	void DestroyAccelerationStructure(AccelerationStructure& structure);
-	void UAVBarrierAS(CommandList* cmd_list, AccelerationStructure structure, std::uint32_t frame_idx);
+	void UAVBarrierAS(CommandList* cmd_list, AccelerationStructure const & structure, std::uint32_t frame_idx);
 
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,

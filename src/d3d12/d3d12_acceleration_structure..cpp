@@ -91,7 +91,6 @@ namespace wr::d3d12
 			{
 				for (auto frame_idx = 0; frame_idx < 3; frame_idx++)
 				{
-					// desc_heap_idx = AllocateDescriptor(heap, increment_size, &bottomLevelDescriptor, index);
 					bottom_level_descriptor = d3d12::GetCPUHandle(heap, frame_idx, 0); // TODO: Don't harcode this.
 					d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
 					device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
@@ -314,7 +313,6 @@ namespace wr::d3d12
 
 		for (std::uint8_t i = 1; i < settings::num_back_buffers; i++)
 		{
-			//internal::CopyInstDescResource(cmd_list, blas, 0, i);
 			internal::CopyAS(device, cmd_list, blas, 0, i);
 		}
 
@@ -375,7 +373,6 @@ namespace wr::d3d12
 		d3d12::UAVBarrierAS(cmd_list, tlas, 0);
 		for (std::uint8_t i = 1; i < settings::num_back_buffers; i++)
 		{
-			//internal::CopyInstDescResource(cmd_list, tlas, 0, i);
 			internal::CopyAS(device, cmd_list, tlas, 0, i);
 		}
 
@@ -396,7 +393,7 @@ namespace wr::d3d12
 		}
 	}
 
-	void UAVBarrierAS(CommandList* cmd_list, AccelerationStructure structure, std::uint32_t frame_idx)
+	void UAVBarrierAS(CommandList* cmd_list, AccelerationStructure const & structure, std::uint32_t frame_idx)
 	{
 		auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(structure.m_natives[frame_idx]);
 		cmd_list->m_native->ResourceBarrier(1, &barrier);
@@ -408,9 +405,7 @@ namespace wr::d3d12
 		std::vector<desc::BlasDesc> blas_list,
 		std::uint32_t frame_idx)
 	{
-		//D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
-
-		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
@@ -420,13 +415,15 @@ namespace wr::d3d12
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO old_prebuild_info = tlas.m_prebuild_info;
 
-		//internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
+		internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
+
+		top_level_inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
 
 		bool rebuild_accel_structure = old_prebuild_info.ResultDataMaxSizeInBytes < tlas.m_prebuild_info.ResultDataMaxSizeInBytes ||
 			old_prebuild_info.ScratchDataSizeInBytes < tlas.m_prebuild_info.ScratchDataSizeInBytes ||
 			old_prebuild_info.UpdateScratchDataSizeInBytes < tlas.m_prebuild_info.UpdateScratchDataSizeInBytes;
 
-		if (false)
+		if (rebuild_accel_structure)
 		{
 			LOGW("Complete AS rebuild triggered. This might break versioining");
 			tlas = CreateTopLevelAccelerationStructure(device, cmd_list, desc_heap, blas_list);
