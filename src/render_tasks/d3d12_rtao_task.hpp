@@ -164,7 +164,10 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTAOData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-			fg.GetPredecessorData<wr::RTHybridData>(); //Wait for RTHybrid to avoid hyper threading issues.
+			if (fg.HasTask<wr::RTHybridData>())
+			{
+				fg.WaitForPredecessorTask<wr::RTHybridData>(); //Wait for RTHybrid to avoid multi threading issues.
+			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
