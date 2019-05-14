@@ -142,7 +142,7 @@ namespace wr
 				return obj;
 			}
 
-			inline void BuildBLASSingle(d3d12::Device* device, d3d12::CommandList* cmd_list, Model* model, std::pair<Mesh*, MaterialHandle> mesh_material, ASBuildData& data)
+			inline void BuildBLASSingle(d3d12::Device* device, d3d12::CommandList* cmd_list, Model* model, std::pair<Mesh*, MaterialHandle> mesh_material, ASBuildData& data, std::uint32_t frame_idx)
 			{
 				auto n_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 				auto vb = n_model_pool->GetVertexStagingBuffer();
@@ -159,11 +159,8 @@ namespace wr
 
 				// Build Bottom level BVH
 				auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
-				{
-					auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native);
-					cmd_list->m_native->ResourceBarrier(1, &barrier);
-				}
-				blas.m_native->SetName(L"Bottomlevelaccel");
+				d3d12::UAVBarrierAS(cmd_list, blas, frame_idx);
+				d3d12::SetName(blas, L"Bottom Level Acceleration Structure");
 
 				data.blasses.insert({ mesh_material.first->id, blas });
 				
@@ -174,7 +171,7 @@ namespace wr
 				AppendOffset(data, n_mesh, material_id);
 			}
 
-			inline void BuildBLASList(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			inline void BuildBLASList(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data, std::uint32_t frame_idx)
 			{
 				data.out_materials.clear();
 				data.out_material_handles.clear();
@@ -222,11 +219,8 @@ namespace wr
 
 						// Build Bottom level BVH
 						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
-						{
-							auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(blas.m_native);
-							cmd_list->m_native->ResourceBarrier(1, &barrier);
-						}
-						blas.m_native->SetName(L"Bottomlevelaccel");
+						d3d12::UAVBarrierAS(cmd_list, blas, frame_idx);
+						d3d12::SetName(blas, L"Bottom Level Acceleration Structure");
 
 						data.blasses.insert({ mesh.first->id, blas });
 
@@ -342,7 +336,7 @@ namespace wr
 				return needs_reconstruction;
 			}*/
 
-			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data)
+			inline void UpdateTLAS(d3d12::Device* device, d3d12::CommandList* cmd_list, SceneGraph& scene_graph, ASBuildData& data, std::uint32_t frame_idx)
 			{
 				data.out_materials.clear();
 				data.out_offsets.clear();
@@ -394,7 +388,7 @@ namespace wr
 							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::VERTEX_AND_CONSTANT_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 							d3d12::Transition(cmd_list, n_model_pool->GetIndexStagingBuffer(), ResourceState::INDEX_BUFFER, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
-							BuildBLASSingle(device, cmd_list, model, { mesh.first, material_handle }, data);
+							BuildBLASSingle(device, cmd_list, model, { mesh.first, material_handle }, data, frame_idx);
 
 							d3d12::Transition(cmd_list, n_model_pool->GetVertexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 							d3d12::Transition(cmd_list, n_model_pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
@@ -427,11 +421,11 @@ namespace wr
 				}
 
 				d3d12::AccelerationStructure old_accel = data.out_tlas;
-				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, out_heap, data.out_blas_list);
+				d3d12::UpdateTopLevelAccelerationStructure(data.out_tlas, device, cmd_list, out_heap, data.out_blas_list, frame_idx);
 
 				if (old_accel.m_scratch != data.out_tlas.m_scratch &&
-					old_accel.m_native != data.out_tlas.m_native &&
-					old_accel.m_instance_desc != data.out_tlas.m_instance_desc)
+					old_accel.m_natives[frame_idx] != data.out_tlas.m_natives[frame_idx] &&
+					old_accel.m_instance_descs[frame_idx] != data.out_tlas.m_instance_descs[frame_idx])
 				{
 					data.old_tlas[data.current_frame_index] = old_accel;
 				}
@@ -445,6 +439,7 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto device = n_render_system.m_device;
+			auto frame_idx = n_render_system.GetFrameIdx();
 
 			data.out_materials_require_update = false;
 
@@ -464,10 +459,10 @@ namespace wr
 				}
 
 				// List all materials used by meshes
-				internal::BuildBLASList(device, cmd_list, scene_graph, data);
+				internal::BuildBLASList(device, cmd_list, scene_graph, data, frame_idx);
 
 				data.out_tlas = d3d12::CreateTopLevelAccelerationStructure(device, cmd_list, out_heap, data.out_blas_list);
-				data.out_tlas.m_native->SetName(L"Highlevelaccel");
+				d3d12::SetName(data.out_tlas, L"Top Level Acceleration Structure");
 
 				// Transition all model pools back to whatever they were.
 				for (auto& pool : model_pools)
@@ -495,7 +490,7 @@ namespace wr
 					data.old_tlas[data.current_frame_index] = {};
 				}
 
-				internal::UpdateTLAS(device, cmd_list, scene_graph, data);
+				internal::UpdateTLAS(device, cmd_list, scene_graph, data, frame_idx);
 			}
 
 			data.previous_frame_index = n_render_system.GetFrameIdx();
