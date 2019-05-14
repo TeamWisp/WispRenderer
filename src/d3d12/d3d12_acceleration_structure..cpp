@@ -217,7 +217,7 @@ namespace wr::d3d12
 	AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
+		std::vector<desc::BlasDesc> blas_list)
 	{
 		AccelerationStructure tlas = {};
 		tlas.m_rebuild_scratch = true;
@@ -261,9 +261,9 @@ namespace wr::d3d12
 			std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instance_descs;
 			for (auto it : blas_list)
 			{
-				auto blas = std::get<AccelerationStructure>(it);
-				auto material = std::get<unsigned int>(it);
-				auto transform = std::get<DirectX::XMMATRIX>(it);
+				auto blas = it.m_as;
+				auto material = it.m_material;
+				auto transform = it.m_transform;
 
 				D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
 
@@ -282,9 +282,9 @@ namespace wr::d3d12
 			std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
 			for (auto it : blas_list)
 			{
-				auto blas = std::get<AccelerationStructure>(it);
-				auto material = std::get<unsigned int>(it);
-				auto transform = std::get<DirectX::XMMATRIX>(it);
+				auto blas = it.m_as;
+				auto material = it.m_material;
+				auto transform = it.m_transform;
 
 				D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
 
@@ -350,7 +350,7 @@ namespace wr::d3d12
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
+		std::vector<desc::BlasDesc> blas_list)
 	{
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
 
@@ -396,9 +396,9 @@ namespace wr::d3d12
 				std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instance_descs;
 				for (auto it : blas_list)
 				{
-					auto blas = std::get<AccelerationStructure>(it);
-					auto material = std::get<unsigned int>(it);
-					auto transform = std::get<DirectX::XMMATRIX>(it);
+					auto blas = it.m_as;
+					auto material = it.m_material;
+					auto transform = it.m_transform;
 
 					D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
 
@@ -417,9 +417,9 @@ namespace wr::d3d12
 				std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
 				for (auto it : blas_list)
 				{
-					auto blas = std::get<AccelerationStructure>(it);
-					auto material = std::get<unsigned int>(it);
-					auto transform = std::get<DirectX::XMMATRIX>(it);
+					auto blas = it.m_as;
+					auto material = it.m_material;
+					auto transform = it.m_transform;
 
 					D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
 
@@ -484,7 +484,7 @@ namespace wr::d3d12
 	}
 
 	void CreateOrUpdateTLAS(Device* device, CommandList* cmd_list, bool& requires_init, d3d12::AccelerationStructure& out_tlas,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
+		std::vector<desc::BlasDesc> blas_list)
 	{
 		d3d12::DescriptorHeap* heap = static_cast<d3d12::CommandList*>(cmd_list)->m_rt_descriptor_heap->GetHeap();
 

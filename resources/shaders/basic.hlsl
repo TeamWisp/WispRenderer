@@ -101,9 +101,14 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 		s0,
 		input.uv);
 
+	if (output_data.alpha == 0)
+	{
+		discard;
+	}
+
 	float3 normal = normalize(mul(output_data.normal, tbn));
 
-	output.albedo_roughness = float4(output_data.albedo, output_data.roughness);
+	output.albedo_roughness = float4(output_data.albedo.xyz, output_data.roughness);
 	output.normal_metallic = float4(normal, output_data.metallic);
 	output.emissive_ao = float4(output_data.emissive, output_data.ao);
 

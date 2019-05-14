@@ -78,7 +78,6 @@ namespace wr
 			d3d12::DescHeapCPUHandle srv_handle = data.out_allocation.GetDescriptorHandle(srv_idx);
 			d3d12::SetShaderSRV(cmd_list, 0, srv_idx, srv_handle);
 
-			bool is_fallback = d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK;
 			d3d12::BindDescriptorHeaps(cmd_list);
 
 			{
@@ -86,7 +85,7 @@ namespace wr
 				cmd_list->m_native->ResourceBarrier(1, &barrier);
 			}
 
-			fg.GetPredecessorData<PathTracerData>();
+			fg.WaitForPredecessorTask<PathTracerData>();
 
 			float samples = n_render_system.temp_rough;
 			d3d12::BindCompute32BitConstants(cmd_list, &samples, 1, 0, 1);

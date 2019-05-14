@@ -188,12 +188,13 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-			fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
-			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
-
-			// Wait for AS to be built
+			// Rebuild acceleratrion structure a 2e time for fallback
+			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
+				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
+
 				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
 				cmd_list->m_native->ResourceBarrier(1, &barrier);
 			}
@@ -311,7 +312,7 @@ namespace wr
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				// Make sure the convolution pass wrote to the skybox.
-				fg.GetPredecessorData<CubemapConvolutionTaskData>();
+				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 				// Get skybox
 				if (scene_graph.m_skybox.has_value())

@@ -9,6 +9,7 @@
 #include <array>
 #include <bitset>
 #include <D3D12RaytracingFallback.h>
+#include <DirectXMath.h>
 
 #include "../structs.hpp"
 
@@ -399,6 +400,16 @@ namespace wr::d3d12
 		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO m_prebuild_info;
 	};
+
+	namespace desc
+	{
+		struct BlasDesc
+		{
+			d3d12::AccelerationStructure m_as;
+			std::uint64_t m_material;
+			DirectX::XMMATRIX m_transform;
+		};
+	} /* desc */
 
 	struct ShaderRecord
 	{

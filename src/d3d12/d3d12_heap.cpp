@@ -318,7 +318,7 @@ namespace wr::d3d12
 		cb->m_begin_offset = heap->m_current_offset;
 
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
-		for (auto i = 0; i < heap->m_versioning_count; i++)
+		for (auto i = 0u; i < heap->m_versioning_count; i++)
 		{
 			TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&temp_resources[i])),
 				"Failed to create constant buffer placed resource.");
