@@ -282,7 +282,7 @@ namespace wr
 
 		inline void BindResources(D3D12RenderSystem& n_render_system, d3d12::CommandList* cmd_list, ShadowDenoiserData& data, bool is_fallback)
 		{
-			d3d12::BindDescriptorHeaps(cmd_list, n_render_system.GetFrameIdx(), is_fallback);
+			d3d12::BindDescriptorHeaps(cmd_list, is_fallback);
 
 			{
 				constexpr unsigned int input = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INPUT);

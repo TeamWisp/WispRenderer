@@ -387,7 +387,7 @@ namespace wr
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 14> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 15> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},			

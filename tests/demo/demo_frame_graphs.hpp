@@ -194,35 +194,30 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTReflectionTask(*fg);
-
 			wr::AddRTShadowTask(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
+			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
+			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
+			//initialize default settings
+			wr::BloomSettings defaultSettings;
+			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
+
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
@@ -234,7 +229,7 @@ namespace fg_manager
 
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RT_HYBRID_DENOISED];
-			fg = new wr::FrameGraph(19);
+			fg = new wr::FrameGraph(20);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -250,7 +245,6 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTReflectionTask(*fg);
-
 			wr::AddRTShadowTask(*fg);
 
 			wr::AddShadowDenoiserTask(*fg);

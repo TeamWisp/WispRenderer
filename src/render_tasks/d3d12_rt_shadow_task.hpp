@@ -68,7 +68,7 @@ namespace wr
 			{
 				// Create Record(s)
 				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowRaygenEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
@@ -82,7 +82,7 @@ namespace wr
 			{
 				// Create Record(s)
 				UINT shader_record_count = 2;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMissEntry");
 				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
@@ -100,7 +100,7 @@ namespace wr
 			{
 				// Create Record(s)
 				UINT shader_record_count = 2;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowHitGroup");
 				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
@@ -191,11 +191,12 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTShadowData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+			fg.WaitForPredecessorTask<wr::CubemapConvolutionTaskData>();
 
-			d3d12::CreateOrUpdateTLAS(n_render_system.m_device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
-
-			// Wait for AS to be built
+			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
+				d3d12::CreateOrUpdateTLAS(n_render_system.m_device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
+
 				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
 				cmd_list->m_native->ResourceBarrier(1, &barrier);
 			}
@@ -268,24 +269,14 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + texture_handle.m_id, texture_internal);
 					};
 
-					if (material_internal->HasTexture(TextureType::ALBEDO))
-					{
-						set_srv(material_internal->GetTexture(TextureType::ALBEDO));
-					}
+					std::array<TextureType, static_cast<size_t>(TextureType::COUNT)> types = { TextureType::ALBEDO, TextureType::NORMAL,
+																							   TextureType::ROUGHNESS, TextureType::METALLIC,
+																							   TextureType::EMISSIVE, TextureType::AO };
 
-					if (material_internal->HasTexture(TextureType::NORMAL))
+					for (auto t : types)
 					{
-						set_srv(material_internal->GetTexture(TextureType::NORMAL));
-					}
-
-					if (material_internal->HasTexture(TextureType::METALLIC))
-					{
-						set_srv(material_internal->GetTexture(TextureType::METALLIC));
-					}
-
-					if (material_internal->HasTexture(TextureType::ROUGHNESS))
-					{
-						set_srv(material_internal->GetTexture(TextureType::ROUGHNESS));
+						if (material_internal->HasTexture(t))
+							set_srv(material_internal->GetTexture(t));
 					}
 				}
 
@@ -322,7 +313,7 @@ namespace wr
 				cam_data.m_frame_idx = ++data.frame_idx;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
-				fg.GetPredecessorData<CubemapConvolutionTaskData>();
+				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 				// Get skybox
 				if (scene_graph.m_skybox.has_value())
@@ -356,7 +347,7 @@ namespace wr
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-				d3d12::BindDescriptorHeaps(cmd_list, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindDescriptorHeaps(cmd_list, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
