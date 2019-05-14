@@ -1076,6 +1076,11 @@ namespace wr
 				}
 			}
 		}
+
+		// Reset frame specific variables
+		m_last_material.m_id = 0;
+		m_last_material.m_pool = nullptr;
+
 	}
 
 	void D3D12RenderSystem::BindMaterial(MaterialHandle material_handle, CommandList* cmd_list)
