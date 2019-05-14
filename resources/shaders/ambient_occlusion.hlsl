@@ -11,7 +11,7 @@ struct AOHitInfo
   float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
-cbuffer cbData : register(b0)
+cbuffer CBData : register(b0)
 {
 	float4x4 inv_vp;
 
@@ -19,9 +19,6 @@ cbuffer cbData : register(b0)
 	float radius;
 	float power;
 	unsigned int sample_count;
-	unsigned int frame_idx;
-
-	float3 padding;
 };
 
 struct Attributes { };
@@ -63,7 +60,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 [shader("raygeneration")]
 void AORaygenEntry()
 {
-    uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+    uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, 0);
 
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
