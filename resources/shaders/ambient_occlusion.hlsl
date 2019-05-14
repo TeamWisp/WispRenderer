@@ -11,7 +11,7 @@ struct AOHitInfo
   float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
-cbuffer cbData : register(b0)
+cbuffer CBData : register(b0)
 {
 	float4x4 inv_vp;
 
