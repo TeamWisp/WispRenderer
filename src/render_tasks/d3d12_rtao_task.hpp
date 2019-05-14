@@ -16,6 +16,13 @@
 
 namespace wr
 {
+	namespace rtaoSettings
+	{
+		static float bias = 0.01f;
+		static float radius = 1.f;
+		static float power = 1.f;
+		static int sample_count = 8u;
+	}
 	struct RTAOData
 	{
 
@@ -195,10 +202,10 @@ namespace wr
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTAO_CBData cb_data;
 				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
-				cb_data.bias = 0.01f;
-				cb_data.radius = 1.f;
-				cb_data.power = 1.f;
-				cb_data.sample_count = 8u;
+				cb_data.bias = rtaoSettings::bias;
+				cb_data.radius = rtaoSettings::radius;
+				cb_data.power = rtaoSettings::power;
+				cb_data.sample_count = static_cast<unsigned int>(rtaoSettings::sample_count);
 				cb_data.frame_idx = frame_idx;
 
 				//TODO: Should use ProjectionView_CBData or not?

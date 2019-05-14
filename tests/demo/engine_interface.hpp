@@ -7,6 +7,7 @@
 #include "d3d12/d3d12_renderer.hpp"
 #include "imgui/ImGuizmo.h"
 #include "demo_frame_graphs.hpp"
+#include "render_tasks/d3d12_rtao_task.hpp"
 
 namespace engine
 {
@@ -17,6 +18,7 @@ namespace engine
 	static bool open0 = true;
 	static bool open_viewport = true;
 	static bool open1 = true;
+	static bool rtao_settings_open = false;
 	static bool open_console = false;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
@@ -68,6 +70,7 @@ namespace engine
 					ImGui::MenuItem("Theme", nullptr, &open0);
 					ImGui::MenuItem("Statistics", nullptr, &stats_window.m_open);
 					ImGui::MenuItem("Camera Settings", nullptr, &open1);
+					ImGui::MenuItem("RTAO Settings", nullptr, &rtao_settings_open);
 					ImGui::EndMenu();
 				}
 
@@ -165,6 +168,20 @@ namespace engine
 			wr::imgui::window::RootSignatureRegistry();
 			wr::imgui::window::D3D12HardwareInfo(*render_system);
 			wr::imgui::window::D3D12Settings();
+		}
+
+		if (rtao_settings_open)
+		{
+			ImGui::Begin("RTAO Settings", &rtao_settings_open);
+			float bias;
+			float radius;
+			float power;
+			unsigned int sample_count;
+			ImGui::DragFloat("Bias", &wr::rtaoSettings::bias, 0.01f, 0.0f, 100.f);
+			ImGui::DragFloat("Radius", &wr::rtaoSettings::radius, 0.1f, 0.0f, 1000.f);
+			ImGui::DragFloat("Power", &wr::rtaoSettings::power, 0.1f, 0.0f, 10.f);
+			ImGui::DragInt("SPP", &wr::rtaoSettings::sample_count, 1, 0, 1073741824);
+			ImGui::End();
 		}
 	}
 	
