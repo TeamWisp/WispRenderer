@@ -140,7 +140,7 @@ namespace wr
 	} /* internal */
 
 	template<typename T, typename T1>
-	inline void AddBloomCompositionTask(FrameGraph& frame_graph, int32_t width, int32_t height)
+	inline void AddBloomCompositionTask(FrameGraph& frame_graph)
 	{
 		std::wstring name(L"Bloom composition");
 
