@@ -87,7 +87,7 @@ namespace wr
 
 	void AssimpModelLoader::LoadMeshes(ModelData * model, const aiScene * scene, aiNode * node)
 	{
-		for (int i = 0; i < node->mNumMeshes; ++i)
+		for (unsigned int i = 0; i < node->mNumMeshes; ++i)
 		{
 			ModelMeshData* mesh_data = new ModelMeshData();
 			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -129,7 +129,7 @@ namespace wr
 
 			if (mesh->HasVertexColors(0))
 			{
-				for (int j = 0; j < mesh->mNumVertices; ++j)
+				for (unsigned int j = 0; j < mesh->mNumVertices; ++j)
 				{
 					memcpy(&mesh_data->m_colors[j], &mesh->mColors[0][j], float3);
 				}
@@ -160,7 +160,7 @@ namespace wr
 			model->m_meshes.push_back(mesh_data);
 		}
 
-		for (int i = 0; i < node->mNumChildren; ++i)
+		for (unsigned int i = 0; i < node->mNumChildren; ++i)
 		{
 			LoadMeshes(model, scene, node->mChildren[i]);
 		}
@@ -169,7 +169,7 @@ namespace wr
 	void AssimpModelLoader::LoadMaterials(ModelData * model, const aiScene * scene)
 	{
 		model->m_materials.resize(scene->mNumMaterials);
-		for (int i = 0; i < scene->mNumMaterials; ++i)
+		for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
 		{
 			aiMaterial* material = scene->mMaterials[i];
 
@@ -285,6 +285,28 @@ namespace wr
 				material_data->m_normal_map_texture_location = TextureLocation::NON_EXISTENT;
 			}
 
+			if (material->GetTextureCount(aiTextureType_EMISSIVE) > 0)
+			{
+				aiString path;
+				material->GetTexture(aiTextureType_EMISSIVE, 0, &path);
+
+				if (path.data[0] == '*')
+				{
+					uint32_t index = atoi(path.C_Str() + 1);
+					material_data->m_emissive_embedded_texture = index;
+					material_data->m_emissive_texture_location = TextureLocation::EMBEDDED;
+				}
+				else
+				{
+					material_data->m_emissive_texture = std::string(path.C_Str());
+					material_data->m_emissive_texture_location = TextureLocation::EXTERNAL;
+				}
+			}
+			else
+			{
+				material_data->m_emissive_texture_location = TextureLocation::NON_EXISTENT;
+			}
+
 			aiColor3D color;
 			material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
 
@@ -313,7 +335,7 @@ namespace wr
 	void AssimpModelLoader::LoadEmbeddedTextures(ModelData * model, const aiScene * scene)
 	{
 		model->m_embedded_textures.resize(scene->mNumTextures);
-		for (int i = 0; i < scene->mNumTextures; ++i) 
+		for (unsigned int i = 0; i < scene->mNumTextures; ++i) 
 		{
 			EmbeddedTexture* texture = new EmbeddedTexture;
 
@@ -331,7 +353,7 @@ namespace wr
 			else
 			{
 				texture->m_data.resize(texture->m_width*texture->m_height * 4);
-				for (int j = 0; j < texture->m_width*texture->m_height; ++j)
+				for (unsigned int j = 0; j < texture->m_width*texture->m_height; ++j)
 				{
 					texture->m_data[j * 4 + 0] = scene->mTextures[i]->pcData[j].r;
 					texture->m_data[j * 4 + 1] = scene->mTextures[i]->pcData[j].g;

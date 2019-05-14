@@ -222,7 +222,7 @@ namespace wr
 
 		memcpy(cpu_address, m_vertex_buffer->m_cpu_address, new_size);
 
-		m_vertex_buffer->m_size = new_size;
+		m_vertex_buffer->m_size = static_cast<std::uint32_t>(new_size);
 		m_vertex_buffer->m_is_staged = true;
 		m_vertex_buffer->m_cpu_address = cpu_address;
 
@@ -376,7 +376,7 @@ namespace wr
 
 		memcpy(cpu_address, m_index_buffer->m_cpu_address, new_size);
 
-		m_index_buffer->m_size = new_size;
+		m_index_buffer->m_size = static_cast<std::uint32_t>(new_size);
 		m_index_buffer->m_is_staged = true;
 		m_index_buffer->m_cpu_address = cpu_address;
 
@@ -1094,7 +1094,7 @@ namespace wr
 
 			memcpy(cpu_address, m_vertex_buffer->m_cpu_address, std::min(static_cast<std::uint32_t>(new_size), m_vertex_buffer->m_size));
 
-			m_vertex_buffer->m_size = new_size;
+			m_vertex_buffer->m_size = static_cast<std::uint32_t>(new_size);
 			m_vertex_buffer->m_is_staged = true;
 			m_vertex_buffer->m_cpu_address = cpu_address;
 
@@ -1280,7 +1280,7 @@ namespace wr
 
 			memcpy(cpu_address, m_index_buffer->m_cpu_address, std::min(static_cast<std::uint32_t>(new_size), m_index_buffer->m_size));
 
-			m_index_buffer->m_size = new_size;
+			m_index_buffer->m_size = static_cast<std::uint32_t>(new_size);
 			m_index_buffer->m_is_staged = true;
 			m_index_buffer->m_cpu_address = cpu_address;
 

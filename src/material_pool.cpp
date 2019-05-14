@@ -15,6 +15,8 @@ namespace wr
 	Material::Material(TexturePool* pool): m_texture_pool(pool)
 	{
 		memset(&m_material_data, 0, sizeof(m_material_data));
+
+		SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(1.0f);
 	}
 
 	Material::Material(TexturePool *pool,
@@ -22,6 +24,7 @@ namespace wr
 					   TextureHandle normal,
 					   TextureHandle roughness,
 					   TextureHandle metallic,
+					   TextureHandle emissive,
 		               TextureHandle ao,
 		               bool alpha_masked,
 					   bool double_sided): Material(pool)
@@ -31,10 +34,12 @@ namespace wr
 		SetTexture(TextureType::NORMAL, normal);
 		SetTexture(TextureType::ROUGHNESS, roughness);
 		SetTexture(TextureType::METALLIC, metallic);
+		SetTexture(TextureType::EMISSIVE, emissive);
 		SetTexture(TextureType::AO, ao);
 
 		SetConstant<MaterialConstant::IS_ALPHA_MASKED>(alpha_masked);
 		SetConstant<MaterialConstant::IS_DOUBLE_SIDED>(double_sided);
+		SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(1.0f);
 	}
 
 	TextureHandle Material::GetTexture(TextureType type) { 
@@ -103,14 +108,14 @@ namespace wr
 	}
 
 	MaterialHandle MaterialPool::Create(TexturePool* pool, TextureHandle& albedo, TextureHandle& normal,
-										TextureHandle& roughness, TextureHandle& metallic,
+										TextureHandle& roughness, TextureHandle& metallic, TextureHandle& emissive,
 										TextureHandle& ao, bool is_alpha_masked, bool is_double_sided)
 	{
 		MaterialHandle handle = {};
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material(pool, albedo, normal, roughness, metallic, ao, is_alpha_masked, is_double_sided);
+		Material* mat = new Material(pool, albedo, normal, roughness, metallic, emissive, ao, is_alpha_masked, is_double_sided);
 		mat->SetConstantBufferHandle(m_constant_buffer_pool->Create(sizeof(Material::MaterialData)));
 		mat->UpdateConstantBuffer();
 

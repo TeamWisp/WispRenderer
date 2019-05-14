@@ -100,7 +100,7 @@ namespace wr::d3d12
 		buffer->m_staging->GetDevice(IID_PPV_ARGS(&n_device));
 
 		std::array<ID3D12Pageable*, 2> objects{ buffer->m_staging, buffer->m_buffer };
-		n_device->Evict(objects.size(), objects.data());
+		n_device->Evict(static_cast<unsigned int>(objects.size()), objects.data());
 	}
 
 	void MakeResident(StagingBuffer * buffer)
@@ -109,10 +109,10 @@ namespace wr::d3d12
 		buffer->m_staging->GetDevice(IID_PPV_ARGS(&n_device));
 
 		std::array<ID3D12Pageable*, 2> objects{ buffer->m_staging, buffer->m_buffer };
-		n_device->MakeResident(objects.size(), objects.data());
+		n_device->MakeResident(static_cast<unsigned int>(objects.size()), objects.data());
 	}
 
-	void CreateRawSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int id, unsigned int count, Format format)
+	void CreateRawSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int count, Format format)
 	{
 		decltype(Device::m_native) n_device;
 		buffer->m_buffer->GetDevice(IID_PPV_ARGS(&n_device));
@@ -120,7 +120,7 @@ namespace wr::d3d12
 		auto increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
-		srv_desc.Format = DXGI_FORMAT_R32_TYPELESS;
+		srv_desc.Format = static_cast<DXGI_FORMAT>(format);
 		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srv_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 		srv_desc.Buffer.NumElements = count;
@@ -132,20 +132,21 @@ namespace wr::d3d12
 
 #include "../vertex.hpp"
 
-	void CreateStructuredBufferSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int id, unsigned int count, Format format)
+	void CreateStructuredBufferSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int count, Format format)
 	{
 		decltype(Device::m_native) n_device;
 		buffer->m_buffer->GetDevice(IID_PPV_ARGS(&n_device));
 
 		auto increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-		auto stride = sizeof(wr::Vertex);
+		auto stride = static_cast<std::uint32_t>(sizeof(wr::Vertex));
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+		srv_desc.Format = static_cast<DXGI_FORMAT>(format);
 		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srv_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 		srv_desc.Buffer.FirstElement = 0;
-		srv_desc.Buffer.NumElements = buffer->m_size / stride;
+		srv_desc.Buffer.NumElements = count;
 		srv_desc.Buffer.StructureByteStride = stride;
 		srv_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 

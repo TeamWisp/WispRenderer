@@ -89,19 +89,22 @@ namespace wr
 
 		struct RayTracingMaterial_CBData
 		{
-			float albedo_id;
-			float normal_id;
-			float roughness_id;
-			float metallicness_id;
+			std::uint32_t albedo_id;
+			std::uint32_t normal_id;
+			std::uint32_t roughness_id;
+			std::uint32_t metallicness_id;
+			std::uint32_t emissive_id;
+			std::uint32_t ao_id;
+			DirectX::XMFLOAT2 padding;
 
 			Material::MaterialData material_data;
 		};
 
 		struct RayTracingOffset_CBData
 		{
-			float material_idx;
-			float idx_offset;
-			float vertex_offset;
+			std::uint32_t material_idx;
+			std::uint32_t idx_offset;
+			std::uint32_t vertex_offset;
 		};
 
 

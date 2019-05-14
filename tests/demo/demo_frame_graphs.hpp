@@ -28,6 +28,9 @@
 #include "render_tasks/d3d12_dof_dilate_flatten_second_pass.hpp"
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
+#include "render_tasks/d3d12_bloom_composition.hpp"
+#include "render_tasks/d3d12_bloom_horizontal.hpp"
+#include "render_tasks/d3d12_bloom_vertical.hpp"
 
 
 namespace fg_manager
@@ -98,32 +101,27 @@ namespace fg_manager
 			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-			//// Do Depth of field task
+			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
+			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
+			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
+			//initialize default settings
+			wr::BloomSettings defaultSettings;
+			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
+
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+
 			// Copy the scene render pixel data to the final render target
-
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			wr::AddAnselTask(*fg);
@@ -167,6 +165,8 @@ namespace fg_manager
 
 			// Copy the raytracing pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+			wr::AddAnselTask(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
@@ -259,28 +259,24 @@ namespace fg_manager
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateTask<wr::DownScaleData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
-			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg,
-				rs.m_window.value()->GetWidth(), rs.m_window.value()->GetHeight());
-
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
+			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
+			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
+			//initialize default settings
+			wr::BloomSettings defaultSettings;
+			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
+
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui

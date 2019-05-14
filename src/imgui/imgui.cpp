@@ -13216,7 +13216,6 @@ ImGuiID ImGui::DockSpaceOverViewport(bool has_main_menu_bar, ImGuiViewport* view
 	if (has_main_menu_bar)
 	{
 		ImGuiContext& g = *GImGui;
-		ImGuiViewport* viewport = g.Viewports[0];
 		g.NextWindowData.MenuBarOffsetMinVal = ImVec2(g.Style.DisplaySafeAreaPadding.x, ImMax(g.Style.DisplaySafeAreaPadding.y - g.Style.FramePadding.y, 0.0f));
 
 		float height_offset = g.NextWindowData.MenuBarOffsetMinVal.y + g.FontBaseSize + (g.Style.FramePadding.y * 2);

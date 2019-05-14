@@ -13,7 +13,7 @@ namespace wr
 	struct TextureHandle
 	{
 		TexturePool* m_pool = nullptr;
-		uint64_t m_id = 0;
+		std::uint32_t m_id = 0;
 	};
 
 	struct CPUTexture
@@ -29,7 +29,7 @@ namespace wr
 	struct MaterialHandle
 	{
 		MaterialPool* m_pool;
-		uint64_t m_id;
+		std::uint32_t m_id;
 
 		friend bool operator ==(MaterialHandle const & lhs, MaterialHandle const & rhs)
 		{

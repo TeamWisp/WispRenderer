@@ -24,12 +24,14 @@ namespace wr
 	namespace internal
 	{
 
-		void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, wr::DeferredCompositionTaskData const & data, unsigned int frame_idx)
+		void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, wr::DeferredCompositionTaskData const& data, unsigned int frame_idx)
 		{
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+
 			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
 
 			bool is_fallback = d3d12::GetRaytracingType(render_system.m_device) == RaytracingType::FALLBACK;
-			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+			d3d12::BindDescriptorHeaps(cmd_list, is_fallback);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
@@ -40,6 +42,10 @@ namespace wr
 			constexpr unsigned int normal_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_NORMAL_METALLIC);
 			d3d12::DescHeapCPUHandle normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle(frame_idx);
 			d3d12::SetShaderSRV(cmd_list, 1, normal_loc, normal_handle);
+
+			constexpr unsigned int emissive_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_EMISSIVE_AO);
+			d3d12::DescHeapCPUHandle emissive_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle(frame_idx);
+			d3d12::SetShaderSRV(cmd_list, 1, emissive_loc, emissive_handle);
 
 			constexpr unsigned int depth_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH);
 			d3d12::DescHeapCPUHandle depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
@@ -59,7 +65,6 @@ namespace wr
 			d3d12::SetShaderSRV(cmd_list, 1, pref_env, data.out_pref_env_map);
 
 			constexpr unsigned int brdf_lut_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BRDF_LUT);
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
 			d3d12::SetShaderSRV(cmd_list, 1, brdf_lut_loc, brdf_lut_text);
 
@@ -90,7 +95,7 @@ namespace wr
 				1);
 		}
 
-		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
@@ -111,9 +116,10 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-
+			
 			data.out_gbuffer_albedo_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
 			data.out_gbuffer_normal_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
+			data.out_gbuffer_emissive_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
 			data.out_gbuffer_depth_alloc = std::move(data.out_allocator->Allocate());
 			data.out_lights_alloc = std::move(data.out_allocator->Allocate());
 			data.out_buffer_refl_alloc = std::move(data.out_allocator->Allocate());
@@ -126,13 +132,15 @@ namespace wr
 			{
 				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle(i);
 				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle(i);
+				auto emissive_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle(i);
 				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
-
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, emissive_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats[2]);
+				
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 
 				// Bind output(s) from hybrid render task, if the composition task is executed in the hybrid frame graph
@@ -200,29 +208,29 @@ namespace wr
 
 			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
       
-      if (data.is_hybrid)
-      {
-		  if (data.has_rt_hybrid)
-		  {
-			  // Wait on hybrid task
-			  const auto& hybrid_data = fg.GetPredecessorData<RTHybridData>();
-		  }
-		  if (data.has_rt_reflection)
-		  {
-			  // Wait on rt reflection task
-			  const auto& reflection_data = fg.GetPredecessorData<RTReflectionData>();
-		  }
-		  if (data.has_rt_shadows)
-		  {
-			  // Wait on rt shadow task
-			  const auto& shadow_data = fg.GetPredecessorData<RTShadowData>();
-		  }
-		  if (data.has_rt_shadows_denoiser)
-		  {
-			  // Wait on shadow denoiser task
-			  const auto& denoiser_data = fg.GetPredecessorData<ShadowDenoiserData>();
-		  }
-      }
+			if (data.is_hybrid)
+			{
+				if (data.has_rt_hybrid)
+				{
+					// Wait on hybrid task
+					const auto& hybrid_data = fg.GetPredecessorData<RTHybridData>();
+				}
+				if (data.has_rt_reflection)
+				{
+					// Wait on rt reflection task
+					const auto& reflection_data = fg.GetPredecessorData<RTReflectionData>();
+				}
+				if (data.has_rt_shadows)
+				{
+					// Wait on rt shadow task
+					const auto& shadow_data = fg.GetPredecessorData<RTShadowData>();
+				}
+				if (data.has_rt_shadows_denoiser)
+				{
+					// Wait on shadow denoiser task
+					const auto& denoiser_data = fg.GetPredecessorData<ShadowDenoiserData>();
+				}
+			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -282,9 +290,9 @@ namespace wr
 				// Get HBAO+ Texture
 				if (data.is_hbao)
 				{
-					auto handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
+					auto hbao_handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
 					auto ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
-					d3d12::CreateSRVFromSpecificRTV(ao_rt, handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
+					d3d12::CreateSRVFromSpecificRTV(ao_rt, hbao_handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
 				}
 
 				// Get Irradiance Map
@@ -337,7 +345,7 @@ namespace wr
 				if constexpr (d3d12::settings::use_bundles)
 				{
 					bool is_fallback = d3d12::GetRaytracingType(n_render_system.m_device) == RaytracingType::FALLBACK;
-					d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+					d3d12::BindDescriptorHeaps(cmd_list, is_fallback);
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
@@ -363,6 +371,7 @@ namespace wr
 				// Small hack to force the allocations to go out of scope, which will tell the texture pool to free them
 				std::move(data.out_gbuffer_albedo_alloc);
 				std::move(data.out_gbuffer_normal_alloc);
+				std::move(data.out_gbuffer_emissive_alloc);
 				std::move(data.out_gbuffer_depth_alloc);
 				std::move(data.out_lights_alloc);
 				std::move(data.out_buffer_refl_alloc);
