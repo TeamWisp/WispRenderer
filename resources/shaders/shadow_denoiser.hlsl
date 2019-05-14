@@ -1,3 +1,5 @@
+//Ignore this file. This is just here as reference material.
+
 Texture2D input_texture : register(t0);
 Texture2D depth_texture : register(t1);
 Texture2D normal_texture : register(t2);

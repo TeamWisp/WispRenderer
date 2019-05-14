@@ -60,31 +60,6 @@ namespace wr
 		})
 		});
 
-	//Shadow Denoiser Root Signature
-	DESC_RANGE_ARRAY(shadow_denoiser_ranges,
-		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::SOURCE),
-		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::DEPTH),
-		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::NORMAL),
-		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::VELOCITY),
-		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::KERNEL),
-		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::ACCUM),
-		DESC_RANGE(params::shadow_denoiser, Type::SRV_RANGE, params::ShadowDenoiserE::VARIANCE_IN),
-		DESC_RANGE(params::shadow_denoiser, Type::UAV_RANGE, params::ShadowDenoiserE::DEST),
-		DESC_RANGE(params::shadow_denoiser, Type::UAV_RANGE, params::ShadowDenoiserE::VARIANCE_OUT),
-		);
-
-	REGISTER(root_signatures::shadow_denoiser, RootSignatureRegistry)({
-		RootSignatureDescription::Parameters({
-			ROOT_PARAM_DESC_TABLE(shadow_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM(GetCBV(params::shadow_denoiser, params::ShadowDenoiserE::CAMERA_PROPERTIES)),
-			ROOT_PARAM(GetCBV(params::shadow_denoiser, params::ShadowDenoiserE::DENOISER_PROPERTIES)),
-		}),
-		RootSignatureDescription::Samplers({
-			{TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP},
-			{TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP}
-		})
-	});
-
 	DESC_RANGE_ARRAY(svgf_denoiser_ranges,
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::INPUT),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::MOTION),
@@ -230,18 +205,6 @@ namespace wr
 		ShaderDescription::Type(ShaderType::VERTEX_SHADER)
 		});
 
-	REGISTER(shaders::shadow_denoiser_cs, ShaderRegistry)({
-		ShaderDescription::Path("resources/shaders/shadow_denoiser.hlsl"),
-		ShaderDescription::Entry("shadow_denoiser_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
-	});
-
-	REGISTER(shaders::temporal_accumulator_cs, ShaderRegistry)({
-		ShaderDescription::Path("resources/shaders/shadow_denoiser.hlsl"),
-		ShaderDescription::Entry("temporal_accumulator_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
-	});
-
 	REGISTER(shaders::svgf_denoiser_reprojection_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/SVGF.hlsl"),
 		ShaderDescription::Entry("reprojection_cs"),
@@ -326,36 +289,6 @@ namespace wr
 		PipelineDescription::CounterClockwise(false),
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 		});
-
-	REGISTER(pipelines::shadow_denoiser, PipelineRegistry) < Vertex2D > ({
-		PipelineDescription::VertexShader(std::nullopt),
-		PipelineDescription::PixelShader(std::nullopt),
-		PipelineDescription::ComputeShader(shaders::shadow_denoiser_cs),
-		PipelineDescription::RootSignature(root_signatures::shadow_denoiser),
-		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats({ Format::R16G16B16A16_FLOAT }),
-		PipelineDescription::NumRTVFormats(1),
-		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
-		PipelineDescription::CullMode(CullMode::CULL_BACK),
-		PipelineDescription::Depth(false),
-		PipelineDescription::CounterClockwise(true),
-		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
-	});
-
-	REGISTER(pipelines::temporal_accumulator, PipelineRegistry) < Vertex2D > ({
-		PipelineDescription::VertexShader(std::nullopt),
-		PipelineDescription::PixelShader(std::nullopt),
-		PipelineDescription::ComputeShader(shaders::temporal_accumulator_cs),
-		PipelineDescription::RootSignature(root_signatures::shadow_denoiser),
-		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats({Format::R32G32B32A32_FLOAT}),
-		PipelineDescription::NumRTVFormats(1),
-		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
-		PipelineDescription::CullMode(CullMode::CULL_BACK),
-		PipelineDescription::Depth(false),
-		PipelineDescription::CounterClockwise(true),
-		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
-	});
 
 	REGISTER(pipelines::svgf_denoiser_reprojection, PipelineRegistry) < Vertex2D > ({
 		PipelineDescription::VertexShader(std::nullopt),

@@ -284,39 +284,6 @@ namespace wr
 			rs_layout::Entry{(int)BasicE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
-		enum class ShadowDenoiserE
-		{
-			SOURCE,
-			DEPTH,
-			NORMAL,
-			VELOCITY,
-			KERNEL,
-			ACCUM,
-			VARIANCE_IN,
-			DEST,
-			VARIANCE_OUT,
-			CAMERA_PROPERTIES,
-			DENOISER_PROPERTIES,
-			SOURCE_UAV,
-			DEST_SRV,
-		};
-
-		constexpr std::array<rs_layout::Entry, 13> shadow_denoiser = {
-			rs_layout::Entry{(int)ShadowDenoiserE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::DEPTH, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::VELOCITY, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::KERNEL, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::VARIANCE_IN, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::DEST, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::VARIANCE_OUT, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::CAMERA_PROPERTIES, 1,rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)ShadowDenoiserE::DENOISER_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)ShadowDenoiserE::SOURCE_UAV, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)ShadowDenoiserE::DEST_SRV, 1, rs_layout::Type::SRV_RANGE},
-		};
-
 		enum class SVGFDenoiserE
 		{
 			INPUT,
@@ -747,7 +714,6 @@ namespace wr
 	{
 		WISPRENDERER_EXPORT static RegistryHandle brdf_lut;
 		WISPRENDERER_EXPORT static RegistryHandle basic;
-		WISPRENDERER_EXPORT static RegistryHandle shadow_denoiser;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser;
 		WISPRENDERER_EXPORT static RegistryHandle deferred_composition;
 		WISPRENDERER_EXPORT static RegistryHandle rt_test_global;
@@ -778,8 +744,6 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle basic_vs;
 		WISPRENDERER_EXPORT static RegistryHandle basic_ps;
 		WISPRENDERER_EXPORT static RegistryHandle fullscreen_quad_vs;
-		WISPRENDERER_EXPORT static RegistryHandle shadow_denoiser_cs;
-		WISPRENDERER_EXPORT static RegistryHandle temporal_accumulator_cs;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_reprojection_cs;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_filter_moments_cs;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_wavelet_filter_cs;
@@ -813,8 +777,6 @@ namespace wr
 	{
 		WISPRENDERER_EXPORT static RegistryHandle brdf_lut_precalculation;
 		WISPRENDERER_EXPORT static RegistryHandle basic_deferred;
-		WISPRENDERER_EXPORT static RegistryHandle shadow_denoiser;
-		WISPRENDERER_EXPORT static RegistryHandle temporal_accumulator;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_reprojection;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_filter_moments;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_wavelet_filter;
