@@ -51,6 +51,19 @@ namespace wr
 			float m_intensity;
 		};
 
+		struct RTAO_CBData
+		{
+			DirectX::XMMATRIX m_inv_vp;
+
+			float bias;
+			float radius;
+			float power;
+			unsigned int sample_count;
+			unsigned int frame_idx;
+
+			float padding[3];
+		};
+
 		struct RayTracingCamera_CBData
 		{
 			DirectX::XMMATRIX m_view;

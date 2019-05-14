@@ -138,7 +138,7 @@ namespace wr
 			if (!resize)
 			{
 				// Camera constant buffer
-				data.in_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
+				data.in_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTAO_CBData)));
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
@@ -193,14 +193,17 @@ namespace wr
 
 				// Update camera constant buffer
 				auto camera = scene_graph.GetActiveCamera();
-				temp::RTHybridCamera_CBData cam_data;
-				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
-				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
-				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
-				cam_data.m_intensity = n_render_system.temp_intensity;
+				temp::RTAO_CBData cb_data;
+				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
+				cb_data.bias = 0.01f;
+				cb_data.radius = 1.f;
+				cb_data.power = 1.f;
+				cb_data.sample_count = 8u;
+				cb_data.frame_idx = frame_idx;
+
 				//TODO: Should use ProjectionView_CBData or not?
 
-				n_render_system.m_camera_pool->Update(data.in_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
+				n_render_system.m_camera_pool->Update(data.in_cb_camera_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
 
 				// Transition depth to NON_PIXEL_RESOURCE
 				d3d12::TransitionDepth(cmd_list, data.in_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);

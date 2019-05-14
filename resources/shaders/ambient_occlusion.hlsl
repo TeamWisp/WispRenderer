@@ -11,15 +11,17 @@ struct AOHitInfo
   float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
-cbuffer CameraProperties : register(b0)
+cbuffer cbData : register(b0)
 {
-	float4x4 inv_view;
-	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float2 padding;
-	float frame_idx;
-	float intensity;
+	float bias;
+	float radius;
+	float power;
+	unsigned int sample_count;
+	unsigned int frame_idx;
+
+	float3 padding;
 };
 
 struct Attributes { };
@@ -38,7 +40,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = EPSILON;
+	ray.TMin = bias;
 	ray.TMax = far;
 
 	AOHitInfo payload = { false, 0 };
@@ -74,14 +76,13 @@ void AORaygenEntry()
 	float depth = gbuffer_depth[screen_co].x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 
-    uint spp = 32;
     float ao_value = 1.0f;
-    for(uint i = 0; i< spp; i++)
+    for(uint i = 0; i< sample_count; i++)
     {
-        ao_value -= (1.0f/float(spp)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), 25.f, 0);
+        ao_value -= (1.0f/float(sample_count)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), radius, 0);
     }
 
-    output[DispatchRaysIndex().xy].x = ao_value;
+    output[DispatchRaysIndex().xy].x = ao_value * power;
 }
 
 [shader("closesthit")]
