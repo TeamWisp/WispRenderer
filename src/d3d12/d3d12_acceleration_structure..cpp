@@ -166,7 +166,7 @@ namespace wr::d3d12
 				{
 					for (auto& inst_desc : tlas.m_instance_descs)
 					{
-						internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * instance_descs.size(), &inst_desc, L"InstanceDescs");
+						internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), &inst_desc, L"InstanceDescs");
 					}
 				}
 			}
@@ -310,6 +310,7 @@ namespace wr::d3d12
 		}
 
 		internal::BuildAS(device, cmd_list, desc_heap, blas, bottom_level_build_desc);
+		d3d12::UAVBarrierAS(cmd_list, blas, 0);
 
 		for (std::uint8_t i = 1; i < settings::num_back_buffers; i++)
 		{
@@ -358,7 +359,7 @@ namespace wr::d3d12
 		}
 
 		// Create the instances to the bottom level instances.
-		internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, false, 0);
+		internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, 0, false);
 
 		// Top Level Acceleration Structure desc
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
@@ -407,7 +408,9 @@ namespace wr::d3d12
 		std::vector<desc::BlasDesc> blas_list,
 		std::uint32_t frame_idx)
 	{
-		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
+		//D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
+
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
@@ -417,13 +420,13 @@ namespace wr::d3d12
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO old_prebuild_info = tlas.m_prebuild_info;
 
-		internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
+		//internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
 
 		bool rebuild_accel_structure = old_prebuild_info.ResultDataMaxSizeInBytes < tlas.m_prebuild_info.ResultDataMaxSizeInBytes ||
 			old_prebuild_info.ScratchDataSizeInBytes < tlas.m_prebuild_info.ScratchDataSizeInBytes ||
 			old_prebuild_info.UpdateScratchDataSizeInBytes < tlas.m_prebuild_info.UpdateScratchDataSizeInBytes;
 
-		if (rebuild_accel_structure)
+		if (false)
 		{
 			LOGW("Complete AS rebuild triggered. This might break versioining");
 			tlas = CreateTopLevelAccelerationStructure(device, cmd_list, desc_heap, blas_list);
@@ -431,7 +434,7 @@ namespace wr::d3d12
 		else
 		{
 			// Create the instances to the bottom level instances.
-			internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, true, frame_idx);
+			internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, frame_idx, true);
 
 			// Top Level Acceleration Structure desc
 			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
