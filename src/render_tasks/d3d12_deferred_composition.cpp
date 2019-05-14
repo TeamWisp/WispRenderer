@@ -140,7 +140,6 @@ namespace wr
 				// Bind output(s) from hybrid render task, if the composition task is executed in the hybrid frame graph
 				if (data.is_hybrid)
 				{
-					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
 					auto shadow_handle = data.out_buffer_refl_shadow_alloc.GetDescriptorHandle();
 
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
@@ -148,7 +147,6 @@ namespace wr
 				
 					if (data.is_rtao)
 					{
-						constexpr auto ao_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_AO);
 						auto ao_handle =  data.out_screen_space_ao_alloc.GetDescriptorHandle();
 
 						auto ao_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTAOData>());
