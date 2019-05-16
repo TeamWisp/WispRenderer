@@ -189,6 +189,7 @@ namespace wr
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
+			float scalar = 1.0f;
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 			// Rebuild acceleratrion structure a 2e time for fallback
@@ -361,8 +362,17 @@ namespace wr
 				CreateShaderTables(device, data, frame_idx);
 //#endif
 
+				scalar = fg.GetRenderTargetResolutionScale(handle);
+
 				// Dispatch hybrid ray tracing rays
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
+				d3d12::DispatchRays(cmd_list, 
+					data.out_hitgroup_shader_table[frame_idx], 
+					data.out_miss_shader_table[frame_idx],
+					data.out_raygen_shader_table[frame_idx], 
+					window->GetWidth() * scalar,
+					window->GetHeight() * scalar,
+					1,
+					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
@@ -402,7 +412,8 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ResourceName(name),
+			RenderTargetProperties::ResolutionScalar(0.5f)
 		};
 
 		RenderTaskDesc desc;
