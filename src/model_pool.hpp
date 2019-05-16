@@ -206,7 +206,7 @@ namespace wr
 			{
 				for (uint32_t j = 0, k = (uint32_t) meshes[i].m_vertices.size(); j < k; ++j)
 				{
-					model->Expand(meshes[i].m_vertices[j].m_pos, mesh);
+					model->Expand(meshes[i].m_vertices[j].m_pos);
 				}
 			}
 
@@ -311,7 +311,7 @@ namespace wr
 				}
 				else if (texture_location == TextureLocation::EXTERNAL)
 				{
-					handle = texture_pool->LoadFromFile(texture_path, true, true);
+					handle = texture_pool->LoadFromFile(dir + texture_path, true, true);
 				}
 			};
 

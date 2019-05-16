@@ -370,14 +370,21 @@ namespace wr
 
 			if (properties.m_width.Get().has_value() || properties.m_height.Get().has_value())
 			{
-				auto retval = d3d12::CreateRenderTarget(m_device, properties.m_width.Get().value(), properties.m_height.Get().value(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, 
+					properties.m_width.Get().value() * properties.m_resolution_scale.Get(),
+					properties.m_height.Get().value() * properties.m_resolution_scale.Get(),
+					desc);
+
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
 					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
 				return retval;
 			}
 			else if (m_window.has_value())
 			{
-				auto retval = d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, 
+					m_window.value()->GetWidth() * properties.m_resolution_scale.Get(), 
+					m_window.value()->GetHeight() * properties.m_resolution_scale.Get(), 
+					desc);
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
 					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
 				return retval;
@@ -1073,6 +1080,11 @@ namespace wr
 				}
 			}
 		}
+
+		// Reset frame specific variables
+		m_last_material.m_id = 0;
+		m_last_material.m_pool = nullptr;
+
 	}
 
 	void D3D12RenderSystem::BindMaterial(MaterialHandle material_handle, CommandList* cmd_list)
