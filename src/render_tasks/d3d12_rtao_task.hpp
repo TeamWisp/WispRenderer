@@ -164,6 +164,8 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTAOData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+			auto frame_idx = n_render_system.GetFrameIdx();
+			
 			if (fg.HasTask<wr::RTHybridData>())
 			{
 				fg.WaitForPredecessorTask<wr::RTHybridData>(); //Wait for RTHybrid to avoid multi threading issues.
@@ -171,7 +173,6 @@ namespace wr
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto frame_idx = n_render_system.GetFrameIdx();
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.in_state_object, false);
 
@@ -214,7 +215,7 @@ namespace wr
 				d3d12::BindDescriptorHeaps(cmd_list, false);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.in_cb_camera_handle->m_native, 2, frame_idx);
 
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_native, 1);
+				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				
 #ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
