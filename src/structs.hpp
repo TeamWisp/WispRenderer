@@ -16,6 +16,16 @@ namespace wr
 		std::uint32_t m_id = 0;
 	};
 
+	struct MaterialUVScales
+	{
+		float m_albedo_scale = 2;
+		float m_normal_scale = 2;
+		float m_roughness_scale = 2;
+		float m_metallic_scale = 2;
+		float m_emissive_scale = 2;
+		float m_ao_scale = 2;
+	};
+
 	struct CPUTexture
 	{
 		float* m_data = nullptr;

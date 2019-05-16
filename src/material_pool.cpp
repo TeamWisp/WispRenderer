@@ -17,6 +17,12 @@ namespace wr
 		memset(&m_material_data, 0, sizeof(m_material_data));
 
 		SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(1.0f);
+		SetConstant<MaterialConstant::ALBEDO_UV_SCALE>(1.0f);
+		SetConstant<MaterialConstant::NORMAL_UV_SCALE>(1.0f);
+		SetConstant<MaterialConstant::ROUGHNESS_UV_SCALE>(1.0f);
+		SetConstant<MaterialConstant::METALLIC_UV_SCALE>(1.0f);
+		SetConstant<MaterialConstant::EMISSIVE_UV_SCALE>(1.0f);
+		SetConstant<MaterialConstant::AO_UV_SCALE>(1.0f);
 	}
 
 	Material::Material(TexturePool *pool,
@@ -26,6 +32,7 @@ namespace wr
 					   TextureHandle metallic,
 					   TextureHandle emissive,
 		               TextureHandle ao,
+					   MaterialUVScales scales,
 		               bool alpha_masked,
 					   bool double_sided): Material(pool)
 	{
@@ -36,6 +43,13 @@ namespace wr
 		SetTexture(TextureType::METALLIC, metallic);
 		SetTexture(TextureType::EMISSIVE, emissive);
 		SetTexture(TextureType::AO, ao);
+
+		m_material_data.albedo_scale = scales.m_albedo_scale;
+		m_material_data.normal_scale = scales.m_normal_scale;
+		m_material_data.roughness_scale = scales.m_roughness_scale;
+		m_material_data.metallic_scale = scales.m_metallic_scale;
+		m_material_data.emissive_scale = scales.m_emissive_scale;
+		m_material_data.ao_scale = scales.m_ao_scale;
 
 		SetConstant<MaterialConstant::IS_ALPHA_MASKED>(alpha_masked);
 		SetConstant<MaterialConstant::IS_DOUBLE_SIDED>(double_sided);
@@ -109,13 +123,13 @@ namespace wr
 
 	MaterialHandle MaterialPool::Create(TexturePool* pool, TextureHandle& albedo, TextureHandle& normal,
 										TextureHandle& roughness, TextureHandle& metallic, TextureHandle& emissive,
-										TextureHandle& ao, bool is_alpha_masked, bool is_double_sided)
+										TextureHandle& ao, MaterialUVScales& mat_scales, bool is_alpha_masked, bool is_double_sided)
 	{
 		MaterialHandle handle = {};
 		handle.m_pool = this;
 		handle.m_id = m_id_factory.GetUnusedID();
 
-		Material* mat = new Material(pool, albedo, normal, roughness, metallic, emissive, ao, is_alpha_masked, is_double_sided);
+		Material* mat = new Material(pool, albedo, normal, roughness, metallic, emissive, ao, mat_scales, is_alpha_masked, is_double_sided);
 		mat->SetConstantBufferHandle(m_constant_buffer_pool->Create(sizeof(Material::MaterialData)));
 		mat->UpdateConstantBuffer();
 

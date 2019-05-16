@@ -71,8 +71,15 @@ namespace wr
 			std::uint32_t metallicness_id;
 			std::uint32_t emissive_id;
 			std::uint32_t ao_id;
-			DirectX::XMFLOAT2 padding;
+			float albedo_scale;
+			float normal_scale;
+			float roughness_scale;
+			float metallic_scale;
 
+			float emissive_scale;
+			float ao_scale;
+
+			uint32_t m_padding;
 			Material::MaterialData material_data;
 		};
 
