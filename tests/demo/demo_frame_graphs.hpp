@@ -212,9 +212,9 @@ namespace fg_manager
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::DownScaleData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::DownScaleData>(imgui_func));
 
 			// Finalize the frame graph
 			fg->Setup(rs);

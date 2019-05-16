@@ -51,13 +51,13 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	float use_ao_texture = float((data.flags & MATERIAL_HAS_AO_TEXTURE) != 0);
 
 	float4 albedo = lerp(float4(data.color, 1), material_albedo.Sample(s0, uv), use_albedo_texture);
-	float roughness = lerp(data.roughness, max(0.05f, material_roughness.Sample(s0, uv).x), use_roughness_texture);
-	float metallic = lerp(data.metallic, material_metallic.Sample(s0, uv).x, use_metallic_texture);
+	float roughness = lerp(data.roughness, max(0.05f, material_roughness.Sample(s0, uv).y), use_roughness_texture);
+	float metallic = lerp(data.metallic, material_metallic.Sample(s0, uv).z, use_metallic_texture);
 
 	float3 tex_normal = lerp(float3(0.0f, 0.0f, 1.0f), material_normal.Sample(s0, uv).rgb * 2.0f - float3(1.0f, 1.0f, 1.0f), use_normal_texture);
 
 	float3 emissive = lerp(float3(0.0f, 0.0f, 0.0f), material_emissive.Sample(s0, uv).xyz, use_emissive_texture);
-	float ao = lerp(1.0f, material_ambient_occlusion.Sample(s0, uv).x, use_ao_texture);
+	float ao = lerp(1.0f, material_metallic.Sample(s0, uv).x, use_ao_texture);
 
 	output.albedo = pow(albedo.xyz, 2.2f);
 	output.alpha = albedo.w;
@@ -95,11 +95,11 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 		use_albedo_texture);
 
 	const float roughness = lerp(data.roughness,
-		max(0.05, material_roughness.SampleLevel(s0, uv, mip_level).r),
+		max(0.05, material_roughness.SampleLevel(s0, uv, mip_level).y),
 		use_roughness_texture);
 
 	const float metallic = lerp(data.metallic,
-		material_metallic.SampleLevel(s0, uv, mip_level).r,
+		material_metallic.SampleLevel(s0, uv, mip_level).z,
 		use_metallic_texture);
 
 	const float3 normal_t = lerp(float3(0.0, 0.0, 1.0),

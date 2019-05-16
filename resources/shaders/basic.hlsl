@@ -91,6 +91,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	PS_OUTPUT output;
 	float3x3 tbn = {input.tangent, input.bitangent, input.normal};
 
+
 	OutputMaterialData output_data = InterpretMaterialData(data,
 		material_albedo,
 		material_normal,
