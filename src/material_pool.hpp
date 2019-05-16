@@ -43,7 +43,13 @@ namespace wr
 		EMISSIVE_MULTIPLIER = (5 << 16) | 0,
 		IS_DOUBLE_SIDED = (6 << 16) | 0,
 		IS_ALPHA_MASKED = (7 << 16) | 0,
-		MAX_OFFSET = 8
+		ALBEDO_UV_SCALE = (8 << 16) | 0,
+		NORMAL_UV_SCALE = (9 << 16) | 0,
+		ROUGHNESS_UV_SCALE = (10 << 16) | 0,
+		METALLIC_UV_SCALE = (11 << 16) | 0,
+		EMISSIVE_UV_SCALE = (12 << 16) | 0,
+		AO_UV_SCALE = (13 << 16) | 0,
+		MAX_OFFSET = 14
 	};
 
 	class Material
@@ -58,6 +64,7 @@ namespace wr
 				 TextureHandle metallic,
 				 TextureHandle emissive,
 				 TextureHandle ao, 
+				 MaterialUVScales mat_scales,
 				 bool alpha_masked = false,
 				 bool double_sided = false);
 
@@ -127,12 +134,19 @@ namespace wr
 				float m_is_double_sided;
 				float m_use_alpha_constant;
 
-				float m_padding[3];
+				float albedo_scale;
+				float normal_scale;
+				float roughness_scale;
+				float metallic_scale;
+
+				float emissive_scale;
+				float ao_scale;
+				float m_padding;
 				TextureFlags m_material_flags;
 
 			};
 
-			float m_constant_data[size_t(MaterialConstant::MAX_OFFSET) + 1]{};
+			float m_constant_data[size_t(MaterialConstant::MAX_OFFSET)]{};
 
 		};
 
@@ -182,7 +196,8 @@ namespace wr
 											TextureHandle& roughness,
 											TextureHandle& metallic,
 											TextureHandle& emissive,
-											TextureHandle& ao, 
+											TextureHandle& ao,
+											MaterialUVScales& mat_scales,
 											bool is_alpha_masked = false, 
 											bool is_double_sided = false);
 
