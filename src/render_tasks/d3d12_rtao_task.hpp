@@ -30,7 +30,7 @@ namespace wr
 		d3d12::StateObject* in_state_object;
 		d3d12::RootSignature* in_root_signature;
 
-		D3D12ConstantBufferHandle* in_cb_camera_handle;
+		D3D12ConstantBufferHandle* out_cb_handle;
 		d3d12::RenderTarget* in_deferred_main_rt;
 
 		DescriptorAllocation out_uav_from_rtv;
@@ -101,7 +101,7 @@ namespace wr
 			}
 		}
 
-		inline void SetupAOTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
+		inline void SetupAOTask(RenderSystem& render_system, FrameGraph& fg, RenderTaskHandle& handle, bool resize)
 		{
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
@@ -119,26 +119,29 @@ namespace wr
 				data.in_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
 			}
 
-			// Bind output texture
+			// Versioning
+			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
+			{
+				// Bind output texture
+				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
-			d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
-			d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+				// Bind g-buffers (albedo, normal, depth)
+				d3d12::DescHeapCPUHandle gbuffers_handle = data.in_gbuffers.GetDescriptorHandle();
+				d3d12::DescHeapCPUHandle depth_buffer_handle = data.in_depthbuffer.GetDescriptorHandle();
 
+				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
 
-			// Bind g-buffers (albedo, normal, depth)
-			d3d12::DescHeapCPUHandle gbuffers_handle = data.in_gbuffers.GetDescriptorHandle();
-			d3d12::DescHeapCPUHandle depth_buffer_handle = data.in_depthbuffer.GetDescriptorHandle();
+				auto deferred_main_rt = data.in_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
-			//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
-
-			auto deferred_main_rt = data.in_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-			d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, gbuffers_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
-			d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, gbuffers_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
+				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
+			}
 
 			if (!resize)
 			{
 				// Camera constant buffer
-				data.in_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTAO_CBData)));
+				data.out_cb_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTAO_CBData)));
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
@@ -165,10 +168,12 @@ namespace wr
 			auto& data = fg.GetData<RTAOData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
-			
+			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
+
 			if (fg.HasTask<wr::RTHybridData>())
 			{
 				fg.WaitForPredecessorTask<wr::RTHybridData>(); //Wait for RTHybrid to avoid multi threading issues.
+				//TODO: Shouldn't we have a more robust system for this, Problem exists in rt_hybrid aswell....
 			}
 
 			if (n_render_system.m_render_window.has_value())
@@ -195,7 +200,7 @@ namespace wr
 					n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*)as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * as_build_data.out_materials.size(), 0);
 				}
 
-				// Update camera constant buffer
+				// Update constant buffer
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTAO_CBData cb_data;
 				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
@@ -204,16 +209,14 @@ namespace wr
 				cb_data.power = 1.f;
 				cb_data.sample_count = 8u;
 
-				//TODO: Should use ProjectionView_CBData or not?
-
-				n_render_system.m_camera_pool->Update(data.in_cb_camera_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
+				n_render_system.m_camera_pool->Update(data.out_cb_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
 
 				// Transition depth to NON_PIXEL_RESOURCE
 				d3d12::TransitionDepth(cmd_list, data.in_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, false);
 				d3d12::BindDescriptorHeaps(cmd_list, false);
-				d3d12::BindComputeConstantBuffer(cmd_list, data.in_cb_camera_handle->m_native, 2, frame_idx);
+				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_handle->m_native, 2, frame_idx);
 
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				
