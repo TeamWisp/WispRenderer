@@ -176,6 +176,7 @@ namespace wr
 					d3d12::Transition(cmd_list, irradiance, irradiance->m_subresource_states[0], ResourceState::PIXEL_SHADER_RESOURCE);
 
 					data.should_run = false;
+					fg.SetShouldExecute(handle, false);
 				}
 			}
 			//if (data.should_run)
