@@ -45,7 +45,7 @@ namespace util
 	class FileWrapper {
 	public:
 		FileWrapper() {
-			std::filesystem::path path("/logs/");
+			std::filesystem::path path("./logs/");
 			if (!std::filesystem::exists(path))
 			{
 				std::filesystem::create_directory(path);
