@@ -206,7 +206,7 @@ namespace wr
 			{
 				for (uint32_t j = 0, k = (uint32_t) meshes[i].m_vertices.size(); j < k; ++j)
 				{
-					model->Expand(meshes[i].m_vertices[j].m_pos, mesh);
+					model->Expand(meshes[i].m_vertices[j].m_pos);
 				}
 			}
 
