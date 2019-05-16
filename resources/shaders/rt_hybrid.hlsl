@@ -193,7 +193,7 @@ void HybridRaygenEntry()
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
 	// Get shadow factor
-	float4 shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos, V, normal, metallic, roughness, albedo, 0, rand_seed);
 
 	// Get reflection result
 	float3 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, depth, cone), 0, 100000);
@@ -212,6 +212,7 @@ void ShadowRaygenEntry()
 	scaling = 1.0;
 	#endif
 	uint rand_seed = initRand(DispatchRaysIndex().x * scaling + DispatchRaysIndex().y * scaling * DispatchRaysDimensions().x * scaling, frame_idx);
+	//uint rand_seed = initRand(DispatchRaysIndex().x % 5, DispatchRaysIndex().y % 5);
 
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
@@ -247,14 +248,14 @@ void ShadowRaygenEntry()
 
 	wpos += normal * EPSILON;
 	// Get shadow factor
-	float shadow_result = DoShadowAllLights(wpos, 0, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, 0, rand_seed);
 
 	// xyz: reflection, a: shadow factor
-	output_refl_shadow[screen_co] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
+	output_refl_shadow[screen_co] = shadow_result;
 	#ifdef HALF_RES
-	output_refl_shadow[screen_co+int2(1,0)] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
-	output_refl_shadow[screen_co+int2(0,1)] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
-	output_refl_shadow[screen_co+int2(1,1)] = float4(shadow_result,shadow_result,shadow_result,shadow_result);
+	output_refl_shadow[screen_co+int2(1,0)] = shadow_result;
+	output_refl_shadow[screen_co+int2(0,1)] = shadow_result;
+	output_refl_shadow[screen_co+int2(1,1)] = shadow_result;
 	#endif
 }
 
@@ -430,7 +431,9 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, payload.cone);
 
 	//Lighting
+	#undef SOFT_SHADOWS
 	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth);
+	#define SOFT_SHADOWS
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;

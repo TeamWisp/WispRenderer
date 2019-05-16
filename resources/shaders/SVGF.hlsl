@@ -39,7 +39,7 @@ cbuffer DenoiserSettings : register(b1)
     float step_distance;
 };
 
-const static float VARIANCE_CLIPPING_GAMMA = 4.0;
+const static float VARIANCE_CLIPPING_GAMMA = 8.0;
 
 float3 OctToDir(uint octo)
 {
