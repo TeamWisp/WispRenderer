@@ -396,7 +396,7 @@ namespace wr::d3d12
 		ID3D12Resource* m_scratch;														 // Scratch memory for AS builder
 		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_natives;        // Where the AS is
 		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_instance_descs; // Hold the matrices of the instances
-		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
+		std::array<WRAPPED_GPU_POINTER, d3d12::settings::num_back_buffers> m_fallback_tlas_ptrs;
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO m_prebuild_info;
 	};
 

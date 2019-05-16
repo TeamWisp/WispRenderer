@@ -199,7 +199,7 @@ namespace wr
 			// Rebuild acceleratrion structure a 2e time for fallback
 			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
-				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list, frame_idx);
+				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list, 0);
 			}
 
 			// Reset accmulation if nessessary
@@ -379,7 +379,7 @@ namespace wr
 				}
 				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 				{
-					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
+					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptrs[0]);
 				}
 
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);

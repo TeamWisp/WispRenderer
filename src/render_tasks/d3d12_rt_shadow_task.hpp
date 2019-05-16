@@ -191,20 +191,17 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTShadowData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+			auto frame_idx = n_render_system.GetFrameIdx();
 			fg.WaitForPredecessorTask<wr::CubemapConvolutionTaskData>();
 
 			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
-				d3d12::CreateOrUpdateTLAS(n_render_system.m_device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
-
-				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
-				cmd_list->m_native->ResourceBarrier(1, &barrier);
+				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list, 0);
+				d3d12::UAVBarrierAS(cmd_list, as_build_data.out_tlas, 0);
 			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto frame_idx = n_render_system.GetFrameIdx();
-
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
@@ -352,11 +349,11 @@ namespace wr
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
 				{
-					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_native, 1);
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				}
 				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 				{
-					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
+					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptrs[0]);
 				}
 
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
