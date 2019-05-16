@@ -23,7 +23,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	ray.TMin = 0;
 	ray.TMax = 1.0e38f;
 
-	HitInfo payload = { float3(0, 0, 0), seed, origin, depth };
+	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
 
 	// Trace the ray
 	TraceRay(
