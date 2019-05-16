@@ -19,12 +19,12 @@ namespace wr
 
 	struct MaterialUVScales
 	{
-		float m_albedo_scale = 2;
-		float m_normal_scale = 2;
-		float m_roughness_scale = 2;
-		float m_metallic_scale = 2;
-		float m_emissive_scale = 2;
-		float m_ao_scale = 2;
+		float m_albedo_scale = 1.f
+		float m_normal_scale = 1.f;
+		float m_roughness_scale = 1.f;
+		float m_metallic_scale = 1.f;
+		float m_emissive_scale = 1.f;
+		float m_ao_scale = 1.f;
 	};
 
 	struct CPUTexture
