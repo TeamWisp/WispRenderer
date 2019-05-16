@@ -19,7 +19,7 @@ namespace wr
 
 	struct MaterialUVScales
 	{
-		float m_albedo_scale = 1.0f
+		float m_albedo_scale = 1.0f;
 		float m_normal_scale = 1.0f;
 		float m_roughness_scale = 1.0f;
 		float m_metallic_scale = 1.0f;
