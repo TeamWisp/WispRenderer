@@ -101,7 +101,7 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 	float use_ao_texture = float((data.flags & MATERIAL_HAS_AO_TEXTURE) != 0);
 
 	const float4 albedo = lerp(float4(data.color, 1),
-		material_albedo.SampleLevel(s0, uv * (data.albedo_uv_scale * 2), mip_level),
+		material_albedo.SampleLevel(s0, uv * (data.albedo_uv_scale), mip_level),
 		use_albedo_texture);
 
 	const float roughness = lerp(data.roughness,
