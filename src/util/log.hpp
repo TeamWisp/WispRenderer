@@ -9,6 +9,11 @@
 #define LOG_PRINT_COLORS
 //#define LOG_PRINT_TO_OUTPUT
 
+#ifndef _DEBUG
+#define LOG_TO_FILE
+#define LOG_PRINT_LOC
+#endif // DEBUG
+
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 #include <Windows.h>
 #endif
@@ -24,6 +29,9 @@
 #include <functional>
 #endif
 
+#include <filesystem>
+#include <ctime>
+
 #define LOG_BREAK DebugBreak();
 
 #ifdef LOG_CALLBACK
@@ -32,6 +40,27 @@ namespace util
 	struct log_callback
 	{
 		WISPRENDERER_EXPORT static std::function<void(std::string const &)> impl;
+	};
+
+	class FileWrapper {
+	public:
+		FileWrapper() {
+			std::filesystem::path path("/logs/");
+			if (!std::filesystem::exists(path))
+			{
+				std::filesystem::create_directory(path);
+			}
+			std::time_t current_time = std::time(0);
+			std::tm* local_time = std::localtime(&current_time);
+			std::stringstream ss;
+			ss << "log-" << local_time->tm_hour << local_time->tm_min << "_" << local_time->tm_mday << "-" << (local_time->tm_mon + 1) << "-" << (local_time->tm_year + 1900);
+			path /= ss.str();
+			std::filesystem::create_directory(path);
+			path /= "WispToMaya.log";
+			m_file = fopen(path.string().c_str(),"w");
+			
+		};
+		std::FILE* m_file;
 	};
 };
 #endif
@@ -85,10 +114,11 @@ namespace util::internal
 #endif
 
 		fmt::print(stdout, str, args...);
-
 		#if defined(LOG_PRINT_TO_OUTPUT) && defined(_WIN32)
 			OutputDebugStringA(str.c_str());
 		#endif
+		static util::FileWrapper file_w;
+		fmt::print(file_w.m_file, str, args...);
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 		if (color != 0)
