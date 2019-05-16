@@ -17,12 +17,12 @@ namespace wr
 		memset(&m_material_data, 0, sizeof(m_material_data));
 
 		SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(1.0f);
-		SetConstant<MaterialConstant::ALBEDO_UV_SCALE>(1.0f);
-		SetConstant<MaterialConstant::NORMAL_UV_SCALE>(1.0f);
-		SetConstant<MaterialConstant::ROUGHNESS_UV_SCALE>(1.0f);
-		SetConstant<MaterialConstant::METALLIC_UV_SCALE>(1.0f);
-		SetConstant<MaterialConstant::EMISSIVE_UV_SCALE>(1.0f);
-		SetConstant<MaterialConstant::AO_UV_SCALE>(1.0f);
+		SetConstant<MaterialConstant::ALBEDO_UV_SCALE>(4.0f);
+		SetConstant<MaterialConstant::NORMAL_UV_SCALE>(4.0f);
+		SetConstant<MaterialConstant::ROUGHNESS_UV_SCALE>(4.0f);
+		SetConstant<MaterialConstant::METALLIC_UV_SCALE>(4.0f);
+		SetConstant<MaterialConstant::EMISSIVE_UV_SCALE>(4.0f);
+		SetConstant<MaterialConstant::AO_UV_SCALE>(4.0f);
 	}
 
 	Material::Material(TexturePool *pool,
@@ -51,6 +51,12 @@ namespace wr
 		m_material_data.emissive_scale = scales.m_emissive_scale;
 		m_material_data.ao_scale = scales.m_ao_scale;
 
+		SetConstant<MaterialConstant::ALBEDO_UV_SCALE>(scales.m_albedo_scale);
+		SetConstant<MaterialConstant::NORMAL_UV_SCALE>(scales.m_normal_scale);
+		SetConstant<MaterialConstant::ROUGHNESS_UV_SCALE>(scales.m_roughness_scale);
+		SetConstant<MaterialConstant::METALLIC_UV_SCALE>(scales.m_metallic_scale);
+		SetConstant<MaterialConstant::EMISSIVE_UV_SCALE>(scales.m_emissive_scale);
+		SetConstant<MaterialConstant::AO_UV_SCALE>(scales.m_ao_scale);
 		SetConstant<MaterialConstant::IS_ALPHA_MASKED>(alpha_masked);
 		SetConstant<MaterialConstant::IS_DOUBLE_SIDED>(double_sided);
 		SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(1.0f);
