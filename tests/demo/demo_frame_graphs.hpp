@@ -92,10 +92,10 @@ namespace fg_manager
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
-			//wr::AddHBAOTask(*fg);
+			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-			/*// Do Depth of field task
+			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
 			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
@@ -111,14 +111,14 @@ namespace fg_manager
 			wr::BloomSettings defaultSettings;
 			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);*/
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
 
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
-			//wr::AddAnselTask(*fg);
+			wr::AddAnselTask(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
@@ -140,7 +140,7 @@ namespace fg_manager
 			// Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 
-			//wr::AddHBAOTask(*fg);
+			wr::AddHBAOTask(*fg);
 
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);
@@ -160,7 +160,7 @@ namespace fg_manager
 			// Copy the raytracing pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
-			//wr::AddAnselTask(*fg);
+			wr::AddAnselTask(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
@@ -191,7 +191,25 @@ namespace fg_manager
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+			// Do Depth of field task
+			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
+			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
+			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
+			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
+			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
+
+			//initialize default settings
+			wr::BloomSettings defaultSettings;
+			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
+
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
