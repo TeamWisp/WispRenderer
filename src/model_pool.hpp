@@ -315,7 +315,12 @@ namespace wr
 				}
 			};
 
-			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, false, true);
+			//TODO: Maya team integrate texture scales in loading
+			// Currently default scales are set to 1 for all materials.
+			MaterialUVScales default_scales;
+
+
+			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, default_scales, false, true);
 			Material* mat = material_pool->GetMaterial(new_handle);
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)

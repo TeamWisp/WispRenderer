@@ -71,8 +71,8 @@ namespace wr
 			std::uint32_t metallicness_id;
 			std::uint32_t emissive_id;
 			std::uint32_t ao_id;
-			DirectX::XMFLOAT2 padding;
 
+			DirectX::XMFLOAT2 padding;
 			Material::MaterialData material_data;
 		};
 
