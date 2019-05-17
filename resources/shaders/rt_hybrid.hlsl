@@ -149,6 +149,7 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint d
 void RaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+	//uint rand_seed = initRand(DispatchRaysIndex().x % TILE_SIZE_2D, DispatchRaysIndex().y % TILE_SIZE_2D);
 
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy + 0.5f) / float2(DispatchRaysDimensions().xy);
@@ -193,7 +194,7 @@ void RaygenEntry()
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
 	// Get shadow factor
-	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
+	float shadow_result = DoShadowAllLights(wpos, normal, 0, rand_seed);
 
 	// Get reflection result
 	float3 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, depth, cone), 0, 100000);

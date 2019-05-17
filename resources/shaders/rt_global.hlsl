@@ -2,8 +2,9 @@
 //#define FOUR_X_A
 //#define PATH_TRACING
 //#define DEPTH_OF_FIELD
-#define EPSILON 0.1
+#define EPSILON 1.1
 #define MAX_SHADOW_SAMPLES 4
+#define TILE_SIZE_2D 5
 
 #ifdef FALLBACK
 	#undef MAX_RECURSION

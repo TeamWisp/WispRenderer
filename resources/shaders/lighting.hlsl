@@ -98,7 +98,8 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float3 wpos = pos + (normal * EPSILON);
 
 	// Offset shadow ray direction to get soft-shadows
-	float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, rand_seed);
+	//float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, rand_seed); AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+	float shadow_factor = 1.0f;
 
 	lighting *= shadow_factor;
 
@@ -120,11 +121,14 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	return res + emissive;
 }
 
-float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
+float DoShadowAllLights(float3 wpos, float3 normal, uint depth, inout float rand_seed)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
 	float res = 0;
+	uint sampled_lights = 0;
+
+	float3 offsetted_pos = wpos + normal * EPSILON;
 
 	for (uint i = 0; i < light_count; i++)
 	{
@@ -132,8 +136,15 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		Light light = lights[i];
 		uint tid = light.tid & 3;
 
+		float dir_dot = dot(light.dir, normal);
+
+		if (dir_dot < 0.0f)
+		{
+			continue;
+		}
+
 		//Light direction (constant with directional, position dependent with other)
-		float3 L = (lerp(light.pos - wpos, light.dir, tid == light_type_directional));
+		float3 L = (lerp(light.pos - offsetted_pos, light.dir, tid == light_type_directional));
 		float light_dist = length(L);
 		L /= light_dist;
 
@@ -142,10 +153,17 @@ float DoShadowAllLights(float3 wpos, uint depth, inout float rand_seed)
 		// Get maxium ray length (depending on type)
 		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
+		if (attenuation < 0.2f)
+		{
+			continue;
+		}
+
 		// Add shadow factor to final result
-		res += GetShadowFactor(wpos, L, t_max, depth + 1, rand_seed) * attenuation;
+		res += GetShadowFactor(offsetted_pos, L, t_max, depth + 1, rand_seed) * attenuation;
+
+		sampled_lights++;
 	}
 
 	// return final res
-	return res / float(light_count);
+	return res / float(sampled_lights);
 }
