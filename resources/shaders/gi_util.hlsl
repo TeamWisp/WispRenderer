@@ -55,6 +55,7 @@ float probabilityToSampleDiffuse(float3 difColor, float3 specColor)
 
 float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
 {
+	return nextRand(seed) * albedo;
 	// #################### GGX #####################
 	uint light_count = lights[0].tid >> 2;
 	if (light_count < 1) return 0;
@@ -112,6 +113,7 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 
 	float3 lighting = (light_intensity * (NdotL * spec + NdotL * albedo / M_PI));
 
+
 	return (shadow_mult * lighting);
 }
 
@@ -140,7 +142,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 
 		// ##### BOUNCE #####
 		nextRand(seed);
-		const float3 rand_dir = getUniformHemisphereSample(seed, N);
+		const float3 rand_dir = getCosHemisphereSample(seed, N);
 		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
 		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
 

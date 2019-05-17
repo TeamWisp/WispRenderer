@@ -92,7 +92,6 @@ float3 unpack_position(float2 uv, float depth)
 [shader("raygeneration")]
 void RaygenEntry()
 {
-	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
@@ -119,6 +118,8 @@ void RaygenEntry()
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(cpos - wpos);
 
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
 	normal = lerp(normal, -normal, dot(normal, V) < 0);
 
 	float3 result = float3(0, 0, 0);
@@ -126,22 +127,22 @@ void RaygenEntry()
 	nextRand(rand_seed);
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
+	//result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
 	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
-	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
 	//result += emissive;
 
 	result = clamp(result, 0, 100);
 
-	// xyz: reflection, a: shadow factor
-	if (frame_idx > 0 && !any(isnan(result)))
+	if (any(isnan(nextRand(rand_seed))))
 	{
-		output[DispatchRaysIndex().xy] += float4(result, 1);
+		output[DispatchRaysIndex().xy] = 1;
 	}
 	else
 	{
-		output[DispatchRaysIndex().xy] = float4(result, 1);
+		output[DispatchRaysIndex().xy] = float4(albedo * nextRand(rand_seed), 1);
 	}
+
 }
 
 //Reflections
@@ -233,7 +234,7 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	// #################### GGX #####################
 	nextRand(payload.seed);
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
-	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	//payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 	payload.color += emissive;
 }
 

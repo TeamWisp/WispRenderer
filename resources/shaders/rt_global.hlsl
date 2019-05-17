@@ -1,7 +1,7 @@
 #ifndef __RT_GLOBAL_HLSL__
 #define __RT_GLOBAL_HLSL__
 
-#define MAX_RECURSION 3
+#define MAX_RECURSION 1
 //#define FOUR_X_A
 //#define PATH_TRACING
 //#define DEPTH_OF_FIELD
