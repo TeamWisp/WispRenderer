@@ -244,7 +244,7 @@ namespace wr::d3d12
 			if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
 				std::uint32_t num_buffer_elements = static_cast<std::uint32_t>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(std::uint32_t);
-				tlas.m_fallback_tlas_ptrs[frame_idx] = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_natives[frame_idx], num_buffer_elements);
+				tlas.m_fallback_tlas_ptrs[0] = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_natives[0], num_buffer_elements);
 			}
 		}
 
