@@ -413,7 +413,7 @@ namespace wr
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResourceName(name),
-			RenderTargetProperties::ResolutionScalar(0.5f)
+			RenderTargetProperties::ResolutionScalar(1.0f)
 		};
 
 		RenderTaskDesc desc;
