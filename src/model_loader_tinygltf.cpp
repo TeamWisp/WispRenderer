@@ -78,19 +78,6 @@ namespace wr
 		}
 
 		return { tanA, tanB };
-		// (2)
-		/*for (size_t i = 0; i < vtxCount; i++) {
-			Vec3f n = vertices[i].normal;
-			Vec3f t0 = tanA[i];
-			Vec3f t1 = tanB[i];
-
-			Vec3f t = t0 - (n * dot(n, t0));
-			t = normalize(t);
-
-			Vec3f c = cross(c, n, t0);
-			float w = (dot(c, t1) < 0) ? -1.0f : 1.0f;
-			vertices[i].tangent = Vec4f(t.x, t.y, t.z, w));
-		}*/
 	}
 
 	inline void LoadMaterial(ModelData* model, tinygltf::Model tg_model, tinygltf::Material mat)
@@ -201,20 +188,23 @@ namespace wr
 				const auto data_address = buffer.data.data() + buffer_view.byteOffset + attrib_accessor.byteOffset;
 				const auto byte_stride = attrib_accessor.ByteStride(buffer_view);
 				const auto count = attrib_accessor.count;
-				if (attrib.first == "POSITION") {
+				if (attrib.first == "POSITION")
+				{
 					mesh_data->m_positions.resize(position_buffer_offset + count);
 					mesh_data->m_colors.resize(position_buffer_offset + count);
 
 					memcpy(mesh_data->m_positions.data() + position_buffer_offset, data_address, count * byte_stride);
 					position_buffer_offset += count * byte_stride;
 				}
-				else if (attrib.first == "NORMAL") {
+				else if (attrib.first == "NORMAL")
+				{
 					mesh_data->m_normals.resize(normal_buffer_offset + count);
 
 					memcpy(mesh_data->m_normals.data() + normal_buffer_offset, data_address, count * byte_stride);
 					normal_buffer_offset += count * byte_stride;
 				}
-				else if (attrib.first == "TEXCOORD_0") {
+				else if (attrib.first == "TEXCOORD_0")
+				{
 					std::vector<DirectX::XMFLOAT2> f2_data;
 					f2_data.resize(count);
 
