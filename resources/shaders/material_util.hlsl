@@ -59,10 +59,10 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 
 	float4 albedo = lerp(float4(data.color, 1), material_albedo.Sample(s0, uv * data.albedo_uv_scale), use_albedo_texture);
 #ifdef COMPRESSED
-	float roughness = lerp(data.roughness, max(0.05f, material_roughness.Sample(s0, uv * data.metallic_uv_scale).y), use_roughness_texture);
+	float roughness = lerp(data.roughness, max(0.05f, material_roughness.Sample(s0, uv * data.roughness_uv_scale).y), use_roughness_texture);
 	float metallic = lerp(data.metallic, material_metallic.Sample(s0, uv * data.metallic_uv_scale).z, use_metallic_texture);
 #else
-	float roughness = lerp(data.roughness, max(0.05f, material_roughness.Sample(s0, uv * data.metallic_uv_scale).x), use_roughness_texture);
+	float roughness = lerp(data.roughness, max(0.05f, material_roughness.Sample(s0, uv * data.roughness_uv_scale).x), use_roughness_texture);
 	float metallic = lerp(data.metallic, material_metallic.Sample(s0, uv * data.metallic_uv_scale).x, use_metallic_texture);
 #endif
 
