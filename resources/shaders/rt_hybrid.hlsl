@@ -432,7 +432,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 
 	//Lighting
 	#undef SOFT_SHADOWS
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth + 1);
 	#define SOFT_SHADOWS
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
