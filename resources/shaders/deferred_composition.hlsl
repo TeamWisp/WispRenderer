@@ -105,32 +105,27 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		//Ao is multiplied with material texture ao, if present
 		ao *= gbuffer_ao;
 
-		float4 shadow_info = buffer_shadow[screen_coord];
-
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float3 shadow_factor = lerp(
 			// Do deferred shadow (fully lit for now)
-			float3(-1, -1, -1),
+			float3(1, 1, 1),
 			// Shadow buffer if its hybrid rendering
-			shadow_info.rgb,
+			buffer_shadow.SampleLevel(point_sampler, uv, 0).rgb,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
-
-		shadow_factor = clamp(shadow_factor, 0.0, 1.0);
 		
 		// Get reflection
 		float3 reflection = lerp(
 			// Sample from environment if it IS NOT hybrid rendering
 			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
-			buffer_reflection[screen_coord].xyz,	
+			buffer_reflection.SampleLevel(point_sampler, uv, 0).xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, is_hybrid);
-		//retval = shadow_info;
 	}
 	else
 	{	

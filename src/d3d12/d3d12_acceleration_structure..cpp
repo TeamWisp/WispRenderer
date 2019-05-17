@@ -99,39 +99,6 @@ namespace wr::d3d12
 			return device->m_fallback_native->GetWrappedPointerSimple(desc_heap_idx, resource->GetGPUVirtualAddress());
 		}
 
-		WRAPPED_GPU_POINTER CreateFallbackWrappedPointer(
-			Device* device,
-			DescriptorHeap* heap,
-			std::uint32_t index,
-			ID3D12Resource* resource,
-			UINT buffer_num_elements,
-			std::uint32_t frame_idx)
-		{
-
-			if (GetRaytracingType(device) != RaytracingType::FALLBACK)
-			{
-				LOGW("CreateFallbackWrappedPointer got called but the device isn't setup for fallback.");
-			}
-
-			D3D12_UNORDERED_ACCESS_VIEW_DESC rawBufferUavDesc = {};
-			rawBufferUavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-			rawBufferUavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-			rawBufferUavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-			rawBufferUavDesc.Buffer.NumElements = buffer_num_elements;
-
-			d3d12::DescHeapCPUHandle bottom_level_descriptor;
-
-			// Only compute fallback requires a valid descriptor index when creating a wrapped pointer.
-			UINT desc_heap_idx = index; // TODO don't hardcode this.
-			if (!device->m_fallback_native->UsingRaytracingDriver())
-			{
-				bottom_level_descriptor = d3d12::GetCPUHandle(heap, frame_idx, 0); // TODO: Don't harcode this.
-				d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
-				device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
-			}
-			return device->m_fallback_native->GetWrappedPointerSimple(desc_heap_idx, resource->GetGPUVirtualAddress());
-		}
-
 		inline void UpdatePrebuildInfo(Device* device, AccelerationStructure& as, D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS inputs)
 		{
 			if (GetRaytracingType(device) == RaytracingType::NATIVE)
@@ -244,7 +211,7 @@ namespace wr::d3d12
 			if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
 				std::uint32_t num_buffer_elements = static_cast<std::uint32_t>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(std::uint32_t);
-				tlas.m_fallback_tlas_ptrs[0] = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_natives[0], num_buffer_elements);
+				tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_natives[0], num_buffer_elements);
 			}
 		}
 

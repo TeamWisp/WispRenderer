@@ -969,7 +969,7 @@ namespace wr
 
 	/* ### Hybrid Raytracing ### */
 	REGISTER(shaders::rt_hybrid_lib, ShaderRegistry)({
-		ShaderDescription::Path("resources/shaders/rt_hybrid.hlsl"),
+		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
 		ShaderDescription::Entry("HybridRaygenEntry"),
 		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 		});
@@ -1091,7 +1091,7 @@ namespace wr
 
 	/* ### Shadow Raytracing ### */
 	REGISTER(shaders::rt_shadow_lib, ShaderRegistry)({
-		ShaderDescription::Path("resources/shaders/rt_hybrid.hlsl"),
+		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
 		ShaderDescription::Entry("ShadowRaygenEntry"),
 		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 		});
@@ -1123,7 +1123,7 @@ namespace wr
 
 	/* ### Reflection Raytracing ### */
 	REGISTER(shaders::rt_reflection_lib, ShaderRegistry)({
-		ShaderDescription::Path("resources/shaders/rt_hybrid.hlsl"),
+		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
 		ShaderDescription::Entry("ReflectionRaygenEntry"),
 		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 		});
