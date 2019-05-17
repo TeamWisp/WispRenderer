@@ -119,6 +119,7 @@ namespace util::internal
 		#endif
 		static util::FileWrapper file_w;
 		fmt::print(file_w.m_file, str, args...);
+		fflush(file_w.file);
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 		if (color != 0)
