@@ -204,7 +204,6 @@ namespace wr
 			return 0;
 		case WM_DESTROY:
 			m_running = false;
-			PostQuitMessage(0);
 			return 0;
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONUP:
