@@ -241,13 +241,14 @@ namespace wr
 		{
 			LOGC("TinyGLTF Parsing Failed");
 		}
-		//bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, argv[1]); // for binary glTF(.glb)
 
-		if (!warn.empty()) {
+		if (!warn.empty())
+		{
 			LOGW("TinyGLTF Warning: {}", warn);
 		}
 
-		if (!err.empty()) {
+		if (!err.empty())
+		{
 			LOGE("TinyGLTF Error: {}", err);
 		}
 
@@ -264,18 +265,12 @@ namespace wr
 			LoadMesh(model, tg_model, mesh);
 		}
 
-
-		// Load meshes
-		//LoadMeshes(model, tg_mode);
-
 		return model;
 	}
 
 	ModelData* TinyGLTFModelLoader::LoadModel(void* data, std::size_t length, std::string format)
 	{
-		auto model = new ModelData();
-
-		return model;
+		return new ModelData();
 	}
 
 }
