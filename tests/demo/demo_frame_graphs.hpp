@@ -1,6 +1,7 @@
 #pragma once
 
 #include "frame_graph/frame_graph.hpp"
+#include "settings.hpp"
 #include "render_tasks/d3d12_imgui_render_task.hpp"
 #include "render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "render_tasks/d3d12_deferred_main.hpp"
@@ -13,6 +14,7 @@
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
 #include "render_tasks/d3d12_shadow_denoiser_task.hpp"
+#include "render_tasks/d3d12_rtao_task.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
@@ -67,7 +69,7 @@ namespace fg_manager
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
 	static std::array<wr::FrameGraph*, 5> frame_graphs = {};
 
-	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> const & imgui_func)
+	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> const& imgui_func)
 	{
 		// Raytracing
 		{
@@ -236,8 +238,7 @@ namespace fg_manager
 
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
-
-			// Construct the G-buffer
+			 // Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 
 			// Build Acceleration Structure
@@ -248,6 +249,9 @@ namespace fg_manager
 			wr::AddRTShadowTask(*fg);
 
 			wr::AddShadowDenoiserTask(*fg);
+
+			//Raytraced Ambient Occlusion task
+			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 

@@ -187,12 +187,13 @@ namespace wr
 			data.frame_idx = 0;
 		}
 
-		inline void Render(D3D12RenderSystem& n_render_system, FrameGraph& fg, SceneGraph& scene_graph, RTHybridData& data, d3d12::CommandList* cmd_list, std::string raygen_entry)
+		inline void Render(D3D12RenderSystem& n_render_system, FrameGraph& fg, SceneGraph& scene_graph, RTHybridData& data, d3d12::CommandList* cmd_list, RenderTaskHandle& handle, std::string raygen_entry)
 		{
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
+			float scalar = 1.0f;
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 			// Rebuild acceleratrion structure a 2e time for fallback
@@ -359,14 +360,26 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
+				/*unsigned int verts_loc = 3; rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
+				This should be the Parameter index not the heap location, it was only working due to a ridiculous amount of luck and should be fixed, or we completely missunderstand this stuff...
+				Much love, Meine and Florian*/
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
 				//#ifdef _DEBUG
 				CreateShaderTables(device, data, raygen_entry, frame_idx);
 				//#endif
 
-								// Dispatch hybrid ray tracing rays
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
+				scalar = fg.GetRenderTargetResolutionScale(handle);
+
+				// Dispatch hybrid ray tracing rays
+				d3d12::DispatchRays(cmd_list, 
+					data.out_hitgroup_shader_table[frame_idx], 
+					data.out_miss_shader_table[frame_idx],
+					data.out_raygen_shader_table[frame_idx], 
+					window->GetWidth() * scalar,
+					window->GetHeight() * scalar,
+					1,
+					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
@@ -380,7 +393,7 @@ namespace wr
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 
-			Render(n_render_system, fg, scene_graph, data, cmd_list, "HybridRaygenEntry");
+			Render(n_render_system, fg, scene_graph, data, cmd_list, handle, "HybridRaygenEntry");
 		}
 
 		inline void DestroyRTHybridTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
@@ -416,7 +429,8 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ResourceName(name),
+			RenderTargetProperties::ResolutionScalar(1.0f)
 		};
 
 		RenderTaskDesc desc;

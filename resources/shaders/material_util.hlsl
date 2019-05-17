@@ -58,15 +58,16 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	float use_ao_texture = float((data.flags & MATERIAL_HAS_AO_TEXTURE) != 0);
 
 	float4 albedo = lerp(float4(data.color, 1), material_albedo.Sample(s0, uv * data.albedo_uv_scale), use_albedo_texture);
-
+#ifdef COMPRESSED
+	float roughness = lerp(data.roughness, max(0.05f, material_roughness.Sample(s0, uv * data.roughness_uv_scale).y), use_roughness_texture);
+	float metallic = lerp(data.metallic, material_metallic.Sample(s0, uv * data.metallic_uv_scale).z, use_metallic_texture);
+#else
 	float roughness = lerp(data.roughness, max(0.05f, material_roughness.Sample(s0, uv * data.roughness_uv_scale).x), use_roughness_texture);
-
 	float metallic = lerp(data.metallic, material_metallic.Sample(s0, uv * data.metallic_uv_scale).x, use_metallic_texture);
+#endif
 
 	float3 tex_normal = lerp(float3(0.0f, 0.0f, 1.0f), material_normal.Sample(s0, uv * data.normal_uv_scale).rgb * 2.0f - float3(1.0f, 1.0f, 1.0f), use_normal_texture);
-
 	float3 emissive = lerp(float3(0.0f, 0.0f, 0.0f), material_emissive.Sample(s0, uv * data.emissive_uv_scale).xyz, use_emissive_texture);
-
 	float ao = lerp(1.0f, material_ambient_occlusion.Sample(s0, uv * data.ao_uv_scale).x, use_ao_texture);
 
 	output.albedo = pow(albedo.xyz, 2.2f);
@@ -104,14 +105,14 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 		material_albedo.SampleLevel(s0, uv * (data.albedo_uv_scale), mip_level),
 		use_albedo_texture);
 
-	const float roughness = lerp(data.roughness,
-		max(0.05, material_roughness.SampleLevel(s0, uv * data.roughness_uv_scale, mip_level).r),
-		use_roughness_texture);
-
-	const float metallic = lerp(data.metallic,
-		material_metallic.SampleLevel(s0, uv * data.metallic_uv_scale, mip_level).r,
-		use_metallic_texture);
-
+	#ifdef COMPRESSED
+	const float roughness = lerp(data.roughness, max(0.05, material_roughness.SampleLevel(s0, uv * data.roughness_uv_scale, mip_level).z), use_roughness_texture);
+	const float metallic = lerp(data.metallic, material_metallic.SampleLevel(s0, uv * data.metallic_uv_scale, mip_level).y, use_metallic_texture); 
+	#else
+	const float roughness = lerp(data.roughness, max(0.05, material_roughness.SampleLevel(s0, uv * data.roughness_uv_scale, mip_level).x), use_roughness_texture);
+	const float metallic = lerp(data.metallic, material_metallic.SampleLevel(s0, uv * data.metallic_uv_scale, mip_level).x, use_metallic_texture); 
+	#endif
+	
 	const float3 normal_t = lerp(float3(0.0, 0.0, 1.0),
 		material_normal.SampleLevel(s0, uv * data.normal_uv_scale, mip_level).xyz * 2 - 1,
 		use_normal_texture);
