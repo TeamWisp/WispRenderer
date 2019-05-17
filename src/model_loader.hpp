@@ -110,7 +110,7 @@ namespace wr
 		float m_base_metallic;
 		float m_base_roughness;
 		float m_base_transparency;
-		float m_base_emissive = 0;
+		float m_base_emissive;
 		
 		bool m_two_sided;
 	};

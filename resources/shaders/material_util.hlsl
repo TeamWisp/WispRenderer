@@ -37,8 +37,6 @@ struct OutputMaterialData
 	float ao;
 };
 
-#define COMPRESSED
-
 OutputMaterialData InterpretMaterialData(MaterialData data,
 	Texture2D material_albedo,
 	Texture2D material_normal,
