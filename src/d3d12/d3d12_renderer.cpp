@@ -232,6 +232,7 @@ namespace wr
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
+		n_cmd_lists.reserve(cmd_lists.size());
 
 		n_cmd_lists.push_back(m_direct_cmd_list);
 
