@@ -100,7 +100,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hbao);
 
 		//Ao is multiplied with material texture ao, if present
-		//ao *= gbuffer_ao;
+		ao *= gbuffer_ao;
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
 		float shadow_factor = lerp(
@@ -123,12 +123,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			is_hybrid);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive * 10, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
 	}
 	else
 	{	
 		retval = skybox.SampleLevel(linear_sampler, -V, 0);
-		retval = 0;
 	}
 
 	//Do shading
