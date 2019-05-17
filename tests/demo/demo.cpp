@@ -2,10 +2,18 @@
 #include <algorithm>
 #include <thread>
 #include <chrono>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "wisp.hpp"
 #include "demo_frame_graphs.hpp"
 #include "util/file_watcher.hpp"
+
+//Crashpad includes
+#include "client/crashpad_client.h"
+#include "client/settings.h"
+#include "client/crash_report_database.h"
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
@@ -46,6 +54,48 @@ void ShaderDirChangeDetected(std::string const & path, util::FileWatcher::FileSt
 	}
 }
 
+void startCrashpad() 
+{
+	// Cache directory that will store crashpad information and minidumps
+	base::FilePath database(L"CrashPadDB");
+	// Path to the out-of-process handler executable
+	base::FilePath handler(L"deps/crashpad/out/Release/crashpad_handler.exe");
+	// URL used to submit minidumps to
+	std::string url("https://sentry.io/api/1455776/minidump/?sentry_key=7735122410eb4b6bbaec9f1f6fd43aff");
+	// Optional annotations passed via --annotations to the handler
+	std::map<std::string, std::string> annotations;
+	// Optional arguments to pass to the handler
+	std::vector<std::string> arguments;
+
+	std::unique_ptr<crashpad::CrashReportDatabase> db =
+		crashpad::CrashReportDatabase::Initialize(database);
+
+	if (db != nullptr && db->GetSettings() != nullptr) 
+	{
+		db->GetSettings()->SetUploadsEnabled(true);
+	}
+
+	arguments.push_back("--no-rate-limit");
+
+	crashpad::CrashpadClient client;
+	bool success = client.StartHandler(
+		handler,
+		database,
+		database,
+		url,
+		annotations,
+		arguments,
+		/* restartable */ true,
+		/* asynchronous_start */ true
+	);
+
+	if (success) 
+	{
+		success = client.WaitForHandlerStart(INFINITE);
+	}
+}
+
+
 int WispEntry()
 {
 	// ImGui Logging
@@ -53,6 +103,7 @@ int WispEntry()
 	{
 		engine::debug_console.AddLog(str.c_str());
 	};
+	startCrashpad();
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
 	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
