@@ -62,9 +62,7 @@ void startCrashpad()
 	base::FilePath handler(L"deps/crashpad/out/Release/crashpad_handler.exe");
 	// URL used to submit minidumps to
 	std::string url;
-	url = "https://";
-	url += "WispRenderer";	// BugSplat database name
-	url += ".bugsplat.com/post/bp/crash/postBP.php";
+	url = "https://WispRenderer.bugsplat.com/post/bp/crash/postBP.php";
 	// Optional annotations passed via --annotations to the handler
 	std::map<std::string, std::string> annotations;
 	annotations["format"] = "minidump";			// Crashpad setting to save crash as a minidump
