@@ -86,7 +86,7 @@ namespace util::internal
 		std::time_t t = std::time(nullptr);
 		localtime_s(&s, &t);
 
-		str += fmt::format("[{:%H:%M}]", s) + " [" + type + "] ";
+		str += fmt::format("[{:%H:%M:%S}]", s) + " [" + type + "] ";
 #endif
 #ifdef LOG_PRINT_THREAD
 		auto thread_id = std::this_thread::get_id();
