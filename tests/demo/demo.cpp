@@ -21,6 +21,7 @@
 #include "scene_spheres.hpp"
 
 #include "model_loader_assimp.hpp"
+#include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
 #define SCENE viknell_scene
@@ -150,6 +151,7 @@ int WispEntry()
 	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
+	wr::ModelLoader* gltf_model_loader = new wr::TinyGLTFModelLoader();
 
 	render_system->Init(window.get());	
 
@@ -183,6 +185,7 @@ int WispEntry()
 	window->StartRenderLoop();
 
 	delete assimp_model_loader;
+	delete gltf_model_loader;
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 
