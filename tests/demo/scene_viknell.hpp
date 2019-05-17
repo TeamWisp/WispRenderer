@@ -59,7 +59,7 @@ namespace viknell_scene
 			bamboo_material_internal->SetTexture(wr::TextureType::METALLIC, bamboo_metallic);
 
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/scene.gltf");
+			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 		}
 
@@ -118,9 +118,6 @@ namespace viknell_scene
 		test_model->SetPosition({0, -1, 0});
 		test_model->SetRotation({0, 180_deg, 0});
 		test_model->SetScale({0.01f,0.01f,0.01f});
-
-		std::vector<wr::MaterialHandle> materials(resources::test_model->m_meshes.size(), resources::bamboo_material);
-		test_model->SetScale({ 0.01f,0.01f,0.01f });
 
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });

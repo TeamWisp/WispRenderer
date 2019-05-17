@@ -219,7 +219,7 @@ namespace wr
 		PipelineDescription::RTVFormats({ Format::R16G16_FLOAT }),
 		PipelineDescription::NumRTVFormats(1),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
-		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
 		PipelineDescription::Depth(false),
 		PipelineDescription::CounterClockwise(true),
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
@@ -235,7 +235,7 @@ namespace wr
 		PipelineDescription::RTVFormats({ Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM }),
 		PipelineDescription::NumRTVFormats(3),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
-		PipelineDescription::CullMode(CullMode::CULL_FRONT),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
 		PipelineDescription::Depth(true),
 		PipelineDescription::CounterClockwise(false),
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
@@ -392,7 +392,7 @@ namespace wr
 			PipelineDescription::ComputeShader(shaders::accumulation),
 			PipelineDescription::RootSignature(root_signatures::accumulation),
 			PipelineDescription::DSVFormat(Format::UNKNOWN),
-			PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
+			PipelineDescription::RTVFormats({ d3d12::settings::back_buffer_format }),
 			PipelineDescription::NumRTVFormats(1),
 			PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 			PipelineDescription::CullMode(CullMode::CULL_NONE),

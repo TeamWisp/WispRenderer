@@ -4,7 +4,6 @@
 //#define DEPTH_OF_FIELD
 #define EPSILON 0.1
 #define MAX_SHADOW_SAMPLES 4
-#define RUSSIAN_ROULETTE
 
 #ifdef FALLBACK
 	#undef MAX_RECURSION
