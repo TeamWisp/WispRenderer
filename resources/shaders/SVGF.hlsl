@@ -163,10 +163,10 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float2 prev_m
 		float x = frac(pos_prev.x);
 		float y = frac(pos_prev.y);
 
-		float weights[4] = {	(1  -	x)   *	(1   -	y),
-										x	 *  (1   - 	y),
-								(1  -	x)	 * 			y,
-										x	 *			y };
+		float weights[4] = {(1 - x) * (1 - y),
+							x * (1 - y),
+							(1 - x) * y,
+							x * y };
 
 		[unroll]
 		for(int sample_idx = 0; sample_idx < 4; ++sample_idx)
