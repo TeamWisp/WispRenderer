@@ -278,6 +278,23 @@ namespace wr
 			}
 		}
 
+		/*! Get Resolution scale of specified Render Task */
+		/*!
+			Checks if specified RenderTask has valid properties and returns it's resolution scalar.
+		*/
+		[[nodiscard]] inline const float GetRenderTargetResolutionScale(RenderTaskHandle handle) const
+		{
+			if (m_rt_properties[handle].has_value())
+			{
+				return m_rt_properties[handle].value().m_resolution_scale.Get();
+			}
+			else
+			{
+				LOGW("Error: GetResolutionScale tried accessing invalid data!")
+			}
+			return 1.0f;
+		}
+
 		/*! Destroy all tasks */
 		/*!
 			Calls all destroy functions and release any allocated data.
