@@ -392,7 +392,7 @@ namespace wr
 			PipelineDescription::ComputeShader(shaders::accumulation),
 			PipelineDescription::RootSignature(root_signatures::accumulation),
 			PipelineDescription::DSVFormat(Format::UNKNOWN),
-			PipelineDescription::RTVFormats({ d3d12::settings::back_buffer_format }),
+			PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
 			PipelineDescription::NumRTVFormats(1),
 			PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 			PipelineDescription::CullMode(CullMode::CULL_NONE),
