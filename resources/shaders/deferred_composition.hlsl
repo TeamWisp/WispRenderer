@@ -29,9 +29,10 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
 	float4x4 inv_projection;
 	float4x4 inv_view;
+
 	uint is_hybrid;
 	uint is_path_tracer;
-	uint is_hbao;
+	uint is_ao;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -97,7 +98,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			1,
 			screen_space_ao.SampleLevel(point_sampler, uv, 0).xyz,
 			// Lerp factor (0: env map, 1: path traced)
-			is_hbao);
+			is_ao);
 
 		//Ao is multiplied with material texture ao, if present
 		ao *= gbuffer_ao;

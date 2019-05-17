@@ -65,7 +65,10 @@ namespace wr
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
 		d3d12::Destroy(m_compute_queue);
-		if (m_render_window.has_value()) d3d12::Destroy(m_render_window.value());
+		if (m_render_window.has_value())
+		{
+			d3d12::Destroy(m_render_window.value());
+		}
 	}
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
