@@ -57,6 +57,27 @@ namespace sun_temple_scene
 
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
+	static std::shared_ptr<wr::LightNode> torch_node_1;
+	static std::shared_ptr<wr::LightNode> torch_node_2;
+	static std::shared_ptr<wr::LightNode> torch_node_3;
+	static std::shared_ptr<wr::LightNode> torch_node_4;
+	static std::shared_ptr<wr::LightNode> torch_node_5;
+	static std::shared_ptr<wr::LightNode> torch_node_6;
+	static std::shared_ptr<wr::LightNode> torch_node_7;
+	static std::shared_ptr<wr::LightNode> torch_node_8;
+	static std::shared_ptr<wr::LightNode> torch_node_9;
+	static std::shared_ptr<wr::LightNode> torch_node_10;
+	static std::shared_ptr<wr::LightNode> torch_node_11;
+	static std::shared_ptr<wr::LightNode> torch_node_12;
+	static std::shared_ptr<wr::LightNode> torch_node_13;
+	static std::shared_ptr<wr::LightNode> torch_node_14;
+	static std::shared_ptr<wr::LightNode> torch_node_15;
+	static std::shared_ptr<wr::LightNode> torch_node_16;
+	static std::shared_ptr<wr::LightNode> torch_node_17;
+	static std::shared_ptr<wr::LightNode> torch_node_18;
+	static std::shared_ptr<wr::LightNode> torch_node_19;
+	static std::shared_ptr<wr::LightNode> fire_bowl_node_1;
+	static std::shared_ptr<wr::LightNode> fire_bowl_node_2;
 	static std::shared_ptr<wr::MeshNode> test_model;
 	static float t = 0;
 	static float lerp_t = 0.0f;
@@ -79,7 +100,91 @@ namespace sun_temple_scene
 		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sun_temple_model);
 		
 		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 0, 1, 0 });
-		directional_light_node->SetDirectional({ 190_deg, -180_deg, 0 }, { 8, 8, 8 });
+		directional_light_node->SetDirectional({ 187.5_deg, -190_deg, 0 }, { 438.f / 255.f, 282.f / 255.f, 174.f / 255.f });
+
+		torch_node_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_1->SetPosition({ 790.0, 397.5, 215.0 });
+		torch_node_1->SetRadius(500.f);
+
+		torch_node_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_2->SetPosition({ 571.0, 397.5, 581.0 });
+		torch_node_2->SetRadius(500.f);
+
+		torch_node_3 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_3->SetPosition({ 208.0, 397.5, 774.0 });
+		torch_node_3->SetRadius(500.f);
+
+		torch_node_4 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_4->SetPosition({ -204, 397.5, 792.8 });
+		torch_node_4->SetRadius(500.f);
+
+		torch_node_5 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_5->SetPosition({ -570, 397.5, 577.2 });
+		torch_node_5->SetRadius(500.f);
+
+		torch_node_6 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_6->SetPosition({ -798.0, 397.5, 205.9 });
+		torch_node_6->SetRadius(500.f);
+
+		torch_node_7 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_7->SetPosition({ -308.2, 397.5, -783.7 });
+		torch_node_7->SetRadius(500.f);
+
+		torch_node_8 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_8->SetPosition({ 317.5, 397.5, -780.4 });
+		torch_node_8->SetRadius(500.f);
+
+		torch_node_9 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_9->SetPosition({ 747.5, 397.5, -1802.8 });
+		torch_node_9->SetRadius(500.f);
+
+		torch_node_10 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_10->SetPosition({ 242.3, 197.0, -2852.4 });
+		torch_node_10->SetRadius(500.f);
+
+		torch_node_11 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_11->SetPosition({ -239.0, 197.0, -2842.3 });
+		torch_node_11->SetRadius(500.f);
+
+		torch_node_12 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_12->SetPosition({ -711.2, 197.0, -4317.4 });
+		torch_node_12->SetRadius(500.f);
+
+		torch_node_13 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_13->SetPosition({ 723.5, 197.0, -4324.3 });
+		torch_node_13->SetRadius(500.f);
+
+		torch_node_14 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_14->SetPosition({ -205.2, 197.0, -4853.7 });
+		torch_node_14->SetRadius(500.f);
+
+		torch_node_15 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_15->SetPosition({ 209.4, 197.0, -4854.0 });
+		torch_node_15->SetRadius(500.f);
+
+		torch_node_16 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_16->SetPosition({ 207.0, 197.0, -5089.7 });
+		torch_node_16->SetRadius(500.f);
+
+		torch_node_17 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_17->SetPosition({ -207.3, 197.0, -5079.4 });
+		torch_node_17->SetRadius(500.f);
+
+		torch_node_18 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_18->SetPosition({ -141.5, 197.0, -7084.6 });
+		torch_node_18->SetRadius(500.f);
+
+		torch_node_19 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		torch_node_19->SetPosition({ 167.0, 197.0, -7083.8 });
+		torch_node_19->SetRadius(500.f);
+
+		fire_bowl_node_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f * 2.0, 176.f / 255.f * 2.0, 68.f / 255.f * 2.0 });
+		fire_bowl_node_1->SetPosition({ 8.8, 95.0, -5798.1 });
+		fire_bowl_node_1->SetRadius(2000.f);
+
+		fire_bowl_node_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f * 2.0, 176.f / 255.f * 2.0, 68.f / 255.f * 2.0 });
+		fire_bowl_node_2->SetPosition({ 5.372, 118.7, -3158.8 });
+		fire_bowl_node_2->SetRadius(2000.f);
 	}
 
 	void UpdateScene()
