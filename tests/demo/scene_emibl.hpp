@@ -40,10 +40,11 @@ namespace emibl_scene
 			wr::TextureHandle metal_splotchy_roughness = texture_pool->LoadFromFile("resources/materials/metal-splotchy-rough.png", false, true);
 			wr::TextureHandle metal_splotchy_metallic = texture_pool->LoadFromFile("resources/materials/metal-splotchy-metal.png", false, true);
 
-			wr::TextureHandle mahogfloor_albedo = texture_pool->LoadFromFile("resources/materials/mahogfloor/albedo.png", true, true);
-			wr::TextureHandle mahogfloor_normal = texture_pool->LoadFromFile("resources/materials/mahogfloor/normal.png", false, true);
-			wr::TextureHandle mahogfloor_roughness = texture_pool->LoadFromFile("resources/materials/mahogfloor/roughness.png", false, true);
-			wr::TextureHandle mahogfloor_metallic = texture_pool->LoadFromFile("resources/materials/mahogfloor/metallic.png", false, true);
+			wr::TextureHandle mahogfloor_albedo = texture_pool->LoadFromFile("resources/materials/harsh_bricks/albedo.png", true, true);
+			wr::TextureHandle mahogfloor_normal = texture_pool->LoadFromFile("resources/materials/harsh_bricks/normal.png", false, true);
+			wr::TextureHandle mahogfloor_roughness = texture_pool->LoadFromFile("resources/materials/harsh_bricks/roughness.png", false, true);
+			wr::TextureHandle mahogfloor_metallic = texture_pool->LoadFromFile("resources/materials/harsh_bricks/metallic.png", false, true);
+			wr::TextureHandle mahogfloor_ao = texture_pool->LoadFromFile("resources/materials/harsh_bricks/ao.png", false, true);
 
 			wr::TextureHandle red_black_albedo = texture_pool->LoadFromFile("resources/materials/dragon_egg/albedo.png", true, true);
 			wr::TextureHandle red_black_normal = texture_pool->LoadFromFile("resources/materials/dragon_egg/normal.png", false, true);
@@ -90,6 +91,7 @@ namespace emibl_scene
 			wr::TextureHandle bw_tiles_normal = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/normal.png", false, true);
 			wr::TextureHandle bw_tiles_roughness = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/roughness.png", false, true);
 			wr::TextureHandle bw_tiles_metallic = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/metallic.png", false, true);
+			wr::TextureHandle bw_tiles_emissive = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/emissive.png", true, true);
 
 			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/artist_workshop_4k.hdr", false, false);
 
@@ -113,6 +115,7 @@ namespace emibl_scene
 				mahogfloor_material_internal->SetTexture(wr::TextureType::NORMAL, mahogfloor_normal);
 				mahogfloor_material_internal->SetTexture(wr::TextureType::ROUGHNESS, mahogfloor_roughness);
 				mahogfloor_material_internal->SetTexture(wr::TextureType::METALLIC, mahogfloor_metallic);
+				mahogfloor_material_internal->SetTexture(wr::TextureType::AO, mahogfloor_ao);
 
 				// Create Material
 				material_handles[1] = material_pool->Create(texture_pool.get());
@@ -196,6 +199,7 @@ namespace emibl_scene
 				bw_tiles_internal->SetTexture(wr::TextureType::NORMAL, bw_tiles_normal);
 				bw_tiles_internal->SetTexture(wr::TextureType::ROUGHNESS, bw_tiles_roughness);
 				bw_tiles_internal->SetTexture(wr::TextureType::METALLIC, bw_tiles_metallic);
+				bw_tiles_internal->SetTexture(wr::TextureType::EMISSIVE, bw_tiles_emissive);
 			}
 
 			model_pool = render_system->CreateModelPool(64_mb, 64_mb);
@@ -326,7 +330,6 @@ namespace emibl_scene
 	void UpdateScene()
 	{
 		float deltaTime = ImGui::GetIO().DeltaTime;
-
 
 		for (auto& model : models)
 		{

@@ -17,6 +17,7 @@ namespace wr
 
 		DescriptorAllocation out_gbuffer_albedo_alloc;
 		DescriptorAllocation out_gbuffer_normal_alloc;
+		DescriptorAllocation out_gbuffer_emissive_alloc;
 		DescriptorAllocation out_gbuffer_depth_alloc;
 		DescriptorAllocation out_lights_alloc;
 		DescriptorAllocation out_buffer_refl_shadow_alloc;
@@ -33,12 +34,12 @@ namespace wr
 
 		bool is_hybrid;
 		bool is_path_tracer;
+		bool is_rtao;
 		bool is_hbao;
 	};
 
 	namespace internal
 	{
-
 		void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, DeferredCompositionTaskData const & data, unsigned int frame_idx);
 
 		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle);

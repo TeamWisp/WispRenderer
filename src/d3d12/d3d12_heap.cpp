@@ -163,7 +163,8 @@ namespace wr::d3d12
 			IID_PPV_ARGS(&heap->m_staging_buffer)),
 			"Failed to create small buffer optimized heap.");
 
-		heap->m_staging_buffer->Map(0, &CD3DX12_RANGE(0, 0), reinterpret_cast<void**>(&heap->m_cpu_address));
+		auto range = CD3DX12_RANGE(0, 0);
+		heap->m_staging_buffer->Map(0, &range, reinterpret_cast<void**>(&heap->m_cpu_address));
 
 		return heap;
 	}
@@ -223,7 +224,8 @@ namespace wr::d3d12
 			IID_PPV_ARGS(&heap->m_staging_buffer)),
 			"Failed to create heap staging buffer.");
 
-		heap->m_staging_buffer->Map(0, &CD3DX12_RANGE(0, 0), reinterpret_cast<void**>(&heap->m_cpu_address));
+		auto range = CD3DX12_RANGE(0, 0);
+		heap->m_staging_buffer->Map(0, &range, reinterpret_cast<void**>(&heap->m_cpu_address));
 
 		return heap;
 	}
@@ -256,7 +258,7 @@ namespace wr::d3d12
 
 		cb->m_begin_offset = heap->m_current_offset;
 
-		for (auto i = 0; i < heap->m_versioning_count; i++)
+		for (auto i = 0u; i < heap->m_versioning_count; i++)
 		{
 			cb->m_gpu_addresses[i] = heap->m_native->GetGPUVirtualAddress() + heap->m_current_offset;
 			heap->m_current_offset += aligned_size;
@@ -267,7 +269,7 @@ namespace wr::d3d12
 		{
 			cb->m_cpu_addresses = std::vector<std::uint8_t*>(heap->m_versioning_count);
 			auto&& addresses = cb->m_cpu_addresses.value();
-			for (auto i = 0; i < heap->m_versioning_count; i++)
+			for (auto i = 0u; i < heap->m_versioning_count; i++)
 			{
 				addresses[i] = heap->m_cpu_address + (cb->m_begin_offset + (SizeAlignTwoPower(cb->m_unaligned_size, 255) * i));
 			}
@@ -316,7 +318,7 @@ namespace wr::d3d12
 		cb->m_begin_offset = heap->m_current_offset;
 
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
-		for (auto i = 0; i < heap->m_versioning_count; i++)
+		for (auto i = 0u; i < heap->m_versioning_count; i++)
 		{
 			TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&temp_resources[i])),
 				"Failed to create constant buffer placed resource.");
@@ -333,7 +335,7 @@ namespace wr::d3d12
 			auto&& addresses = cb->m_cpu_addresses.value();
 
 			CD3DX12_RANGE read_range(0, 0);
-			for (auto i = 0; i < heap->m_versioning_count; i++)
+			for (auto i = 0u; i < heap->m_versioning_count; i++)
 			{
 				TRY_M(temp_resources[i]->Map(0, &read_range, reinterpret_cast<void**>(&addresses[i])),
 					"Failed to map resource.");
@@ -382,7 +384,7 @@ namespace wr::d3d12
 		cb->m_begin_offset = heap->m_current_offset;
 
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
-		for (auto i = 0; i < heap->m_versioning_count; i++)
+		for (auto i = 0u; i < heap->m_versioning_count; i++)
 		{
 			TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&temp_resources[i])),
 				"Failed to create constant buffer placed resource.");
@@ -399,7 +401,7 @@ namespace wr::d3d12
 			auto&& addresses = cb->m_cpu_addresses.value();
 
 			CD3DX12_RANGE read_range(0, 0);
-			for (auto i = 0; i < heap->m_versioning_count; i++)
+			for (auto i = 0u; i < heap->m_versioning_count; i++)
 			{
 				TRY_M(temp_resources[i]->Map(0, &read_range, reinterpret_cast<void**>(&addresses[i])),
 					"Failed to map resource.");
@@ -453,7 +455,7 @@ namespace wr::d3d12
 		cb->m_begin_offset = heap->m_current_offset;
 
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
-		for (auto i = 0; i < heap->m_versioning_count; i++)
+		for (auto i = 0u; i < heap->m_versioning_count; i++)
 		{
 			TRY_M(n_device->CreatePlacedResource(
 				heap->m_native, 
@@ -513,7 +515,7 @@ namespace wr::d3d12
 		cb->m_begin_offset = heap->m_current_offset;
 
 		std::vector<ID3D12Resource*> temp_resources(heap->m_versioning_count);
-		for (auto i = 0; i < heap->m_versioning_count; i++)
+		for (auto i = 0u; i < heap->m_versioning_count; i++)
 		{
 			TRY_M(n_device->CreatePlacedResource(heap->m_native, heap->m_current_offset, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&temp_resources[i])),
 				"Failed to create constant buffer placed resource.");
@@ -682,7 +684,7 @@ namespace wr::d3d12
 			handle->m_cpu_addresses = std::vector<std::uint8_t*>(heap->m_versioning_count);
 			auto&& addresses = handle->m_cpu_addresses.value();
 
-			for (auto i = 0; i < heap->m_versioning_count; i++)
+			for (auto i = 0u; i < heap->m_versioning_count; i++)
 			{
 				addresses[i] = address + (handle->m_begin_offset + (SizeAlignTwoPower(handle->m_unaligned_size, 255) * i));
 			}
@@ -699,7 +701,7 @@ namespace wr::d3d12
 			auto&& addresses = resource.first->m_cpu_addresses.value();
 
 			CD3DX12_RANGE read_range(0, 0);
-			for (auto i = 0; i < heap->m_versioning_count; i++)
+			for (auto i = 0u; i < heap->m_versioning_count; i++)
 			{
 				TRY_M(resource.second[i]->Map(0, &read_range, reinterpret_cast<void**>(&addresses[i])),
 					"Failed to map resource.");

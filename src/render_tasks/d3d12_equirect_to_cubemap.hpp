@@ -236,7 +236,7 @@ namespace wr
 						constexpr unsigned int srv_idx = rs_layout::GetHeapLoc(params::cubemap_conversion, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE);
 						d3d12::SetShaderSRV(cmd_list, 2, srv_idx, equirect_text);
 
-						d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
+						d3d12::BindDescriptorHeaps(cmd_list);
 
 						if (n_mesh->m_index_count != 0)
 						{
@@ -268,6 +268,7 @@ namespace wr
 
 				//Prefilter environment map
 				PrefilterCubemap(cmd_list, data.out_cubemap, data.out_pref_env);
+				fg.SetShouldExecute(handle, false);
 			}
 		}
 

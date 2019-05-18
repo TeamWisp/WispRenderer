@@ -31,8 +31,6 @@ namespace wr
 
 		DirectX::XMMATRIX proj_mat = { DirectX::XMMatrixIdentity() };
 		DirectX::XMMATRIX view_mat[6] = { };
-
-		bool should_run = true;
 	};
 
 	namespace internal
@@ -109,7 +107,7 @@ namespace wr
 			d3d12::TextureResource* radiance = static_cast<d3d12::TextureResource*>(data.in_radiance.m_pool->GetTextureResource(data.in_radiance));
 			d3d12::TextureResource* irradiance = static_cast<d3d12::TextureResource*>(data.out_irradiance.m_pool->GetTextureResource(data.out_irradiance));
 
-			if (data.should_run && radiance->m_is_staged)
+			if (radiance->m_is_staged)
 			{
 				if (n_render_system.m_render_window.has_value())
 				{
@@ -160,7 +158,7 @@ namespace wr
 
 							constexpr unsigned int env_idx = rs_layout::GetHeapLoc(params::cubemap_convolution, params::CubemapConvolutionE::ENVIRONMENT_CUBEMAP);
 							d3d12::SetShaderSRV(cmd_list, 2, env_idx, radiance);
-							d3d12::BindDescriptorHeaps(cmd_list, frame_idx);
+							d3d12::BindDescriptorHeaps(cmd_list);
 
 							if (n_mesh->m_index_count != 0)
 							{
@@ -175,7 +173,7 @@ namespace wr
 
 					d3d12::Transition(cmd_list, irradiance, irradiance->m_subresource_states[0], ResourceState::PIXEL_SHADER_RESOURCE);
 
-					data.should_run = false;
+					fg.SetShouldExecute(handle, false);
 				}
 			}
 			//if (data.should_run)

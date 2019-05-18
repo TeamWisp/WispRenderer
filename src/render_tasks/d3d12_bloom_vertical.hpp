@@ -100,18 +100,15 @@ namespace wr
 	} /* internal */
 
 	template<typename T>
-	inline void AddBloomVerticalTask(FrameGraph& frame_graph, int32_t width, int32_t height)
+	inline void AddBloomVerticalTask(FrameGraph& frame_graph)
 	{
-		const std::uint32_t m_half_width = (uint32_t)width / 2;
-		const std::uint32_t m_half_height = (uint32_t)height / 2;
-
 		std::wstring name(L"Bloom horizontal blur");
 
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(m_half_width),
-			RenderTargetProperties::Height(m_half_height),
+			RenderTargetProperties::Width(std::nullopt),
+			RenderTargetProperties::Height(std::nullopt),
 			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),

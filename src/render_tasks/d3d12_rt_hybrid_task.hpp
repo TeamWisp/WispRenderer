@@ -66,8 +66,8 @@ namespace wr
 			// Set up Raygen Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
@@ -80,8 +80,8 @@ namespace wr
 			// Set up Miss Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 2;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 2;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMissEntry");
 				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
@@ -98,8 +98,8 @@ namespace wr
 			// Set up Hit Group Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 2;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 2;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowHitGroup");
 				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
@@ -186,20 +186,19 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
-			fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			auto frame_idx = n_render_system.GetFrameIdx();
+			float scalar = 1.0f;
+			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
-			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
-
-			// Wait for AS to be built
+			// Rebuild acceleratrion structure a 2e time for fallback
+			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
-				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
-				cmd_list->m_native->ResourceBarrier(1, &barrier);
+				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list, frame_idx);
+				d3d12::UAVBarrierAS(cmd_list, as_build_data.out_tlas, frame_idx);
 			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto frame_idx = n_render_system.GetFrameIdx();
-
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
@@ -268,17 +267,15 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
-					if (material_internal->HasTexture(TextureType::ALBEDO))
-						set_srv(material_internal->GetTexture(TextureType::ALBEDO));
+					std::array<TextureType, static_cast<size_t>(TextureType::COUNT)> types = { TextureType::ALBEDO, TextureType::NORMAL,
+																							   TextureType::ROUGHNESS, TextureType::METALLIC,
+																							   TextureType::EMISSIVE, TextureType::AO };
 
-					if (material_internal->HasTexture(TextureType::NORMAL))
-						set_srv(material_internal->GetTexture(TextureType::NORMAL));
-
-					if (material_internal->HasTexture(TextureType::METALLIC))
-						set_srv(material_internal->GetTexture(TextureType::METALLIC));
-
-					if (material_internal->HasTexture(TextureType::ROUGHNESS))
-						set_srv(material_internal->GetTexture(TextureType::ROUGHNESS));
+					for (auto t : types)
+					{
+						if (material_internal->HasTexture(t))
+							set_srv(material_internal->GetTexture(t));
+					}
 				}
 
 				// Get light buffer
@@ -315,7 +312,7 @@ namespace wr
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				// Make sure the convolution pass wrote to the skybox.
-				fg.GetPredecessorData<CubemapConvolutionTaskData>();
+				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 				// Get skybox
 				if (scene_graph.m_skybox.has_value())
@@ -349,26 +346,38 @@ namespace wr
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-				d3d12::BindDescriptorHeaps(cmd_list, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindDescriptorHeaps(cmd_list, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
 				{
-					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_native, 1);
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				}
 				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 				{
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
+				/*unsigned int verts_loc = 3; rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
+				This should be the Parameter index not the heap location, it was only working due to a ridiculous amount of luck and should be fixed, or we completely missunderstand this stuff...
+				Much love, Meine and Florian*/
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
 //#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
 //#endif
 
+				scalar = fg.GetRenderTargetResolutionScale(handle);
+
 				// Dispatch hybrid ray tracing rays
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth() / 2, window->GetHeight() / 2, 1, frame_idx);
+				d3d12::DispatchRays(cmd_list, 
+					data.out_hitgroup_shader_table[frame_idx], 
+					data.out_miss_shader_table[frame_idx],
+					data.out_raygen_shader_table[frame_idx], 
+					window->GetWidth() * scalar,
+					window->GetHeight() * scalar,
+					1,
+					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
@@ -391,15 +400,15 @@ namespace wr
 
 	} /* internal */
 
-	inline void AddRTHybridTask(FrameGraph& fg, int32_t w, int32_t h)
+	inline void AddRTHybridTask(FrameGraph& fg)
 	{
 		std::wstring name(L"Hybrid raytracing");
 
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(w / 2),
-			RenderTargetProperties::Height(h / 2),
+			RenderTargetProperties::Width(std::nullopt),
+			RenderTargetProperties::Height(std::nullopt),
 			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),

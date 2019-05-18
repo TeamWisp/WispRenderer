@@ -51,6 +51,7 @@ namespace wr
 		TextureHandle GetDefaultRoughness() const;
 		TextureHandle GetDefaultMetalic() const;
 		TextureHandle GetDefaultAO() const;
+		TextureHandle GetDefaultEmissive() const;
 
 		virtual Texture* GetTextureResource(TextureHandle handle) = 0;
 
@@ -61,8 +62,9 @@ namespace wr
 		TextureHandle m_default_albedo;
 		TextureHandle m_default_normal;
 		TextureHandle m_default_roughness;
-		TextureHandle m_default_metalic;
+		TextureHandle m_default_metallic;
 		TextureHandle m_default_ao;
+		TextureHandle m_default_emissive;
 
 		IDFactory m_id_factory;
 

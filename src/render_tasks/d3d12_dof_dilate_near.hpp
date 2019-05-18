@@ -101,18 +101,15 @@ namespace wr
 	} /* internal */
 
 	template<typename T>
-	inline void AddDoFDilateTask(FrameGraph& frame_graph, int32_t width, int32_t height)
+	inline void AddDoFDilateTask(FrameGraph& frame_graph)
 	{
-		const std::uint32_t m_quarter_width = (uint32_t)width / 8;
-		const std::uint32_t m_quarter_height = (uint32_t)height / 8;
-
 		std::wstring name(L"DoF dilate");
 
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(m_quarter_width),
-			RenderTargetProperties::Height(m_quarter_height),
+			RenderTargetProperties::Width(std::nullopt),
+			RenderTargetProperties::Height(std::nullopt),
 			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),

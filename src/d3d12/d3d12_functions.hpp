@@ -35,13 +35,13 @@ namespace wr::d3d12
 	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer, uint32_t frame_idx);
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear = true, bool clear_depth = true);
 	void BindRenderTargetVersioned(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true, bool clear_depth = true);
-	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear = true);
+	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, bool clear = true);
 	void BindViewport(CommandList* cmd_list, Viewport const & viewport);
 	void BindPipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindComputePipeline(CommandList* cmd_list, PipelineState* pipeline_state);
 	void BindRaytracingPipeline(CommandList* cmd_list, StateObject* state_object, bool fallback = false);
 	void BindDescriptorHeap(CommandList* cmd_list, DescriptorHeap* heap, DescriptorHeapType type, unsigned int frame_idx, bool fallback = false);
-	void BindDescriptorHeaps(CommandList* cmd_list, unsigned int frame_idx, bool fallback = false);
+	void BindDescriptorHeaps(CommandList* cmd_list, bool fallback = false);
 	void SetPrimitiveTopology(CommandList* cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 	void BindConstantBuffer(CommandList* cmd_list, HeapResource* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 	void Bind32BitConstants(CommandList* cmd_list, const void* data_to_set, unsigned int num_of_values_to_set, unsigned int dest_offset_in_32bit_values, unsigned int root_parameter_idx);
@@ -70,7 +70,7 @@ namespace wr::d3d12
 	void Alias(CommandList* cmd_list, TextureResource* resource_before, TextureResource* resource_after);
 	void UAVBarrier(CommandList* cmd_list, std::vector<TextureResource*> const & resources);
 	void UAVBarrier(CommandList* cmd_list, std::vector<ID3D12Resource*> const & resources);
-	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth, unsigned int frame_idx);
+	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint32_t width, std::uint32_t height, std::uint32_t depth, unsigned int frame_idx);
 	// void Transition(CommandList* cmd_list, Texture* texture, ResourceState from, ResourceState to);
 	void Destroy(CommandList* cmd_list);
 
@@ -85,7 +85,7 @@ namespace wr::d3d12
 	void SetName(RenderTarget* render_target, std::string name);
 	unsigned int GetRenderTargetWidth(RenderTarget* render_target);
 	unsigned int GetRenderTargetHeight(RenderTarget* render_target);
-	void CreateRenderTargetViews(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
+	void CreateRenderTargetViews(RenderTarget* render_target, Device* device);
 	void CreateDepthStencilBuffer(RenderTarget* render_target, Device* device, unsigned int width, unsigned int height);
 	void CreateSRVFromDSV(RenderTarget* render_target, DescHeapCPUHandle& handle);
 	void CreateSRVFromRTV(RenderTarget* render_target, DescHeapCPUHandle& handle, unsigned int num, Format formats[8]);
@@ -145,8 +145,8 @@ namespace wr::d3d12
 	// RenderWindow
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, HWND window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
 	[[nodiscard]] RenderWindow* CreateRenderWindow(Device* device, IUnknown* window, CommandQueue* cmd_queue, unsigned int num_back_buffers);
-	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height, bool fullscreen);
-	void Present(RenderWindow* render_window, Device* device);
+	void Resize(RenderWindow* render_window, Device* device, unsigned int width, unsigned int height);
+	void Present(RenderWindow* render_window);
 	void Destroy(RenderWindow* render_window);
 
 	// Descriptor Heap
@@ -199,8 +199,8 @@ namespace wr::d3d12
 	void StageBufferRegion(StagingBuffer* buffer, std::uint64_t size, std::uint64_t offset, CommandList* cmd_list);
 	void FreeStagingBuffer(StagingBuffer* buffer);
 	void Evict(StagingBuffer* buffer);
-	void CreateRawSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int id, unsigned int count, Format format = Format::R32_TYPELESS);
-	void CreateStructuredBufferSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int id, unsigned int count, Format format = Format::R32_TYPELESS);
+	void CreateRawSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int count, Format format = Format::R32_TYPELESS);
+	void CreateStructuredBufferSRVFromStagingBuffer(StagingBuffer* buffer, DescHeapCPUHandle& handle, unsigned int count, Format format = Format::R32_TYPELESS);
 	void MakeResident(StagingBuffer* buffer);
 	void Destroy(StagingBuffer* buffer);
 
@@ -263,7 +263,7 @@ namespace wr::d3d12
 	[[nodiscard]] StateObject* CreateStateObject(Device* device, desc::StateObjectDesc desc);
 	void RecreateStateObject(StateObject* state_object);
 	void SetGlobalRootSignature(StateObject* state_object, RootSignature* global_root_signature);
-	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj);
+	[[nodiscard]] std::uint64_t GetShaderIdentifierSize(Device* device);
 	[[nodiscard]] void* GetShaderIdentifier(Device* device, StateObject* obj, std::string const & name);
 	void SetName(StateObject* obj, std::wstring name);
 	void Destroy(StateObject* obj);
@@ -277,17 +277,18 @@ namespace wr::d3d12
 	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list);
+		std::vector<desc::BlasDesc> blas_list);
 
 	void DestroyAccelerationStructure(AccelerationStructure& structure);
+	void UAVBarrierAS(CommandList* cmd_list, AccelerationStructure const & structure, std::uint32_t frame_idx);
 
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list);
+		std::vector<desc::BlasDesc> blas_list, std::uint32_t frame_idx);
 
 	void CreateOrUpdateTLAS(Device* device, CommandList* cmd_list, bool& requires_init, d3d12::AccelerationStructure& out_tlas,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list);
+		std::vector<desc::BlasDesc> blas_list, std::uint32_t frame_idx);
 
 	// Shader Record
 	[[nodiscard]] ShaderRecord CreateShaderRecord(void* identifier, std::uint64_t identifier_size, void* local_root_args = nullptr, std::uint64_t local_root_args_size = 0);
@@ -298,7 +299,7 @@ namespace wr::d3d12
 			std::uint64_t num_shader_records,
 			std::uint64_t shader_record_size);
 	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
-	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name);
+	void SetName(AccelerationStructure& acceleration_structure, std::wstring name);
 	void Destroy(ShaderTable* table);
 
 } /* wr::d3d12 */

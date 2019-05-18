@@ -4,9 +4,8 @@
 namespace wr
 {
 
-	void Model::Expand(float(&pos)[3], Mesh *mesh)
+	void Model::Expand(float(&pos)[3])
 	{
-		//mesh->m_box.Expand(pos);
 		m_box.Expand(pos);
 	}
 
@@ -52,7 +51,7 @@ namespace wr
 				memcpy(vertex.m_bitangent, &mesh->m_bitangents[j], sizeof(vertex.m_bitangent));
 				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 
-				model->Expand(vertex.m_pos, mesh_handle);
+				model->Expand(vertex.m_pos);
 
 			}
 
@@ -118,7 +117,7 @@ namespace wr
 				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 				memcpy(vertex.m_color, &mesh->m_colors[j], sizeof(vertex.m_color));
 
-				model->Expand(vertex.m_pos, mesh_handle);
+				model->Expand(vertex.m_pos);
 
 			}
 
@@ -181,7 +180,7 @@ namespace wr
 				memcpy(vertex.m_normal, &mesh->m_normals[j], sizeof(vertex.m_normal));
 				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 
-				model->Expand(vertex.m_pos, mesh_handle);
+				model->Expand(vertex.m_pos);
 
 			}
 
@@ -245,7 +244,7 @@ namespace wr
 				memcpy(vertex.m_bitangent, &mesh->m_bitangents[j], sizeof(vertex.m_bitangent));
 				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 
-				model->Expand(vertex.m_pos, mesh_handle);
+				model->Expand(vertex.m_pos);
 
 			}
 
@@ -286,29 +285,29 @@ namespace wr
 	}
 
 	template<>
-	void ModelPool::UpdateModelBoundingBoxes<Vertex>(Model * model, Mesh* mesh, std::vector<Vertex> vertices_data)
+	void ModelPool::UpdateModelBoundingBoxes<Vertex>(Model * model, std::vector<Vertex> vertices_data)
 	{
 		for (int i = 0; i < vertices_data.size(); ++i)
 		{
-			model->Expand(vertices_data[i].m_pos, mesh);
+			model->Expand(vertices_data[i].m_pos);
 		}
 	}
 
 	template<>
-	void ModelPool::UpdateModelBoundingBoxes<VertexNoTangent>(Model * model, Mesh* mesh, std::vector<VertexNoTangent> vertices_data)
+	void ModelPool::UpdateModelBoundingBoxes<VertexNoTangent>(Model * model, std::vector<VertexNoTangent> vertices_data)
 	{
 		for (int i = 0; i < vertices_data.size(); ++i)
 		{
-			model->Expand(vertices_data[i].m_pos, mesh);
+			model->Expand(vertices_data[i].m_pos);
 		}
 	}
 
 	template<>
-	void ModelPool::UpdateModelBoundingBoxes<VertexColor>(Model * model, Mesh* mesh, std::vector<VertexColor> vertices_data)
+	void ModelPool::UpdateModelBoundingBoxes<VertexColor>(Model * model, std::vector<VertexColor> vertices_data)
 	{
 		for (int i = 0; i < vertices_data.size(); ++i)
 		{
-			model->Expand(vertices_data[i].m_pos, mesh);
+			model->Expand(vertices_data[i].m_pos);
 		}
 	}
 	
@@ -337,7 +336,7 @@ namespace wr
 				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 				memcpy(vertex.m_color, &mesh->m_colors[j], sizeof(vertex.m_color));
 
-				model->Expand(vertex.m_pos, mesh_handle);
+				model->Expand(vertex.m_pos);
 
 			}
 
@@ -399,7 +398,7 @@ namespace wr
 				memcpy(vertex.m_normal, &mesh->m_normals[j], sizeof(vertex.m_normal));
 				memcpy(vertex.m_uv, &mesh->m_uvw[j], sizeof(vertex.m_uv));
 
-				model->Expand(vertex.m_pos, mesh_handle);
+				model->Expand(vertex.m_pos);
 
 			}
 

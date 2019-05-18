@@ -65,9 +65,11 @@ namespace wr
 		// Load the default textures
 		m_default_albedo = LoadFromFile(settings::default_albedo_path, false, false);
 		m_default_normal = LoadFromFile(settings::default_normal_path, false, false);
-		m_default_roughness = LoadFromFile(settings::default_roughness_path, false, false);
-		m_default_metalic = LoadFromFile(settings::default_metalic_path, false, false);
-		m_default_ao = LoadFromFile(settings::default_ao_path, false, false);
+		m_default_roughness = LoadFromFile(settings::default_white_texture, false, false);
+		m_default_metallic = LoadFromFile(settings::default_black_texture, false, false);
+		m_default_ao = m_default_roughness;
+		m_default_emissive = m_default_metallic;
+		
 
 		// Default UAVs
 		m_default_uav = m_mipmapping_allocator->Allocate(4);
@@ -432,7 +434,7 @@ namespace wr
 
 		if (std::string_view ext_int = extension.value(); extension.has_value())
 		{
-			HRESULT hr;
+			HRESULT hr = S_OK;
 
 			if (ext_int.find("png") != std::string_view::npos
 				|| ext_int.find("jpeg") != std::string_view::npos
@@ -458,6 +460,7 @@ namespace wr
 			else
 			{
 				LOGC("Texture {} not loaded. Format not supported.", path);
+				return {};
 			}
 
 			if (FAILED(hr))

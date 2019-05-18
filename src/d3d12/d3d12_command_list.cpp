@@ -12,7 +12,7 @@ namespace wr::d3d12
 	{
 		auto* cmd_list = new CommandList();
 		const auto n_device = device->m_native;
-		const auto n_cmd_list = cmd_list->m_native;
+		auto& n_cmd_list = cmd_list->m_native;
 
 		cmd_list->m_allocators.resize(num_allocators);
 
@@ -30,14 +30,14 @@ namespace wr::d3d12
 			(D3D12_COMMAND_LIST_TYPE)type,
 			cmd_list->m_allocators[0],
 			NULL,
-			IID_PPV_ARGS(&cmd_list->m_native)
+			IID_PPV_ARGS(&n_cmd_list)
 		), "Failed to create command list");
-		NAME_D3D12RESOURCE(cmd_list->m_native);
-		cmd_list->m_native->Close(); // TODO: Can be optimized away.
+		NAME_D3D12RESOURCE(n_cmd_list);
+		n_cmd_list->Close(); // TODO: Can be optimized away.
 
 		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
-			device->m_fallback_native->QueryRaytracingCommandList(cmd_list->m_native, IID_PPV_ARGS(&cmd_list->m_native_fallback));
+			device->m_fallback_native->QueryRaytracingCommandList(n_cmd_list, IID_PPV_ARGS(&cmd_list->m_native_fallback));
 		}
 
 		//Create the heaps
@@ -99,7 +99,7 @@ namespace wr::d3d12
 
 	void ExecuteIndirect(CommandList* cmd_list, CommandSignature* cmd_signature, IndirectCommandBuffer* buffer, uint32_t frame_idx)
 	{
-		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, buffer->m_num_commands, buffer->m_native[frame_idx], 0, nullptr, 0);
+		cmd_list->m_native->ExecuteIndirect(cmd_signature->m_native, static_cast<unsigned int>(buffer->m_num_commands), buffer->m_native[frame_idx], 0, nullptr, 0);
 	}
 
 	void BindRenderTarget(CommandList* cmd_list, RenderTarget* render_target, bool clear, bool clear_depth)
@@ -115,7 +115,7 @@ namespace wr::d3d12
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv_handle;
 		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
 
-		cmd_list->m_native->OMSetRenderTargets(handles.size(), handles.data(), false, render_target->m_create_info.m_create_dsv_buffer ? &dsv_handle : nullptr);
+		cmd_list->m_native->OMSetRenderTargets(static_cast<unsigned int>(handles.size()), handles.data(), false, render_target->m_create_info.m_create_dsv_buffer ? &dsv_handle : nullptr);
 		if (clear)
 		{
 			for (auto& handle : handles)
@@ -148,7 +148,7 @@ namespace wr::d3d12
 		}
 	}
 
-	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, unsigned int frame_idx, bool clear)
+	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, bool clear)
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv_handle;
 		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
@@ -174,18 +174,18 @@ namespace wr::d3d12
 
 	void BindDescriptorHeap(CommandList* cmd_list, DescriptorHeap* heap, DescriptorHeapType type, unsigned int frame_idx, bool fallback)
 	{
-		size_t heap_idx = frame_idx % heap->m_create_info.m_versions;
+		std::uint32_t heap_idx = frame_idx % heap->m_create_info.m_versions;
 
 		if (cmd_list->m_descriptor_heaps[static_cast<size_t>(type)] != heap->m_native[heap_idx])
 		{
 			cmd_list->m_descriptor_heaps[static_cast<size_t>(type)] = heap->m_native[heap_idx];
-			BindDescriptorHeaps(cmd_list, frame_idx, fallback);
+			BindDescriptorHeaps(cmd_list, fallback);
 		}
 	}
 
-	void BindDescriptorHeaps(CommandList* cmd_list, unsigned int frame_idx, bool fallback)
+	void BindDescriptorHeaps(CommandList* cmd_list, bool fallback)
 	{
-		size_t num_heaps = 0;
+		std::uint32_t num_heaps = 0;
 		ID3D12DescriptorHeap* n_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
 
 		for (uint32_t i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
@@ -362,7 +362,7 @@ namespace wr::d3d12
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
 		barriers.resize(render_target->m_num_render_targets);
-		for (auto i = 0; i < render_target->m_num_render_targets; i++)
+		for (auto i = 0u; i < render_target->m_num_render_targets; i++)
 		{
 			CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 				render_target->m_render_targets[i],
@@ -372,7 +372,7 @@ namespace wr::d3d12
 
 			barriers[i] = barrier;
 		}
-		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
+		cmd_list->m_native->ResourceBarrier(static_cast<unsigned int>(barriers.size()), barriers.data());
 	}
 
 	void Transition(CommandList* cmd_list, TextureResource* texture, ResourceState from, ResourceState to)
@@ -438,7 +438,7 @@ namespace wr::d3d12
 			}
 		}
 
-		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
+		cmd_list->m_native->ResourceBarrier(static_cast<unsigned int>(barriers.size()), barriers.data());
 	}
 
 	void Transition(CommandList* cmd_list, IndirectCommandBuffer* buffer, ResourceState from, ResourceState to, uint32_t frame_idx)
@@ -480,7 +480,7 @@ namespace wr::d3d12
 			barriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(resource->m_resource));
 		}
 
-		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
+		cmd_list->m_native->ResourceBarrier(static_cast<unsigned int>(barriers.size()), barriers.data());
 	}
 
 	void UAVBarrier(CommandList* cmd_list, std::vector<ID3D12Resource*> const & resources)
@@ -492,7 +492,7 @@ namespace wr::d3d12
 			barriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(resource));
 		}
 
-		cmd_list->m_native->ResourceBarrier(barriers.size(), barriers.data());
+		cmd_list->m_native->ResourceBarrier(static_cast<unsigned int>(barriers.size()), barriers.data());
 	}
 
 	void Alias(CommandList* cmd_list, TextureResource* resource_before, TextureResource* resource_after)
@@ -522,8 +522,8 @@ namespace wr::d3d12
 
 		D3D12_COMMAND_SIGNATURE_DESC cmd_signature_desc = {};
 		cmd_signature_desc.pArgumentDescs = arg_descs.data();
-		cmd_signature_desc.NumArgumentDescs = arg_descs.size();
-		cmd_signature_desc.ByteStride = byte_stride;
+		cmd_signature_desc.NumArgumentDescs = static_cast<unsigned int>(arg_descs.size());
+		cmd_signature_desc.ByteStride = static_cast<unsigned int>(byte_stride);
 
 		TRY_M(device->m_native->CreateCommandSignature(&cmd_signature_desc, root_signature->m_native, IID_PPV_ARGS(&cmd_sig->m_native))
 			, "Failed to create command signature");
@@ -531,7 +531,7 @@ namespace wr::d3d12
 		return cmd_sig;
 	}
 
-	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint64_t width, std::uint64_t height, std::uint64_t depth, unsigned int frame_idx)
+	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint32_t width, std::uint32_t height, std::uint32_t depth, unsigned int frame_idx)
 	{
 		D3D12_DISPATCH_RAYS_DESC desc = {};
 		desc.HitGroupTable.StartAddress = hitgroup_table->m_resource->GetGPUVirtualAddress();

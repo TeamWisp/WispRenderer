@@ -9,6 +9,7 @@
 #include <array>
 #include <bitset>
 #include <D3D12RaytracingFallback.h>
+#include <DirectXMath.h>
 
 #include "../structs.hpp"
 
@@ -108,12 +109,12 @@ namespace wr::d3d12
 			StagingBuffer* vertex_buffer = nullptr;
 			std::optional<StagingBuffer*> index_buffer;
 
-			std::uint64_t m_num_vertices = 0;
-			std::uint64_t m_num_indices = 0;
-			std::uint64_t m_vertices_offset = 0;
-			std::uint64_t m_indices_offset = 0;
+			std::uint32_t m_num_vertices = 0;
+			std::uint32_t m_num_indices = 0;
+			std::uint32_t m_vertices_offset = 0;
+			std::uint32_t m_indices_offset = 0;
 
-			std::uint64_t m_vertex_stride = 0;
+			std::uint32_t m_vertex_stride = 0;
 		};
 
 		struct StateObjectDesc
@@ -122,9 +123,9 @@ namespace wr::d3d12
 			std::vector<std::wstring> m_library_exports;
 			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
 
-			std::uint64_t max_payload_size;
-			std::uint64_t max_attributes_size;
-			std::uint64_t max_recursion_depth;
+			std::uint32_t max_payload_size;
+			std::uint32_t max_attributes_size;
+			std::uint32_t max_recursion_depth;
 
 			std::optional<RootSignature*> global_root_signature;
 			std::optional<std::vector<RootSignature*>> local_root_signatures;
@@ -392,13 +393,22 @@ namespace wr::d3d12
 
 	struct AccelerationStructure
 	{
-		ID3D12Resource* m_scratch;       // Scratch memory for AS builder
-		bool m_rebuild_scratch;
-		ID3D12Resource* m_native;        // Where the AS is
-		ID3D12Resource* m_instance_desc; // Hold the matrices of the instances
+		ID3D12Resource* m_scratch;														 // Scratch memory for AS builder
+		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_natives;        // Where the AS is
+		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_instance_descs; // Hold the matrices of the instances
 		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO m_prebuild_info;
 	};
+
+	namespace desc
+	{
+		struct BlasDesc
+		{
+			d3d12::AccelerationStructure m_as;
+			std::uint64_t m_material;
+			DirectX::XMMATRIX m_transform;
+		};
+	} /* desc */
 
 	struct ShaderRecord
 	{

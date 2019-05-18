@@ -33,7 +33,7 @@ namespace wr::d3d12
 			feature_data.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		}
 
-		auto num_samplers = create_info.m_samplers.size();
+		auto num_samplers = static_cast<std::uint32_t>(create_info.m_samplers.size());
 		std::vector<D3D12_STATIC_SAMPLER_DESC> samplers(num_samplers);
 		for (auto i = 0; i < num_samplers; i++)
 		{

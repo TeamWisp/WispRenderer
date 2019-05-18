@@ -25,7 +25,10 @@ namespace wr::imgui::internal
 	template <typename T>
 	inline std::string ConvertPointerToStringAddress(const T* obj)
 	{
-		auto address(reinterpret_cast<int>(obj));
+#pragma warning( push )
+#pragma warning( disable : 4311)
+		auto address = reinterpret_cast<std::uint64_t>(std::addressof(obj));
+#pragma warning( pop ) 
 		std::stringstream ss;
 		ss << std::hex << address;
 		return ss.str();
@@ -92,7 +95,6 @@ namespace wr::imgui::internal
 		DirectX::XMStoreFloat4x4(&rproj, cam->m_projection);
 		DirectX::XMStoreFloat4x4(&rview, view);
 
-		ImGuiIO& io = ImGui::GetIO();
 		ImGuizmo::SetRect(viewport_pos.x, viewport_pos.y, viewport_size.x, viewport_size.y);
 		ImGuizmo::Manipulate(&rview._11, &rproj._11, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, &rmat._11, NULL, NULL);
 
@@ -263,7 +265,7 @@ namespace wr::imgui::window
 				ImGui::Combo("Type", &type, listbox_items, 3);
 				light.tid = type;
 
-				ImGui::ColorEdit3("Color", &light.col.x, 0.25f);
+				ImGui::ColorEdit3("Color", &light.col.x, ImGuiColorEditFlags_HDR);
 				ImGui::DragFloat3("Position", light_node->m_position.m128_f32, 0.25f);
 
 				if (type != (uint32_t)LightType::POINT)
@@ -406,11 +408,8 @@ namespace wr::imgui::window
 			}
 
 			auto root = scene_graph->GetRootNode();
-			auto num_children = root->m_children.size();
 
 			static ImGuiTextFilter filter;
-
-			//auto size = ImGui::GetContentRegionAvail();
 
 			ImGui::PushItemWidth(-1.f);
 			filter.Draw("##");
@@ -600,7 +599,7 @@ namespace wr::imgui::window
 						ImGui::Text("Depth Enabled: %s", internal::BooltoStr(desc.second.m_depth_enabled).c_str());
 						ImGui::Text("Counter Clockwise Winding Order: %s", internal::BooltoStr(desc.second.m_counter_clockwise).c_str());
 						ImGui::Text("Num RTV Formats: %d", desc.second.m_num_rtv_formats);
-						for (auto i = 0; i < desc.second.m_num_rtv_formats; i++)
+						for (auto i = 0u; i < desc.second.m_num_rtv_formats; i++)
 						{
 							std::string text = "Format[" + std::to_string(i) + "]: %s";
 							ImGui::Text(text.c_str(), FormatToStr(desc.second.m_rtv_formats.Get()[i]).c_str());
@@ -761,7 +760,7 @@ namespace wr::imgui::special
 		HistoryPos = -1;
 
 		AddCommand("help",
-			[&](DebugConsole& console, std::string const & str)
+			[&](DebugConsole&, std::string const &)
 			{
 				AddLog("Commands:");
 				for (auto& cmd : m_commands)
@@ -780,15 +779,15 @@ namespace wr::imgui::special
 		);
 
 		AddCommand("clear",
-			[&](DebugConsole& console, std::string const & str) { ClearLog(); }, "Clears the console."
+			[&](DebugConsole&, std::string const &) { ClearLog(); }, "Clears the console."
 		);
 		AddCommand("cls",
-			[&](DebugConsole& console, std::string const & str) { ClearLog(); }, "Clears the console."
+			[&](DebugConsole&, std::string const &) { ClearLog(); }, "Clears the console."
 		);
 
 
 		AddCommand("history",
-			[&](DebugConsole& console, std::string const & str)
+			[&](DebugConsole&, std::string const &)
 			{
 				int first = History.Size - 10;
 				for (int i = first > 0 ? first : 0; i < History.Size; i++)
@@ -800,7 +799,7 @@ namespace wr::imgui::special
 		);
 
 		AddCommand("filter",
-			[&](DebugConsole& console, std::string const & str)
+			[&](DebugConsole&, std::string const &)
 			{
 				filter = ImGuiTextFilter(nullptr);
 				AddLog("Cleared Filter");
@@ -810,7 +809,7 @@ namespace wr::imgui::special
 		);
 
 		AddCommand("filter ",
-			[&](DebugConsole& console, std::string const & str)
+			[&](DebugConsole&, std::string const & str)
 			{
 				auto params = str;
 				params.erase(0, 7);

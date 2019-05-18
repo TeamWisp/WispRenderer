@@ -37,7 +37,7 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_view;
 			unsigned int m_is_hybrid;
 			unsigned int m_is_path_tracer;
-			unsigned int m_is_hbao;
+			unsigned int m_is_ao;
 		};
 
 		struct RTHybridCamera_CBData
@@ -49,6 +49,16 @@ namespace wr
 			uint32_t m_padding[2];
 			float m_frame_idx;
 			float m_intensity;
+		};
+
+		struct RTAO_CBData
+		{
+			DirectX::XMMATRIX m_inv_vp;
+
+			float bias;
+			float radius;
+			float power;
+			unsigned int sample_count;
 		};
 
 		struct RayTracingCamera_CBData
@@ -65,19 +75,22 @@ namespace wr
 
 		struct RayTracingMaterial_CBData
 		{
-			float albedo_id;
-			float normal_id;
-			float roughness_id;
-			float metallicness_id;
+			std::uint32_t albedo_id;
+			std::uint32_t normal_id;
+			std::uint32_t roughness_id;
+			std::uint32_t metallicness_id;
+			std::uint32_t emissive_id;
+			std::uint32_t ao_id;
 
+			DirectX::XMFLOAT2 padding;
 			Material::MaterialData material_data;
 		};
 
 		struct RayTracingOffset_CBData
 		{
-			float material_idx;
-			float idx_offset;
-			float vertex_offset;
+			std::uint32_t material_idx;
+			std::uint32_t idx_offset;
+			std::uint32_t vertex_offset;
 		};
 
 		static const constexpr float size = 1.0f;

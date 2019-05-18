@@ -22,10 +22,11 @@ namespace wr
 {
 	enum class TextureType : size_t
 	{
-		ALBEDO,
+		ALBEDO = 0,
 		NORMAL,
 		ROUGHNESS,
 		METALLIC,
+		EMISSIVE,
 		AO,
 		COUNT
 	};
@@ -34,14 +35,21 @@ namespace wr
 	enum class MaterialConstant : uint32_t
 	{
 		COLOR = (0 << 16) | 1,
-		R = (0 << 16) | 0, 
+		R = (0 << 16) | 0,
 		G = (1 << 16) | 0,
 		B = (2 << 16) | 0,
 		METALLIC = (3 << 16) | 0,
 		ROUGHNESS = (4 << 16) | 0,
-		IS_DOUBLE_SIDED = (5 << 16) | 0,
-		IS_ALPHA_MASKED = (6 << 16) | 0,
-		MAX_OFFSET = 7
+		EMISSIVE_MULTIPLIER = (5 << 16) | 0,
+		IS_DOUBLE_SIDED = (6 << 16) | 0,
+		IS_ALPHA_MASKED = (7 << 16) | 0,
+		ALBEDO_UV_SCALE = (8 << 16) | 0,
+		NORMAL_UV_SCALE = (9 << 16) | 0,
+		ROUGHNESS_UV_SCALE = (10 << 16) | 0,
+		METALLIC_UV_SCALE = (11 << 16) | 0,
+		EMISSIVE_UV_SCALE = (12 << 16) | 0,
+		AO_UV_SCALE = (13 << 16) | 0,
+		MAX_OFFSET = 14
 	};
 
 	class Material
@@ -54,7 +62,9 @@ namespace wr
 				 TextureHandle normal, 
 				 TextureHandle roughness,
 				 TextureHandle metallic,
+				 TextureHandle emissive,
 				 TextureHandle ao, 
+				 MaterialUVScales mat_scales,
 				 bool alpha_masked = false,
 				 bool double_sided = false);
 
@@ -105,6 +115,7 @@ namespace wr
 				uint32_t m_has_normal_texture : 1;
 				uint32_t m_has_roughness_texture : 1;
 				uint32_t m_has_metallic_texture : 1;
+				uint32_t m_has_emissive_texture : 1;
 				uint32_t m_has_ao_texture : 1;
 			};
 
@@ -119,13 +130,23 @@ namespace wr
 				float m_metallic;
 
 				float m_roughness;
+				float m_emissive_multiplier;
 				float m_is_double_sided;
 				float m_use_alpha_constant;
+
+				float albedo_scale;
+				float normal_scale;
+				float roughness_scale;
+				float metallic_scale;
+
+				float emissive_scale;
+				float ao_scale;
+				float m_padding;
 				TextureFlags m_material_flags;
 
 			};
 
-			float m_constant_data[size_t(MaterialConstant::MAX_OFFSET) + 1]{};
+			float m_constant_data[size_t(MaterialConstant::MAX_OFFSET)]{};
 
 		};
 
@@ -142,6 +163,7 @@ namespace wr
 				TextureHandle m_normal;
 				TextureHandle m_roughness;
 				TextureHandle m_metallic;
+				TextureHandle m_emissive;
 				TextureHandle m_ao;
 			};
 
@@ -173,7 +195,9 @@ namespace wr
 											TextureHandle& normal,
 											TextureHandle& roughness,
 											TextureHandle& metallic,
-											TextureHandle& ao, 
+											TextureHandle& emissive,
+											TextureHandle& ao,
+											MaterialUVScales& mat_scales,
 											bool is_alpha_masked = false, 
 											bool is_double_sided = false);
 

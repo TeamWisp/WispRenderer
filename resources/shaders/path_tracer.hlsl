@@ -17,19 +17,22 @@ struct Vertex
 
 struct Material
 {
-	float albedo_id;
-	float normal_id;
-	float roughness_id;
-	float metalicness_id;
+	uint albedo_id;
+	uint normal_id;
+	uint roughness_id;
+	uint metalicness_id;
+	uint emissive_id;
+	uint ao_id;
+	float2 padding;
 
 	MaterialData data;
 };
 
 struct Offset
 {
-    float material_idx;
-    float idx_offset;
-    float vertex_offset;
+	uint material_idx;
+	uint idx_offset;
+	uint vertex_offset;
 };
 
 RWTexture2D<float4> output : register(u0); // xyz: reflection, a: shadow factor
@@ -41,7 +44,8 @@ StructuredBuffer<Offset> g_offsets : register(t5);
 Texture2D g_textures[1000] : register(t10);
 Texture2D gbuffer_albedo : register(t1010);
 Texture2D gbuffer_normal : register(t1011);
-Texture2D gbuffer_depth : register(t1012);
+Texture2D gbuffer_emissive : register(t1012);
+Texture2D gbuffer_depth : register(t1013);
 Texture2D skybox : register(t6);
 TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
@@ -99,14 +103,17 @@ void RaygenEntry()
 	// Get g-buffer information
 	float4 albedo_roughness = gbuffer_albedo[screen_co];
 	float4 normal_metallic = gbuffer_normal[screen_co];
+	float4 emissive_ao = gbuffer_emissive[screen_co];
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
 	float3 albedo = albedo_roughness.rgb;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
-	float3 normal = normal_metallic.xyz;
+	float3 normal = normalize(normal_metallic.xyz);
 	float metallic = normal_metallic.w;
 	float roughness = albedo_roughness.w;
+	float3 emissive = emissive_ao.xyz;
+	float ao = emissive_ao.w;
 
 	// Do lighting
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
@@ -120,11 +127,12 @@ void RaygenEntry()
 	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
 	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
-	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
 	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result += emissive;
 
 	result = clamp(result, 0, 100);
-	
+
 	// xyz: reflection, a: shadow factor
 	if (frame_idx > 0 && !any(isnan(result)))
 	{
@@ -162,10 +170,10 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 
 	// Find first index location
 	const uint index_size = 4;
-    const uint indices_per_triangle = 3;
-    const uint triangle_idx_stride = indices_per_triangle * index_size;
+	const uint indices_per_triangle = 3;
+	const uint triangle_idx_stride = indices_per_triangle * index_size;
 
-    uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
 	base_idx += index_offset * 4; // offset the start
 
 	uint3 indices = Load3x32BitIndices(base_idx);
@@ -188,13 +196,15 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float mip_level = payload.depth+1;
+	float mip_level = payload.depth + 1;
 
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
 		g_textures[material.normal_id],
 		g_textures[material.roughness_id],
 		g_textures[material.metalicness_id],
+		g_textures[material.emissive_id],
+		g_textures[material.ao_id],
 		mip_level,
 		s0,
 		uv);
@@ -202,7 +212,9 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	float3 albedo = output_data.albedo;
 	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
-	
+	float3 emissive = output_data.emissive;
+	float ao = output_data.ao;
+
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 #define CALC_B
@@ -220,8 +232,9 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 
 	// #################### GGX #####################
 	nextRand(payload.seed);
-	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
 	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	payload.color += emissive;
 }
 
 //Reflection skybox
