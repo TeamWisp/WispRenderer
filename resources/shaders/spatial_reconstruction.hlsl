@@ -1,3 +1,4 @@
+#include "util.hlsl"
 #include "pbr_util.hlsl"
 
 RWTexture2D<float4> filtered : register(u0);
@@ -26,10 +27,10 @@ float brdf_weight(float3 V, float3 L, float3 N, float roughness)
 	float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);
 	float D = D_GGX(NdotH, roughness);
 
-	return D * G * M_PI / 4;
+	return D * G * PI / 4;
 }
 
-//Hardcode the samples for now
+//Hardcode the samples for now; settings: kernelSize=5, points=16
 //https://github.com/Nielsbishere/NoisePlayground/blob/master/bluenoise_test.py
 
 static const uint sampleCount = 16;
@@ -70,22 +71,23 @@ float2 sample_neighbor_uv(uint sampleId, uint2 fullResPixel, uint2 resolution)
 }
 
 [numthreads(16, 16, 1)]
-void main(int3 pix : SV_DispatchThreadID)
+void main(int3 pix3 : SV_DispatchThreadID)
 {
 	//Get dispatch dimensions
 
+	uint2 pix = uint2(pix3.xy);
 	uint width, height;
 	depth_buffer.GetDimensions(width, height);
 
 	//Get per pixel values
 
 	const float depth = depth_buffer[pix].r;
-	const float2 uv = float2(pix.x, pix.y) / float2(width - 1, height - 1);
+	const float2 uv = float2(pix.xy) / float2(width - 1, height - 1);
 	const float4 ndc = float4(uv * 2 - 1, depth, 1);
 
 	const float4 vpos = mul(inv_projection, ndc);
-	float3 pos = mul(inv_view, vpos);
-	pos = (pos / pos.w).xyz;
+	const float4 pos4 = mul(inv_view, vpos);
+	const float3 pos = (pos4 / pos4.w).xyz;
 
 	const float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	const float3 V = normalize(camera_pos - pos);
@@ -96,7 +98,7 @@ void main(int3 pix : SV_DispatchThreadID)
 	//Weigh the samples correctly
 
 	float3 result = float3(0, 0, 0);
-	float weightSum = float3(0, 0, 0);
+	float weightSum = 0;
 
 	[unroll]
 	for (uint i = 0; i < sampleCount; ++i)
@@ -105,17 +107,17 @@ void main(int3 pix : SV_DispatchThreadID)
 
 		const float2 neighbor_uv = sample_neighbor_uv(i, pix.xy, uint2(width, height));
 
-		float4 hit_pos = dir_hitT.SampleLevel(neighbor_uv, nearest_sampler, 0);
-		hit_pos = float4(hit_pos.xyz * hit_pos.w + wpos, 1);
+		float4 hit_pos = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
+		hit_pos = float4(hit_pos.xyz * hit_pos.w + pos, 1);
 		float4 hit_vpos = mul(view, hit_pos);
 
-		const float3 color = reflection_pdf.SampleLevel(neighbor_uv, nearest_sampler, 0).xyz;
+		const float3 color = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz;
 		const float3 L = normalize(hit_vpos.xyz - vpos.xyz);
-		const float pdf = max(reflection_pdf.SampleLevel(neighbor_uv, nearest_sampler, 0).w, 1e-5);
+		const float pdf = max(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).w, 1e-5);
 
 		//Calculate weight and weight sum
 
-		const float weight = bdrf_weight(V, L, N, roughness) / pdf * float(neighbor_uv.x >= 0 && neighbor_uv.y >= 0 && neighbor_uv.x <= 1 && neighbor_uv.y <= 1);
+		const float weight = brdf_weight(V, L, N, roughness) / pdf * float(neighbor_uv.x >= 0 && neighbor_uv.y >= 0 && neighbor_uv.x <= 1 && neighbor_uv.y <= 1);
 		result += color * weight;
 		weightSum += weight;
 	}
