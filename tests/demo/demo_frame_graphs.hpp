@@ -11,6 +11,7 @@
 #include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
+#include "render_tasks/d3d12_spatial_reconstruction.hpp"
 #include "render_tasks/d3d12_rtao_task.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_pixel_data_readback.hpp"
@@ -149,6 +150,7 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
+			wr::AddSpatialReconstructionTask(*fg);
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
@@ -189,6 +191,7 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTHybridTask(*fg);
+			wr::AddSpatialReconstructionTask(*fg);
 
 			//Raytraced Ambient Occlusion task
 			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);

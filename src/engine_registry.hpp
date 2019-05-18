@@ -467,6 +467,21 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
+		enum class SpatialReconstructionE
+		{
+			CAMERA_PROPERTIES,
+			OUTPUT,
+			REFLECTION_BUFFER,
+			GBUFFERS
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> spatial_reconstruction = {
+			rs_layout::Entry{(int)SpatialReconstructionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)SpatialReconstructionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SpatialReconstructionE::REFLECTION_BUFFER, 2, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SpatialReconstructionE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE}
+		};
+
 		enum class RTAOE
 		{
 			CAMERA_PROPERTIES,
@@ -700,6 +715,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
+		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
 	};
 
 	struct shaders
@@ -731,6 +747,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
+		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
 	};
 
 	struct pipelines
@@ -755,6 +772,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
+		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
 	};
 
 	struct state_objects

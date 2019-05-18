@@ -872,6 +872,44 @@ namespace wr
 		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
 		});
 
+	// spatial reconstruction
+	REGISTER(shaders::spatial_reconstruction, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/spatial_reconstruction.hlsl"),
+		ShaderDescription::Entry("main"),
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	});
+
+	DESC_RANGE_ARRAY(spatial_reconstruction_r,
+		DESC_RANGE(params::spatial_reconstruction, Type::UAV_RANGE, params::SpatialReconstructionE::OUTPUT),
+		DESC_RANGE(params::spatial_reconstruction, Type::SRV_RANGE, params::SpatialReconstructionE::REFLECTION_BUFFER),
+		DESC_RANGE(params::spatial_reconstruction, Type::SRV_RANGE, params::SpatialReconstructionE::GBUFFERS)
+	);
+
+	REGISTER(root_signatures::spatial_reconstruction, RootSignatureRegistry)({
+		RootSignatureDescription::Parameters({
+			ROOT_PARAM_DESC_TABLE(spatial_reconstruction_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::spatial_reconstruction, params::SpatialReconstructionE::CAMERA_PROPERTIES))
+		}),
+		RootSignatureDescription::Samplers({
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+		})
+	});
+
+	REGISTER(pipelines::spatial_reconstruction, PipelineRegistry) < Vertex2D > ({
+		PipelineDescription::VertexShader(std::nullopt),
+		PipelineDescription::PixelShader(std::nullopt),
+		PipelineDescription::ComputeShader(shaders::spatial_reconstruction),
+		PipelineDescription::RootSignature(root_signatures::spatial_reconstruction),
+		PipelineDescription::DSVFormat(Format::UNKNOWN),
+		PipelineDescription::RTVFormats({ Format::R16G16B16A16_FLOAT }),
+		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_BACK),
+		PipelineDescription::Depth(false),
+		PipelineDescription::CounterClockwise(true),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+	});
+
 
 	/* ### Hybrid Raytracing ### */
 	REGISTER(shaders::rt_hybrid_lib, ShaderRegistry)({
