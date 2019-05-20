@@ -245,9 +245,6 @@ namespace wr
 					int width = rect.right - rect.left;
 					int height = rect.bottom - rect.top;
 
-					width = max(width, 32);
-					height = max(height, 32);
-
 					bool has_changed = width != m_window_width || height != m_window_height;
 					bool is_valid_size = width > 0 && height > 0;
 
