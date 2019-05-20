@@ -84,7 +84,7 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTShadowData>(handle);
 
-			Render(n_render_system, fg, scene_graph, data.base_data, cmd_list, "ShadowRaygenEntry", handle);
+			Render(n_render_system, fg, scene_graph, data.base_data, cmd_list, handle, "ShadowRaygenEntry");
 			
 		}
 
