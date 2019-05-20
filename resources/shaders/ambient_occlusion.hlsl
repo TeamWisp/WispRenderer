@@ -45,7 +45,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_NONE,
+		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
