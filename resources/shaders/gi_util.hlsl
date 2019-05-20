@@ -112,7 +112,6 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 
 	float3 lighting = (light_intensity * (NdotL * spec + NdotL * albedo / M_PI));
 
-
 	return (shadow_mult * lighting);
 }
 
