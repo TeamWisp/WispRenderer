@@ -188,21 +188,19 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+			auto frame_idx = n_render_system.GetFrameIdx();
+			float scalar = 1.0f;
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 			// Rebuild acceleratrion structure a 2e time for fallback
 			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
-				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
-
-				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
-				cmd_list->m_native->ResourceBarrier(1, &barrier);
+				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list, frame_idx);
+				d3d12::UAVBarrierAS(cmd_list, as_build_data.out_tlas, frame_idx);
 			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto frame_idx = n_render_system.GetFrameIdx();
-
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
@@ -351,7 +349,7 @@ namespace wr
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
 				{
-					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_native, 1);
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				}
 				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 				{
@@ -367,8 +365,17 @@ namespace wr
 				CreateShaderTables(device, data, frame_idx);
 //#endif
 
+				scalar = fg.GetRenderTargetResolutionScale(handle);
+
 				// Dispatch hybrid ray tracing rays
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
+				d3d12::DispatchRays(cmd_list, 
+					data.out_hitgroup_shader_table[frame_idx], 
+					data.out_miss_shader_table[frame_idx],
+					data.out_raygen_shader_table[frame_idx], 
+					window->GetWidth() * scalar,
+					window->GetHeight() * scalar,
+					1,
+					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
@@ -408,7 +415,8 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ResourceName(name),
+			RenderTargetProperties::ResolutionScalar(1.0f)
 		};
 
 		RenderTaskDesc desc;

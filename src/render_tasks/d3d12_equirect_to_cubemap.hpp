@@ -268,6 +268,7 @@ namespace wr
 
 				//Prefilter environment map
 				PrefilterCubemap(cmd_list, data.out_cubemap, data.out_pref_env);
+				fg.SetShouldExecute(handle, false);
 			}
 		}
 

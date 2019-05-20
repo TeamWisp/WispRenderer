@@ -145,14 +145,14 @@ namespace wr
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
 					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
 				
-					if (data.is_rtao)
-					{
-						auto ao_handle =  data.out_screen_space_ao_alloc.GetDescriptorHandle();
-
-						auto ao_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTAOData>());
-						d3d12::CreateSRVFromRTV(ao_buffer, ao_handle, 1, ao_buffer->m_create_info.m_rtv_formats.data());
-					} 
 				}			
+				if (data.is_rtao)
+				{
+					auto ao_handle =  data.out_screen_space_ao_alloc.GetDescriptorHandle();
+
+					auto ao_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTAOData>());
+					d3d12::CreateSRVFromRTV(ao_buffer, ao_handle, 1, ao_buffer->m_create_info.m_rtv_formats.data());
+				} 
 			}				
 		}
 

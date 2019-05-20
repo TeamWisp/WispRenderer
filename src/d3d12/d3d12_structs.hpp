@@ -393,10 +393,9 @@ namespace wr::d3d12
 
 	struct AccelerationStructure
 	{
-		ID3D12Resource* m_scratch;       // Scratch memory for AS builder
-		bool m_rebuild_scratch;
-		ID3D12Resource* m_native;        // Where the AS is
-		ID3D12Resource* m_instance_desc; // Hold the matrices of the instances
+		ID3D12Resource* m_scratch;														 // Scratch memory for AS builder
+		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_natives;        // Where the AS is
+		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_instance_descs; // Hold the matrices of the instances
 		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO m_prebuild_info;
 	};
