@@ -82,7 +82,7 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTReflectionData>(handle);
 			
-			Render(n_render_system, fg, scene_graph, data.base_data, cmd_list, "ReflectionRaygenEntry");			
+			Render(n_render_system, fg, scene_graph, data.base_data, cmd_list, "ReflectionRaygenEntry", handle);			
 		}
 
 		inline void DestroyRTReflectionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
@@ -114,7 +114,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R32G32B32A32_FLOAT }),
+			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),

@@ -187,7 +187,7 @@ namespace wr
 			data.frame_idx = 0;
 		}
 
-		inline void Render(D3D12RenderSystem& n_render_system, FrameGraph& fg, SceneGraph& scene_graph, RTHybridData& data, d3d12::CommandList* cmd_list, std::string raygen_entry)
+		inline void Render(D3D12RenderSystem& n_render_system, FrameGraph& fg, SceneGraph& scene_graph, RTHybridData& data, d3d12::CommandList* cmd_list, std::string raygen_entry, RenderTaskHandle handle)
 		{
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
@@ -393,7 +393,7 @@ namespace wr
 			auto& data = fg.GetData<RTHybridData>(handle);
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 
-			Render(n_render_system, fg, scene_graph, data, cmd_list, "HybridRaygenEntry");
+			Render(n_render_system, fg, scene_graph, data, cmd_list, "HybridRaygenEntry", handle);
 		}
 
 		inline void DestroyRTHybridTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)

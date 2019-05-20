@@ -42,9 +42,8 @@ namespace fg_manager
 	{
 		DEFERRED = 0,
 		RT_HYBRID = 1,
-		RT_HYBRID_DENOISED = 2,
-		RAYTRACING = 3,
-		PATH_TRACER = 4,
+		RAYTRACING = 2,
+		PATH_TRACER = 3,
 	};
 
 	inline std::string GetFrameGraphName(PrebuildFrameGraph id)
@@ -55,8 +54,6 @@ namespace fg_manager
 			return "Deferred";
 		case PrebuildFrameGraph::RT_HYBRID:
 			return "Hybrid";
-		case PrebuildFrameGraph::RT_HYBRID_DENOISED:
-			return "Hybrid Denoised";
 		case PrebuildFrameGraph::RAYTRACING:
 			return "Full Raytracing";
 		case PrebuildFrameGraph::PATH_TRACER:
@@ -67,7 +64,7 @@ namespace fg_manager
 	}
 
 	static PrebuildFrameGraph current = fg_manager::PrebuildFrameGraph::DEFERRED;
-	static std::array<wr::FrameGraph*, 5> frame_graphs = {};
+	static std::array<wr::FrameGraph*, 4> frame_graphs = {};
 
 	inline void Setup(wr::RenderSystem& rs, util::Delegate<void(ImTextureID)> const& imgui_func)
 	{
@@ -194,67 +191,11 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTReflectionTask(*fg);
-			wr::AddRTShadowTask(*fg);
-
-			//Raytraced Ambient Occlusion task
-			//wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
-
-			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
-
-			// Do Depth of field task
-			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
-			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
-			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
-			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
-			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
-			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
-			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
-			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
-			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
-
-			//initialize default settings
-			wr::BloomSettings defaultSettings;
-			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
-
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
-
-			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
-
-			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
-			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
-
-			// Finalize the frame graph
-			fg->Setup(rs);
-		}
-
-		// Hybrid denoised raytracing
-		{
-			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RT_HYBRID_DENOISED];
-			fg = new wr::FrameGraph(20);
-
-			// Precalculate BRDF Lut
-			wr::AddBrdfLutPrecalculationTask(*fg);
-
-			wr::AddEquirectToCubemapTask(*fg);
-			wr::AddCubemapConvolutionTask(*fg);
-			// Construct the G-buffer
-			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
-
-			// Build Acceleration Structure
-			wr::AddBuildAccelerationStructuresTask(*fg);
-
-			// Raytracing task
-			wr::AddRTReflectionTask(*fg);
-			wr::AddRTShadowTask(*fg);
+			//wr::AddRTReflectionTask(*fg);
+			//wr::AddRTShadowTask(*fg);
 
 			//Raytraced Ambient Occlusion task
 			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
-
-			wr::AddShadowDenoiserTask(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
