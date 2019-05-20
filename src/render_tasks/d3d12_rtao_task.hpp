@@ -163,12 +163,12 @@ namespace wr
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
 				data.in_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_ao_global))->m_native;
-			}
 
-			// Create Shader Tables
-			CreateShaderTables(device, data, 0);
-			CreateShaderTables(device, data, 1);
-			CreateShaderTables(device, data, 2);
+				// Create Shader Tables
+				CreateShaderTables(device, data, 0);
+				CreateShaderTables(device, data, 1);
+				CreateShaderTables(device, data, 2);
+			}
 		}
 
 		inline void ExecuteAOTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)

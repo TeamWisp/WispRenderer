@@ -171,13 +171,14 @@ namespace wr
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object))->m_native;
+				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object))->m_native;	
+
+				// Create Shader Tables
+				CreateShaderTables(device, data, 0);
+				CreateShaderTables(device, data, 1);
+				CreateShaderTables(device, data, 2);
 			}
 
-			// Create Shader Tables
-			CreateShaderTables(device, data, 0);
-			CreateShaderTables(device, data, 1);
-			CreateShaderTables(device, data, 2);
 		}
 
 		inline void ExecutePathTracerTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)

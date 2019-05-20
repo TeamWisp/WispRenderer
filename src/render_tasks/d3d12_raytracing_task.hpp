@@ -133,6 +133,10 @@ namespace wr
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
+
+				CreateShaderTables(device, data, 0);
+				CreateShaderTables(device, data, 1);
+				CreateShaderTables(device, data, 2);
 			}
 
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
@@ -140,10 +144,6 @@ namespace wr
 				d3d12::DescHeapCPUHandle desc_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, desc_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 			}
-
-			CreateShaderTables(device, data, 0);
-			CreateShaderTables(device, data, 1);
-			CreateShaderTables(device, data, 2);
 		}
 
 		inline void ExecuteRaytracingTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
