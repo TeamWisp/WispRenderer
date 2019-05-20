@@ -192,7 +192,6 @@ void RaygenEntry()
 	// Compute the initial ray cone from the gbuffers.
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
-	// Get shadow factor
 	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
 
 	// Get reflection result

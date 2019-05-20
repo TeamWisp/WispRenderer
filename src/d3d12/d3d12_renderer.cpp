@@ -65,7 +65,10 @@ namespace wr
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
 		d3d12::Destroy(m_compute_queue);
-		if (m_render_window.has_value()) d3d12::Destroy(m_render_window.value());
+		if (m_render_window.has_value())
+		{
+			d3d12::Destroy(m_render_window.value());
+		}
 	}
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
@@ -232,6 +235,7 @@ namespace wr
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
+		n_cmd_lists.reserve(cmd_lists.size());
 
 		n_cmd_lists.push_back(m_direct_cmd_list);
 

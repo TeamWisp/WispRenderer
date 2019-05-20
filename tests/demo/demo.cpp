@@ -21,6 +21,7 @@
 #include "scene_spheres.hpp"
 
 #include "model_loader_assimp.hpp"
+#include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
 #define SCENE viknell_scene
@@ -69,9 +70,14 @@ void startCrashpad()
 	// Path to the out-of-process handler executable
 	base::FilePath handler(L"deps/crashpad/out/Release/crashpad_handler.exe");
 	// URL used to submit minidumps to
-	std::string url("https://sentry.io/api/1455776/minidump/?sentry_key=7735122410eb4b6bbaec9f1f6fd43aff");
+	std::string url;
+	url = "https://WispRenderer.bugsplat.com/post/bp/crash/postBP.php";
 	// Optional annotations passed via --annotations to the handler
 	std::map<std::string, std::string> annotations;
+	annotations["format"] = "minidump";			// Crashpad setting to save crash as a minidump
+	annotations["prod"] = "WispRenderer";	    // BugSplat appName
+	annotations["ver"] = "1.2.0";				// BugSplat appVersion
+
 	// Optional arguments to pass to the handler
 	std::vector<std::string> arguments;
 
@@ -162,6 +168,7 @@ int WispEntry()
 	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
+	wr::ModelLoader* gltf_model_loader = new wr::TinyGLTFModelLoader();
 
 	render_system->Init(window.get());	
 
@@ -200,6 +207,7 @@ int WispEntry()
 	window->StartRenderLoop();
 
 	delete assimp_model_loader;
+	delete gltf_model_loader;
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 

@@ -92,7 +92,7 @@ namespace wr
 	class FrameGraph
 	{
 		// Obtain the type definitions from `RenderTaskDesc` to keep the code readable.
-		using setup_func_t = RenderTaskDesc::setup_func_t;
+		using setup_func_t   = RenderTaskDesc::setup_func_t;
 		using execute_func_t = RenderTaskDesc::execute_func_t;
 		using destroy_func_t = RenderTaskDesc::destroy_func_t;
 	public:
@@ -103,7 +103,11 @@ namespace wr
 			This works by calling `std::vector::reserve`.
 			\param num_reserved_tasks Amount of tasks we should reserve space for.
 		*/
-		FrameGraph(std::size_t num_reserved_tasks = 1) : m_render_system(nullptr), m_num_tasks(0), m_thread_pool(new util::ThreadPool(settings::num_frame_graph_threads)), m_uid(GetFreeUID())
+		FrameGraph(std::size_t num_reserved_tasks = 1) :
+			m_render_system(nullptr),
+			m_num_tasks(0),
+			m_thread_pool(new util::ThreadPool(settings::num_frame_graph_threads)),
+			m_uid(GetFreeUID())
 		{
 			// lambda to simplify reserving space.
 			auto reserve = [num_reserved_tasks](auto v) { v.reserve(num_reserved_tasks); };
@@ -137,10 +141,10 @@ namespace wr
 		}
 
 		FrameGraph(const FrameGraph&) = delete;
-		FrameGraph(FrameGraph&&) = delete;
+		FrameGraph(FrameGraph&&)      = delete;
 
 		FrameGraph& operator=(const FrameGraph&) = delete;
-		FrameGraph& operator=(FrameGraph&&) = delete;
+		FrameGraph& operator=(FrameGraph&&) 	 = delete;
 
 		//! Setup the render tasks
 		/*!
@@ -160,6 +164,7 @@ namespace wr
 
 			// Resize these vectors since we know the end size already.
 			m_cmd_lists.resize(m_num_tasks);
+			m_should_execute.resize(m_num_tasks, true); // All tasks should execute by default.
 			m_render_targets.resize(m_num_tasks);
 			m_futures.resize(m_num_tasks);
 			m_render_system = &render_system;
@@ -229,6 +234,14 @@ namespace wr
 		inline void Execute(RenderSystem& render_system, SceneGraph& scene_graph)
 		{
 			ResetOutputTexture();
+
+			// Check if we need to disable some tasks
+			while (!m_should_execute_change_request.empty())
+			{
+				auto front = m_should_execute_change_request.front();
+				m_should_execute[front.first] = front.second;
+				m_should_execute_change_request.pop();
+			}
 
 			if constexpr (settings::use_multithreading)
 			{
@@ -496,13 +509,20 @@ namespace wr
 		template<typename T>
 		[[nodiscard]] std::vector<T*> GetAllCommandLists()
 		{
-			std::vector<T*> retval(m_num_tasks);
+			std::vector<T*> retval;
+			retval.reserve(m_num_tasks);
 
 			// TODO: Just return the fucking vector as const ref.
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
 			{
+				// Don't return command lists from tasks that don't require to be executed.
+				if (!m_should_execute[i])
+				{
+					continue;
+				}
+
 				WaitForCompletion(i);
-				retval[i] = static_cast<T*>(m_cmd_lists[i]);
+				retval.push_back(static_cast<T*>(m_cmd_lists[i]));
 			}
 
 			return retval;
@@ -681,6 +701,15 @@ namespace wr
 			}
 		}
 
+		/*! Enable or disable execution of a task. */
+		/*!
+			Note that this function is not thread safe.
+		*/
+		inline void SetShouldExecute(RenderTaskHandle handle, bool value)
+		{
+			m_should_execute_change_request.emplace(std::make_pair(handle, value));
+		}
+		
 		/*! Update the settings of a task. */
 		/*!
 			This is used to update settings of a render task.
@@ -811,6 +840,12 @@ namespace wr
 			// Multithreading behaviour
 			for (const auto handle : m_multi_threaded_tasks)
 			{
+				// Skip this task if it doesn't need to be executed
+				if (!m_should_execute[handle])
+				{
+					continue;
+				}
+
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system, &scene_graph]
 				{
 					ExecuteSingleTask(render_system, scene_graph, handle);
@@ -820,6 +855,12 @@ namespace wr
 			// Singlethreading behaviour
 			for (const auto handle : m_single_threaded_tasks)
 			{
+				// Skip this task if it doesn't need to be executed
+				if (!m_should_execute[handle])
+				{
+					continue;
+				}
+
 				ExecuteSingleTask(render_system, scene_graph, handle);
 			}
 		}
@@ -829,6 +870,12 @@ namespace wr
 		{
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
+				// Skip this task if it doesn't need to be executed
+				if (!m_should_execute[i])
+				{
+					continue;
+				}
+
 				ExecuteSingleTask(render_system, scene_graph, i);
 			}
 		}
@@ -905,6 +952,10 @@ namespace wr
 		std::vector<std::reference_wrapper<const std::type_info>> m_data_type_info;
 		/*! Task settings that can be passed to the frame graph from outside the task. */
 		std::vector<std::optional<std::any>> m_settings;
+		/*! Defines whether a task should execute or not. */
+		std::vector<bool> m_should_execute;
+		/*! Used to queue a request to change the should execute value */
+		std::queue<std::pair<RenderTaskHandle, bool>> m_should_execute_change_request;
 		/*! Descriptions of the tasks. */
 #ifndef FG_MAX_PERFORMANCE
 		/*! Stored the dependencies of a task. */
@@ -915,8 +966,8 @@ namespace wr
 		std::vector<std::future<void>> m_futures;
 
 		const std::uint64_t m_uid;
-		WISPRENDERER_EXPORT static inline std::uint64_t m_largest_uid = 0;
-		WISPRENDERER_EXPORT static inline std::stack<std::uint64_t> m_free_uids = {};
+		static inline std::uint64_t m_largest_uid = 0;
+		static inline std::stack<std::uint64_t> m_free_uids = {};
 	};
 
 } /* wr */
