@@ -89,7 +89,7 @@ namespace wr
 				1);
 		}
 
-		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool)
+		void SetupDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
@@ -110,17 +110,20 @@ namespace wr
 				LOGC("Texture pool is nullptr. This shouldn't happen as the render system should always create the first texture pool");
 			}
 
-			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			
-			data.out_gbuffer_albedo_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
-			data.out_gbuffer_normal_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
-			data.out_gbuffer_emissive_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
-			data.out_gbuffer_depth_alloc = std::move(data.out_allocator->Allocate());
-			data.out_lights_alloc = std::move(data.out_allocator->Allocate());
-			data.out_buffer_refl_shadow_alloc = std::move(data.out_allocator->Allocate());
-			data.out_screen_space_irradiance_alloc = std::move(data.out_allocator->Allocate());
-			data.out_screen_space_ao_alloc = std::move(data.out_allocator->Allocate());
-			data.out_output_alloc = std::move(data.out_allocator->Allocate());
+			if (!resize)
+			{
+				data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+
+				data.out_gbuffer_albedo_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
+				data.out_gbuffer_normal_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
+				data.out_gbuffer_emissive_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
+				data.out_gbuffer_depth_alloc = std::move(data.out_allocator->Allocate());
+				data.out_lights_alloc = std::move(data.out_allocator->Allocate());
+				data.out_buffer_refl_shadow_alloc = std::move(data.out_allocator->Allocate());
+				data.out_screen_space_irradiance_alloc = std::move(data.out_allocator->Allocate());
+				data.out_screen_space_ao_alloc = std::move(data.out_allocator->Allocate());
+				data.out_output_alloc = std::move(data.out_allocator->Allocate());
+			}
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
