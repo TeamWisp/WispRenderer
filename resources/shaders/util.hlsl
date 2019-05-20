@@ -1,3 +1,6 @@
+#ifndef __UTIL_HLSL__
+#define __UTIL_HLSL__
+
 // Initialize random seed
 uint initRand(uint val0, uint val1, uint backoff = 16)
 {
@@ -60,3 +63,5 @@ float3 getUniformHemisphereSample(inout uint randSeed, float3 hitNorm)
 	// Get our cosine-weighted hemisphere lobe sample direction
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * randVal.x;
 }
+
+#endif //__UTIL_HLSL__

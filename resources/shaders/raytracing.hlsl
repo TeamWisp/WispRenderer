@@ -3,38 +3,9 @@
 #include "pbr_util.hlsl"
 #include "lighting.hlsl"
 #include "material_util.hlsl"
+#include "rt_structs.hlsl"
 
 static const float M_PI = 3.14159265f;
-
-struct Vertex
-{
-	float3 pos;
-	float2 uv;
-	float3 normal;
-	float3 tangent;
-	float3 bitangent;
-	float3 color;
-};
-
-struct Material
-{
-	uint albedo_id;
-	uint normal_id;
-	uint roughness_id;
-	uint metalicness_id;
-	uint emissive_id;
-	uint ao_id;
-	float2 padding;
-
-	MaterialData data;
-};
-
-struct Offset
-{
-	uint material_idx;
-	uint idx_offset;
-	uint vertex_offset;
-};
 
 RWTexture2D<float4> gOutput : register(u0);
 ByteAddressBuffer g_indices : register(t1);
@@ -50,6 +21,9 @@ SamplerState s0 : register(s0);
 SamplerState point_sampler : register(s1);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
+
+#include "rt_functions.hlsl"
+
 struct HitInfo
 {
 	float3 color;
@@ -77,11 +51,7 @@ struct Ray
 	float3 direction;
 };
 
-uint3 Load3x32BitIndices(uint offsetBytes)
-{
-	// Load first 2 indices
-	return g_indices.Load3(offsetBytes);
-}
+#include "rt_shadow_shaders.hlsl"
 
 inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset, unsigned int seed)
 {
@@ -137,12 +107,6 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 
 	return ray;
 #endif
-}
-
-// Retrieve hit world position.
-float3 HitWorldPosition()
-{
-	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
 float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
@@ -210,18 +174,6 @@ void MissEntry(inout HitInfo payload)
 	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
 }
 
-float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
-{
-	float3 vertexAttribute[3];
-	vertexAttribute[0] = a;
-	vertexAttribute[1] = b;
-	vertexAttribute[2] = c;
-
-	return vertexAttribute[0] +
-		attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
-		attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
-}
-
 [shader("closesthit")]
 void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 {
@@ -240,7 +192,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
 	base_idx += index_offset * 4; // offset the start
 
-	uint3 indices = Load3x32BitIndices(base_idx);
+	uint3 indices = Load3x32BitIndices(g_indices, base_idx);
 	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
 
 	// Gather triangle vertices

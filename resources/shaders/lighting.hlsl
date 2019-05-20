@@ -1,4 +1,7 @@
-#include "shadow_ray.hlsl"
+#ifndef __LIGHTING_HLSL__
+#define __LIGHTING_HLSL__
+
+#include "rt_shadow_func.hlsl"
 
 struct Light
 {
@@ -167,3 +170,5 @@ float DoShadowAllLights(float3 wpos, float3 normal, uint depth, inout float rand
 	// return final res
 	return res / float(sampled_lights);
 }
+
+#endif //__LIGHTING_HLSL__

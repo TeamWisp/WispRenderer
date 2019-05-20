@@ -1,12 +1,10 @@
+#ifndef __SHADOW_FUNC__
+#define __SHADOW_FUNC__
+
 #include "rt_global.hlsl"
-
-struct ShadowHitInfo
-{
-  float is_hit;
-  float thisvariablesomehowmakeshybridrenderingwork_killme;
-};
-
-struct Attributes { };
+#include "util.hlsl"
+#include "material_util.hlsl"
+#include "rt_structs.hlsl"
 
 bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
@@ -28,7 +26,7 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_NONE,
+		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH,
 		~0, // InstanceInclusionMask
 		1, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -42,30 +40,19 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 #endif
 }
 
-[shader("closesthit")]
-void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
-{
-    hit.is_hit = true;
-}
-
-[shader("miss")]
-void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
-{
-    hit.is_hit = false;
-}
-
 // Get shadow factor
 float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, inout uint rand_seed)
 {
 	float shadow_factor = 0.0f;
 
+#define SOFT_SHADOWS
 #ifdef SOFT_SHADOWS
 	[unroll(MAX_SHADOW_SAMPLES)]
 	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
 	{
 		// Perhaps change randomness to not be purely random, but algorithm-random?
 		float3 offset = normalize(float3(nextRand(rand_seed), nextRand(rand_seed), nextRand(rand_seed))) - 0.5;
-		offset *= 0.05f;
+		offset *= 0.02f;
 		float3 ray_direction = normalize(light_dir + offset);
 
 		bool shadow = TraceShadowRay(1, wpos, ray_direction, t_max, depth + 1);
@@ -84,3 +71,5 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 	// Return shadow factor
 	return shadow_factor;
 }
+
+#endif //__SHADOW_FUNC__
