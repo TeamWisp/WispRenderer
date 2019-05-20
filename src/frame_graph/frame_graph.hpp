@@ -264,15 +264,12 @@ namespace wr
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
 				WaitForCompletion(i);
-				m_should_execute[i] = false;
 			}
 
 			render_system.WaitForAllPreviousWork();
 
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
-				WaitForCompletion(i);
-
 				m_destroy_funcs[i](*this, i, true);
 
 				if (!m_rt_properties[i].value().m_is_render_window)
@@ -282,11 +279,7 @@ namespace wr
 						static_cast<std::uint32_t>(height * m_rt_properties[i].value().m_resolution_scale.Get()));
 				}
 
-				
 				m_setup_funcs[i](render_system, *this, i, true);
-
-				m_should_execute[i] = true;
-				
 			}
 		}
 
