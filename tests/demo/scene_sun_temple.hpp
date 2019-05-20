@@ -102,7 +102,7 @@ namespace sun_temple_scene
 		directional_light_node = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 0, 1, 0 });
 		directional_light_node->SetDirectional({ 187.5_deg, -190_deg, 0 }, { 438.f / 255.f, 282.f / 255.f, 174.f / 255.f });
 
-		torch_node_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
+		/*torch_node_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f, 176.f / 255.f, 68.f / 255.f });
 		torch_node_1->SetPosition({ 790.0, 397.5, 215.0 });
 		torch_node_1->SetRadius(500.f);
 
@@ -184,7 +184,7 @@ namespace sun_temple_scene
 
 		fire_bowl_node_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 452.f / 255.f * 2.0, 176.f / 255.f * 2.0, 68.f / 255.f * 2.0 });
 		fire_bowl_node_2->SetPosition({ 5.372, 118.7, -3158.8 });
-		fire_bowl_node_2->SetRadius(2000.f);
+		fire_bowl_node_2->SetRadius(2000.f);*/
 	}
 
 	void UpdateScene()
