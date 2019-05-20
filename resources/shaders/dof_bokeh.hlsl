@@ -32,7 +32,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	const uint NUMSAMPLES = NUMDOFSAMPLES * NUMDOFSAMPLES;
 	const float MAXKERNELSIZE = MAXBOKEHSIZE * 0.5f;
-	const float SHAPECURVE = 4.0f;
+	const float SHAPECURVE = 2.0f;
 
 	float4 fgcolor = float4(0, 0, 0, 0);
 	float4 bgcolor = float4(0, 0, 0, 0);
@@ -45,7 +45,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float kernel_radius = MAXKERNELSIZE * far_coc;
 
 		[branch]
-		if (kernel_radius > 0.5f)
+		if (kernel_radius > 0.3f)
 		{
 			[unroll]
 			for (uint i = 0; i < NUMSAMPLES; ++i)
