@@ -269,6 +269,7 @@ namespace wr
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
 		if (m_render_window.has_value())
 		{
+			WaitForAllPreviousWork();
 			d3d12::Resize(m_render_window.value(), m_device, width, height);
 		}
 	}

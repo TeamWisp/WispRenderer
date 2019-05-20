@@ -28,6 +28,14 @@
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
 
+struct WindowResolution
+{
+	uint32_t width = 0;
+	uint32_t height = 0;
+};
+
+WindowResolution curRes;
+
 void RenderEditor(ImTextureID output)
 {
 	engine::RenderEngine(output, render_system.get(), scene_graph.get());
@@ -106,7 +114,11 @@ int WispEntry()
 	startCrashpad();
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
-	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+
+	curRes.width = 1280;
+	curRes.height = 720;
+
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", curRes.width, curRes.height);
 
 	window->SetKeyCallback([](int key, int action, int mods)
 	{
@@ -165,6 +177,11 @@ int WispEntry()
 
 	window->SetResizeCallback([&](std::uint32_t width, std::uint32_t height)
 	{
+		if (curRes.width == width && curRes.height == height)
+		{
+			return;
+		}
+
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
 		SCENE::camera->SetAspectRatio((float)width / (float)height);

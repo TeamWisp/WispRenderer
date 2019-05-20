@@ -5,6 +5,8 @@
 #include "imgui/imgui.hpp"
 #include "imgui/imgui_impl_win32.hpp"
 
+#include <algorithm>
+
 namespace wr
 {
 
@@ -239,6 +241,10 @@ namespace wr
 				{
 					int width = rect.right - rect.left;
 					int height = rect.bottom - rect.top;
+
+					width = max(width, 32);
+					height = max(height, 32);
+
 					m_resize_callback(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
 				}
 			}
