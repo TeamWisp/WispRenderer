@@ -350,7 +350,7 @@ namespace wr
 			BUFFER_REFLECTION,
 			BUFFER_SHADOW,
 			BUFFER_SCREEN_SPACE_IRRADIANCE,
-			BUFFER_SCREEN_SPACE_AO,
+			BUFFER_AO,
 			OUTPUT,
 		};
 
@@ -368,7 +368,7 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SHADOW, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_AO, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_AO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
 		};
 
@@ -477,8 +477,8 @@ namespace wr
 			rs_layout::Entry{(int)FullRaytracingE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::SKYBOX, 1, rs_layout::Type::SRV_RANGE},
-	  rs_layout::Entry{(int)FullRaytracingE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
-	  rs_layout::Entry{(int)FullRaytracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)FullRaytracingE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)FullRaytracingE::FALLBACK_PTRS, 5, rs_layout::Type::SRV_RANGE},
 		};
@@ -518,6 +518,23 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
+		};
+
+		enum class RTAOE
+		{
+			CAMERA_PROPERTIES,
+			ACCELERATION_STRUCTURE,
+			OUTPUT,
+			GBUFFERS,
+			FALLBACK_PTRS
+		};
+
+		constexpr std::array<rs_layout::Entry, 5> rt_ao = {
+			rs_layout::Entry{(int)RTAOE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)RTAOE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)RTAOE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)RTAOE::GBUFFERS, 2, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTAOE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 
 		enum class PathTracingE
@@ -719,6 +736,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle rt_test_global;
 		WISPRENDERER_EXPORT static RegistryHandle mip_mapping;
 		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_global;
+		WISPRENDERER_EXPORT static RegistryHandle rt_ao_global;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracing_global;
 		WISPRENDERER_EXPORT static RegistryHandle cubemap_conversion;
 		WISPRENDERER_EXPORT static RegistryHandle cubemap_convolution;
@@ -750,6 +768,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle deferred_composition_cs;
 		WISPRENDERER_EXPORT static RegistryHandle rt_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_lib;
+		WISPRENDERER_EXPORT static RegistryHandle rt_ao_lib;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_reflection_lib;
@@ -804,6 +823,7 @@ namespace wr
 	{
 		WISPRENDERER_EXPORT static RegistryHandle state_object;
 		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_ao_state_opbject;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracing_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_state_object;

@@ -193,7 +193,7 @@ void HybridRaygenEntry()
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
 	// Get shadow factor
-	float4 shadow_result = DoShadowAllLights(wpos, V, normal, metallic, roughness, albedo, 0, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos + normal * EPSILON, V, normal, metallic, roughness, albedo, 0, rand_seed);
 
 	// Get reflection result
 	float3 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, depth, cone), 0, 100000);
