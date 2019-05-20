@@ -63,9 +63,14 @@ void startCrashpad()
 	// Path to the out-of-process handler executable
 	base::FilePath handler(L"deps/crashpad/out/Release/crashpad_handler.exe");
 	// URL used to submit minidumps to
-	std::string url("https://sentry.io/api/1455776/minidump/?sentry_key=7735122410eb4b6bbaec9f1f6fd43aff");
+	std::string url;
+	url = "https://WispRenderer.bugsplat.com/post/bp/crash/postBP.php";
 	// Optional annotations passed via --annotations to the handler
 	std::map<std::string, std::string> annotations;
+	annotations["format"] = "minidump";			// Crashpad setting to save crash as a minidump
+	annotations["prod"] = "WispRenderer";	    // BugSplat appName
+	annotations["ver"] = "1.2.0";				// BugSplat appVersion
+
 	// Optional arguments to pass to the handler
 	std::vector<std::string> arguments;
 
