@@ -20,6 +20,7 @@ void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
 [shader("anyhit")]
 void ShadowAnyHitEntry(inout ShadowHitInfo hit, MyAttributes attr)
 {
+#ifndef FALLBACK
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
 	const Material material = g_materials[offset.material_idx];
@@ -67,4 +68,7 @@ void ShadowAnyHitEntry(inout ShadowHitInfo hit, MyAttributes attr)
 	{
 		AcceptHitAndEndSearch();
 	}
+#else
+	hit.is_hit = false;
+#endif
 }

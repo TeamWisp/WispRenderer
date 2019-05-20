@@ -39,8 +39,13 @@ namespace wr::d3d12
 
 		// Hitgroup
 		{
-			for (auto def : desc.m_hit_groups)
+			for (auto& def : desc.m_hit_groups)
 			{
+				if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+				{
+					def.m_anyhit = std::nullopt;
+				}
+
 				auto hitGroup = n_desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
 				hitGroup->SetHitGroupExport(def.m_hitgroup.c_str());
 				

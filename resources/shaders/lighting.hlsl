@@ -162,7 +162,7 @@ float DoShadowAllLights(float3 wpos, float3 normal, uint depth, inout float rand
 		}
 
 		// Add shadow factor to final result
-		res += GetShadowFactor(offsetted_pos, L, t_max, depth + 1, rand_seed) * attenuation;
+		res += GetShadowFactor(offsetted_pos, L, t_max, depth, rand_seed) * attenuation;
 
 		sampled_lights++;
 	}

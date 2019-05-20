@@ -106,11 +106,11 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 
 	const float2 sampled_brdf = brdf_lut.SampleLevel(s0, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
 
-	//Lighting
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth);
-
 	//Reflection in reflections
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, payload.cone);
+
+	//Lighting
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth + 1);
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
@@ -130,6 +130,7 @@ void ReflectionMiss(inout ReflectionHitInfo payload)
 [shader("anyhit")]
 void ReflectionAnyHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 {
+#ifndef FALLBACK
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
 	const Material material = g_materials[offset.material_idx];
@@ -177,4 +178,7 @@ void ReflectionAnyHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	{
 		AcceptHitAndEndSearch();
 	}
+#else
+	payload.color = float3(0.0f, 0.0f, 0.0f);
+#endif
 }

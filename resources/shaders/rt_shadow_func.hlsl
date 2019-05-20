@@ -45,7 +45,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 {
 	float shadow_factor = 0.0f;
 
-#define SOFT_SHADOWS
+//#define SOFT_SHADOWS
 #ifdef SOFT_SHADOWS
 	[unroll(MAX_SHADOW_SAMPLES)]
 	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
@@ -64,7 +64,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 
 #else /* ifdef SOFT_SHADOWS */
 
-	bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth + 1);
+	bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth);
 	shadow_factor = !shadow;
 
 #endif
