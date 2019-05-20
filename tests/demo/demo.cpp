@@ -5,6 +5,8 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <ctime>
+#include <iostream>
 
 #include "wisp.hpp"
 #include "demo_frame_graphs.hpp"
@@ -103,6 +105,15 @@ int WispEntry()
 	{
 		engine::debug_console.AddLog(str.c_str());
 	};
+	
+	std::time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	auto local_time = std::localtime(&current_time);
+	
+	std::stringstream ss;
+	ss << "log-" << local_time->tm_mday << "-" << (local_time->tm_mon + 1) << "-" << (local_time->tm_year + 1900);
+	std::string log_file_name("WispDemo.log");
+	util::log_file_handler = new wr::LogfileHandler( std::filesystem::path(ss.str()), log_file_name);
+
 	startCrashpad();
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();

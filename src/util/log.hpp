@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../wisprenderer_export.hpp"
+#include "logfile_handler.hpp"
 
 #define LOG_PRINT_TIME
 //#define LOG_PRINT_THREAD
@@ -42,26 +43,8 @@ namespace util
 		WISPRENDERER_EXPORT static std::function<void(std::string const &)> impl;
 	};
 
-	class FileWrapper {
-	public:
-		FileWrapper() {
-			std::filesystem::path path("./logs/");
-			if (!std::filesystem::exists(path))
-			{
-				std::filesystem::create_directory(path);
-			}
-			std::time_t current_time = std::time(0);
-			std::tm* local_time = std::localtime(&current_time);
-			std::stringstream ss;
-			ss << "log-" << local_time->tm_hour << local_time->tm_min << "_" << local_time->tm_mday << "-" << (local_time->tm_mon + 1) << "-" << (local_time->tm_year + 1900);
-			path /= ss.str();
-			std::filesystem::create_directory(path);
-			path /= "WispToMaya.log";
-			m_file = fopen(path.string().c_str(),"w");
-			
-		};
-		std::FILE* m_file;
-	};
+	static wr::LogfileHandler* log_file_handler;
+
 };
 #endif
 
@@ -117,10 +100,11 @@ namespace util::internal
 		#if defined(LOG_PRINT_TO_OUTPUT) && defined(_WIN32)
 			OutputDebugStringA(str.c_str());
 		#endif
-		static util::FileWrapper file_w;
-		fmt::print(file_w.m_file, str, args...);
-		fflush(file_w.file);
-
+		if (log_file_handler != nullptr)
+		{
+			fmt::print(log_file_handler->GetFilePtr(), str, args...);
+			fflush(log_file_handler->GetFilePtr());
+		}
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 		if (color != 0)
 		{
