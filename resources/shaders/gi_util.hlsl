@@ -124,13 +124,28 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 	// Diffuse lobe
 	if (choose_diffuse)
 	{
+		float3 color = (albedo / diffuse_probability) * ao;
+
+#ifdef RUSSIAN_ROULETTE
+		// ############## RUSSIAN ROULETTE ###############
+		// Russian Roulette
+		// Randomly terminate a path with a probability inversely equal to the throughput
+		float p = max(color.x, max(color.y, color.z));
+		// Add the energy we 'lose' by randomly terminating paths
+		color *= 1 / p;
+		if (nextRand(seed) > p) {
+			return 0;
+		}
+#endif
+
+		// ##### BOUNCE #####
 		nextRand(seed);
 		const float3 rand_dir = getUniformHemisphereSample(seed, N);
 		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
-
 		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
 
-		return ((irradiance * albedo) / diffuse_probability) * ao;
+
+		return irradiance * color;
 	}
 	else
 	{
@@ -139,9 +154,6 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 
 		// ### BRDF ###
 		float3 L = normalize(2.f * dot(V, H) * H - V);
-
-		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), L, depth, seed);
-		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
 
 		// Compute some dot products needed for shading
 		float NdotV = saturate(dot(N, V));
@@ -159,6 +171,24 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		float3 spec = (D * F * G) / ((4.0 * NdotL * NdotV + 0.001f));
 		float  ggx_probability = D * NdotH / (4 * LdotH);
 
-		return (NdotL * irradiance * spec / (ggx_probability * (1.0f - diffuse_probability)));
+		float3 color = (NdotL * spec / (ggx_probability * (1.0f - diffuse_probability)));
+
+#ifdef RUSSIAN_ROULETTE
+		// ############## RUSSIAN ROULETTE ###############
+		// Russian Roulette
+		// Randomly terminate a path with a probability inversely equal to the throughput
+		float p = max(color.x, max(color.y, color.z));
+		// Add the energy we 'lose' by randomly terminating paths
+		color *= 1 / p;
+		if (nextRand(seed) > p) {
+			return 0;
+		}
+#endif
+
+		// #### BOUNCE ####
+		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), L, depth, seed);
+		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
+
+		return color * irradiance;
 	}
 }

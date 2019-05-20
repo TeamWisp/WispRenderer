@@ -29,9 +29,12 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<BloomHData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-
-			data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_allocation = data.out_allocator->Allocate(2);
+			
+			if (!resize)
+			{
+				data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+				data.out_allocation = data.out_allocator->Allocate(2);
+			}
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::bloom_h))->m_native;
@@ -97,6 +100,18 @@ namespace wr
 				1);
 		}
 
+		inline void DestroyBloomHorizontalTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			if (!resize)
+			{
+				auto& data = fg.GetData<BloomHData>(handle);
+
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_allocation);
+				delete data.out_allocator;
+			}
+		}
+
 	} /* internal */
 
 	template<typename T>
@@ -129,6 +144,7 @@ namespace wr
 			internal::ExecuteBloomHorizontalTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyBloomHorizontalTask(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
