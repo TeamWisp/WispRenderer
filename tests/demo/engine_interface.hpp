@@ -18,7 +18,7 @@ namespace engine
 	static bool open0 = true;
 	static bool open_viewport = true;
 	static bool open1 = true;
-	static bool rtao_settings_open = false;
+	static bool rtao_settings_open = true;
 	static bool open_console = false;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
@@ -173,10 +173,6 @@ namespace engine
 		if (rtao_settings_open)
 		{
 			ImGui::Begin("RTAO Settings", &rtao_settings_open);
-			float bias;
-			float radius;
-			float power;
-			unsigned int sample_count;
 			ImGui::DragFloat("Bias", &wr::rtaoSettings::bias, 0.01f, 0.0f, 100.f);
 			ImGui::DragFloat("Radius", &wr::rtaoSettings::radius, 0.1f, 0.0f, 1000.f);
 			ImGui::DragFloat("Power", &wr::rtaoSettings::power, 0.1f, 0.0f, 10.f);
