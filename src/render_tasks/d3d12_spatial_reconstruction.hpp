@@ -52,7 +52,6 @@ namespace wr
 		inline void ExecuteSpatialReconstructionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<SpatialReconstructionData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
@@ -91,29 +90,29 @@ namespace wr
 			cam_data.view = camera->m_view;
 			n_render_system.m_camera_pool->Update(data.camera_cb, sizeof(temp::SpatialReconstructionCameraData), 0, frame_idx, (std::uint8_t*)&cam_data);
 
-			d3d12::BindComputeConstantBuffer(cmd_list, data.camera_cb->m_native, 1, frame_idx);
+			d3d12::BindComputeConstantBuffer(cmd_list, data.camera_cb->m_native, 0, frame_idx);
 
 			{
 				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::OUTPUT);
 				auto handle_uav = data.allocation.GetDescriptorHandle(dest_idx);
-				d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
+				d3d12::SetShaderUAV(cmd_list, 1, dest_idx, handle_uav);
 			}
 
 			{
 				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::REFLECTION_BUFFER);
 				auto handle_srv = data.allocation.GetDescriptorHandle(dest_idx);
-				d3d12::SetShaderSRV(cmd_list, 0, dest_idx, handle_srv);
+				d3d12::SetShaderSRV(cmd_list, 1, dest_idx, handle_srv, 2);
 			}
 
 			{
 				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::GBUFFERS);
 				auto handle_srv = data.allocation.GetDescriptorHandle(dest_idx);
-				d3d12::SetShaderSRV(cmd_list, 0, dest_idx, handle_srv);
+				d3d12::SetShaderSRV(cmd_list, 1, dest_idx, handle_srv, 3);
 			}
 
 			d3d12::Dispatch(cmd_list,
-				uint32_t(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
-				uint32_t(std::ceil(n_render_system.m_viewport.m_viewport.Height / 16.f)),
+				uint32_t(std::ceil(viewport.m_viewport.Width / 16.f)),
+				uint32_t(std::ceil(viewport.m_viewport.Height / 16.f)),
 				1);
 		}
 
@@ -150,7 +149,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<SpatialReconstructionData>(desc, FG_DEPS(2, DeferredMainTaskData, RTHybridData));
+		frame_graph.AddTask<SpatialReconstructionData>(desc, fg_dep<DeferredMainTaskData, RTHybridData>());
 	}
 
 } /* wr */

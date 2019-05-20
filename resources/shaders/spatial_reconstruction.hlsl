@@ -1,6 +1,13 @@
 #include "util.hlsl"
 #include "pbr_util.hlsl"
 
+cbuffer CameraProperties : register(b0)
+{
+	float4x4 inv_projection;
+	float4x4 inv_view;
+	float4x4 view;
+};
+
 RWTexture2D<float4> filtered : register(u0);
 Texture2D reflection_pdf : register(t0);
 Texture2D dir_hitT : register(t1);
@@ -8,13 +15,6 @@ Texture2D albedo_roughness : register(t2);
 Texture2D normal_metallic : register(t3);
 Texture2D depth_buffer : register(t4);
 SamplerState nearest_sampler  : register(s0);
-
-cbuffer CameraProperties : register(b0)
-{
-	float4x4 inv_projection;
-	float4x4 inv_view;
-	float4x4 view;
-};
 
 float brdf_weight(float3 V, float3 L, float3 N, float roughness)
 {
