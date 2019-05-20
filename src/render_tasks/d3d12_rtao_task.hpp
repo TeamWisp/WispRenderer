@@ -211,6 +211,7 @@ namespace wr
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTAO_CBData cb_data;
 				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
+				cb_data.m_inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
 				cb_data.bias = rtaoSettings::bias;
 				cb_data.radius = rtaoSettings::radius;
 				cb_data.power = rtaoSettings::power;

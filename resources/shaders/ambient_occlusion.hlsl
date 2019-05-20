@@ -14,6 +14,7 @@ struct AOHitInfo
 cbuffer CBData : register(b0)
 {
 	float4x4 inv_vp;
+	float4x4 inv_view;
 
 	float bias;
 	float radius;
@@ -45,7 +46,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH,// RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -73,23 +74,28 @@ void AORaygenEntry()
 	float depth = gbuffer_depth[screen_co].x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 
+
+	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float cam_distance = length(wpos-camera_pos);
+
     float ao_value = 1.0f;
     for(uint i = 0; i< sample_count; i++)
     {
-        ao_value -= (1.0f/float(sample_count)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), radius, 0);
+        ao_value -= (1.0f/float(sample_count)) * TraceAORay(0, wpos + normal * (cam_distance * bias), getCosHemisphereSample(rand_seed, normal), radius, 0);
     }
-
+	
     output[DispatchRaysIndex().xy].x = ao_value / power;
+	//output[DispatchRaysIndex().xy].x = cam_distance;
 }
 
 [shader("closesthit")]
 void ClosestHitEntry(inout AOHitInfo hit, Attributes bary)
 {
-    hit.is_hit = true;
+    hit.is_hit = 1.f;
 }
 
 [shader("miss")]
 void MissEntry(inout AOHitInfo hit : SV_RayPayload)
 {
-    hit.is_hit = false;
+    hit.is_hit = 0.0f;
 }
