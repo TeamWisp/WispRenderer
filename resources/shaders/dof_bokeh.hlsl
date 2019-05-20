@@ -37,7 +37,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float4 fgcolor = float4(0, 0, 0, 0);
 	float4 bgcolor = float4(0, 0, 0, 0);
 
-	//BakingLab kernel gather method credits to MJP and David Neubelt.
+	//Kernel gather method credits to MJP and David Neubelt.
 	if (enable_dof > 0)
 	{
 		float far_coc = source_far.SampleLevel(s1, uv, 0).w;
