@@ -247,7 +247,7 @@ namespace wr
 					int height = rect.bottom - rect.top;
 
 					bool has_changed = width != m_window_width || height != m_window_height;
-					bool is_valid_size = width > 0 && height > 0;
+					bool is_valid_size = width > 16 && height > 16;
 
 					if (has_changed && is_valid_size)
 					{
