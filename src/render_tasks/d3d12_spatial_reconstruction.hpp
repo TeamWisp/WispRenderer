@@ -14,7 +14,11 @@ namespace wr
 		d3d12::PipelineState* pipeline;
 		D3D12ConstantBufferHandle* camera_cb;
 		DescriptorAllocator* allocator;
-		DescriptorAllocation allocation;
+		DescriptorAllocation output;
+		DescriptorAllocation reflection_buffer;
+		DescriptorAllocation gbuffer_normal;
+		DescriptorAllocation gbuffer_roughness;
+		DescriptorAllocation gbuffer_depth;
 	};
 
 	namespace temp {
@@ -32,14 +36,20 @@ namespace wr
 
 		inline void SetupSpatialReconstructionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& data = fg.GetData<SpatialReconstructionData>(handle);
+			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
+			auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<RTHybridData>());
+			auto gbuffer_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
+
 			if (!resize)
 			{
-				auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-				auto& data = fg.GetData<SpatialReconstructionData>(handle);
-				auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-
 				data.allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-				data.allocation = data.allocator->Allocate(6);
+				data.output = data.allocator->Allocate();
+				data.reflection_buffer = data.allocator->Allocate(2);
+				data.gbuffer_normal = data.allocator->Allocate(d3d12::settings::num_back_buffers);
+				data.gbuffer_roughness = data.allocator->Allocate(d3d12::settings::num_back_buffers);
+				data.gbuffer_depth = data.allocator->Allocate();
 
 				auto& ps_registry = PipelineRegistry::Get();
 				data.pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::spatial_reconstruction))->m_native;
@@ -47,38 +57,51 @@ namespace wr
 				data.camera_cb = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_camera_pool->Create(sizeof(temp::SpatialReconstructionCameraData)));
 			}
 
+			// Deferred data
+
+			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
+			{
+				auto albedo_handle = data.gbuffer_roughness.GetDescriptorHandle(i);
+				auto normal_handle = data.gbuffer_normal.GetDescriptorHandle(i);
+
+				d3d12::CreateSRVFromSpecificRTV(gbuffer_rt, albedo_handle, 0, gbuffer_rt->m_create_info.m_rtv_formats[0]);
+				d3d12::CreateSRVFromSpecificRTV(gbuffer_rt, normal_handle, 1, gbuffer_rt->m_create_info.m_rtv_formats[1]);
+
+			}
+
+			d3d12::CreateSRVFromDSV(gbuffer_rt, 
+				data.gbuffer_depth.GetDescriptorHandle());
+
+
+			// Filtered output
+			{
+				auto cpu_handle = data.output.GetDescriptorHandle();
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+			}
+
+			// Reflection buffer input
+			{
+				auto cpu_handle = data.reflection_buffer.GetDescriptorHandle();
+				d3d12::CreateSRVFromSpecificRTV(hybrid_rt, cpu_handle, 0, hybrid_rt->m_create_info.m_rtv_formats[0]);
+
+				cpu_handle = data.reflection_buffer.GetDescriptorHandle(1);
+				d3d12::CreateSRVFromSpecificRTV(hybrid_rt, cpu_handle, 2, hybrid_rt->m_create_info.m_rtv_formats[2]);
+			}
+
 		}
 
 		inline void ExecuteSpatialReconstructionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& n_device = n_render_system.m_device->m_native;
 			auto& data = fg.GetData<SpatialReconstructionData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			const auto viewport = n_render_system.m_viewport;
 
-			auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<RTHybridData>());
-			auto gbuffer_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-
-			// Filtered output
-			{
-				auto cpu_handle = data.allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::OUTPUT)));
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-			}
-			// Reflection buffer input
-			{
-				auto cpu_handle = data.allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::REFLECTION_BUFFER)));
-				d3d12::CreateSRVFromSpecificRTV(hybrid_rt, cpu_handle, 0, hybrid_rt->m_create_info.m_rtv_formats[0]);
-				d3d12::CreateSRVFromSpecificRTV(hybrid_rt, cpu_handle, 2, hybrid_rt->m_create_info.m_rtv_formats[2]);
-			}
-			// G-Buffer input
-			{
-				auto cpu_handle = data.allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::GBUFFERS)));
-				d3d12::CreateSRVFromSpecificRTV(gbuffer_rt, cpu_handle, 0, gbuffer_rt->m_create_info.m_rtv_formats[0]);
-				d3d12::CreateSRVFromSpecificRTV(gbuffer_rt, cpu_handle, 1, gbuffer_rt->m_create_info.m_rtv_formats[1]);
-				d3d12::CreateSRVFromDSV(gbuffer_rt, cpu_handle);
-			}
+			fg.WaitForPredecessorTask<DeferredMainTaskData>();
+			fg.WaitForPredecessorTask<RTHybridData>();
 
 			d3d12::BindComputePipeline(cmd_list, data.pipeline);
 
@@ -90,24 +113,33 @@ namespace wr
 			cam_data.view = camera->m_view;
 			n_render_system.m_camera_pool->Update(data.camera_cb, sizeof(temp::SpatialReconstructionCameraData), 0, frame_idx, (std::uint8_t*)&cam_data);
 
-			d3d12::BindComputeConstantBuffer(cmd_list, data.camera_cb->m_native, 0, frame_idx);
+			d3d12::BindComputeConstantBuffer(cmd_list, data.camera_cb->m_native, 1, frame_idx);
 
 			{
 				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::OUTPUT);
-				auto handle_uav = data.allocation.GetDescriptorHandle(dest_idx);
-				d3d12::SetShaderUAV(cmd_list, 1, dest_idx, handle_uav);
+				auto handle_uav = data.output.GetDescriptorHandle();
+				d3d12::SetShaderUAV(cmd_list, 0, dest_idx, handle_uav);
 			}
 
 			{
 				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::REFLECTION_BUFFER);
-				auto handle_srv = data.allocation.GetDescriptorHandle(dest_idx);
-				d3d12::SetShaderSRV(cmd_list, 1, dest_idx, handle_srv, 2);
+				auto handle_srv = data.reflection_buffer.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, dest_idx, handle_srv);
+				handle_srv = data.reflection_buffer.GetDescriptorHandle(1);
+				d3d12::SetShaderSRV(cmd_list, 0, dest_idx + 1, handle_srv);
 			}
 
 			{
-				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::GBUFFERS);
-				auto handle_srv = data.allocation.GetDescriptorHandle(dest_idx);
-				d3d12::SetShaderSRV(cmd_list, 1, dest_idx, handle_srv, 3);
+				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::spatial_reconstruction, params::SpatialReconstructionE::GBUFFERS); 
+
+				d3d12::DescHeapCPUHandle albedo_handle = data.gbuffer_roughness.GetDescriptorHandle(frame_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, dest_idx, albedo_handle);
+				
+				d3d12::DescHeapCPUHandle normal_handle = data.gbuffer_normal.GetDescriptorHandle(frame_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, dest_idx + 1, normal_handle);
+				
+				d3d12::DescHeapCPUHandle depth_handle = data.gbuffer_depth.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, dest_idx + 2, depth_handle);
 			}
 
 			d3d12::Dispatch(cmd_list,

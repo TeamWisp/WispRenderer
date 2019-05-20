@@ -105,7 +105,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	{
 		//Get sample related data
 
-		const float2 neighbor_uv = sample_neighbor_uv(i, pix.xy, uint2(width, height));
+		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height));
 
 		float4 hit_pos = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
 		hit_pos = float4(hit_pos.xyz * hit_pos.w + pos, 1);
@@ -124,6 +124,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 	//Output averaged result
 
-	filtered[pix.xy] = float4(result / weightSum, 1);
+	float3 result3 = result / weightSum;
+	filtered[pix] = float4(result3, 1);
 
 }

@@ -887,8 +887,8 @@ namespace wr
 
 	REGISTER(root_signatures::spatial_reconstruction, RootSignatureRegistry)({
 		RootSignatureDescription::Parameters({
-			ROOT_PARAM(GetCBV(params::spatial_reconstruction, params::SpatialReconstructionE::CAMERA_PROPERTIES)),
-			ROOT_PARAM_DESC_TABLE(spatial_reconstruction_r, D3D12_SHADER_VISIBILITY_ALL)
+			ROOT_PARAM_DESC_TABLE(spatial_reconstruction_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::spatial_reconstruction, params::SpatialReconstructionE::CAMERA_PROPERTIES))
 		}),
 		RootSignatureDescription::Samplers({
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
