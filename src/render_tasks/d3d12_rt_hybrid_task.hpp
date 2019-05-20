@@ -139,7 +139,7 @@ namespace wr
 			}
 		}
 
-		inline void SetupRTHybridTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
+		inline void SetupRTHybridTask(RenderSystem& render_system, FrameGraph& fg, RenderTaskHandle& handle, bool resize)
 		{
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
@@ -175,16 +175,16 @@ namespace wr
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
 				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
-			}
 
-			// Create Shader Tables
-			for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
-			{
-				CreateShaderTables(device, data, "HybridRaygenEntry", i);
-			}
+				// Create Shader Tables
+				for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
+				{
+					CreateShaderTables(device, data, "HybridRaygenEntry", i);
+				}
 
-			// Setup frame index
-			data.frame_idx = 0;
+				// Setup frame index
+				data.frame_idx = 0;
+			}
 		}
 
 		inline void Render(D3D12RenderSystem& n_render_system, FrameGraph& fg, SceneGraph& scene_graph, RTHybridData& data, d3d12::CommandList* cmd_list, RenderTaskHandle& handle, std::string raygen_entry)

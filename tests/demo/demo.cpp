@@ -113,6 +113,7 @@ int WispEntry()
 	startCrashpad();
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
+
 	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
 
 	window->SetKeyCallback([](int key, int action, int mods)
