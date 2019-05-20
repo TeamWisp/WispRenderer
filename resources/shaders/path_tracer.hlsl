@@ -124,17 +124,19 @@ void RaygenEntry()
 	float3 result = float3(0, 0, 0);
 
 	nextRand(rand_seed);
-	const float3 rand_dir = getUniformHemisphereSample(rand_seed, normal);
+	const float3 rand_dir = getCosHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	//result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
-	result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
-	result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
-	result += emissive;
+	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
+	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
+	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result += emissive;
 
 	if (any(isnan(result)))
 	{
 		result = 0;
 	}
+
+	result = clamp(result, 0, 100);
 	
 	output[DispatchRaysIndex().xy] = float4(result, 1);
 }
