@@ -290,6 +290,10 @@ namespace wr::imgui::window
 					light.ang = light.ang / 180.f * 3.1415926535f;
 				}
 
+				static float light_size_temp = 0.0f;
+				ImGui::DragFloat("Light Size", &light_size_temp, 0.1f, 0.0f, 10.0f);
+				light.light_size = light_size_temp * 0.01f; //Map it back to small values that the shader can digest
+
 				if (ImGui::Button("Take Camera Transform"))
 				{
 					light_node->SetPosition(scene_graph->GetActiveCamera()->m_position);

@@ -27,6 +27,8 @@ namespace wr
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_anyhit_shader_table = { nullptr, nullptr, nullptr };
+
 
 		// Pipeline objects
 		d3d12::StateObject* out_state_object = nullptr;
@@ -63,6 +65,10 @@ namespace wr
 			if (data.out_raygen_shader_table[frame_idx])
 			{
 				d3d12::Destroy(data.out_raygen_shader_table[frame_idx]);
+			}
+			if (data.out_anyhit_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_anyhit_shader_table[frame_idx]);
 			}
 
 			// Set up Raygen Shader Table

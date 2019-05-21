@@ -1,3 +1,6 @@
+#ifndef __PBR_UTILS_HLSL__
+#define __PBR_UTILS_HLSL__
+
 static const float PI = 3.14159265359;
  
 // Based omn http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
@@ -164,3 +167,5 @@ float2 SampleSphericalMap(float3 v)
 	uv += 0.5f;
 	return uv;
 }
+
+#endif __PBR_UTILS_HLSL__

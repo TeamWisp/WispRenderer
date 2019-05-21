@@ -1,3 +1,6 @@
+#ifndef __MATERIAL_UTIL_HLSL__
+#define __MATERIAL_UTIL_HLSL__
+
 #define MATERIAL_HAS_ALBEDO_TEXTURE 1<<0
 #define MATERIAL_HAS_NORMAL_TEXTURE 1<<1
 #define MATERIAL_HAS_ROUGHNESS_TEXTURE 1<<2
@@ -133,3 +136,5 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 
 	return output;
 }
+
+#endif //__MATERIAL_UTIL_HLSL__ 

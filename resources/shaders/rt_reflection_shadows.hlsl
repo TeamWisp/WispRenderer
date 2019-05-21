@@ -1,39 +1,14 @@
+#ifndef __RT_REFLECTION_SHADOWS_HLSL__
+#define __RT_REFLECTION_SHADOWS_HLSL__
+
 #define LIGHTS_REGISTER register(t2)
 #include "util.hlsl"
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
 #include "rt_texture_lod.hlsl"
-
-struct Vertex
-{
-	float3 pos;
-	float2 uv;
-	float3 normal;
-	float3 tangent;
-	float3 bitangent;
-	float3 color;
-};
-
-struct Material
-{
-	uint albedo_id;
-	uint normal_id;
-	uint roughness_id;
-	uint metalicness_id;
-	uint emissive_id;
-	uint ao_id;
-	float2 padding;
-
-	MaterialData data;
-};
-
-struct Offset
-{
-    uint material_idx;
-    uint idx_offset;
-    uint vertex_offset;
-};
+#include "rt_structs.hlsl"
+#include "rt_functions.hlsl"
 
 RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
 ByteAddressBuffer g_indices : register(t1);
@@ -52,14 +27,8 @@ SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 
-struct ReflectionHitInfo
-{
-	float3 origin;
-	float3 color;
-	unsigned int seed;
-	unsigned int depth;
-	RayCone cone;
-};
+#include "rt_reflections_functions.hlsl"
+#include "rt_shadows_functions.hlsl"
 
 cbuffer CameraProperties : register(b0)
 {
@@ -71,77 +40,6 @@ cbuffer CameraProperties : register(b0)
 	float frame_idx;
 	float intensity;
 };
-
-struct Ray
-{
-	float3 origin;
-	float3 direction;
-};
-
-uint3 Load3x32BitIndices(uint offsetBytes)
-{
-	// Load first 2 indices
-	return g_indices.Load3(offsetBytes);
-}
-
-// Retrieve hit world position.
-float3 HitWorldPosition()
-{
-	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
-}
-
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone)
-{
-
-	if (depth >= MAX_RECURSION)
-	{
-		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0).rgb;
-	}
-
-	origin += norm * EPSILON;
-
-	ReflectionHitInfo payload = {origin, float3(0,0,1), rand_seed, depth, cone};
-
-	// Define a ray, consisting of origin, direction, and the min-max distance values
-	RayDesc ray;
-	ray.Origin = origin;
-	ray.Direction = direction;
-	ray.TMin = 0;
-	ray.TMax = 10000.0;
-
-	// Trace the ray
-	TraceRay(
-		Scene,
-		RAY_FLAG_NONE,
-		//RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH
-		//RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
-		0xFF, // InstanceInclusionMask
-		0, // RayContributionToHitGroupIndex
-		1, // MultiplierForGeometryContributionToHitGroupIndex
-		0, // miss shader index
-		ray,
-		payload);
-
-	return payload.color;
-}
-
-float3 unpack_position(float2 uv, float depth)
-{
-	// Get world space position
-	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-	float4 wpos = mul(inv_vp, ndc);
-	return (wpos.xyz / wpos.w).xyz;
-}
-
-float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint depth, RayCone cone)
-{
-	// Calculate ray info
-	float3 reflected = normalize(reflect(-V, normal));
-
-	// Shoot reflection ray
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, depth, cone);
-	return reflection;
-}
 
 #define M_PI 3.14159265358979
 
@@ -162,7 +60,7 @@ void HybridRaygenEntry()
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth.SampleLevel(s0, uv, 0).x;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
 	float3 normal = normalize(normal_metallic.xyz);
@@ -219,7 +117,7 @@ void ShadowRaygenEntry()
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
 	float3 normal = normal_metallic.xyz;
 
 	// Do lighting
@@ -259,7 +157,7 @@ void ReflectionRaygenEntry()
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
 	float3 normal = normal_metallic.xyz;
@@ -295,19 +193,6 @@ void ReflectionRaygenEntry()
 }
 
 //Reflections
-
-float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
-{
-	float3 vertexAttribute[3];
-	vertexAttribute[0] = a;
-	vertexAttribute[1] = b;
-	vertexAttribute[2] = c;
-
-	return vertexAttribute[0] +
-		attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
-		attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
-}
-
 [shader("closesthit")]
 void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 {
@@ -327,7 +212,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
 	base_idx += index_offset * 4; // offset the start
 
-	uint3 indices = Load3x32BitIndices(base_idx);
+	uint3 indices = Load3x32BitIndices(g_indices, base_idx);
 	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
 
 	// Gather triangle vertices
@@ -432,3 +317,129 @@ void ReflectionMiss(inout ReflectionHitInfo payload)
 {
 	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
 }
+
+[shader("anyhit")]
+void ReflectionAnyHit(inout ReflectionHitInfo payload, in MyAttributes attr)
+{
+#ifndef FALLBACK
+	// Calculate the essentials
+	const Offset offset = g_offsets[InstanceID()];
+	const Material material = g_materials[offset.material_idx];
+	const float index_offset = offset.idx_offset;
+	const float vertex_offset = offset.vertex_offset;
+
+	// Find first index location
+	const uint index_size = 4;
+	const uint indices_per_triangle = 3;
+	const uint triangle_idx_stride = indices_per_triangle * index_size;
+
+	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+	base_idx += index_offset * 4; // offset the start
+
+	uint3 indices = Load3x32BitIndices(g_indices, base_idx);
+	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
+
+	// Gather triangle vertices
+	const Vertex v0 = g_vertices[indices.x];
+	const Vertex v1 = g_vertices[indices.y];
+	const Vertex v2 = g_vertices[indices.z];
+
+	//Get data from VBO
+	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
+	uv.y = 1.0f - uv.y;
+
+	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
+		g_textures[material.albedo_id],
+		g_textures[material.normal_id],
+		g_textures[material.roughness_id],
+		g_textures[material.metalicness_id],
+		g_textures[material.emissive_id],
+		g_textures[material.ao_id],
+		0,
+		s0,
+		uv);
+
+	float alpha = output_data.alpha;
+
+	if (alpha < 0.5f)
+	{
+		IgnoreHit();
+	}
+	else
+	{
+		AcceptHitAndEndSearch();
+	}
+#else
+	payload.color = float3(0.0f, 0.0f, 0.0f);
+#endif
+}
+
+//Shadows
+[shader("closesthit")]
+void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
+{
+	hit.is_hit = true;
+}
+
+[shader("miss")]
+void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
+{
+	hit.is_hit = false;
+}
+
+[shader("anyhit")]
+void ShadowAnyHitEntry(inout ShadowHitInfo hit, MyAttributes attr)
+{
+#ifndef FALLBACK
+	// Calculate the essentials
+	const Offset offset = g_offsets[InstanceID()];
+	const Material material = g_materials[offset.material_idx];
+	const float index_offset = offset.idx_offset;
+	const float vertex_offset = offset.vertex_offset;
+
+	// Find first index location
+	const uint index_size = 4;
+	const uint indices_per_triangle = 3;
+	const uint triangle_idx_stride = indices_per_triangle * index_size;
+
+	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+	base_idx += index_offset * 4; // offset the start
+
+	uint3 indices = Load3x32BitIndices(g_indices, base_idx);
+	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
+
+	// Gather triangle vertices
+	const Vertex v0 = g_vertices[indices.x];
+	const Vertex v1 = g_vertices[indices.y];
+	const Vertex v2 = g_vertices[indices.z];
+
+	//Get data from VBO
+	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
+	uv.y = 1.0f - uv.y;
+
+	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
+		g_textures[material.albedo_id],
+		g_textures[material.normal_id],
+		g_textures[material.roughness_id],
+		g_textures[material.metalicness_id],
+		g_textures[material.emissive_id],
+		g_textures[material.ao_id],
+		0,
+		s0,
+		uv);
+
+	float alpha = output_data.alpha;
+
+	if (alpha < 0.5f)
+	{
+		IgnoreHit();
+	}
+	else
+	{
+		AcceptHitAndEndSearch();
+	}
+#else
+	hit.is_hit = false;
+#endif
+}
+#endif __RT_REFLECTION_SHADOWS_HLSL__
