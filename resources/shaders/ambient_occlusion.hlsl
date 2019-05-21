@@ -4,6 +4,7 @@
 RWTexture2D<float4> output : register(u0); // x: AO value
 Texture2D gbuffer_normal : register(t1);
 Texture2D gbuffer_depth : register(t2);
+Texture2D gbuffer_position: register(t3);
 
 struct AOHitInfo
 {
@@ -19,7 +20,10 @@ cbuffer CBData : register(b0)
 	float bias;
 	float radius;
 	float power;
+	float max_distance;
 	unsigned int sample_count;
+
+	float3 padding;
 };
 
 struct Attributes { };
@@ -71,21 +75,27 @@ void AORaygenEntry()
 
     float3 normal = gbuffer_normal[screen_co].xyz;
 
-	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
-
+	float3 wpos = gbuffer_position[screen_co].xyz;
 
 	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float cam_distance = length(wpos-camera_pos);
+	if(cam_distance < max_distance)
+	{
 
-    float ao_value = 1.0f;
-    for(uint i = 0; i< sample_count; i++)
-    {
-        ao_value -= (1.0f/float(sample_count)) * TraceAORay(0, wpos + normal * (cam_distance * bias), getCosHemisphereSample(rand_seed, normal), radius, 0);
-    }
-	
-    output[DispatchRaysIndex().xy].x = ao_value / power;
-	//output[DispatchRaysIndex().xy].x = cam_distance;
+		int spp = min(sample_count,sample_count * (max_distance - cam_distance)/max_distance );
+		float ao_value = 1.0f;
+		for(uint i = 0; i< spp; i++)
+		{
+			ao_value -= (1.0f/float(sample_count)) * TraceAORay(0, wpos + normal * bias, getCosHemisphereSample(rand_seed, normal), radius, 0);
+		}
+		
+		output[DispatchRaysIndex().xy].x = ao_value / power;
+	}
+	else
+	{
+		output[DispatchRaysIndex().xy].x = 1.f;
+	}
+
 }
 
 [shader("closesthit")]

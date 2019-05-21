@@ -59,7 +59,10 @@ namespace wr
 			float bias;
 			float radius;
 			float power;
+			float max_distance;
 			unsigned int sample_count;
+
+			float padding[3];
 		};
 
 		struct RayTracingCamera_CBData

@@ -480,7 +480,7 @@ namespace wr
 			rs_layout::Entry{(int)RTAOE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)RTAOE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)RTAOE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
-			rs_layout::Entry{(int)RTAOE::GBUFFERS, 2, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTAOE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTAOE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
 

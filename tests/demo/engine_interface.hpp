@@ -162,6 +162,21 @@ namespace engine
 				ImGui::End();
 			}
 
+			if (rtao_settings_open)
+			{
+				ImGui::Begin("RTAO Settings", &rtao_settings_open);
+
+				ImGui::DragFloat("Bias", &rtao_user_settings.m_runtime.bias, 0.01f, 0.0f, 100.f);
+				ImGui::DragFloat("Radius", &rtao_user_settings.m_runtime.radius, 0.1f, 0.0f, 1000.f);
+				ImGui::DragFloat("Power", &rtao_user_settings.m_runtime.power, 0.1f, 0.0f, 10.f);
+				ImGui::DragFloat("Max Distance", &rtao_user_settings.m_runtime.max_distance, 1.f, 0.f, 10000.f);
+				ImGui::DragInt("SPP", &rtao_user_settings.m_runtime.sample_count, 1, 0, 1073741824);
+
+				ImGui::End();
+			
+				fg_manager::Get()->UpdateSettings<wr::RTAOData>(rtao_user_settings);
+			}
+
 			stats_window.Draw(*render_system, viewport_pos);
 			wr::imgui::window::SceneGraphEditor(sg);
 			wr::imgui::window::Inspector(sg, viewport_pos, viewport_size);
@@ -172,19 +187,6 @@ namespace engine
 			wr::imgui::window::D3D12Settings();
 		}
 
-		if (rtao_settings_open)
-		{
-			ImGui::Begin("RTAO Settings", &rtao_settings_open);
-
-			ImGui::DragFloat("Bias", &rtao_user_settings.m_runtime.bias, 0.01f, 0.0f, 100.f);
-			ImGui::DragFloat("Radius", &rtao_user_settings.m_runtime.radius, 0.1f, 0.0f, 1000.f);
-			ImGui::DragFloat("Power", &rtao_user_settings.m_runtime.power, 0.1f, 0.0f, 10.f);
-			ImGui::DragInt("SPP", &rtao_user_settings.m_runtime.sample_count, 1, 0, 1073741824);
-
-			ImGui::End();
-			
-			fg_manager::Get()->UpdateSettings<wr::RTAOData>(rtao_user_settings);
-		}
 	}
 	
 }

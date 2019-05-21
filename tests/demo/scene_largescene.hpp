@@ -20,6 +20,8 @@ namespace large_scene
 		static std::shared_ptr<wr::MaterialPool> material_pool;
 
 		static wr::Model* suntemple_model;
+		static wr::Model* room_model;
+		static wr::Model* sponza_model;
 
 		static wr::TextureHandle equirectangular_environment_map;
 
@@ -34,6 +36,9 @@ namespace large_scene
 
 			{
 				suntemple_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple/SunTemple.fbx");
+				room_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/room_test.fbx");
+				sponza_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sponza.obj");
+
 			}
 		}
 
@@ -63,7 +68,7 @@ namespace large_scene
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
-		scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::suntemple_model);
+		scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sponza_model);
 	}
 
 	void UpdateScene()
