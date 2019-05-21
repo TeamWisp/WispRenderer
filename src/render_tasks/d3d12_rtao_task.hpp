@@ -21,8 +21,9 @@ namespace wr
 		struct Runtime
 		{
 			float bias = 0.01f;
-			float radius = 1.f;
+			float radius = 55.f;
 			float power = 1.f;
+			float max_distance = 100.f;
 			int sample_count = 8;
 		};
 
@@ -128,7 +129,7 @@ namespace wr
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
-				data.in_gbuffers = std::move(as_build_data.out_allocator->Allocate());
+				data.in_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
 				data.in_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
 			}
 
@@ -140,7 +141,8 @@ namespace wr
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
 				// Bind g-buffers (albedo, normal, depth)
-				d3d12::DescHeapCPUHandle gbuffers_handle = data.in_gbuffers.GetDescriptorHandle();
+				d3d12::DescHeapCPUHandle gbuffers_handle = data.in_gbuffers.GetDescriptorHandle(0);
+				d3d12::DescHeapCPUHandle position_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(1);
 				d3d12::DescHeapCPUHandle depth_buffer_handle = data.in_depthbuffer.GetDescriptorHandle();
 
 				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
@@ -148,6 +150,7 @@ namespace wr
 				auto deferred_main_rt = data.in_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, gbuffers_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, position_gbuffer_handle, 3, deferred_main_rt->m_create_info.m_rtv_formats.data()[3]);
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
 			}
 
@@ -181,7 +184,7 @@ namespace wr
 			auto& data = fg.GetData<RTAOData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
-			auto setting = fg.GetSettings<RTAOData, RTAOSettings>();
+			auto settings = fg.GetSettings<RTAOData, RTAOSettings>();
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 			if (fg.HasTask<wr::RTHybridData>())
@@ -199,11 +202,14 @@ namespace wr
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::OUTPUT)), out_uav_handle);
 
-				auto in_scene_gbuffers_handle1 = data.in_gbuffers.GetDescriptorHandle();
+				auto in_scene_gbuffers_handle1 = data.in_gbuffers.GetDescriptorHandle(0);
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_gbuffers_handle1);
 
 				auto in_scene_depth_handle = data.in_depthbuffer.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_depth_handle);
+				
+				auto in_scene_position_handle = data.in_gbuffers.GetDescriptorHandle(1);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 2, in_scene_depth_handle);
 
 				// Update offset data
 				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
@@ -219,10 +225,11 @@ namespace wr
 				temp::RTAO_CBData cb_data;
 				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cb_data.m_inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
-				cb_data.bias = setting.m_runtime.bias;
-				cb_data.radius = setting.m_runtime.radius;
-				cb_data.power = setting.m_runtime.power;
-				cb_data.sample_count = static_cast<unsigned int>(setting.m_runtime.sample_count);
+				cb_data.bias = settings.m_runtime.bias;
+				cb_data.radius = settings.m_runtime.radius;
+				cb_data.power = settings.m_runtime.power;
+				cb_data.max_distance = settings.m_runtime.max_distance;
+				cb_data.sample_count = static_cast<unsigned int>(settings.m_runtime.sample_count);
 
 				n_render_system.m_camera_pool->Update(data.out_cb_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
 
@@ -236,8 +243,8 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				
 #ifdef _DEBUG
-				CreateShaderTables(device, data, frame_idx);
 #endif // _DEBUG
+				CreateShaderTables(device, data, frame_idx);
 
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, data.in_hitgroup_shader_table[frame_idx], data.in_miss_shader_table[frame_idx], data.in_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);

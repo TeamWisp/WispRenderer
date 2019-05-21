@@ -14,7 +14,7 @@ struct AOHitInfo
 
 cbuffer CBData : register(b0)
 {
-	float4x4 inv_vp;
+	float4x4 inv_vp; //TODO: remove this :)
 	float4x4 inv_view;
 
 	float bias;
@@ -27,14 +27,6 @@ cbuffer CBData : register(b0)
 };
 
 struct Attributes { };
-
-float3 unpack_position(float2 uv, float depth)
-{
-	// Get world space position
-	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-	float4 wpos = mul(inv_vp, ndc);
-	return (wpos.xyz / wpos.w).xyz;
-}
 
 bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
@@ -50,7 +42,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH,// RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -74,15 +66,15 @@ void AORaygenEntry()
 	int2 screen_co = DispatchRaysIndex().xy;
 
     float3 normal = gbuffer_normal[screen_co].xyz;
-
 	float3 wpos = gbuffer_position[screen_co].xyz;
 
 	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float cam_distance = length(wpos-camera_pos);
 	if(cam_distance < max_distance)
 	{
-
-		int spp = min(sample_count,sample_count * (max_distance - cam_distance)/max_distance );
+		//SPP decreases the closer a pixel is to the max distance
+		//Total is always calculated using the full sample count to have further pixels less occluded
+		int spp = min(sample_count,sample_count * (max_distance - cam_distance)/max_distance ); 
 		float ao_value = 1.0f;
 		for(uint i = 0; i< spp; i++)
 		{
