@@ -171,8 +171,6 @@ namespace wr::d3d12
 			}
 			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
-				//fallback_heap_idx += (blas_list.size() + 1) * frame_idx;
-
 				std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
 				for (auto it : blas_list)
 				{

@@ -49,7 +49,7 @@ namespace wr
 	namespace internal
 	{
 
-		inline void CreateShaderTables(d3d12::Device* device, RTHybridData& data, std::string raygen_entry, int frame_idx)
+		inline void CreateShaderTables(d3d12::Device* device, RTHybridData& data, const std::string& raygen_entry, int frame_idx)
 		{
 			// Delete existing shader table
 			if (data.out_miss_shader_table[frame_idx])
@@ -187,7 +187,7 @@ namespace wr
 			}
 		}
 
-		inline void Render(D3D12RenderSystem& n_render_system, FrameGraph& fg, SceneGraph& scene_graph, RTHybridData& data, d3d12::CommandList* cmd_list, RenderTaskHandle& handle, std::string raygen_entry)
+		inline void Render(D3D12RenderSystem& n_render_system, FrameGraph& fg, SceneGraph& scene_graph, RTHybridData& data, d3d12::CommandList* cmd_list, RenderTaskHandle& handle, const std::string& raygen_entry)
 		{
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;

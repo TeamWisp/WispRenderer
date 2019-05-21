@@ -50,6 +50,7 @@ namespace wr
 			float m_n_phi;
 			float m_z_phi;
 			float m_step_distance;
+			float m_padding[2];
 		};
 
 		struct DenoiserCamera_CBData
@@ -60,6 +61,7 @@ namespace wr
 			DirectX::XMMATRIX m_projection;
 			DirectX::XMMATRIX m_prev_projection;
 			DirectX::XMMATRIX m_inverse_projection;
+			float m_padding[2];
 			float m_near_plane;
 			float m_far_plane;
 		};

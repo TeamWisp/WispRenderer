@@ -198,7 +198,7 @@ namespace wr
 					{
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTReflectionData>());
 						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
-						data.has_rt_reflection;
+						data.has_rt_reflection = true;
 					}
 					if (data.is_rtao)
 					{
@@ -218,7 +218,7 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
       
 			if (data.is_hybrid)
 			{

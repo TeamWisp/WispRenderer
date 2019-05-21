@@ -25,6 +25,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
     float4x4 prev_projection;
 	float4x4 inv_projection;
+	float2 padding;
 	float near_plane;
 	float far_plane;
 };
@@ -37,6 +38,7 @@ cbuffer DenoiserSettings : register(b1)
     float n_phi;
     float z_phi;
     float step_distance;
+	float2 padding;
 };
 
 const static float VARIANCE_CLIPPING_GAMMA = 8.0;
