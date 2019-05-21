@@ -10,6 +10,8 @@
 #define LOG_PRINT_COLORS
 //#define LOG_PRINT_TO_OUTPUT
 
+#define LOG_PRINT_LOC
+
 #ifndef _DEBUG
 #define LOG_TO_FILE
 #define LOG_PRINT_LOC
@@ -43,7 +45,7 @@ namespace util
 		WISPRENDERER_EXPORT static std::function<void(std::string const &)> impl;
 	};
 
-	static wr::LogfileHandler* log_file_handler;
+	WISPRENDERER_EXPORT extern wr::LogfileHandler* log_file_handler;
 
 };
 #endif
@@ -82,10 +84,11 @@ namespace util::internal
 			str += "[thread:" + thread_id_str + "] ";
 		}
 #endif
+		str += format;
 #ifdef LOG_PRINT_LOC
+		str += "	"; // add tab to make it easier to read.
 		str += "[" + file + ":" + func + ":" + std::to_string(line) + "] ";
 #endif
-		str += format;
 		str += "\n";
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)

@@ -112,13 +112,15 @@ int WispEntry()
 		engine::debug_console.AddLog(str.c_str());
 	};
 	
+#ifndef _DEBUG //prevents log spam for developers
 	std::time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	auto local_time = std::localtime(&current_time);
-	
+
 	std::stringstream ss;
 	ss << "log-" << local_time->tm_mday << "-" << (local_time->tm_mon + 1) << "-" << (local_time->tm_year + 1900);
 	std::string log_file_name("WispDemo.log");
-	util::log_file_handler = new wr::LogfileHandler( std::filesystem::path(ss.str()), log_file_name);
+	util::log_file_handler = new wr::LogfileHandler(std::filesystem::path(ss.str()), log_file_name);
+#endif // _DEBUG //prevents log spam for developers
 
 	startCrashpad();
 
@@ -210,6 +212,11 @@ int WispEntry()
 
 	fg_manager::Destroy();
 	render_system.reset();
+
+#ifndef _DEBUG //cleanup
+	delete util::log_file_handler;
+#endif 
+
 	return 0;
 }
 
