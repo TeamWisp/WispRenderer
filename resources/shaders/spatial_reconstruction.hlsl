@@ -51,37 +51,28 @@ float neighbor_edge_weight(float3 N, float3 N_neighbor, float D, float D_neighbo
 	return float(uv.x >= 0 && uv.y >= 0 && uv.x <= 1 && uv.y <= 1) * (D != 1 && D_neighbor != 1);
 }
 
-//Hardcode the samples for now; settings: kernelSize=5, points=16
+//Hardcode the samples for now; settings: kernelSize=3, points=8
 //https://github.com/Nielsbishere/NoisePlayground/blob/master/bluenoise_test.py
 
-static const uint sampleCount = 16;
-static const float2 samples[4][sampleCount] =
+static const uint sampleCount = 8;
+static float2 samples[4][sampleCount] = {
 	{
-		{
-			float2(-1 ,  0), float2(0 ,  -2), float2(-2 ,  -2), float2(1 ,  1),
-			float2(-1 ,  -3), float2(-3 ,  0), float2(2 ,  -1), float2(-2 ,  2),
-			float2(1 ,  2), float2(2 ,  -2), float2(3 ,  -1), float2(2 ,  2),
-			float2(-4 ,  -2), float2(-4 ,  2), float2(-3 ,  3), float2(-4 ,  -3)
-		},
-		{
-			float2(0 ,  0), float2(1 ,  -1), float2(-2 ,  1), float2(-3 ,  -1),
-			float2(-1 ,  2), float2(0 ,  -3), float2(-4 ,  0), float2(-1 ,  -4),
-			float2(-3 ,  -3), float2(1 ,  3), float2(3 ,  1), float2(3 ,  -3),
-			float2(-1 ,  -5), float2(4 ,  1), float2(-2 ,  4), float2(-5 ,  1)
-		},
-		{
-			float2(-1 ,  -2), float2(1 ,  0), float2(0 ,  1), float2(-2 ,  -1),
-			float2(-2 ,  0), float2(1 ,  -2), float2(0 ,  2), float2(-3 ,  -2),
-			float2(-3 ,  1), float2(-3 ,  2), float2(0 ,  3), float2(0 ,  -4),
-			float2(3 ,  0), float2(1 ,  -4), float2(3 ,  -2), float2(-2 ,  3)
-		},
-		{
-			float2(-1 ,  -1), float2(0 ,  -1), float2(-1 ,  1), float2(2 ,  0),
-			float2(-2 ,  -3), float2(2 ,  1), float2(1 ,  -3), float2(-1 ,  3),
-			float2(2 ,  -3), float2(-4 ,  -1), float2(-4 ,  1), float2(-2 ,  -4),
-			float2(3 ,  2), float2(-5 ,  0), float2(4 ,  -1), float2(-1 ,  4)
-		}
-	};
+		float2(0 ,  -1), float2(-1 ,  0), float2(1 ,  -1), float2(0 ,  2),
+		float2(-3 ,  0), float2(-1 ,  -3), float2(-3 ,  -2), float2(2 ,  1)
+	},
+	{
+		float2(-1 ,  1), float2(0 ,  0), float2(0 ,  -2), float2(-2 ,  -1),
+		float2(-2 ,  1), float2(2 ,  -1), float2(1 ,  2), float2(1 ,  -3)
+	},
+	{
+		float2(1 ,  0), float2(0 ,  1), float2(-1 ,  -2), float2(-2 ,  0),
+		float2(2 ,  0), float2(-1 ,  2), float2(-3 ,  -1), float2(0 ,  -3)
+	},
+	{
+		float2(-1 ,  -1), float2(-2 ,  -2), float2(1 ,  1), float2(1 ,  -2),
+		float2(-3 ,  1), float2(-2 ,  2), float2(2 ,  2), float2(-3 ,  2)
+	}
+};
 
 //Sample a neighbor; 0,0 -> 1,1; outside of that range indicates an invalid uv
 float2 sample_neighbor_uv(uint sampleId, uint2 fullResPixel, uint2 resolution)
