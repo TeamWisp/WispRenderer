@@ -98,7 +98,7 @@ namespace fg_manager
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do Depth of field task
-			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
+			/*wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
 			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
@@ -109,13 +109,9 @@ namespace fg_manager
 			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
 			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			//initialize default settings
-			wr::BloomSettings defaultSettings;
-			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);*/
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
-
-			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
@@ -207,10 +203,6 @@ namespace fg_manager
 			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
 			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			//initialize default settings
-			wr::BloomSettings defaultSettings;
-			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
-
 			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
@@ -225,11 +217,11 @@ namespace fg_manager
 		}
 	}
 
-	void Resize(wr::RenderSystem& render_system, std::uint32_t width, std::uint32_t height)
+	void Resize(std::uint32_t width, std::uint32_t height)
 	{
 		for (int i = 0; i < frame_graphs.size(); ++i)
 		{
-			frame_graphs[i]->Resize(render_system, width, height);
+			frame_graphs[i]->Resize(width, height);
 		}
 	}
 

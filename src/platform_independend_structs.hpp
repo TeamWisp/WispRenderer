@@ -12,6 +12,7 @@ namespace wr
 {
 	using CommandList = void;
 	using RenderTarget = void;
+	using Fence = void;
 
 	struct RenderTargetProperties
 	{

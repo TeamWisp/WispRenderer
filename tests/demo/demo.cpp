@@ -176,7 +176,7 @@ int WispEntry()
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
 		SCENE::camera->SetAspectRatio((float)width / (float)height);
-		fg_manager::Resize(*render_system, width, height);
+		fg_manager::Resize(width, height);
 	});
 
 	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));

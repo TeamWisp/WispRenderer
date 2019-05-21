@@ -54,7 +54,17 @@ namespace wr
 			m_texture_pools[i].reset();
 		}
 
-		for (auto iter : m_fences)
+		for (auto iter : m_direct_fences)
+		{
+			SAFE_RELEASE(iter->m_native);
+		}
+
+		for (auto iter : m_compute_fences)
+		{
+			SAFE_RELEASE(iter->m_native);
+		}
+
+		for (auto iter : m_copy_fences)
 		{
 			SAFE_RELEASE(iter->m_native);
 		}
@@ -96,10 +106,22 @@ namespace wr
 		PrepareRTPipelineRegistry();
 
 		// Create fences
-		for (auto i = 0; i < m_fences.size(); i++)
+		for (auto i = 0; i < m_direct_fences.size(); i++)
 		{
-			m_fences[i] = d3d12::CreateFence(m_device);
-			SetName(m_fences[i], (L"Fence " + std::to_wstring(i)));
+			m_direct_fences[i] = d3d12::CreateFence(m_device);
+			SetName(m_direct_fences[i], (L"Fence " + std::to_wstring(i)));
+		}
+
+		for (auto i = 0; i < m_compute_fences.size(); i++)
+		{
+			m_compute_fences[i] = d3d12::CreateFence(m_device);
+			SetName(m_compute_fences[i], (L"Fence " + std::to_wstring(i)));
+		}
+
+		for (auto i = 0; i < m_copy_fences.size(); i++)
+		{
+			m_copy_fences[i] = d3d12::CreateFence(m_device);
+			SetName(m_copy_fences[i], (L"Fence " + std::to_wstring(i)));
 		}
 
 		// Create viewport
@@ -137,7 +159,7 @@ namespace wr
 
 		// Execute
 		d3d12::End(m_direct_cmd_list);
-		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
+		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_direct_fences[frame_idx]);
 
 		m_buffer_frame_graph_uids.resize(d3d12::settings::num_back_buffers);
 
@@ -165,7 +187,9 @@ namespace wr
 		}
 
 		auto frame_idx = GetFrameIdx();
-		d3d12::WaitFor(m_fences[frame_idx]);
+		d3d12::WaitFor(m_direct_fences[frame_idx]);
+		d3d12::WaitFor(m_compute_fences[frame_idx]);
+		d3d12::WaitFor(m_copy_fences[frame_idx]);
 
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
@@ -231,23 +255,39 @@ namespace wr
 		scene_graph->Update();
 		scene_graph->Optimize();
 
-		frame_graph.Execute(*this, *scene_graph.get());
+		frame_graph.Execute(*scene_graph.get());
 
-		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
-		std::vector<d3d12::CommandList*> n_cmd_lists;
-		n_cmd_lists.reserve(cmd_lists.size());
+		std::vector<d3d12::CommandList*> n_direct_cmd_lists;
+		std::vector<d3d12::CommandList*> n_compute_cmd_lists;
+		std::vector<d3d12::CommandList*> n_copy_cmd_lists;
+		auto cmd_list_collection = frame_graph.GetAllCommandLists<d3d12::CommandList>();
+		n_direct_cmd_lists.reserve(cmd_list_collection.m_direct_cmd_lists.size());
+		n_compute_cmd_lists.reserve(cmd_list_collection.m_compute_cmd_lists.size());
+		n_copy_cmd_lists.reserve(cmd_list_collection.m_copy_cmd_lists.size());
 
-		n_cmd_lists.push_back(m_direct_cmd_list);
-
-		for (auto& list : cmd_lists)
+		// Build the direct list
+		n_direct_cmd_lists.push_back(m_direct_cmd_list);
+		for (auto& list : cmd_list_collection.m_direct_cmd_lists)
 		{
-			n_cmd_lists.push_back(list);
+			n_direct_cmd_lists.push_back(list);
+		}
+
+		for (auto& list : cmd_list_collection.m_compute_cmd_lists)
+		{
+			n_compute_cmd_lists.push_back(list);
+		}
+
+		for (auto& list : cmd_list_collection.m_copy_cmd_lists)
+		{
+			n_copy_cmd_lists.push_back(list);
 		}
 
 		// Reset the batches.
 		ResetBatches(*scene_graph.get());
 
-		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
+		d3d12::Execute(m_direct_queue, n_direct_cmd_lists, m_direct_fences[frame_idx]);
+		d3d12::Execute(m_compute_queue, n_compute_cmd_lists, m_compute_fences[frame_idx]);
+		d3d12::Execute(m_copy_queue, n_copy_cmd_lists, m_copy_fences[frame_idx]);
 
 		if (m_render_window.has_value())
 		{
@@ -320,10 +360,22 @@ namespace wr
 
 	void D3D12RenderSystem::WaitForAllPreviousWork()
 	{
-		for (auto& fence : m_fences)
+		for (auto& fence : m_direct_fences)
 		{
 			d3d12::WaitFor(fence);
 			Signal(fence, m_direct_queue);
+		}
+
+		for (auto& fence : m_compute_fences)
+		{
+			d3d12::WaitFor(fence);
+			Signal(fence, m_compute_queue);
+		}
+
+		for (auto& fence : m_copy_fences)
+		{
+			d3d12::WaitFor(fence);
+			Signal(fence, m_copy_queue);
 		}
 	}
 
@@ -339,12 +391,12 @@ namespace wr
 
 	CommandList* D3D12RenderSystem::GetComputeCommandList(unsigned int num_allocators)
 	{
-		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_COMPUTE);
 	}
 
 	CommandList* D3D12RenderSystem::GetCopyCommandList(unsigned int num_allocators)
 	{
-		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
+		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_COPY);
 	}
 
 	void D3D12RenderSystem::DestroyCommandList(CommandList* cmd_list)
@@ -414,12 +466,24 @@ namespace wr
 		m_requested_fullscreen_state = fullscreen_state;
 	}
 
+	void D3D12RenderSystem::ResetCommandList(CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto frame_idx = GetFrameIdx();
+		d3d12::Begin(n_cmd_list, frame_idx);
+	}
+
+	void D3D12RenderSystem::CloseCommandList(CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		d3d12::End(n_cmd_list);
+	}
+
 	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
 		{
@@ -462,23 +526,6 @@ namespace wr
 		{
 			LOGW("A render target has no transitions specified. Is this correct?");
 		}
-
-		d3d12::End(n_cmd_list);
-	}
-
-	void D3D12RenderSystem::StartComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
-	{
-		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto frame_idx = GetFrameIdx();
-
-		d3d12::Begin(n_cmd_list, frame_idx);
-	}
-
-	void D3D12RenderSystem::StopComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
-	{
-		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-
-		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::StartCopyTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
@@ -486,8 +533,6 @@ namespace wr
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-
-		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
 		{
@@ -513,8 +558,35 @@ namespace wr
 		{
 			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.Get().value(), render_target.second.m_state_finished.Get().value());
 		}
+	}
 
-		d3d12::End(n_cmd_list);
+	void D3D12RenderSystem::StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	{
+	}
+
+	void D3D12RenderSystem::StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
+	{
+	}
+
+	void D3D12RenderSystem::SignalDirectQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence)
+	{
+		auto frame_idx = GetFrameIdx();
+		auto n_fence = static_cast<d3d12::Fence*>(fence[frame_idx]);
+		m_direct_queue->m_native->Signal(n_fence->m_native, n_fence->m_fence_value);
+	}
+
+	void D3D12RenderSystem::SignalCopyQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence)
+	{
+		auto frame_idx = GetFrameIdx();
+		auto n_fence = static_cast<d3d12::Fence*>(fence[frame_idx]);
+		m_copy_queue->m_native->Signal(n_fence->m_native, n_fence->m_fence_value);
+	}
+
+	void D3D12RenderSystem::SignalComputeQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence)
+	{
+		auto frame_idx = GetFrameIdx();
+		auto n_fence = static_cast<d3d12::Fence*>(fence[frame_idx]);
+		m_compute_queue->m_native->Signal(n_fence->m_native, n_fence->m_fence_value);
 	}
 
 	void D3D12RenderSystem::SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index)
@@ -854,7 +926,7 @@ namespace wr
 	void D3D12RenderSystem::InitSceneGraph(SceneGraph& scene_graph)
 	{
 		auto frame_idx = GetFrameIdx();
-		d3d12::WaitFor(m_fences[frame_idx]);
+		d3d12::WaitFor(m_direct_fences[frame_idx]);
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
 
 		scene_graph.Init();
@@ -862,7 +934,7 @@ namespace wr
 		d3d12::End(m_direct_cmd_list);
 
 		// Execute
-		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
+		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_direct_fences[frame_idx]);
 	}
 
 	void D3D12RenderSystem::Init_MeshNodes(std::vector<std::shared_ptr<MeshNode>>& nodes)

@@ -140,12 +140,18 @@ namespace wr
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
 		void RequestFullscreenChange(bool fullscreen_state);
 
+		void ResetCommandList(CommandList* cmd_list) final;
+		void CloseCommandList(CommandList* cmd_list) final;
 		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
 		void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+
+		void SignalDirectQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) final;
+		void SignalCopyQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) final;
+		void SignalComputeQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) final;
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 
@@ -175,7 +181,9 @@ namespace wr
 		d3d12::CommandQueue* m_direct_queue;
 		d3d12::CommandQueue* m_compute_queue;
 		d3d12::CommandQueue* m_copy_queue;
-		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_fences;
+		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_direct_fences;
+		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_compute_fences;
+		std::array<d3d12::Fence*, d3d12::settings::num_back_buffers> m_copy_fences;
 
 		d3d12::Viewport m_viewport;
 		d3d12::CommandList* m_direct_cmd_list;

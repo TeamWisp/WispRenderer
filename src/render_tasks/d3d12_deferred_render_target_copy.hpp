@@ -80,7 +80,7 @@ namespace wr
 		};
 		
 		desc.m_properties = rt_properties;
-		desc.m_type = RenderTaskType::COPY;
+		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
 		frame_graph.AddTask<RenderTargetCopyTaskData>(desc, FG_DEPS(1, T));

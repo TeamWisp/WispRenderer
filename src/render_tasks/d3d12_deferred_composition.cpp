@@ -283,11 +283,6 @@ namespace wr
 
 				d3d12::BindViewport(cmd_list, viewport);
 
-				d3d12::Transition(cmd_list,
-					render_target,
-					wr::ResourceState::COPY_SOURCE,
-					wr::ResourceState::UNORDERED_ACCESS);
-
 				if constexpr (d3d12::settings::use_bundles)
 				{
 					bool is_fallback = d3d12::GetRaytracingType(n_render_system.m_device) == RaytracingType::FALLBACK;
@@ -298,11 +293,6 @@ namespace wr
 				{
 					RecordDrawCommands(n_render_system, cmd_list, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, frame_idx);
 				}
-
-				d3d12::Transition(cmd_list,
-					render_target,
-					wr::ResourceState::UNORDERED_ACCESS,
-					wr::ResourceState::COPY_SOURCE);
 
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}
@@ -361,7 +351,7 @@ namespace wr
 		};
 
 		desc.m_properties = rt_properties;
-		desc.m_type = RenderTaskType::COMPUTE;
+		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
 		fg.AddTask<DeferredCompositionTaskData>(desc, FG_DEPS(2, DeferredMainTaskData, CubemapConvolutionTaskData));

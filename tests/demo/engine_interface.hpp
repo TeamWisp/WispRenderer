@@ -183,7 +183,7 @@ namespace engine
 
 			ImGui::End();
 			
-			fg_manager::Get()->UpdateSettings<wr::RTAOData>(rtao_user_settings);
+			//fg_manager::Get()->UpdateSettings<wr::RTAOData>(rtao_user_settings);
 		}
 	}
 	
