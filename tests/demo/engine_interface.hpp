@@ -18,7 +18,7 @@ namespace engine
 	static bool open0 = true;
 	static bool open_viewport = true;
 	static bool open1 = true;
-	static bool rtao_settings_open = false;
+	static bool rtao_settings_open = true;
 	static bool open_console = false;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
@@ -26,6 +26,8 @@ namespace engine
 	static char message_buffer[600];
 
 	static wr::imgui::special::DebugConsole debug_console;
+
+	static wr::RTAOSettings rtao_user_settings;
 
 	void RenderEngine(ImTextureID output, wr::D3D12RenderSystem* render_system, wr::SceneGraph* sg)
 	{
@@ -173,15 +175,15 @@ namespace engine
 		if (rtao_settings_open)
 		{
 			ImGui::Begin("RTAO Settings", &rtao_settings_open);
-			float bias;
-			float radius;
-			float power;
-			unsigned int sample_count;
-			ImGui::DragFloat("Bias", &wr::rtaoSettings::bias, 0.01f, 0.0f, 100.f);
-			ImGui::DragFloat("Radius", &wr::rtaoSettings::radius, 0.1f, 0.0f, 1000.f);
-			ImGui::DragFloat("Power", &wr::rtaoSettings::power, 0.1f, 0.0f, 10.f);
-			ImGui::DragInt("SPP", &wr::rtaoSettings::sample_count, 1, 0, 1073741824);
+
+			ImGui::DragFloat("Bias", &rtao_user_settings.m_runtime.bias, 0.01f, 0.0f, 100.f);
+			ImGui::DragFloat("Radius", &rtao_user_settings.m_runtime.radius, 0.1f, 0.0f, 1000.f);
+			ImGui::DragFloat("Power", &rtao_user_settings.m_runtime.power, 0.1f, 0.0f, 10.f);
+			ImGui::DragInt("SPP", &rtao_user_settings.m_runtime.sample_count, 1, 0, 1073741824);
+
 			ImGui::End();
+			
+			fg_manager::Get()->UpdateSettings<wr::RTAOData>(rtao_user_settings);
 		}
 	}
 	

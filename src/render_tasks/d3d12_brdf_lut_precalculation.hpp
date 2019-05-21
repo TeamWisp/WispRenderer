@@ -64,6 +64,7 @@ namespace wr
 				d3d12::Transition(cmd_list, brdf_lut, ResourceState::UNORDERED_ACCESS, ResourceState::PIXEL_SHADER_RESOURCE);
 
 				n_render_system.m_brdf_lut_generated = true;
+				fg.SetShouldExecute(handle, false);
 			}
 		}
 	}
