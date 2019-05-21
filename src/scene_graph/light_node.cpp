@@ -88,6 +88,12 @@ namespace wr
 		SetColor(col);
 	}
 
+	void LightNode::SetLightSize(float size)
+	{
+		m_light->light_size = size;
+		SignalChange();
+	}
+
 	void LightNode::Update(uint32_t frame_idx)
 	{
 		DirectX::XMVECTOR position = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };

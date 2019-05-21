@@ -129,8 +129,8 @@ namespace shadows_scene
 
 		floor->SetPosition({0, 0, 0});
 		floor->SetRotation({90_deg, 0, 0});
-		floor->SetScale({ 8.0f, 8.0f, 8.0f });
-		floor->AddMaterial(resources::black_material);
+		floor->SetScale({ 18.0f, 18.0f, 18.0f });
+		floor->AddMaterial(resources::white_material);
 
 		sphere1->SetPosition({-1, 1, 0});
 		sphere1->SetScale({0.6f, 0.6f, 0.6f});

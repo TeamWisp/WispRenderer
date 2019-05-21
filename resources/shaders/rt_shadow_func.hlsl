@@ -41,24 +41,41 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 }
 
 // Get shadow factor
-float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, inout uint rand_seed)
+float GetShadowFactor(float3 wpos, float3 light_dir, float light_size, float t_max, uint depth, inout uint rand_seed)
 {
 	float shadow_factor = 0.0f;
 
-//#define SOFT_SHADOWS
+#define SOFT_SHADOWS
 #ifdef SOFT_SHADOWS
+
+#define TEST_A
+#ifdef TEST_A
 	[unroll(MAX_SHADOW_SAMPLES)]
 	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
 	{
-		// Perhaps change randomness to not be purely random, but algorithm-random?
-		float3 offset = normalize(float3(nextRand(rand_seed), nextRand(rand_seed), nextRand(rand_seed))) - 0.5;
-		offset *= 0.02f;
-		float3 ray_direction = normalize(light_dir + offset);
+		//float3 offset = normalize(float3(nextRand(rand_seed), nextRand(rand_seed), nextRand(rand_seed))) - 0.5;
+		float3 dir = perturbDirectionVector(rand_seed, light_dir, light_size);
+		float3 ray_direction = normalize(dir);
 
-		bool shadow = TraceShadowRay(1, wpos, ray_direction, t_max, depth + 1);
+		bool shadow = TraceShadowRay(1, wpos, ray_direction, t_max, depth);
 
 		shadow_factor += lerp(1.0, 0.0, shadow);
 	}
+
+#else
+	[unroll(MAX_SHADOW_SAMPLES)]
+	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
+	{
+		float3 offset = normalize(rand_in_unit_sphere(rand_seed));
+		offset *= light_size;
+
+		float3 ray_direction = normalize(light_dir + offset);
+
+		bool shadow = TraceShadowRay(1, wpos, ray_direction, t_max, depth);
+
+		shadow_factor += lerp(1.0, 0.0, shadow);
+	}
+#endif
 
 	shadow_factor /= float(MAX_SHADOW_SAMPLES);
 

@@ -6,7 +6,7 @@
 //#define PATH_TRACING
 //#define DEPTH_OF_FIELD
 #define EPSILON 0.1
-#define MAX_SHADOW_SAMPLES 4
+#define MAX_SHADOW_SAMPLES 8
 #define TILE_SIZE_2D 5
 
 #ifdef FALLBACK

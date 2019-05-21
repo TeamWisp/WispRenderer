@@ -60,7 +60,10 @@ namespace wr
 		uint32_t tid = (uint32_t)LightType::FREE;		//Type id; LightType::x
 
 		DirectX::XMFLOAT3 dir = { 0, 0, 1 };			//Direction for spot & directional
-		float ang = 40._deg;		//Angle for spot; in radians
+		float ang = 40._deg;							//Angle for spot; in radians
+
+		DirectX::XMFLOAT3 padding;
+		float light_size = 0.0f;
 	};
 
 } /* wr */

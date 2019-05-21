@@ -13,6 +13,9 @@ struct Light
 
 	float3 dir;			//Direction for spot & directional
 	float ang;			//Angle for spot; in radians
+
+	float3 padding;
+	float light_size;	//Physical light size, affects how soft shadows look
 };
 
 StructuredBuffer<Light> lights : LIGHTS_REGISTER;
@@ -101,7 +104,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float3 wpos = pos + (normal * EPSILON);
 
 	// Offset shadow ray direction to get soft-shadows
-	//float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, rand_seed); AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+	//float shadow_factor = GetShadowFactor(wpos, L, light.light_size, t_max, depth, rand_seed); AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 	float shadow_factor = 1.0f;
 
 	lighting *= shadow_factor;
@@ -162,7 +165,7 @@ float DoShadowAllLights(float3 wpos, float3 normal, uint depth, inout float rand
 		}
 
 		// Add shadow factor to final result
-		res += GetShadowFactor(offsetted_pos, L, t_max, depth, rand_seed) * attenuation;
+		res += GetShadowFactor(offsetted_pos, L, light.light_size, t_max, depth, rand_seed) * attenuation;
 
 		sampled_lights++;
 	}
