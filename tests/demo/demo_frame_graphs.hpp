@@ -155,6 +155,9 @@ namespace fg_manager
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
+
+			wr::AddShadowDenoiserTask(*fg);
+
 			wr::AddAccumulationTask<wr::PathTracerData>(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);

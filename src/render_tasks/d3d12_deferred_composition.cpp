@@ -301,8 +301,17 @@ namespace wr
 				if (data.is_path_tracer)
 				{
 					auto irradiance_handle = data.out_screen_space_irradiance_alloc.GetDescriptorHandle();
-					auto pred_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
-					d3d12::CreateSRVFromSpecificRTV(pred_rt, irradiance_handle, 0, pred_rt->m_create_info.m_rtv_formats[0]);
+					d3d12::RenderTarget* pred_rt;
+					if (fg.HasTask<ShadowDenoiserData>())
+					{
+						pred_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::ShadowDenoiserData>());
+						d3d12::CreateSRVFromSpecificRTV(pred_rt, irradiance_handle, 1, pred_rt->m_create_info.m_rtv_formats[1]);
+					}
+					else
+					{
+						pred_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
+						d3d12::CreateSRVFromSpecificRTV(pred_rt, irradiance_handle, 0, pred_rt->m_create_info.m_rtv_formats[0]);
+					}
 				}
 
 				// Get HBAO+ Texture

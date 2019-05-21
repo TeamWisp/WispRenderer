@@ -287,6 +287,7 @@ namespace wr
 		enum class SVGFDenoiserE
 		{
 			INPUT,
+			INDIRECT,
 			MOTION,
 			NORMAL,
 			DEPTH,
@@ -294,24 +295,30 @@ namespace wr
 			IN_HIST_LENGTH,
 
 			PREV_INPUT,
+			PREV_INDIRECT,
 			PREV_MOMENTS,
 			PREV_NORMAL,
 			PREV_DEPTH,
 
 			OUT_COLOR,
+			OUT_INDIRECT,
 			OUT_MOMENTS,
 			OUT_HIST_LENGTH,
 
 			CAMERA_PROPERTIES,
 			SVGF_PROPERTIES,
 
-			PING_PONG_UAV,
-			PING_PONG_SRV,
-			OUTPUT_SRV,
+			DIRECT_PING_PONG_UAV,
+			DIRECT_PING_PONG_SRV,
+			INDIRECT_PING_PONG_UAV,
+			INDIRECT_PING_PONG_SRV,
+			DIRECT_OUTPUT_SRV,
+			INDIRECT_OUTPUT_SRV,
 		};
 
-		constexpr std::array<rs_layout::Entry, 17> svgf_denoiser = {
+		constexpr std::array<rs_layout::Entry, 23> svgf_denoiser = {
 			rs_layout::Entry{(int)SVGFDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::INDIRECT, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::MOTION, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::DEPTH, 1, rs_layout::Type::SRV_RANGE},
@@ -319,20 +326,25 @@ namespace wr
 			rs_layout::Entry{(int)SVGFDenoiserE::IN_HIST_LENGTH, 1, rs_layout::Type::SRV_RANGE},
 
 			rs_layout::Entry{(int)SVGFDenoiserE::PREV_INPUT, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::PREV_INDIRECT, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::PREV_MOMENTS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::PREV_NORMAL, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::PREV_DEPTH, 1, rs_layout::Type::SRV_RANGE},
 
 			rs_layout::Entry{(int)SVGFDenoiserE::OUT_COLOR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::OUT_INDIRECT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::OUT_MOMENTS, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)SVGFDenoiserE::OUT_HIST_LENGTH, 1, rs_layout::Type::UAV_RANGE},
 
 			rs_layout::Entry{(int)SVGFDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)SVGFDenoiserE::SVGF_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 
-			rs_layout::Entry{(int)SVGFDenoiserE::PING_PONG_UAV, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)SVGFDenoiserE::PING_PONG_SRV, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)SVGFDenoiserE::OUTPUT_SRV, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::DIRECT_PING_PONG_UAV, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::DIRECT_PING_PONG_SRV, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::INDIRECT_PING_PONG_UAV, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::INDIRECT_PING_PONG_SRV, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::DIRECT_OUTPUT_SRV, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::INDIRECT_OUTPUT_SRV, 1, rs_layout::Type::SRV_RANGE},
 		};
 
 		enum class DeferredCompositionE

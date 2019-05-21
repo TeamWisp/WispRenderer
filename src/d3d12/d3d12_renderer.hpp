@@ -50,6 +50,7 @@ namespace wr
 			float m_n_phi;
 			float m_z_phi;
 			float m_step_distance;
+			int m_denoise_indirect;
 		};
 
 		struct DenoiserCamera_CBData

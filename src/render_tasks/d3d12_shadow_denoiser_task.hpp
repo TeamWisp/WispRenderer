@@ -11,6 +11,7 @@
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../render_tasks/d3d12_path_tracer.hpp"
 
 #include <optional>
 
@@ -23,7 +24,30 @@ namespace wr
 		wr::D3D12Pipeline* m_wavelet_filter_pipeline;
 
 		DescriptorAllocator* out_allocator;
-		DescriptorAllocation out_allocation;
+
+		DescriptorAllocation input_allocation;
+		DescriptorAllocation indirect_allocation;
+		DescriptorAllocation motion_allocation;
+		DescriptorAllocation normal_allocation;
+		DescriptorAllocation depth_allocation;
+
+		DescriptorAllocation in_hist_allocation;
+
+		DescriptorAllocation prev_input_allocation;
+		DescriptorAllocation prev_indirect_allocation;
+		DescriptorAllocation prev_moments_allocation;
+		DescriptorAllocation prev_normal_allocation;
+		DescriptorAllocation prev_depth_allocation;
+
+		DescriptorAllocation out_color_allocation;
+		DescriptorAllocation out_indirect_allocation;
+		DescriptorAllocation out_moments_allocation;
+		DescriptorAllocation out_hist_allocation;
+
+		DescriptorAllocation direct_ping_pong_allocation;
+		DescriptorAllocation indirect_ping_pong_allocation;
+		DescriptorAllocation direct_output_srv_allocation;
+		DescriptorAllocation indirect_output_srv_allocation;
 
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
 
@@ -33,20 +57,26 @@ namespace wr
 		ConstantBufferHandle* m_denoiser_camera;
 
 		d3d12::RenderTarget* m_input_render_target;
+		d3d12::RenderTarget* m_indirect_input_render_target;
 		d3d12::RenderTarget* m_gbuffer_render_target;
 
 		d3d12::RenderTarget* m_in_hist_length;
 		
 		d3d12::RenderTarget* m_in_prev_color;
+		d3d12::RenderTarget* m_in_prev_indirect;
 		d3d12::RenderTarget* m_in_prev_moments;
 		d3d12::RenderTarget* m_in_prev_normals;
 		d3d12::RenderTarget* m_in_prev_depth;
 
 		d3d12::RenderTarget* m_out_color_render_target;
+		d3d12::RenderTarget* m_out_indirect_render_target;
 		d3d12::RenderTarget* m_out_moments_render_target;
 		d3d12::RenderTarget* m_out_hist_length_render_target;
 
-		d3d12::RenderTarget* m_ping_pong_render_target;
+		d3d12::RenderTarget* m_direct_ping_pong_render_target;
+		d3d12::RenderTarget* m_indirect_ping_pong_render_target;
+
+		bool m_has_indirect;
 	};
 
 	namespace internal
@@ -69,7 +99,31 @@ namespace wr
 			}
 
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_allocation = std::move(data.out_allocator->Allocate(15));
+			data.input_allocation = std::move(data.out_allocator->Allocate());
+			data.indirect_allocation = std::move(data.out_allocator->Allocate());
+			data.motion_allocation = std::move(data.out_allocator->Allocate());
+			data.normal_allocation = std::move(data.out_allocator->Allocate());
+			data.depth_allocation = std::move(data.out_allocator->Allocate());
+			
+			data.in_hist_allocation = std::move(data.out_allocator->Allocate());
+			
+			data.prev_input_allocation = std::move(data.out_allocator->Allocate());
+			data.prev_indirect_allocation = std::move(data.out_allocator->Allocate());
+			data.prev_moments_allocation = std::move(data.out_allocator->Allocate());
+			data.prev_normal_allocation = std::move(data.out_allocator->Allocate());
+			data.prev_depth_allocation = std::move(data.out_allocator->Allocate());
+
+			data.out_color_allocation = std::move(data.out_allocator->Allocate());
+			data.out_moments_allocation = std::move(data.out_allocator->Allocate());
+			data.out_hist_allocation = std::move(data.out_allocator->Allocate());
+
+			data.direct_ping_pong_allocation = std::move(data.out_allocator->Allocate(2));
+			data.indirect_ping_pong_allocation = std::move(data.out_allocator->Allocate(2));
+			data.direct_output_srv_allocation = std::move(data.out_allocator->Allocate());
+			data.indirect_output_srv_allocation = std::move(data.out_allocator->Allocate());
+
+			data.m_has_indirect = fg.HasTask<PathTracerData>();
+
 
 			if (!resize)
 			{
@@ -89,6 +143,7 @@ namespace wr
 				data.m_denoiser_settings.m_l_phi = 4.f;
 				data.m_denoiser_settings.m_n_phi = 128.f;
 				data.m_denoiser_settings.m_z_phi = 1.0;
+				data.m_denoiser_settings.m_denoise_indirect = data.m_has_indirect;
 
 				for (int i = 0; i < data.m_denoiser_settings_buffer.size(); ++i)
 				{
@@ -101,6 +156,12 @@ namespace wr
 			}
 
 			data.m_input_render_target = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<RTShadowData>());
+			data.m_out_color_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
+
+			if (data.m_has_indirect)
+			{
+				data.m_indirect_input_render_target = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<PathTracerData>());
+			}
 
 			data.m_gbuffer_render_target = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
@@ -122,7 +183,7 @@ namespace wr
 				render_target_desc
 			);
 
-			render_target_desc.m_rtv_formats[0] = data.m_gbuffer_render_target->m_create_info.m_rtv_formats[0];
+			render_target_desc.m_rtv_formats[0] = data.m_out_color_render_target->m_create_info.m_rtv_formats[0];
 
 			data.m_in_prev_color = d3d12::CreateRenderTarget(
 				n_render_system.m_device,
@@ -131,7 +192,19 @@ namespace wr
 				render_target_desc
 			);
 
-			render_target_desc.m_rtv_formats[0] = Format::R32G32_FLOAT;
+			if (data.m_has_indirect)
+			{
+				render_target_desc.m_rtv_formats[0] = data.m_out_color_render_target->m_create_info.m_rtv_formats[1];
+
+				data.m_in_prev_indirect = d3d12::CreateRenderTarget(
+					n_render_system.m_device,
+					n_render_system.m_viewport.m_viewport.Width,
+					n_render_system.m_viewport.m_viewport.Height,
+					render_target_desc
+				);
+			}
+
+			render_target_desc.m_rtv_formats[0] = Format::R16G16B16A16_FLOAT;
 			render_target_desc.m_create_dsv_buffer = false;
 
 			data.m_in_prev_moments = d3d12::CreateRenderTarget(
@@ -161,7 +234,7 @@ namespace wr
 
 			data.m_out_color_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			render_target_desc.m_rtv_formats[0] = Format::R32G32_FLOAT;
+			render_target_desc.m_rtv_formats[0] = data.m_in_prev_moments->m_create_info.m_rtv_formats[0];
 			render_target_desc.m_initial_state = ResourceState::UNORDERED_ACCESS;
 
 			data.m_out_moments_render_target = d3d12::CreateRenderTarget(
@@ -182,101 +255,149 @@ namespace wr
 
 			render_target_desc.m_rtv_formats[0] = data.m_out_color_render_target->m_create_info.m_rtv_formats[0];
 
-			data.m_ping_pong_render_target = d3d12::CreateRenderTarget(
+			data.m_direct_ping_pong_render_target = d3d12::CreateRenderTarget(
 				n_render_system.m_device,
 				n_render_system.m_viewport.m_viewport.Width,
 				n_render_system.m_viewport.m_viewport.Height,
 				render_target_desc
 			);
 
+			if (data.m_has_indirect)
 			{
-				constexpr unsigned int input = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INPUT);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(input);
+				render_target_desc.m_rtv_formats[0] = data.m_out_color_render_target->m_create_info.m_rtv_formats[1];
+
+				data.m_indirect_ping_pong_render_target = d3d12::CreateRenderTarget(
+					n_render_system.m_device,
+					n_render_system.m_viewport.m_viewport.Width,
+					n_render_system.m_viewport.m_viewport.Height,
+					render_target_desc
+				);
+			}
+
+			{
+				auto cpu_handle = data.input_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_input_render_target, cpu_handle, 0, data.m_input_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int motion = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::MOTION);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(motion);
+				auto cpu_handle = data.indirect_allocation.GetDescriptorHandle();
+				if (data.m_has_indirect)
+				{
+					d3d12::CreateSRVFromSpecificRTV(data.m_indirect_input_render_target, cpu_handle, 0, data.m_indirect_input_render_target->m_create_info.m_rtv_formats[0]);
+				}
+				else
+				{
+					d3d12::CreateSRVFromSpecificRTV(data.m_input_render_target, cpu_handle, 0, data.m_input_render_target->m_create_info.m_rtv_formats[0]);
+				}
+			}
+
+			{
+				auto cpu_handle = data.motion_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_gbuffer_render_target, cpu_handle, 2, data.m_gbuffer_render_target->m_create_info.m_rtv_formats[2]);
 			}
 
 			{
-				constexpr unsigned int normals = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::NORMAL);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(normals);
+				auto cpu_handle = data.normal_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_gbuffer_render_target, cpu_handle, 1, data.m_gbuffer_render_target->m_create_info.m_rtv_formats[1]);
 			}
 
 			{
-				constexpr unsigned int depth = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::DEPTH);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(depth);
+				auto cpu_handle = data.depth_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_gbuffer_render_target, cpu_handle, 3, data.m_gbuffer_render_target->m_create_info.m_rtv_formats[3]);
 			}
 
 			{
-				constexpr unsigned int hist_length = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::IN_HIST_LENGTH);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(hist_length);
+				auto cpu_handle = data.in_hist_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_in_hist_length, cpu_handle, 0, data.m_in_hist_length->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int prev_color = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_INPUT);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(prev_color);
+				auto cpu_handle = data.prev_input_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_in_prev_color, cpu_handle, 0, data.m_in_prev_color->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int prev_moments = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_MOMENTS);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(prev_moments);
+				auto cpu_handle = data.prev_indirect_allocation.GetDescriptorHandle();
+				if (data.m_has_indirect)
+				{
+					d3d12::CreateSRVFromSpecificRTV(data.m_in_prev_indirect, cpu_handle, 0, data.m_in_prev_indirect->m_create_info.m_rtv_formats[0]);
+				}
+				else
+				{
+					d3d12::CreateSRVFromSpecificRTV(data.m_in_prev_color, cpu_handle, 0, data.m_in_prev_color->m_create_info.m_rtv_formats[0]);
+				}
+			}
+
+			{
+				auto cpu_handle = data.prev_moments_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_in_prev_moments, cpu_handle, 0, data.m_in_prev_moments->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int prev_normals = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_NORMAL);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(prev_normals);
+				auto cpu_handle = data.prev_normal_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_in_prev_normals, cpu_handle, 0, data.m_in_prev_normals->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int prev_depth = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_DEPTH);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(prev_depth);
+				auto cpu_handle = data.prev_depth_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_in_prev_depth, cpu_handle, 0, data.m_in_prev_depth->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int out_color = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_COLOR);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(out_color);
+				auto cpu_handle = data.out_color_allocation.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(data.m_out_color_render_target, cpu_handle, 0, data.m_out_color_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int out_moments = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_MOMENTS);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(out_moments);
+				auto cpu_handle = data.out_indirect_allocation.GetDescriptorHandle();
+				d3d12::CreateUAVFromSpecificRTV(data.m_out_color_render_target, cpu_handle, 1, data.m_out_color_render_target->m_create_info.m_rtv_formats[1]);
+			}
+
+			{
+				auto cpu_handle = data.out_moments_allocation.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(data.m_out_moments_render_target, cpu_handle, 0, data.m_out_moments_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int out_hist_length = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_HIST_LENGTH);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(out_hist_length);
+				auto cpu_handle = data.out_hist_allocation.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(data.m_out_hist_length_render_target, cpu_handle, 0, data.m_out_hist_length_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int input_uav = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PING_PONG_UAV);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(input_uav);
-				d3d12::CreateUAVFromSpecificRTV(data.m_ping_pong_render_target, cpu_handle, 0, data.m_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
+				auto cpu_handle = data.direct_ping_pong_allocation.GetDescriptorHandle(0);
+				d3d12::CreateUAVFromSpecificRTV(data.m_direct_ping_pong_render_target, cpu_handle, 0, data.m_direct_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
+
+				cpu_handle = data.direct_ping_pong_allocation.GetDescriptorHandle(1);
+				d3d12::CreateSRVFromSpecificRTV(data.m_direct_ping_pong_render_target, cpu_handle, 0, data.m_direct_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
-				constexpr unsigned int input_srv = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PING_PONG_SRV);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(input_srv);
-				d3d12::CreateSRVFromSpecificRTV(data.m_ping_pong_render_target, cpu_handle, 0, data.m_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
+				if (data.m_has_indirect)
+				{
+					auto cpu_handle = data.indirect_ping_pong_allocation.GetDescriptorHandle(0);
+					d3d12::CreateUAVFromSpecificRTV(data.m_indirect_ping_pong_render_target, cpu_handle, 0, data.m_indirect_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
+					
+					cpu_handle = data.indirect_ping_pong_allocation.GetDescriptorHandle(1);
+					d3d12::CreateSRVFromSpecificRTV(data.m_indirect_ping_pong_render_target, cpu_handle, 0, data.m_indirect_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
+				}
+				else
+				{
+					auto cpu_handle = data.indirect_ping_pong_allocation.GetDescriptorHandle(0);
+					d3d12::CreateUAVFromSpecificRTV(data.m_direct_ping_pong_render_target, cpu_handle, 0, data.m_direct_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
+
+					cpu_handle = data.indirect_ping_pong_allocation.GetDescriptorHandle(1);
+					d3d12::CreateSRVFromSpecificRTV(data.m_direct_ping_pong_render_target, cpu_handle, 0, data.m_direct_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
+				}
 			}
 
 			{
-				constexpr unsigned int output_srv = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUTPUT_SRV);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(output_srv);
+				auto cpu_handle = data.direct_output_srv_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_out_color_render_target, cpu_handle, 0, data.m_out_color_render_target->m_create_info.m_rtv_formats[0]);
+			}
+
+			{
+				auto cpu_handle = data.indirect_output_srv_allocation.GetDescriptorHandle();
+				d3d12::CreateSRVFromSpecificRTV(data.m_out_color_render_target, cpu_handle, 1, data.m_out_color_render_target->m_create_info.m_rtv_formats[1]);
 			}
 		}
 
@@ -286,73 +407,91 @@ namespace wr
 
 			{
 				constexpr unsigned int input = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INPUT);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(input);
+				auto cpu_handle = data.input_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int input = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INDIRECT);
+				auto cpu_handle = data.indirect_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int motion = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::MOTION);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(motion);
+				auto cpu_handle = data.motion_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, motion, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int normals = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::NORMAL);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(normals);
+				auto cpu_handle = data.normal_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, normals, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int depth = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::DEPTH);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(depth);
+				auto cpu_handle = data.depth_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, depth, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int hist_length = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::IN_HIST_LENGTH);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(hist_length);
+				auto cpu_handle = data.in_hist_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, hist_length, cpu_handle);
 			}
 			
 			{
 				constexpr unsigned int prev_color = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_INPUT);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(prev_color);
+				auto cpu_handle = data.prev_input_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, prev_color, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int prev_color = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_INDIRECT);
+				auto cpu_handle = data.prev_indirect_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, prev_color, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int prev_moments = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_MOMENTS);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(prev_moments);
+				auto cpu_handle = data.prev_moments_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, prev_moments, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int prev_normals = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_NORMAL);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(prev_normals);
+				auto cpu_handle = data.prev_normal_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, prev_normals, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int prev_depth = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PREV_DEPTH);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(prev_depth);
+				auto cpu_handle = data.prev_depth_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, prev_depth, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int out_color = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_COLOR);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(out_color);
+				auto cpu_handle = data.out_color_allocation.GetDescriptorHandle();
+				d3d12::SetShaderUAV(cmd_list, 0, out_color, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int out_color = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_INDIRECT);
+				auto cpu_handle = data.out_indirect_allocation.GetDescriptorHandle();
 				d3d12::SetShaderUAV(cmd_list, 0, out_color, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int out_moments = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_MOMENTS);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(out_moments);
+				auto cpu_handle = data.out_moments_allocation.GetDescriptorHandle();
 				d3d12::SetShaderUAV(cmd_list, 0, out_moments, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int out_hist = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_HIST_LENGTH);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(out_hist);
+				auto cpu_handle = data.out_hist_allocation.GetDescriptorHandle();
 				d3d12::SetShaderUAV(cmd_list, 0, out_hist, cpu_handle);
 			}
 		}
@@ -427,15 +566,25 @@ namespace wr
 
 			{
 				constexpr unsigned int input_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INPUT);
-				constexpr unsigned int output_srv = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUTPUT_SRV);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(output_srv);
+				auto cpu_handle = data.direct_output_srv_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, input_id, cpu_handle);
 			}
 
 			{
 				constexpr unsigned int output_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_COLOR);
-				constexpr unsigned int ping_ping_uav = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PING_PONG_UAV);
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(ping_ping_uav);
+				auto cpu_handle = data.direct_ping_pong_allocation.GetDescriptorHandle(0);
+				d3d12::SetShaderUAV(cmd_list, 0, output_id, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int input_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INDIRECT);
+				auto cpu_handle = data.indirect_output_srv_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, input_id, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int output_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_INDIRECT);
+				auto cpu_handle = data.indirect_ping_pong_allocation.GetDescriptorHandle(0);
 				d3d12::SetShaderUAV(cmd_list, 0, output_id, cpu_handle);
 			}
 
@@ -463,38 +612,71 @@ namespace wr
 
 				if (i % 2 == 0)
 				{
-					d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+					if (data.m_has_indirect)
+					{
+						d3d12::Transition(cmd_list, data.m_indirect_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					}
+
 					d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
 
 					{
 						constexpr unsigned int input_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INPUT);
-						constexpr unsigned int ping_pong_srv = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PING_PONG_SRV);
-						auto cpu_handle = data.out_allocation.GetDescriptorHandle(ping_pong_srv);
+						auto cpu_handle = data.direct_ping_pong_allocation.GetDescriptorHandle(1);
 						d3d12::SetShaderSRV(cmd_list, 0, input_id, cpu_handle);
 					}
 
 					{
 						constexpr unsigned int output_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_COLOR);
-						auto cpu_handle = data.out_allocation.GetDescriptorHandle(output_id);
+						auto cpu_handle = data.out_color_allocation.GetDescriptorHandle();
+						d3d12::SetShaderUAV(cmd_list, 0, output_id, cpu_handle);
+					}
+
+					{
+						constexpr unsigned int input_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INDIRECT);
+						auto cpu_handle = data.indirect_ping_pong_allocation.GetDescriptorHandle(1);
+						d3d12::SetShaderSRV(cmd_list, 0, input_id, cpu_handle);
+					}
+
+					{
+						constexpr unsigned int output_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_INDIRECT);
+						auto cpu_handle = data.out_indirect_allocation.GetDescriptorHandle();
 						d3d12::SetShaderUAV(cmd_list, 0, output_id, cpu_handle);
 					}
 				}
 				else
 				{
-					d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+					d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+
+					if (data.m_has_indirect)
+					{
+						d3d12::Transition(cmd_list, data.m_indirect_ping_pong_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+					}
+
 					d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 					{
 						constexpr unsigned int input_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INPUT);
-						constexpr unsigned int output_srv = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUTPUT_SRV);
-						auto cpu_handle = data.out_allocation.GetDescriptorHandle(output_srv);
+						auto cpu_handle = data.out_color_allocation.GetDescriptorHandle();
 						d3d12::SetShaderSRV(cmd_list, 0, input_id, cpu_handle);
 					}
 
 					{
 						constexpr unsigned int output_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_COLOR);
-						constexpr unsigned int ping_ping_uav = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::PING_PONG_UAV);
-						auto cpu_handle = data.out_allocation.GetDescriptorHandle(ping_ping_uav);
+						auto cpu_handle = data.direct_ping_pong_allocation.GetDescriptorHandle(0);
+						d3d12::SetShaderUAV(cmd_list, 0, output_id, cpu_handle);
+					}
+
+					{
+						constexpr unsigned int input_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::INDIRECT);
+						auto cpu_handle = data.out_indirect_allocation.GetDescriptorHandle();
+						d3d12::SetShaderSRV(cmd_list, 0, input_id, cpu_handle);
+					}
+
+					{
+						constexpr unsigned int output_id = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::OUT_INDIRECT);
+						auto cpu_handle = data.indirect_ping_pong_allocation.GetDescriptorHandle(0);
 						d3d12::SetShaderUAV(cmd_list, 0, output_id, cpu_handle);
 					}
 				}
@@ -511,38 +693,78 @@ namespace wr
 						d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 						d3d12::Transition(cmd_list, data.m_in_prev_color, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
 
+						if (data.m_has_indirect)
+						{
+							d3d12::Transition(cmd_list, data.m_in_prev_indirect, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
+						}
+
 						cmd_list->m_native->CopyResource(data.m_in_prev_color->m_render_targets[0], data.m_out_color_render_target->m_render_targets[0]);
+						cmd_list->m_native->CopyResource(data.m_in_prev_indirect->m_render_targets[0], data.m_out_color_render_target->m_render_targets[1]);
 
 						d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 						d3d12::Transition(cmd_list, data.m_in_prev_color, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+						if (data.m_has_indirect)
+						{
+							d3d12::Transition(cmd_list, data.m_in_prev_indirect, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+						}
 					}
 					else
 					{
 
-						d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+						d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 						d3d12::Transition(cmd_list, data.m_in_prev_color, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
 
-						cmd_list->m_native->CopyResource(data.m_in_prev_color->m_render_targets[0], data.m_ping_pong_render_target->m_render_targets[0]);
+						if (data.m_has_indirect)
+						{
+							d3d12::Transition(cmd_list, data.m_indirect_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+							d3d12::Transition(cmd_list, data.m_in_prev_indirect, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
+						}
 
-						d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+						cmd_list->m_native->CopyResource(data.m_in_prev_color->m_render_targets[0], data.m_direct_ping_pong_render_target->m_render_targets[0]);
+						cmd_list->m_native->CopyResource(data.m_in_prev_indirect->m_render_targets[0], data.m_indirect_ping_pong_render_target->m_render_targets[0]);
+
+						d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 						d3d12::Transition(cmd_list, data.m_in_prev_color, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+						if (data.m_has_indirect)
+						{
+							d3d12::Transition(cmd_list, data.m_indirect_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+							d3d12::Transition(cmd_list, data.m_in_prev_indirect, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+						}
 					}
 				}
 			}
 
 			if (d3d12::settings::shadow_denoiser_wavelet_iterations % 2 == 0)
 			{
-				d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+				d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 				d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
 
-				cmd_list->m_native->CopyResource(data.m_out_color_render_target->m_render_targets[0], data.m_ping_pong_render_target->m_render_targets[0]);
+				if (data.m_has_indirect)
+				{
+					d3d12::Transition(cmd_list, data.m_indirect_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+				}
 
-				d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+				cmd_list->m_native->CopyResource(data.m_out_color_render_target->m_render_targets[0], data.m_direct_ping_pong_render_target->m_render_targets[0]);
+				cmd_list->m_native->CopyResource(data.m_out_color_render_target->m_render_targets[1], data.m_indirect_ping_pong_render_target->m_render_targets[0]);
+
+				d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 				d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::COPY_DEST, ResourceState::UNORDERED_ACCESS);
+
+				if (data.m_has_indirect)
+				{
+					d3d12::Transition(cmd_list, data.m_indirect_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+				}
 			}
 			else
 			{
-				d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+				d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+
+				if (data.m_has_indirect)
+				{
+					d3d12::Transition(cmd_list, data.m_indirect_ping_pong_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+				}
 			}
 		}
 
@@ -592,7 +814,29 @@ namespace wr
 		{
 			auto& data = fg.GetData<ShadowDenoiserData>(handle);
 
-			DescriptorAllocation temp1 = std::move(data.out_allocation);
+			std::move(data.input_allocation);
+			std::move(data.indirect_allocation);
+			std::move(data.motion_allocation);
+			std::move(data.normal_allocation);
+			std::move(data.depth_allocation);
+
+			std::move(data.in_hist_allocation);
+
+			std::move(data.prev_input_allocation);
+			std::move(data.prev_indirect_allocation);
+			std::move(data.prev_moments_allocation);
+			std::move(data.prev_normal_allocation);
+			std::move(data.prev_depth_allocation);
+
+			std::move(data.out_color_allocation);
+			std::move(data.out_indirect_allocation);
+			std::move(data.out_hist_allocation);
+			std::move(data.out_moments_allocation);
+
+			std::move(data.direct_ping_pong_allocation);
+			std::move(data.indirect_ping_pong_allocation);
+			std::move(data.direct_output_srv_allocation);
+			std::move(data.indirect_output_srv_allocation);
 
 			if (!resize)
 			{
@@ -605,12 +849,14 @@ namespace wr
 
 			d3d12::Destroy(data.m_in_hist_length);
 			d3d12::Destroy(data.m_in_prev_color);
+			d3d12::Destroy(data.m_in_prev_indirect);
 			d3d12::Destroy(data.m_in_prev_moments);
 			d3d12::Destroy(data.m_in_prev_normals);
 			d3d12::Destroy(data.m_in_prev_depth);
 			d3d12::Destroy(data.m_out_hist_length_render_target);
 			d3d12::Destroy(data.m_out_moments_render_target);
-			d3d12::Destroy(data.m_ping_pong_render_target);
+			d3d12::Destroy(data.m_direct_ping_pong_render_target);
+			d3d12::Destroy(data.m_indirect_ping_pong_render_target);
 		}
 
 	} /* internal */
@@ -629,8 +875,8 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_FLOAT }),
-			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT }),
+			RenderTargetProperties::NumRTVFormats(2),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
 			RenderTargetProperties::ResourceName(name),

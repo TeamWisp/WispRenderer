@@ -62,6 +62,7 @@ namespace wr
 
 	DESC_RANGE_ARRAY(svgf_denoiser_ranges,
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::INPUT),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::INDIRECT),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::MOTION),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::NORMAL),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::DEPTH),
@@ -69,11 +70,13 @@ namespace wr
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::IN_HIST_LENGTH),
 
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_INPUT),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_INDIRECT),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_MOMENTS),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_NORMAL),
 		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_DEPTH),
 
 		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_COLOR),
+		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_INDIRECT),
 		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_MOMENTS),
 		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_HIST_LENGTH),
 		);
@@ -296,8 +299,8 @@ namespace wr
 		PipelineDescription::ComputeShader(shaders::svgf_denoiser_reprojection_cs),
 		PipelineDescription::RootSignature(root_signatures::svgf_denoiser),
 		PipelineDescription::DSVFormat(Format::UNKNOWN),
-		PipelineDescription::RTVFormats({Format::R16G16B16A16_FLOAT}),
-		PipelineDescription::NumRTVFormats(1),
+		PipelineDescription::RTVFormats({Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT}),
+		PipelineDescription::NumRTVFormats(2),
 		PipelineDescription::Type(PipelineType::COMPUTE_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_BACK),
 		PipelineDescription::Depth(false),

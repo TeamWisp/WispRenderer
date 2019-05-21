@@ -1,18 +1,21 @@
 Texture2D input_texture : register(t0);
-Texture2D motion_texture : register(t1);
-Texture2D normal_texture : register(t2);
-Texture2D depth_texture : register(t3);
+Texture2D indirect_texture : register(t1);
+Texture2D motion_texture : register(t2);
+Texture2D normal_texture : register(t3);
+Texture2D depth_texture : register(t4);
 
-Texture2D in_hist_length_texture : register(t4);
+Texture2D in_hist_length_texture : register(t5);
 
-Texture2D prev_input_texture : register(t5);
-Texture2D prev_moments_texture : register(t6);
-Texture2D prev_normal_texture : register(t7);
-Texture2D prev_depth_texture : register(t8);
+Texture2D prev_input_texture : register(t6);
+Texture2D prev_indirect_texture : register(t7);
+Texture2D prev_moments_texture : register(t8);
+Texture2D prev_normal_texture : register(t9);
+Texture2D prev_depth_texture : register(t10);
 
 RWTexture2D<float4> out_color_texture : register(u0);
-RWTexture2D<float2> out_moments_texture : register(u1);
-RWTexture2D<float> out_hist_length_texture : register(u2);
+RWTexture2D<float4> out_indirect_texture : register(u1);
+RWTexture2D<float4> out_moments_texture : register(u2);
+RWTexture2D<float> out_hist_length_texture : register(u3);
 
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
@@ -37,6 +40,7 @@ cbuffer DenoiserSettings : register(b1)
     float n_phi;
     float z_phi;
     float step_distance;
+	int has_indirect;
 };
 
 const static float VARIANCE_CLIPPING_GAMMA = 8.0;
@@ -122,7 +126,7 @@ bool IsReprojectionValid(int2 coord, float z, float z_prev, float fwidth_z, floa
 	return ret;
 }
 
-bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float2 prev_moments, out float history_length)
+bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_indirect, out float4 prev_moments, out float history_length)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	input_texture.GetDimensions(screen_size.x, screen_size.y);
@@ -138,7 +142,8 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float2 prev_m
 	float3 normal = OctToDir(asuint(depth.w));
 
 	prev_direct = float4(0, 0, 0, 0);
-	prev_moments = float2(0, 0);
+	prev_indirect = float4(0, 0, 0, 0);
+	prev_moments = float4(0, 0, 0, 0);
 
 	bool v[4];
 	const float2 pos_prev = prev_coords;
@@ -174,12 +179,14 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float2 prev_m
 			int2 loc = int2(pos_prev) + offset[sample_idx];
 
 			prev_direct += weights[sample_idx] * prev_input_texture[loc] * float(v[sample_idx]);
+			prev_indirect += weights[sample_idx] * prev_indirect_texture[loc] * float(v[sample_idx]);
 			prev_moments += weights[sample_idx] * prev_moments_texture[loc] * float(v[sample_idx]);
 			sum_weights += weights[sample_idx] * float(v[sample_idx]);
 		}
 
 		valid = (sum_weights >= 0.01);
 		prev_direct = lerp(float4(0, 0, 0, 0), prev_direct / sum_weights, valid);
+		prev_indirect = lerp(float4(0, 0, 0, 0), prev_indirect / sum_weights, valid);
 		prev_moments = lerp(float2(0, 0), prev_moments / sum_weights, valid);
 
 	}
@@ -199,6 +206,7 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float2 prev_m
 				if(IsReprojectionValid(prev_coords, depth.z, depth_filter.x, depth.y, normal, normal_filter, motion.w))
 				{
 					prev_direct += prev_input_texture[p];
+					prev_indirect += prev_indirect_texture[p];
 					prev_moments += prev_moments_texture[p];
 					cnt += 1.0;
 				}
@@ -207,6 +215,7 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float2 prev_m
 
 		valid = cnt > 0;
 		prev_direct /= lerp(1, cnt, cnt > 0);
+		prev_indirect /= lerp(1, cnt, cnt > 0);
 		prev_moments /= lerp(1, cnt, cnt > 0);
 	}
 
