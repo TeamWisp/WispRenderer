@@ -28,6 +28,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
     float4x4 prev_projection;
 	float4x4 inv_projection;
+	float2 padding;
 	float near_plane;
 	float far_plane;
 };
@@ -41,6 +42,7 @@ cbuffer DenoiserSettings : register(b1)
     float z_phi;
     float step_distance;
 	int has_indirect;
+	int padding;
 };
 
 const static float VARIANCE_CLIPPING_GAMMA = 8.0;
@@ -179,7 +181,11 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_i
 			int2 loc = int2(pos_prev) + offset[sample_idx];
 
 			prev_direct += weights[sample_idx] * prev_input_texture[loc] * float(v[sample_idx]);
-			prev_indirect += weights[sample_idx] * prev_indirect_texture[loc] * float(v[sample_idx]);
+			[branch]
+			if(has_indirect)
+			{
+				prev_indirect += weights[sample_idx] * prev_indirect_texture[loc] * float(v[sample_idx]);
+			}		
 			prev_moments += weights[sample_idx] * prev_moments_texture[loc] * float(v[sample_idx]);
 			sum_weights += weights[sample_idx] * float(v[sample_idx]);
 		}
@@ -187,7 +193,7 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_i
 		valid = (sum_weights >= 0.01);
 		prev_direct = lerp(float4(0, 0, 0, 0), prev_direct / sum_weights, valid);
 		prev_indirect = lerp(float4(0, 0, 0, 0), prev_indirect / sum_weights, valid);
-		prev_moments = lerp(float2(0, 0), prev_moments / sum_weights, valid);
+		prev_moments = lerp(float4(0, 0, 0, 0), prev_moments / sum_weights, valid);
 
 	}
 	if(!valid)
@@ -195,8 +201,10 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_i
 		float cnt = 0.0;
 
 		const int radius = 1;
+		[unroll]
 		for(int y = -radius; y <= radius; ++y)
 		{
+			[unroll]
 			for(int x = -radius; x <= radius; ++x)
 			{
 				int2 p = prev_coords + int2(x, y);
@@ -206,7 +214,11 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_i
 				if(IsReprojectionValid(prev_coords, depth.z, depth_filter.x, depth.y, normal, normal_filter, motion.w))
 				{
 					prev_direct += prev_input_texture[p];
-					prev_indirect += prev_indirect_texture[p];
+					[branch]
+					if(has_indirect)
+					{
+						prev_indirect += prev_indirect_texture[p];
+					}
 					prev_moments += prev_moments_texture[p];
 					cnt += 1.0;
 				}
@@ -226,7 +238,8 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_i
 	else
 	{
 		prev_direct = float4(0, 0, 0, 0);
-		prev_moments = float2(0, 0);
+		prev_indirect = float4(0, 0, 0, 0);
+		prev_moments = float4(0, 0, 0, 0);
 		history_length = 0;
 	}
 
@@ -292,18 +305,30 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 
 	float4 direct = input_texture[screen_coord];
-
+	float4 indirect = direct;
+	if(has_indirect)
+	{
+		indirect = indirect_texture[screen_coord];
+	}
+	
 	float4 prev_direct = float4(0.0, 0.0, 0.0, 0.0);
-	float2 prev_moments = float2(0.0, 0.0);
+	float4 prev_indirect = float4(0.0, 0.0, 0.0, 0.0);
+	float2 prev_moments = float4(0.0, 0.0, 0.0, 0.0);
 	float history_length = 0.0;
 
-	bool success = LoadPrevData(screen_coord, prev_direct, prev_moments, history_length);
+	bool success = LoadPrevData(screen_coord, prev_direct, prev_indirect, prev_moments, history_length);
 
-	float3 moment_1 = float3(0.0, 0.0, 0.0);
-	float3 moment_2 = float3(0.0, 0.0, 0.0);
+	float3 direct_moment_1 = float3(0.0, 0.0, 0.0);
+	float3 direct_moment_2 = float3(0.0, 0.0, 0.0);
 
-	float3 clamp_min = 1.0;
-	float3 clamp_max = 0.0;
+	float3 direct_clamp_min = float3(1.0, 1.0, 1.0);
+	float3 direct_clamp_max = float3(0.0, 0.0, 0.0);
+	
+	float3 indirect_moment_1 = float3(0.0, 0.0, 0.0);
+	float3 indirect_moment_2 = float3(0.0, 0.0, 0.0);
+
+	float3 indirect_clamp_min = float3(1.0, 1.0, 1.0);
+	float3 indirect_clamp_max = float3(0.0, 0.0, 0.0);
 
 	[unroll]
 	for(int y = -2; y <= 2; ++y)
@@ -312,33 +337,54 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		for(int x = -2; x <= 2; ++x)
 		{
 			float3 color = input_texture[screen_coord + int2(x, y)].xyz;
-			moment_1 += color;
-			moment_2 += color * color;
-			clamp_min = min(color, clamp_min);
-			clamp_max = max(color, clamp_max);
+			direct_moment_1 += color;
+			direct_moment_2 += color * color;
+			direct_clamp_min = min(color, clamp_min);
+			direct_clamp_max = max(color, clamp_max);
+
+			float3 indirect = color;
+			if(has_indirect)
+			{
+				indirect = indirect_texture[screen_coord + int2(x, y)].xyz;
+			}
+			indirect_moment_1 += indirect;
+			indirect_moment_2 += indirect * indirect;
+			indirect_clamp_min = min(indirect, indirect_clamp_min);
+			indirect_clamp_max = max(indirect, indirect_clamp_max);
 		}
 	}
 
-	float3 mu = moment_1 / 25.0;
-	float3 sigma = sqrt(moment_2 / 25.0 - mu*mu);
+	float3 direct_mu = moment_1 / 25.0;
+	float3 direct_sigma = sqrt(moment_2 / 25.0 - mu*mu);
 
-	float3 box_min = max(mu - VARIANCE_CLIPPING_GAMMA * sigma, clamp_min);
-	float3 box_max = min(mu + VARIANCE_CLIPPING_GAMMA * sigma, clamp_max);
+	float3 direct_box_min = max(direct_mu - VARIANCE_CLIPPING_GAMMA * direct_sigma, direct_clamp_min);
+	float3 direct_box_max = min(direct_mu + VARIANCE_CLIPPING_GAMMA * direct_sigma, direct_clamp_max);
 
-	float4 clipped = LineBoxIntersection(box_min, box_max, direct.xyz, prev_direct.xyz);
+	float4 direct_clipped = LineBoxIntersection(direct_box_min, direct_box_max, direct.xyz, prev_direct.xyz);
+		
+	float3 indirect_mu = moment_1 / 25.0;
+	float3 indirect_sigma = sqrt(moment_2 / 25.0 - mu*mu);
+
+	float3 indirect_box_min = max(indirect_mu - VARIANCE_CLIPPING_GAMMA * indirect_sigma, indirect_clamp_min);
+	float3 indirect_box_max = min(indirect_mu + VARIANCE_CLIPPING_GAMMA * indirect_sigma, indirect_clamp_max);
+
+	float4 indirect_clipped = LineBoxIntersection(indirect_box_min, indirect_box_max, indirect.xyz, prev_indirect.xyz);
 
 	//success = clipped.w > 1.0;
 
-	prev_direct = float4(clipped.xyz, prev_direct.w);
+	prev_direct = float4(direct_clipped.xyz, prev_direct.w);
+	prev_indirect = float4(indirect_clipped.xyz, prev_indirect.w);
 
 	history_length = min(32.0, success ? (history_length + 1.0) : 1.0);
 
 	const float alpha = lerp(1.0, max(blending_alpha, 1.0/history_length), success);
 	const float moments_alpha = lerp(1.0, max(blending_moments_alpha, 1.0/history_length), success);
 
-	float2 moments = float2(0, 0);
+	float4 moments = float4(0, 0, 0, 0);
 	moments.r = Luminance(direct.xyz);
+	moments.b = Luminance(indirect.xyz);
 	moments.g = moments.r * moments.r;
+	moments.a = moments.b * moments.b;
 
 	moments = lerp(prev_moments, moments, moments_alpha);
 
