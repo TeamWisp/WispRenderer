@@ -140,7 +140,7 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 
 		// ##### BOUNCE #####
 		nextRand(seed);
-		const float3 rand_dir = getUniformHemisphereSample(seed, N);
+		const float3 rand_dir = getCosHemisphereSample(seed, N);
 		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
 		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
 
