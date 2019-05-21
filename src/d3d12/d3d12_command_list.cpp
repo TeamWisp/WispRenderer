@@ -250,8 +250,8 @@ namespace wr::d3d12
 
 		D3D12_VERTEX_BUFFER_VIEW view;
 		view.BufferLocation = buffer->m_gpu_address + offset;
-		view.StrideInBytes = stride;
-		view.SizeInBytes = size;
+		view.StrideInBytes = static_cast<UINT>(stride);
+		view.SizeInBytes = static_cast<UINT>(size);
 
 		cmd_list->m_native->IASetVertexBuffers(0, 1, &view);
 	}

@@ -31,11 +31,13 @@ namespace wr::d3d12
 			};
 
 			// Create default heap
+			D3D12_RESOURCE_STATES state = (D3D12_RESOURCE_STATES)descriptor.m_initial_state;
+
 			TRY_M(n_device->CreateCommittedResource(
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 				D3D12_HEAP_FLAG_NONE,
 				&resource_desc,
-				(D3D12_RESOURCE_STATES)descriptor.m_initial_state,
+				state,
 				&optimized_clear_value, // optimizes draw call
 				IID_PPV_ARGS(&render_target->m_render_targets[i])
 			), "Failed to create render target.");

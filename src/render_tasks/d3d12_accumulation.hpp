@@ -63,7 +63,6 @@ namespace wr
 		inline void ExecuteAccumulationTask(RenderSystem& rs, FrameGraph& fg, SceneGraph&, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<AccumulationData>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);

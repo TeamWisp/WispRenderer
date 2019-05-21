@@ -375,8 +375,8 @@ namespace wr
 			if (properties.m_width.Get().has_value() || properties.m_height.Get().has_value())
 			{
 				auto retval = d3d12::CreateRenderTarget(m_device, 
-					properties.m_width.Get().value() * properties.m_resolution_scale.Get(),
-					properties.m_height.Get().value() * properties.m_resolution_scale.Get(),
+					static_cast<std::uint32_t>(properties.m_width.Get().value() * properties.m_resolution_scale.Get()),
+					static_cast<std::uint32_t>(properties.m_height.Get().value() * properties.m_resolution_scale.Get()),
 					desc);
 
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
@@ -386,8 +386,8 @@ namespace wr
 			else if (m_window.has_value())
 			{
 				auto retval = d3d12::CreateRenderTarget(m_device, 
-					m_window.value()->GetWidth() * properties.m_resolution_scale.Get(), 
-					m_window.value()->GetHeight() * properties.m_resolution_scale.Get(), 
+					static_cast<std::uint32_t>(m_window.value()->GetWidth() * properties.m_resolution_scale.Get()),
+					static_cast<std::uint32_t>(m_window.value()->GetHeight() * properties.m_resolution_scale.Get()),
 					desc);
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
 					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
@@ -1016,7 +1016,6 @@ namespace wr
 	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto frame_idx = GetFrameIdx();
 		auto d3d12_camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera->m_camera_cb);
 	
 		d3d12::BindConstantBuffer(n_cmd_list, d3d12_camera_cb->m_native, 0, GetFrameIdx());
@@ -1080,7 +1079,7 @@ namespace wr
 				}
 				else
 				{
-					d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
+					d3d12::Draw(n_cmd_list, static_cast<std::uint32_t>(n_mesh->m_vertex_count), batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
 				}
 			}
 		}

@@ -26,13 +26,13 @@ namespace wr
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
-		d3d12::StateObject* out_state_object;
-		d3d12::RootSignature* out_root_signature;
-		D3D12ConstantBufferHandle* out_cb_camera_handle;
+		d3d12::StateObject* out_state_object = nullptr;
+		d3d12::RootSignature* out_root_signature = nullptr;
+		D3D12ConstantBufferHandle* out_cb_camera_handle = nullptr;
 
 		DescriptorAllocation out_uav_from_rtv;
 
-		bool tlas_requires_init;
+		bool tlas_requires_init = false;
 	};
 
 	namespace internal

@@ -36,7 +36,7 @@ namespace wr::d3d12
 		};
 	}
 
-	Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
+	Heap<HeapOptimization::SMALL_BUFFERS>* CreateHeap_SBO(Device* device, std::uint64_t size_in_bytes, ResourceType resource , unsigned int versioning_count)
 	{
 		auto heap = new Heap<HeapOptimization::SMALL_BUFFERS>();
 		heap->m_mapped = false;
@@ -118,7 +118,7 @@ namespace wr::d3d12
 		return heap;
 	}
 
-	Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* CreateHeap_SSBO(Device * device, std::uint64_t size_in_bytes, ResourceType resource_type, unsigned int versioning_count)
+	Heap<HeapOptimization::SMALL_STATIC_BUFFERS>* CreateHeap_SSBO(Device * device, std::uint64_t size_in_bytes, unsigned int versioning_count)
 	{
 		auto heap = new Heap<HeapOptimization::SMALL_STATIC_BUFFERS>();
 		heap->m_mapped = false;

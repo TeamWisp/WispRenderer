@@ -181,7 +181,7 @@ namespace wr
 
 	void D3D12ModelPool::ShrinkVertexHeapToFit()
 	{
-		MemoryBlock* last_occupied_block;
+		MemoryBlock* last_occupied_block = nullptr;
 		for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
@@ -199,11 +199,9 @@ namespace wr
 		}
 
 		ID3D12Resource* old_buffer = m_vertex_buffer->m_buffer;
-		ID3D12Resource* new_buffer;
+		ID3D12Resource* new_buffer = nullptr;
 		ID3D12Resource* old_staging = m_vertex_buffer->m_staging;
-		ID3D12Resource* new_staging;
-
-		bool was_staged = m_vertex_buffer->m_is_staged;
+		ID3D12Resource* new_staging = nullptr;
 
 		uint8_t* cpu_address;
 
@@ -1040,7 +1038,7 @@ namespace wr
 			}
 		}
 
-		MemoryBlock* last_occupied_block;
+		MemoryBlock* last_occupied_block = nullptr;
 		for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
@@ -1083,7 +1081,7 @@ namespace wr
 
 			new_staging->Map(0, &read_range, reinterpret_cast<void**>(&(cpu_address)));
 
-			memcpy(cpu_address, m_vertex_buffer->m_cpu_address, std::min(static_cast<std::uint32_t>(new_size), m_vertex_buffer->m_size));
+			memcpy(cpu_address, m_vertex_buffer->m_cpu_address, std::min(new_size, m_vertex_buffer->m_size));
 
 			m_vertex_buffer->m_size = static_cast<std::uint32_t>(new_size);
 			m_vertex_buffer->m_is_staged = true;
@@ -1218,7 +1216,7 @@ namespace wr
 			}
 		}
 
-		MemoryBlock* last_occupied_block;
+		MemoryBlock* last_occupied_block = nullptr;
 		for (MemoryBlock* mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
@@ -1261,7 +1259,7 @@ namespace wr
 
 			new_staging->Map(0, &read_range, reinterpret_cast<void**>(&(cpu_address)));
 
-			memcpy(cpu_address, m_index_buffer->m_cpu_address, std::min(static_cast<std::uint32_t>(new_size), m_index_buffer->m_size));
+			memcpy(cpu_address, m_index_buffer->m_cpu_address, std::min(new_size, m_index_buffer->m_size));
 
 			m_index_buffer->m_size = static_cast<std::uint32_t>(new_size);
 			m_index_buffer->m_is_staged = true;
