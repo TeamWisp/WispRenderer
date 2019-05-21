@@ -45,8 +45,8 @@ cbuffer CameraProperties : register(b0)
 [shader("raygeneration")]
 void RaygenEntry()
 {
-	//uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
-	uint rand_seed = initRand(DispatchRaysIndex().x % TILE_SIZE_2D, DispatchRaysIndex().y % TILE_SIZE_2D);
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+	//uint rand_seed = initRand(DispatchRaysIndex().x % TILE_SIZE_2D, DispatchRaysIndex().y % TILE_SIZE_2D);
 
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy + 0.5f) / float2(DispatchRaysDimensions().xy);

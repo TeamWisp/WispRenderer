@@ -43,11 +43,14 @@ namespace wr
 			auto& data = fg.GetData<DoFBokehData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_allocation = data.out_allocator->Allocate(5);
+			if (!resize)
+			{
+				data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+				data.out_allocation = data.out_allocator->Allocate(5);
 
-			data.camera_cb_pool = rs.CreateConstantBufferPool(2);
-			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(Bokeh_CB)));
+				data.camera_cb_pool = rs.CreateConstantBufferPool(2);
+				data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(Bokeh_CB)));
+			}
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::dof_bokeh))->m_native;
@@ -178,6 +181,19 @@ namespace wr
 				1);
 		}
 
+		inline void DestroyDoFBokehTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			if (!resize)
+			{
+				auto& data = fg.GetData<DoFBokehData>(handle);
+
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_allocation);
+				data.camera_cb_pool->Destroy(data.cb_handle);
+				delete data.out_allocator;
+			}
+		}
+
 	} /* internal */
 
 	template<typename T, typename T1>
@@ -210,6 +226,7 @@ namespace wr
 			internal::ExecuteDoFBokehTask<T, T1>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyDoFBokehTask(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;

@@ -6,14 +6,40 @@
 
 #define D3DX12_INC d3dx12_rt.h
 
+/*Helper function to get readable error messages from HResults
+code originated from https://docs.microsoft.com/en-us/windows/desktop/cossdk/interpreting-error-codes
+*/
+inline std::string HResultToString(HRESULT hr)
+{
+	if (FACILITY_WINDOWS == HRESULT_FACILITY(hr))
+	{
+		hr = HRESULT_CODE(hr);
+	}
+	TCHAR* sz_err_msg;
+
+	if (FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&sz_err_msg, 0, NULL) != 0)
+	{
+		std::string retval = sz_err_msg;
+		LocalFree(sz_err_msg);
+		return(retval);
+	}
+	else
+	{
+		return(std::string("[Could not find a description for error # %#x.", hr));
+	}
+}
+
 //! Checks whether the d3d12 object exists before releasing it.
 #define SAFE_RELEASE(obj) { if ( obj ) { obj->Release(); obj = NULL; } }
 
 //! Handles a hresult.
-#define TRY(result) if (FAILED(result)) { LOGC("An hresult returned a error!. File: " + std::string(__FILE__) + " Line: " + std::to_string(__LINE__)); }
+#define TRY(result) if (FAILED(result)) { LOGC("An hresult returned a error!. File: " + std::string(__FILE__) + " Line: " + std::to_string(__LINE__) + " HRResult: " +  HResultToString(result)); }
 
 //! Handles a hresult and outputs a specific message.
-#define TRY_M(result, msg) if (FAILED(result)) { LOGC(msg); }
+#define TRY_M(result, msg) if (FAILED(result)) { LOGC(static_cast<std::string>(msg) + " HRResult: " + HResultToString(result)); }
 
 //! This macro is used to name d3d12 resources.
 #define NAME_D3D12RESOURCE(r, n) { auto temp = std::string(__FILE__); \

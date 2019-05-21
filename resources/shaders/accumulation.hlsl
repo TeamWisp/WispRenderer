@@ -14,14 +14,12 @@ cbuffer Properties : register(b0)
 [numthreads(16, 16, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
-	float2 resolution;
-	input.GetDimensions(resolution.x, resolution.y);
+	float4 current = input[DTid.xy]; // Last path tracer result
+	float4 prev = output[DTid.xy]; // Previous path tracer output
 
-	float2 uv = float2(DTid.xy) / resolution;
-	float gamma = 2.2;
-	float exposure = 1;
+	float accum_count = frame_idx; // 0 to x, the number of times the accumulation has ran.
 
-	float3 color = input.SampleLevel(s0, uv, 0).rgb / (frame_idx + 1);
+	float4 color = (accum_count * prev + current) / (accum_count + 1); // accumulate
 
-	output[DTid.xy] = float4(color, 1);
+	output[DTid.xy] = color; // update the output with the accumulated result.
 }

@@ -81,6 +81,9 @@ namespace wr
 		bool m_running;
 		HWND m_handle;
 		HINSTANCE m_instance;
+
+		uint32_t m_window_width = 0;
+		uint32_t m_window_height = 0;
 	};
 
 } /* wr */

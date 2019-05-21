@@ -1,5 +1,5 @@
-#ifndef __UTIL_HLSL__
-#define __UTIL_HLSL__
+#ifndef __UTILS_HLSL__
+#define __UTILS_HLSL__
 
 // Initialize random seed
 uint initRand(uint val0, uint val1, uint backoff = 16)
@@ -113,4 +113,4 @@ float3 perturbDirectionVector(inout uint randSeed, float3 direction, float angle
 	return bitangent * x + tangent * y + direction * z;
 }
 
-#endif //__UTIL_HLSL__
+#endif // __UTILS_HLSL__

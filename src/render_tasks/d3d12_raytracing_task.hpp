@@ -133,6 +133,10 @@ namespace wr
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
+
+				CreateShaderTables(device, data, 0);
+				CreateShaderTables(device, data, 1);
+				CreateShaderTables(device, data, 2);
 			}
 
 			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
@@ -140,10 +144,6 @@ namespace wr
 				d3d12::DescHeapCPUHandle desc_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, desc_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
 			}
-
-			CreateShaderTables(device, data, 0);
-			CreateShaderTables(device, data, 1);
-			CreateShaderTables(device, data, 2);
 		}
 
 		inline void ExecuteRaytracingTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
@@ -299,6 +299,9 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
+				/*unsigned int verts_loc = rs_layout::GetHeapLoc(params::FullRaytracingE, params::FullRaytracingE::VERTICES);
+				This should be the Parameter index not the heap location, it was only working due to a ridiculous amount of luck and should be fixed, or we completely missunderstand this stuff...
+				Much love, Meine and Florian*/
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
 //#ifdef _DEBUG

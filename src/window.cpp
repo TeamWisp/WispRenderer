@@ -5,8 +5,11 @@
 #include "imgui/imgui.hpp"
 #include "imgui/imgui_impl_win32.hpp"
 
+#include <algorithm>
+
 namespace wr
 {
+
 
 	Window::Window(HINSTANCE instance, int show_cmd, std::string const & name, std::uint32_t width, std::uint32_t height)
 		: m_title(name), m_instance(instance)
@@ -24,6 +27,9 @@ namespace wr
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = name.c_str();
 		wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
+
+		m_window_width = width;
+		m_window_height = height;
 
 		if (!RegisterClassEx(&wc))
 		{
@@ -204,7 +210,6 @@ namespace wr
 			return 0;
 		case WM_DESTROY:
 			m_running = false;
-			PostQuitMessage(0);
 			return 0;
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONUP:
@@ -239,7 +244,17 @@ namespace wr
 				{
 					int width = rect.right - rect.left;
 					int height = rect.bottom - rect.top;
-					m_resize_callback(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+
+					bool has_changed = width != m_window_width || height != m_window_height;
+					bool is_valid_size = width > 0 && height > 0;
+
+					if (has_changed && is_valid_size)
+					{
+						m_resize_callback(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+
+						m_window_width = width;
+						m_window_height = height;
+					}
 				}
 			}
 			return 0;
