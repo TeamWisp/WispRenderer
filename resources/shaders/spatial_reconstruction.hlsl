@@ -6,6 +6,9 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_view;
 	float4x4 view;
+
+	float2 padding;
+	float near_plane, far_plane;
 };
 
 RWTexture2D<float4> filtered : register(u0);
@@ -16,6 +19,7 @@ Texture2D normal_metallic : register(t3);
 Texture2D depth_buffer : register(t4);
 SamplerState nearest_sampler  : register(s0);
 
+//Get weight from roughness, view direction, light direction and normal (view space)
 float brdf_weight(float3 V, float3 L, float3 N, float roughness)
 {
 	float3 H = normalize(V + L);
@@ -30,6 +34,21 @@ float brdf_weight(float3 V, float3 L, float3 N, float roughness)
 	float weight = D * PI / 4;
 
 	return max(weight, 1e-5);		//Perfect mirrors can have weights too
+}
+
+float linearize_depth(float D)
+{
+	float z_n = D * 2 - 1;
+	return 2 * near_plane * far_plane / (far_plane + near_plane - z_n * (far_plane - near_plane));
+}
+
+//Get total weight from neighbor using normal and normalized depth from both neighbor and center
+float neighbor_edge_weight(float3 N, float3 N_neighbor, float D, float D_neighbor, float2 uv)
+{
+	//const float d = linearize_depth(D);
+	//const float d_neighbor = linearize_depth(D_neighbor);
+	//const float weight = edge_weight(N, N_neighbor, d, d_neighbor);
+	return float(uv.x >= 0 && uv.y >= 0 && uv.x <= 1 && uv.y <= 1) * (D != 1 && D_neighbor != 1);
 }
 
 //Hardcode the samples for now; settings: kernelSize=5, points=16
@@ -110,18 +129,19 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height));
 
 		const float4 hitT = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
-		const float3 hit_pos = float4(hitT.xyz * hitT.w + pos, 1);
-		const float3 hit_vpos = mul(view, hit_pos).xyz;
+		const float3 hit_pos = hitT.xyz * hitT.w + pos;
+		const float3 hit_vpos = mul(view, float4(hit_pos, 1)).xyz;
 
 		const float3 color = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz;
 		const float3 L = normalize(hit_vpos - vpos.xyz);
 		const float pdf = max(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).w, 1e-5);
 		const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
+		const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
 
 		//Calculate weight and weight sum
 
-		const float valid = float(neighbor_uv.x >= 0 && neighbor_uv.y >= 0 && neighbor_uv.x <= 1 && neighbor_uv.y <= 1) * float(depth_neighbor != 1);
-		const float weight = brdf_weight(V, L, N, roughness) / pdf * valid;
+		const float neighborWeight = neighbor_edge_weight(Nworld, N_neighbor, depth, depth_neighbor, neighbor_uv);
+		const float weight = brdf_weight(V, L, N, roughness) / pdf * neighborWeight;
 		result += color * weight;
 		weightSum += weight;
 	}

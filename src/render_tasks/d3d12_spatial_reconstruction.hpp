@@ -21,12 +21,17 @@ namespace wr
 		DescriptorAllocation gbuffer_depth;
 	};
 
-	namespace temp {
+	namespace temp
+	{
 
-		struct SpatialReconstructionCameraData {
+		struct SpatialReconstructionCameraData
+		{
 			DirectX::XMMATRIX inv_projection;
 			DirectX::XMMATRIX inv_view;
 			DirectX::XMMATRIX view;
+
+			DirectX::XMFLOAT2 padding;
+			float near_plane, far_plane;
 		};
 
 	}
@@ -111,6 +116,8 @@ namespace wr
 			cam_data.inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
 			cam_data.inv_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 			cam_data.view = camera->m_view;
+			cam_data.near_plane = camera->m_frustum_near;
+			cam_data.far_plane = camera->m_frustum_far;
 			n_render_system.m_camera_pool->Update(data.camera_cb, sizeof(temp::SpatialReconstructionCameraData), 0, frame_idx, (std::uint8_t*)&cam_data);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, data.camera_cb->m_native, 1, frame_idx);
