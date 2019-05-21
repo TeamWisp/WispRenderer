@@ -16,6 +16,19 @@
 
 namespace wr
 {
+	struct RTAOSettings
+	{
+		struct Runtime
+		{
+			float bias = 0.01f;
+			float radius = 1.f;
+			float power = 1.f;
+			int sample_count = 8;
+		};
+
+		Runtime m_runtime;
+	};
+
 	struct RTAOData
 	{
 
@@ -150,12 +163,12 @@ namespace wr
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
 				data.in_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_ao_global))->m_native;
-			}
 
-			// Create Shader Tables
-			CreateShaderTables(device, data, 0);
-			CreateShaderTables(device, data, 1);
-			CreateShaderTables(device, data, 2);
+				// Create Shader Tables
+				CreateShaderTables(device, data, 0);
+				CreateShaderTables(device, data, 1);
+				CreateShaderTables(device, data, 2);
+			}
 		}
 
 		inline void ExecuteAOTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
@@ -168,6 +181,7 @@ namespace wr
 			auto& data = fg.GetData<RTAOData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
+			auto setting = fg.GetSettings<RTAOData, RTAOSettings>();
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 			if (fg.HasTask<wr::RTHybridData>())
@@ -204,10 +218,10 @@ namespace wr
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTAO_CBData cb_data;
 				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
-				cb_data.bias = 0.01f;
-				cb_data.radius = 1.f;
-				cb_data.power = 1.f;
-				cb_data.sample_count = 8u;
+				cb_data.bias = setting.m_runtime.bias;
+				cb_data.radius = setting.m_runtime.radius;
+				cb_data.power = setting.m_runtime.power;
+				cb_data.sample_count = static_cast<unsigned int>(setting.m_runtime.sample_count);
 
 				n_render_system.m_camera_pool->Update(data.out_cb_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
 
@@ -285,6 +299,7 @@ namespace wr
 			desc.m_allow_multithreading = true;
 
 			fg.AddTask<RTAOData>(desc);
+			fg.UpdateSettings<RTAOData>(RTAOSettings());
 		}
 		else
 		{

@@ -166,12 +166,12 @@ namespace wr
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
 				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
-			}
 
-			// Create Shader Tables
-			CreateShaderTables(device, data, 0);
-			CreateShaderTables(device, data, 1);
-			CreateShaderTables(device, data, 2);
+				// Create Shader Tables
+				CreateShaderTables(device, data, 0);
+				CreateShaderTables(device, data, 1);
+				CreateShaderTables(device, data, 2);
+			}
 
 			// Setup frame index
 			data.frame_idx = 0;

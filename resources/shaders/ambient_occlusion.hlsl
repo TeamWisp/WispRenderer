@@ -79,7 +79,7 @@ void AORaygenEntry()
         ao_value -= (1.0f/float(sample_count)) * TraceAORay(0, wpos, getCosHemisphereSample(rand_seed, normal), radius, 0);
     }
 
-    output[DispatchRaysIndex().xy].x = ao_value * power;
+    output[DispatchRaysIndex().xy].x = ao_value / power;
 }
 
 [shader("closesthit")]

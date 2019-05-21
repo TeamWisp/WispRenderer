@@ -294,7 +294,12 @@ namespace wr
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
 				WaitForCompletion(i);
+			}
 
+			render_system.WaitForAllPreviousWork();
+
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
 				m_destroy_funcs[i](*this, i, true);
 
 				if (!m_rt_properties[i].value().m_is_render_window)
