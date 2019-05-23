@@ -28,7 +28,7 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
     float4x4 prev_projection;
 	float4x4 inv_projection;
-	float2 padding;
+	float2 padding_1;
 	float near_plane;
 	float far_plane;
 };
@@ -42,7 +42,7 @@ cbuffer DenoiserSettings : register(b1)
     float z_phi;
     float step_distance;
 	int has_indirect;
-	int padding;
+	int padding_2;
 };
 
 const static float VARIANCE_CLIPPING_GAMMA = 8.0;
@@ -70,7 +70,7 @@ uint DirToOct(float3 normal)
 
 void FetchNormalAndLinearZ(in int2 ipos, out float3 norm, out float2 zLinear)
 {
-	norm = normal_texture[ipos];
+	norm = normal_texture[ipos].xyz;
 	zLinear = depth_texture[ipos].xy;
 }
 
@@ -313,7 +313,7 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	
 	float4 prev_direct = float4(0.0, 0.0, 0.0, 0.0);
 	float4 prev_indirect = float4(0.0, 0.0, 0.0, 0.0);
-	float2 prev_moments = float4(0.0, 0.0, 0.0, 0.0);
+	float4 prev_moments = float4(0.0, 0.0, 0.0, 0.0);
 	float history_length = 0.0;
 
 	bool success = LoadPrevData(screen_coord, prev_direct, prev_indirect, prev_moments, history_length);
@@ -339,8 +339,8 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			float3 color = input_texture[screen_coord + int2(x, y)].xyz;
 			direct_moment_1 += color;
 			direct_moment_2 += color * color;
-			direct_clamp_min = min(color, clamp_min);
-			direct_clamp_max = max(color, clamp_max);
+			direct_clamp_min = min(color, direct_clamp_min);
+			direct_clamp_max = max(color, direct_clamp_max);
 
 			float3 indirect = color;
 			if(has_indirect)
@@ -354,16 +354,16 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 	}
 
-	float3 direct_mu = moment_1 / 25.0;
-	float3 direct_sigma = sqrt(moment_2 / 25.0 - mu*mu);
+	float3 direct_mu = direct_moment_1 / 25.0;
+	float3 direct_sigma = sqrt(direct_moment_2 / 25.0 - direct_mu * direct_mu);
 
 	float3 direct_box_min = max(direct_mu - VARIANCE_CLIPPING_GAMMA * direct_sigma, direct_clamp_min);
 	float3 direct_box_max = min(direct_mu + VARIANCE_CLIPPING_GAMMA * direct_sigma, direct_clamp_max);
 
 	float4 direct_clipped = LineBoxIntersection(direct_box_min, direct_box_max, direct.xyz, prev_direct.xyz);
 		
-	float3 indirect_mu = moment_1 / 25.0;
-	float3 indirect_sigma = sqrt(moment_2 / 25.0 - mu*mu);
+	float3 indirect_mu = indirect_moment_1 / 25.0;
+	float3 indirect_sigma = sqrt(indirect_moment_2 / 25.0 - indirect_mu * indirect_mu);
 
 	float3 indirect_box_min = max(indirect_mu - VARIANCE_CLIPPING_GAMMA * indirect_sigma, indirect_clamp_min);
 	float3 indirect_box_max = min(indirect_mu + VARIANCE_CLIPPING_GAMMA * indirect_sigma, indirect_clamp_max);
@@ -391,11 +391,16 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	out_moments_texture[screen_coord] = moments;
 	out_hist_length_texture[screen_coord] = history_length;
 
-	float variance = max(0.f, moments.g - moments.r * moments.r);
+	float2 variance = max(float2(0.f, 0.f), moments.ga - moments.rb * moments.rb);
 
 	direct = lerp(prev_direct, direct, alpha);
+	indirect = lerp(prev_indirect, indirect, alpha);
 
-	out_color_texture[screen_coord] = float4(direct.xyz, variance);
+	out_color_texture[screen_coord] = float4(direct.xyz, variance.x);
+	if(has_indirect)
+	{
+		out_indirect_texture[screen_coord] = float4(indirect.xyz, variance.y);
+	}
 }
 
 [numthreads(16,16,1)]

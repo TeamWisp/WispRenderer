@@ -114,6 +114,7 @@ namespace wr
 			data.prev_depth_allocation = std::move(data.out_allocator->Allocate());
 
 			data.out_color_allocation = std::move(data.out_allocator->Allocate());
+			data.out_indirect_allocation = std::move(data.out_allocator->Allocate());
 			data.out_moments_allocation = std::move(data.out_allocator->Allocate());
 			data.out_hist_allocation = std::move(data.out_allocator->Allocate());
 
@@ -699,7 +700,11 @@ namespace wr
 						}
 
 						cmd_list->m_native->CopyResource(data.m_in_prev_color->m_render_targets[0], data.m_out_color_render_target->m_render_targets[0]);
-						cmd_list->m_native->CopyResource(data.m_in_prev_indirect->m_render_targets[0], data.m_out_color_render_target->m_render_targets[1]);
+
+						if (data.m_has_indirect)
+						{
+							cmd_list->m_native->CopyResource(data.m_in_prev_indirect->m_render_targets[0], data.m_out_color_render_target->m_render_targets[1]);
+						}
 
 						d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 						d3d12::Transition(cmd_list, data.m_in_prev_color, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
@@ -722,7 +727,10 @@ namespace wr
 						}
 
 						cmd_list->m_native->CopyResource(data.m_in_prev_color->m_render_targets[0], data.m_direct_ping_pong_render_target->m_render_targets[0]);
-						cmd_list->m_native->CopyResource(data.m_in_prev_indirect->m_render_targets[0], data.m_indirect_ping_pong_render_target->m_render_targets[0]);
+						if (data.m_has_indirect)
+						{
+							cmd_list->m_native->CopyResource(data.m_in_prev_indirect->m_render_targets[0], data.m_indirect_ping_pong_render_target->m_render_targets[0]);
+						}
 
 						d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 						d3d12::Transition(cmd_list, data.m_in_prev_color, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
@@ -747,7 +755,10 @@ namespace wr
 				}
 
 				cmd_list->m_native->CopyResource(data.m_out_color_render_target->m_render_targets[0], data.m_direct_ping_pong_render_target->m_render_targets[0]);
-				cmd_list->m_native->CopyResource(data.m_out_color_render_target->m_render_targets[1], data.m_indirect_ping_pong_render_target->m_render_targets[0]);
+				if (data.m_has_indirect)
+				{
+					cmd_list->m_native->CopyResource(data.m_out_color_render_target->m_render_targets[1], data.m_indirect_ping_pong_render_target->m_render_targets[0]);
+				}
 
 				d3d12::Transition(cmd_list, data.m_direct_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 				d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::COPY_DEST, ResourceState::UNORDERED_ACCESS);
