@@ -166,7 +166,7 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_i
 
 	if(valid)
 	{
-		float sum_weights = 0;
+		float sum_weights_direct = 0;
 		float x = frac(pos_prev.x);
 		float y = frac(pos_prev.y);
 
@@ -187,13 +187,13 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_i
 				prev_indirect += weights[sample_idx] * prev_indirect_texture[loc] * float(v[sample_idx]);
 			}		
 			prev_moments += weights[sample_idx] * prev_moments_texture[loc] * float(v[sample_idx]);
-			sum_weights += weights[sample_idx] * float(v[sample_idx]);
+			sum_weights_direct += weights[sample_idx] * float(v[sample_idx]);
 		}
 
-		valid = (sum_weights >= 0.01);
-		prev_direct = lerp(float4(0, 0, 0, 0), prev_direct / sum_weights, valid);
-		prev_indirect = lerp(float4(0, 0, 0, 0), prev_indirect / sum_weights, valid);
-		prev_moments = lerp(float4(0, 0, 0, 0), prev_moments / sum_weights, valid);
+		valid = (sum_weights_direct >= 0.01);
+		prev_direct = lerp(float4(0, 0, 0, 0), prev_direct / sum_weights_direct, valid);
+		prev_indirect = lerp(float4(0, 0, 0, 0), prev_indirect / sum_weights_direct, valid);
+		prev_moments = lerp(float4(0, 0, 0, 0), prev_moments / sum_weights_direct, valid);
 
 	}
 	if(!valid)
@@ -417,12 +417,16 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	if(h < 4.0)
 	{
-		float sum_weights = 0.0;
+		float sum_weights_direct = 0.0;
+		float sum_weights_indirect = 0.0;
 		float3 sum_direct = float3(0.0, 0.0, 0.0);
-		float2 sum_moments = float2(0.0, 0.0);
+		float3 sum_indirect = float3(0.0, 0.0, 0.0);
+		float4 sum_moments = float4(0.0, 0.0, 0.0, 0.0);
 
 		const float4 direct_center = input_texture[screen_coord];
+		const float4 indirect_center = indirect_texture[screen_coord];
 		const float luminance_direct_center = Luminance(direct_center.xyz);
+		const float luminance_indirect_center = Luminance(indirect_center.xyz);
 
 		float3 normal_center = float3(0.0, 0.0, 0.0);
 		float2 depth_center = float2(0.0, 0.0);
@@ -433,10 +437,12 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		if(depth_center.x < 0.0)
 		{
 			out_color_texture[screen_coord] = direct_center;
+			out_indirect_texture[screen_coord] = indirect_center;
 			return;
 		}
 
 		const float phi_direct = l_phi;
+		const float phi_indirect = l_phi;
 		const float phi_depth = max(depth_center.y, 1e-8) * 3.0;
 
 		const int radius = 3;
@@ -454,7 +460,8 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				if(inside)
 				{
 					const float3 direct_p = input_texture[p].xyz;
-					const float2 moments_p = prev_moments_texture[p].xy;
+					const float3 indirect_p = indirect_texture[p].xyz;
+					const float4 moments_p = prev_moments_texture[p].xyzw;
 
 					const float l_direct_p = Luminance(direct_p);
 
@@ -467,7 +474,7 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 						normal_center, normal_p, n_phi,
 						luminance_direct_center, l_direct_p, l_phi);
 
-					sum_weights += w;
+					sum_weights_direct += w;
 					sum_direct += direct_p * w;
 
 					sum_moments += moments_p * float2(w.xx);
@@ -475,10 +482,10 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			}
 		}
 
-		sum_weights = max(sum_weights, 1e-6f);
+		sum_weights_direct = max(sum_weights_direct, 1e-6f);
 
-		sum_direct /= sum_weights;
-		sum_moments /= float2(sum_weights.xx);
+		sum_direct /= sum_weights_direct;
+		sum_moments /= float2(sum_weights_direct.xx);
 
 		float variance = sum_moments.y - sum_moments.x * sum_moments.x;
 
@@ -528,7 +535,7 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float phi_l_direct = l_phi * sqrt(max(0.0, eps_variance + variance));
 	const float phi_depth = max(depth_center.y, 1e-8) * step_distance;
 
-	float sum_weights = 1.0;
+	float sum_weights_direct = 1.0;
 	float4 sum_direct = direct_center;
 
 	[unroll]
@@ -560,11 +567,11 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 				const float w_direct = w * kernel;
 
-				sum_weights += w_direct;
+				sum_weights_direct += w_direct;
 				sum_direct += float4(w_direct.xxx, w_direct * w_direct) * direct_p;
 			}
 		}
 	}
 
-	out_color_texture[screen_coord] = float4(sum_direct / float4(sum_weights.xxx, sum_weights * sum_weights));
+	out_color_texture[screen_coord] = float4(sum_direct / float4(sum_weights_direct.xxx, sum_weights_direct * sum_weights_direct));
 }
