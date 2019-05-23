@@ -552,36 +552,70 @@ namespace wr
 		template<typename T>
 		struct CommandListCollection
 		{
-			std::vector<T*> m_direct_cmd_lists;
-			std::vector<T*> m_compute_cmd_lists;
-			std::vector<T*> m_copy_cmd_lists;
+			std::vector<T*> m_cmd_lists;
+			RenderTaskType m_type;
+			std::optional<std::vector<T*>> m_paired_cmd_lists;
+			RenderTaskType m_paired_type;
 		};
 
 		template<typename T>
-		[[nodiscard]] CommandListCollection<T> GetAllCommandLists()
+		[[nodiscard]] std::vector<CommandListCollection<T>> GetAllCommandLists()
 		{
-			/*
-			TEMP
-			*/
-			// topical sort
-			auto topical_sort = []() -> std::vector<RenderTaskHandle>
-			{
-			}
+			std::optional<CommandListCollection<T>> coll = std::nullopt;
+			std::vector<CommandListCollection<T>> result;
 
-			std::vector<RenderTaskHandle> ordererd(m_num_tasks);
-			// First order the list based on type, DIRECT -> COMPUTE -> COPY
+			// Split cmd_list list into multiple lists for ordered execution.
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; i++)
 			{
-				if (m_should_execute[i] == RenderTaskType::DIRECT)
+				if (!m_should_execute[i])
+					continue;
+
+				WaitForCompletion(i);
+
+				// Is pair
+				if (auto optional_pair = IsMarkedforAsyncCompute(i); optional_pair.has_value())
 				{
-					ordererd.emplace_back(m_types[i]);
+					// if tasks were added to a list before this pair append them to the results.
+					if (coll.has_value())
+					{
+						result.emplace_back(coll.value());
+						coll->m_cmd_lists.clear();
+						if (coll->m_paired_cmd_lists.has_value()) coll->m_paired_cmd_lists->clear();
+					}
+					else
+					{
+						coll = CommandListCollection<T>{}; // initialize the optional
+					}
+					
+					auto pair = optional_pair.value();
+
+					// Make srue 
+					coll->m_paired_cmd_lists = std::vector<T*>{};
+
+					coll->m_cmd_lists.emplace_back(static_cast<T*>(m_cmd_lists[pair.first]));
+					coll->m_paired_cmd_lists->emplace_back(static_cast<T*>(m_cmd_lists[pair.second]));
+					coll->m_type = m_types[pair.first];
+					coll->m_paired_type = m_types[pair.second];
+				}
+				// not a pair
+				else
+				{
+					// initialize coll if it isn't initlaized yet.
+					if (!coll.has_value())
+					{
+						coll = CommandListCollection<T>{}; // initialize the optional
+					}
+
+					coll->m_cmd_lists.emplace_back(static_cast<T*>(m_cmd_lists[i]));
+					coll->m_type = m_types[i];
 				}
 			}
-			/*
-			TEMP
-			*/
 
-			// Reserve to much. Prerfering speed over memory.
+			result.emplace_back(coll.value());
+
+			return result;
+
+			/*// Reserve to much. Prerfering speed over memory.
 			CommandListCollection<T> collection;
 			collection.m_direct_cmd_lists.reserve(m_num_tasks);
 			collection.m_compute_cmd_lists.reserve(m_num_tasks);
@@ -620,7 +654,7 @@ namespace wr
 				}
 			}
 
-			return collection;
+			return collection;*/
 		}
 
 		/*! Get the render target of a task. */
@@ -715,7 +749,14 @@ namespace wr
 			m_dependencies.emplace_back(dependencies);
 #endif
 			m_settings.resize(m_num_tasks + 1ull);
-			m_types.emplace_back(desc.m_type);
+			if (IsMarkedforAsyncCompute(m_num_tasks).has_value())
+			{
+				m_types.emplace_back(desc.m_type);
+			}
+			else
+			{
+				m_types.emplace_back(RenderTaskType::DIRECT);
+			}
 			m_rt_properties.emplace_back(desc.m_properties);
 			m_data.emplace_back(new (std::nothrow) T());
 			m_data_type_info.emplace_back(typeid(T));
@@ -890,6 +931,24 @@ namespace wr
 			// Frame has been rendered, allow a task to write to the CPU texture in the next frame
 			m_output_cpu_textures.pixel_data = std::nullopt;
 			m_output_cpu_textures.depth_data = std::nullopt;
+		}
+
+		std::optional<std::pair<RenderTaskHandle, RenderTaskHandle>> IsMarkedforAsyncCompute(RenderTaskHandle handle)
+		{
+			for (auto const & p : m_compute_pairs)
+			{
+				if (p.first == handle || p.second == handle)
+				{
+					return p;
+				}
+			}
+
+			return std::nullopt;
+		}
+
+		void MarkAsyncComputePair(std::pair<RenderTaskHandle, RenderTaskHandle> pair)
+		{
+			m_compute_pairs.emplace_back(pair);
 		}
 
 	private:
@@ -1070,6 +1129,8 @@ namespace wr
 		std::vector<std::optional<RenderTargetProperties>> m_rt_properties;
 		std::vector<std::future<void>> m_futures;
 		std::vector<std::array<d3d12::Fence*, d3d12::settings::num_back_buffers>> m_fences;
+
+		std::vector<std::pair<RenderTaskHandle, RenderTaskHandle>> m_compute_pairs;
 
 		const std::uint64_t m_uid;
 		static inline std::uint64_t m_largest_uid = 0;

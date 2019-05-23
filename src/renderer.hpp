@@ -68,9 +68,9 @@ namespace wr
 		virtual void SignalDirectQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) = 0;
 		virtual void SignalCopyQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) = 0;
 		virtual void SignalComputeQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) = 0;
-		virtual void WaitDirectQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) = 0;
+		/*virtual void WaitDirectQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) = 0;
 		virtual void WaitCopyQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) = 0;
-		virtual void WaitComputeQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) = 0;
+		virtual void WaitComputeQueue(std::array<Fence*, d3d12::settings::num_back_buffers> fence) = 0;*/
 
 		virtual void Init(std::optional<Window*> window) = 0;
 		virtual CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;

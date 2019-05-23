@@ -89,6 +89,8 @@ namespace fg_manager
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
 			fg = new wr::FrameGraph(18);
+
+			fg->MarkAsyncComputePair({6, 7});
 			
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
@@ -187,12 +189,12 @@ namespace fg_manager
 			wr::AddRTHybridTask(*fg);
 
 			//Raytraced Ambient Occlusion task
-			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
+			//wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
 			// Do Depth of field task
-			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
+			/*wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
 			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
@@ -203,9 +205,9 @@ namespace fg_manager
 			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
 			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);*/
 
-			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);

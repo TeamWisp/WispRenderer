@@ -279,9 +279,9 @@ namespace wr
 
 				//Render deferred
 
-				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+				//d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
-				d3d12::BindViewport(cmd_list, viewport);
+				//d3d12::BindViewport(cmd_list, viewport);
 
 				if constexpr (d3d12::settings::use_bundles)
 				{
@@ -294,7 +294,7 @@ namespace wr
 					RecordDrawCommands(n_render_system, cmd_list, static_cast<D3D12ConstantBufferHandle*>(camera_cb)->m_native, data, frame_idx);
 				}
 
-				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
+				//d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}
 		}
 
@@ -351,7 +351,7 @@ namespace wr
 		};
 
 		desc.m_properties = rt_properties;
-		desc.m_type = RenderTaskType::DIRECT;
+		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
 		fg.AddTask<DeferredCompositionTaskData>(desc, FG_DEPS(2, DeferredMainTaskData, CubemapConvolutionTaskData));

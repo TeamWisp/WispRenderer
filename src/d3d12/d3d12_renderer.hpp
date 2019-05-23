@@ -214,6 +214,8 @@ namespace wr
 		float light_radius = 50;
 		float temp_intensity = 1;
 
+		std::array<std::thread, d3d12::settings::num_back_buffers> m_execute_threads;
+
 	protected:
 		void SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index) final;
 

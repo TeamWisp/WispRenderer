@@ -187,9 +187,6 @@ namespace wr
 		}
 
 		auto frame_idx = GetFrameIdx();
-		d3d12::WaitFor(m_direct_fences[frame_idx]);
-		d3d12::WaitFor(m_compute_fences[frame_idx]);
-		d3d12::WaitFor(m_copy_fences[frame_idx]);
 
 		//Signal to the texture pool that we waited for the previous frame 
 		//so that stale descriptors and temporary textures can be freed.
@@ -257,16 +254,81 @@ namespace wr
 
 		frame_graph.Execute(*scene_graph.get());
 
-		std::vector<d3d12::CommandList*> n_direct_cmd_lists;
-		std::vector<d3d12::CommandList*> n_compute_cmd_lists;
-		std::vector<d3d12::CommandList*> n_copy_cmd_lists;
-		auto cmd_list_collection = frame_graph.GetAllCommandLists<d3d12::CommandList>();
-		n_direct_cmd_lists.reserve(cmd_list_collection.m_direct_cmd_lists.size());
-		n_compute_cmd_lists.reserve(cmd_list_collection.m_compute_cmd_lists.size());
-		n_copy_cmd_lists.reserve(cmd_list_collection.m_copy_cmd_lists.size());
+		auto cmd_list_collections = frame_graph.GetAllCommandLists<d3d12::CommandList>();
+
+		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_direct_fences[frame_idx]);
+		d3d12::WaitFor(m_direct_fences[frame_idx]);
+
+		for (std::size_t i = 0; i < cmd_list_collections.size(); i++)
+		{
+			auto collection = cmd_list_collections[i];
+
+			// if it is a asynchronous compute pair
+			if (collection.m_paired_cmd_lists.has_value())
+			{
+				std::vector<d3d12::CommandList*> n_left_cmd_lists;
+				n_left_cmd_lists.reserve(collection.m_cmd_lists.size());
+
+				std::vector<d3d12::CommandList*> n_right_cmd_lists;
+				n_right_cmd_lists.reserve(collection.m_paired_cmd_lists->size());
+
+				for (auto& list : collection.m_cmd_lists)
+				{
+					n_left_cmd_lists.push_back(list);
+				}
+
+				for (auto& list : collection.m_paired_cmd_lists.value())
+				{
+					n_right_cmd_lists.push_back(list);
+				}
+
+				auto execute_func = [&](auto type, auto cmd_lists) {
+					// Execute left hand
+					switch (type)
+					{
+					case RenderTaskType::COMPUTE:
+					{
+						d3d12::Execute(m_compute_queue, cmd_lists, m_compute_fences[frame_idx]);
+						return m_compute_fences[frame_idx];
+					}
+					case RenderTaskType::COPY:
+					{
+						d3d12::Execute(m_copy_queue, cmd_lists, m_copy_fences[frame_idx]);
+						return m_copy_fences[frame_idx];
+					}
+					case RenderTaskType::DIRECT:
+					{
+						d3d12::Execute(m_direct_queue, cmd_lists, m_direct_fences[frame_idx]);
+						return m_direct_fences[frame_idx];
+					}
+					}
+				};
+
+				auto left_fence = execute_func(collection.m_type, n_left_cmd_lists);
+				auto right_fence = execute_func(collection.m_paired_type, n_right_cmd_lists);
+
+				d3d12::WaitFor(left_fence);
+				d3d12::WaitFor(right_fence);
+			}
+			// normal execution
+			else
+			{
+				std::vector<d3d12::CommandList*> n_cmd_lists;
+				n_cmd_lists.reserve(collection.m_cmd_lists.size());
+
+				for (auto& list : collection.m_cmd_lists)
+				{
+					n_cmd_lists.push_back(list);
+				}
+
+				d3d12::Execute(m_direct_queue, n_cmd_lists, m_direct_fences[frame_idx]);
+				d3d12::WaitFor(m_direct_fences[frame_idx]);
+			}
+		}
+
 
 		// Build the direct list
-		n_direct_cmd_lists.push_back(m_direct_cmd_list);
+		/*n_direct_cmd_lists.push_back(m_direct_cmd_list);
 		for (auto& list : cmd_list_collection.m_direct_cmd_lists)
 		{
 			n_direct_cmd_lists.push_back(list);
@@ -277,17 +339,14 @@ namespace wr
 			n_compute_cmd_lists.push_back(list);
 		}
 
-		for (auto& list : cmd_list_collection.m_copy_cmd_lists)
-		{
-			n_copy_cmd_lists.push_back(list);
-		}
 
-		// Reset the batches.
-		ResetBatches(*scene_graph.get());
 
+		// Reset the batches
 		d3d12::Execute(m_direct_queue, n_direct_cmd_lists, m_direct_fences[frame_idx]);
 		d3d12::Execute(m_compute_queue, n_compute_cmd_lists, m_compute_fences[frame_idx]);
-		d3d12::Execute(m_copy_queue, n_copy_cmd_lists, m_copy_fences[frame_idx]);
+		d3d12::Execute(m_copy_queue, n_copy_cmd_lists, m_copy_fences[frame_idx]);*/
+
+		ResetBatches(*scene_graph.get());
 
 		if (m_render_window.has_value())
 		{
