@@ -68,7 +68,7 @@ namespace large_scene
 		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
-		scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sponza_model);
+		scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::suntemple_model);
 	}
 
 	void UpdateScene()

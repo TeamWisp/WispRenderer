@@ -20,12 +20,12 @@ namespace wr
 	{
 		struct Runtime
 		{
-			float bias = 0.01f;
+			float bias = 1.5f;
 			float radius = 55.f;
 			float power = 1.f;
-			float max_distance = 100.f;
+			float max_distance = 2000.f;
 			int sample_count = 8;
-		};
+		};//Currently setup to work with SunTemple
 
 		Runtime m_runtime;
 	};
@@ -209,7 +209,7 @@ namespace wr
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_depth_handle);
 				
 				auto in_scene_position_handle = data.in_gbuffers.GetDescriptorHandle(1);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 2, in_scene_depth_handle);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 2, in_scene_position_handle);
 
 				// Update offset data
 				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
