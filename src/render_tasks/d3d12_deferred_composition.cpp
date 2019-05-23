@@ -236,9 +236,9 @@ namespace wr
 				// Get HBAO+ Texture
 				if (data.is_hbao)
 				{
-					d3d12::DescHeapCPUHandle handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
+					d3d12::DescHeapCPUHandle desc_handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
 					d3d12::RenderTarget* ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
-					d3d12::CreateSRVFromSpecificRTV(ao_rt, handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
+					d3d12::CreateSRVFromSpecificRTV(ao_rt, desc_handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
 				}
 
 				// Get Irradiance Map
