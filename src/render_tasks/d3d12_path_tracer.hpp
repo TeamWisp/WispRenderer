@@ -16,6 +16,7 @@
 
 namespace wr
 {
+	//TODO, this struct is unpadded, manual padding might be usefull.
 	struct PathTracerData
 	{
 		d3d12::AccelerationStructure out_tlas = {};

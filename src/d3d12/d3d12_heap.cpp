@@ -886,10 +886,11 @@ namespace wr::d3d12
 		if (size_in_bytes != 0) {
 			ID3D12Resource* resource = buffer->m_heap_bsbo->m_resources[buffer->m_heap_vector_location].second[frame_idx];
 
-			cmd_list->m_native->ResourceBarrier(1,
-				&CD3DX12_RESOURCE_BARRIER::Transition(resource,
-					static_cast<D3D12_RESOURCE_STATES>(buffer->m_states[frame_idx]),
-					D3D12_RESOURCE_STATE_COPY_DEST));
+			CD3DX12_RESOURCE_BARRIER resource_barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource,
+				static_cast<D3D12_RESOURCE_STATES>(buffer->m_states[frame_idx]),
+				D3D12_RESOURCE_STATE_COPY_DEST);
+
+			cmd_list->m_native->ResourceBarrier(1, &resource_barrier);
 			
 			cmd_list->m_native->CopyBufferRegion(resource, 
 				offset, 
@@ -897,11 +898,12 @@ namespace wr::d3d12
 				buffer->m_begin_offset + offset + aligned_size * frame_idx, 
 				size_in_bytes);
 
-			
+			CD3DX12_RESOURCE_BARRIER copy_barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource,
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				static_cast<D3D12_RESOURCE_STATES>(buffer->m_states[frame_idx]));
+
 			cmd_list->m_native->ResourceBarrier(1,
-				&CD3DX12_RESOURCE_BARRIER::Transition(resource,
-					D3D12_RESOURCE_STATE_COPY_DEST,
-					static_cast<D3D12_RESOURCE_STATES>(buffer->m_states[frame_idx])));
+				&copy_barrier);
 		}
 	}
 

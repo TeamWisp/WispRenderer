@@ -824,9 +824,9 @@ namespace wr
 			d3d12::desc::StateObjectDesc n_desc;
 			n_desc.m_library = library->m_native;
 			n_desc.m_library_exports = desc.library_desc.Get().exports;
-			n_desc.max_attributes_size = desc.max_attributes_size.Get();
-			n_desc.max_payload_size = desc.max_payload_size.Get();
-			n_desc.max_recursion_depth = desc.max_recursion_depth.Get();
+			n_desc.max_attributes_size = static_cast<std::uint32_t>(desc.max_attributes_size.Get());
+			n_desc.max_payload_size = static_cast<std::uint32_t>(desc.max_payload_size.Get());
+			n_desc.max_recursion_depth = static_cast<std::uint32_t>(desc.max_recursion_depth.Get());
 			n_desc.m_hit_groups = desc.library_desc.Get().m_hit_groups;
 
 			if (auto rt_handle = desc.global_root_signature.Get().value(); desc.global_root_signature.Get().has_value())
@@ -1079,7 +1079,10 @@ namespace wr
 				}
 				else
 				{
-					d3d12::Draw(n_cmd_list, static_cast<std::uint32_t>(n_mesh->m_vertex_count), batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
+					d3d12::Draw(n_cmd_list, 
+						static_cast<std::uint32_t>(n_mesh->m_vertex_count), 
+						batch.num_instances, 
+						static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 				}
 			}
 		}

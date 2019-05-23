@@ -125,10 +125,11 @@ namespace wr
 			{
 				internal::TransitionCommand* transition_command = static_cast<internal::TransitionCommand*>(command);
 
-				cmd_list->m_native->ResourceBarrier(1, 
-					&CD3DX12_RESOURCE_BARRIER::Transition(transition_command->m_buffer, 
-						static_cast<D3D12_RESOURCE_STATES>(transition_command->m_old_state), 
-						static_cast<D3D12_RESOURCE_STATES>(transition_command->m_new_state)));
+				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(transition_command->m_buffer,
+					static_cast<D3D12_RESOURCE_STATES>(transition_command->m_old_state),
+					static_cast<D3D12_RESOURCE_STATES>(transition_command->m_new_state));
+
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
 
 				delete transition_command;
 				m_command_queue.pop();
@@ -205,10 +206,14 @@ namespace wr
 
 		uint8_t* cpu_address;
 
+		CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(new_size);
+
 		m_render_system.m_device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			&heap_properties_upload,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			&buffer_desc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&new_staging));
@@ -230,9 +235,9 @@ namespace wr
 		SAFE_RELEASE(m_vertex_buffer->m_staging);
 
 		m_render_system.m_device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&heap_properties_default,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			&buffer_desc,
 			static_cast<D3D12_RESOURCE_STATES>(m_vertex_buffer->m_target_resource_state),
 			nullptr,
 			IID_PPV_ARGS(&new_buffer));
@@ -359,10 +364,14 @@ namespace wr
 
 		uint8_t* cpu_address;
 
+		CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(new_size);
+
 		m_render_system.m_device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			&heap_properties_upload,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			&buffer_desc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&new_staging));
@@ -384,9 +393,9 @@ namespace wr
 		SAFE_RELEASE(m_index_buffer->m_staging);
 
 		m_render_system.m_device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&heap_properties_default,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			&buffer_desc,
 			static_cast<D3D12_RESOURCE_STATES>(m_index_buffer->m_target_resource_state),
 			nullptr,
 			IID_PPV_ARGS(&new_buffer));
@@ -529,10 +538,13 @@ namespace wr
 			if (largest_block->m_size > m_intermediate_size)
 			{
 				ID3D12Resource* buffer;
+				CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+				CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536));
+
 				m_render_system.m_device->m_native->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+					&heap_properties_default,
 					D3D12_HEAP_FLAG_NONE,
-					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536)),
+					&buffer_desc,
 					D3D12_RESOURCE_STATE_COPY_DEST,
 					nullptr,
 					IID_PPV_ARGS(&buffer));
@@ -787,10 +799,13 @@ namespace wr
 			if (largest_block->m_size > m_intermediate_size)
 			{
 				ID3D12Resource* buffer;
+				CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+				CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536));
+
 				m_render_system.m_device->m_native->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+					&heap_properties_default,
 					D3D12_HEAP_FLAG_NONE,
-					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536)),
+					&buffer_desc,
 					D3D12_RESOURCE_STATE_COPY_DEST,
 					nullptr,
 					IID_PPV_ARGS(&buffer));
@@ -1068,10 +1083,14 @@ namespace wr
 
 			uint8_t* cpu_address;
 
+			CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+			CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(new_size);
+
 			m_render_system.m_device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+				&heap_properties_upload,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+				&buffer_desc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
 				IID_PPV_ARGS(&new_staging));
@@ -1093,9 +1112,9 @@ namespace wr
 			SAFE_RELEASE(m_vertex_buffer->m_staging);
 
 			m_render_system.m_device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+				&heap_properties_default,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+				&buffer_desc,
 				static_cast<D3D12_RESOURCE_STATES>(m_vertex_buffer->m_target_resource_state),
 				nullptr,
 				IID_PPV_ARGS(&new_buffer));
@@ -1246,10 +1265,14 @@ namespace wr
 
 			uint8_t* cpu_address;
 
+			CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+			CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(new_size);
+
 			m_render_system.m_device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+				&heap_properties_upload,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+				&buffer_desc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
 				IID_PPV_ARGS(&new_staging));
@@ -1271,9 +1294,9 @@ namespace wr
 			SAFE_RELEASE(m_index_buffer->m_staging);
 
 			m_render_system.m_device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+				&heap_properties_default,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+				&buffer_desc,
 				static_cast<D3D12_RESOURCE_STATES>(m_index_buffer->m_target_resource_state),
 				nullptr,
 				IID_PPV_ARGS(&new_buffer));

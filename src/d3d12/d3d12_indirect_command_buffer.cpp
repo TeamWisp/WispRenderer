@@ -17,20 +17,25 @@ namespace wr::d3d12
 		buffer->m_native.resize(versions);
 		buffer->m_native_upload.resize(versions);
 
+		CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(max_commands * command_size);
+
 		for (uint32_t i = 0; i < versions; ++i)
 		{
+
 			TRY(device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+				&heap_properties_default,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(max_commands * command_size),
+				&buffer_desc,
 				D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT,
 				nullptr,
 				IID_PPV_ARGS(buffer->m_native.data() + i)));
 
 			TRY(device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+				&heap_properties_upload,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(max_commands * command_size),
+				&buffer_desc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
 				IID_PPV_ARGS(buffer->m_native_upload.data() + i)));

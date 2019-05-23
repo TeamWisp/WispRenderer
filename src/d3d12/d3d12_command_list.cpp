@@ -113,7 +113,11 @@ namespace wr::d3d12
 		}
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv_handle;
-		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
+
+		if (render_target->m_create_info.m_create_dsv_buffer)
+		{
+			dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
+		}
 
 		cmd_list->m_native->OMSetRenderTargets(static_cast<unsigned int>(handles.size()), handles.data(), false, render_target->m_create_info.m_create_dsv_buffer ? &dsv_handle : nullptr);
 		if (clear)
@@ -133,8 +137,13 @@ namespace wr::d3d12
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_handle(render_target->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart(),
 			frame_idx % render_target->m_render_targets.size(), render_target->m_rtv_descriptor_increment_size);
+
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv_handle;
-		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
+
+		if (render_target->m_create_info.m_create_dsv_buffer)
+		{
+			dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
+		}
 
 		cmd_list->m_native->OMSetRenderTargets(1, &rtv_handle, false, render_target->m_create_info.m_create_dsv_buffer ? &dsv_handle : nullptr);
 
@@ -142,6 +151,7 @@ namespace wr::d3d12
 		{
 			cmd_list->m_native->ClearRenderTargetView(rtv_handle, render_target->m_create_info.m_clear_color, 0, nullptr);
 		}
+
 		if (clear_depth && render_target->m_create_info.m_create_dsv_buffer)
 		{
 			cmd_list->m_native->ClearDepthStencilView(dsv_handle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
@@ -151,7 +161,11 @@ namespace wr::d3d12
 	void BindRenderTargetOnlyDepth(CommandList* cmd_list, RenderTarget* render_target, bool clear)
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv_handle;
-		if (render_target->m_create_info.m_create_dsv_buffer) dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
+
+		if (render_target->m_create_info.m_create_dsv_buffer)
+		{
+			dsv_handle = render_target->m_depth_stencil_resource_heap->GetCPUDescriptorHandleForHeapStart();
+		}
 
 		cmd_list->m_native->OMSetRenderTargets(0, nullptr, false, render_target->m_create_info.m_create_dsv_buffer ? &dsv_handle : nullptr);
 
@@ -256,7 +270,7 @@ namespace wr::d3d12
 		cmd_list->m_native->IASetVertexBuffers(0, 1, &view);
 	}
 
-	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset, unsigned int size)
+	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size)
 	{
 		if (!buffer->m_gpu_address)
 		{
@@ -266,7 +280,7 @@ namespace wr::d3d12
 		D3D12_INDEX_BUFFER_VIEW view;
 		view.BufferLocation = buffer->m_gpu_address + offset;
 		view.Format = DXGI_FORMAT_R32_UINT;
-		view.SizeInBytes = size;
+		view.SizeInBytes = static_cast<UINT>(size);
 
 		cmd_list->m_native->IASetIndexBuffer(&view);
 	}
