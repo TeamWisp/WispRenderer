@@ -250,7 +250,7 @@ namespace wr::d3d12
 		(*render_target)->m_width = width;
 		(*render_target)->m_height = height;
 
-		if ((*render_target)->m_create_info.m_dsv_format == Format::UNKNOWN && (*render_target)->m_create_info.m_create_dsv_buffer)
+		if ((*render_target)->m_create_info.m_dsv_format == Format::D32_FLOAT && (*render_target)->m_create_info.m_create_dsv_buffer)
 		{
 			DestroyDepthStencilBuffer((*render_target));
 		}
