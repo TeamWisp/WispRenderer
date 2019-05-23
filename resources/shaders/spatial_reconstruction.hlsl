@@ -54,25 +54,85 @@ float neighbor_edge_weight(float3 N, float3 N_neighbor, float D, float D_neighbo
 //Hardcode the samples for now; settings: kernelSize=3, points=8
 //https://github.com/Nielsbishere/NoisePlayground/blob/master/bluenoise_test.py
 
-static const uint sampleCount = 8;
-static float2 samples[4][sampleCount] = {
-	{
-		float2(0 ,  -1), float2(-1 ,  0), float2(1 ,  -1), float2(0 ,  2),
-		float2(-3 ,  0), float2(-1 ,  -3), float2(-3 ,  -2), float2(2 ,  1)
-	},
-	{
-		float2(-1 ,  1), float2(0 ,  0), float2(0 ,  -2), float2(-2 ,  -1),
-		float2(-2 ,  1), float2(2 ,  -1), float2(1 ,  2), float2(1 ,  -3)
-	},
-	{
-		float2(1 ,  0), float2(0 ,  1), float2(-1 ,  -2), float2(-2 ,  0),
-		float2(2 ,  0), float2(-1 ,  2), float2(-3 ,  -1), float2(0 ,  -3)
-	},
-	{
-		float2(-1 ,  -1), float2(-2 ,  -2), float2(1 ,  1), float2(1 ,  -2),
-		float2(-3 ,  1), float2(-2 ,  2), float2(2 ,  2), float2(-3 ,  2)
-	}
-};
+static const uint sampleCount = 16;
+float2 samples[4][64] = {
+		{
+				float2(-1 ,  -1), float2(0 ,  -1), float2(1 ,  1), float2(0 ,  2),
+				float2(-3 ,  -1), float2(-2 ,  2), float2(2 ,  -2), float2(3 ,  0),
+				float2(2 ,  -3), float2(-1 ,  -4), float2(1 ,  3), float2(3 ,  1),
+				float2(-2 ,  -4), float2(-4 ,  1), float2(-3 ,  3), float2(-1 ,  4),
+				float2(4 ,  -1), float2(-5 ,  -2), float2(3 ,  -4), float2(-4 ,  -4),
+				float2(-5 ,  -3), float2(0 ,  -6), float2(-6 ,  0), float2(-4 ,  4),
+				float2(5 ,  1), float2(1 ,  5), float2(1 ,  -6), float2(-3 ,  5),
+				float2(2 ,  5), float2(5 ,  -3), float2(6 ,  -1), float2(-1 ,  6),
+				float2(-6 ,  3), float2(-4 ,  -6), float2(5 ,  3), float2(-7 ,  -2),
+				float2(-7 ,  1), float2(-2 ,  -7), float2(6 ,  -3), float2(5 ,  -5),
+				float2(5 ,  4), float2(-7 ,  -4), float2(3 ,  -7), float2(3 ,  6),
+				float2(6 ,  3), float2(0 ,  -8), float2(-1 ,  7), float2(7 ,  -2),
+				float2(5 ,  5), float2(-5 ,  -7), float2(3 ,  -8), float2(-8 ,  3),
+				float2(-4 ,  7), float2(-9 ,  -1), float2(-6 ,  6), float2(8 ,  0),
+				float2(1 ,  8), float2(1 ,  -9), float2(4 ,  7), float2(-8 ,  -5),
+				float2(-3 ,  -9), float2(-9 ,  -3), float2(2 ,  8), float2(8 ,  3)
+
+		},
+		{
+				float2(1 ,  0), float2(-1 ,  -2), float2(-2 ,  -1), float2(-1 ,  1),
+				float2(2 ,  -1), float2(-1 ,  -3), float2(1 ,  2), float2(-3 ,  2),
+				float2(-3 ,  -3), float2(-4 ,  -1), float2(-1 ,  3), float2(-4 ,  0),
+				float2(1 ,  -4), float2(-2 ,  3), float2(3 ,  2), float2(3 ,  -3),
+				float2(-4 ,  -3), float2(4 ,  -2), float2(-2 ,  -5), float2(3 ,  3),
+				float2(-5 ,  2), float2(2 ,  -5), float2(5 ,  -1), float2(-6 ,  2),
+				float2(-3 ,  -6), float2(5 ,  2), float2(-5 ,  -5), float2(3 ,  -6),
+				float2(3 ,  5), float2(0 ,  6), float2(0 ,  -7), float2(1 ,  -7),
+				float2(1 ,  6), float2(-2 ,  6), float2(2 ,  6), float2(-7 ,  -3),
+				float2(6 ,  2), float2(-7 ,  2), float2(-6 ,  -5), float2(4 ,  -6),
+				float2(-5 ,  5), float2(-4 ,  -7), float2(-8 ,  0), float2(-1 ,  -8),
+				float2(7 ,  0), float2(-8 ,  1), float2(-8 ,  -2), float2(7 ,  -3),
+				float2(-8 ,  -3), float2(-5 ,  6), float2(-3 ,  7), float2(7 ,  -4),
+				float2(-4 ,  -8), float2(-7 ,  5), float2(0 ,  -9), float2(5 ,  -7),
+				float2(-7 ,  -6), float2(6 ,  -6), float2(8 ,  1), float2(-2 ,  8),
+				float2(-9 ,  1), float2(-2 ,  -9), float2(7 ,  4), float2(-8 ,  4)
+
+		},
+		{
+				float2(-1 ,  0), float2(0 ,  0), float2(1 ,  -1), float2(1 ,  -2),
+				float2(-3 ,  0), float2(0 ,  -3), float2(-3 ,  1), float2(-3 ,  -2),
+				float2(0 ,  -4), float2(0 ,  3), float2(2 ,  2), float2(3 ,  -2),
+				float2(-3 ,  -4), float2(-4 ,  2), float2(2 ,  3), float2(4 ,  0),
+				float2(-5 ,  -1), float2(-5 ,  0), float2(0 ,  4), float2(1 ,  -5),
+				float2(4 ,  1), float2(-2 ,  4), float2(-3 ,  -5), float2(4 ,  -3),
+				float2(-1 ,  -6), float2(-2 ,  5), float2(3 ,  -5), float2(-5 ,  -4),
+				float2(4 ,  3), float2(-5 ,  3), float2(4 ,  -4), float2(3 ,  4),
+				float2(-4 ,  5), float2(-6 ,  -4), float2(-7 ,  0), float2(6 ,  0),
+				float2(-7 ,  -1), float2(-1 ,  -7), float2(6 ,  -2), float2(-6 ,  4),
+				float2(-5 ,  -6), float2(4 ,  5), float2(-4 ,  6), float2(6 ,  -4),
+				float2(0 ,  7), float2(7 ,  1), float2(-6 ,  5), float2(-3 ,  -8),
+				float2(2 ,  7), float2(2 ,  -8), float2(6 ,  -5), float2(4 ,  -7),
+				float2(-8 ,  2), float2(7 ,  3), float2(3 ,  7), float2(6 ,  5),
+				float2(5 ,  6), float2(8 ,  -1), float2(0 ,  8), float2(8 ,  -2),
+				float2(-5 ,  7), float2(4 ,  -8), float2(7 ,  -5), float2(6 ,  6)
+
+		},
+		{
+				float2(0 ,  -2), float2(0 ,  1), float2(-2 ,  0), float2(-2 ,  -2),
+				float2(-2 ,  1), float2(2 ,  0), float2(-1 ,  2), float2(-2 ,  -3),
+				float2(1 ,  -3), float2(2 ,  1), float2(3 ,  -1), float2(-4 ,  -2),
+				float2(2 ,  -4), float2(0 ,  -5), float2(-1 ,  -5), float2(-5 ,  1),
+				float2(1 ,  4), float2(-4 ,  3), float2(2 ,  4), float2(-3 ,  4),
+				float2(4 ,  2), float2(-6 ,  -1), float2(0 ,  5), float2(5 ,  0),
+				float2(-1 ,  5), float2(5 ,  -2), float2(-4 ,  -5), float2(-6 ,  1),
+				float2(-6 ,  -2), float2(-2 ,  -6), float2(2 ,  -6), float2(-6 ,  -3),
+				float2(-5 ,  4), float2(4 ,  -5), float2(4 ,  4), float2(5 ,  -4),
+				float2(6 ,  1), float2(2 ,  -7), float2(-3 ,  6), float2(-3 ,  -7),
+				float2(-7 ,  3), float2(7 ,  -1), float2(-8 ,  -1), float2(-2 ,  7),
+				float2(1 ,  7), float2(1 ,  -8), float2(-2 ,  -8), float2(5 ,  -6),
+				float2(-6 ,  -6), float2(4 ,  6), float2(-7 ,  4), float2(6 ,  4),
+				float2(7 ,  2), float2(-7 ,  -5), float2(-8 ,  -4), float2(-9 ,  0),
+				float2(-1 ,  -9), float2(-1 ,  8), float2(-6 ,  -7), float2(-9 ,  -2),
+				float2(-5 ,  -8), float2(-9 ,  2), float2(-3 ,  8), float2(8 ,  -3)
+
+		}
+}
 
 //Sample a neighbor; 0,0 -> 1,1; outside of that range indicates an invalid uv
 float2 sample_neighbor_uv(uint sampleId, uint2 fullResPixel, uint2 resolution)
