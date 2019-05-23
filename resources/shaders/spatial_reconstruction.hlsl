@@ -31,7 +31,7 @@ float brdf_weight(float3 V, float3 L, float3 N, float roughness)
 	float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);		//This causes issues
 	float D = D_GGX(NdotH, roughness);
 
-	float weight = D * PI / 4;
+	float weight = G * D * PI / 4;
 
 	return max(weight, 1e-5);		//Perfect mirrors can have weights too
 }
@@ -81,6 +81,8 @@ float2 sample_neighbor_uv(uint sampleId, uint2 fullResPixel, uint2 resolution)
 	float2 offset = samples[pixId][sampleId];
 	return (float2(fullResPixel / 2) + offset) / float2(resolution / 2 - 1);
 }
+
+static const float3 luminance = float3(0.2126f, 0.7152f, 0.0722f);
 
 [numthreads(16, 16, 1)]
 void main(int3 pix3 : SV_DispatchThreadID)
@@ -140,6 +142,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	//Output averaged result
 
 	float3 result3 = result / weightSum;
+	result3 /= 1 + dot(luminance, result3);
 	filtered[pix] = float4(result3, 1);
 
 }
