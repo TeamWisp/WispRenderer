@@ -10,8 +10,6 @@
 #define LOG_PRINT_COLORS
 //#define LOG_PRINT_TO_OUTPUT
 
-#define LOG_PRINT_LOC
-
 #ifndef _DEBUG
 #define LOG_TO_FILE
 #define LOG_PRINT_LOC
