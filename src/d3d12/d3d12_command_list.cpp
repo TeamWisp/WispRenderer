@@ -270,7 +270,7 @@ namespace wr::d3d12
 		cmd_list->m_native->IASetVertexBuffers(0, 1, &view);
 	}
 
-	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::size_t offset, std::size_t size)
+	void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, std::uint32_t offset, std::uint32_t size)
 	{
 		if (!buffer->m_gpu_address)
 		{
@@ -280,7 +280,7 @@ namespace wr::d3d12
 		D3D12_INDEX_BUFFER_VIEW view;
 		view.BufferLocation = buffer->m_gpu_address + offset;
 		view.Format = DXGI_FORMAT_R32_UINT;
-		view.SizeInBytes = static_cast<UINT>(size);
+		view.SizeInBytes = size;
 
 		cmd_list->m_native->IASetIndexBuffer(&view);
 	}

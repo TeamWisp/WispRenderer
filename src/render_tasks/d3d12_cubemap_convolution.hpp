@@ -156,7 +156,7 @@ namespace wr
 								n_mesh->m_vertex_staging_buffer_stride);
 
 							d3d12::BindIndexBuffer(cmd_list, static_cast<D3D12ModelPool*>(cube_model->m_model_pool)->GetIndexStagingBuffer(),
-								0, model_pool->GetIndexStagingBuffer()->m_size);
+								0, static_cast<std::uint32_t>(model_pool->GetIndexStagingBuffer()->m_size));
 
 							constexpr unsigned int env_idx = rs_layout::GetHeapLoc(params::cubemap_convolution, params::CubemapConvolutionE::ENVIRONMENT_CUBEMAP);
 							d3d12::SetShaderSRV(cmd_list, 2, env_idx, radiance);

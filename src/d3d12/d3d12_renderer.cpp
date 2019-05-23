@@ -1038,16 +1038,18 @@ namespace wr
 				auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
 				if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride)
 				{
+					D3D12ModelPool* model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
+
 					d3d12::BindVertexBuffer(n_cmd_list,
-						static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
+						model_pool->GetVertexStagingBuffer(),
 						0,
-						static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer()->m_size,
+						model_pool->GetVertexStagingBuffer()->m_size,
 						n_mesh->m_vertex_staging_buffer_stride);
 
 					d3d12::BindIndexBuffer(n_cmd_list,
-						static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer(),
+						model_pool->GetIndexStagingBuffer(),
 						0,
-						static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer()->m_size);
+						static_cast<std::uint32_t>(model_pool->GetIndexStagingBuffer()->m_size));
 
 					m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 					m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;

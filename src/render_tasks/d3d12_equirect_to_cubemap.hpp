@@ -231,7 +231,7 @@ namespace wr
 
 						d3d12::BindVertexBuffer(cmd_list, pool->GetVertexStagingBuffer(), 0, pool->GetVertexStagingBuffer()->m_size, n_mesh->m_vertex_staging_buffer_stride);
 
-						d3d12::BindIndexBuffer(cmd_list, pool->GetIndexStagingBuffer(), 0, pool->GetIndexStagingBuffer()->m_size);
+						d3d12::BindIndexBuffer(cmd_list, pool->GetIndexStagingBuffer(), 0, static_cast<std::uint32_t>(pool->GetIndexStagingBuffer()->m_size));
 
 						constexpr unsigned int srv_idx = rs_layout::GetHeapLoc(params::cubemap_conversion, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE);
 						d3d12::SetShaderSRV(cmd_list, 2, srv_idx, equirect_text);
