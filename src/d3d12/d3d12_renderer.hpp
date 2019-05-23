@@ -53,7 +53,6 @@ namespace wr
 
 		struct RTAO_CBData
 		{
-			DirectX::XMMATRIX m_inv_vp;
 			DirectX::XMMATRIX m_inv_view;
 
 			float bias;

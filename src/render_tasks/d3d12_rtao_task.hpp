@@ -223,7 +223,6 @@ namespace wr
 				// Update constant buffer
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTAO_CBData cb_data;
-				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cb_data.m_inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
 				cb_data.bias = settings.m_runtime.bias;
 				cb_data.radius = settings.m_runtime.radius;

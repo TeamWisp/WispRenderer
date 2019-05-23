@@ -14,7 +14,6 @@ struct AOHitInfo
 
 cbuffer CBData : register(b0)
 {
-	float4x4 inv_vp; //TODO: remove this :)
 	float4x4 inv_view;
 
 	float bias;
