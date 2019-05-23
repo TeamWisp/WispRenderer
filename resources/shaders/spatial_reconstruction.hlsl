@@ -55,7 +55,7 @@ float neighbor_edge_weight(float3 N, float3 N_neighbor, float D, float D_neighbo
 //https://github.com/Nielsbishere/NoisePlayground/blob/master/bluenoise_test.py
 
 static const uint sampleCount = 16;
-float2 samples[4][64] = {
+static const float2 samples[4][64] = {
 		{
 				float2(-1 ,  -1), float2(0 ,  -1), float2(1 ,  1), float2(0 ,  2),
 				float2(-3 ,  -1), float2(-2 ,  2), float2(2 ,  -2), float2(3 ,  0),
@@ -132,7 +132,7 @@ float2 samples[4][64] = {
 				float2(-5 ,  -8), float2(-9 ,  2), float2(-3 ,  8), float2(8 ,  -3)
 
 		}
-}
+};
 
 //Sample a neighbor; 0,0 -> 1,1; outside of that range indicates an invalid uv
 float2 sample_neighbor_uv(uint sampleId, uint2 fullResPixel, uint2 resolution)
