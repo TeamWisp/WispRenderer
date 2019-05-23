@@ -3,9 +3,8 @@
 
 cbuffer CameraProperties : register(b0)
 {
-	float4x4 inv_projection;
+	float4x4 inv_vp;
 	float4x4 inv_view;
-	float4x4 view;
 
 	float2 padding;
 	float near_plane, far_plane;
@@ -56,82 +55,82 @@ float neighbor_edge_weight(float3 N, float3 N_neighbor, float D, float D_neighbo
 
 static const uint sampleCount = 16;
 static const float2 samples[4][64] = {
-		{
-				float2(-1 ,  -1), float2(0 ,  -1), float2(1 ,  1), float2(0 ,  2),
-				float2(-3 ,  -1), float2(-2 ,  2), float2(2 ,  -2), float2(3 ,  0),
-				float2(2 ,  -3), float2(-1 ,  -4), float2(1 ,  3), float2(3 ,  1),
-				float2(-2 ,  -4), float2(-4 ,  1), float2(-3 ,  3), float2(-1 ,  4),
-				float2(4 ,  -1), float2(-5 ,  -2), float2(3 ,  -4), float2(-4 ,  -4),
-				float2(-5 ,  -3), float2(0 ,  -6), float2(-6 ,  0), float2(-4 ,  4),
-				float2(5 ,  1), float2(1 ,  5), float2(1 ,  -6), float2(-3 ,  5),
-				float2(2 ,  5), float2(5 ,  -3), float2(6 ,  -1), float2(-1 ,  6),
-				float2(-6 ,  3), float2(-4 ,  -6), float2(5 ,  3), float2(-7 ,  -2),
-				float2(-7 ,  1), float2(-2 ,  -7), float2(6 ,  -3), float2(5 ,  -5),
-				float2(5 ,  4), float2(-7 ,  -4), float2(3 ,  -7), float2(3 ,  6),
-				float2(6 ,  3), float2(0 ,  -8), float2(-1 ,  7), float2(7 ,  -2),
-				float2(5 ,  5), float2(-5 ,  -7), float2(3 ,  -8), float2(-8 ,  3),
-				float2(-4 ,  7), float2(-9 ,  -1), float2(-6 ,  6), float2(8 ,  0),
-				float2(1 ,  8), float2(1 ,  -9), float2(4 ,  7), float2(-8 ,  -5),
-				float2(-3 ,  -9), float2(-9 ,  -3), float2(2 ,  8), float2(8 ,  3)
+    {
+        float2(-1 ,  -1), float2(0 ,  -1), float2(1 ,  1), float2(0 ,  2),
+        float2(-3 ,  -1), float2(-2 ,  2), float2(2 ,  -2), float2(3 ,  0),
+        float2(2 ,  -3), float2(-1 ,  -4), float2(1 ,  3), float2(3 ,  1),
+        float2(-2 ,  -4), float2(-4 ,  1), float2(-3 ,  3), float2(-1 ,  4),
+        float2(4 ,  -1), float2(-5 ,  -2), float2(3 ,  -4), float2(-4 ,  -4),
+        float2(-5 ,  -3), float2(0 ,  -6), float2(-6 ,  0), float2(-4 ,  4),
+        float2(5 ,  1), float2(1 ,  5), float2(1 ,  -6), float2(-3 ,  5),
+        float2(2 ,  5), float2(5 ,  -3), float2(6 ,  -1), float2(-1 ,  6),
+        float2(-6 ,  3), float2(-4 ,  -6), float2(5 ,  3), float2(-7 ,  -2),
+        float2(-7 ,  1), float2(-2 ,  -7), float2(6 ,  -3), float2(5 ,  -5),
+        float2(5 ,  4), float2(-7 ,  -4), float2(3 ,  -7), float2(3 ,  6),
+        float2(6 ,  3), float2(0 ,  -8), float2(-1 ,  7), float2(7 ,  -2),
+        float2(5 ,  5), float2(-5 ,  -7), float2(3 ,  -8), float2(-8 ,  3),
+        float2(-4 ,  7), float2(-9 ,  -1), float2(-6 ,  6), float2(8 ,  0),
+        float2(1 ,  8), float2(1 ,  -9), float2(4 ,  7), float2(-8 ,  -5),
+        float2(-3 ,  -9), float2(-9 ,  -3), float2(2 ,  8), float2(8 ,  3)
 
-		},
-		{
-				float2(1 ,  0), float2(-1 ,  -2), float2(-2 ,  -1), float2(-1 ,  1),
-				float2(2 ,  -1), float2(-1 ,  -3), float2(1 ,  2), float2(-3 ,  2),
-				float2(-3 ,  -3), float2(-4 ,  -1), float2(-1 ,  3), float2(-4 ,  0),
-				float2(1 ,  -4), float2(-2 ,  3), float2(3 ,  2), float2(3 ,  -3),
-				float2(-4 ,  -3), float2(4 ,  -2), float2(-2 ,  -5), float2(3 ,  3),
-				float2(-5 ,  2), float2(2 ,  -5), float2(5 ,  -1), float2(-6 ,  2),
-				float2(-3 ,  -6), float2(5 ,  2), float2(-5 ,  -5), float2(3 ,  -6),
-				float2(3 ,  5), float2(0 ,  6), float2(0 ,  -7), float2(1 ,  -7),
-				float2(1 ,  6), float2(-2 ,  6), float2(2 ,  6), float2(-7 ,  -3),
-				float2(6 ,  2), float2(-7 ,  2), float2(-6 ,  -5), float2(4 ,  -6),
-				float2(-5 ,  5), float2(-4 ,  -7), float2(-8 ,  0), float2(-1 ,  -8),
-				float2(7 ,  0), float2(-8 ,  1), float2(-8 ,  -2), float2(7 ,  -3),
-				float2(-8 ,  -3), float2(-5 ,  6), float2(-3 ,  7), float2(7 ,  -4),
-				float2(-4 ,  -8), float2(-7 ,  5), float2(0 ,  -9), float2(5 ,  -7),
-				float2(-7 ,  -6), float2(6 ,  -6), float2(8 ,  1), float2(-2 ,  8),
-				float2(-9 ,  1), float2(-2 ,  -9), float2(7 ,  4), float2(-8 ,  4)
+    },
+    {
+        float2(1 ,  0), float2(-1 ,  -2), float2(-2 ,  -1), float2(-1 ,  1),
+        float2(2 ,  -1), float2(-1 ,  -3), float2(1 ,  2), float2(-3 ,  2),
+        float2(-3 ,  -3), float2(-4 ,  -1), float2(-1 ,  3), float2(-4 ,  0),
+        float2(1 ,  -4), float2(-2 ,  3), float2(3 ,  2), float2(3 ,  -3),
+        float2(-4 ,  -3), float2(4 ,  -2), float2(-2 ,  -5), float2(3 ,  3),
+        float2(-5 ,  2), float2(2 ,  -5), float2(5 ,  -1), float2(-6 ,  2),
+        float2(-3 ,  -6), float2(5 ,  2), float2(-5 ,  -5), float2(3 ,  -6),
+        float2(3 ,  5), float2(0 ,  6), float2(0 ,  -7), float2(1 ,  -7),
+        float2(1 ,  6), float2(-2 ,  6), float2(2 ,  6), float2(-7 ,  -3),
+        float2(6 ,  2), float2(-7 ,  2), float2(-6 ,  -5), float2(4 ,  -6),
+        float2(-5 ,  5), float2(-4 ,  -7), float2(-8 ,  0), float2(-1 ,  -8),
+        float2(7 ,  0), float2(-8 ,  1), float2(-8 ,  -2), float2(7 ,  -3),
+        float2(-8 ,  -3), float2(-5 ,  6), float2(-3 ,  7), float2(7 ,  -4),
+        float2(-4 ,  -8), float2(-7 ,  5), float2(0 ,  -9), float2(5 ,  -7),
+        float2(-7 ,  -6), float2(6 ,  -6), float2(8 ,  1), float2(-2 ,  8),
+        float2(-9 ,  1), float2(-2 ,  -9), float2(7 ,  4), float2(-8 ,  4)
 
-		},
-		{
-				float2(-1 ,  0), float2(0 ,  0), float2(1 ,  -1), float2(1 ,  -2),
-				float2(-3 ,  0), float2(0 ,  -3), float2(-3 ,  1), float2(-3 ,  -2),
-				float2(0 ,  -4), float2(0 ,  3), float2(2 ,  2), float2(3 ,  -2),
-				float2(-3 ,  -4), float2(-4 ,  2), float2(2 ,  3), float2(4 ,  0),
-				float2(-5 ,  -1), float2(-5 ,  0), float2(0 ,  4), float2(1 ,  -5),
-				float2(4 ,  1), float2(-2 ,  4), float2(-3 ,  -5), float2(4 ,  -3),
-				float2(-1 ,  -6), float2(-2 ,  5), float2(3 ,  -5), float2(-5 ,  -4),
-				float2(4 ,  3), float2(-5 ,  3), float2(4 ,  -4), float2(3 ,  4),
-				float2(-4 ,  5), float2(-6 ,  -4), float2(-7 ,  0), float2(6 ,  0),
-				float2(-7 ,  -1), float2(-1 ,  -7), float2(6 ,  -2), float2(-6 ,  4),
-				float2(-5 ,  -6), float2(4 ,  5), float2(-4 ,  6), float2(6 ,  -4),
-				float2(0 ,  7), float2(7 ,  1), float2(-6 ,  5), float2(-3 ,  -8),
-				float2(2 ,  7), float2(2 ,  -8), float2(6 ,  -5), float2(4 ,  -7),
-				float2(-8 ,  2), float2(7 ,  3), float2(3 ,  7), float2(6 ,  5),
-				float2(5 ,  6), float2(8 ,  -1), float2(0 ,  8), float2(8 ,  -2),
-				float2(-5 ,  7), float2(4 ,  -8), float2(7 ,  -5), float2(6 ,  6)
+    },
+    {
+        float2(-1 ,  0), float2(0 ,  0), float2(1 ,  -1), float2(1 ,  -2),
+        float2(-3 ,  0), float2(0 ,  -3), float2(-3 ,  1), float2(-3 ,  -2),
+        float2(0 ,  -4), float2(0 ,  3), float2(2 ,  2), float2(3 ,  -2),
+        float2(-3 ,  -4), float2(-4 ,  2), float2(2 ,  3), float2(4 ,  0),
+        float2(-5 ,  -1), float2(-5 ,  0), float2(0 ,  4), float2(1 ,  -5),
+        float2(4 ,  1), float2(-2 ,  4), float2(-3 ,  -5), float2(4 ,  -3),
+        float2(-1 ,  -6), float2(-2 ,  5), float2(3 ,  -5), float2(-5 ,  -4),
+        float2(4 ,  3), float2(-5 ,  3), float2(4 ,  -4), float2(3 ,  4),
+        float2(-4 ,  5), float2(-6 ,  -4), float2(-7 ,  0), float2(6 ,  0),
+        float2(-7 ,  -1), float2(-1 ,  -7), float2(6 ,  -2), float2(-6 ,  4),
+        float2(-5 ,  -6), float2(4 ,  5), float2(-4 ,  6), float2(6 ,  -4),
+        float2(0 ,  7), float2(7 ,  1), float2(-6 ,  5), float2(-3 ,  -8),
+        float2(2 ,  7), float2(2 ,  -8), float2(6 ,  -5), float2(4 ,  -7),
+        float2(-8 ,  2), float2(7 ,  3), float2(3 ,  7), float2(6 ,  5),
+        float2(5 ,  6), float2(8 ,  -1), float2(0 ,  8), float2(8 ,  -2),
+        float2(-5 ,  7), float2(4 ,  -8), float2(7 ,  -5), float2(6 ,  6)
 
-		},
-		{
-				float2(0 ,  -2), float2(0 ,  1), float2(-2 ,  0), float2(-2 ,  -2),
-				float2(-2 ,  1), float2(2 ,  0), float2(-1 ,  2), float2(-2 ,  -3),
-				float2(1 ,  -3), float2(2 ,  1), float2(3 ,  -1), float2(-4 ,  -2),
-				float2(2 ,  -4), float2(0 ,  -5), float2(-1 ,  -5), float2(-5 ,  1),
-				float2(1 ,  4), float2(-4 ,  3), float2(2 ,  4), float2(-3 ,  4),
-				float2(4 ,  2), float2(-6 ,  -1), float2(0 ,  5), float2(5 ,  0),
-				float2(-1 ,  5), float2(5 ,  -2), float2(-4 ,  -5), float2(-6 ,  1),
-				float2(-6 ,  -2), float2(-2 ,  -6), float2(2 ,  -6), float2(-6 ,  -3),
-				float2(-5 ,  4), float2(4 ,  -5), float2(4 ,  4), float2(5 ,  -4),
-				float2(6 ,  1), float2(2 ,  -7), float2(-3 ,  6), float2(-3 ,  -7),
-				float2(-7 ,  3), float2(7 ,  -1), float2(-8 ,  -1), float2(-2 ,  7),
-				float2(1 ,  7), float2(1 ,  -8), float2(-2 ,  -8), float2(5 ,  -6),
-				float2(-6 ,  -6), float2(4 ,  6), float2(-7 ,  4), float2(6 ,  4),
-				float2(7 ,  2), float2(-7 ,  -5), float2(-8 ,  -4), float2(-9 ,  0),
-				float2(-1 ,  -9), float2(-1 ,  8), float2(-6 ,  -7), float2(-9 ,  -2),
-				float2(-5 ,  -8), float2(-9 ,  2), float2(-3 ,  8), float2(8 ,  -3)
+    },
+    {
+        float2(0 ,  -2), float2(0 ,  1), float2(-2 ,  0), float2(-2 ,  -2),
+        float2(-2 ,  1), float2(2 ,  0), float2(-1 ,  2), float2(-2 ,  -3),
+        float2(1 ,  -3), float2(2 ,  1), float2(3 ,  -1), float2(-4 ,  -2),
+        float2(2 ,  -4), float2(0 ,  -5), float2(-1 ,  -5), float2(-5 ,  1),
+        float2(1 ,  4), float2(-4 ,  3), float2(2 ,  4), float2(-3 ,  4),
+        float2(4 ,  2), float2(-6 ,  -1), float2(0 ,  5), float2(5 ,  0),
+        float2(-1 ,  5), float2(5 ,  -2), float2(-4 ,  -5), float2(-6 ,  1),
+        float2(-6 ,  -2), float2(-2 ,  -6), float2(2 ,  -6), float2(-6 ,  -3),
+        float2(-5 ,  4), float2(4 ,  -5), float2(4 ,  4), float2(5 ,  -4),
+        float2(6 ,  1), float2(2 ,  -7), float2(-3 ,  6), float2(-3 ,  -7),
+        float2(-7 ,  3), float2(7 ,  -1), float2(-8 ,  -1), float2(-2 ,  7),
+        float2(1 ,  7), float2(1 ,  -8), float2(-2 ,  -8), float2(5 ,  -6),
+        float2(-6 ,  -6), float2(4 ,  6), float2(-7 ,  4), float2(6 ,  4),
+        float2(7 ,  2), float2(-7 ,  -5), float2(-8 ,  -4), float2(-9 ,  0),
+        float2(-1 ,  -9), float2(-1 ,  8), float2(-6 ,  -7), float2(-9 ,  -2),
+        float2(-5 ,  -8), float2(-9 ,  2), float2(-3 ,  8), float2(8 ,  -3)
 
-		}
+    }
 };
 
 //Sample a neighbor; 0,0 -> 1,1; outside of that range indicates an invalid uv
@@ -143,6 +142,14 @@ float2 sample_neighbor_uv(uint sampleId, uint2 fullResPixel, uint2 resolution)
 }
 
 static const float3 luminance = float3(0.2126f, 0.7152f, 0.0722f);
+
+float3 unpack_position(float2 uv, float depth)
+{
+  // Get world space position
+  const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
+  float4 wpos = mul(inv_vp, ndc);
+  return (wpos.xyz / wpos.w).xyz;
+}
 
 [numthreads(16, 16, 1)]
 void main(int3 pix3 : SV_DispatchThreadID)
@@ -157,10 +164,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 	const float depth = depth_buffer[pix].r;
 	const float2 uv = float2(pix.xy) / float2(width - 1, height - 1);
-	const float4 ndc = float4(uv * 2 - 1, depth, 1);
-
-	const float4 vpos = mul(inv_projection, ndc);
-	const float3 pos = mul(inv_view, vpos).xyz;
+	const float3 pos = unpack_position(uv, depth);
 
 	const float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	const float3 V = normalize(camera_pos - pos);
@@ -181,6 +185,8 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height));
 
 		const float4 hitT = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
+
+    //TODO: Calculate V again
 
 		const float3 color = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz;
 		const float3 L = hitT.xyz;

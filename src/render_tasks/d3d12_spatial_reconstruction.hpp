@@ -26,9 +26,8 @@ namespace wr
 
 		struct SpatialReconstructionCameraData
 		{
-			DirectX::XMMATRIX inv_projection;
+			DirectX::XMMATRIX inv_vp;
 			DirectX::XMMATRIX inv_view;
-			DirectX::XMMATRIX view;
 
 			DirectX::XMFLOAT2 padding;
 			float near_plane, far_plane;
@@ -114,8 +113,7 @@ namespace wr
 			auto camera = sg.GetActiveCamera();
 			temp::SpatialReconstructionCameraData cam_data;
 			cam_data.inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
-			cam_data.inv_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
-			cam_data.view = camera->m_view;
+      cam_data.inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 			cam_data.near_plane = camera->m_frustum_near;
 			cam_data.far_plane = camera->m_frustum_far;
 			n_render_system.m_camera_pool->Update(data.camera_cb, sizeof(temp::SpatialReconstructionCameraData), 0, frame_idx, (std::uint8_t*)&cam_data);
