@@ -156,6 +156,7 @@ namespace wr
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
+			float scalar = 1.0f;
 
 			// Rebuild acceleratrion structure a 2e time for fallback
 			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
@@ -307,8 +308,16 @@ namespace wr
 //#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
 //#endif
+				scalar = fg.GetRenderTargetResolutionScale(handle);
 
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, 0);
+				d3d12::DispatchRays(cmd_list,
+					data.out_hitgroup_shader_table[frame_idx], 
+					data.out_miss_shader_table[frame_idx], 
+					data.out_raygen_shader_table[frame_idx], 
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetWidth())), 
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetHeight())), 
+					1, 
+					0);
 			}
 		}
 

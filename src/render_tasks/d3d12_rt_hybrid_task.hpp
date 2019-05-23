@@ -372,8 +372,8 @@ namespace wr
 					data.out_hitgroup_shader_table[frame_idx], 
 					data.out_miss_shader_table[frame_idx],
 					data.out_raygen_shader_table[frame_idx], 
-					static_cast<std::uint32_t>(window->GetWidth() * scalar),
-					static_cast<std::uint32_t>(window->GetHeight() * scalar),
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetWidth())),
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetHeight())),
 					1u,
 					frame_idx);
 
