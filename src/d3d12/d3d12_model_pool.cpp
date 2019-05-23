@@ -1054,7 +1054,7 @@ namespace wr
 		}
 
 		MemoryBlock* last_occupied_block = nullptr;
-		for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+		for (mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
 			{
@@ -1236,7 +1236,7 @@ namespace wr
 		}
 
 		MemoryBlock* last_occupied_block = nullptr;
-		for (MemoryBlock* mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+		for (mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
 			{

@@ -831,8 +831,8 @@ namespace wr
 
 			if (auto rt_handle = desc.global_root_signature.Get().value(); desc.global_root_signature.Get().has_value())
 			{
-				auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
-				n_desc.global_root_signature = library->m_native;
+				auto rs_library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+				n_desc.global_root_signature = rs_library->m_native;
 			}
 
 			if (desc.local_root_signatures.Get().has_value())
