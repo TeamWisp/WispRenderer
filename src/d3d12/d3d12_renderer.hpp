@@ -31,10 +31,10 @@ namespace wr
 	{
 		struct ProjectionView_CBData
 		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_projection;
-			DirectX::XMMATRIX m_inverse_projection;
-			DirectX::XMMATRIX m_inverse_view;
+			DirectX::XMMATRIX m_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
 			std::uint32_t m_is_hybrid = 0u;
 			std::uint32_t m_is_path_tracer = 0u;
 			std::uint32_t m_is_ao = 0u;
@@ -42,9 +42,9 @@ namespace wr
 
 		struct RTHybridCamera_CBData
 		{
-			DirectX::XMMATRIX m_inverse_view;
-			DirectX::XMMATRIX m_inverse_projection;
-			DirectX::XMMATRIX m_inv_vp;
+			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
 
 			uint32_t m_padding[2] = { 0u };
 			float m_frame_idx = 0.0f;
@@ -53,7 +53,7 @@ namespace wr
 
 		struct RTAO_CBData
 		{
-			DirectX::XMMATRIX m_inv_vp;
+			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
 
 			float bias = 0.0f;
 			float radius = 0.0f;
@@ -63,9 +63,9 @@ namespace wr
 
 		struct RayTracingCamera_CBData
 		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_inverse_view_projection;
-			DirectX::XMVECTOR m_camera_position;
+			DirectX::XMMATRIX m_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_view_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMVECTOR m_camera_position = DirectX::XMVectorZero();
 
 			float light_radius = 0.0f;
 			float metal = 0.0f;
