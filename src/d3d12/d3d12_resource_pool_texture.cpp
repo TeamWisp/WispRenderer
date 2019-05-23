@@ -116,7 +116,7 @@ namespace wr
 		
 		while(m_staged_textures.size() > 0)
 		{
-			TextureHandle handle = { this, m_staged_textures.begin()->first };
+			TextureHandle handle = { this, static_cast<uint32_t>(m_staged_textures.begin()->first) };
 			D3D12TexturePool::Unload(handle);
 		}
 	}
@@ -747,7 +747,7 @@ namespace wr
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
-				size_t idx = static_cast<size_t>(src_mip + mip + 1);
+				std::uint32_t idx = src_mip + mip + 1u;
 
 				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::UNORDERED_ACCESS, idx, 1);
 
@@ -773,7 +773,7 @@ namespace wr
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
-				size_t idx = static_cast<size_t>(src_mip + mip + 1);
+				std::uint32_t idx = src_mip + mip + 1u;
 
 				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::PIXEL_SHADER_RESOURCE, idx, 1);
 			}
@@ -936,7 +936,7 @@ namespace wr
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
-				size_t idx = static_cast<size_t>(src_mip + mip + 1);
+				uint32_t idx = src_mip + mip + 1u;
 
 				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::UNORDERED_ACCESS, idx, 1);
 
@@ -962,7 +962,7 @@ namespace wr
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
-				size_t idx = static_cast<size_t>(src_mip + mip + 1);
+				uint32_t idx = src_mip + mip + 1u;
 
 				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::PIXEL_SHADER_RESOURCE, idx, 1);
 			}
