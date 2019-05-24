@@ -13,15 +13,15 @@ namespace wr
 {
 	struct DoFBokehData
 	{
-		d3d12::RenderTarget* out_source_rt;
-		d3d12::RenderTarget* out_source_coc_rt;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
-		DescriptorAllocator* out_allocator;
+		d3d12::RenderTarget* out_source_rt = nullptr;
+		d3d12::RenderTarget* out_source_coc_rt = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
+		ID3D12Resource* out_previous = nullptr;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
-		D3D12ConstantBufferHandle* cb_handle;
+		D3D12ConstantBufferHandle* cb_handle = nullptr;
 	};
 
 	namespace internal
@@ -29,11 +29,11 @@ namespace wr
 
 		struct Bokeh_CB
 		{
-			float m_f_number;
-			float m_shape;
-			float m_bokeh_poly;
-			uint32_t m_blades;
-			int m_enable_dof;
+			float m_f_number = 0.0f;
+			float m_shape = 0.0f;
+			float m_bokeh_poly = 0.0f;
+			uint32_t m_blades = 0u;
+			int m_enable_dof = false;
 		};
 
 		template<typename T, typename T1>

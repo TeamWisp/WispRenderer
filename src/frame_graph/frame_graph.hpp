@@ -279,8 +279,8 @@ namespace wr
 				if (m_rt_properties[i].has_value() && !m_rt_properties[i].value().m_is_render_window)
 				{
 					m_render_system->ResizeRenderTarget(&m_render_targets[i],
-						static_cast<std::uint32_t>(width * m_rt_properties[i].value().m_resolution_scale.Get()),
-						static_cast<std::uint32_t>(height * m_rt_properties[i].value().m_resolution_scale.Get()));
+						static_cast<std::uint32_t>(std::ceil(width * m_rt_properties[i].value().m_resolution_scale.Get())),
+						static_cast<std::uint32_t>(std::ceil(height * m_rt_properties[i].value().m_resolution_scale.Get())));
 				}
 
 				m_setup_funcs[i](*m_render_system, *this, i, true);

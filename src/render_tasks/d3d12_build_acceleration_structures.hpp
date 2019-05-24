@@ -264,7 +264,7 @@ namespace wr
 					// Create BYTE ADDRESS buffer view into a staging buffer. Hopefully this works.
 					{
 						auto cpu_handle = data.out_scene_ib_alloc.GetDescriptorHandle();
-						d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes);
+						d3d12::CreateRawSRVFromStagingBuffer(data.out_scene_ib, cpu_handle, static_cast<std::uint32_t>(data.out_scene_ib->m_size / data.out_scene_ib->m_stride_in_bytes));
 					}
 
 					// Create material structured buffer view

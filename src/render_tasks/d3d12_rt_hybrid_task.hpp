@@ -372,9 +372,9 @@ namespace wr
 					data.out_hitgroup_shader_table[frame_idx], 
 					data.out_miss_shader_table[frame_idx],
 					data.out_raygen_shader_table[frame_idx], 
-					window->GetWidth() * scalar,
-					window->GetHeight() * scalar,
-					1,
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetWidth())),
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetHeight())),
+					1u,
 					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
@@ -384,10 +384,12 @@ namespace wr
 
 		inline void DestroyRTHybridTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& data = fg.GetData<RTHybridData>(handle);
+			
 
 			if (!resize)
 			{
+				auto& data = fg.GetData<RTHybridData>(handle);
+
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
 				std::move(data.out_output_alloc);
 				std::move(data.out_gbuffer_albedo_alloc);

@@ -31,66 +31,66 @@ namespace wr
 	{
 		struct ProjectionView_CBData
 		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_projection;
-			DirectX::XMMATRIX m_inverse_projection;
-			DirectX::XMMATRIX m_inverse_view;
-			unsigned int m_is_hybrid;
-			unsigned int m_is_path_tracer;
-			unsigned int m_is_ao;
+			DirectX::XMMATRIX m_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
+			std::uint32_t m_is_hybrid = 0u;
+			std::uint32_t m_is_path_tracer = 0u;
+			std::uint32_t m_is_ao = 0u;
 		};
 
 		struct RTHybridCamera_CBData
 		{
-			DirectX::XMMATRIX m_inverse_view;
-			DirectX::XMMATRIX m_inverse_projection;
-			DirectX::XMMATRIX m_inv_vp;
+			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
 
-			uint32_t m_padding[2];
-			float m_frame_idx;
-			float m_intensity;
+			uint32_t m_padding[2] = { 0u };
+			float m_frame_idx = 0.0f;
+			float m_intensity = 0.0f;
 		};
 
 		struct RTAO_CBData
 		{
-			DirectX::XMMATRIX m_inv_vp;
+			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
 
-			float bias;
-			float radius;
-			float power;
-			unsigned int sample_count;
+			float bias = 0.0f;
+			float radius = 0.0f;
+			float power = 0.0f;
+			std::uint32_t sample_count = 0u;
 		};
 
 		struct RayTracingCamera_CBData
 		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_inverse_view_projection;
-			DirectX::XMVECTOR m_camera_position;
+			DirectX::XMMATRIX m_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_view_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMVECTOR m_camera_position = DirectX::XMVectorZero();
 
-			float light_radius;
-			float metal;
-			float roughness;
-			float intensity;
+			float light_radius = 0.0f;
+			float metal = 0.0f;
+			float roughness = 0.0f;
+			float intensity = 0.0f;
 		};
 
 		struct RayTracingMaterial_CBData
 		{
-			std::uint32_t albedo_id;
-			std::uint32_t normal_id;
-			std::uint32_t roughness_id;
-			std::uint32_t metallicness_id;
-			std::uint32_t emissive_id;
-			std::uint32_t ao_id;
+			std::uint32_t albedo_id = 0u;
+			std::uint32_t normal_id = 0u;
+			std::uint32_t roughness_id = 0u;
+			std::uint32_t metallicness_id = 0u;
+			std::uint32_t emissive_id = 0u;
+			std::uint32_t ao_id = 0u;
 
-			DirectX::XMFLOAT2 padding;
+			std::uint32_t padding[2] = { 0u };
 			Material::MaterialData material_data;
 		};
 
 		struct RayTracingOffset_CBData
 		{
-			std::uint32_t material_idx;
-			std::uint32_t idx_offset;
-			std::uint32_t vertex_offset;
+			std::uint32_t material_idx = 0u;
+			std::uint32_t idx_offset = 0u;
+			std::uint32_t vertex_offset = 0u;
 		};
 
 		static const constexpr float size = 1.0f;
