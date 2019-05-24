@@ -169,25 +169,32 @@ namespace wr
 			m_futures.resize(m_num_tasks);
 			m_render_system = &render_system;
 
+			auto get_command_list_from_render_system = [this](auto type)
+			{
+				switch (type)
+				{
+				case RenderTaskType::DIRECT:
+					return m_render_system->GetDirectCommandList(d3d12::settings::num_back_buffers);
+					break;
+				case RenderTaskType::COMPUTE:
+					return m_render_system->GetComputeCommandList(d3d12::settings::num_back_buffers);
+					break;
+				case RenderTaskType::COPY:
+					return m_render_system->GetCopyCommandList(d3d12::settings::num_back_buffers);
+					break;
+				default:
+					break;
+				}
+			};
+
 			if constexpr (settings::use_multithreading)
 			{
+
 				for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 				{
 					// Get the proper command list from the render system.
-					switch (m_types[i])
-					{
-					case RenderTaskType::DIRECT:
-						m_cmd_lists[i] = render_system.GetDirectCommandList(d3d12::settings::num_back_buffers);
-						break;
-					case RenderTaskType::COMPUTE:
-						m_cmd_lists[i] = render_system.GetComputeCommandList(d3d12::settings::num_back_buffers);
-						break;
-					case RenderTaskType::COPY:
-						m_cmd_lists[i] = render_system.GetCopyCommandList(d3d12::settings::num_back_buffers);
-						break;
-					default:
-						break;
-					}
+					m_cmd_lists[i] = get_command_list_from_render_system(m_types[i]);
+
 
 					// Get a render target from the render system.
 					if (m_rt_properties[i].has_value())
@@ -204,20 +211,7 @@ namespace wr
 				for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 				{
 					// Get the proper command list from the render system.
-					switch (m_types[i])
-					{
-					case RenderTaskType::DIRECT:
-						m_cmd_lists[i] = render_system.GetDirectCommandList(d3d12::settings::num_back_buffers);
-						break;
-					case RenderTaskType::COMPUTE:
-						m_cmd_lists[i] = render_system.GetComputeCommandList(d3d12::settings::num_back_buffers);
-						break;
-					case RenderTaskType::COPY:
-						m_cmd_lists[i] = render_system.GetCopyCommandList(d3d12::settings::num_back_buffers);
-						break;
-					default:
-						break;
-					}
+					m_cmd_lists[i] = get_command_list_from_render_system(m_types[i]);
 
 					// Get a render target from the render system.
 					if (m_rt_properties[i].has_value())
