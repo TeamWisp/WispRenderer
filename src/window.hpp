@@ -82,8 +82,8 @@ namespace wr
 		HWND m_handle;
 		HINSTANCE m_instance;
 
-		int m_window_width = 0;
-		int m_window_height = 0;
+		std::int32_t m_window_width = 0;
+		std::int32_t m_window_height = 0;
 	};
 
 } /* wr */
