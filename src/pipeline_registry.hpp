@@ -12,7 +12,7 @@
 namespace wr
 {
 
-	struct Pipeline { };
+	using Pipeline = void;
 
 	struct PipelineDescription
 	{

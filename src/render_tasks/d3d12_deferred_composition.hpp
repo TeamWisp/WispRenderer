@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../d3d12/d3d12_renderer.hpp"
-#include "../d3d12/d3d12_pipeline_registry.hpp"
+#include "../pipeline_registry.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../d3d12/d3d12_descriptors_allocations.hpp"
 #include "../d3d12/d3d12_texture_resources.hpp"
@@ -10,7 +10,7 @@ namespace wr
 {
 	struct DeferredCompositionTaskData
 	{
-		D3D12Pipeline* in_pipeline = nullptr;
+		d3d12::PipelineState* in_pipeline = nullptr;
 		d3d12::RenderTarget* out_deferred_main_rt = nullptr;
 
 		DescriptorAllocator* out_allocator = nullptr;

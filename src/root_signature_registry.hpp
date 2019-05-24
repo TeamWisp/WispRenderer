@@ -11,10 +11,7 @@
 
 namespace wr
 {
-	struct RootSignature
-	{
-
-	};
+	using RootSignature = void;
 
 	struct RootSignatureDescription
 	{

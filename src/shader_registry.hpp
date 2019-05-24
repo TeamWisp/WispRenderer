@@ -6,10 +6,7 @@
 
 namespace wr
 {
-	struct Shader
-	{
-
-	};
+	using Shader = void;
 
 	struct ShaderDescription
 	{
