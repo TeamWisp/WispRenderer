@@ -57,9 +57,6 @@ void AORaygenEntry()
 {
     uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, 0);
 
-	// Texture UV coordinates [0, 1]
-	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
-
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
 
