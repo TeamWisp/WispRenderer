@@ -187,7 +187,6 @@ namespace wr
 
 			if constexpr (settings::use_multithreading)
 			{
-
 				for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 				{
 					// Get the proper command list from the render system.
@@ -277,7 +276,7 @@ namespace wr
 			{
 				m_destroy_funcs[i](*this, i, true);
 
-				if (!m_rt_properties[i].value().m_is_render_window)
+				if (m_rt_properties[i].has_value() && !m_rt_properties[i].value().m_is_render_window)
 				{
 					m_render_system->ResizeRenderTarget(&m_render_targets[i],
 						static_cast<std::uint32_t>(width * m_rt_properties[i].value().m_resolution_scale.Get()),
@@ -751,7 +750,7 @@ namespace wr
 
 		*/
 		template<typename T, typename R>
-		[[nodiscard]] inline R GetSettings() const
+		[[nodiscard]] inline R GetSettings() const try
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -762,17 +761,15 @@ namespace wr
 			{
 				if (typeid(T) == m_data_type_info[i])
 				{
-					try {
-						return std::any_cast<R>(m_settings[i].value());
-					}
-					catch (const std::bad_any_cast & e) {
-						LOGW("A task settings requested failed to cast to T. ({})", e.what());
-						return R();
-					}
+					return std::any_cast<R>(m_settings[i].value());
 				}
 			}
 
 			LOGC("Failed to find task settings! Does your frame graph contain this task?");
+			return R();
+		}
+		catch (const std::bad_any_cast& e) {
+			LOGC("A task settings requested failed to cast to T. ({})", e.what());
 			return R();
 		}
 
@@ -783,20 +780,17 @@ namespace wr
 			The return value can be a nullptr.
 		*/
 		template<typename T>
-		[[nodiscard]] inline T GetSettings(RenderTaskHandle handle) const
+		[[nodiscard]] inline T GetSettings(RenderTaskHandle handle) const try
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
 				std::is_integral<T>::value,
 				"The template variable should be a class, struct, floating point value or a integral value.");
 
-			try {
-				return std::any_cast<T>(m_settings[handle].value());
-			}
-			catch (const std::bad_any_cast & e) {
-				LOGW("A task settings requested failed to cast to T. ({})", e.what());
-			}
-			
+			return std::any_cast<T>(m_settings[handle].value());
+		}
+		catch (const std::bad_any_cast & e) {
+			LOGW("A task settings requested failed to cast to T. ({})", e.what());
 			return T();
 		}
 

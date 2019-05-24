@@ -60,21 +60,17 @@ namespace wr
 		}
 
 		void SetFov(float deg);
-
 		void SetFovFromFocalLength(float aspect_ratio, float filmSize);
-
 		void SetAspectRatio(float ratio);
-
 		void SetFocalLength(float length);
-
+		void SetFrustumNear(float value) noexcept;
+		void SetFrustumFar(float value) noexcept;
 		void SetProjectionOffset(float x, float y);
 
 		std::pair<float, float> GetProjectionOffset();
-
+		
 		void UpdateTemp(unsigned int frame_idx);
-
 		bool InView(std::shared_ptr<MeshNode>& node);
-
 		void CalculatePlanes();
 
 		bool m_active;
