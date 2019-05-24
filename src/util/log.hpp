@@ -85,6 +85,8 @@ namespace util::internal
 		str += format;
 #ifdef LOG_PRINT_LOC
 		str += "	"; // add tab to make it easier to read.
+		auto found = file.find_last_of('/\\');
+		auto file_name = file.substr(found + 1); //remove path from file name.
 		str += "[" + file + ":" + func + ":" + std::to_string(line) + "] ";
 #endif
 		str += "\n";
