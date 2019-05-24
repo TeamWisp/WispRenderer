@@ -654,6 +654,8 @@ namespace wr
 		DESC_RANGE(params::dof_bokeh, Type::UAV_RANGE, params::DoFBokehE::OUTPUT_NEAR),
 		DESC_RANGE(params::dof_bokeh, Type::UAV_RANGE, params::DoFBokehE::OUTPUT_FAR),
 		DESC_RANGE(params::dof_bokeh, Type::SRV_RANGE, params::DoFBokehE::COC),
+		DESC_RANGE(params::dof_bokeh, Type::SRV_RANGE, params::DoFBokehE::BRIGHT),
+		DESC_RANGE(params::dof_bokeh, Type::SRV_RANGE, params::DoFBokehE::BOKEH_SHAPE),
 		);
 
 	REGISTER(root_signatures::dof_bokeh, RootSignatureRegistry)({

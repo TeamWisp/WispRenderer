@@ -4,6 +4,9 @@
 Texture2D source_near : register(t0);
 Texture2D source_far : register(t1);
 Texture2D near_mask :register(t2);
+Texture2D bright_input :register(t3);
+Texture2D bokeh_shape_tex :register(t4);
+
 RWTexture2D<float4> output_near : register(u0);
 RWTexture2D<float4> output_far : register(u1);
 SamplerState s0 : register(s0);

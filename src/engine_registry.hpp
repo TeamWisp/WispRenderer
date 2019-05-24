@@ -591,15 +591,19 @@ namespace wr
 			SOURCE_FAR,
 			OUTPUT_NEAR,
 			OUTPUT_FAR,
-			COC
+			COC,
+			BRIGHT,
+			BOKEH_SHAPE
 		};
 
-		constexpr std::array<rs_layout::Entry, 6> dof_bokeh = {
+		constexpr std::array<rs_layout::Entry, 8> dof_bokeh = {
 			rs_layout::Entry{(int)DoFBokehE::SOURCE_NEAR, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DoFBokehE::SOURCE_FAR, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DoFBokehE::OUTPUT_NEAR, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)DoFBokehE::OUTPUT_FAR, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)DoFBokehE::COC, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::BRIGHT, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFBokehE::BOKEH_SHAPE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DoFBokehE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 

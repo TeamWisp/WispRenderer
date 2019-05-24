@@ -22,6 +22,7 @@ namespace wr
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
 		D3D12ConstantBufferHandle* cb_handle = nullptr;
+		d3d12::TextureResource* out_bokeh_shape = nullptr;
 	};
 
 	namespace internal
@@ -51,6 +52,24 @@ namespace wr
 
 				data.camera_cb_pool = rs.CreateConstantBufferPool(2);
 				data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(Bokeh_CB)));
+
+				//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
+				std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
+				if (!texture_pool)
+				{
+					LOGC("Texture pool is nullptr. This shouldn't happen as the render system should always create the first texture pool");
+				}
+
+				if (n_render_system.m_bokeh_circle == std::nullopt)
+				{
+					n_render_system.m_bokeh_circle = texture_pool->LoadFromFile("resources/bokeh_shapes/bokeh_circle.png", false, false);
+				}
+
+				if (n_render_system.m_bokeh_hex == std::nullopt)
+				{
+					
+					n_render_system.m_bokeh_hex = texture_pool->LoadFromFile("resources/bokeh_shapes/bokeh_six_blades.png",false, false);
+				}
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -85,6 +104,16 @@ namespace wr
 				{
 					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::COC)));
 					d3d12::CreateSRVFromSpecificRTV(source_coc_rt, cpu_handle, frame_idx, source_coc_rt->m_create_info.m_rtv_formats[frame_idx]);
+				}				
+				// bright output
+				{
+					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::BRIGHT)));
+					d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 2, source_coc_rt->m_create_info.m_rtv_formats[frame_idx]);
+				}
+				// Bokeh shape
+				{
+					data.out_bokeh_shape = static_cast<wr::d3d12::TextureResource*>(n_render_system.m_bokeh_hex->m_pool->GetTextureResource(n_render_system.m_bokeh_hex.value()));
+					d3d12::CreateSRVFromTexture(data.out_bokeh_shape);
 				}
 			}
 		}
@@ -127,6 +156,11 @@ namespace wr
 			{
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::COC)));
 				d3d12::CreateSRVFromSpecificRTV(source_coc_rt, cpu_handle, 0, source_coc_rt->m_create_info.m_rtv_formats[0]);
+			}
+			// bright output
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::BRIGHT)));
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 2, source_coc_rt->m_create_info.m_rtv_formats[2]);
 			}
 			
 
@@ -171,6 +205,18 @@ namespace wr
 				constexpr unsigned int source_coc_idx = rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::COC);
 				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_coc_idx);
 				d3d12::SetShaderSRV(cmd_list, 0, source_coc_idx, handle_m_srv);
+			}
+
+			{
+				constexpr unsigned int source_bright_idx = rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::BRIGHT);
+				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_bright_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_bright_idx, handle_b_srv);
+			}
+
+			{
+				constexpr unsigned int bokeh_shape_idx = rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::BOKEH_SHAPE);
+				auto* handle_m_srv = data.out_bokeh_shape.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, bokeh_shape_idx, handle_m_srv);
 			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
