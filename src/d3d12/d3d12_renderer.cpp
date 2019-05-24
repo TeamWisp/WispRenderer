@@ -73,8 +73,6 @@ namespace wr
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
-		TRY_M(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED), "Failed to CoInitialize");
-
 		m_window = window;
 		m_device = d3d12::CreateDevice();
 		SetName(m_device, L"Default D3D12 Device");
