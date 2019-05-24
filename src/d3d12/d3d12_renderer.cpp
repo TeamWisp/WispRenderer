@@ -539,14 +539,8 @@ namespace wr
 
 		d3d12::Begin(cmd_list, 0);
 
-		// Readback
-		d3d12::desc::ReadbackDesc readback_buffer_desc = {};
-		readback_buffer_desc.m_buffer_width = width;
-		readback_buffer_desc.m_buffer_height = height;
-		readback_buffer_desc.m_bytes_per_pixel = bytes_per_pixel;
-
 		// Create the actual read back buffer
-		auto readback_buffer = d3d12::CreateReadbackBuffer(m_device, &readback_buffer_desc);
+		auto readback_buffer = d3d12::CreateReadbackBuffer(m_device, texture_size);
 		d3d12::SetName(readback_buffer, L"Texture ReadBack Buffer (Used for saving to disc)");
 
 		// Copy data to cpu

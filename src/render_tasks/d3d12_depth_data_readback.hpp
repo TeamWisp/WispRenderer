@@ -38,18 +38,12 @@ namespace wr
 			// Bytes per pixel of the previous render target (depth)
 			unsigned int bytesPerPixel = BytesPerPixel(predecessor_rt_desc.m_dsv_format);
 
-			// Information for creating the read back buffer object
-			data.readback_buffer_desc = {};
-			data.readback_buffer_desc.m_buffer_width = dx12_render_system.m_viewport.m_viewport.Width;
-			data.readback_buffer_desc.m_buffer_height = dx12_render_system.m_viewport.m_viewport.Height;
-			data.readback_buffer_desc.m_bytes_per_pixel = bytesPerPixel;
-
-			// Create the actual read back buffer
-			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, &data.readback_buffer_desc);
-			d3d12::SetName(data.readback_buffer, L"Depth data read back render pass");
-
 			// Size of the buffer aligned to a multiple of 256
 			std::uint32_t aligned_buffer_size = SizeAlignTwoPower(data.readback_buffer_desc.m_buffer_width * bytesPerPixel, 256) * data.readback_buffer_desc.m_buffer_height;
+
+			// Create the actual read back buffer
+			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, aligned_buffer_size);
+			d3d12::SetName(data.readback_buffer, L"Depth data read back render pass");
 
 			// Keep the read back buffer mapped for the duration of the entire application
 			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, aligned_buffer_size));

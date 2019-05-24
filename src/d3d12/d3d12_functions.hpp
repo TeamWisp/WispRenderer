@@ -136,8 +136,17 @@ namespace wr::d3d12
 	Format BGRtoRGB(Format format);
 
 	// Read-back buffer
-	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description);
-	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint64_t buffer_size);
+	//! Create a readback buffer
+	/*!
+		\param aligned_buffer_size The size of the buffer you want to create aligned to 256.
+	*/
+	[[nodiscard]] ReadbackBufferResource* CreateReadbackBuffer(Device* device, std::uint32_t aligned_buffer_size);
+	//! Map a readback buffer
+	/*!
+		\param aligned_buffer_size The size of the buffer you want to create aligned to 256.
+	*/
+	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint32_t aligned_buffer_size);
+	//! Unmap a readback buffer
 	void UnmapReadbackBuffer(ReadbackBufferResource* const readback_buffer);
 	void SetName(ReadbackBufferResource* readback_buffer, std::wstring name);
 	void Destroy(ReadbackBufferResource* readback_buffer);
