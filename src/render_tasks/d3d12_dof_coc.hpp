@@ -28,7 +28,7 @@ namespace wr
 	{
 		struct DoFProperties_CB
 		{
-			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
 			float m_focal_length = 0.0f;
 			float m_f_number = 0.0f;
 			float m_film_size = 0.0f;
