@@ -231,7 +231,7 @@ namespace wr
 		scene_graph->Update();
 		scene_graph->Optimize();
 
-		frame_graph.Execute(*this, *scene_graph.get());
+		frame_graph.Execute(*scene_graph.get());
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
@@ -414,12 +414,24 @@ namespace wr
 		m_requested_fullscreen_state = fullscreen_state;
 	}
 
+	void D3D12RenderSystem::ResetCommandList(CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto frame_idx = GetFrameIdx();
+		d3d12::Begin(n_cmd_list, frame_idx);
+	}
+
+	void D3D12RenderSystem::CloseCommandList(CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		d3d12::End(n_cmd_list);
+	}
+
 	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
 		{
@@ -462,23 +474,14 @@ namespace wr
 		{
 			LOGW("A render target has no transitions specified. Is this correct?");
 		}
-
-		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::StartComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto frame_idx = GetFrameIdx();
-
-		d3d12::Begin(n_cmd_list, frame_idx);
 	}
 
 	void D3D12RenderSystem::StopComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-
-		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::StartCopyTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
@@ -486,8 +489,6 @@ namespace wr
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-
-		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
 		{
@@ -513,8 +514,6 @@ namespace wr
 		{
 			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.Get().value(), render_target.second.m_state_finished.Get().value());
 		}
-
-		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index)

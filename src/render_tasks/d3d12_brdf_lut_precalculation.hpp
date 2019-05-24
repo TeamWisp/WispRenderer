@@ -73,22 +73,6 @@ namespace wr
 	{
 		std::wstring name(L"BRDF LUT Precalculation");
 
-		RenderTargetProperties rt_properties
-		{
-			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(512),
-			RenderTargetProperties::Height(512),
-			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
-			RenderTargetProperties::FinishedResourceState(ResourceState::PIXEL_SHADER_RESOURCE),
-			RenderTargetProperties::CreateDSVBuffer(false),
-			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R16G16_FLOAT }),
-			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
-		};
-
 		RenderTaskDesc desc;
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::SetupBrdfLutPrecalculationTask(rs, fg, handle, resize);
@@ -99,7 +83,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 		};
 
-		desc.m_properties = rt_properties;
+		desc.m_properties = std::nullopt;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
