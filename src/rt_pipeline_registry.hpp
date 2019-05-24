@@ -13,7 +13,7 @@
 namespace wr
 {
 
-	struct StateObject { };
+	using StateObject = void;
 
 	struct StateObjectDescription
 	{

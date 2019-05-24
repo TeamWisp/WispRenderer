@@ -41,7 +41,7 @@ namespace wr
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::dof_composition))->m_native;
+			data.out_pipeline = ((d3d12::PipelineState*)ps_registry.Find(pipelines::dof_composition));
 
 			auto source_rt_comp = data.out_source_rt_comp = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 			auto source_rt_bokeh_filtered = data.out_source_bokeh_filtered = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());

@@ -38,7 +38,7 @@ namespace wr
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::down_scale))->m_native;
+			data.out_pipeline = ((d3d12::PipelineState*)ps_registry.Find(pipelines::down_scale));
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
