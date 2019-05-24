@@ -12,7 +12,7 @@
 
 #ifndef _DEBUG
 #define LOG_TO_FILE
-#define LOG_PRINT_LOC
+//#define LOG_PRINT_LOC
 #endif // DEBUG
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
