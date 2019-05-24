@@ -39,9 +39,9 @@ namespace wr::d3d12
 		{
 			ResourceState m_initial_state = ResourceState::RENDER_TARGET;
 			bool m_create_dsv_buffer = true;
-			Format m_dsv_format;
-			std::array<Format, 8> m_rtv_formats;
-			unsigned int m_num_rtv_formats;
+			Format m_dsv_format = wr::Format::UNKNOWN;
+			std::array<Format, 8> m_rtv_formats = { wr::Format::UNKNOWN };
+			std::uint32_t m_num_rtv_formats = 0u;
 			float m_clear_color[4] = { 0.f, 0.f, 0.f, 0.f };
 		};
 
@@ -50,11 +50,11 @@ namespace wr::d3d12
 			ResourceState m_initial_state = ResourceState::COPY_DEST;
 			Format m_texture_format = Format::UNKNOWN;
 
-			unsigned int m_width = 0;
-			unsigned int m_height = 0;;
-			unsigned int m_depth = 0;;
-			unsigned int m_array_size = 0;;
-			unsigned int m_mip_levels = 0;;
+			std::uint32_t m_width = 0u;
+			std::uint32_t m_height = 0u;
+			std::uint32_t m_depth = 0u;
+			std::uint32_t m_array_size = 0u;
+			std::uint32_t m_mip_levels = 0u;
 
 			bool m_is_cubemap = false;
 		};
@@ -62,8 +62,8 @@ namespace wr::d3d12
 		struct PipelineStateDesc
 		{
 			Format m_dsv_format;
-			std::array<Format, 8> m_rtv_formats;
-			unsigned int m_num_rtv_formats;
+			std::array<Format, 8> m_rtv_formats = { wr::Format::UNKNOWN };
+			std::uint32_t m_num_rtv_formats = 0U;
 
 			PipelineType m_type = PipelineType::GRAPHICS_PIPELINE;
 			CullMode m_cull_mode = CullMode::CULL_BACK;
@@ -91,52 +91,52 @@ namespace wr::d3d12
 
 		struct DescriptorHeapDesc
 		{
-			unsigned int m_num_descriptors = 1;
+			std::uint32_t m_num_descriptors = 1u;
 			DescriptorHeapType m_type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 			bool m_shader_visible = true;
-			uint32_t m_versions = 1;
+			uint32_t m_versions = 1u;
 		};
 
 		struct GeometryDesc
 		{
 			StagingBuffer* vertex_buffer = nullptr;
-			std::optional<StagingBuffer*> index_buffer;
+			std::optional<StagingBuffer*> index_buffer = std::nullopt;
 
-			std::uint32_t m_num_vertices = 0;
-			std::uint32_t m_num_indices = 0;
-			std::uint32_t m_vertices_offset = 0;
-			std::uint32_t m_indices_offset = 0;
+			std::uint32_t m_num_vertices = 0u;
+			std::uint32_t m_num_indices = 0u;
+			std::uint32_t m_vertices_offset = 0u;
+			std::uint32_t m_indices_offset = 0u;
 
-			std::uint32_t m_vertex_stride = 0;
+			std::uint32_t m_vertex_stride = 0u;
 		};
 
 		struct StateObjectDesc
 		{
-			Shader* m_library;
+			Shader* m_library = nullptr;
 			std::vector<std::wstring> m_library_exports;
 			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
 
-			std::uint32_t max_payload_size;
-			std::uint32_t max_attributes_size;
-			std::uint32_t max_recursion_depth;
+			std::uint32_t max_payload_size = 0u;
+			std::uint32_t max_attributes_size = 0u;
+			std::uint32_t max_recursion_depth = 0u;
 
-			std::optional<RootSignature*> global_root_signature;
-			std::optional<std::vector<RootSignature*>> local_root_signatures;
+			std::optional<RootSignature*> global_root_signature = std::nullopt;
+			std::optional<std::vector<RootSignature*>> local_root_signatures = { std::nullopt };
 		};
 
 	} /* desc */
 
 	struct Device
 	{
-		IDXGIAdapter4* m_adapter;
-		ID3D12Device5* m_native;
-		IDXGIFactory6* m_dxgi_factory;
+		IDXGIAdapter4* m_adapter = nullptr;
+		ID3D12Device5* m_native = nullptr;
+		IDXGIFactory6* m_dxgi_factory = nullptr;
 		D3D_FEATURE_LEVEL m_feature_level;
 
 		SYSTEM_INFO m_sys_info;
 		DXGI_ADAPTER_DESC3 m_adapter_info;
-		ID3D12Debug1* m_debug_controller;
-		ID3D12InfoQueue* m_info_queue;
+		ID3D12Debug1* m_debug_controller = nullptr;
+		ID3D12InfoQueue* m_info_queue = nullptr;
 		
 		static IDxcCompiler2* m_compiler;
 
@@ -144,10 +144,10 @@ namespace wr::d3d12
 		std::bitset<DXGI_FORMAT_V408> m_optional_formats;
 
 		// Fallback
-		bool m_dxr_fallback_support;
-		bool m_dxr_support;
+		bool m_dxr_fallback_support = false;
+		bool m_dxr_support = false;
 		RaytracingType m_rt_type;
-		ID3D12RaytracingFallbackDevice* m_fallback_native;
+		ID3D12RaytracingFallbackDevice* m_fallback_native = nullptr;
 
 		bool IsFallback() 
 		{
@@ -157,14 +157,14 @@ namespace wr::d3d12
 
 	struct CommandQueue
 	{
-		ID3D12CommandQueue* m_native;
+		ID3D12CommandQueue* m_native = nullptr;
 	};
 
 	struct CommandList
 	{
 		std::vector<ID3D12CommandAllocator*> m_allocators;
-		ID3D12GraphicsCommandList4* m_native;
-		ID3D12RaytracingFallbackCommandList* m_native_fallback;
+		ID3D12GraphicsCommandList4* m_native = nullptr;
+		ID3D12RaytracingFallbackCommandList* m_native_fallback = nullptr;
 
 		// Dynamic descriptor heap where staging happens
 		std::unique_ptr<DynamicDescriptorHeap> m_dynamic_descriptor_heaps[static_cast<size_t>(DescriptorHeapType::DESC_HEAP_TYPE_NUM_TYPES)];
@@ -178,65 +178,65 @@ namespace wr::d3d12
 
 	struct CommandSignature
 	{
-		ID3D12CommandSignature* m_native;
+		ID3D12CommandSignature* m_native = nullptr;
 	};
 
 	struct RenderTarget
 	{
 		desc::RenderTargetDesc m_create_info;
-		unsigned int m_frame_idx;
-		unsigned int m_num_render_targets;
-		unsigned int m_width;
-		unsigned int m_height;
+		std::uint32_t m_frame_idx = 0u;
+		std::uint32_t m_num_render_targets = 0u;
+		std::uint32_t m_width = 0u;
+		std::uint32_t m_height = 0u;
 
 		std::vector<ID3D12Resource*> m_render_targets;
-		ID3D12DescriptorHeap* m_rtv_descriptor_heap;
-		unsigned int m_rtv_descriptor_increment_size;
+		ID3D12DescriptorHeap* m_rtv_descriptor_heap = nullptr;
+		std::uint32_t m_rtv_descriptor_increment_size = 0u;
 
-		ID3D12Resource* m_depth_stencil_buffer;
-		ID3D12DescriptorHeap* m_depth_stencil_resource_heap;
+		ID3D12Resource* m_depth_stencil_buffer = nullptr;
+		ID3D12DescriptorHeap* m_depth_stencil_resource_heap = nullptr;
 	};
 
 	struct RenderWindow : public RenderTarget
 	{
-		IDXGISwapChain4* m_swap_chain;
+		IDXGISwapChain4* m_swap_chain = nullptr;
 	};
 
 	struct Fence
 	{
-		ID3D12Fence1* m_native;
-		HANDLE m_fence_event;
-		UINT64 m_fence_value;
+		ID3D12Fence1* m_native = nullptr;
+		HANDLE m_fence_event = nullptr;
+		UINT64 m_fence_value = static_cast<UINT64>(0u);
 	};
 
 	struct RootSignature
 	{
 		desc::RootSignatureDesc m_create_info;
-		ID3D12RootSignature* m_native;
+		ID3D12RootSignature* m_native = nullptr;
 
-		std::uint32_t m_num_descriptors_per_table[32];
-		std::uint32_t m_sampler_table_bit_mask;
-		std::uint32_t m_descriptor_table_bit_mask;
+		std::uint32_t m_num_descriptors_per_table[32] = { 0u };
+		std::uint32_t m_sampler_table_bit_mask = 0u;
+		std::uint32_t m_descriptor_table_bit_mask = 0u;
 	};
 
 	struct PipelineState;
 	struct StateObject;
 	struct Shader
 	{
-		IDxcBlob* m_native;
-		std::string m_path;
-		std::string m_entry;
+		IDxcBlob* m_native = nullptr;
+		std::string m_path = "";
+		std::string m_entry = "";
 		ShaderType m_type;
 	};
 
 	struct PipelineState
 	{
-		ID3D12PipelineState* m_native;
-		RootSignature* m_root_signature;
-		Shader* m_vertex_shader;
-		Shader* m_pixel_shader;
-		Shader* m_compute_shader;
-		Device* m_device; // only used for refinalization.
+		ID3D12PipelineState* m_native = nullptr;
+		RootSignature* m_root_signature = nullptr;
+		Shader* m_vertex_shader = nullptr;
+		Shader* m_pixel_shader = nullptr;
+		Shader* m_compute_shader = nullptr;
+		Device* m_device = nullptr; // only used for refinalization.
 		desc::PipelineStateDesc m_desc;
 	};
 
@@ -250,7 +250,7 @@ namespace wr::d3d12
 	{
 		desc::DescriptorHeapDesc m_create_info;
 		std::vector<ID3D12DescriptorHeap*> m_native;
-		unsigned int m_increment_size;
+		std::uint32_t m_increment_size = 0u;
 	};
 
 	struct DescHeapCPUHandle
@@ -265,19 +265,19 @@ namespace wr::d3d12
 
 	struct StagingBuffer
 	{
-		ID3D12Resource* m_buffer;
-		ID3D12Resource* m_staging;
-		unsigned int m_size;
-		unsigned int m_stride_in_bytes;
+		ID3D12Resource* m_buffer = nullptr;
+		ID3D12Resource* m_staging = nullptr;
+		std::uint64_t m_size = 0u;
+		std::uint64_t m_stride_in_bytes = 0u;
 		ResourceState m_target_resource_state;
 		D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
-		std::uint8_t* m_cpu_address;
-		bool m_is_staged;
+		std::uint8_t* m_cpu_address = nullptr;
+		bool m_is_staged = false;
 	};
 
 	struct ReadbackBufferResource : ReadbackBuffer
 	{
-		ID3D12Resource* m_resource;
+		ID3D12Resource* m_resource = nullptr;
 	};
 
 	struct HeapResource;
@@ -297,8 +297,8 @@ namespace wr::d3d12
 		struct Heap<HeapOptimization::SMALL_BUFFERS>
 		{
 			std::vector<HeapResource*> m_resources;
-			std::uint8_t* m_cpu_address;
-			ID3D12Resource* m_native;
+			std::uint8_t* m_cpu_address = nullptr;
+			ID3D12Resource* m_native = nullptr;
 		};
 
 		/*! Big Buffer Optimization */
@@ -307,7 +307,7 @@ namespace wr::d3d12
 		struct Heap<HeapOptimization::BIG_BUFFERS>
 		{
 			std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>> m_resources;
-			ID3D12Heap* m_native;
+			ID3D12Heap* m_native = nullptr;
 		};
 
 		template<>
@@ -315,18 +315,18 @@ namespace wr::d3d12
 		{
 			std::vector<HeapResource*> m_resources;
 			D3D12_GPU_VIRTUAL_ADDRESS m_gpu_address;
-			ID3D12Resource* m_native;
-			ID3D12Resource* m_staging_buffer;
-			std::uint8_t* m_cpu_address;
+			ID3D12Resource* m_native = nullptr;
+			ID3D12Resource* m_staging_buffer = nullptr;
+			std::uint8_t* m_cpu_address = nullptr;
 		};
 
 		template<>
 		struct Heap<HeapOptimization::BIG_STATIC_BUFFERS> 
 		{
 			std::vector<std::pair<HeapResource*, std::vector<ID3D12Resource*>>> m_resources;
-			ID3D12Heap* m_native;
-			ID3D12Resource* m_staging_buffer;
-			std::uint8_t* m_cpu_address;
+			ID3D12Heap* m_native = nullptr;
+			ID3D12Resource* m_staging_buffer = nullptr;
+			std::uint8_t* m_cpu_address = nullptr;
 		};
 
 	} /* detail */
@@ -335,10 +335,10 @@ namespace wr::d3d12
 	struct Heap : detail::Heap<O>
 	{
 		bool m_mapped;
-		unsigned int m_versioning_count;
-		std::uint64_t m_current_offset;
-		std::uint64_t m_heap_size;
-		std::uint64_t m_alignment;
+		std::uint32_t m_versioning_count = 0u;
+		std::uint64_t m_current_offset = 0u;
+		std::uint64_t m_heap_size = 0u;
+		std::uint64_t m_alignment = 0u;
 		std::vector<std::uint64_t> m_bitmap;
 	};
 
@@ -354,41 +354,41 @@ namespace wr::d3d12
 
 		std::vector<D3D12_GPU_VIRTUAL_ADDRESS> m_gpu_addresses;
 		std::optional<std::vector<std::uint8_t*>> m_cpu_addresses;
-		std::uint64_t m_unaligned_size;
-		std::uint64_t m_begin_offset;
-		std::size_t m_heap_vector_location;
-		std::size_t m_stride;
-		bool m_used_as_uav;
+		std::uint64_t m_unaligned_size = 0u;
+		std::uint64_t m_begin_offset = 0u;
+		std::size_t m_heap_vector_location = 0;
+		std::size_t m_stride = 0;
+		bool m_used_as_uav = false;
 		HeapOptimization m_resource_heap_optimization;
 		std::vector<ResourceState> m_states;
 	};
 
 	struct IndirectCommandBuffer
 	{
-		std::size_t m_num_commands;
-		std::size_t m_num_max_commands;
-		std::size_t m_command_size;
+		std::size_t m_num_commands = 0u;
+		std::size_t m_num_max_commands = 0u;
+		std::size_t m_command_size = 0u;
 		std::vector<ID3D12Resource*> m_native;
 		std::vector<ID3D12Resource*> m_native_upload;
 	};
 
 	struct StateObject
 	{
-		ID3D12StateObject* m_native;
-		RootSignature* m_global_root_signature;
-		ID3D12StateObjectProperties* m_properties;
+		ID3D12StateObject* m_native = nullptr;
+		RootSignature* m_global_root_signature = nullptr;
+		ID3D12StateObjectProperties* m_properties = nullptr;
 
-		ID3D12RaytracingFallbackStateObject* m_fallback_native;
+		ID3D12RaytracingFallbackStateObject* m_fallback_native = nullptr;
 
 		desc::StateObjectDesc m_desc;
-		Device* m_device; // Only for refinalization.
+		Device* m_device = nullptr; // Only for refinalization.
 	};
 
 	struct AccelerationStructure
 	{
-		ID3D12Resource* m_scratch;														 // Scratch memory for AS builder
-		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_natives;        // Where the AS is
-		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_instance_descs; // Hold the matrices of the instances
+		ID3D12Resource* m_scratch = nullptr;														 // Scratch memory for AS builder
+		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_natives = { nullptr };        // Where the AS is
+		std::array<ID3D12Resource*, d3d12::settings::num_back_buffers> m_instance_descs = { nullptr }; // Hold the matrices of the instances
 		WRAPPED_GPU_POINTER m_fallback_tlas_ptr;
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO m_prebuild_info;
 	};
@@ -398,7 +398,7 @@ namespace wr::d3d12
 		struct BlasDesc
 		{
 			d3d12::AccelerationStructure m_as;
-			std::uint64_t m_material;
+			std::uint64_t m_material = 0u;
 			DirectX::XMMATRIX m_transform;
 		};
 	} /* desc */
@@ -411,10 +411,10 @@ namespace wr::d3d12
 
 	struct ShaderTable
 	{
-		std::uint8_t* m_mapped_shader_records;
-		std::uint64_t m_shader_record_size;
+		std::uint8_t* m_mapped_shader_records = nullptr;
+		std::uint64_t m_shader_record_size = 0u;
 		std::vector<ShaderRecord> m_shader_records;
-		ID3D12Resource* m_resource;
+		ID3D12Resource* m_resource = nullptr;
 	};
 
 } /* wr::d3d12 */

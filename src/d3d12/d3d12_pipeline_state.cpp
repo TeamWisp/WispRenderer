@@ -137,7 +137,7 @@ namespace wr::d3d12
 		break;
 		}
 
-		HRESULT hr;
+		HRESULT hr = E_FAIL;
 		if (std::holds_alternative<D3D12_GRAPHICS_PIPELINE_STATE_DESC>(pso_desc))
 		{
 			hr = n_device->CreateGraphicsPipelineState(&std::get<D3D12_GRAPHICS_PIPELINE_STATE_DESC>(pso_desc), IID_PPV_ARGS(&pipeline_state->m_native));

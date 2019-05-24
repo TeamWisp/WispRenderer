@@ -13,14 +13,14 @@ namespace wr
 {
 	struct DoFCoCData
 	{
-		d3d12::RenderTarget* out_source_dsv;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
+		d3d12::RenderTarget* out_source_dsv = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
+		ID3D12Resource* out_previous = nullptr;
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
-		D3D12ConstantBufferHandle* cb_handle;
+		D3D12ConstantBufferHandle* cb_handle = nullptr;
 
-		DescriptorAllocator* out_allocator;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 	};
 
@@ -28,13 +28,12 @@ namespace wr
 	{
 		struct DoFProperties_CB
 		{
-			DirectX::XMMATRIX m_projection;
-			float m_focal_length;
-			float m_f_number;
-			float m_film_size;
-			float m_focus_dist;
-			int m_enable_dof;
-			//uint32_t m_blades;
+			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
+			float m_focal_length = 0.0f;
+			float m_f_number = 0.0f;
+			float m_film_size = 0.0f;
+			float m_focus_dist = 0.0f;
+			int m_enable_dof = 0;
 		};
 
 		template<typename T>
