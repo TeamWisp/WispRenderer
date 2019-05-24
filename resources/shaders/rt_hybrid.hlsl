@@ -182,6 +182,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 
 	#ifndef PERFECT_MIRROR_REFLECTIONS
 
+	nextRand(rand_seed);
 	float2 xi = hammersley2d(rand_seed, 8192);
 	float pdf = 0;
 	float3 H = importanceSamplePdf(xi, roughness, N, pdf);
@@ -189,9 +190,17 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 
 	float NdotL = max(dot(N, L), 0);
 
-	float3 reflection = float3(0, 0, 0);
+	if(NdotL >= 0){
+		nextRand(rand_seed);
+		xi = hammersley2d(rand_seed, 8192);
+		H = importanceSamplePdf(xi, roughness, N, pdf);
+		L = reflect(-V, H);
+		NdotL = max(dot(N, L), 0);
+	}
+
+	float3 reflection = float3(1, 0, 0);
 	
-	if (NdotL > 0)
+	if (NdotL >= 0)
 		reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dirT);
 
 	return float4(reflection, pdf);

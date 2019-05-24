@@ -10,6 +10,7 @@
 
 #include "../render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../render_tasks/d3d12_spatial_reconstruction.hpp"
 #include "../render_tasks/d3d12_cubemap_convolution.hpp"
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "../render_tasks/d3d12_path_tracer.hpp"
@@ -145,10 +146,14 @@ namespace wr
 				// Bind output(s) from hybrid render task, if the composition task is executed in the hybrid frame graph
 				if (data.is_hybrid)
 				{
-					auto shadow_handle = data.out_buffer_refl_shadow_alloc.GetDescriptorHandle();
+					auto shadow_handle = data.out_buffer_refl_shadow_alloc.GetDescriptorHandle(1);
 
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
-					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 2, hybrid_rt->m_create_info.m_rtv_formats.data());
+					d3d12::CreateSRVFromSpecificRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data()[1]);
+
+					auto filtered_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::SpatialReconstructionData>());
+					shadow_handle = data.out_buffer_refl_shadow_alloc.GetDescriptorHandle();
+					d3d12::CreateSRVFromSpecificRTV(hybrid_rt, shadow_handle, 0, filtered_rt->m_create_info.m_rtv_formats.data()[0]);
 				
 				}			
 				if (data.is_rtao)

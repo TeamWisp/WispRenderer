@@ -184,20 +184,25 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height));
 
+		const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
+	    const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
+
 		const float4 hitT = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
+        const float3 hit_pos = hitT.xyz * hitT.w + pos_neighbor;
+
+        const float3 V_neighbor = normalize(camera_pos - hit_pos);
 
     //TODO: Calculate V again
 
 		const float3 color = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz;
 		const float3 L = hitT.xyz;
-		const float pdf = max(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).w, 1e-5);
-		const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
+		const float pdf_neighbor = max(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).w, 1e-5);
 		const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
 
 		//Calculate weight and weight sum
 
 		const float neighborWeight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
-		const float weight = brdf_weight(V, L, N, roughness) / pdf * neighborWeight;
+		const float weight = brdf_weight(V, L, N, roughness) / pdf_neighbor * neighborWeight;
 		result += color * weight;
 		weightSum += weight;
 	}
@@ -205,7 +210,6 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	//Output averaged result
 
 	float3 result3 = result / weightSum;
-	result3 /= 1 + dot(luminance, result3);
 	filtered[pix] = float4(result3, 1);
 
 }

@@ -73,8 +73,8 @@ namespace wr
 
 			}
 
-			d3d12::CreateSRVFromDSV(gbuffer_rt, 
-				data.gbuffer_depth.GetDescriptorHandle());
+			auto depth_handle = data.gbuffer_depth.GetDescriptorHandle();
+			d3d12::CreateSRVFromDSV(gbuffer_rt, depth_handle);
 
 
 			// Filtered output
