@@ -175,15 +175,13 @@ namespace wr
 				{
 				case RenderTaskType::DIRECT:
 					return m_render_system->GetDirectCommandList(d3d12::settings::num_back_buffers);
-					break;
 				case RenderTaskType::COMPUTE:
 					return m_render_system->GetComputeCommandList(d3d12::settings::num_back_buffers);
-					break;
 				case RenderTaskType::COPY:
 					return m_render_system->GetCopyCommandList(d3d12::settings::num_back_buffers);
-					break;
 				default:
-					break;
+					LOGC("Tried creating a command list of a type that is not supported.");
+					return static_cast<wr::CommandList*>(nullptr);
 				}
 			};
 
@@ -194,7 +192,6 @@ namespace wr
 				{
 					// Get the proper command list from the render system.
 					m_cmd_lists[i] = get_command_list_from_render_system(m_types[i]);
-
 
 					// Get a render target from the render system.
 					if (m_rt_properties[i].has_value())
