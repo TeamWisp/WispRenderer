@@ -170,21 +170,25 @@ namespace engine
 			wr::imgui::window::RootSignatureRegistry();
 			wr::imgui::window::D3D12HardwareInfo(*render_system);
 			wr::imgui::window::D3D12Settings();
-		}
 
-		if (rtao_settings_open)
-		{
-			ImGui::Begin("RTAO Settings", &rtao_settings_open);
+			if (rtao_settings_open)
+			{
+				ImGui::Begin("RTAO Settings", &rtao_settings_open);
 
-			ImGui::DragFloat("Bias", &rtao_user_settings.m_runtime.bias, 0.01f, 0.0f, 100.f);
-			ImGui::DragFloat("Radius", &rtao_user_settings.m_runtime.radius, 0.1f, 0.0f, 1000.f);
-			ImGui::DragFloat("Power", &rtao_user_settings.m_runtime.power, 0.1f, 0.0f, 10.f);
-			ImGui::DragInt("SPP", &rtao_user_settings.m_runtime.sample_count, 1, 0, 1073741824);
+				ImGui::DragFloat("Bias", &rtao_user_settings.m_runtime.bias, 0.01f, 0.0f, 100.f);
+				ImGui::DragFloat("Radius", &rtao_user_settings.m_runtime.radius, 0.1f, 0.0f, 1000.f);
+				ImGui::DragFloat("Power", &rtao_user_settings.m_runtime.power, 0.1f, 0.0f, 10.f);
+				ImGui::DragInt("SPP", &rtao_user_settings.m_runtime.sample_count, 1, 0, 1073741824);
 
-			ImGui::End();
+				ImGui::End();
 			
-			fg_manager::Get()->UpdateSettings<wr::RTAOData>(rtao_user_settings);
+				if (fg_manager::Get()->HasTask<wr::RTAOData>())
+				{
+					fg_manager::Get()->UpdateSettings<wr::RTAOData>(rtao_user_settings);
+				}
+			}
 		}
+
 	}
 	
 }
