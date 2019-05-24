@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "wisp.hpp"
 #include "window.hpp"
 #include "imgui_tools.hpp"
@@ -149,6 +151,16 @@ namespace engine
 					sg->GetActiveCamera()->SignalChange();
 				}
 
+				ImGui::Separator();
+
+				float frustum_near = sg->GetActiveCamera()->m_frustum_near;
+				float frustum_far = sg->GetActiveCamera()->m_frustum_far;
+				ImGui::DragFloatRange2("Frustum Near/Far", &frustum_near, &frustum_far, 1, 0.0001f, std::numeric_limits<float>::max());
+				sg->GetActiveCamera()->SetFrustumNear(std::max(frustum_near, 0.0000001f));
+				sg->GetActiveCamera()->SetFrustumFar(std::max(frustum_far, 0.0000001f));
+
+				ImGui::Separator();
+				
 				ImGui::MenuItem("Enable DOF", nullptr, &sg->GetActiveCamera()->m_enable_dof);
 				ImGui::DragFloat("F number", &sg->GetActiveCamera()->m_f_number, 1.f, 1.f, 128.f);
 				ImGui::DragFloat("Film size", &sg->GetActiveCamera()->m_film_size, 1.f, 25.f, 100.f);
