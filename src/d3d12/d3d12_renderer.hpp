@@ -109,7 +109,7 @@ namespace wr
 		~D3D12RenderSystem();
 
 		void Init(std::optional<Window*> window);
-		CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph);
+		CPUTextures Render(SceneGraph& scene_graph, FrameGraph& frame_graph);
 		void Resize(std::uint32_t width, std::uint32_t height);
 
 		std::shared_ptr<TexturePool> CreateTexturePool();

@@ -65,7 +65,7 @@ void PerformBenchmark(FGType fg_type, unsigned int width = default_window_width,
 		window->PollEvents();
 
 		scene->Update();
-		render_system->Render(scene->GetSceneGraph(), *frame_graph);
+		render_system->Render(*scene->GetSceneGraph(), *frame_graph);
 
 		// Capture screenshot
 		if (frame == frames_till_capture)

@@ -145,7 +145,7 @@ namespace wr
 		m_texture_pools.push_back(CreateTexturePool());
 	}
 
-	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	CPUTextures D3D12RenderSystem::Render(SceneGraph& scene_graph, FrameGraph& frame_graph)
 	{
 		// Perform render target save requests
 		while (!m_requested_rt_saves.empty())
@@ -228,10 +228,10 @@ namespace wr
 
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
-		scene_graph->Update();
-		scene_graph->Optimize();
+		scene_graph.Update();
+		scene_graph.Optimize();
 
-		frame_graph.Execute(*scene_graph.get());
+		frame_graph.Execute(scene_graph);
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
@@ -245,7 +245,7 @@ namespace wr
 		}
 
 		// Reset the batches.
-		ResetBatches(*scene_graph.get());
+		ResetBatches(scene_graph);
 
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
@@ -1213,7 +1213,7 @@ namespace wr
 		return m_simple_shapes[static_cast<std::size_t>(type)];
 	}
 
-	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)
+	void D3D12RenderSystem::ResetBatches(SceneGraph& sg)
 	{
 		for (auto& batch : sg.GetBatches())
 		{
