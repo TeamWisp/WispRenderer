@@ -188,7 +188,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			//wr::AddRTHybridTask(*fg);
 
 			//Raytraced Ambient Occlusion task
 			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
