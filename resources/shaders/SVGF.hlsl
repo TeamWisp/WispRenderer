@@ -92,18 +92,21 @@ float NormalDistanceTan(float3 a, float3 b)
 	return sqrt(max(0.0, 1.0 - d * d)) / d;
 }
 
-float CalcWeights(
+float2 CalcWeights(
 	float depth_center, float depth_p, float phi_depth,
 	float3 normal_center, float3 normal_p, float norm_power, 
-	float luminance_direct_center, float luminance_direct_p, float phi_direct)
+	float luminance_direct_center, float luminance_direct_p, float phi_direct,
+	float luminance_indirect_center, float luminance_indirect_p, float phi_indirect)
 {
 	const float w_normal    = NormalDistanceCos(normal_center, normal_p, norm_power);
 	const float w_z         = (phi_depth == 0) ? 0.0f : abs(depth_center - depth_p) / phi_depth;
 	const float w_l_direct   = abs(luminance_direct_center - luminance_direct_p) / phi_direct;
+	const float w_l_indirect = abs(luminance_indirect_center - luminance_indirect_p) / phi_indirect;
 
 	const float w_direct   = exp(0.0 - max(w_l_direct, 0.0)   - max(w_z, 0.0)) * w_normal;
+	const float w_indirect = exp(0.0 - max(w_l_indirect, 0.0) - max(w_z, 0.0)) * w_normal;
 
-	return w_direct;
+	return float2(w_direct, w_indirect);
 }
 
 float ComputeWeightNoLuminance(float depth_center, float depth_p, float phi_depth, float3 normal_center, float3 normal_p)
@@ -246,9 +249,9 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float4 prev_i
 	return valid;
 }
 
-float ComputeVarianceCenter(int2 center)
+float2 ComputeVarianceCenter(int2 center)
 {
-	float sum = 0.0;
+	float2 sum = float2(0.0, 0.0);
 
 	const float kernel[2][2] = {
 		{1.0 / 4.0, 1.0 / 8.0},
@@ -267,7 +270,12 @@ float ComputeVarianceCenter(int2 center)
 
 			float k = kernel[abs(x)][abs(y)];
 
-			sum += input_texture[p].w * k;
+			sum.x += input_texture[p].w * k;
+			[branch]
+			if(has_indirect)
+			{
+				sum.y += indirect_texture[p].w * k;
+			}
 		}
 	}
 
@@ -306,6 +314,7 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float4 direct = input_texture[screen_coord];
 	float4 indirect = direct;
+	[branch]
 	if(has_indirect)
 	{
 		indirect = indirect_texture[screen_coord];
@@ -343,6 +352,7 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			direct_clamp_max = max(color, direct_clamp_max);
 
 			float3 indirect = color;
+			[branch]
 			if(has_indirect)
 			{
 				indirect = indirect_texture[screen_coord + int2(x, y)].xyz;
@@ -397,6 +407,7 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	indirect = lerp(prev_indirect, indirect, alpha);
 
 	out_color_texture[screen_coord] = float4(direct.xyz, variance.x);
+	[branch]
 	if(has_indirect)
 	{
 		out_indirect_texture[screen_coord] = float4(indirect.xyz, variance.y);
@@ -424,7 +435,12 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float4 sum_moments = float4(0.0, 0.0, 0.0, 0.0);
 
 		const float4 direct_center = input_texture[screen_coord];
-		const float4 indirect_center = indirect_texture[screen_coord];
+		float4 indirect_center = direct_center;
+		[branch]
+		if(has_indirect)
+		{
+			indirect_center = indirect_texture[screen_coord];
+		}
 		const float luminance_direct_center = Luminance(direct_center.xyz);
 		const float luminance_indirect_center = Luminance(indirect_center.xyz);
 
@@ -437,7 +453,11 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		if(depth_center.x < 0.0)
 		{
 			out_color_texture[screen_coord] = direct_center;
-			out_indirect_texture[screen_coord] = indirect_center;
+			[branch]
+			if(has_indirect)
+			{
+				out_indirect_texture[screen_coord] = indirect_center;
+			}
 			return;
 		}
 
@@ -460,42 +480,64 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				if(inside)
 				{
 					const float3 direct_p = input_texture[p].xyz;
-					const float3 indirect_p = indirect_texture[p].xyz;
+					const float3 indirect_p = direct_p;
+					[branch]
+					if(has_indirect)
+					{
+						indirect_texture[p].xyz;
+					}
 					const float4 moments_p = prev_moments_texture[p].xyzw;
 
 					const float l_direct_p = Luminance(direct_p);
+					const float l_indirect_p = Luminance(indirect_p);
+
 
 					float3 normal_p;
 					float2 z_p;
 					FetchNormalAndLinearZ(p, normal_p, z_p);
 
-					const float w = CalcWeights(
+					const float2 w = CalcWeights(
 						depth_center.x, z_p.x, phi_depth * length(float2(x, y)),
 						normal_center, normal_p, n_phi,
-						luminance_direct_center, l_direct_p, l_phi);
+						luminance_direct_center, l_direct_p, phi_direct,
+						luminance_indirect_center, l_indirect_p, phi_indirect);
 
-					sum_weights_direct += w;
-					sum_direct += direct_p * w;
+					sum_weights_direct += w.x;
+					sum_weights_indirect += w.y;
+					sum_direct += direct_p * w.x;
+					sum_indirect += indirect_p * w.y;
 
-					sum_moments += moments_p * float2(w.xx);
+					sum_moments += moments_p * float4(w.xx, w.yy);
 				}
 			}
 		}
 
 		sum_weights_direct = max(sum_weights_direct, 1e-6f);
+		sum_weights_indirect = max(sum_weights_indirect, 1e-6f);
 
 		sum_direct /= sum_weights_direct;
-		sum_moments /= float2(sum_weights_direct.xx);
+		sum_indirect /= sum_weights_indirect;
+		sum_moments /= float4(sum_weights_direct.xx, sum_weights_indirect.xx);
 
-		float variance = sum_moments.y - sum_moments.x * sum_moments.x;
+		float2 variance = sum_moments.yw - sum_moments.xz * sum_moments.xz;
 
-		variance *= 4.0/h;
+		variance *= 4.0 / h;
 
-		out_color_texture[screen_coord] = float4(sum_direct.xyz, variance);
+		out_color_texture[screen_coord] = float4(sum_direct.xyz, variance.x);
+		[branch]
+		if(has_indirect)
+		{
+			out_indirect_texture[screen_coord] = float4(sum_indirect.xyz, variance.y);
+		}
 	}
 	else
 	{
 		out_color_texture[screen_coord] = input_texture[screen_coord];
+		[branch]
+		if(has_indirect)
+		{
+			out_indirect_texture[screen_coord] = indirect_texture[screen_coord];
+		}
 	}
 }
 
@@ -513,12 +555,17 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float kernel_weights[3] = {1.0, 2.0 / 3.0, 1.0 / 6.0};
 
 	const float4 direct_center = input_texture[screen_coord];
+	float4 indirect_center = direct_center;
+	[branch]
+	if(has_indirect)
+	{
+		indirect_center = indirect_texture[screen_coord];
+	}
 
 	const float luminance_direct_center = Luminance(direct_center.xyz);
+	const float luminance_indirect_center = Luminance(indirect_center.xyz);
 
-	const float variance = ComputeVarianceCenter(int2(screen_coord.xy));
-
-	out_color_texture[screen_coord] = direct_center;
+	const float2 variance = ComputeVarianceCenter(int2(screen_coord.xy));
 	
 	const float history_length = in_hist_length_texture[screen_coord].r;
 
@@ -529,14 +576,22 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	if(depth_center.x < 0)
 	{
 		out_color_texture[screen_coord] = direct_center;
+		[branch]
+		if(has_indirect)
+		{
+			out_indirect_texture[screen_coord] = indirect_center;
+		}
 		return;
 	}
 
-	const float phi_l_direct = l_phi * sqrt(max(0.0, eps_variance + variance));
+	const float phi_l_direct = l_phi * sqrt(max(0.0, eps_variance + variance.x));
+	const float phi_l_indirect = l_phi * sqrt(max(0.0, eps_variance + variance.y));
 	const float phi_depth = max(depth_center.y, 1e-8) * step_distance;
 
 	float sum_weights_direct = 1.0;
+	float sum_weights_indirect = 1.0;
 	float4 sum_direct = direct_center;
+	float4 sum_indirect = indirect_center;
 
 	[unroll]
 	for(int y = -2; y <= 2; ++y)
@@ -552,26 +607,41 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			if(inside && (x != 0 || y != 0))
 			{
 				const float4 direct_p = input_texture[p];
+				float4 indirect_p = direct_p;
+				[branch]
+				if(has_indirect)
+				{
+					indirect_p = indirect_texture[p];
+				}
 
 				float3 normal_p;
 				float2 depth_p;
 				FetchNormalAndLinearZ(p, normal_p, depth_p);
 
 				const float luminance_direct_p = Luminance(direct_p.xyz);
+				const float luminance_indirect_p = Luminance(indirect_p.xyz);
 
-				const float w = CalcWeights(
+				const float2 w = CalcWeights(
 					depth_center.x, depth_p.x, phi_depth*length(float2(x, y)),
 					normal_center, normal_p, n_phi,
-					luminance_direct_center, luminance_direct_p, phi_l_direct
-				);
+					luminance_direct_center, luminance_direct_p, phi_l_direct,
+					luminance_indirect_center, luminance_indirect_p, phi_l_indirect);
 
-				const float w_direct = w * kernel;
+				const float w_direct = w.x * kernel;
+				const float w_indirect = w.y * kernel;
 
 				sum_weights_direct += w_direct;
+				sum_weights_indirect += w_indirect;
 				sum_direct += float4(w_direct.xxx, w_direct * w_direct) * direct_p;
+				sum_indirect+= float4(w_indirect.xxx, w_indirect * w_indirect) * indirect_p;
 			}
 		}
 	}
 
 	out_color_texture[screen_coord] = float4(sum_direct / float4(sum_weights_direct.xxx, sum_weights_direct * sum_weights_direct));
+	[branch]
+	if(has_indirect)
+	{
+		out_indirect_texture[screen_coord] = float4(sum_indirect / float4(sum_weights_indirect.xxx, sum_weights_indirect * sum_weights_indirect));
+	}
 }

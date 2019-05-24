@@ -860,14 +860,20 @@ namespace wr
 
 			d3d12::Destroy(data.m_in_hist_length);
 			d3d12::Destroy(data.m_in_prev_color);
-			d3d12::Destroy(data.m_in_prev_indirect);
+			if (data.m_has_indirect)
+			{
+				d3d12::Destroy(data.m_in_prev_indirect);
+			}
 			d3d12::Destroy(data.m_in_prev_moments);
 			d3d12::Destroy(data.m_in_prev_normals);
 			d3d12::Destroy(data.m_in_prev_depth);
 			d3d12::Destroy(data.m_out_hist_length_render_target);
 			d3d12::Destroy(data.m_out_moments_render_target);
 			d3d12::Destroy(data.m_direct_ping_pong_render_target);
-			d3d12::Destroy(data.m_indirect_ping_pong_render_target);
+			if (data.m_has_indirect)
+			{
+				d3d12::Destroy(data.m_indirect_ping_pong_render_target);
+			}
 		}
 
 	} /* internal */
