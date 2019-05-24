@@ -123,8 +123,7 @@ bool IsReprojectionValid(int2 coord, float z, float z_prev, float fwidth_z, floa
 	input_texture.GetDimensions(screen_size.x, screen_size.y);
 
 	bool ret = (coord.x > -1 && coord.x < screen_size.x && coord.y > -1 && coord.y < screen_size.y);
-
-	ret = ret && ((abs(z_prev - z) / (fwidth_z + 1e-4)) < 2.0);
+	ret = ret && ((abs(NormalizeDepth(z_prev) - NormalizeDepth(z)) / (fwidth_z + 1e-4)) < 2.0);
 
 	ret = ret && ((distance(normal, normal_prev) / (fwidth_normal + 1e-2)) < 16.0);
 
@@ -332,12 +331,6 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float3 direct_clamp_min = float3(1.0, 1.0, 1.0);
 	float3 direct_clamp_max = float3(0.0, 0.0, 0.0);
-	
-	float3 indirect_moment_1 = float3(0.0, 0.0, 0.0);
-	float3 indirect_moment_2 = float3(0.0, 0.0, 0.0);
-
-	float3 indirect_clamp_min = float3(1.0, 1.0, 1.0);
-	float3 indirect_clamp_max = float3(0.0, 0.0, 0.0);
 
 	[unroll]
 	for(int y = -2; y <= 2; ++y)
@@ -350,17 +343,6 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			direct_moment_2 += color * color;
 			direct_clamp_min = min(color, direct_clamp_min);
 			direct_clamp_max = max(color, direct_clamp_max);
-
-			float3 indirect = color;
-			[branch]
-			if(has_indirect)
-			{
-				indirect = indirect_texture[screen_coord + int2(x, y)].xyz;
-			}
-			indirect_moment_1 += indirect;
-			indirect_moment_2 += indirect * indirect;
-			indirect_clamp_min = min(indirect, indirect_clamp_min);
-			indirect_clamp_max = max(indirect, indirect_clamp_max);
 		}
 	}
 
@@ -371,21 +353,10 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 direct_box_max = min(direct_mu + VARIANCE_CLIPPING_GAMMA * direct_sigma, direct_clamp_max);
 
 	float4 direct_clipped = LineBoxIntersection(direct_box_min, direct_box_max, direct.xyz, prev_direct.xyz);
-		
-	float3 indirect_mu = indirect_moment_1 / 25.0;
-	float3 indirect_sigma = sqrt(indirect_moment_2 / 25.0 - indirect_mu * indirect_mu);
-
-	float3 indirect_box_min = max(indirect_mu - VARIANCE_CLIPPING_GAMMA * indirect_sigma, indirect_clamp_min);
-	float3 indirect_box_max = min(indirect_mu + VARIANCE_CLIPPING_GAMMA * indirect_sigma, indirect_clamp_max);
-
-	float4 indirect_clipped = LineBoxIntersection(indirect_box_min, indirect_box_max, indirect.xyz, prev_indirect.xyz);
-
-	//success = clipped.w > 1.0;
 
 	prev_direct = float4(direct_clipped.xyz, prev_direct.w);
-	prev_indirect = float4(indirect_clipped.xyz, prev_indirect.w);
 
-	history_length = min(32.0, success ? (history_length + 1.0) : 1.0);
+	history_length = success ? (history_length + 1.0) : 1.0);
 
 	const float alpha = lerp(1.0, max(blending_alpha, 1.0/history_length), success);
 	const float moments_alpha = lerp(1.0, max(blending_moments_alpha, 1.0/history_length), success);
@@ -404,7 +375,7 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 variance = max(float2(0.f, 0.f), moments.ga - moments.rb * moments.rb);
 
 	direct = lerp(prev_direct, direct, alpha);
-	indirect = lerp(prev_indirect, indirect, alpha);
+	indirect = (prev_indirect * (history_length-1) + indirect) / history_length; // lerp(prev_indirect, indirect, alpha);
 
 	out_color_texture[screen_coord] = float4(direct.xyz, variance.x);
 	[branch]
@@ -585,7 +556,7 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	}
 
 	const float phi_l_direct = l_phi * sqrt(max(0.0, eps_variance + variance.x));
-	const float phi_l_indirect = l_phi * sqrt(max(0.0, eps_variance + variance.y));
+	const float phi_l_indirect = (l_phi * sqrt(max(0.0, eps_variance + variance.y))) * (8 - min(7, history_length));
 	const float phi_depth = max(depth_center.y, 1e-8) * step_distance;
 
 	float sum_weights_direct = 1.0;
@@ -642,6 +613,6 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	[branch]
 	if(has_indirect)
 	{
-		out_indirect_texture[screen_coord] = float4(sum_indirect / float4(sum_weights_indirect.xxx, sum_weights_indirect * sum_weights_indirect));
+		out_indirect_texture[screen_coord] = float4(sum_indirect.xyz / float3(sum_weights_indirect.xxx), indirect_center.w);
 	}
 }
