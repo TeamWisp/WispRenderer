@@ -33,7 +33,7 @@ namespace wr
 			if (info.m_data.size() > 0)
 			{
 				d3d12::UpdateStructuredBuffer(info.m_buffer_handle->m_native,
-					frame_idx,
+					static_cast<std::uint32_t>(frame_idx),
 					info.m_data.data(),
 					info.m_size,
 					info.m_offset,
@@ -46,11 +46,13 @@ namespace wr
 
 				if (info.m_buffer_handle->m_native->m_states[frame_idx] != info.m_new_state)
 				{
+					CD3DX12_RESOURCE_BARRIER transition_barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+						resource,
+						static_cast<D3D12_RESOURCE_STATES>(info.m_buffer_handle->m_native->m_states[frame_idx]),
+						static_cast<D3D12_RESOURCE_STATES>(info.m_new_state));
+
 					cmd_list->m_native->ResourceBarrier(1,
-						&CD3DX12_RESOURCE_BARRIER::Transition(
-							resource,
-							static_cast<D3D12_RESOURCE_STATES>(info.m_buffer_handle->m_native->m_states[frame_idx]),
-							static_cast<D3D12_RESOURCE_STATES>(info.m_new_state)));
+						&transition_barrier);
 					info.m_buffer_handle->m_native->m_states[frame_idx] = info.m_new_state;
 				}
 				else

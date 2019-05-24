@@ -10,10 +10,10 @@ namespace wr
 {
 	struct DeferredCompositionTaskData
 	{
-		D3D12Pipeline* in_pipeline;
-		d3d12::RenderTarget* out_deferred_main_rt;
+		D3D12Pipeline* in_pipeline = nullptr;
+		d3d12::RenderTarget* out_deferred_main_rt = nullptr;
 
-		DescriptorAllocator* out_allocator;
+		DescriptorAllocator* out_allocator = nullptr;
 
 		DescriptorAllocation out_gbuffer_albedo_alloc;
 		DescriptorAllocation out_gbuffer_normal_alloc;
@@ -26,21 +26,21 @@ namespace wr
 		DescriptorAllocation out_screen_space_ao_alloc;
 		DescriptorAllocation out_output_alloc;
 
-		d3d12::TextureResource* out_skybox;
-		d3d12::TextureResource* out_irradiance;
-		d3d12::TextureResource* out_pref_env_map;
+		d3d12::TextureResource* out_skybox = nullptr;
+		d3d12::TextureResource* out_irradiance = nullptr;
+		d3d12::TextureResource* out_pref_env_map = nullptr;
 
-		std::array<d3d12::CommandList*, d3d12::settings::num_back_buffers> out_bundle_cmd_lists;
-		bool out_requires_bundle_recording;
+		std::array<d3d12::CommandList*, d3d12::settings::num_back_buffers> out_bundle_cmd_lists = {};
+		bool out_requires_bundle_recording = false;
 
-		bool is_hybrid;
-		bool has_rt_hybrid;
-		bool has_rt_reflection;
-		bool has_rt_shadows;
-		bool has_rt_shadows_denoiser;
-		bool is_path_tracer;
-		bool is_rtao;
-		bool is_hbao;
+		bool is_hybrid = false;
+		bool has_rt_hybrid = false;
+		bool has_rt_reflection = false;
+		bool has_rt_shadows = false;
+		bool has_rt_shadows_denoiser = false;
+		bool is_path_tracer = false;
+		bool is_rtao = false;
+		bool is_hbao = false;
 	};
 
 	namespace internal

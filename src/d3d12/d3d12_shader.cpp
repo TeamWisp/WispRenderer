@@ -90,9 +90,9 @@ namespace wr::d3d12
 			wentry.c_str(),         // entry point function
 			wshader_type.c_str(),   // target profile
 #ifdef _DEBUG
-			d3d12::settings::debug_shader_args.data(), d3d12::settings::debug_shader_args.size(),
+			d3d12::settings::debug_shader_args.data(), static_cast<uint32_t>(d3d12::settings::debug_shader_args.size()),
 #else
-			d3d12::settings::release_shader_args.data(), d3d12::settings::release_shader_args.size(),
+			d3d12::settings::release_shader_args.data(), static_cast<uint32_t>(d3d12::settings::release_shader_args.size()),
 #endif
 			defines.data(), static_cast<std::uint32_t>(defines.size()),       // name/value defines and their count
 			include_handler,          // handler for #include directives

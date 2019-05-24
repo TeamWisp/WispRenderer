@@ -25,6 +25,18 @@ namespace wr
 		SignalChange();
 	}
 
+	void CameraNode::SetFrustumNear(float value) noexcept
+	{
+		m_frustum_near = value;
+		SignalChange();
+	}
+
+	void CameraNode::SetFrustumFar(float value) noexcept
+	{
+		m_frustum_far = value;
+		SignalChange();
+	}
+
 	void CameraNode::SetFocalLength(float length)
 	{
 		m_focal_length = length;

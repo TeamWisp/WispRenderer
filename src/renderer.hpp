@@ -57,6 +57,8 @@ namespace wr
 		virtual RenderTarget* GetRenderTarget(RenderTargetProperties properties) = 0;
 		virtual void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) = 0;
 
+		virtual void ResetCommandList(CommandList* cmd_list) = 0;
+		virtual void CloseCommandList(CommandList* cmd_list) = 0;
 		virtual void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 		virtual void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 		virtual void StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
@@ -65,7 +67,7 @@ namespace wr
 		virtual void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) = 0;
 
 		virtual void Init(std::optional<Window*> window) = 0;
-		virtual CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) = 0;
+		virtual CPUTextures Render(SceneGraph & scene_graph, FrameGraph & frame_graph) = 0;
 		virtual void Resize(std::uint32_t width, std::uint32_t height) = 0;
 		void RequestRenderTargetSaveToDisc(std::string const& path, RenderTarget* render_target, unsigned int index);
 		

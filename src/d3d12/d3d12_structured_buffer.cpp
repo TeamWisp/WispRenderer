@@ -17,8 +17,8 @@ namespace wr::d3d12
 		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srv_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 		srv_desc.Buffer.FirstElement = 0;
-		srv_desc.Buffer.NumElements = structured_buffer->m_unaligned_size / structured_buffer->m_stride;
-		srv_desc.Buffer.StructureByteStride = structured_buffer->m_stride;
+		srv_desc.Buffer.NumElements = static_cast<UINT>(structured_buffer->m_unaligned_size / structured_buffer->m_stride);
+		srv_desc.Buffer.StructureByteStride = static_cast<UINT>(structured_buffer->m_stride);
 		srv_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
 		n_device->CreateShaderResourceView(resource, &srv_desc, handle.m_native);
