@@ -6,16 +6,14 @@
 
 namespace wr::d3d12
 {
-	ReadbackBufferResource* wr::d3d12::CreateReadbackBuffer(Device* device, desc::ReadbackDesc* description)
+	ReadbackBufferResource* wr::d3d12::CreateReadbackBuffer(Device* device, std::uint32_t aligned_buffer_size)
 	{
 		auto native_device = device->m_native;
 
 		auto* readbackBuffer = new ReadbackBufferResource();
 
-		std::uint32_t buffer_size_aligned_to_256 = SizeAlignTwoPower(description->m_buffer_width * description->m_bytes_per_pixel, 256) * description->m_buffer_height;
-
 		CD3DX12_HEAP_PROPERTIES heap_properties_readback = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
-		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(buffer_size_aligned_to_256);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_buffer_size);
 
 		HRESULT res = native_device->CreateCommittedResource(
 			&heap_properties_readback,
@@ -33,7 +31,7 @@ namespace wr::d3d12
 		return readbackBuffer;
 	}
 
-	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint64_t buffer_size)
+	void* MapReadbackBuffer(ReadbackBufferResource* const readback_buffer, std::uint32_t buffer_size)
 	{
 		if (!readback_buffer)
 			return nullptr;

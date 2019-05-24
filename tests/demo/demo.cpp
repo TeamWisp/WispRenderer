@@ -199,7 +199,7 @@ int WispEntry()
 	window->SetRenderLoop([&]() {
 		SCENE::UpdateScene();
 
-		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
+		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
 	});
 
 	window->StartRenderLoop();

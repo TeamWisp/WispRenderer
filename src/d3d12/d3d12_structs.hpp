@@ -59,13 +59,6 @@ namespace wr::d3d12
 			bool m_is_cubemap = false;
 		};
 
-		struct ReadbackDesc
-		{
-			std::uint32_t m_buffer_width = 0u;
-			std::uint32_t m_buffer_height = 0u;
-			std::uint32_t m_bytes_per_pixel = 0u;
-		};
-
 		struct PipelineStateDesc
 		{
 			Format m_dsv_format;
