@@ -37,14 +37,9 @@ namespace wr
 
 		struct OrthographicResolution
 		{
-			explicit OrthographicResolution(OrthographicWidth width, OrthographicHeight height) : m_width(width), m_height(height)
+			explicit OrthographicResolution(OrthographicWidth width, OrthographicHeight height) : m_width(width), m_height(height * -1)
 			{
 			}
-
-			/*OrthographicResolution(OrthographicWidth width, OrthographicHeight height) :
-				m_width(width), m_height(height)
-			{
-			}*/
 
 			int m_width;
 			int m_height;
@@ -73,7 +68,7 @@ namespace wr
 			m_view_projection(),
 			m_camera_cb(),
 			m_planes(),
-			m_ortho_res(OrthographicWidth(1280), OrthographicHeight(-720))
+			m_ortho_res(OrthographicWidth(1280), OrthographicHeight(720))
 		{
 		}
 
