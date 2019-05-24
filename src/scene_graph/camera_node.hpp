@@ -18,6 +18,8 @@ namespace wr
 		using FovFocalLength = util::NamedType<float>;
 		using FovAspectRatio = util::NamedType<float>;
 		using FovFilmSize = util::NamedType<float>;
+		using OrthographicWidth = util::NamedType<int>;
+		using OrthographicHeight = util::NamedType<int>;
 
 		struct FoV
 		{
@@ -31,6 +33,21 @@ namespace wr
 			}
 
 			float m_fov;
+		};
+
+		struct OrthographicResolution
+		{
+			explicit OrthographicResolution(OrthographicWidth width, OrthographicHeight height) : m_width(width), m_height(height)
+			{
+			}
+
+			/*OrthographicResolution(OrthographicWidth width, OrthographicHeight height) :
+				m_width(width), m_height(height)
+			{
+			}*/
+
+			int m_width;
+			int m_height;
 		};
 
 		CameraNode(float aspect_ratio)
@@ -55,7 +72,8 @@ namespace wr
 			m_inverse_projection(),
 			m_view_projection(),
 			m_camera_cb(),
-			m_planes()
+			m_planes(),
+			m_ortho_res(OrthographicWidth(1280), OrthographicHeight(-720))
 		{
 		}
 
@@ -66,6 +84,8 @@ namespace wr
 		void SetFrustumNear(float value) noexcept;
 		void SetFrustumFar(float value) noexcept;
 		void SetProjectionOffset(float x, float y);
+
+		void SetOrthographicResolution(std::uint32_t width, std::uint32_t height);
 
 		std::pair<float, float> GetProjectionOffset();
 		
@@ -85,9 +105,11 @@ namespace wr
 		float m_shape_amt;
 		int m_aperture_blades;
 		bool m_enable_dof = false;
-		bool m_override_projection;
+		bool m_override_projection = false;
+		bool m_enable_orthographic = false;
 
 		FoV m_fov;
+		OrthographicResolution m_ortho_res;
 
 		DirectX::XMMATRIX m_view;
 		DirectX::XMMATRIX m_projection;
@@ -100,6 +122,8 @@ namespace wr
 		std::array<DirectX::XMVECTOR, 6> m_planes;
 
 		ConstantBufferHandle* m_camera_cb;
+
+		int m_window_resolution[2] = { 0,0 };
 	};
 
 } /* wr */

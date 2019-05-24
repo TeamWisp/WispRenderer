@@ -33,6 +33,7 @@ namespace wr
 			float m_shape = 0.0f;
 			float m_bokeh_poly = 0.0f;
 			uint32_t m_blades = 0u;
+			float _padding[3] = { 0.0f };
 			int m_enable_dof = false;
 		};
 
