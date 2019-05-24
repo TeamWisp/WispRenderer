@@ -103,51 +103,51 @@ namespace wr
 
 	} /* temp */
 
-	class D3D12RenderSystem : public RenderSystem
+	class D3D12RenderSystem final : public RenderSystem
 	{
 	public:
-		~D3D12RenderSystem() final;
+		~D3D12RenderSystem();
 
-		void Init(std::optional<Window*> window) final;
-		CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
-		void Resize(std::uint32_t width, std::uint32_t height) final;
+		void Init(std::optional<Window*> window);
+		CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph);
+		void Resize(std::uint32_t width, std::uint32_t height);
 
-		std::shared_ptr<TexturePool> CreateTexturePool() final;
-		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_bytes) final;
-		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes) final;
-		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes) final;
-		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes) final;
+		std::shared_ptr<TexturePool> CreateTexturePool();
+		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_bytes);
+		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes);
+		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes);
+		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes);
 
-		std::shared_ptr<TexturePool> GetDefaultTexturePool() final;
+		std::shared_ptr<TexturePool> GetDefaultTexturePool();
 
-		void PrepareRootSignatureRegistry() final;
-		void PrepareShaderRegistry() final;
-		void PreparePipelineRegistry() final;
-		void PrepareRTPipelineRegistry() final;
+		void PrepareRootSignatureRegistry();
+		void PrepareShaderRegistry();
+		void PreparePipelineRegistry();
+		void PrepareRTPipelineRegistry();
 		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void ReloadRTPipelineRegistryEntry(RegistryHandle handle);
 		void ReloadShaderRegistryEntry(RegistryHandle handle);
 		void ReloadRootSignatureRegistryEntry(RegistryHandle handle);
 
-		void WaitForAllPreviousWork() final;
+		void WaitForAllPreviousWork();
 
-		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
-		void DestroyCommandList(CommandList* cmd_list) final;
-		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
-		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
+		wr::CommandList* GetDirectCommandList(unsigned int num_allocators);
+		wr::CommandList* GetBundleCommandList(unsigned int num_allocators);
+		wr::CommandList* GetComputeCommandList(unsigned int num_allocators);
+		wr::CommandList* GetCopyCommandList(unsigned int num_allocators);
+		void DestroyCommandList(CommandList* cmd_list);
+		RenderTarget* GetRenderTarget(RenderTargetProperties properties);
+		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height);
 		void RequestFullscreenChange(bool fullscreen_state);
 
-		void ResetCommandList(CommandList* cmd_list) final;
-		void CloseCommandList(CommandList* cmd_list) final;
-		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void ResetCommandList(CommandList* cmd_list);
+		void CloseCommandList(CommandList* cmd_list);
+		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 
@@ -169,7 +169,7 @@ namespace wr
 		d3d12::RenderWindow* GetRenderWindow();
 
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
-		wr::Model* GetSimpleShape(SimpleShapes type) final;
+		wr::Model* GetSimpleShape(SimpleShapes type);
 
 	public:
 		d3d12::Device* m_device;
@@ -209,7 +209,7 @@ namespace wr
 		float temp_intensity = 1;
 
 	protected:
-		void SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index) final;
+		void SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index);
 
 	private:
 		void ResetBatches(SceneGraph& sg);
