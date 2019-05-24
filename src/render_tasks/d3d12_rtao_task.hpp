@@ -49,7 +49,6 @@ namespace wr
 
 		DescriptorAllocation out_uav_from_rtv;
 		DescriptorAllocation in_gbuffers;
-		DescriptorAllocation in_depthbuffer;
 
 		bool tlas_requires_init = false;
 	};
@@ -128,9 +127,8 @@ namespace wr
 			{
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
+				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
 				data.in_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
-				data.in_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
 			}
 
 			// Versioning
@@ -140,18 +138,14 @@ namespace wr
 				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
-				// Bind g-buffers (albedo, normal, depth)
-				d3d12::DescHeapCPUHandle gbuffers_handle = data.in_gbuffers.GetDescriptorHandle(0);
+				// Bind g-buffers
+				d3d12::DescHeapCPUHandle normal_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(0);
 				d3d12::DescHeapCPUHandle position_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(1);
-				d3d12::DescHeapCPUHandle depth_buffer_handle = data.in_depthbuffer.GetDescriptorHandle();
-
-				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
-
+				
 				auto deferred_main_rt = data.in_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, gbuffers_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_gbuffer_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, position_gbuffer_handle, 3, deferred_main_rt->m_create_info.m_rtv_formats.data()[3]);
-				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
 			}
 
 			if (!resize)
@@ -202,14 +196,11 @@ namespace wr
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::OUTPUT)), out_uav_handle);
 
-				auto in_scene_gbuffers_handle1 = data.in_gbuffers.GetDescriptorHandle(0);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_gbuffers_handle1);
-
-				auto in_scene_depth_handle = data.in_depthbuffer.GetDescriptorHandle();
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_depth_handle);
+				auto in_scene_normal_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(0);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_normal_gbuffer_handle);
 				
-				auto in_scene_position_handle = data.in_gbuffers.GetDescriptorHandle(1);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 2, in_scene_position_handle);
+				auto in_scene_position_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(1);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_position_gbuffer_handle);
 
 				// Update offset data
 				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
@@ -262,7 +253,6 @@ namespace wr
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
 				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
 				DescriptorAllocation temp2 = std::move(data.in_gbuffers);
-				DescriptorAllocation temp3 = std::move(data.in_depthbuffer);
 			}
 		}
 	}

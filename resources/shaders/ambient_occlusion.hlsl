@@ -3,8 +3,7 @@
 
 RWTexture2D<float4> output : register(u0); // x: AO value
 Texture2D gbuffer_normal : register(t1);
-Texture2D gbuffer_depth : register(t2);
-Texture2D gbuffer_position: register(t3);
+Texture2D gbuffer_position: register(t2);
 
 struct AOHitInfo
 {
