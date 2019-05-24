@@ -47,13 +47,13 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	return lighting;
 }
 
-float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 emissive, float3 normal, float3 irradiance, float ao, float3 reflection, float2 brdf, float3 shadow_factor, bool is_hybrid)
+float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 emissive, float3 normal, float3 irradiance, float ao, float3 reflection, float2 brdf, float3 shadow_factor, bool uses_luminance)
 {
 	float3 res = float3(0.0f, 0.0f, 0.0f);
 
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
-	if(!is_hybrid)
+	if(!uses_luminance)
 	{
 		for (uint i = 0; i < light_count; i++)
 		{

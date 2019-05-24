@@ -184,79 +184,121 @@ namespace wr
 	REGISTER(shaders::brdf_lut_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/brdf_lut_cs.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
-	REGISTER(shaders::basic_vs, ShaderRegistry)({
+	REGISTER(shaders::basic_deferred_vs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/basic.hlsl"),
 		ShaderDescription::Entry("main_vs"),
-		ShaderDescription::Type(ShaderType::VERTEX_SHADER)
+		ShaderDescription::Type(ShaderType::VERTEX_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
-	REGISTER(shaders::basic_ps, ShaderRegistry)({
+	REGISTER(shaders::basic_deferred_ps, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/basic.hlsl"),
 		ShaderDescription::Entry("main_ps"),
-		ShaderDescription::Type(ShaderType::PIXEL_SHADER)
+		ShaderDescription::Type(ShaderType::PIXEL_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
+		});
+
+	REGISTER(shaders::basic_hybrid_vs, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/basic.hlsl"),
+		ShaderDescription::Entry("main_vs"),
+		ShaderDescription::Type(ShaderType::VERTEX_SHADER),
+		ShaderDescription::Defines({L"IS_HYBRID"}),
+		ShaderDescription::DefineArguments({L"1"})
+		});
+
+	REGISTER(shaders::basic_hybrid_ps, ShaderRegistry)({
+		ShaderDescription::Path("resources/shaders/basic.hlsl"),
+		ShaderDescription::Entry("main_ps"),
+		ShaderDescription::Type(ShaderType::PIXEL_SHADER),
+		ShaderDescription::Defines({L"IS_HYBRID"}),
+		ShaderDescription::DefineArguments({L"1"})
 		});
 
 	REGISTER(shaders::fullscreen_quad_vs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/fullscreen_quad.hlsl"),
 		ShaderDescription::Entry("main_vs"),
-		ShaderDescription::Type(ShaderType::VERTEX_SHADER)
+		ShaderDescription::Type(ShaderType::VERTEX_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(shaders::svgf_denoiser_reprojection_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/SVGF.hlsl"),
 		ShaderDescription::Entry("reprojection_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 	});
 
 	REGISTER(shaders::svgf_denoiser_filter_moments_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/SVGF.hlsl"),
 		ShaderDescription::Entry("filter_moments_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 	});
 
 	REGISTER(shaders::svgf_denoiser_wavelet_filter_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/SVGF.hlsl"),
 		ShaderDescription::Entry("wavelet_filter_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 	});
 
 	REGISTER(shaders::deferred_composition_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/deferred_composition.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(shaders::mip_mapping_cs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/generate_mips_cs.hlsl"),
 		ShaderDescription::Entry("main"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(shaders::equirect_to_cubemap_vs, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/equirect_to_cubemap_conversion.hlsl"),
 		ShaderDescription::Entry("main_vs"),
-		ShaderDescription::Type(ShaderType::VERTEX_SHADER)
+		ShaderDescription::Type(ShaderType::VERTEX_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(shaders::equirect_to_cubemap_ps, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/equirect_to_cubemap_conversion.hlsl"),
 		ShaderDescription::Entry("main_ps"),
-		ShaderDescription::Type(ShaderType::PIXEL_SHADER)
+		ShaderDescription::Type(ShaderType::PIXEL_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(shaders::cubemap_convolution_ps, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/cubemap_convolution.hlsl"),
 		ShaderDescription::Entry("main_ps"),
-		ShaderDescription::Type(ShaderType::PIXEL_SHADER)
+		ShaderDescription::Type(ShaderType::PIXEL_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(shaders::cubemap_prefiltering_cs, ShaderRegistry)({
 	ShaderDescription::Path("resources/shaders/prefilter_env_map_cs.hlsl"),
 	ShaderDescription::Entry("main_cs"),
-	ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+	ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(pipelines::brdf_lut_precalculation, PipelineRegistry) < Vertex2D > ({
@@ -276,12 +318,27 @@ namespace wr
 	);
 
 	REGISTER(pipelines::basic_deferred, PipelineRegistry) < VertexColor > ({
-		PipelineDescription::VertexShader(shaders::basic_vs),
-		PipelineDescription::PixelShader(shaders::basic_ps),
+		PipelineDescription::VertexShader(shaders::basic_deferred_vs),
+		PipelineDescription::PixelShader(shaders::basic_deferred_ps),
 		PipelineDescription::ComputeShader(std::nullopt),
 		PipelineDescription::RootSignature(root_signatures::basic),
 		PipelineDescription::DSVFormat(Format::D32_FLOAT),
-		PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT, Format::R8G8B8A8_UNORM }),
+		PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM }),
+		PipelineDescription::NumRTVFormats(3),
+		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
+		PipelineDescription::CullMode(CullMode::CULL_NONE),
+		PipelineDescription::Depth(true),
+		PipelineDescription::CounterClockwise(false),
+		PipelineDescription::TopologyType(TopologyType::TRIANGLE)
+		});
+
+	REGISTER(pipelines::basic_hybrid, PipelineRegistry) < VertexColor > ({
+		PipelineDescription::VertexShader(shaders::basic_hybrid_vs),
+		PipelineDescription::PixelShader(shaders::basic_hybrid_ps),
+		PipelineDescription::ComputeShader(std::nullopt),
+		PipelineDescription::RootSignature(root_signatures::basic),
+		PipelineDescription::DSVFormat(Format::D32_FLOAT),
+		PipelineDescription::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT }),
 		PipelineDescription::NumRTVFormats(5),
 		PipelineDescription::Type(PipelineType::GRAPHICS_PIPELINE),
 		PipelineDescription::CullMode(CullMode::CULL_NONE),
@@ -418,19 +475,25 @@ namespace wr
 	REGISTER(shaders::post_processing, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/post_processing.hlsl"),
 		ShaderDescription::Entry("main"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(shaders::accumulation, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/accumulation.hlsl"),
 		ShaderDescription::Entry("main"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	REGISTER(shaders::rt_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/raytracing.hlsl"),
 		ShaderDescription::Entry("RaygenEntry"),
-		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(post_r,
@@ -554,7 +617,9 @@ namespace wr
 	REGISTER(shaders::dof_coc, ShaderRegistry) ({
 		ShaderDescription::Path("resources/shaders/dof_coc.hlsl"),
 			ShaderDescription::Entry("main_cs"),
-			ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+			ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(dofcoc_r,
@@ -591,7 +656,9 @@ namespace wr
 	REGISTER(shaders::down_scale, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/down_scale.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(dscale_r,
@@ -631,7 +698,9 @@ namespace wr
 	REGISTER(shaders::dof_dilate, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/dof_dilate.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(dilate_r,
@@ -667,7 +736,9 @@ namespace wr
 	REGISTER(shaders::dof_dilate_flatten, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/dof_dilate_flatten.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(dilate_flatten_r,
@@ -703,7 +774,9 @@ namespace wr
 	REGISTER(shaders::dof_dilate_flatten_h, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/dof_dilate_flatten_h.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(dilate_flattenh_r,
@@ -739,7 +812,9 @@ namespace wr
 	REGISTER(shaders::dof_bokeh, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/dof_bokeh.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(dof_bokeh_r,
@@ -780,7 +855,9 @@ namespace wr
 	REGISTER(shaders::dof_bokeh_post_filter, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/dof_bokeh_post_filter.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(dof_bokeh_post_filter_r,
@@ -819,7 +896,9 @@ namespace wr
 	REGISTER(shaders::dof_composition, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/dof_composition.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(dof_composition_r,
@@ -859,7 +938,9 @@ namespace wr
 	REGISTER(shaders::bloom_h, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/bloom_horizontal.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(bloom_h_r,
@@ -895,7 +976,9 @@ namespace wr
 	REGISTER(shaders::bloom_v, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/bloom_vertical.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(bloom_v_r,
@@ -931,7 +1014,9 @@ namespace wr
 	REGISTER(shaders::bloom_composition, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/bloom_composition.hlsl"),
 		ShaderDescription::Entry("main_cs"),
-		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER)
+		ShaderDescription::Type(ShaderType::DIRECT_COMPUTE_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(bloom_comp_r,
@@ -971,7 +1056,9 @@ namespace wr
 	REGISTER(shaders::rt_hybrid_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
 		ShaderDescription::Entry("HybridRaygenEntry"),
-		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(rt_hybrid_ranges,
@@ -1032,7 +1119,9 @@ namespace wr
 	REGISTER(shaders::rt_ao_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/ambient_occlusion.hlsl"),
 		ShaderDescription::Entry("AORaygenEntry"),
-		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 	});
 
 	DESC_RANGE_ARRAY(rt_ao_ranges,
@@ -1077,7 +1166,9 @@ namespace wr
 	REGISTER(shaders::path_tracer_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/path_tracer.hlsl"),
 		ShaderDescription::Entry("RaygenEntry"),
-		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	DESC_RANGE_ARRAY(path_tracer_ranges,
@@ -1138,7 +1229,9 @@ namespace wr
 	REGISTER(shaders::rt_shadow_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
 		ShaderDescription::Entry("ShadowRaygenEntry"),
-		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 	
 	StateObjectDescription::LibraryDesc rt_shadow_so_library = []()
@@ -1170,7 +1263,9 @@ namespace wr
 	REGISTER(shaders::rt_reflection_lib, ShaderRegistry)({
 		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
 		ShaderDescription::Entry("ReflectionRaygenEntry"),
-		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
+		ShaderDescription::Type(ShaderType::LIBRARY_SHADER),
+		ShaderDescription::Defines({}),
+		ShaderDescription::DefineArguments({})
 		});
 
 	StateObjectDescription::LibraryDesc rt_reflection_so_library = []()

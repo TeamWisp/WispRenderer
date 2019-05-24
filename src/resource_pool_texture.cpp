@@ -16,7 +16,7 @@ namespace wr
 #endif
 	}
 
-	TextureHandle TexturePool::LoadFromCompressedMemory(unsigned char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips)
+	TextureHandle TexturePool::LoadFromMemory(unsigned char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips)
 	{
 		std::string new_str = texture_extension;
 
@@ -43,7 +43,7 @@ namespace wr
 			return {};
 		}
 
-		return LoadFromCompressedMemory(data, width, height, type, srgb, generate_mips);
+		return LoadFromMemory(data, width, height, type, srgb, generate_mips);
 	}
 
 	TextureHandle TexturePool::GetDefaultAlbedo() const

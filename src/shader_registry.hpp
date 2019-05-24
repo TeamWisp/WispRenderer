@@ -16,10 +16,14 @@ namespace wr
 		using Path = util::NamedType<std::string>;
 		using Entry = util::NamedType<std::string>;
 		using Type = util::NamedType<ShaderType>;
+		using Defines = util::NamedType<std::vector<std::wstring>>;
+		using DefineArguments = util::NamedType<std::vector<std::wstring>>;
 
 		Path path;
 		Entry entry;
 		Type type;
+		Defines defines;
+		DefineArguments define_arguments;
 	};
 
 	class ShaderRegistry : public internal::Registry<ShaderRegistry, Shader, ShaderDescription>

@@ -40,6 +40,9 @@ namespace wr
 			unsigned int m_is_hybrid;
 			unsigned int m_is_path_tracer;
 			unsigned int m_is_ao;
+			unsigned int m_has_shadows;
+			unsigned int m_has_reflections;
+			int padding[3];
 		};
 
 		struct ShadowDenoiserSettings_CBData

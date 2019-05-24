@@ -528,7 +528,7 @@ namespace wr
 		return texture_handle;
 	}
 	
-	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(unsigned char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips)
+	TextureHandle D3D12TexturePool::LoadFromMemory(unsigned char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -561,6 +561,31 @@ namespace wr
 			//Assuming RGBA16_FLOAT for the time being, need to find a solution
 			hr = LoadFromHDRMemory(data, width * height * 16/*bits*/ * 4/*channels*/,
 				&metadata, *image);
+
+			break;
+		}
+		case wr::TextureFormat::RAW:
+		{
+			DirectX::Image temp_image = {};
+
+			temp_image.format = srgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+			temp_image.width = width;
+			temp_image.height = height;
+			temp_image.rowPitch = width * 4;
+			temp_image.slicePitch = width * height * 4;
+			temp_image.pixels = data;
+
+			hr = image->InitializeFromImage(temp_image);
+
+			metadata.width = width;
+			metadata.height = height;
+			metadata.arraySize = 1;
+			metadata.format = srgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+			metadata.mipLevels = 1;
+			metadata.depth = 1;
+			metadata.dimension = DirectX::TEX_DIMENSION::TEX_DIMENSION_TEXTURE2D;
+			metadata.miscFlags = 0;
+			metadata.miscFlags2 = 0;
 
 			break;
 		}
@@ -635,84 +660,6 @@ namespace wr
 
 		return texture_handle;
 
-	}
-
-	TextureHandle D3D12TexturePool::LoadFromRawMemory(unsigned char* data, size_t width, size_t height, bool srgb, bool generate_mips)
-	{
-		auto device = m_render_system.m_device;
-		DirectX::ScratchImage* scratch_image = new DirectX::ScratchImage;
-		DirectX::Image image = {};
-
-		image.format = srgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
-		image.width = width;
-		image.height = height;
-		image.rowPitch = width * 4;
-		image.slicePitch = width * height * 4;
-		image.pixels = data;
-
-		HRESULT hr = scratch_image->InitializeFromImage(image);
-
-		if (FAILED(hr))
-		{
-			LOGE("Loading raw texture failed with code " + std::to_string(hr));
-		}
-
-		uint32_t mip_lvls;
-
-		bool mip_generation = generate_mips;
-
-		if (mip_generation)
-		{
-			mip_lvls = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-		}
-		else
-		{
-			mip_lvls = 1;
-		}
-
-		Format texture_format = static_cast<wr::Format>(srgb ? wr::Format::R8G8B8A8_UNORM_SRGB : wr::Format::R8G8B8A8_UNORM);
-
-		d3d12::desc::TextureDesc desc;
-
-		desc.m_width = width;
-		desc.m_height = height;
-		desc.m_is_cubemap = false;
-		desc.m_depth = 1;
-		desc.m_array_size = 1;
-		desc.m_mip_levels = mip_lvls;
-		desc.m_texture_format = texture_format;
-		desc.m_initial_state = ResourceState::COPY_DEST;
-
-		d3d12::TextureResource* texture = d3d12::CreateTexture(device, &desc, mip_generation);
-
-		DescriptorAllocation alloc = m_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->Allocate();
-
-		if (alloc.IsNull())
-		{
-			LOGC("Couldn't allocate descriptor for the texture resource");
-		}
-
-		texture->m_need_mips = mip_generation;
-		texture->m_srv_allocation = std::move(alloc);
-
-		std::wstring name = L"TextureFromMemory" + std::to_wstring(m_loaded_textures);
-		texture->m_resource->SetName(name.c_str());
-
-		d3d12::CreateSRVFromTexture(texture);
-
-		m_loaded_textures++;
-
-		LOG("[TEXTURE LOADED]: Texture from Memory");
-
-		uint64_t texture_id = m_id_factory.GetUnusedID();
-
-		TextureHandle texture_handle;
-		texture_handle.m_pool = this;
-		texture_handle.m_id = texture_id;
-
-		m_unstaged_textures.insert(std::make_pair(texture_id, std::make_pair(texture, scratch_image)));
-
-		return texture_handle;
 	}
 
 	void D3D12TexturePool::MoveStagedTextures(unsigned int frame_idx)

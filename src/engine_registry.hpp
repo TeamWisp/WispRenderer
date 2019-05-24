@@ -759,8 +759,10 @@ namespace wr
 	struct shaders
 	{
 		WISPRENDERER_EXPORT static RegistryHandle brdf_lut_cs;
-		WISPRENDERER_EXPORT static RegistryHandle basic_vs;
-		WISPRENDERER_EXPORT static RegistryHandle basic_ps;
+		WISPRENDERER_EXPORT static RegistryHandle basic_deferred_vs;
+		WISPRENDERER_EXPORT static RegistryHandle basic_deferred_ps;
+		WISPRENDERER_EXPORT static RegistryHandle basic_hybrid_vs;
+		WISPRENDERER_EXPORT static RegistryHandle basic_hybrid_ps;
 		WISPRENDERER_EXPORT static RegistryHandle fullscreen_quad_vs;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_reprojection_cs;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_filter_moments_cs;
@@ -796,6 +798,7 @@ namespace wr
 	{
 		WISPRENDERER_EXPORT static RegistryHandle brdf_lut_precalculation;
 		WISPRENDERER_EXPORT static RegistryHandle basic_deferred;
+		WISPRENDERER_EXPORT static RegistryHandle basic_hybrid;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_reprojection;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_filter_moments;
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_wavelet_filter;

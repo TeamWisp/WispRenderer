@@ -21,17 +21,20 @@ namespace wr
 	struct DeferredMainTaskData
 	{
 		D3D12Pipeline* in_pipeline;
+		bool is_hybrid;
 	};
 	
 	namespace internal
 	{
 
-		inline void SetupDeferredTask(RenderSystem&, FrameGraph& fg, RenderTaskHandle handle)
+		inline void SetupDeferredTask(RenderSystem&, FrameGraph& fg, RenderTaskHandle handle, bool resized, bool is_hybrid)
 		{
 			auto& data = fg.GetData<DeferredMainTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::basic_deferred);
+
+			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(is_hybrid ? pipelines::basic_hybrid : pipelines::basic_deferred);
+			data.is_hybrid = is_hybrid;
 		}
 
 		inline void ExecuteDeferredTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
@@ -58,11 +61,11 @@ namespace wr
 
 	} /* internal */
 
-	inline void AddDeferredMainTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
+	inline void AddDeferredMainTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height, bool is_hybrid)
 	{
 		std::wstring name(L"Deferred Main");
 
-		RenderTargetProperties rt_properties
+		RenderTargetProperties rt_properties_deferred
 		{
 			RenderTargetProperties::IsRenderWindow(false),
 			RenderTargetProperties::Width(target_width),
@@ -71,7 +74,23 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
 			RenderTargetProperties::CreateDSVBuffer(true),
 			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
-			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT, Format::R8G8B8A8_UNORM }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM }),
+			RenderTargetProperties::NumRTVFormats(3),
+			RenderTargetProperties::Clear(true),
+			RenderTargetProperties::ClearDepth(true),
+			RenderTargetProperties::ResourceName(name)
+		};
+
+		RenderTargetProperties rt_properties_hybrid
+		{
+			RenderTargetProperties::IsRenderWindow(false),
+			RenderTargetProperties::Width(target_width),
+			RenderTargetProperties::Height(target_height),
+			RenderTargetProperties::ExecuteResourceState(ResourceState::RENDER_TARGET),
+			RenderTargetProperties::FinishedResourceState(ResourceState::NON_PIXEL_SHADER_RESOURCE),
+			RenderTargetProperties::CreateDSVBuffer(true),
+			RenderTargetProperties::DSVFormat(Format::D32_FLOAT),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(5),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
@@ -79,8 +98,8 @@ namespace wr
 		};
 
 		RenderTaskDesc desc;
-		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool) {
-			internal::SetupDeferredTask(rs, fg, handle);
+		desc.m_setup_func = [is_hybrid](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resized) {
+			internal::SetupDeferredTask(rs, fg, handle, resized, is_hybrid);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteDeferredTask(rs, fg, sg, handle);
@@ -89,7 +108,7 @@ namespace wr
 			// Nothing to destroy
 		};
 
-		desc.m_properties = rt_properties;
+		desc.m_properties = is_hybrid ? rt_properties_hybrid : rt_properties_deferred;
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 

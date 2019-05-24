@@ -7,7 +7,7 @@
 #define LOG_CALLBACK
 //#define LOG_PRINT_LOC
 #define LOG_PRINT_COLORS
-#define LOG_PRINT_TO_OUTPUT
+//#define LOG_PRINT_TO_OUTPUT
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 #include <Windows.h>

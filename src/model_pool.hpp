@@ -315,11 +315,11 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						handle = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, srgb, gen_mips);
+						handle = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, srgb, gen_mips);
 					}
 					else
 					{
-						handle = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, srgb, gen_mips);
+						handle = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, wr::TextureFormat::RAW, srgb, gen_mips);
 					}
 				}
 				else if (texture_location == TextureLocation::EXTERNAL)

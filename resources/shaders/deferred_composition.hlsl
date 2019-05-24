@@ -35,6 +35,8 @@ cbuffer CameraProperties : register(b0)
 	uint is_hybrid;
 	uint is_path_tracer;
 	uint is_ao;
+	uint has_reflections;
+	uint has_shadows;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -112,7 +114,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Shadow buffer if its hybrid rendering
 			buffer_shadow.SampleLevel(point_sampler, uv, 0).rgb,
 			// Lerp factor (0: no hybrid, 1: hybrid)
-			is_hybrid);
+			has_shadows);
 		
 		// Get reflection
 		float3 reflection = lerp(
@@ -121,7 +123,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Reflection buffer if it IS hybrid rendering
 			buffer_reflection.SampleLevel(point_sampler, uv, 0).xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
-			is_hybrid);
+			has_reflections);
 
 
 		// Shade pixel

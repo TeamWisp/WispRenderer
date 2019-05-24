@@ -96,7 +96,7 @@ namespace fg_manager
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
-			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, false);
 			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
@@ -143,7 +143,7 @@ namespace fg_manager
 			wr::AddCubemapConvolutionTask(*fg);
 
 			// Construct the G-buffer
-			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 
 			wr::AddHBAOTask(*fg);
 
@@ -185,7 +185,7 @@ namespace fg_manager
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			 // Construct the G-buffer
-			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);

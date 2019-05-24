@@ -617,7 +617,7 @@ namespace wr
 		for (auto desc : registry.m_descriptions)
 		{
 			auto shader = new D3D12Shader();
-			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry, desc.second.defines, desc.second.define_arguments);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
@@ -704,7 +704,9 @@ namespace wr
 
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
-				pipeline_shader->m_entry);
+				pipeline_shader->m_entry,
+				pipeline_shader->m_defines,
+				pipeline_shader->m_define_arguments);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -751,7 +753,9 @@ namespace wr
 		{
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
-				pipeline_shader->m_entry);
+				pipeline_shader->m_entry,
+				pipeline_shader->m_defines,
+				pipeline_shader->m_define_arguments);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{

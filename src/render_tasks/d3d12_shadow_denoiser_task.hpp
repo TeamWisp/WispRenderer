@@ -655,7 +655,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<ShadowDenoiserData>(desc);
+		fg.AddTask<ShadowDenoiserData>(desc, FG_DEPS(1, RTShadowData));
 	}
 
 }/* wr */

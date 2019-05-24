@@ -140,7 +140,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<RTReflectionData>(desc);
+		fg.AddTask<RTReflectionData>(desc, FG_DEPS(1, DeferredMainTaskData));
 	}
 
 } /* wr */

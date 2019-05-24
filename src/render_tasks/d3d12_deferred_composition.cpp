@@ -144,7 +144,7 @@ namespace wr
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, emissive_handle, 4, deferred_main_rt->m_create_info.m_rtv_formats[4]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, emissive_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats[2]);
 				
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 
@@ -260,6 +260,8 @@ namespace wr
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
 				camera_data.m_prev_view = active_camera->m_prev_view;
 				camera_data.m_is_hybrid = data.is_hybrid;
+				camera_data.m_has_reflections = data.has_rt_reflection;
+				camera_data.m_has_shadows = data.has_rt_shadows || data.has_rt_shadows_denoiser;
 				camera_data.m_is_path_tracer = data.is_path_tracer;
 				if (data.is_rtao)
 				{
