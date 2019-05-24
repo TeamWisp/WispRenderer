@@ -55,13 +55,14 @@ namespace wr
 		{
 			DirectX::XMMATRIX m_inv_view;
 
-			float bias;
-			float radius;
-			float power;
-			float max_distance;
-			unsigned int sample_count;
+			float m_bias;
+			float m_radius;
+			float m_power;
+			float m_max_distance;
+			float m_frame_idx;
+			unsigned int m_sample_count;
 
-			float padding[3];
+			float m_padding[2];
 		};
 
 		struct RayTracingCamera_CBData

@@ -19,9 +19,10 @@ cbuffer CBData : register(b0)
 	float radius;
 	float power;
 	float max_distance;
+	float frame_idx;
 	unsigned int sample_count;
 
-	float3 padding;
+	float2 padding;
 };
 
 struct Attributes { };
@@ -32,7 +33,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	RayDesc ray;
 	ray.Origin = origin;
 	ray.Direction = direction;
-	ray.TMin = bias;
+	ray.TMin = 0.f;
 	ray.TMax = far;
 
 	AOHitInfo payload = { false, 0 };
@@ -55,7 +56,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 [shader("raygeneration")]
 void AORaygenEntry()
 {
-    uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, 0);
+    uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
@@ -70,13 +71,12 @@ void AORaygenEntry()
 		//SPP decreases the closer a pixel is to the max distance
 		//Total is always calculated using the full sample count to have further pixels less occluded
 		int spp = min(sample_count,sample_count * (max_distance - cam_distance)/max_distance ); 
-		float ao_value = 1.0f;
+		int ao_value = sample_count;
 		for(uint i = 0; i< spp; i++)
 		{
-			ao_value -= (1.0f/float(sample_count)) * TraceAORay(0, wpos + normal * bias, getCosHemisphereSample(rand_seed, normal), radius, 0);
+			 ao_value -= TraceAORay(0, wpos + normal * bias , getCosHemisphereSample(rand_seed, normal), radius, 0);
 		}
-		
-		output[DispatchRaysIndex().xy].x = ao_value / power;
+		output[DispatchRaysIndex().xy].x = (ao_value/float(sample_count)) / power;
 	}
 	else
 	{

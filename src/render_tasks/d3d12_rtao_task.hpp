@@ -215,11 +215,12 @@ namespace wr
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTAO_CBData cb_data;
 				cb_data.m_inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
-				cb_data.bias = settings.m_runtime.bias;
-				cb_data.radius = settings.m_runtime.radius;
-				cb_data.power = settings.m_runtime.power;
-				cb_data.max_distance = settings.m_runtime.max_distance;
-				cb_data.sample_count = static_cast<unsigned int>(settings.m_runtime.sample_count);
+				cb_data.m_bias = settings.m_runtime.bias;
+				cb_data.m_radius = settings.m_runtime.radius;
+				cb_data.m_power = settings.m_runtime.power;
+				cb_data.m_max_distance = settings.m_runtime.max_distance;
+				cb_data.m_frame_idx = frame_idx;
+				cb_data.m_sample_count = static_cast<unsigned int>(settings.m_runtime.sample_count);
 
 				n_render_system.m_camera_pool->Update(data.out_cb_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
 
