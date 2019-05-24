@@ -276,7 +276,7 @@ namespace wr
 			{
 				m_destroy_funcs[i](*this, i, true);
 
-				if (!m_rt_properties[i].value().m_is_render_window)
+				if (m_rt_properties[i].has_value() && !m_rt_properties[i].value().m_is_render_window)
 				{
 					m_render_system->ResizeRenderTarget(&m_render_targets[i],
 						static_cast<std::uint32_t>(width * m_rt_properties[i].value().m_resolution_scale.Get()),
@@ -769,7 +769,7 @@ namespace wr
 			return R();
 		}
 		catch (const std::bad_any_cast& e) {
-			LOGW("A task settings requested failed to cast to T. ({})", e.what());
+			LOGC("A task settings requested failed to cast to T. ({})", e.what());
 			return R();
 		}
 
