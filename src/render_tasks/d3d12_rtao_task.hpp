@@ -183,6 +183,7 @@ namespace wr
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto setting = fg.GetSettings<RTAOData, RTAOSettings>();
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
+			float scalar = 1.0f;
 
 			if (fg.HasTask<wr::RTHybridData>())
 			{
@@ -238,8 +239,17 @@ namespace wr
 				CreateShaderTables(device, data, frame_idx);
 #endif // _DEBUG
 
+				scalar = fg.GetRenderTargetResolutionScale(handle);
+
 				// Dispatch hybrid ray tracing rays
-				d3d12::DispatchRays(cmd_list, data.in_hitgroup_shader_table[frame_idx], data.in_miss_shader_table[frame_idx], data.in_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
+				d3d12::DispatchRays(cmd_list, 
+					data.in_hitgroup_shader_table[frame_idx], 
+					data.in_miss_shader_table[frame_idx], 
+					data.in_raygen_shader_table[frame_idx], 
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetWidth())),
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetHeight())),
+					1,
+					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.in_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);

@@ -26,13 +26,13 @@ namespace wr
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
-		d3d12::StateObject* out_state_object;
-		d3d12::RootSignature* out_root_signature;
-		D3D12ConstantBufferHandle* out_cb_camera_handle;
+		d3d12::StateObject* out_state_object = nullptr;
+		d3d12::RootSignature* out_root_signature = nullptr;
+		D3D12ConstantBufferHandle* out_cb_camera_handle = nullptr;
 
 		DescriptorAllocation out_uav_from_rtv;
 
-		bool tlas_requires_init;
+		bool tlas_requires_init = false;
 	};
 
 	namespace internal
@@ -156,6 +156,7 @@ namespace wr
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
+			float scalar = 1.0f;
 
 			// Rebuild acceleratrion structure a 2e time for fallback
 			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
@@ -307,8 +308,16 @@ namespace wr
 //#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
 //#endif
+				scalar = fg.GetRenderTargetResolutionScale(handle);
 
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, 0);
+				d3d12::DispatchRays(cmd_list,
+					data.out_hitgroup_shader_table[frame_idx], 
+					data.out_miss_shader_table[frame_idx], 
+					data.out_raygen_shader_table[frame_idx], 
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetWidth())), 
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetHeight())), 
+					1, 
+					0);
 			}
 		}
 

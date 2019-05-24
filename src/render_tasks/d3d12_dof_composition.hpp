@@ -15,12 +15,12 @@ namespace wr
 {
 	struct DoFCompositionData
 	{
-		d3d12::RenderTarget* out_source_rt_comp;
-		d3d12::RenderTarget* out_source_bokeh_filtered;
-		d3d12::RenderTarget* out_source_coc;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
-		DescriptorAllocator* out_allocator;
+		d3d12::RenderTarget* out_source_rt_comp = nullptr;
+		d3d12::RenderTarget* out_source_bokeh_filtered = nullptr;
+		d3d12::RenderTarget* out_source_coc = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
+		ID3D12Resource* out_previous = nullptr;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 	};
 

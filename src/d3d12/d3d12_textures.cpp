@@ -26,7 +26,7 @@ namespace wr::d3d12
 		desc.Width = description->m_width;
 		desc.Height = description->m_height;
 		desc.MipLevels = static_cast<std::uint16_t>(description->m_mip_levels);
-		desc.DepthOrArraySize = (description->m_depth > 1) ? description->m_depth : description->m_array_size;
+		desc.DepthOrArraySize = static_cast<UINT16>((description->m_depth > 1) ? description->m_depth : description->m_array_size);
 		desc.Format = static_cast<DXGI_FORMAT>(description->m_texture_format);
 		desc.SampleDesc.Count = 1;
 		desc.SampleDesc.Quality = 0;
@@ -58,11 +58,12 @@ namespace wr::d3d12
 		ID3D12Resource* intermediate;
 
 		CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize);
 
 		device->m_native->CreateCommittedResource(
 			&uploadHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize),
+			&buffer_desc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&intermediate));
@@ -108,7 +109,7 @@ namespace wr::d3d12
 		desc.Width = description->m_width;
 		desc.Height = description->m_height;
 		desc.MipLevels = static_cast<std::uint16_t>(description->m_mip_levels);
-		desc.DepthOrArraySize = (description->m_depth > 1) ? description->m_depth : description->m_array_size;
+		desc.DepthOrArraySize = static_cast<std::uint16_t>((description->m_depth > 1) ? description->m_depth : description->m_array_size);
 		desc.Format = static_cast<DXGI_FORMAT>(description->m_texture_format);
 		desc.SampleDesc.Count = 1;
 		desc.SampleDesc.Quality = 0;
@@ -173,8 +174,6 @@ namespace wr::d3d12
 
 		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
 
-		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
 		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
 		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srv_desc.Format = (DXGI_FORMAT)tex->m_format;
@@ -185,7 +184,7 @@ namespace wr::d3d12
 		if (tex->m_is_cubemap)
 		{
 			dimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-			srv_desc.TextureCube.MipLevels = tex->m_mip_levels;
+			srv_desc.TextureCube.MipLevels = static_cast<std::uint32_t>(tex->m_mip_levels);
 		}
 		else
 		{
@@ -193,7 +192,7 @@ namespace wr::d3d12
 			{
 				//Then it's a 3D texture
 				dimension = D3D12_SRV_DIMENSION_TEXTURE3D;
-				srv_desc.Texture3D.MipLevels = tex->m_mip_levels;
+				srv_desc.Texture3D.MipLevels = static_cast<std::uint32_t>(tex->m_mip_levels);
 			}
 			else
 			{
@@ -202,13 +201,13 @@ namespace wr::d3d12
 					if (tex->m_array_size > 1)
 					{
 						dimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-						srv_desc.Texture2DArray.MipLevels = tex->m_mip_levels;
-						srv_desc.Texture2DArray.ArraySize = tex->m_array_size;
+						srv_desc.Texture2DArray.MipLevels = static_cast<std::uint32_t>(tex->m_mip_levels);
+						srv_desc.Texture2DArray.ArraySize = static_cast<std::uint32_t>(tex->m_array_size);
 					}
 					else
 					{
 						dimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-						srv_desc.Texture2D.MipLevels = tex->m_mip_levels;
+						srv_desc.Texture2D.MipLevels = static_cast<std::uint32_t>(tex->m_mip_levels);
 					}
 				}
 				else
@@ -218,14 +217,14 @@ namespace wr::d3d12
 					{
 						dimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
 
-						srv_desc.Texture1DArray.MipLevels = tex->m_mip_levels;
-						srv_desc.Texture1DArray.ArraySize = tex->m_array_size;
+						srv_desc.Texture1DArray.MipLevels = static_cast<std::uint32_t>(tex->m_mip_levels);
+						srv_desc.Texture1DArray.ArraySize = static_cast<std::uint32_t>(tex->m_array_size);
 					}
 					else
 					{
 						dimension = D3D12_SRV_DIMENSION_TEXTURE1D;
 
-						srv_desc.Texture1D.MipLevels = tex->m_mip_levels;
+						srv_desc.Texture1D.MipLevels = static_cast<std::uint32_t>(tex->m_mip_levels);
 					}
 				}
 			}
@@ -242,8 +241,6 @@ namespace wr::d3d12
 		decltype(Device::m_native) n_device;
 
 		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
-
-		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
 		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -276,7 +273,7 @@ namespace wr::d3d12
 						dimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
 						srv_desc.Texture2DArray.MipLevels = mip_levels;
 						srv_desc.Texture2DArray.MostDetailedMip = most_detailed_mip;
-						srv_desc.Texture2DArray.ArraySize = tex->m_array_size;
+						srv_desc.Texture2DArray.ArraySize = static_cast<std::uint32_t>(tex->m_array_size);
 					}
 					else
 					{
@@ -294,7 +291,7 @@ namespace wr::d3d12
 
 						srv_desc.Texture1DArray.MipLevels = mip_levels;
 						srv_desc.Texture1DArray.MostDetailedMip = most_detailed_mip;
-						srv_desc.Texture1DArray.ArraySize = tex->m_array_size;
+						srv_desc.Texture1DArray.ArraySize = static_cast<std::uint32_t>(tex->m_array_size);
 					}
 					else
 					{
@@ -318,8 +315,6 @@ namespace wr::d3d12
 		decltype(Device::m_native) n_device;
 
 		tex->m_resource->GetDevice(IID_PPV_ARGS(&n_device));
-
-		unsigned int increment_size = n_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
 		srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -371,7 +366,7 @@ namespace wr::d3d12
 		{
 			dimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
 			uav_desc.Texture2DArray.MipSlice = mip_slice;
-			uav_desc.Texture2DArray.ArraySize = tex->m_array_size;
+			uav_desc.Texture2DArray.ArraySize = static_cast<std::uint32_t>(tex->m_array_size);
 		}
 		else
 		{
@@ -391,7 +386,7 @@ namespace wr::d3d12
 						dimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
 
 						uav_desc.Texture2DArray.MipSlice = mip_slice;
-						uav_desc.Texture2DArray.ArraySize = tex->m_array_size;
+						uav_desc.Texture2DArray.ArraySize = static_cast<std::uint32_t>(tex->m_array_size);
 					}
 					else
 					{
@@ -408,7 +403,7 @@ namespace wr::d3d12
 						dimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
 
 						uav_desc.Texture1DArray.MipSlice = mip_slice;
-						uav_desc.Texture1DArray.ArraySize = tex->m_array_size;
+						uav_desc.Texture1DArray.ArraySize = static_cast<std::uint32_t>(tex->m_array_size);
 					}
 					else
 					{

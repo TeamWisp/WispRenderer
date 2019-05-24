@@ -27,15 +27,15 @@ namespace wr
 
 	struct BloomCompostionData
 	{
-		d3d12::RenderTarget* out_source_rt;
-		d3d12::RenderTarget* out_source_bloom_rt;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
-		DescriptorAllocator* out_allocator;
+		d3d12::RenderTarget* out_source_rt = nullptr;
+		d3d12::RenderTarget* out_source_bloom_rt = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
+		ID3D12Resource* out_previous = nullptr;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 
 		std::shared_ptr<ConstantBufferPool> bloom_cb_pool;
-		D3D12ConstantBufferHandle* cb_handle;
+		D3D12ConstantBufferHandle* cb_handle = nullptr;
 	};
 
 	namespace internal

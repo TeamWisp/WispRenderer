@@ -12,10 +12,13 @@ namespace wr::d3d12
 
 		auto* readbackBuffer = new ReadbackBufferResource();
 
+		CD3DX12_HEAP_PROPERTIES heap_properties_readback = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(aligned_buffer_size);
+
 		HRESULT res = native_device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+			&heap_properties_readback,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(aligned_buffer_size),
+			&buffer_desc,
 			D3D12_RESOURCE_STATE_COPY_DEST,
 			nullptr,
 			IID_PPV_ARGS(&readbackBuffer->m_resource));
@@ -34,7 +37,10 @@ namespace wr::d3d12
 			return nullptr;
 
 		void* memory = nullptr;
-		readback_buffer->m_resource->Map(0, &CD3DX12_RANGE(0, buffer_size), &memory);
+		CD3DX12_RANGE buffer_range = CD3DX12_RANGE(0, buffer_size);
+
+		readback_buffer->m_resource->Map(0, &buffer_range, &memory);
+
 		return memory;
 	}
 
@@ -43,7 +49,8 @@ namespace wr::d3d12
 		if (!readback_buffer)
 			return;
 
-		readback_buffer->m_resource->Unmap(0, &CD3DX12_RANGE(0, 0));
+		CD3DX12_RANGE buffer_range = CD3DX12_RANGE(0, 0);
+		readback_buffer->m_resource->Unmap(0, &buffer_range);
 	}
 
 	void SetName(ReadbackBufferResource* readback_buffer, std::wstring name)
