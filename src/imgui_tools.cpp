@@ -530,15 +530,15 @@ namespace wr::imgui::window
 					obj = obj_it->second;
 				}
 
-				std::string tree_name = internal::ShaderTypeToStr(desc.second.type) + "[" + std::to_string(desc.first) + "]: " + desc.second.path.Get();
+				std::string tree_name = internal::ShaderTypeToStr(desc.second.type) + "[" + std::to_string(desc.first) + "]: " + desc.second.path;
 				if (ImGui::TreeNode(tree_name.c_str()))
 				{
 					if (ImGui::TreeNode("Description"))
 					{
 						ImGui::Text("ID: %d", desc.first);
-						ImGui::Text("Path: %s", desc.second.path.Get().c_str());
-						ImGui::Text("Entry: %s", desc.second.entry.Get().c_str());
-						ImGui::Text("Type: %s", internal::ShaderTypeToStr(desc.second.type.Get()).c_str());
+						ImGui::Text("Path: %s", desc.second.path.c_str());
+						ImGui::Text("Entry: %s", desc.second.entry.c_str());
+						ImGui::Text("Type: %s", internal::ShaderTypeToStr(desc.second.type).c_str());
 
 						ImGui::TreePop();
 					}
@@ -591,10 +591,10 @@ namespace wr::imgui::window
 							}
 						};
 
-						text_handle("Vertex Shader", desc.second.m_vertex_shader_handle.Get());
-						text_handle("Pixel Shader", desc.second.m_pixel_shader_handle.Get());
-						text_handle("Compute Shader", desc.second.m_compute_shader_handle.Get());
-						text_handle("RootSignature", desc.second.m_root_signature_handle.Get());
+						text_handle("Vertex Shader", desc.second.m_vertex_shader_handle);
+						text_handle("Pixel Shader", desc.second.m_pixel_shader_handle);
+						text_handle("Compute Shader", desc.second.m_compute_shader_handle);
+						text_handle("RootSignature", desc.second.m_root_signature_handle);
 						
 						ImGui::Text("Depth Enabled: %s", internal::BooltoStr(desc.second.m_depth_enabled).c_str());
 						ImGui::Text("Counter Clockwise Winding Order: %s", internal::BooltoStr(desc.second.m_counter_clockwise).c_str());
@@ -602,7 +602,7 @@ namespace wr::imgui::window
 						for (auto i = 0u; i < desc.second.m_num_rtv_formats; i++)
 						{
 							std::string text = "Format[" + std::to_string(i) + "]: %s";
-							ImGui::Text(text.c_str(), FormatToStr(desc.second.m_rtv_formats.Get()[i]).c_str());
+							ImGui::Text(text.c_str(), FormatToStr(desc.second.m_rtv_formats[i]).c_str());
 						}
 
 						ImGui::TreePop();
@@ -647,15 +647,12 @@ namespace wr::imgui::window
 							}
 						};
 
-						text_handle("Library Shader", desc.second.library_desc.Get().shader_handle);
-						text_handle("Global RootSignature", desc.second.global_root_signature.Get().value_or(-1));
+						text_handle("Library Shader", desc.second.library_desc.shader_handle);
+						text_handle("Global RootSignature", desc.second.global_root_signature.value_or(-1));
 
-						if (desc.second.local_root_signatures.Get().has_value())
+						for (auto i = 0; i < desc.second.local_root_signatures.size(); i++)
 						{
-							for (auto i = 0; i < desc.second.local_root_signatures.Get().value().size(); i++)
-							{
-								ImGui::Text("Local Root Signature [%d] = %d", i, desc.second.local_root_signatures.Get().value()[i]);
-							}
+							ImGui::Text("Local Root Signature [%d] = %d", i, desc.second.local_root_signatures[i]);
 						}
 
 						ImGui::TreePop();
@@ -732,8 +729,8 @@ namespace wr::imgui::window
 							}
 						};
 
-						ImGui::Text("Num samplers: %d", desc.second.m_samplers.Get().size());
-						ImGui::Text("Num parameters: %d", desc.second.m_parameters.Get().size());
+						ImGui::Text("Num samplers: %d", desc.second.m_samplers.size());
+						ImGui::Text("Num parameters: %d", desc.second.m_parameters.size());
 
 						ImGui::TreePop();
 					}

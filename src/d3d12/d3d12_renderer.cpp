@@ -59,6 +59,11 @@ namespace wr
 			SAFE_RELEASE(iter->m_native);
 		}
 
+		DestroyShaderRegistry();
+		DestroyRootSignatureRegistry();
+		DestroyPipelineRegistry();
+		DestroyRTPipelineRegistry();
+
 		d3d12::Destroy(m_fullscreen_quad_vb);
 		d3d12::Destroy(m_direct_cmd_list);
 		d3d12::Destroy(m_device);
@@ -593,7 +598,7 @@ namespace wr
 
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
 			d3d12::FinalizeRootSignature(n_rs, m_device);
-			SetName(n_rs, (L"Root Signature " + desc.second.name.Get()));
+			SetName(n_rs, (L"Root Signature " + desc.second.name));
 
 			registry.m_objects.insert({ desc.first, n_rs });
 		}
@@ -646,21 +651,21 @@ namespace wr
 
 			auto n_pipeline = d3d12::CreatePipelineState();
 
-			if (desc.second.m_vertex_shader_handle.Get().has_value())
+			if (desc.second.m_vertex_shader_handle.has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.Get().value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
 				auto shader = static_cast<d3d12::Shader*>(obj);
 				d3d12::SetVertexShader(n_pipeline, shader);
 			}
-			if (desc.second.m_pixel_shader_handle.Get().has_value())
+			if (desc.second.m_pixel_shader_handle.has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.Get().value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
 				auto shader = static_cast<d3d12::Shader*>(obj);
 				d3d12::SetFragmentShader(n_pipeline, shader);
 			}
-			if (desc.second.m_compute_shader_handle.Get().has_value())
+			if (desc.second.m_compute_shader_handle.has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.Get().value());
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
 				auto shader = static_cast<d3d12::Shader*>(obj);
 				d3d12::SetComputeShader(n_pipeline, shader);
 			}
@@ -800,35 +805,72 @@ namespace wr
 		for (auto it : registry.m_descriptions)
 		{
 			auto desc = it.second;
-			auto library = static_cast<d3d12::Shader*>(ShaderRegistry::Get().Find(desc.library_desc.Get().shader_handle));
+			auto library = static_cast<d3d12::Shader*>(ShaderRegistry::Get().Find(desc.library_desc.shader_handle));
 
 			d3d12::desc::StateObjectDesc n_desc;
 			n_desc.m_library = library;
-			n_desc.m_library_exports = desc.library_desc.Get().exports;
-			n_desc.max_attributes_size = static_cast<std::uint32_t>(desc.max_attributes_size.Get());
-			n_desc.max_payload_size = static_cast<std::uint32_t>(desc.max_payload_size.Get());
-			n_desc.max_recursion_depth = static_cast<std::uint32_t>(desc.max_recursion_depth.Get());
-			n_desc.m_hit_groups = desc.library_desc.Get().m_hit_groups;
+			n_desc.m_library_exports = desc.library_desc.exports;
+			n_desc.max_attributes_size = static_cast<std::uint32_t>(desc.max_attributes_size);
+			n_desc.max_payload_size = static_cast<std::uint32_t>(desc.max_payload_size);
+			n_desc.max_recursion_depth = static_cast<std::uint32_t>(desc.max_recursion_depth);
+			n_desc.m_hit_groups = desc.library_desc.m_hit_groups;
 
-			if (auto rt_handle = desc.global_root_signature.Get().value(); desc.global_root_signature.Get().has_value())
+			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
 			{
 				n_desc.global_root_signature = static_cast<d3d12::RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
 			}
 
-			if (desc.local_root_signatures.Get().has_value())
+			n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
+			for (auto rt_handle : desc.local_root_signatures)
 			{
-				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
-				for (auto rt_handle : desc.local_root_signatures.Get().value())
-				{
-					auto rs = static_cast<d3d12::RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
-					n_desc.local_root_signatures.value().push_back(rs);
-				}
+				auto rs = static_cast<d3d12::RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+				n_desc.local_root_signatures.value().push_back(rs);
 			}
 
 			auto n_state_object = d3d12::CreateStateObject(m_device, n_desc);
 
 			registry.m_objects.insert({ it.first, n_state_object });
 		}
+	}
+
+	namespace internal
+	{
+
+		template<typename R, typename T>
+		void DestroyGenericRegistry()
+		{
+			auto& registry = R::Get();
+
+			for (auto it : registry.m_objects)
+			{
+				auto native = static_cast<T*>(it.second);
+				if (native)
+				{
+					d3d12::Destroy(native);
+				}
+			}
+		}
+
+	} /* internal */
+
+	void D3D12RenderSystem::DestroyRootSignatureRegistry()
+	{
+		internal::DestroyGenericRegistry<RootSignatureRegistry, d3d12::RootSignature>();
+	}
+
+	void D3D12RenderSystem::DestroyShaderRegistry()
+	{
+		internal::DestroyGenericRegistry<ShaderRegistry, d3d12::Shader>();
+	}
+
+	void D3D12RenderSystem::DestroyPipelineRegistry()
+	{
+		internal::DestroyGenericRegistry<PipelineRegistry, d3d12::PipelineState>();
+	}
+
+	void D3D12RenderSystem::DestroyRTPipelineRegistry()
+	{
+		internal::DestroyGenericRegistry<RTPipelineRegistry, d3d12::StateObject>();
 	}
 
 	void D3D12RenderSystem::InitSceneGraph(SceneGraph& scene_graph)
