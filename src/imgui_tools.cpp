@@ -15,9 +15,9 @@
 #include "scene_graph/mesh_node.hpp"
 #include "scene_graph/skybox_node.hpp"
 #include "model_pool.hpp"
-#include "d3d12/d3d12_shader_registry.hpp"
-#include "d3d12/d3d12_rt_pipeline_registry.hpp"
-#include "d3d12/d3d12_pipeline_registry.hpp"
+#include "shader_registry.hpp"
+#include "rt_pipeline_registry.hpp"
+#include "pipeline_registry.hpp"
 #include "imgui/ImGuizmo.h"
 
 namespace wr::imgui::internal
