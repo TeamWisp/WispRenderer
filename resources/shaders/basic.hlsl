@@ -68,12 +68,15 @@ struct PS_OUTPUT
 {
 	float4 albedo_roughness : SV_TARGET0;
 	float4 normal_metallic : SV_TARGET1;
+	float4 emissive_ao : SV_TARGET2;
 };
 
 Texture2D material_albedo : register(t0);
 Texture2D material_normal : register(t1);
 Texture2D material_roughness : register(t2);
 Texture2D material_metallic : register(t3);
+Texture2D material_ao : register(t4);
+Texture2D material_emissive : register(t5);
 
 SamplerState s0 : register(s0);
 
@@ -93,13 +96,21 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 		material_normal,
 		material_roughness,
 		material_metallic,
+		material_emissive,
+		material_ao,
 		s0,
 		input.uv);
 
+	if (output_data.alpha == 0)
+	{
+		discard;
+	}
+
 	float3 normal = normalize(mul(output_data.normal, tbn));
 
-	output.albedo_roughness = float4(pow(output_data.albedo, 2.2f), output_data.roughness);
+	output.albedo_roughness = float4(output_data.albedo.xyz, output_data.roughness);
 	output.normal_metallic = float4(normal, output_data.metallic);
+	output.emissive_ao = float4(output_data.emissive, output_data.ao);
 
 	return output;
 }

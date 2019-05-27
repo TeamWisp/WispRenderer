@@ -16,6 +16,7 @@
 
 namespace wr
 {
+	//TODO, this struct is unpadded, manual padding might be usefull.
 	struct PathTracerData
 	{
 		d3d12::AccelerationStructure out_tlas = {};
@@ -38,6 +39,7 @@ namespace wr
 		DescriptorAllocation out_output_alloc;
 		DescriptorAllocation out_gbuffer_albedo_alloc;
 		DescriptorAllocation out_gbuffer_normal_alloc;
+		DescriptorAllocation out_gbuffer_emissive_alloc;
 		DescriptorAllocation out_gbuffer_depth_alloc;
 
 		bool tlas_requires_init = true;
@@ -65,8 +67,8 @@ namespace wr
 			// Set up Raygen Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
@@ -79,8 +81,8 @@ namespace wr
 			// Set up Miss Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 2;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 2;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMissEntry");
 				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
@@ -97,8 +99,8 @@ namespace wr
 			// Set up Hit Group Shader Table
 			{
 				// Create Record(s)
-				UINT shader_record_count = 2;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device, data.out_state_object);
+				std::uint32_t shader_record_count = 2;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
 
 				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowHitGroup");
 				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
@@ -117,7 +119,7 @@ namespace wr
 		{
 			if (fg.HasTask<RTHybridData>())
 			{
-				fg.GetPredecessorData<RTHybridData>();
+				fg.WaitForPredecessorTask<RTHybridData>();
 			}
 
 			// Initialize variables
@@ -135,6 +137,7 @@ namespace wr
 				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_emissive_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
@@ -150,12 +153,14 @@ namespace wr
 				// Bind g-buffers (albedo, normal, depth)
 				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
 				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				auto emissive_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle();
 				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, emissive_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats[2]);
 
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 			}
@@ -167,20 +172,21 @@ namespace wr
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object))->m_native;
+				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object))->m_native;	
+
+				// Create Shader Tables
+				CreateShaderTables(device, data, 0);
+				CreateShaderTables(device, data, 1);
+				CreateShaderTables(device, data, 2);
 			}
 
-			// Create Shader Tables
-			CreateShaderTables(device, data, 0);
-			CreateShaderTables(device, data, 1);
-			CreateShaderTables(device, data, 2);
 		}
 
 		inline void ExecutePathTracerTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
 		{
 			if (fg.HasTask<RTHybridData>())
 			{
-				fg.GetPredecessorData<RTHybridData>();
+				fg.WaitForPredecessorTask<RTHybridData>();
 			}
 
 			// Initialize variables
@@ -190,8 +196,13 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<PathTracerData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+			auto frame_idx = n_render_system.GetFrameIdx();
 
-			d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list);
+			// Rebuild acceleratrion structure a 2e time for fallback
+			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+			{
+				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list, frame_idx);
+			}
 
 			// Reset accmulation if nessessary
 			if (DirectX::XMVector3Length(DirectX::XMVectorSubtract(scene_graph.GetActiveCamera()->m_position, data.last_cam_pos)).m128_f32[0] > 0.01)
@@ -207,16 +218,10 @@ namespace wr
 			}
 
 			// Wait for AS to be built
-			{
-				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(as_build_data.out_tlas.m_native);
-				cmd_list->m_native->ResourceBarrier(1, &barrier);
-			}
+			d3d12::UAVBarrierAS(cmd_list, as_build_data.out_tlas, frame_idx);
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				auto frame_idx = n_render_system.GetFrameIdx();
-
-
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
@@ -238,8 +243,11 @@ namespace wr
 				auto out_normal_gbuffer_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 1, out_normal_gbuffer_handle);
 
+				auto out_emissive_gbuffer_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 2, out_emissive_gbuffer_handle);
+
 				auto out_scene_depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 2, out_scene_depth_handle);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::GBUFFERS)) + 3, out_scene_depth_handle);
 
 				/*
 				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
@@ -270,9 +278,9 @@ namespace wr
 				}
 
 				// Fill descriptor heap with textures used by the scene
-				for (auto handle : as_build_data.out_material_handles)
+				for (auto material_handle : as_build_data.out_material_handles)
 				{
-					auto* material_internal = handle.m_pool->GetMaterial(handle);
+					auto* material_internal = material_handle.m_pool->GetMaterial(material_handle);
 
 					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
 					{
@@ -284,10 +292,17 @@ namespace wr
 						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
 					};
 
-					set_srv(material_internal->GetTexture(wr::TextureType::ALBEDO));
-					set_srv(material_internal->GetTexture(wr::TextureType::METALLIC));
-					set_srv(material_internal->GetTexture(wr::TextureType::NORMAL));
-					set_srv(material_internal->GetTexture(wr::TextureType::ROUGHNESS));
+					std::array<TextureType, static_cast<size_t>(TextureType::COUNT)> types = { TextureType::ALBEDO, TextureType::NORMAL, 
+																							   TextureType::ROUGHNESS, TextureType::METALLIC, 
+																							   TextureType::EMISSIVE, TextureType::AO };
+
+					for (auto t : types)
+					{
+						if (material_internal->HasTexture(t))
+							set_srv(material_internal->GetTexture(t));
+					}
+
+
 				}
 
 				// Get light buffer
@@ -323,7 +338,7 @@ namespace wr
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 
 				// Make sure the convolution pass wrote to the skybox.
-				fg.GetPredecessorData<CubemapConvolutionTaskData>();
+				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
                                 // Get skybox
 				if (SkyboxNode *skybox = scene_graph.GetCurrentSkybox().get())
@@ -348,12 +363,12 @@ namespace wr
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-				d3d12::BindDescriptorHeaps(cmd_list, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindDescriptorHeaps(cmd_list, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
 				{
-					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_native, 1);
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				}
 				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 				{

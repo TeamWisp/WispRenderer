@@ -2,10 +2,20 @@
 #include <algorithm>
 #include <thread>
 #include <chrono>
+#include <map>
+#include <string>
+#include <vector>
+#include <ctime>
+#include <iostream>
 
 #include "wisp.hpp"
 #include "demo_frame_graphs.hpp"
 #include "util/file_watcher.hpp"
+
+//Crashpad includes
+#include "client/crashpad_client.h"
+#include "client/settings.h"
+#include "client/crash_report_database.h"
 
 #include "engine_interface.hpp"
 #include "scene_viknell.hpp"
@@ -13,6 +23,7 @@
 #include "scene_spheres.hpp"
 
 #include "model_loader_assimp.hpp"
+#include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
 #define SCENE viknell_scene
@@ -46,6 +57,53 @@ void ShaderDirChangeDetected(std::string const & path, util::FileWatcher::FileSt
 	}
 }
 
+void startCrashpad() 
+{
+	// Cache directory that will store crashpad information and minidumps
+	base::FilePath database(L"CrashPadDB");
+	// Path to the out-of-process handler executable
+	base::FilePath handler(L"deps/crashpad/out/Release/crashpad_handler.exe");
+	// URL used to submit minidumps to
+	std::string url;
+	url = "https://WispRenderer.bugsplat.com/post/bp/crash/postBP.php";
+	// Optional annotations passed via --annotations to the handler
+	std::map<std::string, std::string> annotations;
+	annotations["format"] = "minidump";			// Crashpad setting to save crash as a minidump
+	annotations["prod"] = "WispRenderer";	    // BugSplat appName
+	annotations["ver"] = "1.2.0";				// BugSplat appVersion
+
+	// Optional arguments to pass to the handler
+	std::vector<std::string> arguments;
+
+	std::unique_ptr<crashpad::CrashReportDatabase> db =
+		crashpad::CrashReportDatabase::Initialize(database);
+
+	if (db != nullptr && db->GetSettings() != nullptr) 
+	{
+		db->GetSettings()->SetUploadsEnabled(true);
+	}
+
+	arguments.push_back("--no-rate-limit");
+
+	crashpad::CrashpadClient client;
+	bool success = client.StartHandler(
+		handler,
+		database,
+		database,
+		url,
+		annotations,
+		arguments,
+		/* restartable */ true,
+		/* asynchronous_start */ true
+	);
+
+	if (success) 
+	{
+		success = client.WaitForHandlerStart(INFINITE);
+	}
+}
+
+
 int WispEntry()
 {
 	// ImGui Logging
@@ -53,8 +111,21 @@ int WispEntry()
 	{
 		engine::debug_console.AddLog(str.c_str());
 	};
+	
+#ifndef _DEBUG //prevents log spam for developers
+	std::time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	auto local_time = std::localtime(&current_time);
+
+	std::stringstream ss;
+	ss << "log-" << local_time->tm_mday << "-" << (local_time->tm_mon + 1) << "-" << (local_time->tm_year + 1900);
+	std::string log_file_name("WispDemo.log");
+	util::log_file_handler = new wr::LogfileHandler(std::filesystem::path(ss.str()), log_file_name);
+#endif // _DEBUG //prevents log spam for developers
+
+	startCrashpad();
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
+
 	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
 
 	window->SetKeyCallback([](int key, int action, int mods)
@@ -86,58 +157,6 @@ int WispEntry()
 		{
 			SCENE::resources::model_pool->ShrinkToFit();
 		}
-		if (action == WM_KEYUP && key == VK_F6)
-		{
-			auto model = wr::ModelLoader::m_registered_model_loaders[0]->Load("resources/models/material_ball.fbx");
-
-			std::vector<wr::VertexColor> vertices(model->m_meshes[0]->m_positions.size());
-			std::vector<std::uint32_t> indices(model->m_meshes[0]->m_indices.size());
-
-			for (unsigned int j = 0; j < model->m_meshes[0]->m_positions.size(); ++j)
-			{
-				wr::VertexColor &vertex = vertices[j];
-
-				memcpy(vertex.m_pos, &model->m_meshes[0]->m_positions[j], sizeof(vertex.m_pos));
-				memcpy(vertex.m_normal, &model->m_meshes[0]->m_normals[j], sizeof(vertex.m_normal));
-				memcpy(vertex.m_tangent, &model->m_meshes[0]->m_tangents[j], sizeof(vertex.m_tangent));
-				memcpy(vertex.m_bitangent, &model->m_meshes[0]->m_bitangents[j], sizeof(vertex.m_bitangent));
-				memcpy(vertex.m_uv, &model->m_meshes[0]->m_uvw[j], sizeof(vertex.m_uv));
-				memcpy(vertex.m_color, &model->m_meshes[0]->m_colors[j], sizeof(vertex.m_color));
-
-			}
-
-			memcpy(indices.data(), model->m_meshes[0]->m_indices.data(), indices.size() * sizeof(std::uint32_t));
-
-			SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
-
-			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
-		}
-		if (action == WM_KEYUP && key == VK_F7)
-		{
-			auto model = wr::ModelLoader::m_registered_model_loaders[0]->Load("resources/models/xbot.fbx");
-
-			std::vector<wr::VertexColor> vertices(model->m_meshes[0]->m_positions.size());
-			std::vector<std::uint32_t> indices(model->m_meshes[0]->m_indices.size());
-
-			for (unsigned int j = 0; j < model->m_meshes[0]->m_positions.size(); ++j)
-			{
-				wr::VertexColor &vertex = vertices[j];
-
-				memcpy(vertex.m_pos, &model->m_meshes[0]->m_positions[j], sizeof(vertex.m_pos));
-				memcpy(vertex.m_normal, &model->m_meshes[0]->m_normals[j], sizeof(vertex.m_normal));
-				memcpy(vertex.m_tangent, &model->m_meshes[0]->m_tangents[j], sizeof(vertex.m_tangent));
-				memcpy(vertex.m_bitangent, &model->m_meshes[0]->m_bitangents[j], sizeof(vertex.m_bitangent));
-				memcpy(vertex.m_uv, &model->m_meshes[0]->m_uvw[j], sizeof(vertex.m_uv));
-				memcpy(vertex.m_color, &model->m_meshes[0]->m_colors[j], sizeof(vertex.m_color));
-
-			}
-
-			memcpy(indices.data(), model->m_meshes[0]->m_indices.data(), indices.size() * sizeof(std::uint32_t));
-
-			SCENE::resources::model_pool->EditMesh<wr::VertexColor, std::uint32_t>(SCENE::resources::test_model->m_meshes[0].first, vertices, indices);
-
-			wr::ModelLoader::m_registered_model_loaders[0]->DeleteModel(model);
-		}
 	});
 
 	window->SetMouseCallback([](int key, int action, int mods)
@@ -151,6 +170,7 @@ int WispEntry()
 	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
+	wr::ModelLoader* gltf_model_loader = new wr::TinyGLTFModelLoader();
 
 	render_system->Init(window.get());	
 
@@ -178,12 +198,13 @@ int WispEntry()
 	window->SetRenderLoop([&]() {
 		SCENE::UpdateScene();
 
-		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
+		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
 	});
 
 	window->StartRenderLoop();
 
 	delete assimp_model_loader;
+	delete gltf_model_loader;
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 
@@ -191,6 +212,11 @@ int WispEntry()
 
 	fg_manager::Destroy();
 	render_system.reset();
+
+#ifndef _DEBUG //cleanup
+	delete util::log_file_handler;
+#endif 
+
 	return 0;
 }
 

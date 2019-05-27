@@ -13,14 +13,14 @@ namespace wr
 {
 	struct DoFCoCData
 	{
-		d3d12::RenderTarget* out_source_dsv;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
+		d3d12::RenderTarget* out_source_dsv = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
+		ID3D12Resource* out_previous = nullptr;
 
 		std::shared_ptr<ConstantBufferPool> camera_cb_pool;
-		D3D12ConstantBufferHandle* cb_handle;
+		D3D12ConstantBufferHandle* cb_handle = nullptr;
 
-		DescriptorAllocator* out_allocator;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 	};
 
@@ -28,13 +28,12 @@ namespace wr
 	{
 		struct DoFProperties_CB
 		{
-			DirectX::XMMATRIX m_projection;
-			float m_focal_length;
-			float m_f_number;
-			float m_film_size;
-			float m_focus_dist;
-			int m_enable_dof;
-			//uint32_t m_blades;
+			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
+			float m_focal_length = 0.0f;
+			float m_f_number = 0.0f;
+			float m_film_size = 0.0f;
+			float m_focus_dist = 0.0f;
+			int m_enable_dof = 0;
 		};
 
 		template<typename T>
@@ -44,11 +43,14 @@ namespace wr
 			auto& data = fg.GetData<DoFCoCData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_allocation = data.out_allocator->Allocate(2);
+			if (!resize)
+			{
+				data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+				data.out_allocation = data.out_allocator->Allocate(2);
 
-			data.camera_cb_pool = rs.CreateConstantBufferPool(2);
-			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(DoFProperties_CB)));
+				data.camera_cb_pool = rs.CreateConstantBufferPool(2);
+				data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(DoFProperties_CB)));
+			}
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::dof_coc))->m_native;
@@ -131,6 +133,19 @@ namespace wr
 				1);
 		}
 
+		inline void DestroyCoCTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			if (!resize)
+			{
+				auto& data = fg.GetData<DoFCoCData>(handle);
+
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_allocation);
+				data.camera_cb_pool->Destroy(data.cb_handle);
+				delete data.out_allocator;
+			}
+		}
+
 	} /* internal */
 
 	template<typename T>
@@ -162,6 +177,7 @@ namespace wr
 			internal::ExecuteDoFCoCTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyCoCTask(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;

@@ -14,6 +14,7 @@
 #include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "../render_tasks/d3d12_path_tracer.hpp"
 #include "../render_tasks/d3d12_accumulation.hpp"
+#include "../render_tasks/d3d12_rtao_task.hpp"
 #include "d3d12_hbao.hpp"
 
 namespace wr
@@ -21,12 +22,14 @@ namespace wr
 	namespace internal
 	{
 
-		void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, wr::DeferredCompositionTaskData const & data, unsigned int frame_idx)
+		void RecordDrawCommands(D3D12RenderSystem& render_system, d3d12::CommandList* cmd_list, d3d12::HeapResource* camera_cb, wr::DeferredCompositionTaskData const& data, unsigned int frame_idx)
 		{
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+
 			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
 
 			bool is_fallback = d3d12::GetRaytracingType(render_system.m_device) == RaytracingType::FALLBACK;
-			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+			d3d12::BindDescriptorHeaps(cmd_list, is_fallback);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb, 0, frame_idx);
 
@@ -37,6 +40,10 @@ namespace wr
 			constexpr unsigned int normal_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_NORMAL_METALLIC);
 			d3d12::DescHeapCPUHandle normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle(frame_idx);
 			d3d12::SetShaderSRV(cmd_list, 1, normal_loc, normal_handle);
+
+			constexpr unsigned int emissive_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_EMISSIVE_AO);
+			d3d12::DescHeapCPUHandle emissive_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle(frame_idx);
+			d3d12::SetShaderSRV(cmd_list, 1, emissive_loc, emissive_handle);
 
 			constexpr unsigned int depth_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::GBUFFER_DEPTH);
 			d3d12::DescHeapCPUHandle depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
@@ -56,7 +63,6 @@ namespace wr
 			d3d12::SetShaderSRV(cmd_list, 1, pref_env, data.out_pref_env_map);
 
 			constexpr unsigned int brdf_lut_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BRDF_LUT);
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto* brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
 			d3d12::SetShaderSRV(cmd_list, 1, brdf_lut_loc, brdf_lut_text);
 
@@ -68,9 +74,9 @@ namespace wr
 			d3d12::DescHeapCPUHandle sp_irradiance_handle = data.out_screen_space_irradiance_alloc.GetDescriptorHandle();
 			d3d12::SetShaderSRV(cmd_list, 1, sp_irradiance_loc, sp_irradiance_handle);
 
-			constexpr unsigned int hbao_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_AO);
-			d3d12::DescHeapCPUHandle hbao_handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
-			d3d12::SetShaderSRV(cmd_list, 1, hbao_loc, hbao_handle);
+			constexpr unsigned int ao_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_AO);
+			d3d12::DescHeapCPUHandle ao_handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
+			d3d12::SetShaderSRV(cmd_list, 1, ao_loc, ao_handle);
 
 			constexpr unsigned int output_loc = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::OUTPUT);
 			d3d12::DescHeapCPUHandle output_handle = data.out_output_alloc.GetDescriptorHandle();
@@ -94,7 +100,8 @@ namespace wr
 			// Check if the current frame graph contains the hybrid task to know if it is hybrid or not.
 			data.is_hybrid = fg.HasTask<wr::RTHybridData>();
 			data.is_path_tracer = fg.HasTask<wr::PathTracerData>();
-			data.is_hbao = fg.HasTask<wr::HBAOData>();
+			data.is_rtao = fg.HasTask<wr::RTAOData>();
+			data.is_hbao = fg.HasTask<wr::HBAOData>() && !data.is_rtao; //Don't use HBAO when RTAO is active
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
@@ -103,40 +110,53 @@ namespace wr
 				LOGC("Texture pool is nullptr. This shouldn't happen as the render system should always create the first texture pool");
 			}
 
-			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+			if (!resize)
+			{
+				data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
-			data.out_gbuffer_albedo_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
-			data.out_gbuffer_normal_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
-			data.out_gbuffer_depth_alloc = std::move(data.out_allocator->Allocate());
-			data.out_lights_alloc = std::move(data.out_allocator->Allocate());
-			data.out_buffer_refl_shadow_alloc = std::move(data.out_allocator->Allocate());
-			data.out_screen_space_irradiance_alloc = std::move(data.out_allocator->Allocate());
-			data.out_screen_space_ao_alloc = std::move(data.out_allocator->Allocate());
-			data.out_output_alloc = std::move(data.out_allocator->Allocate());
+				data.out_gbuffer_albedo_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
+				data.out_gbuffer_normal_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
+				data.out_gbuffer_emissive_alloc = std::move(data.out_allocator->Allocate(d3d12::settings::num_back_buffers));
+				data.out_gbuffer_depth_alloc = std::move(data.out_allocator->Allocate());
+				data.out_lights_alloc = std::move(data.out_allocator->Allocate());
+				data.out_buffer_refl_shadow_alloc = std::move(data.out_allocator->Allocate());
+				data.out_screen_space_irradiance_alloc = std::move(data.out_allocator->Allocate());
+				data.out_screen_space_ao_alloc = std::move(data.out_allocator->Allocate());
+				data.out_output_alloc = std::move(data.out_allocator->Allocate());
+			}
 
 			for (uint32_t i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
 				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle(i);
 				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle(i);
+				auto emissive_handle = data.out_gbuffer_emissive_alloc.GetDescriptorHandle(i);
 				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
-
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, emissive_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats[2]);
+				
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 
 				// Bind output(s) from hybrid render task, if the composition task is executed in the hybrid frame graph
 				if (data.is_hybrid)
 				{
-					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW);
 					auto shadow_handle = data.out_buffer_refl_shadow_alloc.GetDescriptorHandle();
 
 					auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
 					d3d12::CreateSRVFromRTV(hybrid_rt, shadow_handle, 1, hybrid_rt->m_create_info.m_rtv_formats.data());
-				}
-			}
+				
+				}			
+				if (data.is_rtao)
+				{
+					auto ao_handle =  data.out_screen_space_ao_alloc.GetDescriptorHandle();
+
+					auto ao_buffer = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTAOData>());
+					d3d12::CreateSRVFromRTV(ao_buffer, ao_handle, 1, ao_buffer->m_create_info.m_rtv_formats.data());
+				} 
+			}				
 		}
 
 		void ExecuteDeferredCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
@@ -146,12 +166,12 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			const auto& pred_data = fg.GetPredecessorData<CubemapConvolutionTaskData>();
+			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 			if (data.is_hybrid)
 			{
 				// Wait on hybrid task
-				const auto& hybird_data = fg.GetPredecessorData<RTHybridData>();
+				fg.WaitForPredecessorTask<RTHybridData>();
 			}
 
 			if (n_render_system.m_render_window.has_value())
@@ -169,12 +189,18 @@ namespace wr
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
 				camera_data.m_is_hybrid = data.is_hybrid;
 				camera_data.m_is_path_tracer = data.is_path_tracer;
+				if (data.is_rtao)
+				{
+					camera_data.m_is_ao = true;
+				}
+				else
+				{
 #ifdef NVIDIA_GAMEWORKS_HBAO
-				camera_data.m_is_hbao = data.is_hbao;
+					camera_data.m_is_ao = data.is_hbao;
 #else
-				camera_data.m_is_hbao = false;
+					camera_data.m_is_ao = false;
 #endif
-
+				}
 				active_camera->m_camera_cb->m_pool->Update(active_camera->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&camera_data);
 				const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(active_camera->m_camera_cb);
 
@@ -186,7 +212,7 @@ namespace wr
 
 				//Get light buffer
 				{
-					auto srv_struct_buffer_handle = data.out_lights_alloc.GetDescriptorHandle();
+					d3d12::DescHeapCPUHandle srv_struct_buffer_handle = data.out_lights_alloc.GetDescriptorHandle();
 					d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, srv_struct_buffer_handle, frame_idx);
 				}
 
@@ -202,17 +228,17 @@ namespace wr
 				// Get Screen Space Environment Texture
 				if (data.is_path_tracer)
 				{
-					auto irradiance_handle = data.out_screen_space_irradiance_alloc.GetDescriptorHandle();
-					auto pred_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
+					d3d12::DescHeapCPUHandle irradiance_handle = data.out_screen_space_irradiance_alloc.GetDescriptorHandle();
+					d3d12::RenderTarget* pred_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::AccumulationData>());
 					d3d12::CreateSRVFromSpecificRTV(pred_rt, irradiance_handle, 0, pred_rt->m_create_info.m_rtv_formats[0]);
 				}
 
 				// Get HBAO+ Texture
 				if (data.is_hbao)
 				{
-					auto handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
-					auto ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
-					d3d12::CreateSRVFromSpecificRTV(ao_rt, handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
+					d3d12::DescHeapCPUHandle desc_handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
+					d3d12::RenderTarget* ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
+					d3d12::CreateSRVFromSpecificRTV(ao_rt, desc_handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
 				}
 
 				// Get Irradiance Map
@@ -231,7 +257,7 @@ namespace wr
 
 				// Output UAV
 				{
-					auto rtv_out_uav_handle = data.out_output_alloc.GetDescriptorHandle();
+					d3d12::DescHeapCPUHandle rtv_out_uav_handle = data.out_output_alloc.GetDescriptorHandle();
 					std::vector<Format> formats = { Format::R16G16B16A16_FLOAT };
 					d3d12::CreateUAVFromRTV(render_target, rtv_out_uav_handle, 1, formats.data());
 				}
@@ -265,7 +291,7 @@ namespace wr
 				if constexpr (d3d12::settings::use_bundles)
 				{
 					bool is_fallback = d3d12::GetRaytracingType(n_render_system.m_device) == RaytracingType::FALLBACK;
-					d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+					d3d12::BindDescriptorHeaps(cmd_list, is_fallback);
 					d3d12::ExecuteBundle(cmd_list, data.out_bundle_cmd_lists[frame_idx]);
 				}
 				else
@@ -291,6 +317,7 @@ namespace wr
 				// Small hack to force the allocations to go out of scope, which will tell the texture pool to free them
 				std::move(data.out_gbuffer_albedo_alloc);
 				std::move(data.out_gbuffer_normal_alloc);
+				std::move(data.out_gbuffer_emissive_alloc);
 				std::move(data.out_gbuffer_depth_alloc);
 				std::move(data.out_lights_alloc);
 				std::move(data.out_buffer_refl_shadow_alloc);

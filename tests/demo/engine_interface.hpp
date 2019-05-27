@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "wisp.hpp"
 #include "window.hpp"
 #include "imgui_tools.hpp"
@@ -7,6 +9,7 @@
 #include "d3d12/d3d12_renderer.hpp"
 #include "imgui/ImGuizmo.h"
 #include "demo_frame_graphs.hpp"
+#include "render_tasks/d3d12_rtao_task.hpp"
 
 namespace engine
 {
@@ -17,6 +20,7 @@ namespace engine
 	static bool open0 = true;
 	static bool open_viewport = true;
 	static bool open1 = true;
+	static bool rtao_settings_open = true;
 	static bool open_console = false;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
@@ -24,6 +28,8 @@ namespace engine
 	static char message_buffer[600];
 
 	static wr::imgui::special::DebugConsole debug_console;
+
+	static wr::RTAOSettings rtao_user_settings;
 
 	void RenderEngine(ImTextureID output, wr::D3D12RenderSystem* render_system, wr::SceneGraph* sg)
 	{
@@ -68,6 +74,7 @@ namespace engine
 					ImGui::MenuItem("Theme", nullptr, &open0);
 					ImGui::MenuItem("Statistics", nullptr, &stats_window.m_open);
 					ImGui::MenuItem("Camera Settings", nullptr, &open1);
+					ImGui::MenuItem("RTAO Settings", nullptr, &rtao_settings_open);
 					ImGui::EndMenu();
 				}
 
@@ -144,6 +151,16 @@ namespace engine
 					sg->GetActiveCamera()->SignalChange();
 				}
 
+				ImGui::Separator();
+
+				float frustum_near = sg->GetActiveCamera()->m_frustum_near;
+				float frustum_far = sg->GetActiveCamera()->m_frustum_far;
+				ImGui::DragFloatRange2("Frustum Near/Far", &frustum_near, &frustum_far, 1, 0.0001f, std::numeric_limits<float>::max());
+				sg->GetActiveCamera()->SetFrustumNear(std::max(frustum_near, 0.0000001f));
+				sg->GetActiveCamera()->SetFrustumFar(std::max(frustum_far, 0.0000001f));
+
+				ImGui::Separator();
+				
 				ImGui::MenuItem("Enable DOF", nullptr, &sg->GetActiveCamera()->m_enable_dof);
 				ImGui::DragFloat("F number", &sg->GetActiveCamera()->m_f_number, 1.f, 1.f, 128.f);
 				ImGui::DragFloat("Film size", &sg->GetActiveCamera()->m_film_size, 1.f, 25.f, 100.f);
@@ -165,7 +182,25 @@ namespace engine
 			wr::imgui::window::RootSignatureRegistry();
 			wr::imgui::window::D3D12HardwareInfo(*render_system);
 			wr::imgui::window::D3D12Settings();
+
+			if (rtao_settings_open)
+			{
+				ImGui::Begin("RTAO Settings", &rtao_settings_open);
+
+				ImGui::DragFloat("Bias", &rtao_user_settings.m_runtime.bias, 0.01f, 0.0f, 100.f);
+				ImGui::DragFloat("Radius", &rtao_user_settings.m_runtime.radius, 0.1f, 0.0f, 1000.f);
+				ImGui::DragFloat("Power", &rtao_user_settings.m_runtime.power, 0.1f, 0.0f, 10.f);
+				ImGui::DragInt("SPP", &rtao_user_settings.m_runtime.sample_count, 1, 0, 1073741824);
+
+				ImGui::End();
+			
+				if (fg_manager::Get()->HasTask<wr::RTAOData>())
+				{
+					fg_manager::Get()->UpdateSettings<wr::RTAOData>(rtao_user_settings);
+				}
+			}
 		}
+
 	}
 	
 }

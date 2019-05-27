@@ -125,10 +125,11 @@ namespace wr
 			{
 				internal::TransitionCommand* transition_command = static_cast<internal::TransitionCommand*>(command);
 
-				cmd_list->m_native->ResourceBarrier(1, 
-					&CD3DX12_RESOURCE_BARRIER::Transition(transition_command->m_buffer, 
-						static_cast<D3D12_RESOURCE_STATES>(transition_command->m_old_state), 
-						static_cast<D3D12_RESOURCE_STATES>(transition_command->m_new_state)));
+				CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(transition_command->m_buffer,
+					static_cast<D3D12_RESOURCE_STATES>(transition_command->m_old_state),
+					static_cast<D3D12_RESOURCE_STATES>(transition_command->m_new_state));
+
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
 
 				delete transition_command;
 				m_command_queue.pop();
@@ -181,7 +182,7 @@ namespace wr
 
 	void D3D12ModelPool::ShrinkVertexHeapToFit()
 	{
-		MemoryBlock* last_occupied_block;
+		MemoryBlock* last_occupied_block = nullptr;
 		for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
@@ -199,18 +200,20 @@ namespace wr
 		}
 
 		ID3D12Resource* old_buffer = m_vertex_buffer->m_buffer;
-		ID3D12Resource* new_buffer;
+		ID3D12Resource* new_buffer = nullptr;
 		ID3D12Resource* old_staging = m_vertex_buffer->m_staging;
-		ID3D12Resource* new_staging;
-
-		bool was_staged = m_vertex_buffer->m_is_staged;
+		ID3D12Resource* new_staging = nullptr;
 
 		uint8_t* cpu_address;
 
+		CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(new_size);
+
 		m_render_system.m_device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			&heap_properties_upload,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			&buffer_desc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&new_staging));
@@ -222,7 +225,7 @@ namespace wr
 
 		memcpy(cpu_address, m_vertex_buffer->m_cpu_address, new_size);
 
-		m_vertex_buffer->m_size = new_size;
+		m_vertex_buffer->m_size = static_cast<std::uint32_t>(new_size);
 		m_vertex_buffer->m_is_staged = true;
 		m_vertex_buffer->m_cpu_address = cpu_address;
 
@@ -232,9 +235,9 @@ namespace wr
 		SAFE_RELEASE(m_vertex_buffer->m_staging);
 
 		m_render_system.m_device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&heap_properties_default,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			&buffer_desc,
 			static_cast<D3D12_RESOURCE_STATES>(m_vertex_buffer->m_target_resource_state),
 			nullptr,
 			IID_PPV_ARGS(&new_buffer));
@@ -361,10 +364,14 @@ namespace wr
 
 		uint8_t* cpu_address;
 
+		CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(new_size);
+
 		m_render_system.m_device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			&heap_properties_upload,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			&buffer_desc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&new_staging));
@@ -376,7 +383,7 @@ namespace wr
 
 		memcpy(cpu_address, m_index_buffer->m_cpu_address, new_size);
 
-		m_index_buffer->m_size = new_size;
+		m_index_buffer->m_size = static_cast<std::uint32_t>(new_size);
 		m_index_buffer->m_is_staged = true;
 		m_index_buffer->m_cpu_address = cpu_address;
 
@@ -386,9 +393,9 @@ namespace wr
 		SAFE_RELEASE(m_index_buffer->m_staging);
 
 		m_render_system.m_device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&heap_properties_default,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+			&buffer_desc,
 			static_cast<D3D12_RESOURCE_STATES>(m_index_buffer->m_target_resource_state),
 			nullptr,
 			IID_PPV_ARGS(&new_buffer));
@@ -531,10 +538,13 @@ namespace wr
 			if (largest_block->m_size > m_intermediate_size)
 			{
 				ID3D12Resource* buffer;
+				CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+				CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536));
+
 				m_render_system.m_device->m_native->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+					&heap_properties_default,
 					D3D12_HEAP_FLAG_NONE,
-					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536)),
+					&buffer_desc,
 					D3D12_RESOURCE_STATE_COPY_DEST,
 					nullptr,
 					IID_PPV_ARGS(&buffer));
@@ -789,10 +799,13 @@ namespace wr
 			if (largest_block->m_size > m_intermediate_size)
 			{
 				ID3D12Resource* buffer;
+				CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+				CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536));
+
 				m_render_system.m_device->m_native->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+					&heap_properties_default,
 					D3D12_HEAP_FLAG_NONE,
-					&CD3DX12_RESOURCE_DESC::Buffer(SizeAlignAnyAlignment(largest_block->m_size, 65536)),
+					&buffer_desc,
 					D3D12_RESOURCE_STATE_COPY_DEST,
 					nullptr,
 					IID_PPV_ARGS(&buffer));
@@ -1040,8 +1053,8 @@ namespace wr
 			}
 		}
 
-		MemoryBlock* last_occupied_block;
-		for (MemoryBlock* mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+		MemoryBlock* last_occupied_block = nullptr;
+		for (mem_block = m_vertex_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
 			{
@@ -1050,7 +1063,6 @@ namespace wr
 		}
 
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
-		size_t old_size = m_vertex_buffer->m_size;
 
 		if (new_size > SizeAlignAnyAlignment(vertex_heap_new_size, 65536))
 		{
@@ -1071,10 +1083,14 @@ namespace wr
 
 			uint8_t* cpu_address;
 
+			CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+			CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(new_size);
+
 			m_render_system.m_device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+				&heap_properties_upload,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+				&buffer_desc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
 				IID_PPV_ARGS(&new_staging));
@@ -1084,9 +1100,9 @@ namespace wr
 
 			new_staging->Map(0, &read_range, reinterpret_cast<void**>(&(cpu_address)));
 
-			memcpy(cpu_address, m_vertex_buffer->m_cpu_address, std::min(static_cast<std::uint32_t>(new_size), m_vertex_buffer->m_size));
+			memcpy(cpu_address, m_vertex_buffer->m_cpu_address, std::min(new_size, m_vertex_buffer->m_size));
 
-			m_vertex_buffer->m_size = new_size;
+			m_vertex_buffer->m_size = static_cast<std::uint32_t>(new_size);
 			m_vertex_buffer->m_is_staged = true;
 			m_vertex_buffer->m_cpu_address = cpu_address;
 
@@ -1096,9 +1112,9 @@ namespace wr
 			SAFE_RELEASE(m_vertex_buffer->m_staging);
 
 			m_render_system.m_device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+				&heap_properties_default,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+				&buffer_desc,
 				static_cast<D3D12_RESOURCE_STATES>(m_vertex_buffer->m_target_resource_state),
 				nullptr,
 				IID_PPV_ARGS(&new_buffer));
@@ -1219,8 +1235,8 @@ namespace wr
 			}
 		}
 
-		MemoryBlock* last_occupied_block;
-		for (MemoryBlock* mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
+		MemoryBlock* last_occupied_block = nullptr;
+		for (mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
 			{
@@ -1249,10 +1265,14 @@ namespace wr
 
 			uint8_t* cpu_address;
 
+			CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+			CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(new_size);
+
 			m_render_system.m_device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+				&heap_properties_upload,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+				&buffer_desc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
 				IID_PPV_ARGS(&new_staging));
@@ -1262,9 +1282,9 @@ namespace wr
 
 			new_staging->Map(0, &read_range, reinterpret_cast<void**>(&(cpu_address)));
 
-			memcpy(cpu_address, m_index_buffer->m_cpu_address, std::min(static_cast<std::uint32_t>(new_size), m_index_buffer->m_size));
+			memcpy(cpu_address, m_index_buffer->m_cpu_address, std::min(new_size, m_index_buffer->m_size));
 
-			m_index_buffer->m_size = new_size;
+			m_index_buffer->m_size = static_cast<std::uint32_t>(new_size);
 			m_index_buffer->m_is_staged = true;
 			m_index_buffer->m_cpu_address = cpu_address;
 
@@ -1274,9 +1294,9 @@ namespace wr
 			SAFE_RELEASE(m_index_buffer->m_staging);
 
 			m_render_system.m_device->m_native->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+				&heap_properties_default,
 				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(new_size),
+				&buffer_desc,
 				static_cast<D3D12_RESOURCE_STATES>(m_index_buffer->m_target_resource_state),
 				nullptr,
 				IID_PPV_ARGS(&new_buffer));

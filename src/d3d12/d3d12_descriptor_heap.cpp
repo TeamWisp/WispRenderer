@@ -68,12 +68,12 @@ namespace wr::d3d12
 
 	void Offset(DescHeapGPUHandle& handle, unsigned int index, unsigned int increment_size)
 	{
-		handle.m_native.ptr += index * increment_size;
+		handle.m_native.ptr += static_cast<UINT64>(index) * static_cast<UINT64>(increment_size);
 	}
 
 	void Offset(DescHeapCPUHandle& handle, unsigned int index, unsigned int increment_size)
 	{
-		handle.m_native.ptr += index * increment_size;
+		handle.m_native.ptr += static_cast<UINT64>(index) * static_cast<UINT64>(increment_size);
 	}
 
 	void Destroy(DescriptorHeap* desc_heap)

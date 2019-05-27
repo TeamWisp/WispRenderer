@@ -15,12 +15,12 @@ namespace wr
 {
 	struct DoFCompositionData
 	{
-		d3d12::RenderTarget* out_source_rt_comp;
-		d3d12::RenderTarget* out_source_bokeh_filtered;
-		d3d12::RenderTarget* out_source_coc;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
-		DescriptorAllocator* out_allocator;
+		d3d12::RenderTarget* out_source_rt_comp = nullptr;
+		d3d12::RenderTarget* out_source_bokeh_filtered = nullptr;
+		d3d12::RenderTarget* out_source_coc = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
+		ID3D12Resource* out_previous = nullptr;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 	};
 
@@ -34,8 +34,11 @@ namespace wr
 			auto& data = fg.GetData<DoFCompositionData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
-			data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-			data.out_allocation = data.out_allocator->Allocate(5);
+			if (!resize)
+			{
+				data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
+				data.out_allocation = data.out_allocator->Allocate(5);
+			}
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::dof_composition))->m_native;
@@ -147,7 +150,6 @@ namespace wr
 				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_coc_idx);
 				d3d12::SetShaderSRV(cmd_list, 0, source_coc_idx, handle_m_srv);
 			}
-			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 5, data.out_allocation.GetDescriptorHandle());
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt_comp->m_render_targets[frame_idx % versions]));
 
@@ -155,6 +157,18 @@ namespace wr
 				static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
 				static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Height / 16.f)),
 				1);
+		}
+
+		inline void DestroyDoFCompositionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		{
+			if (!resize)
+			{
+				auto& data = fg.GetData<DoFCompositionData>(handle);
+
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_allocation);
+				delete data.out_allocator;
+			}
 		}
 
 	} /* internal */
@@ -188,6 +202,7 @@ namespace wr
 			internal::ExecuteDoFCompositionTask<T, T1, T2>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
+			internal::DestroyDoFCompositionTask(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;

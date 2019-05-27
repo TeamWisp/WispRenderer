@@ -36,6 +36,7 @@ namespace wr
 				LOGC("Texture pool is nullptr. This shouldn't happen as the render system should always create the first texture pool");
 			}
 
+
 			data.out_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 			data.out_allocation = data.out_allocator->Allocate(2);
 

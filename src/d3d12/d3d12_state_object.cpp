@@ -111,7 +111,7 @@ namespace wr::d3d12
 		*state_object = *CreateStateObject(state_object->m_device, state_object->m_desc);
 	}
 
-	std::uint64_t GetShaderIdentifierSize(Device* device, StateObject* obj)
+	std::uint64_t GetShaderIdentifierSize(Device* device)
 	{
 		// Get shader identifiers.
 		std::uint64_t retval = 0;
@@ -143,7 +143,6 @@ namespace wr::d3d12
 		};
 
 		// Get shader identifiers.
-		std::uint64_t retval;
 		if (GetRaytracingType(device) == RaytracingType::NATIVE)
 		{
 			return GetShaderIdentifiers(obj->m_properties);

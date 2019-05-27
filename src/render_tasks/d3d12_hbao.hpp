@@ -39,11 +39,11 @@ namespace wr
 		GFSDK_SSAO_InputData_D3D12 ssao_input_data;
 #endif
 
-		d3d12::DescHeapCPUHandle cpu_depth_handle;
-		d3d12::DescHeapGPUHandle gpu_depth_handle;
-		d3d12::DescHeapCPUHandle cpu_normal_handle;
-		d3d12::DescHeapGPUHandle gpu_normal_handle;
-		d3d12::DescHeapCPUHandle cpu_target_handle;
+		d3d12::DescHeapCPUHandle cpu_depth_handle = d3d12::DescHeapCPUHandle();
+		d3d12::DescHeapGPUHandle gpu_depth_handle = d3d12::DescHeapGPUHandle();
+		d3d12::DescHeapCPUHandle cpu_normal_handle = d3d12::DescHeapCPUHandle();
+		d3d12::DescHeapGPUHandle gpu_normal_handle = d3d12::DescHeapGPUHandle();
+		d3d12::DescHeapCPUHandle cpu_target_handle = d3d12::DescHeapCPUHandle();
 	};
 
 	namespace internal
@@ -83,10 +83,10 @@ namespace wr
 				data.cpu_target_handle = d3d12::GetCPUHandle(data.out_descriptor_heap_rtv, 0);
 			}
 
-			// depth
+			// depth & normal
 			{
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, data.cpu_normal_handle, 1, Format::R16G16B16A16_FLOAT);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, data.cpu_normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
 				d3d12::CreateSRVFromDSV(deferred_main_rt, data.cpu_depth_handle);
 			}
 

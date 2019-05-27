@@ -31,7 +31,7 @@ namespace wr::d3d12
 			native_lists[i] = cmd_lists[i]->m_native;
 		}
 
-		cmd_queue->m_native->ExecuteCommandLists(native_lists.size(), native_lists.data());
+		cmd_queue->m_native->ExecuteCommandLists(static_cast<unsigned int>(native_lists.size()), native_lists.data());
 
 		fence->m_fence_value++;
 		Signal(fence, cmd_queue);

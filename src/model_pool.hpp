@@ -50,12 +50,12 @@ namespace wr
 	struct Model
 	{
 		std::vector<std::pair<Mesh*, MaterialHandle>> m_meshes;
-		ModelPool* m_model_pool;
+		ModelPool* m_model_pool = nullptr;
 		std::string m_model_name;
 
 		Box m_box;
 
-		void Expand(float (&pos)[3], Mesh *mesh);
+		void Expand(float (&pos)[3]);
 
 	};
 
@@ -132,7 +132,7 @@ namespace wr
 		int LoadNodeMeshesWithMaterials(ModelData* data, Model* model, std::vector<MaterialHandle> materials);
 
 		template<typename TV>
-		void UpdateModelBoundingBoxes(Model* model, Mesh* mesh, std::vector<TV> vertices_data);
+		void UpdateModelBoundingBoxes(Model* model, std::vector<TV> vertices_data);
 
 		std::size_t m_vertex_buffer_pool_size_in_bytes;
 		std::size_t m_index_buffer_pool_size_in_bytes;
@@ -206,7 +206,7 @@ namespace wr
 			{
 				for (uint32_t j = 0, k = (uint32_t) meshes[i].m_vertices.size(); j < k; ++j)
 				{
-					model->Expand(meshes[i].m_vertices[j].m_pos, mesh);
+					model->Expand(meshes[i].m_vertices[j].m_pos);
 				}
 			}
 
@@ -289,7 +289,7 @@ namespace wr
 
 		for (int i = 0; i < data->m_materials.size(); ++i)
 		{
-			TextureHandle albedo, normals, metallic, roughness, ambient_occlusion;
+			TextureHandle albedo, normals, metallic, roughness, emissive, ambient_occlusion;
 
 			ModelMaterialData* material = data->m_materials[i];
 
@@ -302,20 +302,25 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						handle = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, true, true);
+						handle = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, srgb, gen_mips);
 					}
 					else
 					{
-						handle = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, true, true);
+						handle = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, srgb, gen_mips);
 					}
 				}
 				else if (texture_location == TextureLocation::EXTERNAL)
 				{
-					handle = texture_pool->LoadFromFile(texture_path, true, true);
+					handle = texture_pool->LoadFromFile(dir + texture_path, srgb, gen_mips);
 				}
 			};
 
-			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, ambient_occlusion, false, true);
+			//TODO: Maya team integrate texture scales in loading
+			// Currently default scales are set to 1 for all materials.
+			MaterialUVScales default_scales;
+
+
+			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, default_scales, false, true);
 			Material* mat = material_pool->GetMaterial(new_handle);
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
@@ -342,6 +347,12 @@ namespace wr
 				mat->SetTexture(TextureType::ROUGHNESS, roughness);
 			}
 
+			if (material->m_emissive_texture_location != TextureLocation::NON_EXISTENT)
+			{
+				load_material_texture(material->m_emissive_texture_location, material->m_emissive_embedded_texture, material->m_emissive_texture, emissive, true, true);
+				mat->SetTexture(TextureType::EMISSIVE, emissive);
+			}
+
 			if (material->m_ambient_occlusion_texture_location != TextureLocation::NON_EXISTENT)
 			{
 				load_material_texture(material->m_ambient_occlusion_texture_location, material->m_ambient_occlusion_embedded_texture, material->m_ambient_occlusion_texture, ambient_occlusion, false, true);
@@ -354,7 +365,9 @@ namespace wr
 
 			mat->SetConstant<MaterialConstant::COLOR>({ material->m_base_color[0], material->m_base_color[1], material->m_base_color[2] });
 			mat->SetConstant<MaterialConstant::METALLIC>(material->m_base_metallic);
-			mat->SetConstant<MaterialConstant::ROUGHNESS>(std::min(1.f, std::max(material->m_base_roughness, 0.f)));
+			mat->SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(material->m_base_emissive);
+			mat->SetConstant<MaterialConstant::ROUGHNESS>(material->m_base_roughness);
+
 
 			material_handles.push_back(new_handle);
 		}
@@ -397,7 +410,7 @@ namespace wr
 			{
 				if (mesh_material.first->id == mesh->id)
 				{
-					UpdateModelBoundingBoxes<TV>(model, mesh, vertices);
+					UpdateModelBoundingBoxes<TV>(model, vertices);
 				}
 			}
 		}

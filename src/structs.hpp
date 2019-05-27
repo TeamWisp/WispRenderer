@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <cstdint>
 
 namespace wr
 {
@@ -13,7 +14,17 @@ namespace wr
 	struct TextureHandle
 	{
 		TexturePool* m_pool = nullptr;
-		uint64_t m_id = 0;
+		std::uint32_t m_id = 0;
+	};
+
+	struct MaterialUVScales
+	{
+		float m_albedo_scale = 1.0f;
+		float m_normal_scale = 1.0f;
+		float m_roughness_scale = 1.0f;
+		float m_metallic_scale = 1.0f;
+		float m_emissive_scale = 1.0f;
+		float m_ao_scale = 1.0f;
 	};
 
 	struct CPUTexture
@@ -29,7 +40,7 @@ namespace wr
 	struct MaterialHandle
 	{
 		MaterialPool* m_pool;
-		uint64_t m_id;
+		std::uint32_t m_id;
 
 		friend bool operator ==(MaterialHandle const & lhs, MaterialHandle const & rhs)
 		{

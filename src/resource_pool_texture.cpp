@@ -40,6 +40,7 @@ namespace wr
 		else
 		{
 			LOGC("[ERROR]: Texture format not supported.");
+			return {};
 		}
 
 		return LoadFromCompressedMemory(data, width, height, type, srgb, generate_mips);
@@ -62,11 +63,16 @@ namespace wr
 
 	TextureHandle TexturePool::GetDefaultMetalic() const
 	{
-		return m_default_metalic;
+		return m_default_metallic;
 	}
 
 	TextureHandle TexturePool::GetDefaultAO() const
 	{
 		return m_default_ao;
+	}
+
+	TextureHandle TexturePool::GetDefaultEmissive() const
+	{
+		return m_default_emissive;
 	}
 }

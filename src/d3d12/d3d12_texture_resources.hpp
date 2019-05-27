@@ -13,16 +13,16 @@ namespace wr::d3d12
 {
 	struct TextureResource : Texture
 	{
-		std::size_t m_width;
-		std::size_t m_height;
-		std::size_t m_depth;
-		std::size_t m_array_size;
-		std::size_t m_mip_levels;
+		std::size_t m_width = 0;
+		std::size_t m_height = 0;
+		std::size_t m_depth = 0;
+		std::size_t m_array_size = 0;
+		std::size_t m_mip_levels = 0;
 
-		Format m_format;
+		Format m_format = wr::Format::UNKNOWN;
 
-		ID3D12Resource* m_resource;
-		ID3D12Resource* m_intermediate;
+		ID3D12Resource* m_resource = nullptr;
+		ID3D12Resource* m_intermediate = nullptr;
 		std::vector<ResourceState> m_subresource_states;
 		DescriptorAllocation m_srv_allocation;
 		DescriptorAllocation m_uav_allocation;

@@ -65,13 +65,14 @@ namespace wr
 		d3d12::Destroy(m_direct_queue);
 		d3d12::Destroy(m_copy_queue);
 		d3d12::Destroy(m_compute_queue);
-		if (m_render_window.has_value()) d3d12::Destroy(m_render_window.value());
+		if (m_render_window.has_value())
+		{
+			d3d12::Destroy(m_render_window.value());
+		}
 	}
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
-		TRY_M(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED), "Failed to CoInitialize");
-
 		m_window = window;
 		m_device = d3d12::CreateDevice();
 		SetName(m_device, L"Default D3D12 Device");
@@ -142,7 +143,7 @@ namespace wr
 		m_texture_pools.push_back(CreateTexturePool());
 	}
 
-	CPUTextures D3D12RenderSystem::Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph)
+	CPUTextures D3D12RenderSystem::Render(SceneGraph& scene_graph, FrameGraph& frame_graph)
 	{
 		// Perform render target save requests
 		while (!m_requested_rt_saves.empty())
@@ -225,13 +226,14 @@ namespace wr
 
 		PreparePreRenderCommands(clear_frame_buffer, frame_idx);
 
-		scene_graph->Update();
-		scene_graph->Optimize();
+		scene_graph.Update();
+		scene_graph.Optimize();
 
-		frame_graph.Execute(*this, *scene_graph.get());
+		frame_graph.Execute(scene_graph);
 
 		auto cmd_lists = frame_graph.GetAllCommandLists<d3d12::CommandList>();
 		std::vector<d3d12::CommandList*> n_cmd_lists;
+		n_cmd_lists.reserve(cmd_lists.size());
 
 		n_cmd_lists.push_back(m_direct_cmd_list);
 
@@ -241,13 +243,13 @@ namespace wr
 		}
 
 		// Reset the batches.
-		ResetBatches(*scene_graph.get());
+		ResetBatches(scene_graph);
 
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
 		if (m_render_window.has_value())
 		{
-			d3d12::Present(m_render_window.value(), m_device);
+			d3d12::Present(m_render_window.value());
 		}
 
 		m_bound_model_pool = nullptr;
@@ -266,11 +268,10 @@ namespace wr
 
 	void D3D12RenderSystem::Resize(std::uint32_t width, std::uint32_t height)
 	{
-
 		d3d12::ResizeViewport(m_viewport, (int)width, (int)height);
 		if (m_render_window.has_value())
 		{
-			d3d12::Resize(m_render_window.value(), m_device, width, height, m_window.value()->IsFullscreen());
+			d3d12::Resize(m_render_window.value(), m_device, width, height);
 		}
 	}
 
@@ -371,14 +372,21 @@ namespace wr
 
 			if (properties.m_width.Get().has_value() || properties.m_height.Get().has_value())
 			{
-				auto retval = d3d12::CreateRenderTarget(m_device, properties.m_width.Get().value(), properties.m_height.Get().value(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, 
+					static_cast<std::uint32_t>(properties.m_width.Get().value() * properties.m_resolution_scale.Get()),
+					static_cast<std::uint32_t>(properties.m_height.Get().value() * properties.m_resolution_scale.Get()),
+					desc);
+
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
 					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
 				return retval;
 			}
 			else if (m_window.has_value())
 			{
-				auto retval = d3d12::CreateRenderTarget(m_device, m_window.value()->GetWidth(), m_window.value()->GetHeight(), desc);
+				auto retval = d3d12::CreateRenderTarget(m_device, 
+					static_cast<std::uint32_t>(m_window.value()->GetWidth() * properties.m_resolution_scale.Get()),
+					static_cast<std::uint32_t>(m_window.value()->GetHeight() * properties.m_resolution_scale.Get()),
+					desc);
 				for (auto i = 0; i < retval->m_render_targets.size(); i++)
 					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
 				return retval;
@@ -404,12 +412,24 @@ namespace wr
 		m_requested_fullscreen_state = fullscreen_state;
 	}
 
+	void D3D12RenderSystem::ResetCommandList(CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		auto frame_idx = GetFrameIdx();
+		d3d12::Begin(n_cmd_list, frame_idx);
+	}
+
+	void D3D12RenderSystem::CloseCommandList(CommandList* cmd_list)
+	{
+		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
+		d3d12::End(n_cmd_list);
+	}
+
 	void D3D12RenderSystem::StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
 		{
@@ -452,26 +472,14 @@ namespace wr
 		{
 			LOGW("A render target has no transitions specified. Is this correct?");
 		}
-
-		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::StartComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
-		auto frame_idx = GetFrameIdx();
-
-		d3d12::Begin(n_cmd_list, frame_idx);
 	}
 
 	void D3D12RenderSystem::StopComputeTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
 	{
-		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
-		auto frame_idx = GetFrameIdx();
-
-		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::StartCopyTask(CommandList * cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target)
@@ -479,8 +487,6 @@ namespace wr
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
 		auto n_render_target = static_cast<d3d12::RenderTarget*>(render_target.first);
 		auto frame_idx = GetFrameIdx();
-
-		d3d12::Begin(n_cmd_list, frame_idx);
 
 		if (render_target.second.m_is_render_window) // TODO: do once at the beginning of the frame.
 		{
@@ -506,8 +512,6 @@ namespace wr
 		{
 			d3d12::Transition(n_cmd_list, n_render_target, render_target.second.m_state_execute.Get().value(), render_target.second.m_state_finished.Get().value());
 		}
-
-		d3d12::End(n_cmd_list);
 	}
 
 	void D3D12RenderSystem::SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index)
@@ -533,19 +537,14 @@ namespace wr
 
 		d3d12::Begin(cmd_list, 0);
 
-		// Readback
-		d3d12::desc::ReadbackDesc readback_buffer_desc = {};
-		readback_buffer_desc.m_buffer_width = width;
-		readback_buffer_desc.m_buffer_height = height;
-		readback_buffer_desc.m_bytes_per_pixel = bytes_per_pixel;
-
 		// Create the actual read back buffer
-		auto readback_buffer = d3d12::CreateReadbackBuffer(m_device, &readback_buffer_desc);
+		auto readback_buffer = d3d12::CreateReadbackBuffer(m_device, texture_size);
 		d3d12::SetName(readback_buffer, L"Texture ReadBack Buffer (Used for saving to disc)");
 
 		// Copy data to cpu
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
-		n_device->GetCopyableFootprints(&rt_resource->GetDesc(), 0, 1, 0, &footprint, nullptr, nullptr, (std::uint64_t*)&texture_size);
+		auto rt_desc = rt_resource->GetDesc();
+		n_device->GetCopyableFootprints(&rt_desc, 0, 1, 0, &footprint, nullptr, nullptr, (std::uint64_t*)&texture_size);
 
 		CD3DX12_TEXTURE_COPY_LOCATION dest_loc(readback_buffer->m_resource, footprint);
 		CD3DX12_TEXTURE_COPY_LOCATION src_loc(rt_resource, 0);
@@ -816,15 +815,15 @@ namespace wr
 			d3d12::desc::StateObjectDesc n_desc;
 			n_desc.m_library = library->m_native;
 			n_desc.m_library_exports = desc.library_desc.Get().exports;
-			n_desc.max_attributes_size = desc.max_attributes_size.Get();
-			n_desc.max_payload_size = desc.max_payload_size.Get();
-			n_desc.max_recursion_depth = desc.max_recursion_depth.Get();
+			n_desc.max_attributes_size = static_cast<std::uint32_t>(desc.max_attributes_size.Get());
+			n_desc.max_payload_size = static_cast<std::uint32_t>(desc.max_payload_size.Get());
+			n_desc.max_recursion_depth = static_cast<std::uint32_t>(desc.max_recursion_depth.Get());
 			n_desc.m_hit_groups = desc.library_desc.Get().m_hit_groups;
 
 			if (auto rt_handle = desc.global_root_signature.Get().value(); desc.global_root_signature.Get().has_value())
 			{
-				auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
-				n_desc.global_root_signature = library->m_native;
+				auto rs_library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+				n_desc.global_root_signature = rs_library->m_native;
 			}
 
 			if (desc.local_root_signatures.Get().has_value())
@@ -832,8 +831,8 @@ namespace wr
 				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
 				for (auto rt_handle : desc.local_root_signatures.Get().value())
 				{
-					auto library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
-					n_desc.local_root_signatures.value().push_back(library->m_native);
+					auto rs = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+					n_desc.local_root_signatures.value().push_back(rs->m_native);
 				}
 			}
 
@@ -1008,7 +1007,6 @@ namespace wr
 	void D3D12RenderSystem::Render_MeshNodes(temp::MeshBatches& batches, CameraNode* camera, CommandList* cmd_list)
 	{
 		auto n_cmd_list = static_cast<d3d12::CommandList*>(cmd_list);
-		auto frame_idx = GetFrameIdx();
 		auto d3d12_camera_cb = static_cast<D3D12ConstantBufferHandle*>(camera->m_camera_cb);
 	
 		d3d12::BindConstantBuffer(n_cmd_list, d3d12_camera_cb->m_native, 0, GetFrameIdx());
@@ -1031,22 +1029,24 @@ namespace wr
 				auto n_mesh = static_cast<D3D12ModelPool*>(model->m_model_pool)->GetMeshData(mesh.first->id);
 				if (model->m_model_pool != m_bound_model_pool || n_mesh->m_vertex_staging_buffer_stride != m_bound_model_pool_stride)
 				{
+					D3D12ModelPool* model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
+
 					d3d12::BindVertexBuffer(n_cmd_list,
-						static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer(),
+						model_pool->GetVertexStagingBuffer(),
 						0,
-						static_cast<D3D12ModelPool*>(model->m_model_pool)->GetVertexStagingBuffer()->m_size,
+						model_pool->GetVertexStagingBuffer()->m_size,
 						n_mesh->m_vertex_staging_buffer_stride);
 
 					d3d12::BindIndexBuffer(n_cmd_list,
-						static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer(),
+						model_pool->GetIndexStagingBuffer(),
 						0,
-						static_cast<D3D12ModelPool*>(model->m_model_pool)->GetIndexStagingBuffer()->m_size);
+						static_cast<std::uint32_t>(model_pool->GetIndexStagingBuffer()->m_size));
 
 					m_bound_model_pool = static_cast<D3D12ModelPool*>(model->m_model_pool);
 					m_bound_model_pool_stride = n_mesh->m_vertex_staging_buffer_stride;
 				}
 
-				d3d12::BindDescriptorHeaps(n_cmd_list, frame_idx);
+				d3d12::BindDescriptorHeaps(n_cmd_list);
 
 				// Pick the standard material or if available a user defined material.
 				auto material_handle = mesh.second;
@@ -1064,14 +1064,26 @@ namespace wr
 
 				if (n_mesh->m_index_count != 0)
 				{
-					d3d12::DrawIndexed(n_cmd_list, n_mesh->m_index_count, batch.num_instances, n_mesh->m_index_staging_buffer_offset, n_mesh->m_vertex_staging_buffer_offset);
+					d3d12::DrawIndexed(n_cmd_list,
+						static_cast<std::uint32_t>(n_mesh->m_index_count),
+						batch.num_instances,
+						static_cast<std::uint32_t>(n_mesh->m_index_staging_buffer_offset),
+						static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 				}
 				else
 				{
-					d3d12::Draw(n_cmd_list, n_mesh->m_vertex_count, batch.num_instances, n_mesh->m_vertex_staging_buffer_offset);
+					d3d12::Draw(n_cmd_list, 
+						static_cast<std::uint32_t>(n_mesh->m_vertex_count), 
+						batch.num_instances, 
+						static_cast<std::uint32_t>(n_mesh->m_vertex_staging_buffer_offset));
 				}
 			}
 		}
+
+		// Reset frame specific variables
+		m_last_material.m_id = 0;
+		m_last_material.m_pool = nullptr;
+
 	}
 
 	void D3D12RenderSystem::BindMaterial(MaterialHandle material_handle, CommandList* cmd_list)
@@ -1135,10 +1147,35 @@ namespace wr
 			metallic_internal = static_cast<wr::d3d12::TextureResource*>(metallic_handle.m_pool->GetTextureResource(metallic_handle));
 		}
 
+		auto emissive_handle = material_internal->GetTexture(TextureType::EMISSIVE);
+		wr::d3d12::TextureResource* emissive_internal;
+		if (emissive_handle.m_pool == nullptr)
+		{
+			emissive_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultEmissive());
+		}
+		else
+		{
+			emissive_internal = static_cast<wr::d3d12::TextureResource*>(emissive_handle.m_pool->GetTextureResource(emissive_handle));
+		}
+
+		auto ao_handle = material_internal->GetTexture(TextureType::AO);
+		wr::d3d12::TextureResource* ao_internal;
+		if (ao_handle.m_pool == nullptr)
+		{
+			ao_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultAO());
+		}
+		else
+		{
+			ao_internal = static_cast<wr::d3d12::TextureResource*>(ao_handle.m_pool->GetTextureResource(ao_handle));
+		}
+
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ALBEDO)), albedo_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::NORMAL)), normal_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::ROUGHNESS)), roughness_internal);
 		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::METALLIC)), metallic_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::EMISSIVE)), emissive_internal);
+		d3d12::SetShaderSRV(n_cmd_list, 2, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::basic, params::BasicE::AMBIENT_OCCLUSION)), ao_internal);
+
 		d3d12::BindConstantBuffer(n_cmd_list, handle->m_native, 3, GetFrameIdx());
 	}
 
@@ -1178,7 +1215,7 @@ namespace wr
 		return m_simple_shapes[static_cast<std::size_t>(type)];
 	}
 
-	void D3D12RenderSystem::ResetBatches(SceneGraph & sg)
+	void D3D12RenderSystem::ResetBatches(SceneGraph& sg)
 	{
 		for (auto& batch : sg.GetBatches())
 		{

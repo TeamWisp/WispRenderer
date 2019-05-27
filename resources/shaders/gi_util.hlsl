@@ -110,10 +110,12 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 	float3 kD = (1.f - kS) * (1.0 - metal);
 	float3 spec = (D * F * G) / (4.0 * NdotV * NdotL + 0.001f);
 
-	return shadow_mult * (light_intensity * (NdotL * spec + NdotL * albedo / M_PI));
+	float3 lighting = (light_intensity * (NdotL * spec + NdotL * albedo / M_PI));
+
+	return (shadow_mult * lighting);
 }
 
-float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
+float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, float ao, unsigned int seed, unsigned int depth)
 {
 	// #################### GGX #####################
 	float diffuse_probability = probabilityToSampleDiffuse(albedo, metal);
@@ -122,21 +124,28 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 	// Diffuse lobe
 	if (choose_diffuse)
 	{
+		float3 color = (albedo / diffuse_probability) * ao;
+
+#ifdef RUSSIAN_ROULETTE
+		// ############## RUSSIAN ROULETTE ###############
+		// Russian Roulette
+		// Randomly terminate a path with a probability inversely equal to the throughput
+		float p = max(color.x, max(color.y, color.z));
+		// Add the energy we 'lose' by randomly terminating paths
+		color *= 1 / p;
+		if (nextRand(seed) > p) {
+			return 0;
+		}
+#endif
+
+		// ##### BOUNCE #####
 		nextRand(seed);
-		const float3 rand_dir = getUniformHemisphereSample(seed, N);
+		const float3 rand_dir = getCosHemisphereSample(seed, N);
 		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
-
-		float3 lighting = shade_pixel(hit_pos, V, 
-			albedo, 
-			metal, 
-			roughness, 
-			fN, 
-			seed, 
-			depth+1);
-
 		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
 
-		return (lighting + (irradiance * albedo)) / diffuse_probability;
+
+		return irradiance * color;
 	}
 	else
 	{
@@ -145,9 +154,6 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 
 		// ### BRDF ###
 		float3 L = normalize(2.f * dot(V, H) * H - V);
-
-		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), L, depth, seed);
-		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
 
 		// Compute some dot products needed for shading
 		float NdotV = saturate(dot(N, V));
@@ -165,6 +171,24 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		float3 spec = (D * F * G) / ((4.0 * NdotL * NdotV + 0.001f));
 		float  ggx_probability = D * NdotH / (4 * LdotH);
 
-		return NdotL * irradiance * spec / (ggx_probability * (1.0f - diffuse_probability));
+		float3 color = (NdotL * spec / (ggx_probability * (1.0f - diffuse_probability)));
+
+#ifdef RUSSIAN_ROULETTE
+		// ############## RUSSIAN ROULETTE ###############
+		// Russian Roulette
+		// Randomly terminate a path with a probability inversely equal to the throughput
+		float p = max(color.x, max(color.y, color.z));
+		// Add the energy we 'lose' by randomly terminating paths
+		color *= 1 / p;
+		if (nextRand(seed) > p) {
+			return 0;
+		}
+#endif
+
+		// #### BOUNCE ####
+		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), L, depth, seed);
+		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
+
+		return color * irradiance;
 	}
 }

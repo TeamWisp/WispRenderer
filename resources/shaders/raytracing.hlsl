@@ -18,19 +18,22 @@ struct Vertex
 
 struct Material
 {
-	float albedo_id;
-	float normal_id;
-	float roughness_id;
-	float metalicness_id;
+	uint albedo_id;
+	uint normal_id;
+	uint roughness_id;
+	uint metalicness_id;
+	uint emissive_id;
+	uint ao_id;
+	float2 padding;
 
 	MaterialData data;
 };
 
 struct Offset
 {
-    float material_idx;
-    float idx_offset;
-    float vertex_offset;
+	uint material_idx;
+	uint idx_offset;
+	uint vertex_offset;
 };
 
 RWTexture2D<float4> gOutput : register(u0);
@@ -77,7 +80,7 @@ struct Ray
 uint3 Load3x32BitIndices(uint offsetBytes)
 {
 	// Load first 2 indices
- 	return g_indices.Load3(offsetBytes);
+	return g_indices.Load3(offsetBytes);
 }
 
 inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld, in float2 offset, unsigned int seed)
@@ -109,7 +112,7 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 	float lensrad = focal_len / (2.0f * 16);
 	float3 focalPt = cameraPosition + focallen * world;
 
-	float2 rngLens = float2(6.2831853f * nextRand(seed), lensrad*nextRand(seed));
+	float2 rngLens = float2(6.2831853f * nextRand(seed), lensrad * nextRand(seed));
 	float2 lensPos = float2(cos(rngLens.x) * rngLens.y, sin(rngLens.x) * rngLens.y);
 
 	//lensPos = mul(float4(lensPos, 0, 0), projectionToWorld);
@@ -118,28 +121,28 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 	ray.origin = cameraPosition + float3(lensPos, 0);
 	ray.direction = normalize(focalPt.xyz - ray.origin);
 #else
-    float2 xy = (index + offset) + 0.5f; // center in the middle of the pixel.
-    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+	float2 xy = (index + offset) + 0.5f; // center in the middle of the pixel.
+	float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
 	// Invert Y for DirectX-style coordinates.
 	screenPos.y = -screenPos.y;
 
-    // Unproject the pixel coordinate into a world positon.
-    float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
-    world.xyz /= world.w;
+	// Unproject the pixel coordinate into a world positon.
+	float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
+	world.xyz /= world.w;
 
-    Ray ray;
-    ray.origin = cameraPosition;
-    ray.direction = normalize(world.xyz - ray.origin);
+	Ray ray;
+	ray.origin = cameraPosition;
+	ray.direction = normalize(world.xyz - ray.origin);
 
-    return ray;
+	return ray;
 #endif
 }
 
 // Retrieve hit world position.
 float3 HitWorldPosition()
 {
-    return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
+	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
 }
 
 float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
@@ -177,7 +180,7 @@ void RaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
-//#define FOUR_X_AA
+	//#define FOUR_X_AA
 #ifdef FOUR_X_AA
 	Ray a = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.5, 0), rand_seed);
 	Ray b = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(-0.5, 0), rand_seed);
@@ -197,7 +200,7 @@ void RaygenEntry()
 	Ray ray = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0, 0), rand_seed);
 	float3 result = TraceColorRay(ray.origin, ray.direction, 0, rand_seed);
 #endif
-	
+
 	gOutput[DispatchRaysIndex().xy] = float4(result, 1);
 }
 
@@ -214,9 +217,9 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 	vertexAttribute[1] = b;
 	vertexAttribute[2] = c;
 
-    return vertexAttribute[0] +
-        attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
-        attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
+	return vertexAttribute[0] +
+		attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
+		attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
 }
 
 [shader("closesthit")]
@@ -231,10 +234,10 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 
 	// Find first index location
 	const uint index_size = 4;
-    const uint indices_per_triangle = 3;
-    const uint triangle_idx_stride = indices_per_triangle * index_size;
+	const uint indices_per_triangle = 3;
+	const uint triangle_idx_stride = indices_per_triangle * index_size;
 
-    uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
 	base_idx += index_offset * 4; // offset the start
 
 	uint3 indices = Load3x32BitIndices(base_idx);
@@ -257,22 +260,25 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float mip_level = payload.depth+1;
+	float mip_level = payload.depth + 1;
 
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
 		g_textures[material.normal_id],
 		g_textures[material.roughness_id],
 		g_textures[material.metalicness_id],
+		g_textures[material.emissive_id],
+		g_textures[material.ao_id],
 		mip_level,
 		s0,
 		uv);
 
-	float3 albedo = pow(output_data.albedo, 2.2f);
-  //float3 albedo = output_data.albedo;
-  float roughness = output_data.roughness;
+	float3 albedo = output_data.albedo;
+	float roughness = output_data.roughness;
 	float metal = output_data.metallic;
-	
+	float3 emissive = output_data.emissive;
+	float ao = output_data.ao;
+
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
 	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
 #define CALC_B
@@ -291,32 +297,34 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 	float3 flipped_N = fN;
 	flipped_N.y *= -1;
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
-  
-  const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
+
+	const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
 
 	// Direct
 	float3 reflect_dir = reflect(-V, fN);
 	float3 reflection = TraceColorRay(hit_pos + fN * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
 
-	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0), 
-		metal, 
-		albedo, 
+	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0),
+		metal,
+		albedo,
 		roughness);
 
 	float3 kS = F;
-  float3 kD = 1.0 - kS;
-  kD *= 1.0 - metal;
+	float3 kD = 1.0 - kS;
+	kD *= 1.0 - metal;
 
-	float3 lighting = shade_pixel(hit_pos, V, 
-		albedo, 
-		metal, 
-		roughness, 
-		fN, 
-		payload.seed, 
+	float3 lighting = shade_pixel(hit_pos, V,
+		albedo,
+		metal,
+		roughness,
+		emissive,
+		fN,
+		payload.seed,
 		payload.depth);
 
 	float3 specular = reflection * (F * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
-	float3 ambient = (kD * diffuse + specular);
+	float3 ambient = (kD * diffuse + specular) * ao;
+
 	payload.color = ambient + lighting;
 }

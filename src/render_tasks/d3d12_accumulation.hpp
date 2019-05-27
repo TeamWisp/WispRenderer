@@ -63,7 +63,6 @@ namespace wr
 		inline void ExecuteAccumulationTask(RenderSystem& rs, FrameGraph& fg, SceneGraph&, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& device = n_render_system.m_device;
 			auto& data = fg.GetData<AccumulationData>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
@@ -78,15 +77,14 @@ namespace wr
 			d3d12::DescHeapCPUHandle srv_handle = data.out_allocation.GetDescriptorHandle(srv_idx);
 			d3d12::SetShaderSRV(cmd_list, 0, srv_idx, srv_handle);
 
-			bool is_fallback = d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK;
-			d3d12::BindDescriptorHeaps(cmd_list, frame_idx, is_fallback);
+			d3d12::BindDescriptorHeaps(cmd_list);
 
 			{
 				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % 1 /*versions*/]);
 				cmd_list->m_native->ResourceBarrier(1, &barrier);
 			}
 
-			fg.GetPredecessorData<PathTracerData>();
+			fg.WaitForPredecessorTask<PathTracerData>();
 
 			float samples = n_render_system.temp_rough;
 			d3d12::BindCompute32BitConstants(cmd_list, &samples, 1, 0, 1);
@@ -119,7 +117,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ d3d12::settings::back_buffer_format }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),

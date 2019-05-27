@@ -91,7 +91,6 @@ namespace wr::d3d12
 			{
 				for (auto frame_idx = 0; frame_idx < 3; frame_idx++)
 				{
-					// desc_heap_idx = AllocateDescriptor(heap, increment_size, &bottomLevelDescriptor, index);
 					bottom_level_descriptor = d3d12::GetCPUHandle(heap, frame_idx, 0); // TODO: Don't harcode this.
 					d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
 					device->m_native->CreateUnorderedAccessView(resource, nullptr, &rawBufferUavDesc, bottom_level_descriptor.m_native);
@@ -111,6 +110,124 @@ namespace wr::d3d12
 				device->m_fallback_native->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &as.m_prebuild_info);
 			}
 			if (!(as.m_prebuild_info.ResultDataMaxSizeInBytes > 0)) LOGW("Result data max size in bytes is more than zero. accel structure");
+		}
+
+		inline void BuildAS(Device* device, CommandList* cmd_list, DescriptorHeap* desc_heap, D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC const & desc)
+		{
+			auto BuildAccelerationStructure = [&](auto * raytracingCommandList)
+			{
+				raytracingCommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
+			};
+
+			// Build acceleration structure.
+			if (GetRaytracingType(device) == RaytracingType::NATIVE)
+			{
+				BuildAccelerationStructure(cmd_list->m_native);
+			}
+			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+			{
+				// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
+				d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
+				BuildAccelerationStructure(cmd_list->m_native_fallback);
+			}
+		}
+
+		inline void CreateInstancesForTLAS(Device* device, AccelerationStructure& tlas, DescriptorHeap* desc_heap, std::vector<desc::BlasDesc> blas_list, std::uint32_t frame_idx, bool update)
+		{
+			// Falback layer heap offset
+			auto fallback_heap_idx = d3d12::settings::fallback_ptrs_offset;
+
+			// Create the instances to the bottom level instances.
+			if (GetRaytracingType(device) == RaytracingType::NATIVE)
+			{
+				std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instance_descs;
+				for (auto it : blas_list)
+				{
+					auto blas = it.m_as;
+					auto material = it.m_material;
+					auto transform = it.m_transform;
+
+					D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
+
+					XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(instance_desc.Transform), transform);
+
+					instance_desc.InstanceMask = 1;
+					instance_desc.InstanceID = material;
+					instance_desc.AccelerationStructure = blas.m_natives[frame_idx]->GetGPUVirtualAddress();
+					instance_descs.push_back(instance_desc);
+				}
+
+				if (update)
+				{
+					internal::UpdateUploadbuffer(instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), tlas.m_instance_descs[frame_idx]);
+				}
+				else
+				{
+					for (auto& inst_desc : tlas.m_instance_descs)
+					{
+						internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), &inst_desc, L"InstanceDescs");
+					}
+				}
+			}
+			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+			{
+				std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
+				for (auto it : blas_list)
+				{
+					auto blas = it.m_as;
+					auto material = it.m_material;
+					auto transform = it.m_transform;
+
+					D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
+
+					XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(instance_desc.Transform), transform);
+
+					instance_desc.InstanceMask = 1;
+					instance_desc.InstanceID = material;
+					std::uint32_t num_buffer_elements = static_cast<std::uint32_t>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(std::uint32_t);
+					instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_natives[frame_idx], num_buffer_elements);
+
+					instance_descs.push_back(instance_desc);
+
+					fallback_heap_idx++;
+				}
+
+				if (update)
+				{
+					internal::UpdateUploadbuffer(instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * instance_descs.size(), tlas.m_instance_descs[frame_idx]);
+				}
+				else
+				{
+					for (auto& inst_desc : tlas.m_instance_descs)
+					{
+						internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * instance_descs.size(), &inst_desc, L"InstanceDescs");
+					}
+				}
+			}
+
+			// Create a wrapped pointer to the acceleration structure.
+			if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+			{
+				std::uint32_t num_buffer_elements = static_cast<std::uint32_t>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(std::uint32_t);
+				tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_natives[0], num_buffer_elements);
+			}
+		}
+
+		inline void CopyInstDescResource(CommandList* cmd_list, AccelerationStructure& as, std::uint32_t source_index, std::uint32_t target_index)
+		{
+			cmd_list->m_native->CopyResource(as.m_instance_descs[target_index], as.m_instance_descs[source_index]);
+		}
+
+		inline void CopyAS(Device* device, CommandList* cmd_list, AccelerationStructure& as, std::uint32_t source_index, std::uint32_t target_index)
+		{
+			if (GetRaytracingType(device) == RaytracingType::NATIVE)
+			{
+				cmd_list->m_native->CopyRaytracingAccelerationStructure(as.m_natives[target_index]->GetGPUVirtualAddress(), as.m_natives[source_index]->GetGPUVirtualAddress(), D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_CLONE);
+			}
+			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+			{
+				cmd_list->m_native_fallback->CopyRaytracingAccelerationStructure(as.m_natives[target_index]->GetGPUVirtualAddress(), as.m_natives[source_index]->GetGPUVirtualAddress(), D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_CLONE);
+			}
 		}
 
 	} /* internal */
@@ -149,9 +266,6 @@ namespace wr::d3d12
 			geometry_descs[i].Triangles.VertexCount = geom.m_num_vertices;
 			geometry_descs[i].Triangles.VertexBuffer.StartAddress = geom.vertex_buffer->m_buffer->GetGPUVirtualAddress() + (geom.m_vertices_offset * geom.m_vertex_stride);
 			geometry_descs[i].Triangles.VertexBuffer.StrideInBytes = geom.m_vertex_stride;
-			// Mark the geometry as opaque. 
-			// PERFORMANCE TIP: mark geometry as opaque whenever applicable as it can enable important ray processing optimizations.
-			// Note: When rays encounter opaque geometry an any hit shader will not be executed whether it is present or not.
 			geometry_descs[i].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 		}
 
@@ -160,7 +274,7 @@ namespace wr::d3d12
 		// Get prebuild info bottom level
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS bottom_level_inputs;
 		bottom_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-		bottom_level_inputs.NumDescs = geometry.size();
+		bottom_level_inputs.NumDescs = static_cast<std::uint32_t>(geometry.size());
 		bottom_level_inputs.pGeometryDescs = geometry_descs.data();
 		bottom_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		bottom_level_inputs.Flags = build_flags;
@@ -176,18 +290,14 @@ namespace wr::d3d12
 			L"Acceleration Structure Scratch Resource");
 
 		// Allocate resources for acceleration structures.
-		{
-			D3D12_RESOURCE_STATES initial_resource_state;
-			if (GetRaytracingType(device) == RaytracingType::NATIVE)
-			{
-				initial_resource_state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-			}
-			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+		for (auto& as : blas.m_natives) {
+			D3D12_RESOURCE_STATES initial_resource_state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
 				initial_resource_state = device->m_fallback_native->GetAccelerationStructureResourceState();
 			}
 
-			internal::AllocateUAVBuffer(device, blas.m_prebuild_info.ResultDataMaxSizeInBytes, &blas.m_native, initial_resource_state, L"BottomLevelAccelerationStructure");
+			internal::AllocateUAVBuffer(device, blas.m_prebuild_info.ResultDataMaxSizeInBytes, &as, initial_resource_state, L"BottomLevelAccelerationStructure");
 		}
 
 		// Bottom Level Acceleration Structure desc
@@ -195,24 +305,15 @@ namespace wr::d3d12
 		{
 			bottom_level_build_desc.Inputs = bottom_level_inputs;
 			bottom_level_build_desc.ScratchAccelerationStructureData = blas.m_scratch->GetGPUVirtualAddress();
-			bottom_level_build_desc.DestAccelerationStructureData = blas.m_native->GetGPUVirtualAddress();
+			bottom_level_build_desc.DestAccelerationStructureData = blas.m_natives[0]->GetGPUVirtualAddress();
 		}
 
-		auto BuildAccelerationStructure = [&](auto* raytracingCommandList)
-		{
-			raytracingCommandList->BuildRaytracingAccelerationStructure(&bottom_level_build_desc, 0, nullptr);
-		};
+		internal::BuildAS(device, cmd_list, desc_heap, bottom_level_build_desc);
+		d3d12::UAVBarrierAS(cmd_list, blas, 0);
 
-		// Build acceleration structure.
-		if (GetRaytracingType(device) == RaytracingType::NATIVE)
+		for (std::uint8_t i = 1; i < settings::num_back_buffers; i++)
 		{
-			BuildAccelerationStructure(cmd_list->m_native);
-		}
-		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
-		{
-			// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-			d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
-			BuildAccelerationStructure(cmd_list->m_native_fallback);
+			internal::CopyAS(device, cmd_list, blas, 0, i);
 		}
 
 		return blas;
@@ -221,17 +322,16 @@ namespace wr::d3d12
 	AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
+		std::vector<desc::BlasDesc> blas_list)
 	{
 		AccelerationStructure tlas = {};
-		tlas.m_rebuild_scratch = true;
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		top_level_inputs.Flags = build_flags;
-		top_level_inputs.NumDescs = blas_list.size();
+		top_level_inputs.NumDescs = static_cast<std::uint32_t>(blas_list.size());
 		top_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 
 		// Get prebuild info top level
@@ -246,103 +346,34 @@ namespace wr::d3d12
 
 
 		// Allocate acceleration structure buffer
-		{
-			D3D12_RESOURCE_STATES initial_resoruce_state;
-			if (GetRaytracingType(device) == RaytracingType::NATIVE)
-			{
-				initial_resoruce_state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-			}
-			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
+		for (auto& as : tlas.m_natives) {
+			D3D12_RESOURCE_STATES initial_resoruce_state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
 				initial_resoruce_state = device->m_fallback_native->GetAccelerationStructureResourceState();
 			}
 
-			internal::AllocateUAVBuffer(device, tlas.m_prebuild_info.ResultDataMaxSizeInBytes, &tlas.m_native, initial_resoruce_state, L"TopLevelAccelerationStructure");
+			internal::AllocateUAVBuffer(device, tlas.m_prebuild_info.ResultDataMaxSizeInBytes, &as, initial_resoruce_state, L"TopLevelAccelerationStructure");
 		}
-
-		// Falback layer heap offset
-		auto fallback_heap_idx = d3d12::settings::fallback_ptrs_offset;
 
 		// Create the instances to the bottom level instances.
-		if (GetRaytracingType(device) == RaytracingType::NATIVE)
-		{
-			std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instance_descs;
-			for (auto it : blas_list)
-			{
-				auto blas = std::get<AccelerationStructure>(it);
-				auto material = std::get<unsigned int>(it);
-				auto transform = std::get<DirectX::XMMATRIX>(it);
-
-				D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
-
-				XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(instance_desc.Transform), transform);
-
-				instance_desc.InstanceMask = 1;
-				instance_desc.InstanceID = material;
-				instance_desc.AccelerationStructure = blas.m_native->GetGPUVirtualAddress();
-				instance_descs.push_back(instance_desc);
-			}
-
-			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), &tlas.m_instance_desc, L"InstanceDescs");
-		}
-		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
-		{
-			std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
-			for (auto it : blas_list)
-			{
-				auto blas = std::get<AccelerationStructure>(it);
-				auto material = std::get<unsigned int>(it);
-				auto transform = std::get<DirectX::XMMATRIX>(it);
-
-				D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
-
-				XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(instance_desc.Transform), transform);
-
-				instance_desc.InstanceMask = 1;
-				instance_desc.InstanceID = material;
-				UINT num_buffer_elements = static_cast<UINT>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-				instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements);
-
-				instance_descs.push_back(instance_desc);
-
-				fallback_heap_idx++;
-			}
-
-			internal::AllocateUploadBuffer(device, instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * instance_descs.size(), &tlas.m_instance_desc, L"InstanceDescs");
-		}
-
-		// TODO WHY HERE AND NOT EARLIER?
-		// Create a wrapped pointer to the acceleration structure.
-		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
-		{
-			UINT num_buffer_elements = static_cast<UINT>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-			tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements);
-		}
+		internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, 0, false);
 
 		// Top Level Acceleration Structure desc
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
 		{
-			top_level_inputs.InstanceDescs = tlas.m_instance_desc->GetGPUVirtualAddress();
+			top_level_inputs.InstanceDescs = tlas.m_instance_descs[0]->GetGPUVirtualAddress();
 			top_level_build_desc.Inputs = top_level_inputs;
-			top_level_build_desc.DestAccelerationStructureData = tlas.m_native->GetGPUVirtualAddress();
+			top_level_build_desc.DestAccelerationStructureData = tlas.m_natives[0]->GetGPUVirtualAddress();
 			top_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
 		}
 
-		auto BuildAccelerationStructure = [&](auto* raytracingCommandList)
-		{
-			raytracingCommandList->BuildRaytracingAccelerationStructure(&top_level_build_desc, 0, nullptr);
-		};
+		internal::BuildAS(device, cmd_list, desc_heap, top_level_build_desc);
 
-		// Build acceleration structure.
-		if (GetRaytracingType(device) == RaytracingType::NATIVE)
+		d3d12::UAVBarrierAS(cmd_list, tlas, 0);
+		for (std::uint8_t i = 1; i < settings::num_back_buffers; i++)
 		{
-			BuildAccelerationStructure(cmd_list->m_native);
-		}
-		else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
-		{
-			// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-			d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
-			BuildAccelerationStructure(cmd_list->m_native_fallback);
+			internal::CopyAS(device, cmd_list, tlas, 0, i);
 		}
 
 		return tlas;
@@ -351,37 +382,42 @@ namespace wr::d3d12
 	void DestroyAccelerationStructure(AccelerationStructure& structure)
 	{
 		SAFE_RELEASE(structure.m_scratch);
-		SAFE_RELEASE(structure.m_native);
-		SAFE_RELEASE(structure.m_instance_desc);
+
+		for (auto& as : structure.m_natives)
+		{
+			SAFE_RELEASE(as);
+		}
+		for (auto& inst_desc : structure.m_instance_descs)
+		{
+			SAFE_RELEASE(inst_desc);
+		}
+	}
+
+	void UAVBarrierAS(CommandList* cmd_list, AccelerationStructure const & structure, std::uint32_t frame_idx)
+	{
+		auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(structure.m_natives[frame_idx]);
+		cmd_list->m_native->ResourceBarrier(1, &barrier);
 	}
 
 	void UpdateTopLevelAccelerationStructure(AccelerationStructure& tlas, Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
+		std::vector<desc::BlasDesc> blas_list,
+		std::uint32_t frame_idx)
 	{
-		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS build_flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS top_level_inputs;
 		top_level_inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		top_level_inputs.Flags = build_flags;
-		top_level_inputs.NumDescs = blas_list.size();
+		top_level_inputs.NumDescs = static_cast<std::uint32_t>(blas_list.size());
 		top_level_inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO old_prebuild_info = tlas.m_prebuild_info;
 
 		internal::UpdatePrebuildInfo(device, tlas, top_level_inputs);
-		if (tlas.m_rebuild_scratch)
-		{
-			if (tlas.m_scratch)
-			{
-				//tlas.m_scratch->Release();
-			}
 
-			// Allocate scratch resource
-
-			tlas.m_rebuild_scratch = false;
-		}
+		top_level_inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
 
 		bool rebuild_accel_structure = old_prebuild_info.ResultDataMaxSizeInBytes < tlas.m_prebuild_info.ResultDataMaxSizeInBytes ||
 			old_prebuild_info.ScratchDataSizeInBytes < tlas.m_prebuild_info.ScratchDataSizeInBytes ||
@@ -389,109 +425,48 @@ namespace wr::d3d12
 
 		if (rebuild_accel_structure)
 		{
+			LOGW("Complete AS rebuild triggered. This might break versioining");
 			tlas = CreateTopLevelAccelerationStructure(device, cmd_list, desc_heap, blas_list);
 		}
 		else
 		{
-			// Get prebuild info top level
-
-			// Falback layer heap offset
-			auto fallback_heap_idx = d3d12::settings::fallback_ptrs_offset;
-
 			// Create the instances to the bottom level instances.
-			if (GetRaytracingType(device) == RaytracingType::NATIVE)
-			{
-				std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instance_descs;
-				for (auto it : blas_list)
-				{
-					auto blas = std::get<AccelerationStructure>(it);
-					auto material = std::get<unsigned int>(it);
-					auto transform = std::get<DirectX::XMMATRIX>(it);
-
-					D3D12_RAYTRACING_INSTANCE_DESC instance_desc = {};
-
-					XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(instance_desc.Transform), transform);
-
-					instance_desc.InstanceMask = 1;
-					instance_desc.InstanceID = material;
-					instance_desc.AccelerationStructure = blas.m_native->GetGPUVirtualAddress();
-					instance_descs.push_back(instance_desc);
-				}
-
-				internal::UpdateUploadbuffer(instance_descs.data(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * blas_list.size(), tlas.m_instance_desc);
-			}
-			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
-			{
-				std::vector<D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC> instance_descs;
-				for (auto it : blas_list)
-				{
-					auto blas = std::get<AccelerationStructure>(it);
-					auto material = std::get<unsigned int>(it);
-					auto transform = std::get<DirectX::XMMATRIX>(it);
-
-					D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC instance_desc = {};
-
-					XMStoreFloat3x4(reinterpret_cast<DirectX::XMFLOAT3X4*>(instance_desc.Transform), transform);
-
-					instance_desc.InstanceMask = 1;
-					instance_desc.InstanceID = material;
-					UINT num_buffer_elements = static_cast<UINT>(blas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-					instance_desc.AccelerationStructure = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, blas.m_native, num_buffer_elements);
-
-					instance_descs.push_back(instance_desc);
-
-					fallback_heap_idx++;
-				}
-
-				internal::UpdateUploadbuffer(instance_descs.data(), sizeof(D3D12_RAYTRACING_FALLBACK_INSTANCE_DESC) * instance_descs.size(), tlas.m_instance_desc);
-			}
-
-			// Create a wrapped pointer to the acceleration structure.
-			if (GetRaytracingType(device) == RaytracingType::FALLBACK)
-			{
-				UINT num_buffer_elements = static_cast<UINT>(tlas.m_prebuild_info.ResultDataMaxSizeInBytes) / sizeof(UINT32);
-				tlas.m_fallback_tlas_ptr = internal::CreateFallbackWrappedPointer(device, desc_heap, fallback_heap_idx, tlas.m_native, num_buffer_elements);
-			}
+			internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, frame_idx, true);
 
 			// Top Level Acceleration Structure desc
 			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
 			{
-				cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(tlas.m_native));
+				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(tlas.m_natives[frame_idx]);
+				cmd_list->m_native->ResourceBarrier(1, &barrier);
 
-				top_level_inputs.InstanceDescs = tlas.m_instance_desc->GetGPUVirtualAddress();
+				top_level_inputs.InstanceDescs = tlas.m_instance_descs[frame_idx]->GetGPUVirtualAddress();
 				top_level_build_desc.Inputs = top_level_inputs;
-				top_level_build_desc.SourceAccelerationStructureData = tlas.m_native->GetGPUVirtualAddress();
-				top_level_build_desc.DestAccelerationStructureData = tlas.m_native->GetGPUVirtualAddress();
+				top_level_build_desc.SourceAccelerationStructureData = tlas.m_natives[frame_idx]->GetGPUVirtualAddress(); //TODO: Benchmark performance when taking the previous source.
+				top_level_build_desc.DestAccelerationStructureData = tlas.m_natives[frame_idx]->GetGPUVirtualAddress();
 				top_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
 			}
 
-			auto BuildAccelerationStructure = [&](auto* raytracingCommandList)
-			{
-				raytracingCommandList->BuildRaytracingAccelerationStructure(&top_level_build_desc, 0, nullptr);
-			};
+			internal::BuildAS(device, cmd_list, desc_heap, top_level_build_desc);
+		}
+	}
 
-			// Build acceleration structure.
-			if (GetRaytracingType(device) == RaytracingType::NATIVE)
+	void SetName(AccelerationStructure& acceleration_structure, std::wstring name)
+	{
+		for (auto& as : acceleration_structure.m_natives)
+		{
+			as->SetName((name + L" - Acceleration Structure").c_str());
+		}
+		for (auto& inst_desc : acceleration_structure.m_instance_descs)
+		{
+			if (inst_desc)
 			{
-				BuildAccelerationStructure(cmd_list->m_native);
-			}
-			else if (GetRaytracingType(device) == RaytracingType::FALLBACK)
-			{
-				// Set the descriptor heaps to be used during acceleration structure build for the Fallback Layer.
-				d3d12::BindDescriptorHeap(cmd_list, desc_heap, desc_heap->m_create_info.m_type, 0, true); //TODO: note this non frame idx
-				BuildAccelerationStructure(cmd_list->m_native_fallback);
+				inst_desc->SetName((name + L" - Acceleration Structure").c_str());
 			}
 		}
 	}
 
-	void SetName(std::pair<AccelerationStructure, AccelerationStructure> acceleration_structure, std::wstring name)
-	{
-		acceleration_structure.first.m_native->SetName((name + L" - Bottom Level Acceleration Structure").c_str());
-		acceleration_structure.second.m_native->SetName((name + L" - Top Level Acceleration Structure").c_str());
-	}
-
 	void CreateOrUpdateTLAS(Device* device, CommandList* cmd_list, bool& requires_init, d3d12::AccelerationStructure& out_tlas,
-		std::vector<std::tuple<d3d12::AccelerationStructure, unsigned int, DirectX::XMMATRIX>> blas_list)
+		std::vector<desc::BlasDesc> blas_list, std::uint32_t frame_idx)
 	{
 		d3d12::DescriptorHeap* heap = static_cast<d3d12::CommandList*>(cmd_list)->m_rt_descriptor_heap->GetHeap();
 
@@ -505,7 +480,7 @@ namespace wr::d3d12
 			}
 			else
 			{
-				d3d12::UpdateTopLevelAccelerationStructure(out_tlas, device, cmd_list, heap, blas_list);
+				d3d12::UpdateTopLevelAccelerationStructure(out_tlas, device, cmd_list, heap, blas_list, frame_idx);
 			}
 		}
 	}
