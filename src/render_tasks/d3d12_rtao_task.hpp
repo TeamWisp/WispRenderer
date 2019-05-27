@@ -98,20 +98,6 @@ namespace wr
 				data.in_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
 				d3d12::AddShaderRecord(data.in_miss_shader_table[frame_idx], miss_record);
 			}
-
-			//// Set up Hit Group Shader Table
-			//{
-			//	// Create Record(s)
-			//	UINT shader_record_count = 1;
-			//	auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
-
-			//	auto hit_identifier = d3d12::GetShaderIdentifier(device, data.in_state_object, "AOHitGroup");
-			//	auto hit_record = d3d12::CreateShaderRecord(hit_identifier, shader_identifier_size);
-
-			//	// Create Table(s)
-			//	data.in_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-			//	d3d12::AddShaderRecord(data.in_hitgroup_shader_table[frame_idx], hit_record);
-			//}
 		}
 
 		inline void SetupAOTask(RenderSystem& render_system, FrameGraph& fg, RenderTaskHandle& handle, bool resize)
@@ -235,8 +221,8 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				
 #ifdef _DEBUG
-#endif // _DEBUG
 				CreateShaderTables(device, data, frame_idx);
+#endif // _DEBUG
 
 				scalar = fg.GetRenderTargetResolutionScale(handle);
 
