@@ -19,6 +19,7 @@ namespace wr
 		DescriptorAllocation gbuffer_normal;
 		DescriptorAllocation gbuffer_roughness;
 		DescriptorAllocation gbuffer_depth;
+		std::uint32_t frame_idx;
 	};
 
 	namespace temp
@@ -29,7 +30,8 @@ namespace wr
 			DirectX::XMMATRIX inv_vp;
 			DirectX::XMMATRIX inv_view;
 
-			DirectX::XMFLOAT2 padding;
+			float padding;
+			std::uint32_t frame_idx;
 			float near_plane, far_plane;
 		};
 
@@ -48,6 +50,7 @@ namespace wr
 
 			if (!resize)
 			{
+				data.frame_idx = 0;
 				data.allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 				data.output = data.allocator->Allocate();
 				data.reflection_buffer = data.allocator->Allocate(2);
@@ -116,6 +119,7 @@ namespace wr
       cam_data.inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 			cam_data.near_plane = camera->m_frustum_near;
 			cam_data.far_plane = camera->m_frustum_far;
+			cam_data.frame_idx = ++data.frame_idx;
 			n_render_system.m_camera_pool->Update(data.camera_cb, sizeof(temp::SpatialReconstructionCameraData), 0, frame_idx, (std::uint8_t*)&cam_data);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, data.camera_cb->m_native, 1, frame_idx);
