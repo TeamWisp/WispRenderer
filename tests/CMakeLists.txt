@@ -30,5 +30,5 @@ function(add_example EXAMPLE_DIR EXAMPLE_NAME)
 	set_target_properties(${EXAMPLE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 endfunction(add_example)
 
-add_example(demo Demo)
+add_test(demo Demo)
 add_test(graphics_benchmark GraphicsBenchmark)
