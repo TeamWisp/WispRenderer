@@ -101,9 +101,6 @@ namespace wr
 
 		uint32_t GetCurrentLightSize();
 
-		// Temporary
-		std::optional<TextureHandle> m_skybox;
-
 	protected:
 
 		void RegisterLight(std::shared_ptr<LightNode>& light_node);

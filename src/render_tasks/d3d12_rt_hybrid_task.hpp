@@ -313,30 +313,22 @@ namespace wr
 				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
 				// Get skybox
-				if (scene_graph.m_skybox.has_value())
+
+				if (SkyboxNode *skybox = scene_graph.GetCurrentSkybox().get())
 				{
-					auto skybox_t = static_cast<d3d12::TextureResource*>(scene_graph.m_skybox.value().m_pool->GetTextureResource(scene_graph.m_skybox.value()));
+					auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX)), skybox_t);
-				}
 
-				// Get Pre-filtered environment
-				if (scene_graph.m_skybox.has_value())
-				{
-					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_prefiltered_env_map->m_pool->GetTextureResource(scene_graph.GetCurrentSkybox()->m_prefiltered_env_map.value()));
+					// Get Pre-filtered environment
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::PREF_ENV_MAP)), irradiance_t);
-				}
 
-				// Get brdf lookup texture
-				if (scene_graph.m_skybox.has_value())
-				{
+					// Get brdf lookup texture
 					auto brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::BRDF_LUT)), brdf_lut_text);
-				}
 
-				// Get Environment Map
-				if (scene_graph.m_skybox.has_value())
-				{
-					auto irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTextureResource(scene_graph.GetCurrentSkybox()->m_irradiance.value()));
+					// Get Environment Map
+					irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::IRRADIANCE_MAP)), irradiance_t);
 				}
 

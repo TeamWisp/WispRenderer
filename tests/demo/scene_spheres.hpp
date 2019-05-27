@@ -121,7 +121,6 @@ namespace spheres_scene
 		camera->SetPosition({0.0f, 0.0f, 5.f });
 		camera->SetSpeed(60.0f);
 		
-		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 
