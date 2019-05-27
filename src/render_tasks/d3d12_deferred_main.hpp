@@ -60,8 +60,6 @@ namespace wr
 
 	inline void AddDeferredMainTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
-		std::wstring name(L"Deferred Main");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -75,7 +73,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -93,7 +90,7 @@ namespace wr
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<DeferredMainTaskData>(desc);
+		fg.AddTask<DeferredMainTaskData>(desc, L"Deferred Main");
 	}
 
 } /* wr */

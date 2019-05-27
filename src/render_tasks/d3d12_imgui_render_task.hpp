@@ -139,8 +139,6 @@ namespace wr
 	template<typename T>
 	[[nodiscard]] inline RenderTaskDesc GetImGuiTask(std::function<void(ImTextureID)> imgui_func)
 	{
-		std::wstring name(L"Dear ImGui");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(true),
@@ -154,7 +152,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;

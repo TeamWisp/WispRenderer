@@ -118,8 +118,6 @@ namespace wr
 	template<typename T>
 	inline void AddDoFDilateFlattenTask(FrameGraph& frame_graph)
 	{
-		std::wstring name(L"DoF coc dilate flatten horizontal");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -133,7 +131,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name),
 			RenderTargetProperties::ResolutionScalar(0.125f)
 		};
 
@@ -151,7 +148,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<DoFDilateFlattenData>(desc);
+		frame_graph.AddTask<DoFDilateFlattenData>(desc, L"DoF coc dilate flatten horizontal");
 	}
 
 } /* wr */

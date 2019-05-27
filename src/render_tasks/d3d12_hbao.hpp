@@ -195,9 +195,6 @@ namespace wr
 #ifndef NVIDIA_GAMEWORKS_HBAO
 		LOGW("HBAO+ task has been added to the frame graph. But `NVIDIA_GAMEWORKS_HBAO` is not defined.");
 #endif
-
-		std::wstring name(L"NVIDIA HBAO+");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -211,7 +208,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -229,7 +225,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<HBAOData>(desc, FG_DEPS(1, DeferredMainTaskData));
+		frame_graph.AddTask<HBAOData>(desc, L"NVIDIA HBAO+", FG_DEPS(1, DeferredMainTaskData));
 		frame_graph.UpdateSettings<HBAOData>(HBAOSettings());
 	}
 

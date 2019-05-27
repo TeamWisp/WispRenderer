@@ -286,8 +286,6 @@ namespace wr
 
 	inline void AddEquirectToCubemapTask(FrameGraph& fg)
 	{
-		std::wstring name(L"Equirect To Cubemap");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -301,7 +299,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -318,7 +315,7 @@ namespace wr
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<EquirectToCubemapTaskData>(desc);
+		fg.AddTask<EquirectToCubemapTaskData>(desc, L"Equire To Cubemap");
 	}
 
 } /* wr */

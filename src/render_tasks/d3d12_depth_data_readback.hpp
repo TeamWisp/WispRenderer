@@ -107,8 +107,6 @@ namespace wr
 	template<typename T>
 	inline void AddDepthDataReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
-		std::wstring name(L"Depth Data CPU Readback");
-
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
 		RenderTargetProperties rt_properties{
@@ -149,7 +147,7 @@ namespace wr
 		readback_task_description.m_allow_multithreading = false;
 
 		// Save this task to the frame graph system
-		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description, FG_DEPS(1, T));
+		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description, L"Depth Data CPU Readback", FG_DEPS(1, T));
 	}
 
 } /* wr */
