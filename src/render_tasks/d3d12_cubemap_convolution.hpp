@@ -213,7 +213,7 @@ namespace wr
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<CubemapConvolutionTaskData>(desc, "Cubemap Convolution");
+		fg.AddTask<CubemapConvolutionTaskData>(desc, L"Cubemap Convolution");
 	}
 
 } /* wr */
