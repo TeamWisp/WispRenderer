@@ -172,6 +172,8 @@ namespace wr
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
 
+		void SignalSkyboxChange(); 
+
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
 		wr::Model* GetSimpleShape(SimpleShapes type);
 
@@ -225,6 +227,8 @@ namespace wr
 		std::optional<bool> m_requested_fullscreen_state;
 
 		MaterialHandle m_last_material = { nullptr, 0 };
+
+		bool m_skybox_changed = false;
 
 	};
 

@@ -357,6 +357,56 @@ namespace wr::imgui::window
 				model_node->SignalChange();
 			}
 		},
+		{ typeid(SkyboxNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
+				auto skybox_node = std::static_pointer_cast<SkyboxNode>(node);
+
+				if (ImGui::Button("Change Sky"))
+				{
+					std::string skybox_name;
+
+					{
+						//char buffer[MAX_PATH];
+
+						//OPENFILENAME dialog_args;
+						//ZeroMemory(&dialog_args, sizeof(dialog_args));
+						//dialog_args.lStructSize = sizeof(OPENFILENAME);
+						//dialog_args.hwndOwner = NULL;
+						//dialog_args.lpstrFile = buffer;
+						//dialog_args.lpstrFile[0] = '\0';
+						//dialog_args.nMaxFile = sizeof(buffer);
+						//dialog_args.lpstrFilter = "All Files\0*.*\0\0";
+						//dialog_args.nFilterIndex = 1;
+						//dialog_args.lpstrTitle = "Load Sky";
+						//dialog_args.lpstrFileTitle = nullptr;
+						//dialog_args.nMaxFileTitle = 0;
+						//dialog_args.lpstrInitialDir = NULL;
+						//dialog_args.Flags = OFN_READONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NONETWORKBUTTON | OFN_SHAREAWARE;
+
+						//bool file_selected = GetOpenFileName(&dialog_args);
+					}
+
+					bool file_selected = true;
+
+					if (file_selected)
+					{
+						//skybox_name = std::string(buffer);
+
+						skybox_name = "resources/materials/Arches_E_PineTree_3k.hdr";
+
+						TextureHandle new_texture = skybox_node->m_hdr.m_pool->LoadFromFile(skybox_name, false, false);
+
+						scene_graph->UpdateSkyboxNode(new_texture);
+					}
+					else
+					{
+						LOGW("The Open dialog didn't return a file name.");
+						return;
+					}
+				}
+			}
+		},
 	};
 
 	decltype(SceneGraphEditorDetails::sg_editor_type_context_menu) SceneGraphEditorDetails::sg_editor_type_context_menu =

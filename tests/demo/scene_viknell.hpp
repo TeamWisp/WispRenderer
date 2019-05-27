@@ -80,8 +80,8 @@ namespace viknell_scene
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
-		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float) window->GetWidth() / (float) window->GetHeight());
-		camera->SetPosition({0, 0, 2});
+		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
+		camera->SetPosition({ 0, 0, 2 });
 		camera->SetSpeed(10);
 
 		camera_spline_node = scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline", false);
@@ -96,45 +96,45 @@ namespace viknell_scene
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 		auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
-		floor->SetPosition({0, -1, 0});
-		floor->SetRotation({90_deg, 0, 0});
+		floor->SetPosition({ 0, -1, 0 });
+		floor->SetRotation({ 90_deg, 0, 0 });
 		floor->AddMaterial(resources::bamboo_material);
-		sphere->SetPosition({1, -1, -1});
-		sphere->SetScale({0.6f, 0.6f, 0.6f});
+		sphere->SetPosition({ 1, -1, -1 });
+		sphere->SetScale({ 0.6f, 0.6f, 0.6f });
 		sphere->AddMaterial(resources::mirror_material);
-		roof->SetPosition({0, 1, 0});
-		roof->SetRotation({-90_deg, 0, 0});
+		roof->SetPosition({ 0, 1, 0 });
+		roof->SetRotation({ -90_deg, 0, 0 });
 		roof->AddMaterial(resources::bamboo_material);
-		back_wall->SetPosition({0, 0, -1});
-		back_wall->SetRotation({0, 180_deg, 0});
+		back_wall->SetPosition({ 0, 0, -1 });
+		back_wall->SetRotation({ 0, 180_deg, 0 });
 		back_wall->AddMaterial(resources::bamboo_material);
-		left_wall->SetPosition({-1, 0, 0});
-		left_wall->SetRotation({0, -90_deg, 0});
+		left_wall->SetPosition({ -1, 0, 0 });
+		left_wall->SetRotation({ 0, -90_deg, 0 });
 		left_wall->AddMaterial(resources::bamboo_material);
-		right_wall->SetPosition({1, 0, 0});
-		right_wall->SetRotation({0, 90_deg, 0});
+		right_wall->SetPosition({ 1, 0, 0 });
+		right_wall->SetRotation({ 0, 90_deg, 0 });
 		right_wall->AddMaterial(resources::bamboo_material);
-		test_model->SetPosition({0, -1, 0});
-		test_model->SetRotation({0, 180_deg, 0});
-		test_model->SetScale({0.01f,0.01f,0.01f});
+		test_model->SetPosition({ 0, -1, 0 });
+		test_model->SetRotation({ 0, 180_deg, 0 });
+		test_model->SetScale({ 0.01f,0.01f,0.01f });
 
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 		point_light_0->SetRotation({ 20.950f, 0.98f, 0.f });
 		point_light_0->SetPosition({ -0.002f, 0.080f, 1.404f });
 
-		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{1, 0, 0});
+		auto point_light_1 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 1, 0, 0 });
 		point_light_1->SetRadius(5.0f);
 		point_light_1->SetPosition({ 0.5f, 0.f, -0.3f });
 
-		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{0, 0, 1});
+		auto point_light_2 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 0, 0, 1 });
 		point_light_2->SetRadius(5.0f);
 		point_light_2->SetPosition({ -0.5f, 0.5f, -0.3f });
 
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	}
 
-	void UpdateScene()
+	void UpdateScene(wr::SceneGraph* sg, wr::D3D12RenderSystem& rs)
 	{
 		t += 10.f * ImGui::GetIO().DeltaTime;
 
@@ -144,5 +144,57 @@ namespace viknell_scene
 
 		camera->Update(ImGui::GetIO().DeltaTime);
 		camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, camera);
+
+		auto skybox_node = sg->GetCurrentSkybox();
+
+		//Delete first
+
+		static bool reload_skybox = false;
+		static size_t index = 0;
+
+		if (t >= 60.0f)
+		{
+			reload_skybox = true;
+
+			t = 0.0f;
+		}
+
+		//if (false)
+		//{
+		//	std::array<std::string, 8> skyboxes = 
+		//	{
+		//		"resources/materials/Arches_E_PineTree_3k.hdr",
+		//		"resources/materials/artist_workshop_4k.hdr",
+		//		"resources/materials/Barce_Rooftop_C_3k.hdr",
+		//		"resources/materials/cayley_interior_4k.hdr",
+		//		"resources/materials/Circus_Backstage_3k.hdr",
+		//		"resources/materials/Factory_Catwalk_2k.hdr",
+		//		"resources/materials/Ice_Lake_Ref.hdr",
+		//		"resources/materials/LA_Downtown_Afternoon_Fishing_3k.hdr"
+		//	};
+
+
+		//	skybox_node->m_irradiance.value().m_pool->MarkForUnload(skybox_node->m_irradiance.value(), rs.GetFrameIdx());
+		//	skybox_node->m_irradiance = std::nullopt;
+
+		//	skybox_node->m_skybox.value().m_pool->MarkForUnload(skybox_node->m_skybox.value(), rs.GetFrameIdx());
+		//	skybox_node->m_skybox = std::nullopt;
+
+		//	skybox_node->m_prefiltered_env_map.value().m_pool->MarkForUnload(skybox_node->m_prefiltered_env_map.value(), rs.GetFrameIdx());
+		//	skybox_node->m_prefiltered_env_map = std::nullopt;
+
+		//	skybox_node->m_hdr.m_pool->MarkForUnload(skybox_node->m_hdr, rs.GetFrameIdx());
+		//	skybox_node->m_hdr = resources::texture_pool->LoadFromFile(skyboxes[index], false, false);
+
+		//	reload_skybox = false;
+		//	index++;
+		//	if (index > 7)
+		//	{
+		//		index = 0;
+		//	}
+
+		//	rs.SignalSkyboxChange();
+		//}
+
 	}
 } /* cube_scene */

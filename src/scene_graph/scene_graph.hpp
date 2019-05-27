@@ -85,6 +85,8 @@ namespace wr
 		std::vector<std::shared_ptr<MeshNode>>& GetMeshNodes();
 		std::shared_ptr<SkyboxNode> GetCurrentSkybox();
 
+		void UpdateSkyboxNode(TextureHandle new_equirectangular);
+
 		void Init();
 		void Update();
 		void Render(CommandList* cmd_list, CameraNode* camera);
@@ -124,7 +126,7 @@ namespace wr
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
 		std::vector<std::shared_ptr<LightNode>> m_light_nodes;
-		std::vector< std::shared_ptr<SkyboxNode>>	m_skybox_nodes;
+		std::vector< std::shared_ptr<SkyboxNode>> m_skybox_nodes;
 
 		uint32_t m_next_light_id = 0;
 	};

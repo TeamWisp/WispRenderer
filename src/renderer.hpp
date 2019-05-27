@@ -75,6 +75,9 @@ namespace wr
 		virtual void Resize(std::uint32_t width, std::uint32_t height) = 0;
 		void RequestRenderTargetSaveToDisc(std::string const& path, RenderTarget* render_target, unsigned int index);
 		
+		virtual unsigned int GetFrameIdx() = 0;
+		virtual void SignalSkyboxChange() = 0;
+
 		std::optional<Window*> m_window;
 
 		enum class SimpleShapes : std::size_t

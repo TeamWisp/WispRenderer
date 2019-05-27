@@ -90,6 +90,25 @@ namespace wr
 		}
 	}
 
+	void SceneGraph::UpdateSkyboxNode(TextureHandle new_equirectangular)
+	{
+		auto skybox_node = GetCurrentSkybox();
+
+		skybox_node->m_irradiance.value().m_pool->MarkForUnload(skybox_node->m_irradiance.value(), m_render_system->GetFrameIdx());
+		skybox_node->m_irradiance = std::nullopt;
+
+		skybox_node->m_skybox.value().m_pool->MarkForUnload(skybox_node->m_skybox.value(), m_render_system->GetFrameIdx());
+		skybox_node->m_skybox = std::nullopt;
+
+		skybox_node->m_prefiltered_env_map.value().m_pool->MarkForUnload(skybox_node->m_prefiltered_env_map.value(), m_render_system->GetFrameIdx());
+		skybox_node->m_prefiltered_env_map = std::nullopt;
+
+		skybox_node->m_hdr.m_pool->MarkForUnload(skybox_node->m_hdr, m_render_system->GetFrameIdx());
+		skybox_node->m_hdr = new_equirectangular;
+
+		m_render_system->SignalSkyboxChange();
+	}
+
 	//! Initialize the scene graph
 	void SceneGraph::Init()
 	{

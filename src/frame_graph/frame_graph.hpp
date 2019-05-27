@@ -141,10 +141,10 @@ namespace wr
 		}
 
 		FrameGraph(const FrameGraph&) = delete;
-		FrameGraph(FrameGraph&&)      = delete;
+		FrameGraph(FrameGraph&&) = delete;
 
 		FrameGraph& operator=(const FrameGraph&) = delete;
-		FrameGraph& operator=(FrameGraph&&) 	 = delete;
+		FrameGraph& operator=(FrameGraph&&) = delete;
 
 		//! Setup the render tasks
 		/*!
@@ -422,7 +422,7 @@ namespace wr
 			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
 		*/
 		template<typename T>
-		[[nodiscard]] inline auto const & GetPredecessorData()
+		[[nodiscard]] inline auto const& GetPredecessorData()
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -442,7 +442,7 @@ namespace wr
 			}
 
 			LOGC("Failed to find predecessor data! Please check your task order.")
-			return *static_cast<T*>(nullptr);
+				return *static_cast<T*>(nullptr);
 		}
 
 		/*! Get the render target of a previously ran task. (Constant) */
@@ -464,7 +464,7 @@ namespace wr
 				{
 					WaitForCompletion(i);
 
-					return m_render_targets[i];			
+					return m_render_targets[i];
 				}
 			}
 
@@ -658,7 +658,7 @@ namespace wr
 		};
 
 		/*! Return the cpu texture. */
-		[[nodiscard]] CPUTextures const & GetOutputTexture() const noexcept
+		[[nodiscard]] CPUTextures const& GetOutputTexture() const noexcept
 		{
 			return m_output_cpu_textures;
 		}
@@ -669,7 +669,7 @@ namespace wr
 			\param index The index of the render target from the task you want to save.
 		*/
 		template<typename T>
-		void SaveTaskToDisc(std::string const & path, int index = 0)
+		void SaveTaskToDisc(std::string const& path, int index = 0)
 		{
 			auto handle = GetHandleFromType<T>();
 
@@ -692,34 +692,45 @@ namespace wr
 				if (m_output_cpu_textures.pixel_data != std::nullopt)
 					LOGW("Warning: CPU texture pixel data is written to more than once a frame!")
 
-				// Save the pixel data
-				m_output_cpu_textures.pixel_data = output_texture;
+					// Save the pixel data
+					m_output_cpu_textures.pixel_data = output_texture;
 				break;
 
 			case wr::CPUTextureType::DEPTH_DATA:
 				if (m_output_cpu_textures.depth_data != std::nullopt)
 					LOGW("Warning: CPU texture depth data is written to more than once a frame!")
 
-				// Save the depth data
-				m_output_cpu_textures.depth_data = output_texture;
+					// Save the depth data
+					m_output_cpu_textures.depth_data = output_texture;
 				break;
 
 			default:
 				// Should never happen
 				LOGC("Invalid CPU texture type supplied!")
-				break;
+					break;
 			}
 		}
 
 		/*! Enable or disable execution of a task. */
-		/*!
-			Note that this function is not thread safe.
-		*/
 		inline void SetShouldExecute(RenderTaskHandle handle, bool value)
 		{
 			m_should_execute_change_request.emplace(std::make_pair(handle, value));
 		}
-		
+
+		/*! Enable or disable execution of a task. Templated version */
+		template<typename T>
+		inline void SetShouldExecute(bool value)
+		{
+			auto handle = GetHandleFromType<T>();
+
+			if (handle.has_value())
+			{
+
+				SetShouldExecute(handle.value(), value);
+			}
+		}
+
+
 		/*! Update the settings of a task. */
 		/*!
 			This is used to update settings of a render task.
@@ -789,7 +800,7 @@ namespace wr
 
 			return std::any_cast<T>(m_settings[handle].value());
 		}
-		catch (const std::bad_any_cast & e) {
+		catch (const std::bad_any_cast& e) {
 			LOGW("A task settings requested failed to cast to T. ({})", e.what());
 			return T();
 		}
@@ -827,9 +838,9 @@ namespace wr
 			for (const auto handle : m_multi_threaded_tasks)
 			{
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle]
-				{
-					m_setup_funcs[handle](*m_render_system, *this, handle, false);
-				});
+					{
+						m_setup_funcs[handle](*m_render_system, *this, handle, false);
+					});
 			}
 
 			// Singlethreading behaviour
@@ -852,9 +863,9 @@ namespace wr
 				}
 
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &scene_graph]
-				{
-					ExecuteSingleTask(scene_graph, handle);
-				});
+					{
+						ExecuteSingleTask(scene_graph, handle);
+					});
 			}
 
 			// Singlethreading behaviour
