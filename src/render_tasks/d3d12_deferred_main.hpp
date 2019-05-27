@@ -78,7 +78,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTargetProperties rt_properties_hybrid
@@ -93,8 +92,7 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(5),
 			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ClearDepth(true)
 		};
 
 		RenderTaskDesc desc;
@@ -112,7 +110,7 @@ namespace wr
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<DeferredMainTaskData>(desc);
+		fg.AddTask<DeferredMainTaskData>(desc, L"Deferred Main");
 	}
 
 } /* wr */

@@ -631,7 +631,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name),
 			RenderTargetProperties::ResolutionScalar(1.0f)
 		};
 
@@ -653,7 +652,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<ShadowDenoiserData>(desc, FG_DEPS(1, RTShadowData));
+		fg.AddTask<ShadowDenoiserData>(desc, name, FG_DEPS(1, RTShadowData));
 	}
 
 }/* wr */

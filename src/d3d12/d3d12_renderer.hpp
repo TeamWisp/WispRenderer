@@ -170,8 +170,10 @@ namespace wr
 		wr::CommandList* GetBundleCommandList(unsigned int num_allocators);
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators);
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators);
+		void SetCommandListName(CommandList* cmd_list, std::wstring const& name);
 		void DestroyCommandList(CommandList* cmd_list);
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties);
+		void SetRenderTargetName(RenderTarget* cmd_list, std::wstring const& name);
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height);
 		void RequestFullscreenChange(bool fullscreen_state);
 

@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <optional>
 #include <d3d12.h>
+#include <mutex>
 
 #include "structs.hpp"
 #include "util/defines.hpp"
@@ -58,6 +59,7 @@ namespace wr
 	protected:
 
 		std::size_t m_loaded_textures = 0;
+		std::mutex m_mutex;
 
 		TextureHandle m_default_albedo;
 		TextureHandle m_default_normal;

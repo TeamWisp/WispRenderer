@@ -83,7 +83,7 @@ namespace fg_manager
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");
 
 			fg->Setup(rs);
 		}
@@ -122,7 +122,7 @@ namespace fg_manager
 			wr::AddAnselTask(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");
 
 			fg->Setup(rs);
 		}
@@ -164,7 +164,7 @@ namespace fg_manager
 			wr::AddAnselTask(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");
 
 			// Finalize the frame graph
 			fg->Setup(rs);
@@ -216,7 +216,7 @@ namespace fg_manager
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func));
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");
 
 			// Finalize the frame graph
 			fg->Setup(rs);
