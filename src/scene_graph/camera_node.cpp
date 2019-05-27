@@ -25,6 +25,18 @@ namespace wr
 		SignalChange();
 	}
 
+	void CameraNode::SetFrustumNear(float value) noexcept
+	{
+		m_frustum_near = value;
+		SignalChange();
+	}
+
+	void CameraNode::SetFrustumFar(float value) noexcept
+	{
+		m_frustum_far = value;
+		SignalChange();
+	}
+
 	void CameraNode::SetFocalLength(float length)
 	{
 		m_focal_length = length;
@@ -43,6 +55,16 @@ namespace wr
 		return std::pair<float, float>(m_projection_offset_x, m_projection_offset_y);
 	}
 
+	void CameraNode::SetOrthographicResolution(std::uint32_t width, std::uint32_t height)
+	{
+		m_ortho_res.m_width = static_cast<int>(width);
+
+		//Window resolution counts in negative on Y axis, therefore conversion to signed is needed.
+		m_ortho_res.m_height = static_cast<int>(height) * -1;
+
+		SignalChange();
+	}
+
 	void CameraNode::UpdateTemp(unsigned int frame_idx)
 	{
 		DirectX::XMVECTOR pos = { m_transform.r[3].m128_f32[0], m_transform.r[3].m128_f32[1], m_transform.r[3].m128_f32[2] };
@@ -56,6 +78,17 @@ namespace wr
 		if (!m_override_projection)
 		{
 			m_projection = DirectX::XMMatrixPerspectiveFovRH(m_fov.m_fov, m_aspect_ratio, m_frustum_near, m_frustum_far);
+
+			if (m_enable_orthographic)
+			{
+				m_projection = DirectX::XMMatrixOrthographicOffCenterRH(
+					0,
+					static_cast<float>(m_ortho_res.m_width), 
+					static_cast<float>(m_ortho_res.m_height), 
+					0,
+					m_frustum_near,
+					m_frustum_far);
+			}
 
 			m_projection.r[2].m128_f32[0] += m_projection_offset_x;
 			m_projection.r[2].m128_f32[1] += m_projection_offset_y;

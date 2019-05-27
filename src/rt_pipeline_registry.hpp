@@ -13,7 +13,7 @@
 namespace wr
 {
 
-	struct StateObject { };
+	using StateObject = void;
 
 	struct StateObjectDescription
 	{
@@ -24,23 +24,15 @@ namespace wr
 			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
 		};
 
-		using Library = util::NamedType<LibraryDesc>;
-		using D3D12StateObjectDesc = util::NamedType<CD3DX12_STATE_OBJECT_DESC>;
-		using MaxPayloadSize = util::NamedType<std::uint64_t>;
-		using MaxAttributeSize = util::NamedType<std::uint64_t>;
-		using MaxRecursionDepth = util::NamedType<std::uint64_t>;
-		using GlobalRootSignature = util::NamedType<std::optional<RegistryHandle>>;
-		using LocalRootSignatures = util::NamedType<std::optional<std::vector<RegistryHandle>>>;
+		CD3DX12_STATE_OBJECT_DESC desc;
+		LibraryDesc library_desc;
 
-		D3D12StateObjectDesc desc;
-		Library library_desc;
+		std::uint64_t max_payload_size;
+		std::uint64_t max_attributes_size;
+		std::uint64_t max_recursion_depth;
 
-		MaxPayloadSize max_payload_size;
-		MaxAttributeSize max_attributes_size;
-		MaxRecursionDepth max_recursion_depth;
-
-		GlobalRootSignature global_root_signature;
-		LocalRootSignatures local_root_signatures;
+		std::optional<RegistryHandle> global_root_signature;
+		std::vector<RegistryHandle> local_root_signatures;
 	};
 
 	class RTPipelineRegistry : public internal::Registry<RTPipelineRegistry, StateObject, StateObjectDescription>

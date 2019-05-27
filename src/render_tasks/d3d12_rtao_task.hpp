@@ -6,8 +6,8 @@
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
-#include "../d3d12/d3d12_rt_pipeline_registry.hpp"
-#include "../d3d12/d3d12_root_signature_registry.hpp"
+#include "../rt_pipeline_registry.hpp"
+#include "../root_signature_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
@@ -155,11 +155,11 @@ namespace wr
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.in_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_ao_state_opbject))->m_native;
+				data.in_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::rt_ao_state_opbject));
 
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
-				data.in_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_ao_global))->m_native;
+				data.in_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_ao_global));
 
 				// Create Shader Tables
 				CreateShaderTables(device, data, 0);
@@ -180,6 +180,7 @@ namespace wr
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto settings = fg.GetSettings<RTAOData, RTAOSettings>();
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
+			float scalar = 1.0f;
 
 			if (fg.HasTask<wr::RTHybridData>())
 			{
@@ -237,8 +238,17 @@ namespace wr
 				CreateShaderTables(device, data, frame_idx);
 #endif // _DEBUG
 
+				scalar = fg.GetRenderTargetResolutionScale(handle);
+
 				// Dispatch hybrid ray tracing rays
-				d3d12::DispatchRays(cmd_list, data.in_hitgroup_shader_table[frame_idx], data.in_miss_shader_table[frame_idx], data.in_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
+				d3d12::DispatchRays(cmd_list, 
+					data.in_hitgroup_shader_table[frame_idx], 
+					data.in_miss_shader_table[frame_idx], 
+					data.in_raygen_shader_table[frame_idx], 
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetWidth())),
+					static_cast<std::uint32_t>(std::ceil(scalar * window->GetHeight())),
+					1,
+					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.in_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);

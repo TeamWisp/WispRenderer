@@ -72,7 +72,7 @@ namespace util
 				auto file_path = file.path().u8string();
 
 				// File Created
-				if (!PathsContains(file_path))
+				if (!m_paths.contains(file_path))
 				{
 					m_paths[file_path] = last_write_time;
 					run_callback(file_path, FileStatus::CREATED);
@@ -101,12 +101,6 @@ namespace util
 		m_thread = std::thread([this, callback]() {
 			Start(callback);
 		});
-	}
-
-	bool FileWatcher::PathsContains(std::string const & key)
-	{
-		auto it = m_paths.find(key);
-		return it != m_paths.end();
 	}
 
 } /* util */

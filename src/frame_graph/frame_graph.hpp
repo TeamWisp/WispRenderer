@@ -169,31 +169,37 @@ namespace wr
 			m_futures.resize(m_num_tasks);
 			m_render_system = &render_system;
 
+			auto get_command_list_from_render_system = [this](auto type)
+			{
+				switch (type)
+				{
+				case RenderTaskType::DIRECT:
+					return m_render_system->GetDirectCommandList(d3d12::settings::num_back_buffers);
+				case RenderTaskType::COMPUTE:
+					return m_render_system->GetComputeCommandList(d3d12::settings::num_back_buffers);
+				case RenderTaskType::COPY:
+					return m_render_system->GetCopyCommandList(d3d12::settings::num_back_buffers);
+				default:
+					LOGC("Tried creating a command list of a type that is not supported.");
+					return static_cast<wr::CommandList*>(nullptr);
+				}
+			};
+
 			if constexpr (settings::use_multithreading)
 			{
 				for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 				{
 					// Get the proper command list from the render system.
-					switch (m_types[i])
-					{
-					case RenderTaskType::DIRECT:
-						m_cmd_lists[i] = render_system.GetDirectCommandList(d3d12::settings::num_back_buffers);
-						break;
-					case RenderTaskType::COMPUTE:
-						m_cmd_lists[i] = render_system.GetComputeCommandList(d3d12::settings::num_back_buffers);
-						break;
-					case RenderTaskType::COPY:
-						m_cmd_lists[i] = render_system.GetCopyCommandList(d3d12::settings::num_back_buffers);
-						break;
-					default:
-						break;
-					}
+					m_cmd_lists[i] = get_command_list_from_render_system(m_types[i]);
 
 					// Get a render target from the render system.
-					m_render_targets[i] = render_system.GetRenderTarget(m_rt_properties[i].value());
+					if (m_rt_properties[i].has_value())
+					{
+						m_render_targets[i] = render_system.GetRenderTarget(m_rt_properties[i].value());
+					}
 				}
 
-				Setup_MT_Impl(render_system);
+				Setup_MT_Impl();
 			}
 			else
 			{
@@ -201,27 +207,23 @@ namespace wr
 				for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 				{
 					// Get the proper command list from the render system.
-					switch (m_types[i])
-					{
-					case RenderTaskType::DIRECT:
-						m_cmd_lists[i] = render_system.GetDirectCommandList(d3d12::settings::num_back_buffers);
-						break;
-					case RenderTaskType::COMPUTE:
-						m_cmd_lists[i] = render_system.GetComputeCommandList(d3d12::settings::num_back_buffers);
-						break;
-					case RenderTaskType::COPY:
-						m_cmd_lists[i] = render_system.GetCopyCommandList(d3d12::settings::num_back_buffers);
-						break;
-					default:
-						break;
-					}
+					m_cmd_lists[i] = get_command_list_from_render_system(m_types[i]);
 
 					// Get a render target from the render system.
-					m_render_targets[i] = render_system.GetRenderTarget(m_rt_properties[i].value());
+					if (m_rt_properties[i].has_value())
+					{
+						m_render_targets[i] = render_system.GetRenderTarget(m_rt_properties[i].value());
+					}
 
 					// Call the setup function pointer.
 					m_setup_funcs[i](render_system, *this, i, false);
 				}
+			}
+
+			// Finish the setup before continuing for savety.
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				WaitForCompletion(i);
 			}
 		}
 
@@ -231,7 +233,7 @@ namespace wr
 			\param render_system The render system we want to use for rendering.
 			\param scene_graph The scene graph we want to render.
 		*/
-		inline void Execute(RenderSystem& render_system, SceneGraph& scene_graph)
+		inline void Execute(SceneGraph& scene_graph)
 		{
 			ResetOutputTexture();
 
@@ -245,11 +247,11 @@ namespace wr
 
 			if constexpr (settings::use_multithreading)
 			{
-				Execute_MT_Impl(render_system, scene_graph);
+				Execute_MT_Impl(scene_graph);
 			}
 			else
 			{
-				Execute_ST_Impl(render_system, scene_graph);
+				Execute_ST_Impl(scene_graph);
 			}
 		}
 
@@ -259,27 +261,29 @@ namespace wr
 			The width and height parameters should be the output size.
 			Please note this function calls Destroy than setup with the resize boolean set to true.
 		*/
-		inline void Resize(RenderSystem & render_system, std::uint32_t width, std::uint32_t height)
+		inline void Resize(std::uint32_t width, std::uint32_t height)
 		{
+			// Make sure the tasks are finished executing
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
 				WaitForCompletion(i);
 			}
 
-			render_system.WaitForAllPreviousWork();
+			// Make sure the GPU has finished with the tasks
+			m_render_system->WaitForAllPreviousWork();
 
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
 				m_destroy_funcs[i](*this, i, true);
 
-				if (!m_rt_properties[i].value().m_is_render_window)
+				if (m_rt_properties[i].has_value() && !m_rt_properties[i].value().m_is_render_window)
 				{
-					render_system.ResizeRenderTarget(&m_render_targets[i],
-						static_cast<std::uint32_t>(width * m_rt_properties[i].value().m_resolution_scale.Get()),
-						static_cast<std::uint32_t>(height * m_rt_properties[i].value().m_resolution_scale.Get()));
+					m_render_system->ResizeRenderTarget(&m_render_targets[i],
+						static_cast<std::uint32_t>(std::ceil(width * m_rt_properties[i].value().m_resolution_scale.Get())),
+						static_cast<std::uint32_t>(std::ceil(height * m_rt_properties[i].value().m_resolution_scale.Get())));
 				}
 
-				m_setup_funcs[i](render_system, *this, i, true);
+				m_setup_funcs[i](*m_render_system, *this, i, true);
 			}
 		}
 
@@ -306,10 +310,17 @@ namespace wr
 		*/
 		void Destroy()
 		{
-			// Allow the tasks to safely deallocate the stuff they allocated.
+			// Make sure all tasks finished executing
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
 				WaitForCompletion(i);
+			}
+
+			m_render_system->WaitForAllPreviousWork();
+
+			// Send the destroy events to the render tasks.
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
 				m_destroy_funcs[i](*this, i, false);
 			}
 
@@ -641,13 +652,13 @@ namespace wr
 		}
 
 		/*! Return the frame graph's unique id.*/
-		[[nodiscard]] const std::uint64_t GetUID() const
+		[[nodiscard]] const std::uint64_t GetUID() const noexcept
 		{
 			return m_uid;
 		};
 
 		/*! Return the cpu texture. */
-		[[nodiscard]] CPUTextures const & GetOutputTexture() const
+		[[nodiscard]] CPUTextures const & GetOutputTexture() const noexcept
 		{
 			return m_output_cpu_textures;
 		}
@@ -739,7 +750,7 @@ namespace wr
 
 		*/
 		template<typename T, typename R>
-		[[nodiscard]] inline R GetSettings() const
+		[[nodiscard]] inline R GetSettings() const try
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -750,17 +761,15 @@ namespace wr
 			{
 				if (typeid(T) == m_data_type_info[i])
 				{
-					try {
-						return std::any_cast<R>(m_settings[i].value());
-					}
-					catch (const std::bad_any_cast & e) {
-						LOGW("A task settings requested failed to cast to T. ({})", e.what());
-						return R();
-					}
+					return std::any_cast<R>(m_settings[i].value());
 				}
 			}
 
 			LOGC("Failed to find task settings! Does your frame graph contain this task?");
+			return R();
+		}
+		catch (const std::bad_any_cast& e) {
+			LOGC("A task settings requested failed to cast to T. ({})", e.what());
 			return R();
 		}
 
@@ -771,25 +780,22 @@ namespace wr
 			The return value can be a nullptr.
 		*/
 		template<typename T>
-		[[nodiscard]] inline T GetSettings(RenderTaskHandle handle) const
+		[[nodiscard]] inline T GetSettings(RenderTaskHandle handle) const try
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
 				std::is_integral<T>::value,
 				"The template variable should be a class, struct, floating point value or a integral value.");
 
-			try {
-				return std::any_cast<T>(m_settings[handle].value());
-			}
-			catch (const std::bad_any_cast & e) {
-				LOGW("A task settings requested failed to cast to T. ({})", e.what());
-			}
-			
+			return std::any_cast<T>(m_settings[handle].value());
+		}
+		catch (const std::bad_any_cast & e) {
+			LOGW("A task settings requested failed to cast to T. ({})", e.what());
 			return T();
 		}
 
 		/*! Resets the CPU texture data for this frame. */
-		void ResetOutputTexture()
+		inline void ResetOutputTexture()
 		{
 			// Frame has been rendered, allow a task to write to the CPU texture in the next frame
 			m_output_cpu_textures.pixel_data = std::nullopt;
@@ -815,26 +821,26 @@ namespace wr
 		}
 
 		/*! Setup tasks multi threaded */
-		inline void Setup_MT_Impl(RenderSystem& render_system)
+		inline void Setup_MT_Impl()
 		{
 			// Multithreading behaviour
 			for (const auto handle : m_multi_threaded_tasks)
 			{
-				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system]
+				m_futures[handle] = m_thread_pool->Enqueue([this, handle]
 				{
-					m_setup_funcs[handle](render_system, *this, handle, false);
+					m_setup_funcs[handle](*m_render_system, *this, handle, false);
 				});
 			}
 
 			// Singlethreading behaviour
 			for (const auto handle : m_single_threaded_tasks)
 			{
-				m_setup_funcs[handle](render_system, *this, handle, false);
+				m_setup_funcs[handle](*m_render_system, *this, handle, false);
 			}
 		}
 
 		/*! Execute tasks multi threaded */
-		inline void Execute_MT_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
+		inline void Execute_MT_Impl(SceneGraph& scene_graph)
 		{
 			// Multithreading behaviour
 			for (const auto handle : m_multi_threaded_tasks)
@@ -845,9 +851,9 @@ namespace wr
 					continue;
 				}
 
-				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &render_system, &scene_graph]
+				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &scene_graph]
 				{
-					ExecuteSingleTask(render_system, scene_graph, handle);
+					ExecuteSingleTask(scene_graph, handle);
 				});
 			}
 
@@ -860,12 +866,12 @@ namespace wr
 					continue;
 				}
 
-				ExecuteSingleTask(render_system, scene_graph, handle);
+				ExecuteSingleTask(scene_graph, handle);
 			}
 		}
 
 		/*! Execute tasks single threaded */
-		inline void Execute_ST_Impl(RenderSystem& render_system, SceneGraph& scene_graph)
+		inline void Execute_ST_Impl(SceneGraph& scene_graph)
 		{
 			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
 			{
@@ -875,39 +881,61 @@ namespace wr
 					continue;
 				}
 
-				ExecuteSingleTask(render_system, scene_graph, i);
+				ExecuteSingleTask(scene_graph, i);
 			}
 		}
 
 		/*! Execute a single task */
-		inline void ExecuteSingleTask(RenderSystem& rs, SceneGraph& sg, RenderTaskHandle handle)
+		inline void ExecuteSingleTask(SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto cmd_list = m_cmd_lists[handle];
 			auto render_target = m_render_targets[handle];
-			auto rt_properties = m_rt_properties[handle].value();
+			auto rt_properties = m_rt_properties[handle];
+
+			m_render_system->ResetCommandList(cmd_list);
 
 			switch (m_types[handle])
 			{
 			case RenderTaskType::DIRECT:
-				rs.StartRenderTask(cmd_list, { render_target, rt_properties });
-				m_execute_funcs[handle](rs, *this, sg, handle);
-				rs.StopRenderTask(cmd_list, { render_target, rt_properties });
+				if (rt_properties.has_value())
+				{
+					m_render_system->StartRenderTask(cmd_list, { render_target, rt_properties.value() });
+				}
+				m_execute_funcs[handle](*m_render_system, *this, sg, handle);
+				if (rt_properties.has_value())
+				{
+					m_render_system->StopRenderTask(cmd_list, { render_target, rt_properties.value() });
+				}
 				break;
 			case RenderTaskType::COMPUTE:
-				rs.StartComputeTask(cmd_list, { render_target, rt_properties });
-				m_execute_funcs[handle](rs, *this, sg, handle);
-				rs.StopComputeTask(cmd_list, { render_target, rt_properties });
+				if (rt_properties.has_value())
+				{
+					m_render_system->StartComputeTask(cmd_list, { render_target, rt_properties.value() });
+				}
+				m_execute_funcs[handle](*m_render_system, *this, sg, handle);
+				if (rt_properties.has_value())
+				{
+					m_render_system->StopComputeTask(cmd_list, { render_target, rt_properties.value() });
+				}
 				break;
 			case RenderTaskType::COPY:
-				rs.StartCopyTask(cmd_list, { render_target, rt_properties });
-				m_execute_funcs[handle](rs, *this, sg, handle);
-				rs.StopCopyTask(cmd_list, { render_target, rt_properties });
+				if (rt_properties.has_value())
+				{
+					m_render_system->StartCopyTask(cmd_list, { render_target, rt_properties.value() });
+				}
+				m_execute_funcs[handle](*m_render_system, *this, sg, handle);
+				if (rt_properties.has_value())
+				{
+					m_render_system->StopCopyTask(cmd_list, { render_target, rt_properties.value() });
+				}
 				break;
 			}
+
+			m_render_system->CloseCommandList(cmd_list);
 		}
 
 		/*! Get a free unique ID. */
-		WISPRENDERER_EXPORT static std::uint64_t GetFreeUID()
+		static std::uint64_t GetFreeUID()
 		{
 			if (!m_free_uids.empty())
 			{

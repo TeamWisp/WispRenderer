@@ -5,6 +5,8 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <ctime>
+#include <iostream>
 
 #include "wisp.hpp"
 #include "demo_frame_graphs.hpp"
@@ -110,6 +112,17 @@ int WispEntry()
 	{
 		engine::debug_console.AddLog(str.c_str());
 	};
+	
+#ifndef _DEBUG //prevents log spam for developers
+	std::time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	auto local_time = std::localtime(&current_time);
+
+	std::stringstream ss;
+	ss << "log-" << local_time->tm_mday << "-" << (local_time->tm_mon + 1) << "-" << (local_time->tm_year + 1900);
+	std::string log_file_name("WispDemo.log");
+	util::log_file_handler = new wr::LogfileHandler(std::filesystem::path(ss.str()), log_file_name);
+#endif // _DEBUG //prevents log spam for developers
+
 	startCrashpad();
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
@@ -177,6 +190,7 @@ int WispEntry()
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
 		SCENE::camera->SetAspectRatio((float)width / (float)height);
+		SCENE::camera->SetOrthographicResolution(width, height);
 		fg_manager::Resize(*render_system, width, height);
 	});
 
@@ -186,7 +200,7 @@ int WispEntry()
 	window->SetRenderLoop([&]() {
 		SCENE::UpdateScene();
 
-		auto texture = render_system->Render(scene_graph, *fg_manager::Get());
+		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
 	});
 
 	window->StartRenderLoop();
@@ -200,6 +214,11 @@ int WispEntry()
 
 	fg_manager::Destroy();
 	render_system.reset();
+
+#ifndef _DEBUG //cleanup
+	delete util::log_file_handler;
+#endif 
+
 	return 0;
 }
 

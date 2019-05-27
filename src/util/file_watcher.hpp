@@ -43,9 +43,6 @@ namespace util
 		void StartAsync(util::Delegate<void(std::string const &, FileStatus)> const & callback);
 
 	private:
-		//! C++20's path::contains function.
-		bool PathsContains(std::string const & key);
-
 		bool m_running;
 		bool m_regular_files_only;
 		const std::chrono::milliseconds m_delay;
