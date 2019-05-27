@@ -36,12 +36,12 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	ray.TMin = 0.f;
 	ray.TMax = far;
 
-	AOHitInfo payload = { false, 0 };
+	AOHitInfo payload = { 1.0f, 0.0f };
 
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH,
+		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -83,12 +83,6 @@ void AORaygenEntry()
 		output[DispatchRaysIndex().xy].x = 1.f;
 	}
 
-}
-
-[shader("closesthit")]
-void ClosestHitEntry(inout AOHitInfo hit, Attributes bary)
-{
-    hit.is_hit = 1.f;
 }
 
 [shader("miss")]

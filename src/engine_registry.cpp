@@ -960,9 +960,7 @@ namespace wr
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_ao_lib;
 		lib.exports.push_back(L"AORaygenEntry");
-		lib.exports.push_back(L"ClosestHitEntry");
 		lib.exports.push_back(L"MissEntry");
-		lib.m_hit_groups.push_back({ L"AOHitGroup", L"ClosestHitEntry" });
 		return lib;
 	}();
 
