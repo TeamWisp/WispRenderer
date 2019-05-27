@@ -33,6 +33,7 @@ namespace wr
 			float m_shape = 0.0f;
 			float m_bokeh_poly = 0.0f;
 			uint32_t m_blades = 0u;
+			float _padding[3] = { 0.0f };
 			int m_enable_dof = false;
 		};
 
@@ -53,7 +54,7 @@ namespace wr
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::dof_bokeh))->m_native;
+			data.out_pipeline = ((d3d12::PipelineState*)ps_registry.Find(pipelines::dof_bokeh));
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 			auto source_coc_rt = data.out_source_coc_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());

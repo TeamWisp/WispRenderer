@@ -53,7 +53,7 @@ namespace wr
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::dof_coc))->m_native;
+			data.out_pipeline = ((d3d12::PipelineState*)ps_registry.Find(pipelines::dof_coc));
 
 			auto source_dsv = data.out_source_dsv = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 

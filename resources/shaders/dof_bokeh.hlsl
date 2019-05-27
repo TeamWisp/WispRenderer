@@ -15,6 +15,7 @@ cbuffer CameraProperties : register(b0)
 	float shape_curve;
 	float bokeh_poly_amount;
 	uint num_blades;
+	float3 _padding;
 	int enable_dof;
 };
 
@@ -58,6 +59,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 				s *= saturate(1.0f + (samplecoc - far_coc));
 				s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.001f), SHAPECURVE) * shape_curve;
+
 				bgcolor += s;
 			}
 

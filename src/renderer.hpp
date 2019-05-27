@@ -46,6 +46,10 @@ namespace wr
 		virtual void PrepareShaderRegistry() = 0;
 		virtual void PreparePipelineRegistry() = 0;
 		virtual void PrepareRTPipelineRegistry() = 0;
+		virtual void DestroyRootSignatureRegistry() = 0;
+		virtual void DestroyShaderRegistry() = 0;
+		virtual void DestroyPipelineRegistry() = 0;
+		virtual void DestroyRTPipelineRegistry() = 0;
 
 		virtual void WaitForAllPreviousWork() = 0;
 
