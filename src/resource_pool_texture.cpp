@@ -8,6 +8,8 @@ namespace wr
 	TexturePool::TexturePool()
 	{
 #ifdef _DEBUG
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		static uint16_t pool_count = 0u;
 		
 		m_name = "TexturePool_" + std::to_string(pool_count);
@@ -43,6 +45,7 @@ namespace wr
 			return {};
 		}
 
+		std::lock_guard<std::mutex> lock(m_mutex);
 		return LoadFromCompressedMemory(data, width, height, type, srgb, generate_mips);
 	}
 

@@ -121,7 +121,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(L"Accumulation")
 		};
 
 		RenderTaskDesc desc;
@@ -138,7 +137,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<AccumulationData>(desc, fg_dep<T>());
+		frame_graph.AddTask<AccumulationData>(desc, L"Accumulation Task", fg_dep<T>());
 	}
 
 } /* wr */

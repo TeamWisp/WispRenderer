@@ -65,7 +65,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(w_name)
 		};
 
 		RenderTaskDesc desc;
@@ -83,7 +82,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COPY;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<RenderTargetCopyTaskData>(desc, fg_dep<T>());
+		frame_graph.AddTask<RenderTargetCopyTaskData>(desc, w_name, fg_dep<T>());
 	}
 
 } /* wr */

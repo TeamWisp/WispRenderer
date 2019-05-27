@@ -71,8 +71,6 @@ namespace wr
 
 	inline void AddBrdfLutPrecalculationTask(FrameGraph& fg)
 	{
-		std::wstring name(L"BRDF LUT Precalculation");
-
 		RenderTaskDesc desc;
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::SetupBrdfLutPrecalculationTask(rs, fg, handle, resize);
@@ -87,6 +85,6 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<BrdfLutTaskData>(desc);
+		fg.AddTask<BrdfLutTaskData>(desc, L"BRDF LUT Precalculation");
 	}
 }

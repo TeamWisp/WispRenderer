@@ -338,8 +338,6 @@ namespace wr
 
 	void AddDeferredCompositionTask(FrameGraph& fg, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
-		std::wstring name(L"Deferred Composition");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -353,7 +351,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -371,7 +368,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<DeferredCompositionTaskData>(desc, fg_dep<DeferredMainTaskData, CubemapConvolutionTaskData>());
+		fg.AddTask<DeferredCompositionTaskData>(desc, L"Deferred Composition", fg_dep<DeferredMainTaskData, CubemapConvolutionTaskData>());
 	}
 
 }

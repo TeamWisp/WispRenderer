@@ -174,7 +174,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(L"Spatial reconstruction"),
 			RenderTargetProperties::ResolutionScalar(1.f)
 		};
 
@@ -190,7 +189,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<SpatialReconstructionData>(desc, fg_dep<DeferredMainTaskData, RTHybridData>());
+		frame_graph.AddTask<SpatialReconstructionData>(desc, L"Spatial reconstruction", fg_dep<DeferredMainTaskData, RTHybridData>());
 	}
 
 } /* wr */

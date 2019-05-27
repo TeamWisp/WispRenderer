@@ -421,7 +421,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(L"Path Tracer")
 		};
 
 		RenderTaskDesc desc;
@@ -441,7 +440,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<PathTracerData>(desc, fg_dep<DeferredMainTaskData>());
+		fg.AddTask<PathTracerData>(desc, L"Path Traced Global Illumination", fg_dep<DeferredMainTaskData>());
 	}
 
 } /* wr */

@@ -157,8 +157,6 @@ namespace wr
 	template<typename T, typename T1>
 	inline void AddBloomCompositionTask(FrameGraph& frame_graph)
 	{
-		std::wstring name(L"Bloom composition");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -172,7 +170,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name),
 			RenderTargetProperties::ResolutionScalar(1.0f)
 		};
 
@@ -190,7 +187,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<BloomCompostionData>(desc);
+		frame_graph.AddTask<BloomCompostionData>(desc, L"Bloom Composition");
 		frame_graph.UpdateSettings<BloomCompostionData>(BloomSettings());
 	}
 

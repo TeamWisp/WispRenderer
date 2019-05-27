@@ -397,8 +397,6 @@ namespace wr
 
 	inline void AddRTHybridTask(FrameGraph& fg)
 	{
-		std::wstring name(L"Hybrid raytracing");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -412,7 +410,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name),
 			RenderTargetProperties::ResolutionScalar(0.5f)
 		};
 
@@ -434,7 +431,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<RTHybridData>(desc, fg_dep<DeferredMainTaskData>());
+		fg.AddTask<RTHybridData>(desc, L"Hybrid Raytracing", fg_dep<DeferredMainTaskData>());
 	}
 
 } /* wr */

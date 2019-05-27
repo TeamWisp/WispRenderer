@@ -350,6 +350,11 @@ namespace wr
 		return d3d12::CreateCommandList(m_device, num_allocators, CmdListType::CMD_LIST_DIRECT);
 	}
 
+	void D3D12RenderSystem::SetCommandListName(CommandList* cmd_list, std::wstring const& name)
+	{
+		d3d12::SetName(static_cast<d3d12::CommandList*>(cmd_list), name);
+	}
+
 	void D3D12RenderSystem::DestroyCommandList(CommandList* cmd_list)
 	{
 		Destroy(static_cast<wr::d3d12::CommandList*>(cmd_list));
@@ -382,8 +387,6 @@ namespace wr
 					static_cast<std::uint32_t>(properties.m_height.Get().value() * properties.m_resolution_scale.Get()),
 					desc);
 
-				for (auto i = 0; i < retval->m_render_targets.size(); i++)
-					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
 				return retval;
 			}
 			else if (m_window.has_value())
@@ -392,8 +395,7 @@ namespace wr
 					static_cast<std::uint32_t>(m_window.value()->GetWidth() * properties.m_resolution_scale.Get()),
 					static_cast<std::uint32_t>(m_window.value()->GetHeight() * properties.m_resolution_scale.Get()),
 					desc);
-				for (auto i = 0; i < retval->m_render_targets.size(); i++)
-					retval->m_render_targets[i]->SetName(properties.m_name.Get().c_str());
+
 				return retval;
 			}
 			else
@@ -402,6 +404,11 @@ namespace wr
 				return nullptr;
 			}
 		}
+	}
+
+	void D3D12RenderSystem::SetRenderTargetName(RenderTarget* render_target, std::wstring const& name)
+	{
+		d3d12::SetName(static_cast<d3d12::RenderTarget*>(render_target), name);
 	}
 
 	void D3D12RenderSystem::ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height)
