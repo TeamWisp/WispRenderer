@@ -1,5 +1,7 @@
 #pragma once
+
 #include <vector>
+#include <mutex>
 
 namespace wr
 {
@@ -35,7 +37,7 @@ namespace wr
 		virtual void UpdateBuffer(StructuredBufferHandle* handle, void* data, std::size_t size, std::size_t offset) = 0;
 
 		std::size_t m_size_in_bytes;
-
+		std::mutex m_mutex;
 	};
 
 
