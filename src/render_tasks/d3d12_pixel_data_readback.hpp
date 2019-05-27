@@ -15,8 +15,6 @@ namespace wr
 		// Read back buffer used to retrieve the depth data on the GPU
 		d3d12::ReadbackBufferResource* readback_buffer = nullptr;
 
-		d3d12::desc::ReadbackDesc readback_buffer_desc = {};
-
 		// Stores the final depth data
 		CPUTexture cpu_texture_output;
 	};

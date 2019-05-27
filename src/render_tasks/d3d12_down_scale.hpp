@@ -13,11 +13,11 @@ namespace wr
 {
 	struct DownScaleData
 	{
-		d3d12::RenderTarget* out_source_rt;
-		d3d12::RenderTarget* out_source_coc;
-		d3d12::PipelineState* out_pipeline;
-		ID3D12Resource* out_previous;
-		DescriptorAllocator* out_allocator;
+		d3d12::RenderTarget* out_source_rt = nullptr;
+		d3d12::RenderTarget* out_source_coc = nullptr;
+		d3d12::PipelineState* out_pipeline = nullptr;
+		ID3D12Resource* out_previous = nullptr;
+		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
 	};
 
@@ -38,7 +38,7 @@ namespace wr
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.out_pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::down_scale))->m_native;
+			data.out_pipeline = ((d3d12::PipelineState*)ps_registry.Find(pipelines::down_scale));
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());

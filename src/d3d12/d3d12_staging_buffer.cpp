@@ -14,19 +14,23 @@ namespace wr::d3d12
 		buffer->m_stride_in_bytes = stride;
 		buffer->m_is_staged = true;
 
+		CD3DX12_HEAP_PROPERTIES heap_properties_default = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_HEAP_PROPERTIES heap_properties_upload = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(size);
+
 		device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&heap_properties_default,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(size),
+			&buffer_desc,
 			static_cast<D3D12_RESOURCE_STATES>(resource_state),
 			nullptr,
 			IID_PPV_ARGS(&buffer->m_buffer));
 		NAME_D3D12RESOURCE(buffer->m_buffer)
 
 		device->m_native->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			&heap_properties_upload,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(size),
+			&buffer_desc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&buffer->m_staging));
@@ -60,13 +64,15 @@ namespace wr::d3d12
 
 		if (buffer->m_is_staged)
 		{
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state, D3D12_RESOURCE_STATE_COPY_DEST));
+			CD3DX12_RESOURCE_BARRIER resource_barrier = CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state, D3D12_RESOURCE_STATE_COPY_DEST);
+			cmd_list->m_native->ResourceBarrier(1, &resource_barrier);
 		}
 
 		cmd_list->m_native->CopyBufferRegion(buffer->m_buffer, 0, buffer->m_staging, 0, buffer->m_size);
 
 		// transition the vertex buffer data from copy destination state to vertex buffer state
-		cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, D3D12_RESOURCE_STATE_COPY_DEST, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state));
+		CD3DX12_RESOURCE_BARRIER vertex_barrier = CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, D3D12_RESOURCE_STATE_COPY_DEST, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state);
+		cmd_list->m_native->ResourceBarrier(1, &vertex_barrier);
 
 		buffer->m_gpu_address = buffer->m_buffer->GetGPUVirtualAddress();
 		buffer->m_is_staged = true;
@@ -76,13 +82,15 @@ namespace wr::d3d12
 	{
 		if (buffer->m_is_staged)
 		{
-			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state, D3D12_RESOURCE_STATE_COPY_DEST));
+			CD3DX12_RESOURCE_BARRIER resource_barrier = CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state, D3D12_RESOURCE_STATE_COPY_DEST);
+			cmd_list->m_native->ResourceBarrier(1, &resource_barrier);
 		}
 
 		cmd_list->m_native->CopyBufferRegion(buffer->m_buffer, offset, buffer->m_staging, offset, size);
 
 		// transition the vertex buffer data from copy destination state to vertex buffer state
-		cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, D3D12_RESOURCE_STATE_COPY_DEST, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state));
+		CD3DX12_RESOURCE_BARRIER vertex_barrier = CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer, D3D12_RESOURCE_STATE_COPY_DEST, (D3D12_RESOURCE_STATES)buffer->m_target_resource_state);
+		cmd_list->m_native->ResourceBarrier(1, &vertex_barrier);
 
 		buffer->m_gpu_address = buffer->m_buffer->GetGPUVirtualAddress();
 		buffer->m_is_staged = true;

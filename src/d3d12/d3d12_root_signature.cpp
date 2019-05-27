@@ -35,7 +35,7 @@ namespace wr::d3d12
 
 		auto num_samplers = static_cast<std::uint32_t>(create_info.m_samplers.size());
 		std::vector<D3D12_STATIC_SAMPLER_DESC> samplers(num_samplers);
-		for (auto i = 0; i < num_samplers; i++)
+		for (auto i = 0u; i < num_samplers; i++)
 		{
 			auto sampler_info = create_info.m_samplers[i];
 
@@ -61,7 +61,7 @@ namespace wr::d3d12
 		}
 
 		CD3DX12_ROOT_SIGNATURE_DESC root_signature_desc;
-		root_signature_desc.Init(create_info.m_parameters.size(),
+		root_signature_desc.Init(static_cast<UINT>(create_info.m_parameters.size()),
 			create_info.m_parameters.data(),
 			num_samplers,
 			samplers.data(),

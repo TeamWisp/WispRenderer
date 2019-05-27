@@ -56,7 +56,7 @@ namespace wr
 				data.gbuffer_depth = data.allocator->Allocate();
 
 				auto& ps_registry = PipelineRegistry::Get();
-				data.pipeline = ((D3D12Pipeline*)ps_registry.Find(pipelines::spatial_reconstruction))->m_native;
+				data.pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::spatial_reconstruction);
 
 				data.camera_cb = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_camera_pool->Create(sizeof(temp::SpatialReconstructionCameraData)));
 			}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../wisprenderer_export.hpp"
+#include "logfile_handler.hpp"
 
 #define LOG_PRINT_TIME
 //#define LOG_PRINT_THREAD
@@ -8,6 +9,11 @@
 //#define LOG_PRINT_LOC
 #define LOG_PRINT_COLORS
 //#define LOG_PRINT_TO_OUTPUT
+
+#ifndef _DEBUG
+#define LOG_TO_FILE
+#define LOG_PRINT_LOC
+#endif // DEBUG
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 #include <Windows.h>
@@ -24,6 +30,9 @@
 #include <functional>
 #endif
 
+#include <filesystem>
+#include <ctime>
+
 #define LOG_BREAK DebugBreak();
 
 #ifdef LOG_CALLBACK
@@ -33,6 +42,9 @@ namespace util
 	{
 		WISPRENDERER_EXPORT static std::function<void(std::string const &)> impl;
 	};
+
+	WISPRENDERER_EXPORT extern wr::LogfileHandler* log_file_handler;
+
 };
 #endif
 
@@ -57,7 +69,7 @@ namespace util::internal
 		std::time_t t = std::time(nullptr);
 		localtime_s(&s, &t);
 
-		str += fmt::format("[{:%H:%M}]", s) + " [" + type + "] ";
+		str += fmt::format("[{:%H:%M:%S}]", s) + " [" + type + "] ";
 #endif
 #ifdef LOG_PRINT_THREAD
 		auto thread_id = std::this_thread::get_id();
@@ -70,10 +82,13 @@ namespace util::internal
 			str += "[thread:" + thread_id_str + "] ";
 		}
 #endif
+		str += format;
 #ifdef LOG_PRINT_LOC
+		str += "	"; // add tab to make it easier to read.
+		auto found = file.find_last_of('/\\');
+		auto file_name = file.substr(found + 1); //remove path from file name.
 		str += "[" + file + ":" + func + ":" + std::to_string(line) + "] ";
 #endif
-		str += format;
 		str += "\n";
 
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
@@ -85,11 +100,14 @@ namespace util::internal
 #endif
 
 		fmt::print(stdout, str, args...);
-
 		#if defined(LOG_PRINT_TO_OUTPUT) && defined(_WIN32)
 			OutputDebugStringA(str.c_str());
 		#endif
-
+		if (log_file_handler != nullptr)
+		{
+			fmt::print(log_file_handler->GetFilePtr(), str, args...);
+			fflush(log_file_handler->GetFilePtr());
+		}
 #if defined(LOG_PRINT_COLORS) && defined(_WIN32)
 		if (color != 0)
 		{

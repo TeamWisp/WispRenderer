@@ -50,7 +50,7 @@ namespace wr
 	struct Model
 	{
 		std::vector<std::pair<Mesh*, MaterialHandle>> m_meshes;
-		ModelPool* m_model_pool;
+		ModelPool* m_model_pool = nullptr;
 		std::string m_model_name;
 
 		Box m_box;

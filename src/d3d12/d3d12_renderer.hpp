@@ -31,66 +31,66 @@ namespace wr
 	{
 		struct ProjectionView_CBData
 		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_projection;
-			DirectX::XMMATRIX m_inverse_projection;
-			DirectX::XMMATRIX m_inverse_view;
-			unsigned int m_is_hybrid;
-			unsigned int m_is_path_tracer;
-			unsigned int m_is_ao;
+			DirectX::XMMATRIX m_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
+			std::uint32_t m_is_hybrid = 0u;
+			std::uint32_t m_is_path_tracer = 0u;
+			std::uint32_t m_is_ao = 0u;
 		};
 
 		struct RTHybridCamera_CBData
 		{
-			DirectX::XMMATRIX m_inverse_view;
-			DirectX::XMMATRIX m_inverse_projection;
-			DirectX::XMMATRIX m_inv_vp;
+			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
 
-			uint32_t m_padding[2];
-			float m_frame_idx;
-			float m_intensity;
+			uint32_t m_padding[2] = { 0u };
+			float m_frame_idx = 0.0f;
+			float m_intensity = 0.0f;
 		};
 
 		struct RTAO_CBData
 		{
-			DirectX::XMMATRIX m_inv_vp;
+			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
 
-			float bias;
-			float radius;
-			float power;
-			unsigned int sample_count;
+			float bias = 0.0f;
+			float radius = 0.0f;
+			float power = 0.0f;
+			std::uint32_t sample_count = 0u;
 		};
 
 		struct RayTracingCamera_CBData
 		{
-			DirectX::XMMATRIX m_view;
-			DirectX::XMMATRIX m_inverse_view_projection;
-			DirectX::XMVECTOR m_camera_position;
+			DirectX::XMMATRIX m_view = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inverse_view_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMVECTOR m_camera_position = DirectX::XMVectorZero();
 
-			float light_radius;
-			float metal;
-			float roughness;
-			float intensity;
+			float light_radius = 0.0f;
+			float metal = 0.0f;
+			float roughness = 0.0f;
+			float intensity = 0.0f;
 		};
 
 		struct RayTracingMaterial_CBData
 		{
-			std::uint32_t albedo_id;
-			std::uint32_t normal_id;
-			std::uint32_t roughness_id;
-			std::uint32_t metallicness_id;
-			std::uint32_t emissive_id;
-			std::uint32_t ao_id;
+			std::uint32_t albedo_id = 0u;
+			std::uint32_t normal_id = 0u;
+			std::uint32_t roughness_id = 0u;
+			std::uint32_t metallicness_id = 0u;
+			std::uint32_t emissive_id = 0u;
+			std::uint32_t ao_id = 0u;
 
-			DirectX::XMFLOAT2 padding;
+			std::uint32_t padding[2] = { 0u };
 			Material::MaterialData material_data;
 		};
 
 		struct RayTracingOffset_CBData
 		{
-			std::uint32_t material_idx;
-			std::uint32_t idx_offset;
-			std::uint32_t vertex_offset;
+			std::uint32_t material_idx = 0u;
+			std::uint32_t idx_offset = 0u;
+			std::uint32_t vertex_offset = 0u;
 		};
 
 		static const constexpr float size = 1.0f;
@@ -103,49 +103,55 @@ namespace wr
 
 	} /* temp */
 
-	class D3D12RenderSystem : public RenderSystem
+	class D3D12RenderSystem final : public RenderSystem
 	{
 	public:
-		~D3D12RenderSystem() final;
+		~D3D12RenderSystem();
 
-		void Init(std::optional<Window*> window) final;
-		CPUTextures Render(std::shared_ptr<SceneGraph> const & scene_graph, FrameGraph & frame_graph) final;
-		void Resize(std::uint32_t width, std::uint32_t height) final;
+		void Init(std::optional<Window*> window);
+		CPUTextures Render(SceneGraph& scene_graph, FrameGraph& frame_graph);
+		void Resize(std::uint32_t width, std::uint32_t height);
 
-		std::shared_ptr<TexturePool> CreateTexturePool() final;
-		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_bytes) final;
-		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes) final;
-		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes) final;
-		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes) final;
+		std::shared_ptr<TexturePool> CreateTexturePool();
+		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_bytes);
+		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes);
+		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes);
+		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes);
 
-		std::shared_ptr<TexturePool> GetDefaultTexturePool() final;
+		std::shared_ptr<TexturePool> GetDefaultTexturePool();
 
-		void PrepareRootSignatureRegistry() final;
-		void PrepareShaderRegistry() final;
-		void PreparePipelineRegistry() final;
-		void PrepareRTPipelineRegistry() final;
+		void PrepareRootSignatureRegistry();
+		void PrepareShaderRegistry();
+		void PreparePipelineRegistry();
+		void PrepareRTPipelineRegistry();
 		void ReloadPipelineRegistryEntry(RegistryHandle handle);
 		void ReloadRTPipelineRegistryEntry(RegistryHandle handle);
 		void ReloadShaderRegistryEntry(RegistryHandle handle);
 		void ReloadRootSignatureRegistryEntry(RegistryHandle handle);
+		void DestroyRootSignatureRegistry();
+		void DestroyShaderRegistry();
+		void DestroyPipelineRegistry();
+		void DestroyRTPipelineRegistry();
 
-		void WaitForAllPreviousWork() final;
+		void WaitForAllPreviousWork();
 
-		wr::CommandList* GetDirectCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetBundleCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetComputeCommandList(unsigned int num_allocators) final;
-		wr::CommandList* GetCopyCommandList(unsigned int num_allocators) final;
-		void DestroyCommandList(CommandList* cmd_list) final;
-		RenderTarget* GetRenderTarget(RenderTargetProperties properties) final;
-		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) final;
+		wr::CommandList* GetDirectCommandList(unsigned int num_allocators);
+		wr::CommandList* GetBundleCommandList(unsigned int num_allocators);
+		wr::CommandList* GetComputeCommandList(unsigned int num_allocators);
+		wr::CommandList* GetCopyCommandList(unsigned int num_allocators);
+		void DestroyCommandList(CommandList* cmd_list);
+		RenderTarget* GetRenderTarget(RenderTargetProperties properties);
+		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height);
 		void RequestFullscreenChange(bool fullscreen_state);
 
-		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
-		void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target) final;
+		void ResetCommandList(CommandList* cmd_list);
+		void CloseCommandList(CommandList* cmd_list);
+		void StartRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StopRenderTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StartComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StopComputeTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StartCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
+		void StopCopyTask(CommandList* cmd_list, std::pair<RenderTarget*, RenderTargetProperties> render_target);
 
 		void InitSceneGraph(SceneGraph& scene_graph);
 
@@ -167,7 +173,7 @@ namespace wr
 		d3d12::RenderWindow* GetRenderWindow();
 
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
-		wr::Model* GetSimpleShape(SimpleShapes type) final;
+		wr::Model* GetSimpleShape(SimpleShapes type);
 
 	public:
 		d3d12::Device* m_device;
@@ -207,7 +213,7 @@ namespace wr
 		float temp_intensity = 1;
 
 	protected:
-		void SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index) final;
+		void SaveRenderTargetToDisc(std::string const& path, RenderTarget* render_target, unsigned int index);
 
 	private:
 		void ResetBatches(SceneGraph& sg);

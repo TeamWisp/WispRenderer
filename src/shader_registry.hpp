@@ -6,20 +6,13 @@
 
 namespace wr
 {
-	struct Shader
-	{
-
-	};
+	using Shader = void;
 
 	struct ShaderDescription
 	{
-		using Path = util::NamedType<std::string>;
-		using Entry = util::NamedType<std::string>;
-		using Type = util::NamedType<ShaderType>;
-
-		Path path;
-		Entry entry;
-		Type type;
+		std::string path;
+		std::string entry;
+		ShaderType type;
 	};
 
 	class ShaderRegistry : public internal::Registry<ShaderRegistry, Shader, ShaderDescription>

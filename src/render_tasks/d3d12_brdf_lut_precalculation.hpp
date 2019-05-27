@@ -3,7 +3,7 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_defines.hpp"
 #include "../d3d12/d3d12_functions.hpp"
-#include "../d3d12/d3d12_pipeline_registry.hpp"
+#include "../pipeline_registry.hpp"
 #include "../engine_registry.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../d3d12/d3d12_descriptors_allocations.hpp"
@@ -13,7 +13,7 @@ namespace wr
 {
 	struct BrdfLutTaskData
 	{
-		D3D12Pipeline* in_pipeline;
+		d3d12::PipelineState* in_pipeline;
 	};
 
 	namespace internal
@@ -24,7 +24,7 @@ namespace wr
 			auto& data = fg.GetData<BrdfLutTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::brdf_lut_precalculation);
+			data.in_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::brdf_lut_precalculation);
 
 			if (!resize && !n_render_system.m_brdf_lut.has_value())
 			{
@@ -51,7 +51,7 @@ namespace wr
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 
-				d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
+				d3d12::BindComputePipeline(cmd_list, data.in_pipeline);
 
 				auto* brdf_lut = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
 
@@ -73,22 +73,6 @@ namespace wr
 	{
 		std::wstring name(L"BRDF LUT Precalculation");
 
-		RenderTargetProperties rt_properties
-		{
-			RenderTargetProperties::IsRenderWindow(false),
-			RenderTargetProperties::Width(512),
-			RenderTargetProperties::Height(512),
-			RenderTargetProperties::ExecuteResourceState(ResourceState::UNORDERED_ACCESS),
-			RenderTargetProperties::FinishedResourceState(ResourceState::PIXEL_SHADER_RESOURCE),
-			RenderTargetProperties::CreateDSVBuffer(false),
-			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R16G16_FLOAT }),
-			RenderTargetProperties::NumRTVFormats(1),
-			RenderTargetProperties::Clear(true),
-			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
-		};
-
 		RenderTaskDesc desc;
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::SetupBrdfLutPrecalculationTask(rs, fg, handle, resize);
@@ -99,7 +83,7 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
 		};
 
-		desc.m_properties = rt_properties;
+		desc.m_properties = std::nullopt;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 

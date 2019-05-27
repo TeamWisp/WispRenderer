@@ -110,10 +110,6 @@ namespace fg_manager
 			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
 			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			//initialize default settings
-			wr::BloomSettings defaultSettings;
-			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
-
 			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
@@ -210,10 +206,6 @@ namespace fg_manager
 			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
 			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			//initialize default settings
-			wr::BloomSettings defaultSettings;
-			fg->UpdateSettings<wr::BloomSettings>(defaultSettings);
-
 			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
@@ -232,7 +224,7 @@ namespace fg_manager
 	{
 		for (int i = 0; i < frame_graphs.size(); ++i)
 		{
-			frame_graphs[i]->Resize(render_system, width, height);
+			frame_graphs[i]->Resize(width, height);
 		}
 	}
 

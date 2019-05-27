@@ -112,7 +112,7 @@ namespace wr::d3d12
 			if (!(as.m_prebuild_info.ResultDataMaxSizeInBytes > 0)) LOGW("Result data max size in bytes is more than zero. accel structure");
 		}
 
-		inline void BuildAS(Device* device, CommandList* cmd_list, DescriptorHeap* desc_heap, AccelerationStructure& as, D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC const & desc)
+		inline void BuildAS(Device* device, CommandList* cmd_list, DescriptorHeap* desc_heap, D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC const & desc)
 		{
 			auto BuildAccelerationStructure = [&](auto * raytracingCommandList)
 			{
@@ -308,7 +308,7 @@ namespace wr::d3d12
 			bottom_level_build_desc.DestAccelerationStructureData = blas.m_natives[0]->GetGPUVirtualAddress();
 		}
 
-		internal::BuildAS(device, cmd_list, desc_heap, blas, bottom_level_build_desc);
+		internal::BuildAS(device, cmd_list, desc_heap, bottom_level_build_desc);
 		d3d12::UAVBarrierAS(cmd_list, blas, 0);
 
 		for (std::uint8_t i = 1; i < settings::num_back_buffers; i++)
@@ -368,7 +368,7 @@ namespace wr::d3d12
 			top_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
 		}
 
-		internal::BuildAS(device, cmd_list, desc_heap, tlas, top_level_build_desc);
+		internal::BuildAS(device, cmd_list, desc_heap, top_level_build_desc);
 
 		d3d12::UAVBarrierAS(cmd_list, tlas, 0);
 		for (std::uint8_t i = 1; i < settings::num_back_buffers; i++)
@@ -446,7 +446,7 @@ namespace wr::d3d12
 				top_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
 			}
 
-			internal::BuildAS(device, cmd_list, desc_heap, tlas, top_level_build_desc);
+			internal::BuildAS(device, cmd_list, desc_heap, top_level_build_desc);
 		}
 	}
 

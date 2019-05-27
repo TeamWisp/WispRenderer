@@ -10,7 +10,7 @@
 #include "../d3d12/d3d12_resource_pool_texture.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
-#include "../d3d12/d3d12_pipeline_registry.hpp"
+#include "../pipeline_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../platform_independend_structs.hpp"
@@ -21,7 +21,7 @@ namespace wr
 {
 	struct EquirectToCubemapTaskData
 	{
-		D3D12Pipeline* in_pipeline = nullptr;
+		d3d12::PipelineState* in_pipeline = nullptr;
 
 		TextureHandle in_equirect = {};
 		TextureHandle out_cubemap = {};
@@ -102,9 +102,9 @@ namespace wr
 
 		inline void PrefilterCubemap(d3d12::CommandList* cmd_list, wr::TextureHandle src_texture, wr::TextureHandle dst_texture)
 		{
-			D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::cubemap_prefiltering));
+			auto pipeline = static_cast<d3d12::PipelineState*>(PipelineRegistry::Get().Find(pipelines::cubemap_prefiltering));
 
-			d3d12::BindComputePipeline(cmd_list, pipeline->m_native);
+			d3d12::BindComputePipeline(cmd_list, pipeline);
 			
 			//Get allocator from pool
 			auto allocator = static_cast<D3D12TexturePool*>(src_texture.m_pool)->GetMipmappingAllocator();
@@ -129,7 +129,7 @@ namespace wr
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::equirect_to_cubemap);
+			data.in_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::equirect_to_cubemap);
 
 			data.camera_cb_pool = rs.CreateConstantBufferPool(2_mb);
 			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CB)));
@@ -194,7 +194,7 @@ namespace wr
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 
 				d3d12::BindViewport(cmd_list, viewport);
-				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
+				d3d12::BindPipeline(cmd_list, data.in_pipeline);
 				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 				ProjectionView_CB cb_data;
@@ -231,7 +231,7 @@ namespace wr
 
 						d3d12::BindVertexBuffer(cmd_list, pool->GetVertexStagingBuffer(), 0, pool->GetVertexStagingBuffer()->m_size, n_mesh->m_vertex_staging_buffer_stride);
 
-						d3d12::BindIndexBuffer(cmd_list, pool->GetIndexStagingBuffer(), 0, pool->GetIndexStagingBuffer()->m_size);
+						d3d12::BindIndexBuffer(cmd_list, pool->GetIndexStagingBuffer(), 0, static_cast<std::uint32_t>(pool->GetIndexStagingBuffer()->m_size));
 
 						constexpr unsigned int srv_idx = rs_layout::GetHeapLoc(params::cubemap_conversion, params::CubemapConversionE::EQUIRECTANGULAR_TEXTURE);
 						d3d12::SetShaderSRV(cmd_list, 2, srv_idx, equirect_text);
@@ -252,9 +252,9 @@ namespace wr
 				d3d12::Transition(cmd_list, cubemap_text, cubemap_text->m_subresource_states[0], ResourceState::PIXEL_SHADER_RESOURCE);
 
 				//Mipmap the skybox
-				D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
+				auto pipeline = static_cast<d3d12::PipelineState*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
 
-				d3d12::BindComputePipeline(cmd_list, pipeline->m_native);
+				d3d12::BindComputePipeline(cmd_list, pipeline);
 
 				auto texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
 

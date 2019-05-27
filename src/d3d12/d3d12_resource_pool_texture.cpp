@@ -37,7 +37,7 @@ SOFTWARE.
 #include "../settings.hpp"
 #include "d3d12_renderer.hpp"
 #include "d3d12_structs.hpp"
-#include "../d3d12/d3d12_pipeline_registry.hpp"
+#include "../pipeline_registry.hpp"
 #include "d3d12_descriptors_allocations.hpp"
 
 #include <DirectXTex.h>
@@ -116,7 +116,7 @@ namespace wr
 		
 		while(m_staged_textures.size() > 0)
 		{
-			TextureHandle handle = { this, m_staged_textures.begin()->first };
+			TextureHandle handle = { this, static_cast<uint32_t>(m_staged_textures.begin()->first) };
 			D3D12TexturePool::Unload(handle);
 		}
 	}
@@ -136,8 +136,6 @@ namespace wr
 		if (unstaged_number > 0)
 		{
 			d3d12::CommandList* cmdlist = static_cast<d3d12::CommandList*>(cmd_list);
-
-			int frame = m_render_system.GetFrameIdx();
 
 			std::vector<d3d12::TextureResource*> unstaged_textures;
 			std::vector<d3d12::TextureResource*> need_mipmapping;
@@ -310,7 +308,7 @@ namespace wr
 
 		TextureHandle texture_handle;
 		texture_handle.m_pool = this;
-		texture_handle.m_id = texture_id;
+		texture_handle.m_id = static_cast<std::uint32_t>(texture_id);
 
 		m_staged_textures.insert(std::make_pair(texture_id, texture));
 
@@ -388,7 +386,7 @@ namespace wr
 
 		TextureHandle texture_handle;
 		texture_handle.m_pool = this;
-		texture_handle.m_id = texture_id;
+		texture_handle.m_id = static_cast<std::uint32_t>(texture_id);
 
 		m_staged_textures.insert(std::make_pair(texture_id, texture));
 
@@ -482,18 +480,18 @@ namespace wr
 		}
 		else
 		{
-			mip_lvls = metadata.mipLevels;
+			mip_lvls = static_cast<std::uint32_t>(metadata.mipLevels);
 		}
 
 		Format texture_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
-		desc.m_width = metadata.width;
-		desc.m_height = metadata.height;
+		desc.m_width = static_cast<std::uint32_t>(metadata.width);
+		desc.m_height = static_cast<std::uint32_t>(metadata.height);
 		desc.m_is_cubemap = metadata.IsCubemap();
-		desc.m_depth = metadata.depth;
-		desc.m_array_size = metadata.arraySize;
+		desc.m_depth = static_cast<std::uint32_t>(metadata.depth);
+		desc.m_array_size = static_cast<std::uint32_t>(metadata.arraySize);
 		desc.m_mip_levels = mip_lvls;
 		desc.m_texture_format = texture_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
@@ -521,7 +519,7 @@ namespace wr
 
 		TextureHandle texture_handle;
 		texture_handle.m_pool = this;
-		texture_handle.m_id = texture_id;
+		texture_handle.m_id = static_cast<std::uint32_t>(texture_id);
 
 		m_unstaged_textures.insert(std::make_pair(texture_id, std::make_pair(texture, image)));
 
@@ -588,18 +586,18 @@ namespace wr
 		}
 		else
 		{
-			mip_lvls = metadata.mipLevels;
+			mip_lvls = static_cast<std::uint32_t>(metadata.mipLevels);
 		}
 
 		Format texture_format = static_cast<wr::Format>(metadata.format);
 
 		d3d12::desc::TextureDesc desc;
 
-		desc.m_width = metadata.width;
-		desc.m_height = metadata.height;
+		desc.m_width = static_cast<std::uint32_t>(metadata.width);
+		desc.m_height = static_cast<std::uint32_t>(metadata.height);
 		desc.m_is_cubemap = metadata.IsCubemap();
-		desc.m_depth = metadata.depth;
-		desc.m_array_size = metadata.arraySize;
+		desc.m_depth = static_cast<std::uint32_t>(metadata.depth);
+		desc.m_array_size = static_cast<std::uint32_t>(metadata.arraySize);
 		desc.m_mip_levels = mip_lvls;
 		desc.m_texture_format = texture_format;
 		desc.m_initial_state = ResourceState::COPY_DEST;
@@ -629,7 +627,7 @@ namespace wr
 
 		TextureHandle texture_handle;
 		texture_handle.m_pool = this;
-		texture_handle.m_id = texture_id;
+		texture_handle.m_id = static_cast<std::uint32_t>(texture_id);
 
 		m_unstaged_textures.insert(std::make_pair(texture_id, std::make_pair(texture, image)));
 
@@ -663,10 +661,9 @@ namespace wr
 	void D3D12TexturePool::GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list)
 	{
 		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
-		D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
-		auto device = m_render_system.m_device;
+		auto pipeline = static_cast<d3d12::PipelineState*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
 
-		d3d12::BindComputePipeline(d3d12_cmd_list, pipeline->m_native);
+		d3d12::BindComputePipeline(d3d12_cmd_list, pipeline);
 
 		if (texture->m_need_mips)
 		{
@@ -703,8 +700,8 @@ namespace wr
 
 		for (uint32_t src_mip = 0; src_mip < texture->m_mip_levels - 1u;)
 		{
-			uint32_t src_width = texture->m_width >> src_mip;
-			uint32_t src_height = texture->m_height >> src_mip;
+			uint32_t src_width = static_cast<std::uint32_t>(texture->m_width) >> src_mip;
+			uint32_t src_height = static_cast<std::uint32_t>(texture->m_height) >> src_mip;
 			uint32_t dst_width = src_width >> 1;
 			uint32_t dst_height = src_height >> 1;
 
@@ -730,7 +727,7 @@ namespace wr
 			// Maximum number of mips to generate is 4.
 			mip_count = std::min<DWORD>(4, mip_count + 1);
 			// Clamp to total number of mips left over.
-			mip_count = ((src_mip + mip_count) > texture->m_mip_levels) ? texture->m_mip_levels - src_mip : mip_count;
+			mip_count = ((static_cast<DWORD>(src_mip) + mip_count) > texture->m_mip_levels) ? static_cast<DWORD>(texture->m_mip_levels - src_mip) : mip_count;
 
 			// Dimensions should not reduce to 0.
 			// This can happen if the width and height are not the same.
@@ -750,7 +747,7 @@ namespace wr
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
-				size_t idx = src_mip + mip + 1;
+				std::uint32_t idx = src_mip + mip + 1u;
 
 				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::UNORDERED_ACCESS, idx, 1);
 
@@ -776,7 +773,7 @@ namespace wr
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
-				size_t idx = src_mip + mip + 1;
+				std::uint32_t idx = src_mip + mip + 1u;
 
 				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::PIXEL_SHADER_RESOURCE, idx, 1);
 			}
@@ -795,13 +792,13 @@ namespace wr
 
 		//Create new resource with UAV compatible format
 		d3d12::desc::TextureDesc copy_desc;
-		copy_desc.m_width = texture->m_width;
-		copy_desc.m_height = texture->m_height;
-		copy_desc.m_depth = texture->m_depth;
-		copy_desc.m_array_size = texture->m_array_size;
+		copy_desc.m_width = static_cast<std::uint32_t>(texture->m_width);
+		copy_desc.m_height = static_cast<std::uint32_t>(texture->m_height);
+		copy_desc.m_depth = static_cast<std::uint32_t>(texture->m_depth);
+		copy_desc.m_array_size = static_cast<std::uint32_t>(texture->m_array_size);
 		copy_desc.m_initial_state = ResourceState::COMMON;
 		copy_desc.m_is_cubemap = texture->m_is_cubemap;
-		copy_desc.m_mip_levels = texture->m_mip_levels;
+		copy_desc.m_mip_levels = static_cast<std::uint32_t>(texture->m_mip_levels);
 		copy_desc.m_texture_format = Format::R8G8B8A8_UNORM;
 
 		// Create a heap to alias the resource. This is used to copy the resource without 
@@ -810,7 +807,6 @@ namespace wr
 		auto resourceDesc = resource->GetDesc();
 
 		auto allocation_info = device->m_native->GetResourceAllocationInfo(0, 1, &resourceDesc);
-		auto buffer_size = GetRequiredIntermediateSize(resource, 0, resourceDesc.MipLevels);
 
 		d3d12::Heap<wr::HeapOptimization::BIG_STATIC_BUFFERS>* heap;
 		heap = d3d12::CreateHeap_BSBO(device, allocation_info.SizeInBytes, ResourceType::TEXTURE, 1);
@@ -857,12 +853,12 @@ namespace wr
 		//Create copy of the texture and store it for later deletion.
 		d3d12::desc::TextureDesc copy_desc;
 
-		copy_desc.m_width = texture->m_width;
-		copy_desc.m_height = texture->m_height;
+		copy_desc.m_width = static_cast<std::uint32_t>(texture->m_width);
+		copy_desc.m_height = static_cast<std::uint32_t>(texture->m_height);
 		copy_desc.m_is_cubemap = texture->m_is_cubemap;
-		copy_desc.m_depth = texture->m_depth;
-		copy_desc.m_array_size = texture->m_array_size;
-		copy_desc.m_mip_levels = texture->m_mip_levels;
+		copy_desc.m_depth = static_cast<std::uint32_t>(texture->m_depth);
+		copy_desc.m_array_size = static_cast<std::uint32_t>(texture->m_array_size);
+		copy_desc.m_mip_levels = static_cast<std::uint32_t>(texture->m_mip_levels);
 		copy_desc.m_texture_format = d3d12::RemoveSRGB(texture->m_format);
 		copy_desc.m_initial_state = ResourceState::COPY_DEST;
 
@@ -887,14 +883,14 @@ namespace wr
 		DescriptorAllocation srv_alloc = m_mipmapping_allocator->Allocate();
 		d3d12::DescHeapCPUHandle srv_handle = srv_alloc.GetDescriptorHandle();
 
-		d3d12::CreateSRVFromCubemapFace(texture, srv_handle, texture->m_mip_levels, 0, array_slice);
+		d3d12::CreateSRVFromCubemapFace(texture, srv_handle, static_cast<unsigned int>(texture->m_mip_levels), 0, array_slice);
 
 		MipMapping_CB generate_mips_cb;
 
 		for (uint32_t src_mip = 0; src_mip < texture->m_mip_levels - 1u;)
 		{
-			uint32_t src_width = texture->m_width >> src_mip;
-			uint32_t src_height = texture->m_height >> src_mip;
+			uint32_t src_width = static_cast<std::uint32_t>(texture->m_width) >> src_mip;
+			uint32_t src_height = static_cast<std::uint32_t>(texture->m_height) >> src_mip;
 			uint32_t dst_width = src_width >> 1;
 			uint32_t dst_height = src_height >> 1;
 
@@ -920,7 +916,7 @@ namespace wr
 			// Maximum number of mips to generate is 4.
 			mip_count = std::min<DWORD>(4, mip_count + 1);
 			// Clamp to total number of mips left over.
-			mip_count = ((src_mip + mip_count) > texture->m_mip_levels) ? texture->m_mip_levels - src_mip : mip_count;
+			mip_count = ((static_cast<DWORD>(src_mip) + mip_count) > texture->m_mip_levels) ? static_cast<DWORD>(texture->m_mip_levels - src_mip) : mip_count;
 
 			// Dimensions should not reduce to 0.
 			// This can happen if the width and height are not the same.
@@ -940,7 +936,7 @@ namespace wr
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
-				size_t idx = src_mip + mip + 1;
+				uint32_t idx = src_mip + mip + 1u;
 
 				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::UNORDERED_ACCESS, idx, 1);
 
@@ -966,7 +962,7 @@ namespace wr
 
 			for (uint32_t mip = 0; mip < mip_count; ++mip)
 			{
-				size_t idx = src_mip + mip + 1;
+				uint32_t idx = src_mip + mip + 1u;
 
 				d3d12::Transition(d3d12_cmd_list, texture, texture->m_subresource_states[idx], ResourceState::PIXEL_SHADER_RESOURCE, idx, 1);
 			}
