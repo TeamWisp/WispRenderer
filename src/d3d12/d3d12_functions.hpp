@@ -179,7 +179,7 @@ namespace wr::d3d12
 	void ResizeViewport(Viewport& viewport, int width, int height);
 
 	// Shader
-	[[nodiscard]] std::variant<Shader*, std::string> LoadShader(Device* device, ShaderType type, std::string const& path, std::string const& entry = "main", std::vector<std::wstring> defines = {}, std::vector<std::wstring> define_arguments = {});
+	[[nodiscard]] std::variant<Shader*, std::string> LoadShader(Device* device, ShaderType type, std::string const& path, std::string const& entry = "main", std::vector<std::pair<std::wstring, std::wstring>> defines = { {} });
 	void Destroy(Shader* shader);
 
 	// Root Signature

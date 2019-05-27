@@ -190,6 +190,7 @@ int WispEntry()
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
 		SCENE::camera->SetAspectRatio((float)width / (float)height);
+		SCENE::camera->SetOrthographicResolution(width, height);
 		fg_manager::Resize(*render_system, width, height);
 	});
 

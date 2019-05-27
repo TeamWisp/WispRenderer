@@ -935,7 +935,7 @@ namespace wr
 		}
 
 		/*! Get a free unique ID. */
-		WISPRENDERER_EXPORT static std::uint64_t GetFreeUID()
+		static std::uint64_t GetFreeUID()
 		{
 			if (!m_free_uids.empty())
 			{

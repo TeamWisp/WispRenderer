@@ -227,8 +227,7 @@ namespace wr::d3d12
 		std::string m_path = "";
 		std::string m_entry = "";
 		ShaderType m_type;
-		std::vector<std::wstring> m_defines;
-		std::vector<std::wstring> m_define_arguments;
+		std::vector<std::pair<std::wstring,std::wstring>> m_defines;
 	};
 
 	struct PipelineState

@@ -29,7 +29,7 @@ namespace wr
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 
-			d3d12::BindComputePipeline(cmd_list, data.in_pipeline->m_native);
+			d3d12::BindComputePipeline(cmd_list, data.in_pipeline);
 
 			bool is_fallback = d3d12::GetRaytracingType(render_system.m_device) == RaytracingType::FALLBACK;
 			d3d12::BindDescriptorHeaps(cmd_list, is_fallback);
@@ -102,7 +102,7 @@ namespace wr
 			auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::deferred_composition);
+			data.in_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::deferred_composition);
 
 			// Check if the current frame graph contains the hybrid task to know if it is hybrid or not.
 			data.is_path_tracer = fg.HasTask<wr::PathTracerData>();

@@ -8,7 +8,7 @@
 #include "../d3d12/d3d12_resource_pool_texture.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
-#include "../d3d12/d3d12_pipeline_registry.hpp"
+#include "../pipeline_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../platform_independend_structs.hpp"
@@ -20,7 +20,7 @@ namespace wr
 
 	struct DeferredMainTaskData
 	{
-		D3D12Pipeline* in_pipeline;
+		d3d12::PipelineState* in_pipeline;
 		bool is_hybrid;
 	};
 	
@@ -33,7 +33,7 @@ namespace wr
 
 			auto& ps_registry = PipelineRegistry::Get();
 
-			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(is_hybrid ? pipelines::basic_hybrid : pipelines::basic_deferred);
+			data.in_pipeline = (d3d12::PipelineState*)ps_registry.Find(is_hybrid ? pipelines::basic_hybrid : pipelines::basic_deferred);
 			data.is_hybrid = is_hybrid;
 		}
 
@@ -49,7 +49,7 @@ namespace wr
 				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 
 				d3d12::BindViewport(cmd_list, viewport);
-				d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
+				d3d12::BindPipeline(cmd_list, data.in_pipeline);
 				d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 				auto d3d12_cb_handle = static_cast<D3D12ConstantBufferHandle*>(scene_graph.GetActiveCamera()->m_camera_cb);

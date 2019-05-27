@@ -7,8 +7,8 @@
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
-#include "../d3d12/d3d12_rt_pipeline_registry.hpp"
-#include "../d3d12/d3d12_root_signature_registry.hpp"
+#include "../rt_pipeline_registry.hpp"
+#include "../root_signature_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
@@ -170,11 +170,11 @@ namespace wr
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_hybrid_state_object))->m_native;
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::rt_hybrid_state_object));
 
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
-				data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
+				data.out_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global));
 
 				// Create Shader Tables
 				for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)

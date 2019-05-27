@@ -6,24 +6,14 @@
 
 namespace wr
 {
-	struct Shader
-	{
-
-	};
+	using Shader = void;
 
 	struct ShaderDescription
 	{
-		using Path = util::NamedType<std::string>;
-		using Entry = util::NamedType<std::string>;
-		using Type = util::NamedType<ShaderType>;
-		using Defines = util::NamedType<std::vector<std::wstring>>;
-		using DefineArguments = util::NamedType<std::vector<std::wstring>>;
-
-		Path path;
-		Entry entry;
-		Type type;
-		Defines defines;
-		DefineArguments define_arguments;
+		std::string path;
+		std::string entry;
+		ShaderType type;
+		std::vector<std::pair<std::wstring, std::wstring>> defines;
 	};
 
 	class ShaderRegistry : public internal::Registry<ShaderRegistry, Shader, ShaderDescription>

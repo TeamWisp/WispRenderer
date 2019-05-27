@@ -13,10 +13,10 @@
 #include "d3d12_constant_buffer_pool.hpp"
 #include "d3d12_structured_buffer_pool.hpp"
 #include "d3d12_functions.hpp"
-#include "d3d12_pipeline_registry.hpp"
-#include "d3d12_rt_pipeline_registry.hpp"
-#include "d3d12_shader_registry.hpp"
-#include "d3d12_root_signature_registry.hpp"
+#include "../pipeline_registry.hpp"
+#include "../rt_pipeline_registry.hpp"
+#include "../shader_registry.hpp"
+#include "../root_signature_registry.hpp"
 #include "d3d12_resource_pool_texture.hpp"
 #include "d3d12_dynamic_descriptor_heap.hpp"
 
@@ -59,6 +59,11 @@ namespace wr
 			SAFE_RELEASE(iter->m_native);
 		}
 
+		DestroyShaderRegistry();
+		DestroyRootSignatureRegistry();
+		DestroyPipelineRegistry();
+		DestroyRTPipelineRegistry();
+
 		d3d12::Destroy(m_fullscreen_quad_vb);
 		d3d12::Destroy(m_direct_cmd_list);
 		d3d12::Destroy(m_device);
@@ -73,8 +78,6 @@ namespace wr
 
 	void D3D12RenderSystem::Init(std::optional<Window*> window)
 	{
-		TRY_M(CoInitializeEx(nullptr, COINITBASE_MULTITHREADED), "Failed to CoInitialize");
-
 		m_window = window;
 		m_device = d3d12::CreateDevice();
 		SetName(m_device, L"Default D3D12 Device");
@@ -587,7 +590,6 @@ namespace wr
 
 		for (auto desc : registry.m_descriptions)
 		{
-			auto rs = new D3D12RootSignature();
 			d3d12::desc::RootSignatureDesc n_desc;
 			n_desc.m_parameters = desc.second.m_parameters;
 			n_desc.m_samplers = desc.second.m_samplers;
@@ -596,10 +598,9 @@ namespace wr
 
 			auto n_rs = d3d12::CreateRootSignature(n_desc);
 			d3d12::FinalizeRootSignature(n_rs, m_device);
-			rs->m_native = n_rs;
-			SetName(n_rs, (L"Root Signature " + desc.second.name.Get()));
+			SetName(n_rs, (L"Root Signature " + desc.second.name));
 
-			registry.m_objects.insert({ desc.first, rs });
+			registry.m_objects.insert({ desc.first, n_rs });
 		}
 	}
 
@@ -609,13 +610,11 @@ namespace wr
 
 		for (auto desc : registry.m_descriptions)
 		{
-			auto shader = new D3D12Shader();
-			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry, desc.second.defines, desc.second.define_arguments);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry, desc.second.defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
-				auto n_shader = std::get<d3d12::Shader*>(shader_error);
-				shader->m_native = n_shader;
+				auto shader = std::get<d3d12::Shader*>(shader_error);
 				registry.m_objects.insert({ desc.first, shader });
 			}
 			else
@@ -652,36 +651,33 @@ namespace wr
 
 			auto n_pipeline = d3d12::CreatePipelineState();
 
-			if (desc.second.m_vertex_shader_handle.Get().has_value())
+			if (desc.second.m_vertex_shader_handle.has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.Get().value());
-				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_vertex_shader_handle.value());
+				auto shader = static_cast<d3d12::Shader*>(obj);
 				d3d12::SetVertexShader(n_pipeline, shader);
 			}
-			if (desc.second.m_pixel_shader_handle.Get().has_value())
+			if (desc.second.m_pixel_shader_handle.has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.Get().value());
-				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_pixel_shader_handle.value());
+				auto shader = static_cast<d3d12::Shader*>(obj);
 				d3d12::SetFragmentShader(n_pipeline, shader);
 			}
-			if (desc.second.m_compute_shader_handle.Get().has_value())
+			if (desc.second.m_compute_shader_handle.has_value())
 			{
-				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.Get().value());
-				auto& shader = static_cast<D3D12Shader*>(obj)->m_native;
+				auto obj = ShaderRegistry::Get().Find(desc.second.m_compute_shader_handle.value());
+				auto shader = static_cast<d3d12::Shader*>(obj);
 				d3d12::SetComputeShader(n_pipeline, shader);
 			}
 			{
 				auto obj = RootSignatureRegistry::Get().Find(desc.second.m_root_signature_handle);
-				d3d12::SetRootSignature(n_pipeline, static_cast<D3D12RootSignature*>(obj)->m_native);
+				d3d12::SetRootSignature(n_pipeline, static_cast<d3d12::RootSignature*>(obj));
 			}
 
 			d3d12::FinalizePipeline(n_pipeline, m_device, n_desc);
-
-			D3D12Pipeline* pipeline = new D3D12Pipeline();
-			pipeline->m_native = n_pipeline;
 			SetName(n_pipeline, L"Default pipeline state");
 
-			registry.m_objects.insert({ desc.first, pipeline });
+			registry.m_objects.insert({ desc.first, n_pipeline });
 		}
 	}
 
@@ -689,7 +685,7 @@ namespace wr
 	{
 		auto& registry = PipelineRegistry::Get();
 		std::optional<std::string> error_msg = std::nullopt;
-		auto n_pipeline = static_cast<D3D12Pipeline*>(registry.Find(handle))->m_native;
+		auto n_pipeline = static_cast<d3d12::PipelineState*>(registry.Find(handle));
 
 		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
@@ -698,8 +694,7 @@ namespace wr
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry,
-				pipeline_shader->m_defines,
-				pipeline_shader->m_define_arguments);
+				pipeline_shader->m_defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -740,15 +735,14 @@ namespace wr
 	{
 		auto& registry = RTPipelineRegistry::Get();
 		std::optional<std::string> error_msg = std::nullopt;
-		auto n_pipeline = static_cast<D3D12StateObject*>(registry.Find(handle))->m_native;
+		auto n_pipeline = static_cast<d3d12::StateObject*>(registry.Find(handle));
 
 		auto recompile_shader = [&error_msg, this](auto& pipeline_shader)
 		{
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
 				pipeline_shader->m_entry,
-				pipeline_shader->m_defines,
-				pipeline_shader->m_define_arguments);
+				pipeline_shader->m_defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -781,7 +775,7 @@ namespace wr
 	{
 		auto& registry = ShaderRegistry::Get();
 		std::optional<std::string> error_msg = std::nullopt;
-		auto& n_shader = static_cast<D3D12Shader*>(registry.Find(handle))->m_native;
+		auto n_shader = static_cast<d3d12::Shader*>(registry.Find(handle));
 
 		auto new_shader_variant = d3d12::LoadShader(m_device, n_shader->m_type,
 			n_shader->m_path,
@@ -801,8 +795,7 @@ namespace wr
 	void D3D12RenderSystem::ReloadRootSignatureRegistryEntry(RegistryHandle handle)
 	{
 		auto& registry = RootSignatureRegistry::Get();
-		std::optional<std::string> error_msg = std::nullopt;
-		auto& n_root_signature = static_cast<D3D12RootSignature*>(registry.Find(handle))->m_native;
+		auto n_root_signature = static_cast<d3d12::RootSignature*>(registry.Find(handle));
 
 		d3d12::RefinalizeRootSignature(n_root_signature, m_device);
 	}
@@ -814,38 +807,72 @@ namespace wr
 		for (auto it : registry.m_descriptions)
 		{
 			auto desc = it.second;
-			auto obj = new D3D12StateObject();
-
-			auto library = static_cast<D3D12Shader*>(ShaderRegistry::Get().Find(desc.library_desc.Get().shader_handle));
+			auto library = static_cast<d3d12::Shader*>(ShaderRegistry::Get().Find(desc.library_desc.shader_handle));
 
 			d3d12::desc::StateObjectDesc n_desc;
-			n_desc.m_library = library->m_native;
-			n_desc.m_library_exports = desc.library_desc.Get().exports;
-			n_desc.max_attributes_size = static_cast<std::uint32_t>(desc.max_attributes_size.Get());
-			n_desc.max_payload_size = static_cast<std::uint32_t>(desc.max_payload_size.Get());
-			n_desc.max_recursion_depth = static_cast<std::uint32_t>(desc.max_recursion_depth.Get());
-			n_desc.m_hit_groups = desc.library_desc.Get().m_hit_groups;
+			n_desc.m_library = library;
+			n_desc.m_library_exports = desc.library_desc.exports;
+			n_desc.max_attributes_size = static_cast<std::uint32_t>(desc.max_attributes_size);
+			n_desc.max_payload_size = static_cast<std::uint32_t>(desc.max_payload_size);
+			n_desc.max_recursion_depth = static_cast<std::uint32_t>(desc.max_recursion_depth);
+			n_desc.m_hit_groups = desc.library_desc.m_hit_groups;
 
-			if (auto rt_handle = desc.global_root_signature.Get().value(); desc.global_root_signature.Get().has_value())
+			if (auto rt_handle = desc.global_root_signature.value(); desc.global_root_signature.has_value())
 			{
-				auto rs_library = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
-				n_desc.global_root_signature = rs_library->m_native;
+				n_desc.global_root_signature = static_cast<d3d12::RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
 			}
 
-			if (desc.local_root_signatures.Get().has_value())
+			n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
+			for (auto rt_handle : desc.local_root_signatures)
 			{
-				n_desc.local_root_signatures = std::vector<d3d12::RootSignature*>();
-				for (auto rt_handle : desc.local_root_signatures.Get().value())
+				auto rs = static_cast<d3d12::RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
+				n_desc.local_root_signatures.value().push_back(rs);
+			}
+
+			auto n_state_object = d3d12::CreateStateObject(m_device, n_desc);
+
+			registry.m_objects.insert({ it.first, n_state_object });
+		}
+	}
+
+	namespace internal
+	{
+
+		template<typename R, typename T>
+		void DestroyGenericRegistry()
+		{
+			auto& registry = R::Get();
+
+			for (auto it : registry.m_objects)
+			{
+				auto native = static_cast<T*>(it.second);
+				if (native)
 				{
-					auto rs = static_cast<D3D12RootSignature*>(RootSignatureRegistry::Get().Find(rt_handle));
-					n_desc.local_root_signatures.value().push_back(rs->m_native);
+					d3d12::Destroy(native);
 				}
 			}
-
-			obj->m_native = d3d12::CreateStateObject(m_device, n_desc);
-
-			registry.m_objects.insert({ it.first, obj });
 		}
+
+	} /* internal */
+
+	void D3D12RenderSystem::DestroyRootSignatureRegistry()
+	{
+		internal::DestroyGenericRegistry<RootSignatureRegistry, d3d12::RootSignature>();
+	}
+
+	void D3D12RenderSystem::DestroyShaderRegistry()
+	{
+		internal::DestroyGenericRegistry<ShaderRegistry, d3d12::Shader>();
+	}
+
+	void D3D12RenderSystem::DestroyPipelineRegistry()
+	{
+		internal::DestroyGenericRegistry<PipelineRegistry, d3d12::PipelineState>();
+	}
+
+	void D3D12RenderSystem::DestroyRTPipelineRegistry()
+	{
+		internal::DestroyGenericRegistry<RTPipelineRegistry, d3d12::StateObject>();
 	}
 
 	void D3D12RenderSystem::InitSceneGraph(SceneGraph& scene_graph)

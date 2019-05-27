@@ -10,8 +10,7 @@
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/skybox_node.hpp"
-#include "../d3d12/d3d12_pipeline_registry.hpp"
-#include "../engine_registry.hpp"
+#include "../pipeline_registry.hpp"
 
 #include "../platform_independend_structs.hpp"
 #include "d3d12_imgui_render_task.hpp"
@@ -21,7 +20,7 @@ namespace wr
 {
 	struct CubemapConvolutionTaskData
 	{
-		D3D12Pipeline* in_pipeline = nullptr;
+		d3d12::PipelineState* in_pipeline = nullptr;
 
 		TextureHandle in_radiance = {};
 		TextureHandle out_irradiance = {};
@@ -51,7 +50,7 @@ namespace wr
 			auto& data = fg.GetData<CubemapConvolutionTaskData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.in_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::cubemap_convolution);
+			data.in_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::cubemap_convolution);
 
 			data.camera_cb_pool = rs.CreateConstantBufferPool(2_mb);
 			data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.camera_cb_pool->Create(sizeof(ProjectionView_CBuffer)));
@@ -116,7 +115,7 @@ namespace wr
 					const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
 
 					d3d12::BindViewport(cmd_list, viewport);
-					d3d12::BindPipeline(cmd_list, data.in_pipeline->m_native);
+					d3d12::BindPipeline(cmd_list, data.in_pipeline);
 					d3d12::SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 					ProjectionView_CBuffer cb_data;

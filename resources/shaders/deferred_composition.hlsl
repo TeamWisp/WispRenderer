@@ -43,7 +43,7 @@ static uint min_depth = 0xFFFFFFFF;
 static uint max_depth = 0x0;
 
 float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
-	const float4 ndc = float4(uv * 2.0f - 1.f, depth, 1.0);
+	const float4 ndc = float4(uv * 2.0f - 1.f, depth, 1.0f);
 	const float4 pos = mul( view_inv, mul(proj_inv, ndc));
 	return (pos / pos.w).xyz;
 }
@@ -61,7 +61,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = screen_coord / screen_size;
 
-	const float depth_f = gbuffer_depth.SampleLevel(point_sampler, uv, 0).r;
+	const float depth_f = gbuffer_depth.SampleLevel(point_sampler, uv, 0.0f).r;
 
 	// View position and camera position
 	float3 pos = unpack_position(float2(uv.x, 1.f - uv.y), depth_f, inv_projection, inv_view);
@@ -73,34 +73,34 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	if(depth_f != 1.0f)
 	{
 		// GBuffer contents
-		float4 albedo_roughness = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0);
+		float4 albedo_roughness = gbuffer_albedo_roughness.SampleLevel(point_sampler, uv, 0.0f);
 		float3 albedo = albedo_roughness.xyz;
 		const float roughness = albedo_roughness.w;
 
-		float4 normal_metallic = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0);
+		float4 normal_metallic = gbuffer_normal_metallic.SampleLevel(point_sampler, uv, 0.0f);
 		float3 normal = normalize(normal_metallic.xyz);
 		const float metallic = normal_metallic.w;
 
-		float4 emissive_ao = gbuffer_emissive_ao.SampleLevel(point_sampler, uv, 0);
+		float4 emissive_ao = gbuffer_emissive_ao.SampleLevel(point_sampler, uv, 0.0f);
 		float3 emissive = emissive_ao.xyz;
 		float gbuffer_ao = emissive_ao.w;
 
 		float3 flipped_N = normal;
-		flipped_N.y *= -1;
+		flipped_N.y *= -1.0f;
 		
 		const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(normal, V), 0.01f), roughness), 0).rg;
 		float3 sampled_environment_map = pref_env_map.SampleLevel(linear_sampler, reflect(-V, normal), roughness * MAX_REFLECTION_LOD);
 		
 		// Get irradiance
 		float3 irradiance = lerp(
-			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0).xyz,
-			screen_space_irradiance.SampleLevel(point_sampler, uv, 0).xyz,
+			irradiance_map.SampleLevel(linear_sampler, flipped_N, 0.0f).xyz,
+			screen_space_irradiance.SampleLevel(point_sampler, uv, 0.0f).xyz,
 			is_path_tracer);
 
 		// Get ao
 		float ao = lerp(
 			1,
-			screen_space_ao.SampleLevel(point_sampler, uv, 0).xyz,
+			screen_space_ao.SampleLevel(point_sampler, uv, 0.0f).xyz,
 			// Lerp factor (0: env map, 1: path traced)
 			is_ao);
 
@@ -131,7 +131,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	}
 	else
 	{	
-		retval = skybox.SampleLevel(linear_sampler, -V, 0);
+		retval = skybox.SampleLevel(linear_sampler, -V, 0.0f);
+	}
+
+	//Temporary hackfix for NaN pixels
+	if (isnan(retval).x == true)
+	{
+		retval = float3(0.0f, 0.0f, 0.0f);
 	}
 
 	//Do shading

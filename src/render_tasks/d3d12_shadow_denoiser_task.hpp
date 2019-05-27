@@ -6,8 +6,6 @@
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/scene_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
-#include "../d3d12/d3d12_rt_pipeline_registry.hpp"
-#include "../d3d12/d3d12_root_signature_registry.hpp"
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
@@ -18,9 +16,9 @@ namespace wr
 {
 	struct ShadowDenoiserData
 	{		
-		wr::D3D12Pipeline* m_reprojection_pipeline;
-		wr::D3D12Pipeline* m_filter_moments_pipeline;
-		wr::D3D12Pipeline* m_wavelet_filter_pipeline;
+		d3d12::PipelineState* m_reprojection_pipeline;
+		d3d12::PipelineState* m_filter_moments_pipeline;
+		d3d12::PipelineState* m_wavelet_filter_pipeline;
 
 		DescriptorAllocator* out_allocator;
 		DescriptorAllocation out_allocation;
@@ -57,9 +55,9 @@ namespace wr
 			auto& data = fg.GetData<ShadowDenoiserData>(handle);
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.m_reprojection_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::svgf_denoiser_reprojection);
-			data.m_filter_moments_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::svgf_denoiser_filter_moments);
-			data.m_wavelet_filter_pipeline = (D3D12Pipeline*)ps_registry.Find(pipelines::svgf_denoiser_wavelet_filter);
+			data.m_reprojection_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::svgf_denoiser_reprojection);
+			data.m_filter_moments_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::svgf_denoiser_filter_moments);
+			data.m_wavelet_filter_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::svgf_denoiser_wavelet_filter);
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
@@ -363,7 +361,7 @@ namespace wr
 				
 			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_camera);
 
-			d3d12::BindComputePipeline(cmd_list, data.m_reprojection_pipeline->m_native);
+			d3d12::BindComputePipeline(cmd_list, data.m_reprojection_pipeline);
 
 			BindResources(n_render_system, cmd_list, data, is_fallback);
 
@@ -415,7 +413,7 @@ namespace wr
 
 			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_camera);
 
-			d3d12::BindComputePipeline(cmd_list, data.m_filter_moments_pipeline->m_native);
+			d3d12::BindComputePipeline(cmd_list, data.m_filter_moments_pipeline);
 
 			BindResources(n_render_system, cmd_list, data, is_fallback);
 
@@ -451,7 +449,7 @@ namespace wr
 
 			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_camera);
 
-			d3d12::BindComputePipeline(cmd_list, data.m_wavelet_filter_pipeline->m_native);
+			d3d12::BindComputePipeline(cmd_list, data.m_wavelet_filter_pipeline);
 
 			BindResources(n_render_system, cmd_list, data, is_fallback);
 

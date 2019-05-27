@@ -37,7 +37,7 @@ SOFTWARE.
 #include "../settings.hpp"
 #include "d3d12_renderer.hpp"
 #include "d3d12_structs.hpp"
-#include "../d3d12/d3d12_pipeline_registry.hpp"
+#include "../pipeline_registry.hpp"
 #include "d3d12_descriptors_allocations.hpp"
 
 #include <DirectXTex.h>
@@ -677,9 +677,9 @@ namespace wr
 	void D3D12TexturePool::GenerateMips(d3d12::TextureResource* texture, CommandList* cmd_list)
 	{
 		wr::d3d12::CommandList* d3d12_cmd_list = static_cast<wr::d3d12::CommandList*>(cmd_list);
-		D3D12Pipeline* pipeline = static_cast<D3D12Pipeline*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
+		auto pipeline = static_cast<d3d12::PipelineState*>(PipelineRegistry::Get().Find(pipelines::mip_mapping));
 
-		d3d12::BindComputePipeline(d3d12_cmd_list, pipeline->m_native);
+		d3d12::BindComputePipeline(d3d12_cmd_list, pipeline);
 
 		if (texture->m_need_mips)
 		{
