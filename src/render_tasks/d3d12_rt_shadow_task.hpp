@@ -58,11 +58,11 @@ namespace wr
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.base_data.out_state_object = static_cast<D3D12StateObject*>(rt_registry.Find(state_objects::rt_shadow_state_object))->m_native;
+				data.base_data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::rt_shadow_state_object));
 
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
-				data.base_data.out_root_signature = static_cast<D3D12RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global))->m_native;
+				data.base_data.out_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global));
 			}
 
 			// Create Shader Tables

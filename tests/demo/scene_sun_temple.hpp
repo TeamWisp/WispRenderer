@@ -94,7 +94,6 @@ namespace sun_temple_scene
 		camera->SetSpeed(100.0f);
 		camera->m_frustum_near = 0.5;
 
-		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sun_temple_model);
