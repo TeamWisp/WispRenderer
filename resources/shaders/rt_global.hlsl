@@ -5,7 +5,7 @@
 //#define FOUR_X_A
 //#define PATH_TRACING
 //#define DEPTH_OF_FIELD
-#define EPSILON 1.5
+#define EPSILON 0.1
 #define MAX_SHADOW_SAMPLES 4
 #define RUSSIAN_ROULETTE
 

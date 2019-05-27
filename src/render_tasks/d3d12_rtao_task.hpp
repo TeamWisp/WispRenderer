@@ -234,8 +234,8 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				
 #ifdef _DEBUG
-#endif // _DEBUG
 				CreateShaderTables(device, data, frame_idx);
+#endif // _DEBUG
 
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, data.in_hitgroup_shader_table[frame_idx], data.in_miss_shader_table[frame_idx], data.in_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);

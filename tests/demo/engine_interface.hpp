@@ -162,7 +162,7 @@ namespace engine
 				ImGui::End();
 			}
 
-			if (rtao_settings_open)
+			if (rtao_settings_open && fg_manager::Get()->HasTask<wr::RTAOData>())
 			{
 				ImGui::Begin("RTAO Settings", &rtao_settings_open);
 
