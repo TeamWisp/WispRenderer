@@ -22,7 +22,7 @@ namespace wr
 		{
 			float bias = 0.05f;
 			float radius = 2.f;
-			float power = 1.f;
+			float power = 1.f; // The final AO output is pow(AO, powerExponent) // 1.0~4.0
 			float max_distance = 2000.f;
 			int sample_count = 128;
 		};//Currently setup to make screen shots in pica pica

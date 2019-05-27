@@ -76,7 +76,7 @@ void AORaygenEntry()
 		{
 			 ao_value -= TraceAORay(0, wpos + normal * bias , getCosHemisphereSample(rand_seed, normal), radius, 0);
 		}
-		output[DispatchRaysIndex().xy].x = (ao_value/float(sample_count)) / power;
+		output[DispatchRaysIndex().xy].x = pow(ao_value/float(sample_count), power);
 	}
 	else
 	{
