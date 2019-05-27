@@ -47,9 +47,6 @@ namespace wr
 			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, aligned_buffer_size);
 			d3d12::SetName(data.readback_buffer, L"Pixel data read back render pass");
 
-			// Size of the buffer aligned to a multiple of 256
-			std::uint32_t aligned_buffer_size = SizeAlignTwoPower(rt_width * bytesPerPixel, 256) * rt_height;
-
 			// Keep the read back buffer mapped for the duration of the entire application
 			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, aligned_buffer_size));
 			data.cpu_texture_output.m_buffer_width = rt_width;
