@@ -66,7 +66,6 @@ namespace large_scene
 		camera->SetRotation({ -23._deg, 120._deg, 0._deg });
 		camera->SetSpeed(100.0f);
 
-		scene_graph->m_skybox = resources::equirectangular_environment_map;
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::pica_model);
