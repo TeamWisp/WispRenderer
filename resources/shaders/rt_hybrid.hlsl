@@ -198,7 +198,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 		NdotL = max(dot(N, L), 0);
 	}
 
-	float3 reflection = float3(1, 0, 0);
+	float3 reflection = float3(0, 0, 0);
 	
 	if (NdotL >= 0)
 		reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dirT);
