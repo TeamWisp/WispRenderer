@@ -468,7 +468,7 @@ namespace wr
 				_com_error err(hr);
 				LPCTSTR errMsg = err.ErrorMessage();
 
-				LOGC("ERROR: DirectXTex error: {}", errMsg);
+				LOGC("ERROR: DirectXTex error: { }", errMsg);
 			}
 		}
 

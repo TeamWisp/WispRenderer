@@ -34,7 +34,6 @@ namespace wr
 		bool out_requires_bundle_recording;
 
 		bool is_hybrid;
-		bool has_rt_hybrid;
 		bool has_rt_reflection;
 		bool has_rt_shadows;
 		bool has_rt_shadows_denoiser;

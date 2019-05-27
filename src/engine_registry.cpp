@@ -968,12 +968,6 @@ namespace wr
 
 
 	/* ### Hybrid Raytracing ### */
-	REGISTER(shaders::rt_hybrid_lib, ShaderRegistry)({
-		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
-		ShaderDescription::Entry("HybridRaygenEntry"),
-		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
-		});
-
 	DESC_RANGE_ARRAY(rt_hybrid_ranges,
 		DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::RTHybridE::OUTPUT),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::INDICES),
@@ -1000,34 +994,6 @@ namespace wr
 			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
 		}),
 		RootSignatureDescription::RTXLocal(true)
-		});
-
-	StateObjectDescription::LibraryDesc rt_hybrid_so_library = []()
-	{
-		StateObjectDescription::LibraryDesc lib;
-		lib.shader_handle = shaders::rt_hybrid_lib;
-		lib.exports.push_back(L"HybridRaygenEntry");
-		lib.exports.push_back(L"ReflectionHit");
-		lib.exports.push_back(L"ReflectionMiss");
-		lib.exports.push_back(L"ReflectionAnyHit");
-		lib.exports.push_back(L"ShadowClosestHitEntry");
-		lib.exports.push_back(L"ShadowMissEntry");
-		lib.exports.push_back(L"ShadowAnyHitEntry");
-		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit", L"ReflectionAnyHit" });
-		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry", L"ShadowAnyHitEntry" });
-
-		return lib;
-	}();
-
-	REGISTER(state_objects::rt_hybrid_state_object, RTPipelineRegistry)(
-		{
-			StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
-			StateObjectDescription::Library(rt_hybrid_so_library),
-			StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2)),
-			StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
-			StateObjectDescription::MaxRecursionDepth(3),
-			StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
-			StateObjectDescription::LocalRootSignatures(std::nullopt),
 		});
 
 	/*### Raytraced Ambient Oclusion ### */
@@ -1138,7 +1104,7 @@ namespace wr
 
 	/* ### Shadow Raytracing ### */
 	REGISTER(shaders::rt_shadow_lib, ShaderRegistry)({
-		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
+		ShaderDescription::Path("resources/shaders/rt_shadows.hlsl"),
 		ShaderDescription::Entry("ShadowRaygenEntry"),
 		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 		});
@@ -1148,13 +1114,9 @@ namespace wr
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_shadow_lib;
 		lib.exports.push_back(L"ShadowRaygenEntry");
-		lib.exports.push_back(L"ReflectionHit");
-		lib.exports.push_back(L"ReflectionMiss");
-		lib.exports.push_back(L"ReflectionAnyHit");
 		lib.exports.push_back(L"ShadowClosestHitEntry");
 		lib.exports.push_back(L"ShadowMissEntry");
 		lib.exports.push_back(L"ShadowAnyHitEntry");
-		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit", L"ReflectionAnyHit" });
 		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry", L"ShadowAnyHitEntry" });
 
 		return lib;
@@ -1163,7 +1125,7 @@ namespace wr
 		{
 			StateObjectDescription::D3D12StateObjectDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE),
 			StateObjectDescription::Library(rt_shadow_so_library),
-			StateObjectDescription::MaxPayloadSize((sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2)),
+			StateObjectDescription::MaxPayloadSize((sizeof(float) * 2)),
 			StateObjectDescription::MaxAttributeSize(sizeof(float) * 4),
 			StateObjectDescription::MaxRecursionDepth(1),
 			StateObjectDescription::GlobalRootSignature(root_signatures::rt_hybrid_global),
@@ -1172,7 +1134,7 @@ namespace wr
 
 	/* ### Reflection Raytracing ### */
 	REGISTER(shaders::rt_reflection_lib, ShaderRegistry)({
-		ShaderDescription::Path("resources/shaders/rt_reflection_shadows.hlsl"),
+		ShaderDescription::Path("resources/shaders/rt_reflections.hlsl"),
 		ShaderDescription::Entry("ReflectionRaygenEntry"),
 		ShaderDescription::Type(ShaderType::LIBRARY_SHADER)
 		});

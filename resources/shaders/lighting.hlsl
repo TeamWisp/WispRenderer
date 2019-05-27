@@ -114,6 +114,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	
 	// Offset shadow ray direction to get soft-shadows
 	float shadow_factor = GetShadowFactor(wpos, L, light.light_size, t_max, depth, rand_seed);
+	//float shadow_factor = 1.0f;
 
 	lighting *= shadow_factor;
 
@@ -134,6 +135,42 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 
 	return res + emissive;
 }
+
+
+float3 shade_light_toon(float3 pos, float3 V, float3 albedo, float3 normal, Light light)
+{
+	uint tid = light.tid & 3;
+
+	//Light direction (constant with directional, position dependent with other)
+	float3 L = (lerp(light.pos - pos, light.dir, tid == light_type_directional));
+	float light_dist = length(L);
+	L /= light_dist;
+
+	float attenuation = calc_attenuation(light, L, light_dist);
+
+	float3 radiance = light.col * attenuation;
+
+	return radiance;
+}
+
+float3 shade_pixel_toon(float3 pos, float3 V, float3 albedo, float3 emissive, float3 normal, float ao, float3 shadow_factor, float3 irradiance, bool is_hybrid)
+{
+	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
+
+	float3 res = float3(0, 0, 0);
+
+	[unroll]
+	for (uint i = 0; i < light_count; i++)
+	{
+		res += shade_light_toon(pos, V, albedo, normal, lights[i]);
+	}
+
+	float3 ambient = irradiance * albedo;
+	float3 diffuse = res * albedo;
+
+	return ambient + (diffuse * shadow_factor) + emissive;
+}
+
 
 float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, float roughness, float3 albedo, uint depth, inout float rand_seed)
 {

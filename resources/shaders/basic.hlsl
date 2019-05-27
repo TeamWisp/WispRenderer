@@ -129,7 +129,7 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 		s0,
 		input.uv);
 
-	if (output_data.alpha == 0)
+	if (output_data.alpha <= 0.5f)
 	{
 		discard;
 	}

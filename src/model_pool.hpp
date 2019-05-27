@@ -333,8 +333,12 @@ namespace wr
 			MaterialUVScales default_scales;
 
 
-			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, default_scales, false, true);
+			//auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, default_scales, false, true);
+			auto new_handle = material_pool->Create(texture_pool);
 			Material* mat = material_pool->GetMaterial(new_handle);
+
+			mat->SetConstant<MaterialConstant::IS_ALPHA_MASKED>(false);
+			mat->SetConstant<MaterialConstant::IS_DOUBLE_SIDED>(true);
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
 			{

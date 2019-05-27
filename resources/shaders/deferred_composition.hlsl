@@ -123,13 +123,20 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			is_hybrid);
 
+		reflection = float3(0.0f, 0.0f, 0.0f);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, is_hybrid);
+		//retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, is_hybrid);
+		retval = shade_pixel_toon(pos, V, albedo, emissive, normal, ao, shadow_factor, irradiance, is_hybrid);
+		//retval = irradiance;
 	}
 	else
 	{	
-		retval = skybox.SampleLevel(linear_sampler, -V, 0);
+		//retval = skybox.SampleLevel(linear_sampler, -V, 0);
+
+		float3 unit_direction = normalize(-V);
+		float t = 0.5f * (unit_direction.y + 1.0f);
+		retval = (1.0f - t) * float3(0.01f, 0.01f, 0.01f) + t * float3(0.01f, 0.01f, 0.01f);
 	}
 
 	//Do shading

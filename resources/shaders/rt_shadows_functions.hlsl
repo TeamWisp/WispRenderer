@@ -3,15 +3,18 @@
 
 #include "rt_global.hlsl"
 
+#define RAY_CONTR_TO_HIT_INDEX 0
+#define MISS_SHADER_OFFSET 0
+
 struct ShadowHitInfo
 {
-  float is_hit;
-  float thisvariablesomehowmakeshybridrenderingwork_killme;
+	float is_hit;
+	float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
 struct Attributes { };
 
-bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
+bool TraceShadowRay(uint ray_contr_to_hitgroup, uint miss_shader_idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
 	if (depth >= MAX_RECURSION)
 	{
@@ -28,13 +31,14 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 	ShadowHitInfo payload = { false, 0 };
 
 	// Trace the ray
+
 	TraceRay(
 		Scene,
 		RAY_FLAG_NONE,
-		~0, // InstanceInclusionMask
-		1, // RayContributionToHitGroupIndex
+		0xFF, // InstanceInclusionMask
+		ray_contr_to_hitgroup, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
-		1, // miss shader index is set to idx but can probably be anything.
+		miss_shader_idx, // miss shader index is set to idx but can probably be anything.
 		ray,
 		payload);
 
@@ -46,7 +50,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float light_size, float t_m
 {
 	float shadow_factor = 0.0f;
 
-#define SOFT_SHADOWS
+	//#define SOFT_SHADOWS
 #ifdef SOFT_SHADOWS
 
 #define TEST_A
@@ -59,7 +63,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float light_size, float t_m
 		float3 dir = perturbDirectionVector(rand_seed, light_dir, light_size);
 		float3 ray_direction = normalize(dir);
 
-		bool shadow = TraceShadowRay(1, wpos, ray_direction, t_max, depth);
+		bool shadow = TraceShadowRay(RAY_CONTR_TO_HIT_INDEX, MISS_SHADER_OFFSET, wpos, ray_direction, t_max, depth);
 
 		shadow_factor += lerp(1.0, 0.0, shadow);
 	}
@@ -73,7 +77,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float light_size, float t_m
 
 		float3 ray_direction = normalize(light_dir + offset);
 
-		bool shadow = TraceShadowRay(1, wpos, ray_direction, t_max, depth);
+		bool shadow = TraceShadowRay(RAY_CONTR_TO_HIT_INDEX, MISS_SHADER_OFFSET, wpos, ray_direction, t_max, depth);
 
 		shadow_factor += lerp(1.0, 0.0, shadow);
 	}
@@ -83,7 +87,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float light_size, float t_m
 
 #else //SOFT_SHADOWS
 
-	bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth);
+	bool shadow = TraceShadowRay(RAY_CONTR_TO_HIT_INDEX, MISS_SHADER_OFFSET, wpos, light_dir, t_max, depth);
 	shadow_factor = !shadow;
 
 #endif //SOFT_SHADOWS

@@ -168,4 +168,4 @@ float2 SampleSphericalMap(float3 v)
 	return uv;
 }
 
-#endif __PBR_UTILS_HLSL__
+#endif //__PBR_UTILS_HLSL__

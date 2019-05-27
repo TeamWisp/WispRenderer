@@ -11,7 +11,6 @@
 #include "../render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_cubemap_convolution.hpp"
-#include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "../render_tasks/d3d12_rt_shadow_task.hpp"
 #include "../render_tasks/d3d12_rt_reflection_task.hpp"
 #include "../render_tasks/d3d12_shadow_denoiser_task.hpp"
@@ -108,7 +107,7 @@ namespace wr
 			data.is_path_tracer = fg.HasTask<wr::PathTracerData>();
 			data.is_rtao = fg.HasTask<wr::RTAOData>();
 			data.is_hbao = fg.HasTask<wr::HBAOData>() && !data.is_rtao; //Don't use HBAO when RTAO is active
-			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTHybridData>() || fg.HasTask<wr::RTReflectionData>() || fg.HasTask<wr::ShadowDenoiserData>();
+			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTReflectionData>() || fg.HasTask<wr::ShadowDenoiserData>();
 
 			//Retrieve the texture pool from the render system. It will be used to allocate temporary cpu visible descriptors
 			std::shared_ptr<D3D12TexturePool> texture_pool = std::static_pointer_cast<D3D12TexturePool>(n_render_system.m_texture_pools[0]);
@@ -160,12 +159,6 @@ namespace wr
 						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
 						data.has_rt_reflection = true;
 					}
-					else if (fg.HasTask<wr::RTHybridData>())
-					{
-						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
-						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
-						data.has_rt_hybrid = true;
-					}
 					else
 					{
 						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
@@ -187,12 +180,6 @@ namespace wr
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
 						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
 						data.has_rt_shadows = true;
-					}
-					else if (fg.HasTask<wr::RTHybridData>())
-					{
-						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTHybridData>());
-						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
-						data.has_rt_hybrid = true;
 					}
 					else
 					{
@@ -222,11 +209,6 @@ namespace wr
       
 			if (data.is_hybrid)
 			{
-				if (data.has_rt_hybrid)
-				{
-					// Wait on hybrid task
-					const auto& hybrid_data = fg.GetPredecessorData<RTHybridData>();
-				}
 				if (data.has_rt_reflection)
 				{
 					// Wait on rt reflection task

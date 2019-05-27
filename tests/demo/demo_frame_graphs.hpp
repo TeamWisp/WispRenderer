@@ -8,7 +8,6 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
-#include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_rt_reflection_task.hpp"
 #include "render_tasks/d3d12_rt_shadow_task.hpp"
 #include "render_tasks/d3d12_shadow_denoiser_task.hpp"
@@ -145,13 +144,14 @@ namespace fg_manager
 			// Construct the G-buffer
 			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
 
-			wr::AddHBAOTask(*fg);
+			//wr::AddHBAOTask(*fg);
 
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			//wr::AddRTReflectionTask(*fg);
+			wr::AddRTShadowTask(*fg);
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
@@ -191,7 +191,7 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTReflectionTask(*fg);
+			//wr::AddRTReflectionTask(*fg);
 			wr::AddRTShadowTask(*fg);
 
 			wr::AddShadowDenoiserTask(*fg);

@@ -11,6 +11,7 @@
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../render_tasks/d3d12_rt_hybrid_helpers.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../imgui_tools.hpp"
 
@@ -116,9 +117,13 @@ namespace wr
 
 		inline void SetupPathTracerTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
 		{
-			if (fg.HasTask<RTHybridData>())
+			if (fg.HasTask<RTShadowData>())
 			{
-				fg.WaitForPredecessorTask<RTHybridData>();
+				fg.WaitForPredecessorTask<RTShadowData>();
+			}
+			if (fg.HasTask<RTReflectionData>())
+			{
+				fg.WaitForPredecessorTask<RTReflectionData>();
 			}
 
 			// Initialize variables
@@ -183,9 +188,13 @@ namespace wr
 
 		inline void ExecutePathTracerTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
 		{
-			if (fg.HasTask<RTHybridData>())
+			if (fg.HasTask<RTShadowData>())
 			{
-				fg.WaitForPredecessorTask<RTHybridData>();
+				fg.WaitForPredecessorTask<RTShadowData>();
+			}
+			if (fg.HasTask<RTReflectionData>())
+			{
+				fg.WaitForPredecessorTask<RTReflectionData>();
 			}
 
 			// Initialize variables

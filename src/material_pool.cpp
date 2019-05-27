@@ -97,7 +97,6 @@ namespace wr
 
 	void Material::UpdateConstantBuffer()
 	{
-
 		m_constant_buffer_handle->m_pool->Update(
 			m_constant_buffer_handle,
 			sizeof(MaterialData),
