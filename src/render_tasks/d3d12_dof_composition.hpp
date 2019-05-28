@@ -176,8 +176,6 @@ namespace wr
 	template<typename T, typename T1, typename T2>
 	inline void AddDoFCompositionTask(FrameGraph& frame_graph)
 	{
-		std::wstring name(L"DoF composition");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -191,7 +189,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -208,7 +205,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<DoFCompositionData>(desc);
+		frame_graph.AddTask<DoFCompositionData>(desc, L"DoF Composition");
 	}
 
 } /* wr */

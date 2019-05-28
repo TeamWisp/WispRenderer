@@ -65,6 +65,5 @@ namespace wr
 	private:
 		std::bitset<3> m_requires_update;
 		std::bitset<3> m_requires_transform_update;
-		bool m_used_quaternion;
 	};
 } // namespace wr

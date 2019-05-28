@@ -214,6 +214,10 @@ namespace wr
 			constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
 			for (auto& node : m_mesh_nodes) {
+				if (!node->m_visible)
+				{
+					continue;
+				}
 
 				auto mesh_materials_pair = std::make_pair(node->m_model, node->m_materials);
 

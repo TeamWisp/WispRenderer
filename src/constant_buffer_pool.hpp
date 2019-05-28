@@ -3,6 +3,7 @@
 #include <string_view>
 #include <vector>
 #include <optional>
+#include <mutex>
 #include <d3d12.h>
 
 #include "util/defines.hpp"
@@ -45,6 +46,7 @@ namespace wr
 		virtual void DeallocateConstantBuffer(ConstantBufferHandle* handle) = 0;
 
 		std::size_t m_size_in_bytes;
+		std::mutex m_mutex;
 	};
 
 } /* wr */
