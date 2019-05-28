@@ -141,10 +141,10 @@ namespace wr
 		}
 
 		FrameGraph(const FrameGraph&) = delete;
-		FrameGraph(FrameGraph&&) = delete;
+		FrameGraph(FrameGraph&&)	  = delete;
 
 		FrameGraph& operator=(const FrameGraph&) = delete;
-		FrameGraph& operator=(FrameGraph&&) = delete;
+		FrameGraph& operator=(FrameGraph&&)		 = delete;
 
 		//! Setup the render tasks
 		/*!
@@ -422,7 +422,7 @@ namespace wr
 			\param handle The handle to the render task. (Given by the `Setup`, `Execute` and `Destroy` functions)
 		*/
 		template<typename T>
-		[[nodiscard]] inline auto const& GetPredecessorData()
+		[[nodiscard]] inline auto const & GetPredecessorData()
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -442,7 +442,7 @@ namespace wr
 			}
 
 			LOGC("Failed to find predecessor data! Please check your task order.")
-				return *static_cast<T*>(nullptr);
+			return *static_cast<T*>(nullptr);
 		}
 
 		/*! Get the render target of a previously ran task. (Constant) */
@@ -658,7 +658,7 @@ namespace wr
 		};
 
 		/*! Return the cpu texture. */
-		[[nodiscard]] CPUTextures const& GetOutputTexture() const noexcept
+		[[nodiscard]] CPUTextures const & GetOutputTexture() const noexcept
 		{
 			return m_output_cpu_textures;
 		}
@@ -669,7 +669,7 @@ namespace wr
 			\param index The index of the render target from the task you want to save.
 		*/
 		template<typename T>
-		void SaveTaskToDisc(std::string const& path, int index = 0)
+		void SaveTaskToDisc(std::string const & path, int index = 0)
 		{
 			auto handle = GetHandleFromType<T>();
 
@@ -707,7 +707,7 @@ namespace wr
 			default:
 				// Should never happen
 				LOGC("Invalid CPU texture type supplied!")
-					break;
+				break;
 			}
 		}
 
@@ -779,7 +779,7 @@ namespace wr
 			LOGC("Failed to find task settings! Does your frame graph contain this task?");
 			return R();
 		}
-		catch (const std::bad_any_cast& e) {
+		catch (const std::bad_any_cast & e) {
 			LOGC("A task settings requested failed to cast to T. ({})", e.what());
 			return R();
 		}
@@ -838,9 +838,9 @@ namespace wr
 			for (const auto handle : m_multi_threaded_tasks)
 			{
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle]
-					{
-						m_setup_funcs[handle](*m_render_system, *this, handle, false);
-					});
+				{
+					m_setup_funcs[handle](*m_render_system, *this, handle, false);
+				});
 			}
 
 			// Singlethreading behaviour
@@ -863,9 +863,9 @@ namespace wr
 				}
 
 				m_futures[handle] = m_thread_pool->Enqueue([this, handle, &scene_graph]
-					{
-						ExecuteSingleTask(scene_graph, handle);
-					});
+				{
+					ExecuteSingleTask(scene_graph, handle);
+				});
 			}
 
 			// Singlethreading behaviour
