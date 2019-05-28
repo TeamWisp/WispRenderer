@@ -42,7 +42,7 @@ namespace wr
 
 		struct MeshBatch
 		{
-			unsigned int num_instances = 0, num_global_instances = 0;
+			unsigned int num_instances = 0, num_global_instances = 0, num_total_instances = 0;
 			ConstantBufferHandle* batch_buffer;
 			MeshBatch_CBData data;
 			std::vector<MaterialHandle> m_materials;
@@ -100,6 +100,11 @@ namespace wr
 		Light* GetLight(uint32_t offset);			//Returns nullptr when out of bounds
 
 		uint32_t GetCurrentLightSize();
+		float GetRTCullingDistance();
+		bool GetRTCullingEnabled();
+
+		void SetRTCullingDistance(float dist);
+		void SetRTCullingEnable(bool b);
 
 	protected:
 
@@ -127,6 +132,7 @@ namespace wr
 		std::vector< std::shared_ptr<SkyboxNode>>	m_skybox_nodes;
 
 		uint32_t m_next_light_id = 0;
+		float m_rt_culling_distance = -1;
 	};
 
 	//! Creates a child into the scene graph

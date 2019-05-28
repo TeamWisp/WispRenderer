@@ -85,7 +85,8 @@ namespace wr
 		std::pair<float, float> GetProjectionOffset();
 		
 		void UpdateTemp(unsigned int frame_idx);
-		bool InView(std::shared_ptr<MeshNode>& node);
+		bool InView(const std::shared_ptr<MeshNode>& node) const;
+		bool InRange(const std::shared_ptr<MeshNode>& node, const float dist) const;
 		void CalculatePlanes();
 
 		bool m_active;
