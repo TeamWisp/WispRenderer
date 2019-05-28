@@ -35,8 +35,9 @@ cbuffer CameraProperties : register(b0)
 	uint is_hybrid;
 	uint is_path_tracer;
 	uint is_ao;
-	uint has_reflections;
 	uint has_shadows;
+	uint has_reflections;
+	float3 padding;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -127,7 +128,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, is_hybrid);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, has_shadows);
 	}
 	else
 	{	
