@@ -143,7 +143,7 @@ namespace viknell_scene
 		//pos.m128_f32[0] = sin(t * 0.1) * 0.5;
 		//test_model->SetPosition(pos);
 
-		if (t > 75.f) {
+		if (t > 25.f) {
 			scene_graph->DestroyNode<wr::MeshNode>(test_model);
 			scene_graph->DestroyNode<wr::MeshNode>(back_wall);
 		}
