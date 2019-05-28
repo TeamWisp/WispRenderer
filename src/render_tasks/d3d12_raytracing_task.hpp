@@ -333,8 +333,6 @@ namespace wr
 
 	inline void AddRaytracingTask(FrameGraph& frame_graph)
 	{
-		std::wstring name(L"Raytracing");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -348,7 +346,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -366,7 +363,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<RaytracingData>(desc);
+		frame_graph.AddTask<RaytracingData>(desc, L"Full Raytracing");
 	}
 
 } /* wr */

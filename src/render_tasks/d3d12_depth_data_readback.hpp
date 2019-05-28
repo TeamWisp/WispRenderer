@@ -1,9 +1,11 @@
 #pragma once
 
-#include "d3d12/d3d12_functions.hpp"
-#include "d3d12/d3d12_renderer.hpp"
-#include "d3d12/d3d12_structs.hpp"
-#include "frame_graph/frame_graph.hpp"
+#include "../d3d12/d3d12_enums.hpp"
+#include "../d3d12/d3d12_defines.hpp"
+#include "../d3d12/d3d12_functions.hpp"
+#include "../d3d12/d3d12_renderer.hpp"
+#include "../d3d12/d3d12_structs.hpp"
+#include "../frame_graph/frame_graph.hpp"
 
 namespace wr
 {
@@ -14,8 +16,6 @@ namespace wr
 
 		// Read back buffer used to retrieve the pixel data on the GPU
 		d3d12::ReadbackBufferResource* readback_buffer = nullptr;
-
-		d3d12::desc::ReadbackDesc readback_buffer_desc = {};
 
 		// Stores the final pixel data
 		CPUTexture cpu_texture_output;
@@ -39,7 +39,9 @@ namespace wr
 			unsigned int bytesPerPixel = BytesPerPixel(predecessor_rt_desc.m_dsv_format);
 
 			// Size of the buffer aligned to a multiple of 256
-			std::uint32_t aligned_buffer_size = SizeAlignTwoPower(data.readback_buffer_desc.m_buffer_width * bytesPerPixel, 256) * data.readback_buffer_desc.m_buffer_height;
+			unsigned int rt_width = d3d12::GetRenderTargetWidth(data.predecessor_render_target);
+			unsigned int rt_height = d3d12::GetRenderTargetHeight(data.predecessor_render_target);
+			std::uint32_t aligned_buffer_size = SizeAlignTwoPower(rt_width * bytesPerPixel, 256) * rt_height;
 
 			// Create the actual read back buffer
 			data.readback_buffer = d3d12::CreateReadbackBuffer(dx12_render_system.m_device, aligned_buffer_size);
@@ -47,9 +49,9 @@ namespace wr
 
 			// Keep the read back buffer mapped for the duration of the entire application
 			data.cpu_texture_output.m_data = reinterpret_cast<float*>(MapReadbackBuffer(data.readback_buffer, aligned_buffer_size));
-			data.cpu_texture_output.m_buffer_width = data.readback_buffer_desc.m_buffer_width;
-			data.cpu_texture_output.m_buffer_height = data.readback_buffer_desc.m_buffer_height;
-			data.cpu_texture_output.m_bytes_per_pixel = data.readback_buffer_desc.m_bytes_per_pixel;
+			data.cpu_texture_output.m_buffer_width = rt_width;
+			data.cpu_texture_output.m_buffer_height = rt_height;
+			data.cpu_texture_output.m_bytes_per_pixel = bytesPerPixel;
 		}
 
 		inline void ExecuteDepthDataReadBackTask(RenderSystem& render_system, FrameGraph& frame_graph, SceneGraph& scene_graph, RenderTaskHandle handle)
@@ -105,8 +107,6 @@ namespace wr
 	template<typename T>
 	inline void AddDepthDataReadBackTask(FrameGraph& frame_graph, std::optional<unsigned int> target_width, std::optional<unsigned int> target_height)
 	{
-		std::wstring name(L"Depth Data CPU Readback");
-
 		// This is the same as the composition task, as this task should not change anything of the buffer that comes
 		// into the task. It just copies the data to the read back buffer and leaves the render target be.
 		RenderTargetProperties rt_properties{
@@ -120,8 +120,7 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
-			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ClearDepth(false)
 		};
 
 		// Render task information
@@ -147,7 +146,7 @@ namespace wr
 		readback_task_description.m_allow_multithreading = false;
 
 		// Save this task to the frame graph system
-		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description, FG_DEPS(1, T));
+		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description, L"Depth Data CPU Readback", FG_DEPS(1, T));
 	}
 
 } /* wr */

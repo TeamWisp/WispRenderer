@@ -119,8 +119,6 @@ namespace wr
 	template<typename T>
 	inline void AddPostProcessingTask(FrameGraph& frame_graph)
 	{
-		std::wstring name(L"Post Processing");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -134,7 +132,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -152,7 +149,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<PostProcessingData>(desc);
+		frame_graph.AddTask<PostProcessingData>(desc, L"Post Processing");
 	}
 
 } /* wr */

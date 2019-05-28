@@ -151,8 +151,6 @@ namespace wr
 	template<typename T>
 	inline void AddDoFCoCTask(FrameGraph& frame_graph)
 	{
-		std::wstring name(L"DoF cone of confusion");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -166,7 +164,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name),
 		};
 
 		RenderTaskDesc desc; 
@@ -183,7 +180,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<DoFCoCData>(desc);
+		frame_graph.AddTask<DoFCoCData>(desc, L"DoF Cone of Confusion");
 	}
 
 } /* wr */
