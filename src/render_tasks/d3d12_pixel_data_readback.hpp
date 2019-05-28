@@ -114,8 +114,7 @@ namespace wr
 			RenderTargetProperties::RTVFormats({ Format::R8G8B8A8_UNORM }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
-			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
+			RenderTargetProperties::ClearDepth(false)
 		};
 
 		// Render task information

@@ -117,8 +117,10 @@ namespace wr
 		while(m_staged_textures.size() > 0)
 		{
 			TextureHandle handle = { this, static_cast<uint32_t>(m_staged_textures.begin()->first) };
-			D3D12TexturePool::Unload(handle);
+			D3D12TexturePool::MarkForUnload(handle, 0);
 		}
+
+		D3D12TexturePool::UnloadTextures(0);
 	}
 
 	void D3D12TexturePool::Evict()
@@ -217,19 +219,18 @@ namespace wr
 			d3d12::Destroy(h);
 		}
 
-		auto& vec = m_staging_textures[frame_idx];
 
-		for (auto& elem : vec)
+		for (auto& map : m_staging_textures[frame_idx])
 		{
-			auto* tex = (d3d12::TextureResource*) elem.second;
+			auto* texture = (d3d12::TextureResource*) map.second;
 
-			if(tex->m_intermediate)
-				SAFE_RELEASE(tex->m_intermediate);
+			if (texture->m_intermediate)
+				SAFE_RELEASE(texture->m_intermediate);
 
-			((d3d12::TextureResource*)m_staged_textures[elem.first])->m_intermediate = nullptr;
+			((d3d12::TextureResource*)m_staged_textures[map.first])->m_intermediate = nullptr;
 		}
 
-		vec.clear();
+		m_staging_textures[frame_idx].clear();
 		m_temporary_heaps[frame_idx].clear();
 	}
 
@@ -398,27 +399,40 @@ namespace wr
 		return m_allocators[static_cast<size_t>(type)];
 	}
 
-	void D3D12TexturePool::Unload(TextureHandle& handle)
+	void D3D12TexturePool::MarkForUnload(TextureHandle& handle, unsigned int frame_idx)
 	{
 		uint64_t texture_id = handle.m_id;
 
 		d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));
 		m_staged_textures.erase(texture_id);
+		m_staging_textures.at(frame_idx).erase(texture_id);
 
-		SAFE_RELEASE(texture->m_resource);
-
-		if(texture->m_intermediate)
-			SAFE_RELEASE(texture->m_intermediate);
-
-		delete texture;
+		m_marked_for_unload.at(frame_idx).push_back(texture);
 
 #ifdef _DEBUG
 		LOGW("[DEBUG MESSAGE]: Handle {} from {} invalidated.", texture_id, m_name);
 #endif
+
 		handle.m_pool = nullptr;
 		handle.m_id = -UINT_MAX;
 	}
 
+	void D3D12TexturePool::UnloadTextures(unsigned int frame_idx)
+	{
+		auto& vec = m_marked_for_unload.at(frame_idx);
+
+		for (auto* texture : vec)
+		{
+			SAFE_RELEASE(texture->m_resource);
+
+			if (texture->m_intermediate)
+				SAFE_RELEASE(texture->m_intermediate);
+
+			delete texture;
+		}
+
+		m_marked_for_unload.at(frame_idx).clear();
+	}
 
 	TextureHandle D3D12TexturePool::LoadFromFile(std::string_view path, bool srgb, bool generate_mips)
 	{
