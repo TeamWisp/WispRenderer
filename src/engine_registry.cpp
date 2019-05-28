@@ -775,10 +775,10 @@ namespace wr
 	REGISTER(root_signatures::bloom_blur, RootSignatureRegistry)({
 		.m_parameters = {
 			ROOT_PARAM_DESC_TABLE(bloom_blur_r, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM(GetConstants(params::bloom_blur, params::BloomBlurE::BLUR_DIRECTION)),
+			ROOT_PARAM(GetCBV(params::bloom_blur, params::BloomBlurE::BLUR_DIRECTION)),
 		},
 		.m_samplers = {
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP},
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP},
 		}
 		});
 

@@ -18,11 +18,19 @@ namespace wr
 		ID3D12Resource* out_previous = nullptr;
 		DescriptorAllocator* out_allocator = nullptr;
 		DescriptorAllocation out_allocation;
+
+		std::shared_ptr<ConstantBufferPool> cb_pool;
+		D3D12ConstantBufferHandle* cb_handle = nullptr;
 	};
 
 	namespace internal
 	{
-	
+		struct Bloom_CB
+		{
+			int isHorizontal;
+			float sigma;
+		};
+
 		template<typename T>
 		inline void SetupBloomHalfTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
@@ -34,6 +42,9 @@ namespace wr
 			{
 				data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 				data.out_allocation = data.out_allocator->Allocate(2);
+
+				data.cb_pool = rs.CreateConstantBufferPool(2);
+				data.cb_handle = static_cast<D3D12ConstantBufferHandle*>(data.cb_pool->Create(sizeof(Bloom_CB)));
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -81,8 +92,12 @@ namespace wr
 				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 2, source_rt->m_create_info.m_rtv_formats[2]);
 			}
 
-			std::uint32_t isHorizontal = 1;
-			d3d12::BindCompute32BitConstants(cmd_list, &isHorizontal, 1, 0, 1);
+			Bloom_CB cb_data;
+			cb_data.isHorizontal = 1;
+			cb_data.sigma = 2.0f;
+
+			data.cb_handle->m_pool->Update(data.cb_handle, sizeof(Bokeh_CB), 0, frame_idx, (uint8_t*)& cb_data);
+			d3d12::BindComputeConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);
 
 			{
 				constexpr unsigned int dest_idx = rs_layout::GetHeapLoc(params::bloom_blur, params::BloomBlurE::OUTPUT);
@@ -113,6 +128,8 @@ namespace wr
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
 				DescriptorAllocation temp1 = std::move(data.out_allocation);
 				delete data.out_allocator;
+
+				data.cb_pool->Destroy(data.cb_handle);
 			}
 		}
 

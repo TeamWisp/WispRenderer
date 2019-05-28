@@ -8,6 +8,7 @@ SamplerState s0 : register(s0);
 cbuffer BloomDirection : register(b0)
 {
 	int blur_direction;
+	float sigma_amt;
 };
 
 [numthreads(16, 16, 1)]
@@ -16,12 +17,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
 	float2 texel_size = 1.0f / screen_size;
 
-	float2 uv = (screen_coord + 0.5f) / screen_size;
+	float2 uv = (screen_coord) / screen_size;
 
-	float sigma = 6.0f;
+	float sigma = sigma_amt;
 
 	float2 blur_dir = float2(0.0f, 1.0f);
 
@@ -36,7 +37,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{
 		float weight = CalcGaussianWeight(i, sigma);
 		weightSum += weight;
-		float2 o_uv = (screen_coord + 0.5f + (blur_dir * i)) / screen_size;
+		float2 o_uv = saturate((screen_coord + (blur_dir * i)) / screen_size);
 		float4 s = source.SampleLevel(s0, o_uv, 0);
 		color += s * weight;
 	}
