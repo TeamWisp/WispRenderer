@@ -167,6 +167,11 @@ namespace wr
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
 			auto skybox_node = scene_graph.GetCurrentSkybox();
+			if (!skybox_node)
+			{
+				return;
+			}
+
 
 			//Does it need conversion?
 			if (skybox_node->m_skybox != std::nullopt)

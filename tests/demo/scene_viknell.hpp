@@ -134,7 +134,7 @@ namespace viknell_scene
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	}
 
-	void UpdateScene(wr::SceneGraph* sg, wr::D3D12RenderSystem& rs)
+	void UpdateScene(wr::SceneGraph* sg)
 	{
 		t += 10.f * ImGui::GetIO().DeltaTime;
 

@@ -1249,7 +1249,7 @@ namespace wr
 		}
 	}
 
-	void D3D12RenderSystem::SignalSkyboxChange()
+	void D3D12RenderSystem::RequestSkyboxReload()
 	{
 		m_skybox_changed = true;
 	}

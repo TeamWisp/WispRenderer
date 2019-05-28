@@ -172,7 +172,7 @@ namespace wr
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
 
-		void SignalSkyboxChange(); 
+		void RequestSkyboxReload(); 
 
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
 		wr::Model* GetSimpleShape(SimpleShapes type);

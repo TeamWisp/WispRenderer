@@ -725,8 +725,11 @@ namespace wr
 
 			if (handle.has_value())
 			{
-
 				SetShouldExecute(handle.value(), value);
+			}
+			else
+			{
+				LOGW("Failed to mark the task for execution, Task was not found.");
 			}
 		}
 

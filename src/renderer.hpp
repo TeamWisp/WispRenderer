@@ -76,7 +76,7 @@ namespace wr
 		void RequestRenderTargetSaveToDisc(std::string const& path, RenderTarget* render_target, unsigned int index);
 		
 		virtual unsigned int GetFrameIdx() = 0;
-		virtual void SignalSkyboxChange() = 0;
+		virtual void RequestSkyboxReload() = 0;
 
 		std::optional<Window*> m_window;
 

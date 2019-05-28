@@ -12,6 +12,8 @@ namespace wr {
 			, m_irradiance(irradiance)
 		{}
 
+		void UpdateSkybox(TextureHandle new_equirectangular, unsigned int frame_idx);
+
 		wr::TextureHandle m_hdr;
 		std::optional<wr::TextureHandle> m_skybox;
 		std::optional<wr::TextureHandle> m_irradiance;

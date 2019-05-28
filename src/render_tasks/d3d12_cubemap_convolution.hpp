@@ -90,6 +90,10 @@ namespace wr
 			auto& pred_data = fg.GetPredecessorData<EquirectToCubemapTaskData>();
 
 			auto skybox_node = scene_graph.GetCurrentSkybox();
+			if (!skybox_node)
+			{
+				return;
+			}
 
 			//Does it need convolution? And does it have a cubemap already?
 			if (skybox_node->m_irradiance != std::nullopt && skybox_node->m_skybox != std::nullopt)

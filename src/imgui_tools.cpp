@@ -372,7 +372,7 @@ namespace wr::imgui::window
 
 					TextureHandle new_texture = skybox_node->m_skybox.value().m_pool->LoadFromFile(skybox_name, false, false);
 
-					scene_graph->UpdateSkyboxNode(new_texture);
+					scene_graph->UpdateSkyboxNode(skybox_node, new_texture);
 				}
 			}
 		},
@@ -409,6 +409,21 @@ namespace wr::imgui::window
 
 					return true; // close popup.
 				}
+
+				return false;
+			}
+		},
+		{ typeid(SkyboxNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
+				//TODO: Leaving this comment in as I need to implement a proper handling for skyboxes soon.
+
+				//if (ImGui::Button("Remove"))
+				//{
+				//	scene_graph->DestroyNode(std::static_pointer_cast<SkyboxNode>(node));
+
+				//	return true; // close popup.
+				//}
 
 				return false;
 			}
