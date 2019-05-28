@@ -690,18 +690,20 @@ namespace wr
 			{
 			case wr::CPUTextureType::PIXEL_DATA:
 				if (m_output_cpu_textures.pixel_data != std::nullopt)
-					LOGW("Warning: CPU texture pixel data is written to more than once a frame!")
-
-					// Save the pixel data
-					m_output_cpu_textures.pixel_data = output_texture;
+				{
+					LOGW("Warning: CPU texture pixel data is written to more than once a frame!");
+				}
+				// Save the pixel data
+				m_output_cpu_textures.pixel_data = output_texture;
 				break;
 
 			case wr::CPUTextureType::DEPTH_DATA:
 				if (m_output_cpu_textures.depth_data != std::nullopt)
-					LOGW("Warning: CPU texture depth data is written to more than once a frame!")
-
-					// Save the depth data
-					m_output_cpu_textures.depth_data = output_texture;
+				{
+					LOGW("Warning: CPU texture depth data is written to more than once a frame!");
+				}
+				// Save the depth data
+				m_output_cpu_textures.depth_data = output_texture;
 				break;
 
 			default:
