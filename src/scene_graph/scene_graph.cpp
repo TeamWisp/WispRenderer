@@ -80,14 +80,14 @@ namespace wr
 
 	std::shared_ptr<SkyboxNode> SceneGraph::GetCurrentSkybox()
 	{
-		if (!m_skybox_nodes.empty())
-		{
-			return m_skybox_nodes.at(0);
-		}
-		else
-		{
-			return nullptr;
-		}
+		return m_current_skybox;
+	}
+
+	void SceneGraph::UpdateSkyboxNode(std::shared_ptr<SkyboxNode> node, TextureHandle new_equirectangular)
+	{
+		node->UpdateSkybox(new_equirectangular, m_render_system->GetFrameIdx());
+
+		m_render_system->RequestSkyboxReload();
 	}
 
 	//! Initialize the scene graph

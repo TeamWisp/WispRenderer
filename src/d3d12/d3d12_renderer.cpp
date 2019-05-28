@@ -24,6 +24,10 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
 #include "../scene_graph/skybox_node.hpp"
+
+#include "../render_tasks/d3d12_equirect_to_cubemap.hpp"
+#include "../render_tasks/d3d12_cubemap_convolution.hpp"
+
 #include <iostream>
 #include <string>
 
@@ -137,7 +141,7 @@ namespace wr
 
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
-
+		
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
@@ -150,6 +154,14 @@ namespace wr
 
 	CPUTextures D3D12RenderSystem::Render(SceneGraph& scene_graph, FrameGraph& frame_graph)
 	{
+		if (m_skybox_changed)
+		{
+			frame_graph.SetShouldExecute<wr::EquirectToCubemapTaskData>(true);
+			frame_graph.SetShouldExecute<wr::CubemapConvolutionTaskData>(true);
+
+			m_skybox_changed = false;
+		}
+
 		// Perform render target save requests
 		while (!m_requested_rt_saves.empty())
 		{
@@ -175,6 +187,7 @@ namespace wr
 		for (auto pool : m_texture_pools)
 		{
 			pool->ReleaseTemporaryResources();
+			pool->UnloadTextures(frame_idx);
 		}
 
 		// Perform reload requests
@@ -1241,6 +1254,11 @@ namespace wr
 			LOGW("Called `D3D12RenderSystem::GetRenderWindow` without a window!");
 			return nullptr;
 		}
+	}
+
+	void D3D12RenderSystem::RequestSkyboxReload()
+	{
+		m_skybox_changed = true;
 	}
 
 	wr::Model* D3D12RenderSystem::GetSimpleShape(SimpleShapes type)
