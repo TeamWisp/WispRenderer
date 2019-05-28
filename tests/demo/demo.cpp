@@ -197,7 +197,7 @@ int WispEntry()
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
 	window->SetRenderLoop([&]() {
-		SCENE::UpdateScene(scene_graph.get());
+		SCENE::UpdateScene();
 
 		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
 	});
