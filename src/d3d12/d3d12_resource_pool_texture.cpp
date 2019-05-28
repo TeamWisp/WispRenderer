@@ -220,16 +220,14 @@ namespace wr
 		}
 
 
-		StagedTextures::iterator iter = m_staging_textures[frame_idx].begin();
-
-		for ( ; iter != m_staging_textures[frame_idx].end(); ++iter)
+		for (auto& map : m_staging_textures[frame_idx])
 		{
-			auto* tex = (d3d12::TextureResource*) iter->second;
+			auto* texture = (d3d12::TextureResource*) map.second;
 
-			if(tex->m_intermediate)
-				SAFE_RELEASE(tex->m_intermediate);
+			if (texture->m_intermediate)
+				SAFE_RELEASE(texture->m_intermediate);
 
-			((d3d12::TextureResource*)m_staged_textures[iter->first])->m_intermediate = nullptr;
+			((d3d12::TextureResource*)m_staged_textures[map.first])->m_intermediate = nullptr;
 		}
 
 		m_staging_textures[frame_idx].clear();
