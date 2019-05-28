@@ -1,7 +1,9 @@
 #include "hdr_util.hlsl"
 
 Texture2D source_main : register(t0);
-Texture2D source_bloom : register(t1);
+Texture2D source_bloom_half : register(t1);
+Texture2D source_bloom_quarter : register(t2);
+Texture2D source_bloom_eighth : register(t3);
 RWTexture2D<float4> output : register(u0);
 SamplerState linear_sampler : register(s0);
 SamplerState point_sampler : register(s1);
@@ -27,7 +29,10 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	if (enable_bloom > 0)
 	{
-		finalcolor += source_bloom.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;
+		finalcolor += source_bloom_half.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;
+		finalcolor += source_bloom_quarter.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;
+		finalcolor += source_bloom_eighth.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;
+		//finalcolor /= 3;
 	}
 	finalcolor += source_main.SampleLevel(point_sampler, uv, 0).rgb;
 

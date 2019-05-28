@@ -72,12 +72,12 @@ namespace wr
 
 			// Destination near
 			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_half, params::BloomHalfE::OUTPUT)));
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_blur, params::BloomBlurE::OUTPUT)));
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
 			// Source
 			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_half, params::BloomHalfE::SOURCE)));
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_blur, params::BloomBlurE::SOURCE)));
 				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 2, source_rt->m_create_info.m_rtv_formats[2]);
 			}
 
@@ -142,7 +142,7 @@ namespace wr
 			internal::SetupBloomEighthTask<T>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteBloomEigthTask<T>(rs, fg, sg, handle);
+			internal::ExecuteBloomEighthTask<T>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyBloomEighthTask(fg, handle, resize);

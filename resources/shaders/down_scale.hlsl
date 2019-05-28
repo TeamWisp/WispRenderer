@@ -5,6 +5,7 @@ RWTexture2D<float4> output_near : register(u0);
 RWTexture2D<float4> output_far : register(u1);
 RWTexture2D<float4> output_bright : register(u2);
 Texture2D cocbuffer : register(t1);
+Texture2D g_emissive : register(t2);
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
 
@@ -12,10 +13,10 @@ float GetDownSampledCoC(float2 uv, float2 texelSize)
 {
 	float4 offset = texelSize.xyxy * float2(-0.5f, 0.5f).xxyy;
 
-	float coc0 = cocbuffer.SampleLevel(s1, uv + offset.xy, 0);
-	float coc1 = cocbuffer.SampleLevel(s1, uv + offset.zy, 0);
-	float coc2 = cocbuffer.SampleLevel(s1, uv + offset.xw, 0);
-	float coc3 = cocbuffer.SampleLevel(s1, uv + offset.zw, 0);
+	float coc0 = cocbuffer.SampleLevel(s1, uv + offset.xy, 0).r;
+	float coc1 = cocbuffer.SampleLevel(s1, uv + offset.zy, 0).r;
+	float coc2 = cocbuffer.SampleLevel(s1, uv + offset.xw, 0).r;
+	float coc3 = cocbuffer.SampleLevel(s1, uv + offset.zw, 0).r;
 
 	float cocMin = min(min(min(coc0, coc1), coc2), coc3);
 	float cocMax = max(max(max(coc0, coc1), coc2), coc3);
@@ -57,10 +58,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float brightness = dot(finalcolor, float3(0.2126f, 0.7152f, 0.0722f));
 
-	if (brightness > 1.0f)
+	if (brightness > 1.0f && cocbuffer.SampleLevel(s1, uv, 0).g < 1)
 	{
 		out_bright = saturate(float4(finalcolor, 1.0f));
 	}
+
+	out_bright += float4(g_emissive.SampleLevel(s0, uv, 0).rgb, 1.0f);
 
 	output_bright[int2(dispatch_thread_id.xy)] = out_bright;
 	output_near[int2(dispatch_thread_id.xy)] = out_near;

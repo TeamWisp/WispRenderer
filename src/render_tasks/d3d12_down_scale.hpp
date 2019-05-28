@@ -14,6 +14,7 @@ namespace wr
 	struct DownScaleData
 	{
 		d3d12::RenderTarget* out_source_rt = nullptr;
+		d3d12::RenderTarget* out_source_emissive = nullptr;
 		d3d12::RenderTarget* out_source_coc = nullptr;
 		d3d12::PipelineState* out_pipeline = nullptr;
 		ID3D12Resource* out_previous = nullptr;
@@ -24,7 +25,7 @@ namespace wr
 	namespace internal
 	{
 	
-		template<typename T, typename T1>
+		template<typename T, typename T1, typename T2>
 		inline void SetupDownScaleTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -34,7 +35,7 @@ namespace wr
 			if (!resize)
 			{
 				data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-				data.out_allocation = data.out_allocator->Allocate(5);
+				data.out_allocation = data.out_allocator->Allocate(6);
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -42,6 +43,7 @@ namespace wr
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
+			auto source_emissive = data.out_source_emissive = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T2>());
 
 			// Destination near
 			{
@@ -63,15 +65,21 @@ namespace wr
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
 				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
 			}
+
 			// Cone of confusion
 			{
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
 				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
 			}
-			
+
+			// Source emissive
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE_EMISSIVE)));
+				d3d12::CreateSRVFromSpecificRTV(source_emissive, cpu_handle, 2, source_emissive->m_create_info.m_rtv_formats[2]);
+			}
 		}
 
-		template<typename T, typename T1>
+		template<typename T, typename T1, typename T2>
 		inline void ExecuteDownScaleTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -84,6 +92,7 @@ namespace wr
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
 			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
+			auto source_emissive = data.out_source_emissive = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T2>());
 
 			// Destination near
 			{
@@ -111,6 +120,11 @@ namespace wr
 				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
 			}
 			
+			// Source emissive
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE_EMISSIVE)));
+				d3d12::CreateSRVFromSpecificRTV(source_emissive, cpu_handle, 2, source_emissive->m_create_info.m_rtv_formats[2]);
+			}
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
@@ -142,6 +156,12 @@ namespace wr
 				constexpr unsigned int source_coc_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC);
 				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_coc_idx);
 				d3d12::SetShaderSRV(cmd_list, 0, source_coc_idx, handle_m_srv);
+			}			
+			
+			{
+				constexpr unsigned int source_emissive_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE_EMISSIVE);
+				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_emissive_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_emissive_idx, handle_m_srv);
 			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
@@ -166,7 +186,7 @@ namespace wr
 
 	} /* internal */
 
-	template<typename T, typename T1>
+	template<typename T, typename T1, typename T2>
 	inline void AddDownScaleTask(FrameGraph& frame_graph)
 	{
 		RenderTargetProperties rt_properties
@@ -187,10 +207,10 @@ namespace wr
 
 		RenderTaskDesc desc; 
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::SetupDownScaleTask<T, T1>(rs, fg, handle, resize);
+			internal::SetupDownScaleTask<T, T1, T2>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteDownScaleTask<T, T1>(rs, fg, sg, handle);
+			internal::ExecuteDownScaleTask<T, T1, T2>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyDownScaleTask(fg, handle, resize);

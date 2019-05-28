@@ -78,7 +78,7 @@ namespace wr
 			// Source
 			{
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_blur, params::BloomBlurE::SOURCE)));
-				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 2, source_rt->m_create_info.m_rtv_formats[2]);
+				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
 			}
 
 			std::uint32_t isHorizontal = 0;

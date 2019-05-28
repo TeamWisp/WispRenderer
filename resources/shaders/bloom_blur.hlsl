@@ -21,7 +21,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 
-	float sigma = 2.0f;
+	float sigma = 6.0f;
 
 	float2 blur_dir = float2(0.0f, 1.0f);
 
@@ -32,7 +32,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float4 color = 0;
 	float weightSum = 0.0f;
-	for (int i = -5; i < 5; i++)
+	for (int i = -14; i < 14; i++)
 	{
 		float weight = CalcGaussianWeight(i, sigma);
 		weightSum += weight;

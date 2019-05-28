@@ -95,7 +95,7 @@ namespace fg_manager
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(18);
+			fg = new wr::FrameGraph(20);
 			
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
@@ -106,20 +106,24 @@ namespace fg_manager
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData, wr::DeferredMainTaskData>(*fg);
 			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
 			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
 			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
-			//wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
-			//wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
+
 			wr::AddBloomHalfTask<wr::DownScaleData>(*fg);
 			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
 
+			wr::AddBloomQuarterTask<wr::DownScaleData>(*fg);
+			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData>(*fg);
+			wr::AddBloomEighthTask<wr::DownScaleData>(*fg);
+			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 
@@ -180,7 +184,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(19);
+			fg = new wr::FrameGraph(23);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -203,17 +207,24 @@ namespace fg_manager
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData>(*fg);
+			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData, wr::DeferredMainTaskData>(*fg);
 			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
 			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
 			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
 			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
-			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
-			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
+			wr::AddBloomHalfTask<wr::DownScaleData>(*fg);
+			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
+
+			wr::AddBloomQuarterTask<wr::DownScaleData>(*fg);
+			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
+
+			wr::AddBloomEighthTask<wr::DownScaleData>(*fg);
+			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 
