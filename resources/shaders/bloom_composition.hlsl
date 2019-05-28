@@ -32,8 +32,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		finalcolor += source_bloom_half.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;
 		finalcolor += source_bloom_quarter.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;
 		finalcolor += source_bloom_eighth.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;
-		//finalcolor /= 3;
 	}
+
 	finalcolor += source_main.SampleLevel(point_sampler, uv, 0).rgb;
 
 	output[int2(dispatch_thread_id.xy)] = float4(finalcolor, 1.0f);

@@ -694,8 +694,6 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
@@ -726,8 +724,6 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
@@ -751,8 +747,6 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};

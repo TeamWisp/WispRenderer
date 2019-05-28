@@ -28,9 +28,6 @@
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
 #include "render_tasks/d3d12_bloom_composition.hpp"
-#include "render_tasks/d3d12_bloom_horizontal.hpp"
-#include "render_tasks/d3d12_bloom_vertical.hpp"
-
 #include "render_tasks/d3d12_bloom_half_res.hpp"
 #include "render_tasks/d3d12_bloom_half_res_v.hpp"
 #include "render_tasks/d3d12_bloom_quarter_res.hpp"
