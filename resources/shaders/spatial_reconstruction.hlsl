@@ -19,23 +19,6 @@ Texture2D normal_metallic : register(t3);
 Texture2D depth_buffer : register(t4);
 SamplerState nearest_sampler  : register(s0);
 
-//Get weight from roughness, view direction, light direction and normal (view space)
-float brdf_weight(float3 V, float3 L, float3 N, float roughness)
-{
-	float3 H = normalize(V + L);
-
-	float NdotH = saturate(dot(N, H));
-	float NdotL = saturate(dot(N, L));
-	float NdotV = saturate(dot(N, V));
-
-	float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);		//This causes issues
-	float D = D_GGX(NdotH, roughness);
-
-	float weight = G * D * PI / 4;
-
-	return max(weight, 1e-5);		//Perfect mirrors can have weights too
-}
-
 float linearize_depth(float D)
 {
 	float z_n = D * 2 - 1;
@@ -54,7 +37,7 @@ float neighbor_edge_weight(float3 N, float3 N_neighbor, float D, float D_neighbo
 //Hardcode the samples for now; settings: kernelSize=3, points=8
 //https://github.com/Nielsbishere/NoisePlayground/blob/master/bluenoise_test.py
 
-static const uint sampleCount = 16;
+static const uint sample_count = 16;
 static const float2 samples[4][64] = {
     {
         float2(-1 ,  -1), float2(0 ,  -1), float2(1 ,  1), float2(0 ,  2),
@@ -135,11 +118,11 @@ static const float2 samples[4][64] = {
 };
 
 //Sample a neighbor; 0,0 -> 1,1; outside of that range indicates an invalid uv
-float2 sample_neighbor_uv(uint sampleId, uint2 fullResPixel, uint2 resolution, float rand)
+float2 sample_neighbor_uv(uint sampleId, uint2 full_res_pixel, uint2 resolution, float rand)
 {
-	uint pixId = fullResPixel.x % 2 + fullResPixel.y % 2 * 2;
+	uint pixId = full_res_pixel.x % 2 + full_res_pixel.y % 2 * 2;
 	float2 offset = samples[pixId][16 * rand];
-	return (float2(fullResPixel / 2) + offset) / float2(resolution / 2 - 1);
+	return (float2(full_res_pixel / 2) + offset) / float2(resolution / 2 - 1);
 }
 
 static const float3 luminance = float3(0.2126f, 0.7152f, 0.0722f);
@@ -178,12 +161,12 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	//Weigh the samples correctly
 
 	float3 result = float3(0, 0, 0);
-	float weightSum = 0;
+	float weight_sum = 0;
 
 	uint rand_seed = initRand(pix.x + pix.y * width, frame_idx);
 
 	[unroll]
-	for (uint i = 0; i < sampleCount; ++i)
+	for (uint i = 0; i < sample_count; ++i)
 	{
 		//Get sample related data
 
@@ -206,15 +189,15 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 		//Calculate weight and weight sum
 
-		const float neighborWeight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
-		const float weight = brdf_weight(V, L, N, roughness) / pdf * neighborWeight;
+		const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
+		const float weight = brdf_weight(V, L, N, roughness) / pdf * neighbor_weight;
 		result += color * weight;
-		weightSum += weight;
+		weight_sum += weight;
 	}
 
 	//Output averaged result
 
-	float3 result3 = result / weightSum;
+	float3 result3 = result / weight_sum;
 	//result3 /= 1 + dot(luminance, result3);
 	filtered[pix] = float4(result3, 1);
 

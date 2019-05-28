@@ -137,33 +137,6 @@ float3 unpack_position(float2 uv, float depth)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-// Brian Karis, Epic Games "Real Shading in Unreal Engine 4"
-// Modified version to do pdf and tangent to world conversions
-float3 importanceSamplePdf(float2 xi, float a, float3 N, inout float pdf)
-{
-	float m = a * a;
-	float m2 = m * m;
-
-	float phi = 2 * PI * xi.x;
-	float cosTheta = sqrt((1.0 - xi.y) / (1.0 + (m2 - 1.0) * xi.y));
-	float sinTheta = sqrt(max(1e-5, 1.0 - cosTheta * cosTheta));
-
-	float3 H;
-	H.x = sinTheta * cos(phi);
-	H.y = sinTheta * sin(phi);
-	H.z = cosTheta;
-
-	float d = (cosTheta * m2 - cosTheta) * cosTheta + 1;
-	float D = m2 / (PI * d * d);
-	pdf = D * cosTheta;
-
-	float3 up = lerp(float3(1.0, 0.0, 0.0), float3(0.0, 0.0, 1.0), float(abs(N.z) < 0.999));
-	float3 T = normalize(cross(up, N));
-	float3 B = cross(N, T);
-
-	return normalize(T * H.x + B * H.y + N * H.z);
-}
-
 float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, RayCone cone, inout float4 dirT)
 {
 

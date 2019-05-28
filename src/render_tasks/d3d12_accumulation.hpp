@@ -137,7 +137,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<AccumulationData>(desc, L"Accumulation Task", fg_dep<T>());
+		frame_graph.AddTask<AccumulationData>(desc, L"Accumulation Task", FG_DEPS(1, T));
 	}
 
 } /* wr */

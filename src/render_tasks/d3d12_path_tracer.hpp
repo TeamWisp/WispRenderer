@@ -440,7 +440,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<PathTracerData>(desc, L"Path Traced Global Illumination", fg_dep<DeferredMainTaskData>());
+		fg.AddTask<PathTracerData>(desc, L"Path Traced Global Illumination", FG_DEPS(1, DeferredMainTaskData));
 	}
 
 } /* wr */

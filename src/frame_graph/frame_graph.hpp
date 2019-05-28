@@ -21,44 +21,14 @@
 #define FG_MAX_PERFORMANCE
 #endif
 
-namespace fg_deps
-{
-	using type = std::vector<std::reference_wrapper<const std::type_info>>;
-
-	template<typename T, typename ...args>
-	struct insert
-	{
-		static void exec(type& deps)
-		{
-			deps.push_back(typeid(T));
-			fg_deps::insert<args...>::exec(deps);
-		}
-	};
-
-	template<typename T>
-	struct insert<T>
-	{
-		static void exec(type& deps)
-		{
-			deps.push_back(typeid(T));
-		}
-	};
-
-	template<typename ...args>
-	static type make() {
-		type result;
-		insert<args...>::exec(result);
-		return result;
-	}
-
-}
-
-template<typename ...args>
-static const fg_deps::type& fg_dep()
-{
-	static fg_deps::type deps = fg_deps::make<args...>();
-	return deps;
-}
+#define EXPAND(x) x // Because msvc handles the preprocessor differently
+#define FG_DEPS(N, ...) EXPAND(FG_DEPS##N(__VA_ARGS__))
+#define FG_DEPS1(A) { typeid(A) }
+#define FG_DEPS2(A, B) { typeid(A), typeid(B) }
+#define FG_DEPS3(A, B, C) { typeid(A), typeid(B), typeid(C) }
+#define FG_DEPS4(A, B, C, D) { typeid(A), typeid(B), typeid(C), typeid(D) }
+#define FG_DEPS5(A, B, C, D, E) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E) }
+#define FG_DEPS6(A, B, C, D, E, F) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E), typeid(F) }
 
 namespace wr
 {

@@ -225,7 +225,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<HBAOData>(desc, L"NVIDIA HBAO+", fg_dep<DeferredMainTaskData>());
+		frame_graph.AddTask<HBAOData>(desc, L"NVIDIA HBAO+", FG_DEPS(1, DeferredMainTaskData));
 		frame_graph.UpdateSettings<HBAOData>(HBAOSettings());
 	}
 
