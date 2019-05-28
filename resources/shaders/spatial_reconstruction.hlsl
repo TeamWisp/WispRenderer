@@ -175,12 +175,12 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), randomVar);
 
 		const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
-	    const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
+		const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
 
 		const float4 hitT = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
         //const float3 hit_pos = hitT.xyz * hitT.w + pos_neighbor;
 
-        const float3 V_neighbor = normalize(camera_pos - pos_neighbor);
+		const float3 V_neighbor = normalize(camera_pos - pos_neighbor);
 
 		const float3 color = clamp(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz, 0, 1);
 		const float3 L = hitT.xyz;

@@ -143,40 +143,47 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 	// Calculate ray info
 	float3 reflected = reflect(-V, N);
 
-	// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
-
-	#ifndef PERFECT_MIRROR_REFLECTIONS
-	if(depth > 0 || roughness < 0.05)
-	#endif
-
-		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), 1);
-
 	// Shoot an importance sampled ray
 
 	#ifndef PERFECT_MIRROR_REFLECTIONS
 
-	nextRand(rand_seed);
-	float2 xi = hammersley2d(rand_seed, 8192);
-	float pdf = 0;
-	float3 H = importanceSamplePdf(xi, roughness, N, pdf);
-	float3 L = reflect(-V, H);
 
-	float NdotL = max(dot(N, L), 0);
+		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
 
-	if(NdotL >= 0){
+		if (depth > 0 || roughness < 0.05)
+			return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), 1);
+
+		//Calculate an importance sampled ray
+
 		nextRand(rand_seed);
-		xi = hammersley2d(rand_seed, 8192);
-		H = importanceSamplePdf(xi, roughness, N, pdf);
-		L = reflect(-V, H);
-		NdotL = max(dot(N, L), 0);
-	}
+		float2 xi = hammersley2d(rand_seed, 8192);
+		float pdf = 0;
+		float3 H = importanceSamplePdf(xi, roughness, N, pdf);
+		float3 L = reflect(-V, H);
 
-	float3 reflection = float3(0, 0, 0);
-	
-	if (NdotL >= 0)
-		reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dirT);
+		float NdotL = max(dot(N, L), 0);
 
-	return float4(reflection, pdf);
+		if(NdotL >= 0)
+		{
+			nextRand(rand_seed);
+			xi = hammersley2d(rand_seed, 8192);
+			H = importanceSamplePdf(xi, roughness, N, pdf);
+			L = reflect(-V, H);
+			NdotL = max(dot(N, L), 0);
+		}
+
+		float3 reflection = float3(0, 0, 0);
+		
+		if (NdotL >= 0)
+		{
+			reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dirT);
+		}
+
+		return float4(reflection, pdf);
+
+	#else
+		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
+		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), 1);
 	#endif
 }
 
