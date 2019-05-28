@@ -395,7 +395,7 @@ namespace wr::imgui::window
 
 						skybox_name = "resources/materials/Arches_E_PineTree_3k.hdr";
 
-						TextureHandle new_texture = skybox_node->m_hdr.m_pool->LoadFromFile(skybox_name, false, false);
+						TextureHandle new_texture = skybox_node->m_skybox.value().m_pool->LoadFromFile(skybox_name, false, false);
 
 						scene_graph->UpdateSkyboxNode(new_texture);
 					}

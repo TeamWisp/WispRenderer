@@ -103,7 +103,14 @@ namespace wr
 		skybox_node->m_prefiltered_env_map.value().m_pool->MarkForUnload(skybox_node->m_prefiltered_env_map.value(), m_render_system->GetFrameIdx());
 		skybox_node->m_prefiltered_env_map = std::nullopt;
 
-		skybox_node->m_hdr.m_pool->MarkForUnload(skybox_node->m_hdr, m_render_system->GetFrameIdx());
+#ifdef _DEBUG
+		if (skybox_node->m_hdr.m_pool)
+		{
+			//Decide if we want to break when developing in case something goes wrong here.
+			LOGC("SOFT-ERROR: M_HDR is supposed to be an invalid handle at this stage. If that's not the case, the next line of code could leak memory");
+		}
+#endif // DEBUG
+
 		skybox_node->m_hdr = new_equirectangular;
 
 		m_render_system->SignalSkyboxChange();

@@ -407,6 +407,7 @@ namespace wr
 
 		d3d12::TextureResource* texture = static_cast<d3d12::TextureResource*>(m_staged_textures.at(texture_id));
 		m_staged_textures.erase(texture_id);
+		m_staging_textures.at(frame_idx).erase(texture_id);
 
 		m_marked_for_unload.at(frame_idx).push_back(texture);
 
