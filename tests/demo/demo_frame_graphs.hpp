@@ -92,7 +92,7 @@ namespace fg_manager
 		// Deferred
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::DEFERRED];
-			fg = new wr::FrameGraph(20);
+			fg = new wr::FrameGraph(24);
 			
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
@@ -181,7 +181,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(23);
+			fg = new wr::FrameGraph(25);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
