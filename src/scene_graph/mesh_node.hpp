@@ -27,6 +27,7 @@ namespace wr
 		Model* m_model;
 		AABB m_aabb;
 		std::vector<MaterialHandle> m_materials;
+		bool m_visible;
 
 	private:
 		/*! Check whether their are more materials than meshes */
