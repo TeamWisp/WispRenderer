@@ -12,7 +12,6 @@ namespace wr
 	Node::Node(std::type_info const & type_info) : m_type_info(type_info)
 	{
 		SignalTransformChange();
-		m_used_quaternion = false;
 	}
 
 	void Node::SignalChange()
@@ -67,7 +66,7 @@ namespace wr
 	void Node::SetQuaternionRotation( float x, float y, float z, float w )
 	{
 		m_rotation = { x,y,z,w };
-		m_used_quaternion = true;
+		m_use_quaternion = true;
 		SignalTransformChange();
 	}
 
