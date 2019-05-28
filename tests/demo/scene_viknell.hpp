@@ -76,6 +76,7 @@ namespace viknell_scene
 	static std::shared_ptr<SplineNode> camera_spline_node;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
 	static std::shared_ptr<wr::MeshNode> test_model;
+	static std::shared_ptr<wr::MeshNode> back_wall;
 	static float t = 0;
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
@@ -91,7 +92,7 @@ namespace viknell_scene
 		// Geometry
 		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		 back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
@@ -134,13 +135,18 @@ namespace viknell_scene
 		//auto dir_light = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	}
 
-	void UpdateScene()
+	void UpdateScene(wr::SceneGraph* scene_graph)
 	{
 		t += 10.f * ImGui::GetIO().DeltaTime;
 
 		//auto pos = test_model->m_position;
 		//pos.m128_f32[0] = sin(t * 0.1) * 0.5;
 		//test_model->SetPosition(pos);
+
+		if (t > 75.f) {
+			scene_graph->DestroyNode<wr::MeshNode>(test_model);
+			scene_graph->DestroyNode<wr::MeshNode>(back_wall);
+		}
 
 		camera->Update(ImGui::GetIO().DeltaTime);
 		camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, camera);
