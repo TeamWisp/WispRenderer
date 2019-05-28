@@ -31,6 +31,13 @@
 #include "render_tasks/d3d12_bloom_horizontal.hpp"
 #include "render_tasks/d3d12_bloom_vertical.hpp"
 
+#include "render_tasks/d3d12_bloom_half_res.hpp"
+#include "render_tasks/d3d12_bloom_half_res_v.hpp"
+#include "render_tasks/d3d12_bloom_quarter_res.hpp"
+#include "render_tasks/d3d12_bloom_quarter_res_v.hpp"
+#include "render_tasks/d3d12_bloom_eighth_res.hpp"
+#include "render_tasks/d3d12_bloom_eighth_res_v.hpp"
+
 
 namespace fg_manager
 {
@@ -106,10 +113,13 @@ namespace fg_manager
 			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
-			wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
-			wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
+			//wr::AddBloomHorizontalTask<wr::DownScaleData>(*fg);
+			//wr::AddBloomVerticalTask<wr::BloomHData>(*fg);
+			wr::AddBloomHalfTask<wr::DownScaleData>(*fg);
+			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomVData>(*fg);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 

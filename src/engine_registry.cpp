@@ -831,6 +831,43 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 	});
 
+	// bloom blur
+	REGISTER(shaders::bloom_blur, ShaderRegistry)({
+		.path = "resources/shaders/bloom_blur.hlsl",
+		.entry = "main_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		});
+
+	DESC_RANGE_ARRAY(bloom_blur_r,
+		DESC_RANGE(params::bloom_blur, Type::SRV_RANGE, params::BloomBlurE::SOURCE),
+		DESC_RANGE(params::bloom_blur, Type::UAV_RANGE, params::BloomBlurE::OUTPUT),
+		);
+
+	REGISTER(root_signatures::bloom_blur, RootSignatureRegistry)({
+		.m_parameters = {
+			ROOT_PARAM_DESC_TABLE(bloom_blur_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetConstants(params::bloom_blur, params::BloomBlurE::BLUR_DIRECTION)),
+		},
+		.m_samplers = {
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP},
+		}
+		});
+
+	REGISTER(pipelines::bloom_blur, PipelineRegistry) < Vertex2D > ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::bloom_blur,
+		.m_root_signature_handle = root_signatures::bloom_blur,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = {d3d12::settings::back_buffer_format },
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
+		});
+
 	// bloom composition
 	REGISTER(shaders::bloom_composition, ShaderRegistry)({
 		.path = "resources/shaders/bloom_composition.hlsl",

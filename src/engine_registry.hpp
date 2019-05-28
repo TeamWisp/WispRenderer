@@ -646,6 +646,19 @@ namespace wr
 			rs_layout::Entry{(int)BloomHE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 		};
 
+		enum class BloomBlurE
+		{
+			SOURCE,
+			OUTPUT,
+			BLUR_DIRECTION
+		};
+
+		constexpr std::array<rs_layout::Entry, 3> bloom_blur = {
+			rs_layout::Entry{(int)BloomBlurE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomBlurE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)BloomBlurE::BLUR_DIRECTION, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
 		enum class BloomVE
 		{
 			SOURCE,
@@ -699,6 +712,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
@@ -730,6 +744,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
@@ -754,6 +769,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
