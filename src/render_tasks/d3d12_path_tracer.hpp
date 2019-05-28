@@ -340,7 +340,7 @@ namespace wr
 				// Make sure the convolution pass wrote to the skybox.
 				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
-                                // Get skybox
+                // Get skybox
 				if (SkyboxNode *skybox = scene_graph.GetCurrentSkybox().get())
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
@@ -350,14 +350,24 @@ namespace wr
 					auto irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::PREF_ENV_MAP)), irradiance_t);
 
-					// Get brdf lookup texture
-					auto brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
-                                        d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::BRDF_LUT)), brdf_lut_text);
-
 					// Get Environment Map
 					irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::IRRADIANCE_MAP)), irradiance_t);
 				}
+				else
+				{
+					TextureHandle default_cubemap = n_render_system.m_default_cubemap.value();
+					auto* texture = static_cast<wr::d3d12::TextureResource*>(default_cubemap.m_pool->GetTextureResource(default_cubemap));
+
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::SKYBOX)), texture);
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::PREF_ENV_MAP)), texture);
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::IRRADIANCE_MAP)), texture);
+				}
+
+				// Get brdf lookup texture
+				auto brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::BRDF_LUT)), brdf_lut_text);
+
 
 				// Transition depth to NON_PIXEL_RESOURCE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);

@@ -416,6 +416,13 @@ namespace wr::imgui::window
 		{ typeid(SkyboxNode),
 			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
 			{
+				if (ImGui::Button("Remove"))
+				{
+					scene_graph->DestroyNode(std::static_pointer_cast<SkyboxNode>(node));
+
+					return true; // close popup.
+				}
+
 				return false;
 			}
 		},

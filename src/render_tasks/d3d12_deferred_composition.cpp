@@ -218,10 +218,16 @@ namespace wr
 
 				//GetSkybox
 				auto skybox = scene_graph.GetCurrentSkybox();
-				if (skybox != nullptr)
+				if (skybox)
 				{
 					//data.out_skybox = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
 					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
+					d3d12::CreateSRVFromTexture(data.out_skybox);
+				}
+				else
+				{
+					TextureHandle default_cubemap = n_render_system.m_default_cubemap.value();
+					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(default_cubemap.m_pool->GetTextureResource(default_cubemap));
 					d3d12::CreateSRVFromTexture(data.out_skybox);
 				}
 
@@ -242,16 +248,28 @@ namespace wr
 				}
 
 				// Get Irradiance Map
-				if (skybox != nullptr)
+				if (skybox)
 				{
 					data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
 					d3d12::CreateSRVFromTexture(data.out_irradiance);
 				}
+				else
+				{
+					TextureHandle default_cubemap = n_render_system.m_default_cubemap.value();
+					data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(default_cubemap.m_pool->GetTextureResource(default_cubemap));
+					d3d12::CreateSRVFromTexture(data.out_irradiance);
+				}
 
 				// Get the prefiltered environment map	
-				if (skybox != nullptr)
+				if (skybox)
 				{
 					data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
+					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
+				}
+				else
+				{
+					TextureHandle default_cubemap = n_render_system.m_default_cubemap.value();
+					data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(default_cubemap.m_pool->GetTextureResource(default_cubemap));
 					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
 				}
 

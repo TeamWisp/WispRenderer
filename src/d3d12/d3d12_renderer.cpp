@@ -150,6 +150,7 @@ namespace wr
 
 		//Rendering engine creates a texture pool that will be used by the render tasks.
 		m_texture_pools.push_back(CreateTexturePool());
+		CreateDefaultResources();
 	}
 
 	CPUTextures D3D12RenderSystem::Render(SceneGraph& scene_graph, FrameGraph& frame_graph)
@@ -1346,6 +1347,11 @@ namespace wr
 
 			m_simple_shapes[static_cast<std::size_t>(SimpleShapes::PLANE)] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
 		}
+	}
+
+	void D3D12RenderSystem::CreateDefaultResources()
+	{
+		m_default_cubemap = m_texture_pools.at(0)->CreateCubemap("DefaultResource_Cubemap", 2, 2, 1, wr::Format::R8G8B8A8_UNORM, false);
 	}
 
 } /*  */

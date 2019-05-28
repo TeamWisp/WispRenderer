@@ -246,22 +246,31 @@ namespace wr
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::LIGHTS)), light_handle2);
 				}
 
+
+
 				// Get skybox
-				if (SkyboxNode *skybox = scene_graph.GetCurrentSkybox().get())
+				if (SkyboxNode* skybox = scene_graph.GetCurrentSkybox().get())
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX)), skybox_t);
 
-				// Get brdf lookup texture
-				if (scene_graph.GetCurrentSkybox() != nullptr)
-				{
-				  auto brdf_lut_texture = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
-				  d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::BRDF_LUT)), brdf_lut_texture);
-				}
-
 					// Get Environment Map
 					auto irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::IRRADIANCE_MAP)), irradiance_t);
+				}
+				else
+				{
+					TextureHandle default_cubemap = n_render_system.m_default_cubemap.value();
+					auto* texture = static_cast<wr::d3d12::TextureResource*>(default_cubemap.m_pool->GetTextureResource(default_cubemap));
+
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX)), texture);
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::IRRADIANCE_MAP)), texture);
+				}
+
+				{
+					// Get brdf lookup texture
+					auto brdf_lut_texture = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::BRDF_LUT)), brdf_lut_texture);
 				}
 
 				// Update offset data
