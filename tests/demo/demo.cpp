@@ -106,8 +106,6 @@ void startCrashpad()
 
 int WispEntry()
 {
-	HRESULT hres = CoInitializeEx(0, COINIT_MULTITHREADED);
-
 	// ImGui Logging
 	util::log_callback::impl = [&](std::string const & str)
 	{
@@ -195,8 +193,8 @@ int WispEntry()
 		fg_manager::Resize(*render_system, width, height);
 	});
 
-	/*auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
-	file_watcher->StartAsync(&ShaderDirChangeDetected);*/
+	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
+	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
 	window->SetRenderLoop([&]() {
 		SCENE::UpdateScene(scene_graph.get(), *render_system);

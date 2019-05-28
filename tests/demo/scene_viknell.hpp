@@ -144,57 +144,5 @@ namespace viknell_scene
 
 		camera->Update(ImGui::GetIO().DeltaTime);
 		camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, camera);
-
-		auto skybox_node = sg->GetCurrentSkybox();
-
-		//Delete first
-
-		static bool reload_skybox = false;
-		static size_t index = 0;
-
-		if (t >= 60.0f)
-		{
-			reload_skybox = true;
-
-			t = 0.0f;
-		}
-
-		//if (false)
-		//{
-		//	std::array<std::string, 8> skyboxes = 
-		//	{
-		//		"resources/materials/Arches_E_PineTree_3k.hdr",
-		//		"resources/materials/artist_workshop_4k.hdr",
-		//		"resources/materials/Barce_Rooftop_C_3k.hdr",
-		//		"resources/materials/cayley_interior_4k.hdr",
-		//		"resources/materials/Circus_Backstage_3k.hdr",
-		//		"resources/materials/Factory_Catwalk_2k.hdr",
-		//		"resources/materials/Ice_Lake_Ref.hdr",
-		//		"resources/materials/LA_Downtown_Afternoon_Fishing_3k.hdr"
-		//	};
-
-
-		//	skybox_node->m_irradiance.value().m_pool->MarkForUnload(skybox_node->m_irradiance.value(), rs.GetFrameIdx());
-		//	skybox_node->m_irradiance = std::nullopt;
-
-		//	skybox_node->m_skybox.value().m_pool->MarkForUnload(skybox_node->m_skybox.value(), rs.GetFrameIdx());
-		//	skybox_node->m_skybox = std::nullopt;
-
-		//	skybox_node->m_prefiltered_env_map.value().m_pool->MarkForUnload(skybox_node->m_prefiltered_env_map.value(), rs.GetFrameIdx());
-		//	skybox_node->m_prefiltered_env_map = std::nullopt;
-
-		//	skybox_node->m_hdr.m_pool->MarkForUnload(skybox_node->m_hdr, rs.GetFrameIdx());
-		//	skybox_node->m_hdr = resources::texture_pool->LoadFromFile(skyboxes[index], false, false);
-
-		//	reload_skybox = false;
-		//	index++;
-		//	if (index > 7)
-		//	{
-		//		index = 0;
-		//	}
-
-		//	rs.SignalSkyboxChange();
-		//}
-
 	}
 } /* cube_scene */
