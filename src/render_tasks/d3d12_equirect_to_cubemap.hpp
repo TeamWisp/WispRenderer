@@ -33,8 +33,6 @@ namespace wr
 		DirectX::XMMATRIX proj_mat = { DirectX::XMMatrixIdentity() };
 		DirectX::XMMATRIX view_mat[6] = {};
 
-		bool should_run = true;
-
 		std::uint32_t build_frame_idx = -1;
 	};
 
@@ -169,16 +167,15 @@ namespace wr
 			auto& data = fg.GetData<EquirectToCubemapTaskData>(handle);
 
 			auto skybox_node = scene_graph.GetCurrentSkybox();
+			if (!skybox_node)
+			{
+				return;
+			}
+
 
 			//Does it need conversion?
 			if (skybox_node->m_skybox != std::nullopt)
 			{
-				//Clean up the intermediate texture (wait for the frame to finish first)
-				if (skybox_node->m_hdr.m_pool && n_render_system.GetFrameIdx() == data.build_frame_idx) {
-					skybox_node->m_hdr.m_pool->Unload(skybox_node->m_hdr);
-					skybox_node->m_hdr = { nullptr, 0 };
-				}
-
 				return;
 			}
 
@@ -278,6 +275,7 @@ namespace wr
 
 				//Prefilter environment map
 				PrefilterCubemap(cmd_list, data.out_cubemap, data.out_pref_env);
+
 				fg.SetShouldExecute(handle, false);
 			}
 		}

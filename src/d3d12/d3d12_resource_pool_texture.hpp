@@ -69,7 +69,8 @@ namespace wr
 		DescriptorAllocator* GetAllocator(DescriptorHeapType type);
 		DescriptorAllocator* GetMipmappingAllocator() { return m_mipmapping_allocator; }
 
-		void Unload(TextureHandle& handle) final;
+		void MarkForUnload(TextureHandle& handle, unsigned int frame_idx) final;
+		void UnloadTextures(unsigned int frame_idx) final;
 
 		void GenerateMips_Cubemap(d3d12::TextureResource* texture, CommandList* cmd_list, unsigned int array_slice);
 
@@ -102,6 +103,9 @@ namespace wr
 		//Track resources that are created in one frame and destroyed after
 		std::array<std::vector<d3d12::TextureResource*>, d3d12::settings::num_back_buffers> m_temporary_textures;
 		std::array< std::vector<d3d12::Heap<wr::HeapOptimization::BIG_STATIC_BUFFERS>*>, d3d12::settings::num_back_buffers> m_temporary_heaps;
+
+		//Resources marked for deletion
+		std::array<std::vector<d3d12::TextureResource*>, d3d12::settings::num_back_buffers> m_marked_for_unload;
 
 		//Default UAV used for padding
 		DescriptorAllocation m_default_uav;

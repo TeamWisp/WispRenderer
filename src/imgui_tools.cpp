@@ -357,6 +357,25 @@ namespace wr::imgui::window
 				model_node->SignalChange();
 			}
 		},
+		{ typeid(SkyboxNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
+				auto skybox_node = std::static_pointer_cast<SkyboxNode>(node);
+
+				if (ImGui::Button("Change Sky"))
+				{
+					//TODO: tool for skybox selection.
+
+					std::string skybox_name;
+
+					skybox_name = "resources/materials/Arches_E_PineTree_3k.hdr";
+
+					TextureHandle new_texture = skybox_node->m_skybox.value().m_pool->LoadFromFile(skybox_name, false, false);
+
+					scene_graph->UpdateSkyboxNode(skybox_node, new_texture);
+				}
+			}
+		},
 	};
 
 	decltype(SceneGraphEditorDetails::sg_editor_type_context_menu) SceneGraphEditorDetails::sg_editor_type_context_menu =
@@ -391,6 +410,12 @@ namespace wr::imgui::window
 					return true; // close popup.
 				}
 
+				return false;
+			}
+		},
+		{ typeid(SkyboxNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
 				return false;
 			}
 		},
