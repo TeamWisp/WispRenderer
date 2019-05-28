@@ -3,6 +3,7 @@
 #include "render_tasks/d3d12_rtao_task.hpp"
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
+#include "render_tasks/d3d12_build_acceleration_structures.hpp"
 
 namespace wr::imgui::window
 {
@@ -13,6 +14,7 @@ namespace wr::imgui::window
 	static wr::RTAOSettings rtao_user_settings;
 	static wr::HBAOSettings hbao_user_settings;
 	static wr::AnselSettings ansel_user_settings;
+	static wr::ASBuildSettings as_build_user_settings;
 
 	void GraphicsSettings(wr::FrameGraph* frame_graph)
 	{
@@ -32,6 +34,7 @@ namespace wr::imgui::window
 				frame_graph->UpdateSettings<wr::RTAOData>(rtao_user_settings);
 			}
 
+			
 			ImGui::Dummy(ImVec2(0.0f, 10.0f));
 			ImGui::LabelText("", "HBAO+");
 			ImGui::Separator();
@@ -47,6 +50,7 @@ namespace wr::imgui::window
 			{
 				frame_graph->UpdateSettings<wr::HBAOData>(hbao_user_settings);
 			}
+
 
 			ImGui::Dummy(ImVec2(0.0f, 10.0f));
 			ImGui::LabelText("", "Ansel");
@@ -70,6 +74,16 @@ namespace wr::imgui::window
 			if (frame_graph->HasTask<wr::AnselData>())
 			{
 				frame_graph->UpdateSettings<wr::AnselData>(ansel_user_settings);
+			}
+
+			ImGui::Dummy(ImVec2(0.0f, 10.0f));
+			ImGui::LabelText("", "Acceleration Structure");
+			ImGui::Separator();
+
+			ImGui::Checkbox("Enable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
+			if (frame_graph->HasTask<wr::ASBuildData>())
+			{
+				frame_graph->UpdateSettings<wr::ASBuildData>(as_build_user_settings);
 			}
 
 			ImGui::End();

@@ -13,6 +13,16 @@
 
 namespace wr
 {
+
+	struct ASBuildSettings
+	{
+		struct Runtime
+		{
+			bool m_rebuild_as = false;
+		};
+		Runtime m_runtime;
+	};
+
 	struct ASBuildData
 	{
 		DescriptorAllocator* out_allocator = nullptr;
@@ -436,6 +446,7 @@ namespace wr
 		inline void ExecuteBuildASTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle handle)
 		{
 			auto& data = fg.GetData<ASBuildData>(handle);
+			auto settings = fg.GetSettings<ASBuildSettings>(handle);
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto device = n_render_system.m_device;
@@ -475,7 +486,7 @@ namespace wr
 
 				data.out_init = false;
 			}
-			else
+			else if (!settings.m_runtime.m_rebuild_as)
 			{
 				if (data.current_frame_index != data.previous_frame_index)
 				{
@@ -544,6 +555,7 @@ namespace wr
 		desc.m_allow_multithreading = true;
 
 		frame_graph.AddTask<ASBuildData>(desc, L"Acceleration Structure Builder");
+		frame_graph.UpdateSettings<ASBuildData>(ASBuildSettings());
 	}
 
 } /* wr */
