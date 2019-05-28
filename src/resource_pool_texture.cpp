@@ -48,34 +48,4 @@ namespace wr
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return LoadFromCompressedMemory(data, width, height, type, srgb, generate_mips);
 	}
-
-	TextureHandle TexturePool::GetDefaultAlbedo() const
-	{
-		return m_default_albedo;
-	}
-
-	TextureHandle TexturePool::GetDefaultNormal() const
-	{
-		return m_default_normal;
-	}
-
-	TextureHandle TexturePool::GetDefaultRoughness() const
-	{
-		return m_default_roughness;
-	}
-
-	TextureHandle TexturePool::GetDefaultMetalic() const
-	{
-		return m_default_metallic;
-	}
-
-	TextureHandle TexturePool::GetDefaultAO() const
-	{
-		return m_default_ao;
-	}
-
-	TextureHandle TexturePool::GetDefaultEmissive() const
-	{
-		return m_default_emissive;
-	}
 }

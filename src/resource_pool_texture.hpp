@@ -48,26 +48,12 @@ namespace wr
 		virtual void PostStageClear() = 0;
 		virtual void ReleaseTemporaryResources() = 0;
 
-		TextureHandle GetDefaultAlbedo() const;
-		TextureHandle GetDefaultNormal() const;
-		TextureHandle GetDefaultRoughness() const;
-		TextureHandle GetDefaultMetalic() const;
-		TextureHandle GetDefaultAO() const;
-		TextureHandle GetDefaultEmissive() const;
-
 		virtual Texture* GetTextureResource(TextureHandle handle) = 0;
 
 	protected:
 
 		std::size_t m_loaded_textures = 0;
 		std::mutex m_mutex;
-
-		TextureHandle m_default_albedo;
-		TextureHandle m_default_normal;
-		TextureHandle m_default_roughness;
-		TextureHandle m_default_metallic;
-		TextureHandle m_default_ao;
-		TextureHandle m_default_emissive;
 
 		IDFactory m_id_factory;
 

@@ -234,15 +234,8 @@ namespace wr
 				candidate for this.
 				*/
 				{
-					auto texture_pool = render_system.GetDefaultTexturePool();
-
-					if (texture_pool == nullptr)
-					{
-						LOGC("ERROR: Texture Pool in Raytracing Task is nullptr. This is not supposed to happen.");
-					}
-
-					auto texture_handle = texture_pool->GetDefaultAlbedo();
-					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTextureResource(texture_handle));
+					auto texture_handle = render_system.GetDefaultAlbedo();
+					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
 					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::rt_hybrid, params::RTHybridE::TEXTURES));
 					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES));

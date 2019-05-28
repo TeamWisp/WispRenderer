@@ -92,10 +92,21 @@ namespace wr
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
 		virtual wr::Model* GetSimpleShape(SimpleShapes type) = 0;
 
+		TextureHandle GetDefaultAlbedo() const { return m_default_albedo; }
+		TextureHandle GetDefaultNormal() const { return m_default_normal; }
+		TextureHandle GetDefaultRoughness() const { return m_default_white; }
+		TextureHandle GetDefaultMetalic() const { return m_default_black; }
+		TextureHandle GetDefaultAO() const { return m_default_white; }
+		TextureHandle GetDefaultEmissive() const { return m_default_black; }
+
 		std::shared_ptr<ModelPool> m_shapes_pool;
 		std::array<wr::Model*, static_cast<std::size_t>(SimpleShapes::COUNT)> m_simple_shapes;
 
 		wr::TextureHandle m_default_cubemap;
+		wr::TextureHandle m_default_albedo;
+		wr::TextureHandle m_default_normal;
+		wr::TextureHandle m_default_white;
+		wr::TextureHandle m_default_black;
 
 	protected:
 		struct SaveRenderTargetRequest
