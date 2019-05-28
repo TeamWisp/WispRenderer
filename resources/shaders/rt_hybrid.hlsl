@@ -45,7 +45,7 @@ Texture2D g_textures[1000] : register(t10);
 Texture2D gbuffer_albedo : register(t1010);
 Texture2D gbuffer_normal : register(t1011);
 Texture2D gbuffer_depth : register(t1012);
-Texture2D skybox : register(t6);
+TextureCube skybox : register(t6);
 Texture2D brdf_lut : register(t8);
 TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
@@ -95,7 +95,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 
 	if (depth >= MAX_RECURSION)
 	{
-		return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0).rgb;
+		return skybox.SampleLevel(s0, direction, 0).rgb;
 	}
 
 	origin += norm * EPSILON;
@@ -334,5 +334,5 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 [shader("miss")]
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, SampleSphericalMap(WorldRayDirection()), 0);
+	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
 }

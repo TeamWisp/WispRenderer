@@ -128,6 +128,10 @@ namespace wr
 		void ReloadRTPipelineRegistryEntry(RegistryHandle handle);
 		void ReloadShaderRegistryEntry(RegistryHandle handle);
 		void ReloadRootSignatureRegistryEntry(RegistryHandle handle);
+		void DestroyRootSignatureRegistry();
+		void DestroyShaderRegistry();
+		void DestroyPipelineRegistry();
+		void DestroyRTPipelineRegistry();
 
 		void WaitForAllPreviousWork();
 
