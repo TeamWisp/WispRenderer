@@ -361,7 +361,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<DeferredCompositionTaskData>(desc, L"Deferred Composition", FG_DEPS(2, DeferredMainTaskData, CubemapConvolutionTaskData));
+		fg.AddTask<DeferredCompositionTaskData>(desc, L"Deferred Composition", FG_DEPS<DeferredMainTaskData, CubemapConvolutionTaskData>());
 	}
 
 }

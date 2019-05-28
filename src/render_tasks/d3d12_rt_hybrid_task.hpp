@@ -428,7 +428,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<RTHybridData>(desc, L"Hybrid Raytracing", FG_DEPS(1, DeferredMainTaskData));
+		fg.AddTask<RTHybridData>(desc, L"Hybrid Raytracing", FG_DEPS<DeferredMainTaskData>());
 	}
 
 } /* wr */

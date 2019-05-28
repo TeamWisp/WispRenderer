@@ -146,7 +146,7 @@ namespace wr
 		readback_task_description.m_allow_multithreading = false;
 
 		// Save this task to the frame graph system
-		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description, L"Depth Data CPU Readback", FG_DEPS(1, T));
+		frame_graph.AddTask<DepthReadbackTaskData>(readback_task_description, L"Depth Data CPU Readback", FG_DEPS<T>());
 	}
 
 } /* wr */
