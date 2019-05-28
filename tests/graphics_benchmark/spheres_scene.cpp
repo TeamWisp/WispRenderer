@@ -26,7 +26,6 @@ void SpheresScene::BuildScene(unsigned int width, unsigned int height)
 	camera->SetFov(45.f);
 	camera->SetPosition({ 0.0f, 0.0f, 30.f });
 
-	m_scene_graph->m_skybox = m_skybox;
 	m_scene_graph->CreateChild<wr::SkyboxNode>(nullptr, m_skybox);
 
 	std::shared_ptr<wr::MeshNode> spheres[49];
