@@ -6,11 +6,10 @@
 
 #include "engine_registry.hpp"
 #include "platform_independend_structs.hpp"
+#include "structs.hpp"
 
 namespace wr
 {
-
-	struct TextureHandle;
 	struct Model;
 	struct CPUTextures;
 
@@ -95,6 +94,8 @@ namespace wr
 
 		std::shared_ptr<ModelPool> m_shapes_pool;
 		std::array<wr::Model*, static_cast<std::size_t>(SimpleShapes::COUNT)> m_simple_shapes;
+
+		wr::TextureHandle m_default_cubemap;
 
 	protected:
 		struct SaveRenderTargetRequest

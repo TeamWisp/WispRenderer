@@ -209,8 +209,6 @@ namespace wr
 
 		std::optional<wr::TextureHandle> m_brdf_lut = std::nullopt;
 		bool m_brdf_lut_generated = false;
-
-		std::optional<wr::TextureHandle> m_default_cubemap = std::nullopt;
     
 		float temp_metal = 1.0f;
 		float temp_rough = -3;

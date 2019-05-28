@@ -128,6 +128,8 @@ namespace wr
 		std::vector<std::shared_ptr<LightNode>> m_light_nodes;
 		std::vector< std::shared_ptr<SkyboxNode>> m_skybox_nodes;
 
+		std::shared_ptr<SkyboxNode> m_default_skybox = nullptr;
+
 		std::shared_ptr<SkyboxNode> m_current_skybox = nullptr;
 
 		uint32_t m_next_light_id = 0;
