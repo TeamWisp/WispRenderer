@@ -118,13 +118,9 @@ namespace wr
 		{
 			TextureHandle handle = { this, static_cast<uint32_t>(m_staged_textures.begin()->first) };
 			D3D12TexturePool::MarkForUnload(handle, 0);
-			D3D12TexturePool::MarkForUnload(handle, 1);
-			D3D12TexturePool::MarkForUnload(handle, 2);
 		}
 
 		D3D12TexturePool::UnloadTextures(0);
-		D3D12TexturePool::UnloadTextures(1);
-		D3D12TexturePool::UnloadTextures(2);
 	}
 
 	void D3D12TexturePool::Evict()
