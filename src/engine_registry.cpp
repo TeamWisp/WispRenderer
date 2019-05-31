@@ -778,7 +778,7 @@ namespace wr
 			ROOT_PARAM(GetCBV(params::bloom_blur, params::BloomBlurE::BLUR_DIRECTION)),
 		},
 		.m_samplers = {
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP},
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP},
 		}
 		});
 
@@ -809,6 +809,7 @@ namespace wr
 		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM_HALF),
 		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM_QUARTER),
 		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM_EIGHTH),
+		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM_SIXTEENTH),
 		DESC_RANGE(params::bloom_composition, Type::UAV_RANGE, params::BloomCompositionE::OUTPUT),
 	);
 

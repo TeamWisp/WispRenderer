@@ -34,6 +34,8 @@
 #include "render_tasks/d3d12_bloom_quarter_res_v.hpp"
 #include "render_tasks/d3d12_bloom_eighth_res.hpp"
 #include "render_tasks/d3d12_bloom_eighth_res_v.hpp"
+#include "render_tasks/d3d12_bloom_sixteenth_res.hpp"
+#include "render_tasks/d3d12_bloom_sixteenth_res_v.hpp"
 
 
 namespace fg_manager
@@ -119,8 +121,11 @@ namespace fg_manager
 
 			wr::AddBloomEighthTask<wr::DownScaleData>(*fg);
 			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
+			
+			wr::AddBloomSixteenthTask<wr::DownScaleData>(*fg);
+			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData>(*fg);
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 
@@ -221,7 +226,10 @@ namespace fg_manager
 			wr::AddBloomEighthTask<wr::DownScaleData>(*fg);
 			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
 
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData>(*fg);
+			wr::AddBloomSixteenthTask<wr::DownScaleData>(*fg);
+			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
+
+			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
 
 			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 

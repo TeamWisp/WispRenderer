@@ -657,14 +657,16 @@ namespace wr
 			SOURCE_BLOOM_HALF,
 			SOURCE_BLOOM_QUARTER,
 			SOURCE_BLOOM_EIGHTH,
+			SOURCE_BLOOM_SIXTEENTH,
 			OUTPUT
 		};
 
-		constexpr std::array<rs_layout::Entry, 6> bloom_composition = {
+		constexpr std::array<rs_layout::Entry, 7> bloom_composition = {
 			rs_layout::Entry{(int)BloomCompositionE::SOURCE_MAIN, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_HALF, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_QUARTER, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_EIGHTH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_SIXTEENTH, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::BLOOM_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};

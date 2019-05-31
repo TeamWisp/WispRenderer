@@ -31,6 +31,7 @@ namespace wr
 		d3d12::RenderTarget* out_source_bloom_half_rt = nullptr;
 		d3d12::RenderTarget* out_source_bloom_quarter_rt = nullptr;
 		d3d12::RenderTarget* out_source_bloom_eighth_rt = nullptr;
+		d3d12::RenderTarget* out_source_bloom_sixteenth_rt = nullptr;
 		d3d12::PipelineState* out_pipeline = nullptr;
 		ID3D12Resource* out_previous = nullptr;
 		DescriptorAllocator* out_allocator = nullptr;
@@ -42,7 +43,7 @@ namespace wr
 
 	namespace internal
 	{
-		template<typename T, typename T1, typename T2, typename T3>
+		template<typename T, typename T1, typename T2, typename T3, typename T4>
 		inline void SetupBloomCompositionTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -62,6 +63,7 @@ namespace wr
 			auto bloom_rt_half = data.out_source_bloom_half_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
 			auto bloom_rt_quarter = data.out_source_bloom_quarter_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T2>());
 			auto bloom_rt_eighth = data.out_source_bloom_eighth_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T3>());
+			auto bloom_rt_sixteenth = data.out_source_bloom_sixteenth_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T4>());
 
 			// Destination near
 			{
@@ -86,12 +88,17 @@ namespace wr
 			// Source bloom eighth
 			{
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_BLOOM_EIGHTH)));
+				d3d12::CreateSRVFromSpecificRTV(bloom_rt_sixteenth, cpu_handle, 0, bloom_rt_eighth->m_create_info.m_rtv_formats[0]);
+			}			
+			// Source bloom sixteenth
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_BLOOM_SIXTEENTH)));
 				d3d12::CreateSRVFromSpecificRTV(bloom_rt_eighth, cpu_handle, 0, bloom_rt_eighth->m_create_info.m_rtv_formats[0]);
 			}
 			
 		}
 
-		template<typename T, typename T1, typename T2, typename T3>
+		template<typename T, typename T1, typename T2, typename T3, typename T4>
 		inline void ExecuteBloomCompositionTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
@@ -109,6 +116,7 @@ namespace wr
 			auto bloom_rt_half = data.out_source_bloom_half_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
 			auto bloom_rt_quarter = data.out_source_bloom_quarter_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T2>());
 			auto bloom_rt_eighth = data.out_source_bloom_eighth_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T3>());
+			auto bloom_rt_sixteenth = data.out_source_bloom_sixteenth_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T4>());
 
 			// Destination near
 			{
@@ -133,6 +141,11 @@ namespace wr
 			// Source bloom eighth
 			{
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_BLOOM_EIGHTH)));
+				d3d12::CreateSRVFromSpecificRTV(bloom_rt_eighth, cpu_handle, 0, bloom_rt_eighth->m_create_info.m_rtv_formats[0]);
+			}
+			// Source bloom sixteenth
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_BLOOM_SIXTEENTH)));
 				d3d12::CreateSRVFromSpecificRTV(bloom_rt_eighth, cpu_handle, 0, bloom_rt_eighth->m_create_info.m_rtv_formats[0]);
 			}
 
@@ -170,6 +183,12 @@ namespace wr
 				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_bloom_eighth_idx);
 				d3d12::SetShaderSRV(cmd_list, 0, source_bloom_eighth_idx, handle_b_srv);
 			}
+						
+			{
+				constexpr unsigned int source_bloom_sixteenth_idx = rs_layout::GetHeapLoc(params::bloom_composition, params::BloomCompositionE::SOURCE_BLOOM_SIXTEENTH);
+				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_bloom_sixteenth_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_bloom_sixteenth_idx, handle_b_srv);
+			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
@@ -193,7 +212,7 @@ namespace wr
 
 	} /* internal */
 
-	template<typename T, typename T1, typename T2, typename T3>
+	template<typename T, typename T1, typename T2, typename T3, typename T4>
 	inline void AddBloomCompositionTask(FrameGraph& frame_graph)
 	{
 		RenderTargetProperties rt_properties
@@ -214,10 +233,10 @@ namespace wr
 
 		RenderTaskDesc desc; 
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::SetupBloomCompositionTask<T, T1, T2, T3>(rs, fg, handle, resize);
+			internal::SetupBloomCompositionTask<T, T1, T2, T3, T4>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteBloomCompositionTask<T, T1, T2, T3>(rs, fg, sg, handle);
+			internal::ExecuteBloomCompositionTask<T, T1, T2, T3, T4>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 			internal::DestroyBloomCompositionTask(fg, handle, resize);
