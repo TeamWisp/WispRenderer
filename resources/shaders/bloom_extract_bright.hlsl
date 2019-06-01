@@ -16,10 +16,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	output_bright.GetDimensions(screen_size.x, screen_size.y);
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
-
-	float2 texel_size = 1.0f / screen_size;
-	float4 offset = texel_size.xyxy * float2(-0.5, 0.5).xxyy;
-
 	float2 uv = screen_coord / screen_size;
 
 	float4 out_bright = float4(0.0f, 0.0f, 0.0f, 1.0f);
