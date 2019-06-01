@@ -539,19 +539,17 @@ namespace wr
 			SOURCE,
 			OUTPUT_NEAR,
 			OUTPUT_FAR,
-			OUTPUT_BRIGHT,
 			COC,
-			SOURCE_EMISSIVE
 		};
 
-		constexpr std::array<rs_layout::Entry,6> down_scale = {
+		constexpr std::array<rs_layout::Entry,4> down_scale = {
 			rs_layout::Entry{(int)DownScaleE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DownScaleE::OUTPUT_NEAR, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)DownScaleE::OUTPUT_FAR, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)DownScaleE::OUTPUT_BRIGHT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)DownScaleE::COC, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DownScaleE::SOURCE_EMISSIVE, 1, rs_layout::Type::SRV_RANGE}
 		};
+
+
 
 		enum class DoFDilateE
 		{
@@ -562,28 +560,6 @@ namespace wr
 		constexpr std::array<rs_layout::Entry, 2> dof_dilate = {
 			rs_layout::Entry{(int)DoFDilateE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DoFDilateE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-		};
-
-		enum class DoFDilateFlattenE
-		{
-			SOURCE,
-			OUTPUT
-		};
-
-		constexpr std::array<rs_layout::Entry, 2> dof_dilate_flatten = {
-			rs_layout::Entry{(int)DoFDilateFlattenE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DoFDilateFlattenE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-		};
-
-		enum class DoFDilateFlattenHE
-		{
-			SOURCE,
-			OUTPUT
-		};
-
-		constexpr std::array<rs_layout::Entry, 2> dof_dilate_flatten_h = {
-			rs_layout::Entry{(int)DoFDilateFlattenHE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DoFDilateFlattenHE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 		};
 
 		enum class DoFBokehE
@@ -637,6 +613,20 @@ namespace wr
 			rs_layout::Entry{(int)DoFCompositionE::COC, 1, rs_layout::Type::SRV_RANGE},
 		};
 
+		enum class BloomExtractBrightE
+		{
+			SOURCE,
+			G_EMISSIVE,
+			G_DEPTH,
+			OUTPUT_BRIGHT
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> bloom_extract_bright = {
+			rs_layout::Entry{(int)BloomExtractBrightE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomExtractBrightE::G_EMISSIVE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomExtractBrightE::G_DEPTH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomExtractBrightE::OUTPUT_BRIGHT, 1, rs_layout::Type::UAV_RANGE},
+		};
 		enum class BloomBlurE
 		{
 			SOURCE,
@@ -691,11 +681,10 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
@@ -721,11 +710,10 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
@@ -744,11 +732,10 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};

@@ -11,7 +11,7 @@
 
 namespace wr
 {
-	struct DownScaleData
+	struct BloomExtractBrightData
 	{
 		d3d12::RenderTarget* out_source_rt = nullptr;
 		d3d12::RenderTarget* out_source_emissive = nullptr;
@@ -26,10 +26,10 @@ namespace wr
 	{
 	
 		template<typename T, typename T1>
-		inline void SetupDownScaleTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void SetupBloomExtractBrightTask(RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& data = fg.GetData<DownScaleData>(handle);
+			auto& data = fg.GetData<BloomExtractBrightData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 
 			if (!resize)
@@ -39,97 +39,99 @@ namespace wr
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
-			data.out_pipeline = ((d3d12::PipelineState*)ps_registry.Find(pipelines::down_scale));
+			data.out_pipeline = ((d3d12::PipelineState*)ps_registry.Find(pipelines::bloom_extract_bright));
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
-			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
+			auto source_emissive = data.out_source_emissive = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
 
-			// Destination near
+			// Bright output for bloom
 			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_NEAR)));
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::OUTPUT_BRIGHT)));
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-			}
-			// Destination far
-			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR)));
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
 			}
 			// Source
 			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::SOURCE)));
 				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
 			}
 
-			// Cone of confusion
+			// Depth buffer
 			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
-				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::G_DEPTH)));
+				d3d12::CreateSRVFromDSV(source_emissive, cpu_handle);
 			}
 
+			// Source emissive
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::G_EMISSIVE)));
+				d3d12::CreateSRVFromSpecificRTV(source_emissive, cpu_handle, 2, source_emissive->m_create_info.m_rtv_formats[2]);
+			}
 		}
 
 		template<typename T, typename T1>
-		inline void ExecuteDownScaleTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
+		inline void ExecuteBloomExtractBrightTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& device = n_render_system.m_device;
-			auto& data = fg.GetData<DownScaleData>(handle);
+			auto& data = fg.GetData<BloomExtractBrightData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto frame_idx = n_render_system.GetFrameIdx();
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			const auto viewport = n_render_system.m_viewport;
 
 			auto source_rt = data.out_source_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T>());
-			auto source_coc = data.out_source_coc = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
+			auto source_emissive = data.out_source_emissive = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<T1>());
 
-			// Destination near
+			// Bright output for bloom
 			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_NEAR)));
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::OUTPUT_BRIGHT)));
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
-			}
-			// Destination far
-			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR)));
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
 			}
 			// Source
 			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::SOURCE)));
 				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
 			}
-			// Cone of confusion
+			// Depth buffer
 			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
-				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::G_DEPTH)));
+				d3d12::CreateSRVFromDSV(source_emissive, cpu_handle);
 			}
+
+			// Source emissive
+			{
+				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::G_EMISSIVE)));
+				d3d12::CreateSRVFromSpecificRTV(source_emissive, cpu_handle, 2, source_emissive->m_create_info.m_rtv_formats[2]);
+			}
+
 
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
+
 			{
-				constexpr unsigned int dest_n_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_NEAR);
-				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_n_idx);
-				d3d12::SetShaderUAV(cmd_list, 0, dest_n_idx, handle_uav);
+				constexpr unsigned int dest_b_idx = rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::OUTPUT_BRIGHT);
+				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_b_idx);
+				d3d12::SetShaderUAV(cmd_list, 0, dest_b_idx, handle_uav);
 			}
 
 			{
-				constexpr unsigned int dest_f_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR);
-				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_f_idx);
-				d3d12::SetShaderUAV(cmd_list, 0, dest_f_idx, handle_uav);
-			}
-
-			{
-				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE);
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::SOURCE);
 				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_idx);
 				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_b_srv);
 			}
 
 			{
-				constexpr unsigned int source_coc_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC);
-				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_coc_idx);
-				d3d12::SetShaderSRV(cmd_list, 0, source_coc_idx, handle_m_srv);
-			}			
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::G_EMISSIVE);
+				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_b_srv);
+			}
 			
+			{
+				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::bloom_extract_bright, params::BloomExtractBrightE::G_DEPTH);
+				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_idx);
+				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_b_srv);
+			}
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
@@ -139,11 +141,11 @@ namespace wr
 				1);
 		}
 
-		inline void DestroyDownScaleTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
+		inline void DestroyBloomExtractBrightTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
 			if (!resize)
 			{
-				auto& data = fg.GetData<DownScaleData>(handle);
+				auto& data = fg.GetData<BloomExtractBrightData>(handle);
 
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
 				DescriptorAllocation temp1 = std::move(data.out_allocation);
@@ -154,7 +156,7 @@ namespace wr
 	} /* internal */
 
 	template<typename T, typename T1>
-	inline void AddDownScaleTask(FrameGraph& frame_graph)
+	inline void AddBloomExtractBrightTask(FrameGraph& frame_graph)
 	{
 		RenderTargetProperties rt_properties
 		{
@@ -165,8 +167,8 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT,wr::Format::R16G16B16A16_FLOAT}),
-			RenderTargetProperties::NumRTVFormats(2),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT}),
+			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResolutionScalar(0.5f)
@@ -174,19 +176,19 @@ namespace wr
 
 		RenderTaskDesc desc; 
 		desc.m_setup_func = [](RenderSystem& rs, FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::SetupDownScaleTask<T, T1>(rs, fg, handle, resize);
+			internal::SetupBloomExtractBrightTask<T, T1>(rs, fg, handle, resize);
 		};
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
-			internal::ExecuteDownScaleTask<T, T1>(rs, fg, sg, handle);
+			internal::ExecuteBloomExtractBrightTask<T, T1>(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			internal::DestroyDownScaleTask(fg, handle, resize);
+			internal::DestroyBloomExtractBrightTask(fg, handle, resize);
 		};
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<DownScaleData>(desc, L"Down Scale");
+		frame_graph.AddTask<BloomExtractBrightData>(desc, L"extract bright");
 	}
 
 } /* wr */

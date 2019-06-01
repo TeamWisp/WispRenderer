@@ -33,7 +33,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	const uint NUMSAMPLES = NUMDOFSAMPLES * NUMDOFSAMPLES;
 	const float MAXKERNELSIZE = MAXBOKEHSIZE * 0.5f;
-	const float SHAPECURVE = 0.0f;
+	const float SHAPECURVE = 2.0f;
 
 	float4 fgcolor = float4(0, 0, 0, 0);
 	float4 bgcolor = float4(0, 0, 0, 0);
@@ -46,8 +46,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float kernel_radius = MAXKERNELSIZE * far_coc;
 
 		[branch]
-		if (kernel_radius > 0.3f)
+		if (kernel_radius > 0.5f)
 		{
+			float weightsum = 0.0001f;
 			[unroll]
 			for (uint i = 0; i < NUMSAMPLES; ++i)
 			{
@@ -94,8 +95,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 				fgcolor.xyz += s.xyz * sw;
 
-				float sampledist = length(kernel_offset) * kernel_radius;
-
 				float samplealpha = 1.0f;
 				samplealpha *= saturate(samplecoc * 1.0f);
 				fgcolor.w += samplealpha * sw;
@@ -105,12 +104,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 			fgcolor.xyz /= weightsum;
 			fgcolor.w = saturate(fgcolor.w * (1.0f / NUMSAMPLES));
-			fgcolor.w = max(fgcolor.w, source_near.SampleLevel(s1, uv, 0).w);
+			fgcolor.w = max(fgcolor.w, source_near.SampleLevel(s0, uv, 0).w);
 		}
 		else
 		{
 			fgcolor = float4(source_near.SampleLevel(s0, uv, 0).rgb, 0.0f);
 		}
+		//fgcolor.w = nearMask;
 	}
 
 	output_near[int2(dispatch_thread_id.xy)] = fgcolor;

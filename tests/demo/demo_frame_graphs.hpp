@@ -23,10 +23,9 @@
 #include "render_tasks/d3d12_down_scale.hpp"
 #include "render_tasks/d3d12_dof_composition.hpp"
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
-#include "render_tasks/d3d12_dof_dilate_flatten.hpp"
-#include "render_tasks/d3d12_dof_dilate_flatten_second_pass.hpp"
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
+#include "render_tasks/d3d12_bloom_extract_bright.hpp"
 #include "render_tasks/d3d12_bloom_composition.hpp"
 #include "render_tasks/d3d12_bloom_half_res.hpp"
 #include "render_tasks/d3d12_bloom_half_res_v.hpp"
@@ -103,31 +102,28 @@ namespace fg_manager
 			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
+			//High quality bloom pass
+			wr::AddBloomExtractBrightTask<wr::DeferredCompositionTaskData, wr::DeferredMainTaskData>(*fg);
+			wr::AddBloomHalfTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
+			wr::AddBloomQuarterTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
+			wr::AddBloomEighthTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
+			wr::AddBloomSixteenthTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
+			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
+
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData, wr::DeferredMainTaskData>(*fg);
+			wr::AddDownScaleTask<wr::BloomCompostionData, wr::DoFCoCData>(*fg);
 			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
-			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
-			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
-			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateData>(*fg);
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
-			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
-			wr::AddBloomHalfTask<wr::DownScaleData>(*fg);
-			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
+			wr::AddDoFCompositionTask<wr::BloomCompostionData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
-			wr::AddBloomQuarterTask<wr::DownScaleData>(*fg);
-			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
-
-			wr::AddBloomEighthTask<wr::DownScaleData>(*fg);
-			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
-			
-			wr::AddBloomSixteenthTask<wr::DownScaleData>(*fg);
-			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
-
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
-
-			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
@@ -186,7 +182,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(25);
+			fg = new wr::FrameGraph(27);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -207,31 +203,27 @@ namespace fg_manager
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
+			//High quality bloom pass
+			wr::AddBloomExtractBrightTask<wr::DeferredCompositionTaskData, wr::DeferredMainTaskData>(*fg);
+			wr::AddBloomHalfTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
+			wr::AddBloomQuarterTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
+			wr::AddBloomEighthTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
+			wr::AddBloomSixteenthTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
+			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
+
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
-			wr::AddDownScaleTask<wr::DeferredCompositionTaskData, wr::DoFCoCData, wr::DeferredMainTaskData>(*fg);
+			wr::AddDownScaleTask<wr::BloomCompostionData, wr::DoFCoCData>(*fg);
 			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
-			wr::AddDoFDilateFlattenTask<wr::DoFDilateData>(*fg);
-			wr::AddDoFDilateFlattenHTask<wr::DoFDilateFlattenData>(*fg);
-			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateFlattenHData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateData>(*fg);
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
-			wr::AddDoFCompositionTask<wr::DeferredCompositionTaskData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+			wr::AddDoFCompositionTask<wr::BloomCompostionData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
 
-			wr::AddBloomHalfTask<wr::DownScaleData>(*fg);
-			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
-
-			wr::AddBloomQuarterTask<wr::DownScaleData>(*fg);
-			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
-
-			wr::AddBloomEighthTask<wr::DownScaleData>(*fg);
-			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
-
-			wr::AddBloomSixteenthTask<wr::DownScaleData>(*fg);
-			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
-
-			wr::AddBloomCompositionTask<wr::DoFCompositionData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
-
-			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
+			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);

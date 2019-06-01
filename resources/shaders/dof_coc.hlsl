@@ -61,7 +61,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = screen_coord / screen_size;
 	
-	float sample_depth = gbuffer_depth[screen_coord].r;
+	float sample_depth = gbuffer_depth.SampleLevel(s0, uv, 0).r;
 	float focus_depth = GetAutoFocusDepth(screen_size);
 
 	sample_depth = GetLinearDepth(sample_depth) * FFAR;
@@ -78,6 +78,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		coc = 0.0f;
 	}
 
-	float2 result = float2(coc, gbuffer_depth[screen_coord].r);
+	float2 result = float2(coc, gbuffer_depth.SampleLevel(s0, uv, 0).r);
 	output[int2(dispatch_thread_id.xy)] = result;
 }

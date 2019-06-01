@@ -3,9 +3,7 @@
 Texture2D source : register(t0);
 RWTexture2D<float4> output_near : register(u0);
 RWTexture2D<float4> output_far : register(u1);
-RWTexture2D<float4> output_bright : register(u2);
 Texture2D cocbuffer : register(t1);
-Texture2D g_emissive : register(t2);
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
 
@@ -54,18 +52,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float4 out_far = max(0,float4(finalcolor, 1.0f) * max(coc, 0.0f));
 
-	float4 out_bright = float4(0.0f, 0.0f, 0.0f, 1.0f);
-
-	float brightness = dot(finalcolor, float3(0.2126f, 0.7152f, 0.0722f));
-
-	if (brightness > 1.0f && cocbuffer.SampleLevel(s1, uv, 0).g < 1)
-	{
-		out_bright = saturate(float4(finalcolor, 1.0f));
-	}
-
-	out_bright += float4(g_emissive.SampleLevel(s0, uv, 0).rgb, 1.0f);
-
-	output_bright[int2(dispatch_thread_id.xy)] = out_bright;
 	output_near[int2(dispatch_thread_id.xy)] = out_near;
 	output_far[int2(dispatch_thread_id.xy)] = out_far;
 }

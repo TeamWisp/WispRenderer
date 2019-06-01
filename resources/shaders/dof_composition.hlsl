@@ -35,7 +35,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 uv = (screen_coord + 0.5f) / screen_size;
 	float2 uvc = (screen_coord) / screen_size;
 
-	float coc = coc_buffer.SampleLevel(s0, uv, 0);
+	float coc = GetDownSampledCoC(uv, texel_size);//coc_buffer.SampleLevel(s0, uvc, 0);
 	
 	float3 original_sample = source.SampleLevel(s0, uv, 0).rgb;
 	float4 near_sample = bokeh_near.SampleLevel(s1, uv, 0);
@@ -46,17 +46,19 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	near = near_sample.rgb;
 
-	if (far_sample.w > 0.0f)
+	if (far_sample.w > 0.f)
 	{
 		far = far_sample.rgb / far_sample.w;
 	}
 
-	float far_blend = saturate(coc) * MAXBOKEHSIZE* 0.5f - 0.5f;
+	float far_blend = saturate(coc) *MAXBOKEHSIZE * 0.5f - 0.5f;
+
 	float3 result = lerp(original_sample, far.rgb, smoothstep(0.0f, 1.0f, far_blend));
 
-	float near_blend = saturate(near_sample.w * 2.0);
+	float near_blend = saturate(near_sample.w * 2.0f);
 	result = lerp(result, near.rgb, smoothstep(0.0f, 1.0f, near_blend));
 
+	//result = near_sample.rgb;
 	//result = near_sample.aaa;
 	output[int2(dispatch_thread_id.xy)] = float4(result, 1.0f);
 }
