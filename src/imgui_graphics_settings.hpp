@@ -4,6 +4,7 @@
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
+#include "render_tasks/d3d12_cubemap_convolution.hpp"
 
 namespace wr::imgui::window
 {
@@ -15,6 +16,7 @@ namespace wr::imgui::window
 	static wr::HBAOSettings hbao_user_settings;
 	static wr::AnselSettings ansel_user_settings;
 	static wr::ASBuildSettings as_build_user_settings;
+	static wr::CubemapConvolutionSettings cubemap_convolution_user_settings;
 
 	void GraphicsSettings(wr::FrameGraph* frame_graph)
 	{
@@ -66,7 +68,6 @@ namespace wr::imgui::window
 			ImGui::Checkbox("Pause", &ansel_user_settings.m_runtime.m_allow_pause); ImGui::SameLine();
 			ImGui::Checkbox("High res", &ansel_user_settings.m_runtime.m_allow_highres);
 
-
 			ImGui::DragFloat("Camera Speed", &ansel_user_settings.m_runtime.m_translation_speed_in_world_units_per_sec, 0.1f, 0.1f, 100.f);
 			ImGui::DragFloat("Rotation Speed", &ansel_user_settings.m_runtime.m_rotation_speed_in_deg_per_second, 5.f, 5.f, 920.f);
 			ImGui::DragFloat("Max FOV", &ansel_user_settings.m_runtime.m_maximum_fov_in_deg, 1.f, 140.f, 179.f);
@@ -76,14 +77,28 @@ namespace wr::imgui::window
 				frame_graph->UpdateSettings<wr::AnselData>(ansel_user_settings);
 			}
 
+			
 			ImGui::Dummy(ImVec2(0.0f, 10.0f));
 			ImGui::LabelText("", "Acceleration Structure");
 			ImGui::Separator();
 
 			ImGui::Checkbox("Enable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
+			
 			if (frame_graph->HasTask<wr::ASBuildData>())
 			{
 				frame_graph->UpdateSettings<wr::ASBuildData>(as_build_user_settings);
+			}
+
+			
+			ImGui::Dummy(ImVec2(0.0f, 10.0f));
+			ImGui::LabelText("", "Cubemap Convolution");
+			ImGui::Separator();
+
+			ImGui::DragInt2("Camera Speed", cubemap_convolution_user_settings.m_runtime.m_resolution, 1.f, 1.f, 16384.f);
+
+			if (frame_graph->HasTask<wr::CubemapConvolutionTaskData>())
+			{
+				frame_graph->UpdateSettings<wr::CubemapConvolutionTaskData>(cubemap_convolution_user_settings);
 			}
 
 			ImGui::End();

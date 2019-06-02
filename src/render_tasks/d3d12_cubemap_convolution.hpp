@@ -18,6 +18,16 @@
 
 namespace wr
 {
+	struct CubemapConvolutionSettings
+	{
+		struct Runtime
+		{
+			int m_resolution[2] = {128, 128};
+		};
+
+		Runtime m_runtime;
+	};
+
 	struct CubemapConvolutionTaskData
 	{
 		d3d12::PipelineState* in_pipeline = nullptr;
@@ -86,20 +96,26 @@ namespace wr
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<CubemapConvolutionTaskData>(handle);
+			auto settings = fg.GetSettings<CubemapConvolutionSettings>(handle);
 
 			auto& pred_data = fg.GetPredecessorData<EquirectToCubemapTaskData>();
 
 			auto skybox_node = scene_graph.GetCurrentSkybox();
-
-			//Does it need convolution? And does it have a cubemap already?
-			if (skybox_node->m_irradiance != std::nullopt && skybox_node->m_skybox != std::nullopt)
+			
+			//Does it need convolution?
+			if (skybox_node->m_irradiance != std::nullopt) 
 			{
-				return;
+				d3d12::TextureResource* irradiance = static_cast<d3d12::TextureResource*>(skybox_node->m_irradiance->m_pool->GetTextureResource(skybox_node->m_irradiance.value()));
+				bool did_resolution_change = irradiance->m_width != settings.m_runtime.m_resolution[0] || irradiance->m_height != settings.m_runtime.m_resolution[1];
+				if (!did_resolution_change)
+				{
+					return;
+				}
 			}
 
 			data.in_radiance = pred_data.out_cubemap;
 
-			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", 128, 128, 1, wr::Format::R16G16B16A16_FLOAT, true);;
+			skybox_node->m_irradiance = skybox_node->m_skybox.value().m_pool->CreateCubemap("ConvolutedMap", settings.m_runtime.m_resolution[0], settings.m_runtime.m_resolution[1], 1, wr::Format::R16G16B16A16_FLOAT, true);;
 
 			data.out_irradiance = skybox_node->m_irradiance.value();
 
@@ -214,6 +230,7 @@ namespace wr
 		desc.m_allow_multithreading = true;
 
 		fg.AddTask<CubemapConvolutionTaskData>(desc, L"Cubemap Convolution");
+		fg.UpdateSettings<CubemapConvolutionTaskData>(CubemapConvolutionSettings());
 	}
 
 } /* wr */
