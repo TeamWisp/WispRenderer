@@ -754,7 +754,7 @@ namespace wr
 		.m_compute_shader_handle = shaders::bloom_blur,
 		.m_root_signature_handle = root_signatures::bloom_blur,
 		.m_dsv_format = Format::UNKNOWN,
-		.m_rtv_formats = {d3d12::settings::back_buffer_format },
+		.m_rtv_formats = {wr::Format::R16G16B16A16_FLOAT},
 		.m_num_rtv_formats = 1,
 		.m_type = PipelineType::COMPUTE_PIPELINE,
 		.m_cull_mode = CullMode::CULL_BACK,
