@@ -307,7 +307,7 @@ namespace wr
 		.m_compute_shader_handle = std::nullopt,
 		.m_root_signature_handle = root_signatures::basic,
 		.m_dsv_format = Format::D32_FLOAT,
-		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM },
+		.m_rtv_formats = { Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM},
 		.m_num_rtv_formats = 3,
 		.m_type = PipelineType::GRAPHICS_PIPELINE,
 		.m_cull_mode = CullMode::CULL_NONE,
@@ -1112,9 +1112,7 @@ namespace wr
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_ao_lib;
 		lib.exports.push_back(L"AORaygenEntry");
-		lib.exports.push_back(L"ClosestHitEntry");
 		lib.exports.push_back(L"MissEntry");
-		lib.m_hit_groups.push_back({ L"AOHitGroup", L"ClosestHitEntry" });
 		return lib;
 	}();
 

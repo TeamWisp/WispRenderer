@@ -83,11 +83,16 @@ namespace wr
 		struct RTAO_CBData
 		{
 			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inv_view = DirectX::XMMatrixIdentity();
 
-			float bias = 0.0f;
-			float radius = 0.0f;
-			float power = 0.0f;
-			std::uint32_t sample_count = 0u;
+			float m_bias = 0.0f;
+			float m_radius = 0.0f;
+			float m_power = 0.0f;
+			float m_max_distance = 0.0f;
+
+			float m_padding[2];
+			float m_frame_idx = 0.0f;
+			std::uint32_t m_sample_count = 0u;
 		};
 
 		struct RayTracingCamera_CBData
