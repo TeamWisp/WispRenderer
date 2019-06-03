@@ -356,7 +356,7 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	prev_direct = float4(direct_clipped.xyz, prev_direct.w);
 
-	history_length = max(32, success ? (history_length + 1.0) : 1.0);
+	history_length = success ? (history_length + 1.0) : 1.0);
 
 	const float alpha = lerp(1.0, max(blending_alpha, 1.0/history_length), success);
 	const float moments_alpha = lerp(1.0, max(blending_moments_alpha, 1.0/history_length), success);
