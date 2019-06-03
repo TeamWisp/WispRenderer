@@ -3,27 +3,86 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_constant_buffer_pool.hpp"
-#include "d3d12_deferred_main.hpp"
-#include "d3d12_rt_hybrid_task.hpp"
 #include "../d3d12/d3d12_structured_buffer_pool.hpp"
 #include "../frame_graph/frame_graph.hpp"
 #include "../scene_graph/scene_graph.hpp"
 #include "../scene_graph/camera_node.hpp"
 #include "../engine_registry.hpp"
 
-#include "../render_tasks/d3d12_deferred_main.hpp"
-#include "../render_tasks/d3d12_build_acceleration_structures.hpp"
+#include "d3d12_build_acceleration_structures.hpp"
+#include "d3d12_deferred_main.hpp"
+#include "d3d12_rt_hybrid_helpers.hpp"
+
 #include "../imgui_tools.hpp"
 
 namespace wr
 {
 	struct RTShadowData
 	{
-		RTHybridData base_data;
+		RTHybrid_BaseData base_data;
 	};
 
 	namespace internal
 	{
+		inline void CreateShadowsShaderTables(d3d12::Device* device, RTHybrid_BaseData& data, int frame_idx)
+		{
+			// Delete existing shader table
+			if (data.out_miss_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_miss_shader_table[frame_idx]);
+			}
+			if (data.out_hitgroup_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_hitgroup_shader_table[frame_idx]);
+			}
+			if (data.out_raygen_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_raygen_shader_table[frame_idx]);
+			}
+
+			// Set up Raygen Shader Table
+			{
+				// Create Record(s)
+				std::uint32_t shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowRaygenEntry");
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_raygen_shader_table[frame_idx], shader_record);
+			}
+
+			// Set up Miss Shader Table
+			{
+				// Create Record(s)
+				std::uint32_t shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
+
+				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMissEntry");
+				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
+
+				// Create Table(s)
+				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
+			}
+
+			// Set up Hit Group Shader Table
+			{
+				// Create Record(s)
+				std::uint32_t shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
+
+				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowHitGroup");
+				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
+
+				// Create Table(s)
+				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shadow_hit_record);
+			}
+		}
+
 		inline void SetupRTShadowTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
 		{
 			// Initialize variables
@@ -68,7 +127,7 @@ namespace wr
 			// Create Shader Tables
 			for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
-				CreateShaderTables(device, data.base_data, "ShadowRaygenEntry", i);
+				CreateShadowsShaderTables(device, data.base_data, i);
 			}
 
 			// Setup frame index
@@ -82,8 +141,193 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTShadowData>(handle);
 
-			Render(n_render_system, fg, scene_graph, data.base_data, cmd_list, handle, "ShadowRaygenEntry");
-			
+			auto window = n_render_system.m_window.value();
+			auto device = n_render_system.m_device;
+			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
+			auto frame_idx = n_render_system.GetFrameIdx();
+			float scalar = 1.0f;
+
+			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
+
+			// Rebuild acceleratrion structure a 2e time for fallback
+			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+			{
+				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.base_data.tlas_requires_init, data.base_data.out_tlas, as_build_data.out_blas_list, frame_idx);
+				d3d12::UAVBarrierAS(cmd_list, as_build_data.out_tlas, frame_idx);
+			}
+
+			if (n_render_system.m_render_window.has_value())
+			{
+				d3d12::BindRaytracingPipeline(cmd_list, data.base_data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+
+				// Bind output, indices and materials, offsets, etc
+				auto out_uav_handle = data.base_data.out_output_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
+
+				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
+
+				auto out_scene_mat_handle = as_build_data.out_scene_mat_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::MATERIALS)), out_scene_mat_handle);
+
+				auto out_scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OFFSETS)), out_scene_offset_handle);
+
+				auto out_albedo_gbuffer_handle = data.base_data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 0, out_albedo_gbuffer_handle);
+
+				auto out_normal_gbuffer_handle = data.base_data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, out_normal_gbuffer_handle);
+
+				auto out_scene_depth_handle = data.base_data.out_gbuffer_depth_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, out_scene_depth_handle);
+
+				/*
+				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
+				We fill the table with a single descriptor, then overwrite some spots with the he correct textures
+				If a spot is unused, then a default descriptor will be still bound, but not used in the shaders.
+				Since the renderer creates a texture pool that can be used by the render tasks, and
+				the texture pool also has default textures for albedo/roughness/etc... one of those textures is a good
+				candidate for this.
+				*/
+				{
+					auto texture_pool = n_render_system.GetDefaultTexturePool();
+
+					if (texture_pool == nullptr)
+					{
+						LOGC("ERROR: Texture Pool in Raytracing Task is nullptr. This is not supposed to happen.");
+					}
+
+					auto texture_handle = texture_pool->GetDefaultAlbedo();
+					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTextureResource(texture_handle));
+
+					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::rt_hybrid, params::RTHybridE::TEXTURES));
+					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES));
+
+					for (size_t i = 0; i < num_textures_in_heap; ++i)
+					{
+						d3d12::SetRTShaderSRV(cmd_list, 0, static_cast<std::uint32_t>(heap_loc_start + i), texture_resource);
+					}
+				}
+
+				// Fill descriptor heap with textures used by the scene
+				for (auto material_handle : as_build_data.out_material_handles)
+				{
+					auto* material_internal = material_handle.m_pool->GetMaterial(material_handle);
+
+					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
+					{
+						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
+
+						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
+					};
+
+					std::array<TextureType, static_cast<size_t>(TextureType::COUNT)> types = { TextureType::ALBEDO, TextureType::NORMAL,
+																							   TextureType::ROUGHNESS, TextureType::METALLIC,
+																							   TextureType::EMISSIVE, TextureType::AO };
+
+					for (auto t : types)
+					{
+						if (material_internal->HasTexture(t))
+							set_srv(material_internal->GetTexture(t));
+					}
+				}
+
+				// Get light buffer
+				if (static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native->m_states[frame_idx] != ResourceState::NON_PIXEL_SHADER_RESOURCE)
+				{
+					static_cast<D3D12StructuredBufferPool*>(scene_graph.GetLightBuffer()->m_pool)->SetBufferState(scene_graph.GetLightBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE);
+				}
+
+				DescriptorAllocation light_alloc = std::move(as_build_data.out_allocator->Allocate());
+				d3d12::DescHeapCPUHandle light_handle = light_alloc.GetDescriptorHandle();
+				d3d12::CreateSRVFromStructuredBuffer(static_cast<D3D12StructuredBufferHandle*>(scene_graph.GetLightBuffer())->m_native, light_handle, frame_idx);
+
+				d3d12::DescHeapCPUHandle light_handle2 = light_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::LIGHTS)), light_handle2);
+
+
+				// Update offset data
+				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
+
+				// Update material data
+				if (as_build_data.out_materials_require_update)
+				{
+					n_render_system.m_raytracing_material_sb_pool->Update(as_build_data.out_sb_material_handle, (void*)as_build_data.out_materials.data(), sizeof(temp::RayTracingMaterial_CBData) * as_build_data.out_materials.size(), 0);
+				}
+
+				// Update camera constant buffer
+				auto camera = scene_graph.GetActiveCamera();
+				temp::RTHybridCamera_CBData cam_data;
+				cam_data.m_inverse_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
+				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
+				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
+				cam_data.m_intensity = n_render_system.temp_intensity;
+				cam_data.m_frame_idx = static_cast<float>(++data.base_data.frame_idx);
+				n_render_system.m_camera_pool->Update(data.base_data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*) & cam_data); // FIXME: Uhh wrong pool?
+
+				// Make sure the convolution pass wrote to the skybox.
+				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
+
+				// Get skybox
+				if (SkyboxNode * skybox = scene_graph.GetCurrentSkybox().get())
+				{
+					auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::SKYBOX)), skybox_t);
+
+					// Get Pre-filtered environment
+					auto irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::PREF_ENV_MAP)), irradiance_t);
+
+					// Get Environment Map
+					irradiance_t = static_cast<d3d12::TextureResource*>(scene_graph.GetCurrentSkybox()->m_irradiance->m_pool->GetTextureResource(scene_graph.GetCurrentSkybox()->m_irradiance.value()));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::IRRADIANCE_MAP)), irradiance_t);
+				}
+
+				// Get brdf lookup texture
+				auto brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::BRDF_LUT)), brdf_lut_text);
+
+				// Transition depth to NON_PIXEL_RESOURCE
+				d3d12::TransitionDepth(cmd_list, data.base_data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindDescriptorHeaps(cmd_list, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				d3d12::BindComputeConstantBuffer(cmd_list, data.base_data.out_cb_camera_handle->m_native, 2, frame_idx);
+
+				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
+				{
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
+				}
+				else if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+				{
+					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
+				}
+
+				/*unsigned int verts_loc = 3; rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
+				This should be the Parameter index not the heap location, it was only working due to a ridiculous amount of luck and should be fixed, or we completely missunderstand this stuff...
+				Much love, Meine and Florian*/
+				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+
+				//#ifdef _DEBUG
+				CreateShadowsShaderTables(device, data.base_data, frame_idx);
+				//#endif
+
+				scalar = fg.GetRenderTargetResolutionScale(handle);
+
+				// Dispatch hybrid ray tracing rays
+				d3d12::DispatchRays(cmd_list,
+					data.base_data.out_hitgroup_shader_table[frame_idx],
+					data.base_data.out_miss_shader_table[frame_idx],
+					data.base_data.out_raygen_shader_table[frame_idx],
+					window->GetWidth() * scalar,
+					window->GetHeight() * scalar,
+					1,
+					frame_idx);
+
+				// Transition depth back to DEPTH_WRITE
+				d3d12::TransitionDepth(cmd_list, data.base_data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
+			}
 		}
 
 		inline void DestroyRTShadowTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)

@@ -8,7 +8,6 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
-#include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_rt_reflection_task.hpp"
 #include "render_tasks/d3d12_rt_shadow_task.hpp"
 #include "render_tasks/d3d12_shadow_denoiser_task.hpp"
@@ -129,7 +128,7 @@ namespace fg_manager
 		// Path Tracer
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::PATH_TRACER];
-			fg = new wr::FrameGraph(10);
+			fg = new wr::FrameGraph(11);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -146,7 +145,8 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			wr::AddRTReflectionTask(*fg);
+			wr::AddRTShadowTask(*fg);
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
