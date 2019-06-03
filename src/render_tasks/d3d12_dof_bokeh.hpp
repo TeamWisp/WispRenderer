@@ -84,7 +84,7 @@ namespace wr
 				// Dilated COC
 				{
 					auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::dof_bokeh, params::DoFBokehE::COC)));
-					d3d12::CreateSRVFromSpecificRTV(source_coc_rt, cpu_handle, frame_idx, source_coc_rt->m_create_info.m_rtv_formats[frame_idx]);
+					d3d12::CreateSRVFromSpecificRTV(source_coc_rt, cpu_handle, 0, source_coc_rt->m_create_info.m_rtv_formats[0]);
 				}
 			}
 		}
@@ -136,7 +136,7 @@ namespace wr
 			cb_data.m_f_number = sg.GetActiveCamera()->m_f_number;
 			cb_data.m_shape = sg.GetActiveCamera()->m_shape_amt;
 			cb_data.m_blades = sg.GetActiveCamera()->m_aperture_blades;
-			cb_data.m_bokeh_poly = sqrt(std::clamp((sg.GetActiveCamera()->m_f_number - 1.8f) / (5.0f - 1.8f), 0.f, 1.f));
+			cb_data.m_bokeh_poly = sqrt(std::clamp((sg.GetActiveCamera()->m_f_number - 1.8f) / (7.0f - 1.8f), 0.f, 1.f));
 			cb_data.m_enable_dof = sg.GetActiveCamera()->m_enable_dof;
 
 			data.cb_handle->m_pool->Update(data.cb_handle, sizeof(Bokeh_CB), 0, frame_idx, (uint8_t*)&cb_data);

@@ -307,7 +307,7 @@ namespace wr
 		.m_compute_shader_handle = std::nullopt,
 		.m_root_signature_handle = root_signatures::basic,
 		.m_dsv_format = Format::D32_FLOAT,
-		.m_rtv_formats = { Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM},
+		.m_rtv_formats = { Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT },
 		.m_num_rtv_formats = 3,
 		.m_type = PipelineType::GRAPHICS_PIPELINE,
 		.m_cull_mode = CullMode::CULL_NONE,
@@ -322,7 +322,7 @@ namespace wr
 		.m_compute_shader_handle = std::nullopt,
 		.m_root_signature_handle = root_signatures::basic,
 		.m_dsv_format = Format::D32_FLOAT,
-		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT },
+		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT },
 		.m_num_rtv_formats = 5,
 		.m_type = PipelineType::GRAPHICS_PIPELINE,
 		.m_cull_mode = CullMode::CULL_NONE,
@@ -622,7 +622,7 @@ namespace wr
 		.m_compute_shader_handle = shaders::dof_coc,
 		.m_root_signature_handle = root_signatures::dof_coc,
 		.m_dsv_format = Format::UNKNOWN,
-		.m_rtv_formats = { Format::R16_FLOAT },
+		.m_rtv_formats = { Format::R16G16_FLOAT },
 		.m_num_rtv_formats = 1,
 		.m_type = PipelineType::COMPUTE_PIPELINE,
 		.m_cull_mode = CullMode::CULL_BACK,
@@ -643,7 +643,6 @@ namespace wr
 		DESC_RANGE(params::down_scale, Type::SRV_RANGE, params::DownScaleE::SOURCE),
 		DESC_RANGE(params::down_scale, Type::UAV_RANGE, params::DownScaleE::OUTPUT_NEAR),
 		DESC_RANGE(params::down_scale, Type::UAV_RANGE, params::DownScaleE::OUTPUT_FAR),
-		DESC_RANGE(params::down_scale, Type::UAV_RANGE, params::DownScaleE::OUTPUT_BRIGHT),
 		DESC_RANGE(params::down_scale, Type::SRV_RANGE, params::DownScaleE::COC),
 	);
 
@@ -663,8 +662,8 @@ namespace wr
 		.m_compute_shader_handle = shaders::down_scale,
 		.m_root_signature_handle = root_signatures::down_scale,
 		.m_dsv_format = Format::UNKNOWN,
-		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT,wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT },
-		.m_num_rtv_formats = 3,
+		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT,wr::Format::R16G16B16A16_FLOAT},
+		.m_num_rtv_formats = 2,
 		.m_type = PipelineType::COMPUTE_PIPELINE,
 		.m_cull_mode = CullMode::CULL_BACK,
 		.m_depth_enabled = false,
@@ -699,80 +698,6 @@ namespace wr
 		.m_pixel_shader_handle = std::nullopt,
 		.m_compute_shader_handle = shaders::dof_dilate,
 		.m_root_signature_handle = root_signatures::dof_dilate,
-		.m_dsv_format = Format::UNKNOWN,
-		.m_rtv_formats = { Format::R32_FLOAT },
-		.m_num_rtv_formats = 1,
-		.m_type = PipelineType::COMPUTE_PIPELINE,
-		.m_cull_mode = CullMode::CULL_BACK,
-		.m_depth_enabled = false,
-		.m_counter_clockwise = true,
-		.m_topology_type = TopologyType::TRIANGLE
-	});
-
-	// dof dilate flatten
-	REGISTER(shaders::dof_dilate_flatten, ShaderRegistry)({
-		.path = "resources/shaders/dof_dilate_flatten.hlsl",
-		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER,
-		.defines = {}
-	});
-
-	DESC_RANGE_ARRAY(dilate_flatten_r,
-		DESC_RANGE(params::dof_dilate_flatten, Type::SRV_RANGE, params::DoFDilateFlattenE::SOURCE),
-		DESC_RANGE(params::dof_dilate_flatten, Type::UAV_RANGE, params::DoFDilateFlattenE::OUTPUT),
-	);
-
-	REGISTER(root_signatures::dof_dilate_flatten, RootSignatureRegistry)({
-		.m_parameters = {
-			ROOT_PARAM_DESC_TABLE(dilate_flatten_r, D3D12_SHADER_VISIBILITY_ALL),
-		},
-		.m_samplers = {
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
-		}
-	});
-
-	REGISTER(pipelines::dof_dilate_flatten, PipelineRegistry) < Vertex2D > ({
-		.m_vertex_shader_handle = std::nullopt,
-		.m_pixel_shader_handle = std::nullopt,
-		.m_compute_shader_handle = shaders::dof_dilate_flatten,
-		.m_root_signature_handle = root_signatures::dof_dilate_flatten,
-		.m_dsv_format = Format::UNKNOWN,
-		.m_rtv_formats = { Format::R32_FLOAT },
-		.m_num_rtv_formats = 1,
-		.m_type = PipelineType::COMPUTE_PIPELINE,
-		.m_cull_mode = CullMode::CULL_BACK,
-		.m_depth_enabled = false,
-		.m_counter_clockwise = true,
-		.m_topology_type = TopologyType::TRIANGLE
-	});
-
-	// dof dilate flatten 2nd pass
-	REGISTER(shaders::dof_dilate_flatten_h, ShaderRegistry)({
-		.path = "resources/shaders/dof_dilate_flatten_h.hlsl",
-		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER,
-		.defines = {}
-	});
-
-	DESC_RANGE_ARRAY(dilate_flattenh_r,
-		DESC_RANGE(params::dof_dilate_flatten_h, Type::SRV_RANGE, params::DoFDilateFlattenHE::SOURCE),
-		DESC_RANGE(params::dof_dilate_flatten_h, Type::UAV_RANGE, params::DoFDilateFlattenHE::OUTPUT),
-	);
-
-	REGISTER(root_signatures::dof_dilate_flatten_h, RootSignatureRegistry)({
-		.m_parameters = {
-			ROOT_PARAM_DESC_TABLE(dilate_flattenh_r, D3D12_SHADER_VISIBILITY_ALL),
-		},
-		.m_samplers = {
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
-		}
-	});
-
-	REGISTER(pipelines::dof_dilate_flatten_h, PipelineRegistry) < Vertex2D > ({
-		.m_vertex_shader_handle = std::nullopt,
-		.m_pixel_shader_handle = std::nullopt,
-		.m_compute_shader_handle = shaders::dof_dilate_flatten_h,
-		.m_root_signature_handle = root_signatures::dof_dilate_flatten_h,
 		.m_dsv_format = Format::UNKNOWN,
 		.m_rtv_formats = { Format::R32_FLOAT },
 		.m_num_rtv_formats = 1,
@@ -906,79 +831,85 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 	});
 
-	// bloom horizontal blur
-	REGISTER(shaders::bloom_h, ShaderRegistry)({
-		.path = "resources/shaders/bloom_horizontal.hlsl",
+	// Extract bright
+	REGISTER(shaders::bloom_extract_bright, ShaderRegistry)({
+		.path = "resources/shaders/bloom_extract_bright.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER,
-		.defines = {}
-	});
+		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		});
 
-	DESC_RANGE_ARRAY(bloom_h_r,
-		DESC_RANGE(params::bloom_h, Type::SRV_RANGE, params::BloomHE::SOURCE),
-		DESC_RANGE(params::bloom_h, Type::UAV_RANGE, params::BloomHE::OUTPUT),
-	);
 
-	REGISTER(root_signatures::bloom_h, RootSignatureRegistry)({
+
+	DESC_RANGE_ARRAY(bloombright_r,
+		DESC_RANGE(params::bloom_extract_bright, Type::SRV_RANGE, params::BloomExtractBrightE::SOURCE),
+		DESC_RANGE(params::bloom_extract_bright, Type::SRV_RANGE, params::BloomExtractBrightE::G_EMISSIVE),
+		DESC_RANGE(params::bloom_extract_bright, Type::SRV_RANGE, params::BloomExtractBrightE::G_DEPTH),
+		DESC_RANGE(params::bloom_extract_bright, Type::UAV_RANGE, params::BloomExtractBrightE::OUTPUT_BRIGHT),
+		);
+
+	REGISTER(root_signatures::bloom_extract_bright, RootSignatureRegistry)({
 		.m_parameters = {
-			ROOT_PARAM_DESC_TABLE(bloom_h_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM_DESC_TABLE(bloombright_r, D3D12_SHADER_VISIBILITY_ALL),
 		},
 		.m_samplers = {
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP}
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP},
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
 		}
-	});
+		});
 
-	REGISTER(pipelines::bloom_h, PipelineRegistry) < Vertex2D > ({
+	REGISTER(pipelines::bloom_extract_bright, PipelineRegistry) < Vertex2D > ({
 		.m_vertex_shader_handle = std::nullopt,
 		.m_pixel_shader_handle = std::nullopt,
-		.m_compute_shader_handle = shaders::bloom_h,
-		.m_root_signature_handle = root_signatures::bloom_h,
+		.m_compute_shader_handle = shaders::bloom_extract_bright,
+		.m_root_signature_handle = root_signatures::bloom_extract_bright,
 		.m_dsv_format = Format::UNKNOWN,
-		.m_rtv_formats = { Format::R16G16B16A16_FLOAT },
+		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT },
 		.m_num_rtv_formats = 1,
 		.m_type = PipelineType::COMPUTE_PIPELINE,
 		.m_cull_mode = CullMode::CULL_BACK,
 		.m_depth_enabled = false,
 		.m_counter_clockwise = true,
 		.m_topology_type = TopologyType::TRIANGLE
-	});
+		});
 
-	// bloom vertical blur
-	REGISTER(shaders::bloom_v, ShaderRegistry)({
-		.path = "resources/shaders/bloom_vertical.hlsl",
+	// bloom blur
+	REGISTER(shaders::bloom_blur, ShaderRegistry)({
+		.path = "resources/shaders/bloom_blur.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
-	});
+		});
 
-	DESC_RANGE_ARRAY(bloom_v_r,
-		DESC_RANGE(params::bloom_v, Type::SRV_RANGE, params::BloomVE::SOURCE),
-		DESC_RANGE(params::bloom_v, Type::UAV_RANGE, params::BloomVE::OUTPUT),
-	);
 
-	REGISTER(root_signatures::bloom_v, RootSignatureRegistry)({
+	DESC_RANGE_ARRAY(bloom_blur_r,
+		DESC_RANGE(params::bloom_blur, Type::SRV_RANGE, params::BloomBlurE::SOURCE),
+		DESC_RANGE(params::bloom_blur, Type::UAV_RANGE, params::BloomBlurE::OUTPUT),
+		);
+
+	REGISTER(root_signatures::bloom_blur, RootSignatureRegistry)({
 		.m_parameters = {
-			ROOT_PARAM_DESC_TABLE(bloom_v_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM_DESC_TABLE(bloom_blur_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::bloom_blur, params::BloomBlurE::BLUR_DIRECTION)),
 		},
 		.m_samplers = {
-			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP}
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP},
 		}
-	});
+		});
 
-	REGISTER(pipelines::bloom_v, PipelineRegistry) < Vertex2D > ({
+	REGISTER(pipelines::bloom_blur, PipelineRegistry) < Vertex2D > ({
 		.m_vertex_shader_handle = std::nullopt,
 		.m_pixel_shader_handle = std::nullopt,
-		.m_compute_shader_handle = shaders::bloom_v,
-		.m_root_signature_handle = root_signatures::bloom_v,
+		.m_compute_shader_handle = shaders::bloom_blur,
+		.m_root_signature_handle = root_signatures::bloom_blur,
 		.m_dsv_format = Format::UNKNOWN,
-		.m_rtv_formats = { Format::R16G16B16A16_FLOAT },
+		.m_rtv_formats = {wr::Format::R16G16B16A16_FLOAT},
 		.m_num_rtv_formats = 1,
 		.m_type = PipelineType::COMPUTE_PIPELINE,
 		.m_cull_mode = CullMode::CULL_BACK,
 		.m_depth_enabled = false,
 		.m_counter_clockwise = true,
 		.m_topology_type = TopologyType::TRIANGLE
-	});
+		});
 
 	// bloom composition
 	REGISTER(shaders::bloom_composition, ShaderRegistry)({
@@ -990,7 +921,10 @@ namespace wr
 
 	DESC_RANGE_ARRAY(bloom_comp_r,
 		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_MAIN),
-		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM),
+		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM_HALF),
+		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM_QUARTER),
+		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM_EIGHTH),
+		DESC_RANGE(params::bloom_composition, Type::SRV_RANGE, params::BloomCompositionE::SOURCE_BLOOM_SIXTEENTH),
 		DESC_RANGE(params::bloom_composition, Type::UAV_RANGE, params::BloomCompositionE::OUTPUT),
 	);
 
