@@ -9,12 +9,14 @@
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
 #include "render_tasks/d3d12_rt_hybrid_task.hpp"
+#include "render_tasks/d3d12_rt_reflection_task.hpp"
+#include "render_tasks/d3d12_rt_shadow_task.hpp"
+#include "render_tasks/d3d12_shadow_denoiser_task.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
 #include "render_tasks/d3d12_spatial_reconstruction.hpp"
 #include "render_tasks/d3d12_rtao_task.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
-#include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "render_tasks/d3d12_path_tracer.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
@@ -94,7 +96,7 @@ namespace fg_manager
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
-			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, false);
 			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
@@ -137,7 +139,7 @@ namespace fg_manager
 			wr::AddCubemapConvolutionTask(*fg);
 
 			// Construct the G-buffer
-			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 
 			wr::AddHBAOTask(*fg);
 
@@ -180,13 +182,16 @@ namespace fg_manager
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			 // Construct the G-buffer
-			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 
 			// Build Acceleration Structure
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			wr::AddRTReflectionTask(*fg);
+			wr::AddRTShadowTask(*fg);
+
+			wr::AddShadowDenoiserTask(*fg);
 			wr::AddSpatialReconstructionTask(*fg);
 
 			//Raytraced Ambient Occlusion task

@@ -1062,7 +1062,16 @@ namespace wr
 			}
 		}
 
-		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
+		size_t new_size;
+		if (last_occupied_block != nullptr)
+		{
+			new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
+		}
+		else
+		{
+			new_size = 0;
+		}
+		size_t old_size = m_vertex_buffer->m_size;
 
 		if (new_size > SizeAlignAnyAlignment(vertex_heap_new_size, 65536))
 		{
@@ -1244,7 +1253,15 @@ namespace wr
 			}
 		}
 
-		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
+		size_t new_size;
+		if (last_occupied_block != nullptr)
+		{
+			new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
+		}
+		else
+		{
+			new_size = 0;
+		}
 
 		if (new_size > SizeAlignAnyAlignment(index_heap_new_size, 65536))
 		{

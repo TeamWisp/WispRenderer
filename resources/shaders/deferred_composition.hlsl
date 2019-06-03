@@ -30,10 +30,14 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
 	float4x4 inv_projection;
 	float4x4 inv_view;
-
+	float4x4 prev_projection;
+	float4x4 prev_view;
 	uint is_hybrid;
 	uint is_path_tracer;
 	uint is_ao;
+	uint has_shadows;
+	uint has_reflections;
+	float3 padding;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -105,15 +109,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		ao *= gbuffer_ao;
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
-		float shadow_factor = lerp(
+		float3 shadow_factor = lerp(
 			// Do deferred shadow (fully lit for now)
-			1.0,
+			float3(1, 1, 1),
 			// Shadow buffer if its hybrid rendering
-			buffer_shadow.SampleLevel(linear_sampler, uv, 0).r,
+			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0.0f).rgb,
 			// Lerp factor (0: no hybrid, 1: hybrid)
-			is_hybrid);
-
-		shadow_factor = clamp(shadow_factor, 0.0f, 1.0f);
+			has_shadows);
 		
 		// Get reflection
 		float3 reflection = lerp(
@@ -122,10 +124,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Reflection buffer if it IS hybrid rendering
 			buffer_reflection.SampleLevel(linear_sampler, uv, 0).xyz,
 			// Lerp factor (0: no hybrid, 1: hybrid)
-			is_hybrid);
+			has_reflections);
+
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, has_shadows);
 	}
 	else
 	{	

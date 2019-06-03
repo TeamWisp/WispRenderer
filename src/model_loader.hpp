@@ -133,7 +133,7 @@ namespace wr
 
 	struct EmbeddedTexture 
 	{
-		std::vector<char> m_data;
+		std::vector<unsigned char> m_data;
 
 		std::uint32_t m_width;
 		std::uint32_t m_height;

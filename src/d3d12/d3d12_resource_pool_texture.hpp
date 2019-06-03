@@ -61,8 +61,7 @@ namespace wr
 
 		d3d12::TextureResource* GetTextureResource(TextureHandle handle) final;
 		[[nodiscard]] TextureHandle LoadFromFile(std::string_view path, bool srgb, bool generate_mips) final;
-		[[nodiscard]] TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips) final;
-		[[nodiscard]] TextureHandle LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips) final;
+		[[nodiscard]] TextureHandle LoadFromMemory(unsigned char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips) final;
 		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 		[[nodiscard]] TextureHandle CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 
