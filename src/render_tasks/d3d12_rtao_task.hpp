@@ -24,7 +24,7 @@ namespace wr
 			float radius = 2.f;
 			float power = 1.f; // The final AO output is pow(AO, powerExponent) // 1.0~4.0
 			float max_distance = 2000.f;
-			int sample_count = 128;
+			int sample_count = 8;
 		};//Currently setup to make screen shots in pica pica
 
 		Runtime m_runtime;
