@@ -1,11 +1,11 @@
+#ifndef __RT_TEXTURE_LOD__
+#define __RT_TEXTURE_LOD__
+
+//Definition for RayCone
+#include "rt_structs.hlsl" 
+
 // numbers prefixed with Cha mean its chapter x.x
 // numbers prefixed with Fig means its figure x.x
-
-struct RayCone
-{
-	float width;
-	float spread_angle;
-};
 
 struct SurfaceHit
 {
@@ -221,3 +221,5 @@ RayCone ComputeRayConeFromGBuffer(SurfaceHit hit, float vertical_fov, float heig
 
 	return Propagate(cone, hit.surface_spread_angle, hit.dist);
 }
+
+#endif //__RT_TEXTURE_LOD__

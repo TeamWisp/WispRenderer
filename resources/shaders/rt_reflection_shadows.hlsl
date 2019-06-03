@@ -1,3 +1,6 @@
+#ifndef __RT_REFLECTION_SHADOWS__
+#define __RT_REFLECTION_SHADOWS__
+
 #define LIGHTS_REGISTER register(t2)
 #include "util.hlsl"
 #include "pbr_util.hlsl"
@@ -5,35 +8,10 @@
 #include "lighting.hlsl"
 #include "rt_texture_lod.hlsl"
 
-struct Vertex
-{
-	float3 pos;
-	float2 uv;
-	float3 normal;
-	float3 tangent;
-	float3 bitangent;
-	float3 color;
-};
-
-struct Material
-{
-	uint albedo_id;
-	uint normal_id;
-	uint roughness_id;
-	uint metalicness_id;
-	uint emissive_id;
-	uint ao_id;
-	float2 padding;
-
-	MaterialData data;
-};
-
-struct Offset
-{
-    uint material_idx;
-    uint idx_offset;
-    uint vertex_offset;
-};
+// Definitions for: 
+// - Vertex, Material, Offset
+// - Ray, RayCone, ReflectionHitInfo
+#include "rt_structs.hlsl"
 
 RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
 ByteAddressBuffer g_indices : register(t1);
@@ -52,15 +30,6 @@ SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 
-struct ReflectionHitInfo
-{
-	float3 origin;
-	float3 color;
-	unsigned int seed;
-	unsigned int depth;
-	RayCone cone;
-};
-
 cbuffer CameraProperties : register(b0)
 {
 	float4x4 inv_view;
@@ -70,12 +39,6 @@ cbuffer CameraProperties : register(b0)
 	float2 padding;
 	float frame_idx;
 	float intensity;
-};
-
-struct Ray
-{
-	float3 origin;
-	float3 direction;
 };
 
 uint3 Load3x32BitIndices(uint offsetBytes)
@@ -432,3 +395,5 @@ void ReflectionMiss(inout ReflectionHitInfo payload)
 {
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
 }
+
+#endif //__RT_REFLECTION_SHADOWS__
