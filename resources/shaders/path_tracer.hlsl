@@ -5,35 +5,14 @@
 #include "lighting.hlsl"
 #include "gi_util.hlsl"
 
-struct Vertex
-{
-	float3 pos;
-	float2 uv;
-	float3 normal;
-	float3 tangent;
-	float3 bitangent;
-	float3 color;
-};
+// Definitions for: 
+// - Vertex, Material, Offset
+// - Ray, RayCone, ReflectionHitInfo
+#include "rt_structs.hlsl"
 
-struct Material
-{
-	uint albedo_id;
-	uint normal_id;
-	uint roughness_id;
-	uint metalicness_id;
-	uint emissive_id;
-	uint ao_id;
-	float2 padding;
-
-	MaterialData data;
-};
-
-struct Offset
-{
-	uint material_idx;
-	uint idx_offset;
-	uint vertex_offset;
-};
+// Definitions for: 
+// - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
+#include "rt_functions.hlsl"
 
 RWTexture2D<float4> output : register(u0); // xyz: reflection, a: shadow factor
 ByteAddressBuffer g_indices : register(t1);
@@ -63,32 +42,6 @@ cbuffer CameraProperties : register(b0)
 	float intensity;
 };
 
-struct Ray
-{
-	float3 origin;
-	float3 direction;
-};
-
-uint3 Load3x32BitIndices(uint offsetBytes)
-{
-	// Load first 2 indices
-	return g_indices.Load3(offsetBytes);
-}
-
-// Retrieve hit world position.
-float3 HitWorldPosition()
-{
-	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
-}
-
-float3 unpack_position(float2 uv, float depth)
-{
-	// Get world space position
-	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-	float4 wpos = mul(inv_vp, ndc);
-	return (wpos.xyz / wpos.w).xyz;
-}
-
 [shader("raygeneration")]
 void RaygenEntry()
 {
@@ -108,7 +61,7 @@ void RaygenEntry()
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
 	float3 albedo = albedo_roughness.rgb;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
 	float3 normal = normalize(normal_metallic.xyz);
 	float metallic = normal_metallic.w;
 	float roughness = albedo_roughness.w;
@@ -142,19 +95,6 @@ void RaygenEntry()
 }
 
 //Reflections
-
-float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
-{
-	float3 vertexAttribute[3];
-	vertexAttribute[0] = a;
-	vertexAttribute[1] = b;
-	vertexAttribute[2] = c;
-
-	return vertexAttribute[0] +
-		attr.barycentrics.x * (vertexAttribute[1] - vertexAttribute[0]) +
-		attr.barycentrics.y * (vertexAttribute[2] - vertexAttribute[0]);
-}
-
 [shader("closesthit")]
 void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 {
@@ -173,7 +113,7 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
 	base_idx += index_offset * 4; // offset the start
 
-	uint3 indices = Load3x32BitIndices(base_idx);
+	uint3 indices = Load3x32BitIndices(g_indices, base_idx);
 	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
 
 	// Gather triangle vertices
@@ -238,5 +178,5 @@ void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
 [shader("miss")]
 void ReflectionMiss(inout HitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
+	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
 }

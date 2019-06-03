@@ -18,7 +18,7 @@ static uint light_type_point = 0;
 static uint light_type_directional = 1;
 static uint light_type_spot = 2;
 
-float3 calc_attenuation(Light light, float3 L, float3 light_dist)
+float calc_attenuation(Light light, float3 L, float light_dist)
 {
 	uint tid = light.tid & 3;
 

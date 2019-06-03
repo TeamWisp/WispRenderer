@@ -1,5 +1,5 @@
-#ifndef __RT_STRUCTS__
-#define __RT_STRUCTS__
+#ifndef __RT_STRUCTS_HLSL__
+#define __RT_STRUCTS_HLSL__
 
 struct Vertex
 {
@@ -52,4 +52,4 @@ struct ReflectionHitInfo
 	RayCone cone;
 };
 
-#endif //__RT_STRUCTS__
+#endif //__RT_STRUCTS_HLSL__

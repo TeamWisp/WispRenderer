@@ -8,12 +8,12 @@ struct HitInfo
 	unsigned int depth;
 };
 
-float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
+float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
 {
 	if (depth >= MAX_RECURSION)
 	{
 		//return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
-		return float4(0, 0, 0, 0);
+		return float3(0, 0, 0);
 	}
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
@@ -36,7 +36,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 		ray,
 		payload);
 
-	return float4(payload.color, 1);
+	return payload.color;
 }
 
 // NVIDIA's luminance function
