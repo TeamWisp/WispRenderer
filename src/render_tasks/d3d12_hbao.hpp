@@ -167,6 +167,8 @@ namespace wr
 			GFSDK_SSAO_Output_D3D12 output;
 			output.pRenderTargetView = &rtv;
 
+			d3d12::Transition(cmd_list, n_render_target, ResourceState::COPY_SOURCE, ResourceState::RENDER_TARGET);
+
 			d3d12::BindDescriptorHeap(cmd_list, data.out_descriptor_heap_srv, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, 0);
 
 			GFSDK_SSAO_Status status = data.ssao_context->RenderAO(n_render_system.m_direct_queue->m_native, cmd_list->m_native, data.ssao_input_data, ao_parameters, output, render_mask);
@@ -174,6 +176,8 @@ namespace wr
 			{
 				LOGW("Failed to perform NVIDIA HBAO+");
 			}
+
+			d3d12::Transition(cmd_list, n_render_target, ResourceState::RENDER_TARGET, ResourceState::COPY_SOURCE);
 #endif
 		}
 
@@ -225,7 +229,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<HBAOData>(desc, L"NVIDIA HBAO+", FG_DEPS(1, DeferredMainTaskData));
+		frame_graph.AddTask<HBAOData>(desc, L"NVIDIA HBAO+", FG_DEPS<DeferredMainTaskData>());
 		frame_graph.UpdateSettings<HBAOData>(HBAOSettings());
 	}
 

@@ -74,7 +74,7 @@ namespace wr
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path);
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path);
+		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals = false);
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
 
@@ -266,7 +266,7 @@ namespace wr
 
 	//! Loads a model with materials
 	template<typename TV, typename TI>
-	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path)
+	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals)
 	{
 		IS_PROPER_VERTEX_CLASS(TV);
 
@@ -279,6 +279,19 @@ namespace wr
 		}
 
 		ModelData* data = loader->Load(path);
+
+		if (flip_normals)
+		{
+			for (auto* meshes : data->m_meshes)
+			{
+				for (auto& normals : meshes->m_normals)
+				{
+					normals.x = -1.f * normals.x;
+					normals.y = -1.f * normals.y;
+					normals.z = -1.f * normals.z;
+				}
+			}
+		}
 
 		// Find directory
 		std::string dir = std::string(path);
@@ -302,11 +315,11 @@ namespace wr
 
 					if (texture->m_compressed)
 					{
-						handle = texture_pool->LoadFromCompressedMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, srgb, gen_mips);
+						handle = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, texture->m_format, srgb, gen_mips);
 					}
 					else
 					{
-						handle = texture_pool->LoadFromRawMemory(texture->m_data.data(), texture->m_width, texture->m_height, srgb, gen_mips);
+						handle = texture_pool->LoadFromMemory(texture->m_data.data(), texture->m_width, texture->m_height, wr::TextureFormat::RAW, srgb, gen_mips);
 					}
 				}
 				else if (texture_location == TextureLocation::EXTERNAL)

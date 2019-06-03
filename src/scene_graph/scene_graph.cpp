@@ -80,14 +80,14 @@ namespace wr
 
 	std::shared_ptr<SkyboxNode> SceneGraph::GetCurrentSkybox()
 	{
-		if (!m_skybox_nodes.empty())
-		{
-			return m_skybox_nodes.at(0);
-		}
-		else
-		{
-			return nullptr;
-		}
+		return m_current_skybox;
+	}
+
+	void SceneGraph::UpdateSkyboxNode(std::shared_ptr<SkyboxNode> node, TextureHandle new_equirectangular)
+	{
+		node->UpdateSkybox(new_equirectangular, m_render_system->GetFrameIdx());
+
+		m_render_system->RequestSkyboxReload();
 	}
 
 	//! Initialize the scene graph
@@ -282,7 +282,7 @@ namespace wr
 				if (!d3d12::settings::enable_object_culling || GetActiveCamera()->InView(node))
 				{
 					unsigned int& offset = batch.num_instances;
-					batch.data.objects[offset] = { node->m_transform };
+					batch.data.objects[offset] = { node->m_transform, node->m_prev_transform };
 					++offset;
 				}
 
@@ -290,7 +290,7 @@ namespace wr
 				if (!GetRTCullingEnabled() || GetActiveCamera()->InRange(node, GetRTCullingDistance()))
 				{
 					unsigned int& globalOffset = batch.num_global_instances;
-					obj->second[globalOffset] = { node->m_transform };
+					obj->second[globalOffset] = { node->m_transform, node->m_prev_transform };
 					++globalOffset;
 				}
 

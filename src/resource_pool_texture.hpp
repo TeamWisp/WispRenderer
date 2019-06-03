@@ -19,7 +19,8 @@ namespace wr
 	{
 		WIC,
 		DDS,
-		HDR
+		HDR,
+		RAW
 	};
 
 	class TexturePool
@@ -34,12 +35,12 @@ namespace wr
 		TexturePool& operator=(TexturePool&&) = delete;
 
 		[[nodiscard]] virtual TextureHandle LoadFromFile(std::string_view path, bool srgb, bool generate_mips) = 0;
-		[[nodiscard]] virtual TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips);
-		[[nodiscard]] virtual TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips) = 0;
-		[[nodiscard]] virtual TextureHandle LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips) = 0;
+		[[nodiscard]] virtual TextureHandle LoadFromMemory(unsigned char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips);
+		[[nodiscard]] virtual TextureHandle LoadFromMemory(unsigned char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips) = 0;
 		[[nodiscard]] virtual TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) = 0;
 		[[nodiscard]] virtual TextureHandle CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) = 0;
-		virtual void Unload(TextureHandle& handle) = 0;
+		virtual void MarkForUnload(TextureHandle& handle, unsigned int frame_idx) = 0;
+		virtual void UnloadTextures(unsigned int frame_idx) = 0;
 
 		virtual void Evict() = 0;
 		virtual void MakeResident() = 0;

@@ -20,7 +20,8 @@ namespace wr
 		DescriptorAllocation out_gbuffer_emissive_alloc;
 		DescriptorAllocation out_gbuffer_depth_alloc;
 		DescriptorAllocation out_lights_alloc;
-		DescriptorAllocation out_buffer_refl_shadow_alloc;
+		DescriptorAllocation out_buffer_refl_alloc;
+		DescriptorAllocation out_buffer_shadow_alloc;
 		DescriptorAllocation out_screen_space_irradiance_alloc;
 		DescriptorAllocation out_screen_space_ao_alloc;
 		DescriptorAllocation out_output_alloc;
@@ -33,6 +34,10 @@ namespace wr
 		bool out_requires_bundle_recording = false;
 
 		bool is_hybrid = false;
+		bool has_rt_hybrid = false;
+		bool has_rt_reflection = false;
+		bool has_rt_shadows = false;
+		bool has_rt_shadows_denoiser = false;
 		bool is_path_tracer = false;
 		bool is_rtao = false;
 		bool is_hbao = false;
