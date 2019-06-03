@@ -31,8 +31,8 @@ namespace wr::d3d12::settings
 	static const constexpr DXGI_SCALING swapchain_scaling = DXGI_SCALING_STRETCH;
 	static const constexpr DXGI_ALPHA_MODE swapchain_alpha_mode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	static const constexpr bool enable_gpu_timeout = false;
-	static const constexpr bool enable_debug_factory = true;
-	static const constexpr DebugLayer enable_debug_layer = DebugLayer::ENABLE;	//Don't use ENABLE_WITH_GPU_VALIDATION (Raytracing); it breaks
+	static const constexpr bool enable_debug_factory = false;
+	static const constexpr DebugLayer enable_debug_layer = DebugLayer::DISABLE;	//Don't use ENABLE_WITH_GPU_VALIDATION (Raytracing); it breaks
 	static const constexpr char* default_shader_model = "6_3";
 	static std::array<LPCWSTR, 1> debug_shader_args = { L"/O3" };
 	static std::array<LPCWSTR, 1> release_shader_args = { L"/O3" };
@@ -50,5 +50,7 @@ namespace wr::d3d12::settings
 	static const constexpr unsigned int fallback_ptrs_offset = 3500;
 	static const constexpr std::uint32_t res_skybox = 1024;
 	static const constexpr std::uint32_t res_envmap = 512;
+	static const constexpr unsigned int shadow_denoiser_wavelet_iterations = 4; // controls the number of iterations of the shadow denoiser, controlling the effective size of the kernel (size = 2^i + 1)
+	static const constexpr unsigned int shadow_denoiser_feedback_tap = 1; // After which of the iterations should the result be stored for denoising the next frame.
 	
 } /* wr::d3d12::settings */

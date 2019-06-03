@@ -234,9 +234,6 @@ namespace wr
 #ifndef NVIDIA_GAMEWORKS_ANSEL
 		LOGW("Ansel task has been added to the frame graph. But `NVIDIA_GAMEWORKS_ANSEL` is not defined.");
 #endif
-
-		std::wstring name(L"NVIDIA Ansel");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -250,7 +247,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -268,7 +264,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<AnselData>(desc);
+		frame_graph.AddTask<AnselData>(desc, L"NVIDIA Ansel");
 		frame_graph.UpdateSettings<AnselData>(AnselSettings());
 	}
 

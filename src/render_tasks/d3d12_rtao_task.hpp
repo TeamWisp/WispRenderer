@@ -261,7 +261,6 @@ namespace wr
 	{
 		if (wr::d3d12::GetRaytracingType(device) == wr::RaytracingType::NATIVE)//We do not support fallback layer for shadow rays.
 		{
-			std::wstring name(L"Ambient Oclussion");
 			RenderTargetProperties rt_properties
 			{
 				RenderTargetProperties::IsRenderWindow(false),
@@ -275,7 +274,6 @@ namespace wr
 				RenderTargetProperties::NumRTVFormats(1),
 				RenderTargetProperties::Clear(true),
 				RenderTargetProperties::ClearDepth(true),
-				RenderTargetProperties::ResourceName(name)
 			};
 
 			RenderTaskDesc desc;
@@ -296,7 +294,7 @@ namespace wr
 			desc.m_type = RenderTaskType::COMPUTE;
 			desc.m_allow_multithreading = true;
 
-			fg.AddTask<RTAOData>(desc);
+			fg.AddTask<RTAOData>(desc, L"Ray Traced Ambient Occlusion");
 			fg.UpdateSettings<RTAOData>(RTAOSettings());
 		}
 		else

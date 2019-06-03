@@ -513,8 +513,6 @@ namespace wr
 
 	inline void AddBuildAccelerationStructuresTask(FrameGraph& frame_graph)
 	{
-		std::wstring name(L"Acceleration Structure Builder");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -528,7 +526,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(0),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -546,7 +543,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<ASBuildData>(desc);
+		frame_graph.AddTask<ASBuildData>(desc, L"Acceleration Structure Builder");
 	}
 
 } /* wr */

@@ -21,6 +21,7 @@
 #include "scene_viknell.hpp"
 #include "scene_emibl.hpp"
 #include "scene_spheres.hpp"
+#include "scene_sun_temple.hpp"
 
 #include "model_loader_assimp.hpp"
 #include "model_loader_tinygltf.hpp"
@@ -197,7 +198,7 @@ int WispEntry()
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
 	window->SetRenderLoop([&]() {
-		SCENE::UpdateScene();
+		SCENE::UpdateScene(scene_graph.get());
 
 		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
 	});

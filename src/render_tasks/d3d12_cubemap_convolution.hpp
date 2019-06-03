@@ -90,6 +90,10 @@ namespace wr
 			auto& pred_data = fg.GetPredecessorData<EquirectToCubemapTaskData>();
 
 			auto skybox_node = scene_graph.GetCurrentSkybox();
+			if (!skybox_node)
+			{
+				return;
+			}
 
 			//Does it need convolution? And does it have a cubemap already?
 			if (skybox_node->m_irradiance != std::nullopt && skybox_node->m_skybox != std::nullopt)
@@ -174,6 +178,11 @@ namespace wr
 
 					d3d12::Transition(cmd_list, irradiance, irradiance->m_subresource_states[0], ResourceState::PIXEL_SHADER_RESOURCE);
 
+					//Once we're done we can mark the equirectangular texture for deletion in the next frame as it won't be used anymore
+					//Mark for unload makes the m_hdr handle invalid, if it's used anywhere else the program will probably break.
+					//If users want to keep using the equirectangular texture afterward, the following line of code can be removed.
+					skybox_node->m_hdr.m_pool->MarkForUnload(skybox_node->m_hdr, frame_idx);
+
 					fg.SetShouldExecute(handle, false);
 				}
 			}
@@ -184,8 +193,6 @@ namespace wr
 
 	inline void AddCubemapConvolutionTask(FrameGraph& fg)
 	{
-		std::wstring name(L"Cubemap Convolution");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -199,7 +206,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResourceName(name)
 		};
 
 		RenderTaskDesc desc;
@@ -216,7 +222,7 @@ namespace wr
 		desc.m_type = RenderTaskType::DIRECT;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<CubemapConvolutionTaskData>(desc);
+		fg.AddTask<CubemapConvolutionTaskData>(desc, L"Cubemap Convolution");
 	}
 
 } /* wr */

@@ -61,15 +61,15 @@ namespace wr
 
 		d3d12::TextureResource* GetTextureResource(TextureHandle handle) final;
 		[[nodiscard]] TextureHandle LoadFromFile(std::string_view path, bool srgb, bool generate_mips) final;
-		[[nodiscard]] TextureHandle LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips) final;
-		[[nodiscard]] TextureHandle LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips) final;
+		[[nodiscard]] TextureHandle LoadFromMemory(unsigned char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips) final;
 		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 		[[nodiscard]] TextureHandle CreateTexture(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
 
 		DescriptorAllocator* GetAllocator(DescriptorHeapType type);
 		DescriptorAllocator* GetMipmappingAllocator() { return m_mipmapping_allocator; }
 
-		void Unload(TextureHandle& handle) final;
+		void MarkForUnload(TextureHandle& handle, unsigned int frame_idx) final;
+		void UnloadTextures(unsigned int frame_idx) final;
 
 		void GenerateMips_Cubemap(d3d12::TextureResource* texture, CommandList* cmd_list, unsigned int array_slice);
 
@@ -102,6 +102,9 @@ namespace wr
 		//Track resources that are created in one frame and destroyed after
 		std::array<std::vector<d3d12::TextureResource*>, d3d12::settings::num_back_buffers> m_temporary_textures;
 		std::array< std::vector<d3d12::Heap<wr::HeapOptimization::BIG_STATIC_BUFFERS>*>, d3d12::settings::num_back_buffers> m_temporary_heaps;
+
+		//Resources marked for deletion
+		std::array<std::vector<d3d12::TextureResource*>, d3d12::settings::num_back_buffers> m_marked_for_unload;
 
 		//Default UAV used for padding
 		DescriptorAllocation m_default_uav;

@@ -169,8 +169,6 @@ namespace wr
 	template<typename T, typename T1>
 	inline void AddDownScaleTask(FrameGraph& frame_graph)
 	{
-		std::wstring name(L"down scale");
-
 		RenderTargetProperties rt_properties
 		{
 			RenderTargetProperties::IsRenderWindow(false),
@@ -184,7 +182,6 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
-			RenderTargetProperties::ResourceName(name),
 			RenderTargetProperties::ResolutionScalar(0.5f)
 		};
 
@@ -202,7 +199,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<DownScaleData>(desc);
+		frame_graph.AddTask<DownScaleData>(desc, L"Down Scale");
 	}
 
 } /* wr */

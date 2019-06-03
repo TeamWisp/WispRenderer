@@ -8,6 +8,8 @@ namespace wr
 	TexturePool::TexturePool()
 	{
 #ifdef _DEBUG
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		static uint16_t pool_count = 0u;
 		
 		m_name = "TexturePool_" + std::to_string(pool_count);
@@ -16,7 +18,7 @@ namespace wr
 #endif
 	}
 
-	TextureHandle TexturePool::LoadFromCompressedMemory(char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips)
+	TextureHandle TexturePool::LoadFromMemory(unsigned char* data, size_t width, size_t height, const std::string& texture_extension, bool srgb, bool generate_mips)
 	{
 		std::string new_str = texture_extension;
 
@@ -43,7 +45,8 @@ namespace wr
 			return {};
 		}
 
-		return LoadFromCompressedMemory(data, width, height, type, srgb, generate_mips);
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return LoadFromMemory(data, width, height, type, srgb, generate_mips);
 	}
 
 	TextureHandle TexturePool::GetDefaultAlbedo() const

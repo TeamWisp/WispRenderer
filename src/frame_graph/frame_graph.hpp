@@ -21,14 +21,10 @@
 #define FG_MAX_PERFORMANCE
 #endif
 
-#define EXPAND(x) x // Because msvc handles the preprocessor differently
-#define FG_DEPS(N, ...) EXPAND(FG_DEPS##N(__VA_ARGS__))
-#define FG_DEPS1(A) { typeid(A) }
-#define FG_DEPS2(A, B) { typeid(A), typeid(B) }
-#define FG_DEPS3(A, B, C) { typeid(A), typeid(B), typeid(C) }
-#define FG_DEPS4(A, B, C, D) { typeid(A), typeid(B), typeid(C), typeid(D) }
-#define FG_DEPS5(A, B, C, D, E) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E) }
-#define FG_DEPS6(A, B, C, D, E, F) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E), typeid(F) }
+template<typename ...Ts>
+std::vector<std::reference_wrapper<const std::type_info>> FG_DEPS() {
+	return { (typeid(Ts))... };
+}
 
 namespace wr
 {
@@ -122,6 +118,7 @@ namespace wr
 			reserve(m_data_type_info);
 #ifndef FG_MAX_PERFORMANCE
 			reserve(m_dependencies);
+			reserve(m_names);
 #endif
 			reserve(m_types);
 			reserve(m_rt_properties);
@@ -141,10 +138,10 @@ namespace wr
 		}
 
 		FrameGraph(const FrameGraph&) = delete;
-		FrameGraph(FrameGraph&&)      = delete;
+		FrameGraph(FrameGraph&&)	  = delete;
 
 		FrameGraph& operator=(const FrameGraph&) = delete;
-		FrameGraph& operator=(FrameGraph&&) 	 = delete;
+		FrameGraph& operator=(FrameGraph&&)		 = delete;
 
 		//! Setup the render tasks
 		/*!
@@ -191,11 +188,17 @@ namespace wr
 				{
 					// Get the proper command list from the render system.
 					m_cmd_lists[i] = get_command_list_from_render_system(m_types[i]);
+#ifndef FG_MAX_PERFORMANCE
+					render_system.SetCommandListName(m_cmd_lists[i], m_names[i]);
+#endif
 
 					// Get a render target from the render system.
 					if (m_rt_properties[i].has_value())
 					{
 						m_render_targets[i] = render_system.GetRenderTarget(m_rt_properties[i].value());
+#ifndef FG_MAX_PERFORMANCE
+						render_system.SetRenderTargetName(m_render_targets[i], m_names[i]);
+#endif
 					}
 				}
 
@@ -208,11 +211,17 @@ namespace wr
 				{
 					// Get the proper command list from the render system.
 					m_cmd_lists[i] = get_command_list_from_render_system(m_types[i]);
+#ifndef FG_MAX_PERFORMANCE
+					render_system.SetCommandListName(m_cmd_lists[i], m_names[i]);
+#endif
 
 					// Get a render target from the render system.
 					if (m_rt_properties[i].has_value())
 					{
 						m_render_targets[i] = render_system.GetRenderTarget(m_rt_properties[i].value());
+#ifndef FG_MAX_PERFORMANCE
+						render_system.SetRenderTargetName(m_render_targets[i], m_names[i]);
+#endif
 					}
 
 					// Call the setup function pointer.
@@ -346,6 +355,7 @@ namespace wr
 			m_settings.clear();
 #ifndef FG_MAX_PERFORMANCE
 			m_dependencies.clear();
+			m_names.clear();
 #endif
 			m_types.clear();
 			m_rt_properties.clear();
@@ -464,7 +474,7 @@ namespace wr
 				{
 					WaitForCompletion(i);
 
-					return m_render_targets[i];			
+					return m_render_targets[i];
 				}
 			}
 
@@ -612,7 +622,7 @@ namespace wr
 			\param desc A description of the render task.
 		*/
 		template<typename T>
-		inline void AddTask(RenderTaskDesc& desc, std::vector<std::reference_wrapper<const std::type_info>> dependencies = {})
+		inline void AddTask(RenderTaskDesc& desc, std::wstring const & name, std::vector<std::reference_wrapper<const std::type_info>> dependencies = {})
 		{
 			static_assert(std::is_class<T>::value ||
 				std::is_floating_point<T>::value ||
@@ -628,6 +638,7 @@ namespace wr
 			m_destroy_funcs.emplace_back(desc.m_destroy_func);
 #ifndef FG_MAX_PERFORMANCE
 			m_dependencies.emplace_back(dependencies);
+			m_names.emplace_back(name);
 #endif
 			m_settings.resize(m_num_tasks + 1ull);
 			m_types.emplace_back(desc.m_type);
@@ -690,16 +701,18 @@ namespace wr
 			{
 			case wr::CPUTextureType::PIXEL_DATA:
 				if (m_output_cpu_textures.pixel_data != std::nullopt)
-					LOGW("Warning: CPU texture pixel data is written to more than once a frame!")
-
+				{
+					LOGW("Warning: CPU texture pixel data is written to more than once a frame!");
+				}
 				// Save the pixel data
 				m_output_cpu_textures.pixel_data = output_texture;
 				break;
 
 			case wr::CPUTextureType::DEPTH_DATA:
 				if (m_output_cpu_textures.depth_data != std::nullopt)
-					LOGW("Warning: CPU texture depth data is written to more than once a frame!")
-
+				{
+					LOGW("Warning: CPU texture depth data is written to more than once a frame!");
+				}
 				// Save the depth data
 				m_output_cpu_textures.depth_data = output_texture;
 				break;
@@ -712,14 +725,28 @@ namespace wr
 		}
 
 		/*! Enable or disable execution of a task. */
-		/*!
-			Note that this function is not thread safe.
-		*/
 		inline void SetShouldExecute(RenderTaskHandle handle, bool value)
 		{
 			m_should_execute_change_request.emplace(std::make_pair(handle, value));
 		}
-		
+
+		/*! Enable or disable execution of a task. Templated version */
+		template<typename T>
+		inline void SetShouldExecute(bool value)
+		{
+			auto handle = GetHandleFromType<T>();
+
+			if (handle.has_value())
+			{
+				SetShouldExecute(handle.value(), value);
+			}
+			else
+			{
+				LOGW("Failed to mark the task for execution, Task was not found.");
+			}
+		}
+
+
 		/*! Update the settings of a task. */
 		/*!
 			This is used to update settings of a render task.
@@ -768,7 +795,7 @@ namespace wr
 			LOGC("Failed to find task settings! Does your frame graph contain this task?");
 			return R();
 		}
-		catch (const std::bad_any_cast& e) {
+		catch (const std::bad_any_cast & e) {
 			LOGC("A task settings requested failed to cast to T. ({})", e.what());
 			return R();
 		}
@@ -789,7 +816,7 @@ namespace wr
 
 			return std::any_cast<T>(m_settings[handle].value());
 		}
-		catch (const std::bad_any_cast & e) {
+		catch (const std::bad_any_cast& e) {
 			LOGW("A task settings requested failed to cast to T. ({})", e.what());
 			return T();
 		}
@@ -987,6 +1014,8 @@ namespace wr
 #ifndef FG_MAX_PERFORMANCE
 		/*! Stored the dependencies of a task. */
 		std::vector<std::vector<std::reference_wrapper<const std::type_info>>> m_dependencies;
+		/*! The names of the render targets meant for debugging */
+		std::vector<std::wstring> m_names;
 #endif
 		std::vector<RenderTaskType> m_types;
 		std::vector<std::optional<RenderTargetProperties>> m_rt_properties;

@@ -35,9 +35,38 @@ namespace wr
 			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
 			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
 			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
-			std::uint32_t m_is_hybrid = 0u;
-			std::uint32_t m_is_path_tracer = 0u;
-			std::uint32_t m_is_ao = 0u;
+			DirectX::XMMATRIX m_prev_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_prev_view = DirectX::XMMatrixIdentity();
+			unsigned int m_is_hybrid = 0u;
+			unsigned int m_is_path_tracer = 0u;
+			unsigned int m_is_ao = 0u;
+			unsigned int m_has_shadows = 0u;
+			unsigned int m_has_reflections = 0u;
+			int padding[3];
+		};
+
+		struct ShadowDenoiserSettings_CBData
+		{
+			float m_alpha;
+			float m_moments_alpha;
+			float m_l_phi;
+			float m_n_phi;
+			float m_z_phi;
+			float m_step_distance;
+			float m_padding[2];
+		};
+
+		struct DenoiserCamera_CBData
+		{
+			DirectX::XMMATRIX m_view;
+			DirectX::XMMATRIX m_prev_view;
+			DirectX::XMMATRIX m_inverse_view;
+			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_prev_projection;
+			DirectX::XMMATRIX m_inverse_projection;
+			float m_padding[2];
+			float m_near_plane;
+			float m_far_plane;
 		};
 
 		struct RTHybridCamera_CBData
@@ -98,6 +127,8 @@ namespace wr
 			std::uint32_t vertex_offset = 0u;
 		};
 
+
+
 		static const constexpr float size = 1.0f;
 		static const constexpr Vertex2D quad_vertices[] = {
 			{ -size, -size },
@@ -144,8 +175,10 @@ namespace wr
 		wr::CommandList* GetBundleCommandList(unsigned int num_allocators);
 		wr::CommandList* GetComputeCommandList(unsigned int num_allocators);
 		wr::CommandList* GetCopyCommandList(unsigned int num_allocators);
+		void SetCommandListName(CommandList* cmd_list, std::wstring const& name);
 		void DestroyCommandList(CommandList* cmd_list);
 		RenderTarget* GetRenderTarget(RenderTargetProperties properties);
+		void SetRenderTargetName(RenderTarget* cmd_list, std::wstring const& name);
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height);
 		void RequestFullscreenChange(bool fullscreen_state);
 
@@ -176,6 +209,8 @@ namespace wr
 
 		unsigned int GetFrameIdx();
 		d3d12::RenderWindow* GetRenderWindow();
+
+		void RequestSkyboxReload(); 
 
 		//SimpleShapes don't have a material attached to them. The user is expected to provide one.
 		wr::Model* GetSimpleShape(SimpleShapes type);
@@ -230,6 +265,8 @@ namespace wr
 		std::optional<bool> m_requested_fullscreen_state;
 
 		MaterialHandle m_last_material = { nullptr, 0 };
+
+		bool m_skybox_changed = false;
 
 	};
 

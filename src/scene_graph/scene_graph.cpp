@@ -80,14 +80,14 @@ namespace wr
 
 	std::shared_ptr<SkyboxNode> SceneGraph::GetCurrentSkybox()
 	{
-		if (!m_skybox_nodes.empty())
-		{
-			return m_skybox_nodes.at(0);
-		}
-		else
-		{
-			return nullptr;
-		}
+		return m_current_skybox;
+	}
+
+	void SceneGraph::UpdateSkyboxNode(std::shared_ptr<SkyboxNode> node, TextureHandle new_equirectangular)
+	{
+		node->UpdateSkybox(new_equirectangular, m_render_system->GetFrameIdx());
+
+		m_render_system->RequestSkyboxReload();
 	}
 
 	//! Initialize the scene graph
@@ -214,6 +214,10 @@ namespace wr
 			constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
 			for (auto& node : m_mesh_nodes) {
+				if (!node->m_visible)
+				{
+					continue;
+				}
 
 				auto mesh_materials_pair = std::make_pair(node->m_model, node->m_materials);
 
@@ -251,12 +255,12 @@ namespace wr
 				if (GetActiveCamera()->InView(node) || !d3d12::settings::enable_object_culling) 
 				{
 					unsigned int& offset = batch.num_instances;
-					batch.data.objects[offset] = { node->m_transform };
+					batch.data.objects[offset] = { node->m_transform, node->m_prev_transform };
 					++offset;
 				}
 
 				unsigned int& globalOffset = batch.num_global_instances;
-				obj->second[globalOffset] = { node->m_transform };
+				obj->second[globalOffset] = { node->m_transform, node->m_prev_transform };
 				++globalOffset;
 
 			}
