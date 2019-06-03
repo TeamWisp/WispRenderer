@@ -21,6 +21,7 @@ namespace emibl_scene
 
 		static wr::Model* cube_model;
 		static wr::Model* plane_model;
+		static wr::Model* test_model;
 		static wr::Model* material_knob;
 
 		static wr::MaterialHandle rusty_metal_material;
@@ -93,7 +94,7 @@ namespace emibl_scene
 			wr::TextureHandle bw_tiles_metallic = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/metallic.png", false, true);
 			wr::TextureHandle bw_tiles_emissive = texture_pool->LoadFromFile("resources/materials/bw_tiles_gold_lining/emissive.png", true, true);
 
-			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/artist_workshop_4k.hdr", false, false);
+			equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/Arches_E_PineTree_3k.hdr", false, false);
 
 			{
 				// Create Material
@@ -244,6 +245,10 @@ namespace emibl_scene
 						m.second = material_handles[0];
 					}
 				}
+
+				{
+					test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				}
 			}
 		}
 
@@ -326,7 +331,7 @@ namespace emibl_scene
 		directional_light_node->SetDirectional({ 360_deg - 136_deg, 0, 0 }, { 4, 4, 4 });
 	}
 
-	void UpdateScene()
+	void UpdateScene(wr::SceneGraph* sg)
 	{
 		float deltaTime = ImGui::GetIO().DeltaTime;
 

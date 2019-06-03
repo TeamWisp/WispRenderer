@@ -184,7 +184,5 @@ namespace engine
 			wr::imgui::window::D3D12Settings();
 			wr::imgui::window::GraphicsSettings(fg_manager::Get());
 		}
-
 	}
-	
 }

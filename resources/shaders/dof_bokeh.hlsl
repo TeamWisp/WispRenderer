@@ -38,7 +38,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float4 fgcolor = float4(0, 0, 0, 0);
 	float4 bgcolor = float4(0, 0, 0, 0);
 
-	//Kernel gather method credits to MJP and David Neubelt.
+	//Kernel gather method credits to Matt Pettineo and David Neubelt.
 	if (enable_dof > 0)
 	{
 		float far_coc = source_far.SampleLevel(s1, uv, 0).w;
@@ -46,8 +46,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		float kernel_radius = MAXKERNELSIZE * far_coc;
 
 		[branch]
-		if (kernel_radius > 0.3f)
+		if (kernel_radius > 0.5f)
 		{
+			float weightsum = 0.0001f;
 			[unroll]
 			for (uint i = 0; i < NUMSAMPLES; ++i)
 			{
@@ -58,7 +59,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float samplecoc = s.w;
 
 				s *= saturate(1.0f + (samplecoc - far_coc));
-				s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.001f), SHAPECURVE) * shape_curve;
+				s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.01f), SHAPECURVE) * shape_curve;
 
 				bgcolor += s;
 			}
@@ -67,7 +68,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 		else
 		{
-			bgcolor = source_far.SampleLevel(s0, uv, 0);
+			bgcolor = source_far.SampleLevel(s1, uv, 0);
 		}
 
 		float nearMask = SampleTextureBSpline(near_mask, s0, uv).x;
@@ -94,8 +95,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 				fgcolor.xyz += s.xyz * sw;
 
-				float sampledist = length(kernel_offset) * kernel_radius;
-
 				float samplealpha = 1.0f;
 				samplealpha *= saturate(samplecoc * 1.0f);
 				fgcolor.w += samplealpha * sw;
@@ -105,13 +104,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 			fgcolor.xyz /= weightsum;
 			fgcolor.w = saturate(fgcolor.w * (1.0f / NUMSAMPLES));
-			fgcolor.w = max(fgcolor.w, source_near.SampleLevel(s1, uv, 0).w);
+			fgcolor.w = max(fgcolor.w, source_near.SampleLevel(s0, uv, 0).w);
 		}
 		else
 		{
 			fgcolor = float4(source_near.SampleLevel(s0, uv, 0).rgb, 0.0f);
 		}
-		fgcolor.w = nearMask;
+		//fgcolor.w = source_near.SampleLevel(s1, uv, 0).w;
 	}
 
 	output_near[int2(dispatch_thread_id.xy)] = fgcolor;

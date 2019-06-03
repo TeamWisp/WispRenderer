@@ -23,7 +23,7 @@ Wisp is a general purpose high level rendering library. Specially made for real 
 * NVIDIA's HBAO+
 * NVIDIA's AnselSDK
 
-**Suprted Rendering Backends**
+**Supported Rendering Backends**
 
 * DirectX 12
 

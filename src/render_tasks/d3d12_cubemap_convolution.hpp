@@ -101,9 +101,13 @@ namespace wr
 			auto& pred_data = fg.GetPredecessorData<EquirectToCubemapTaskData>();
 
 			auto skybox_node = scene_graph.GetCurrentSkybox();
-			
-			//Does it need convolution?
-			if (skybox_node->m_irradiance != std::nullopt) 
+			if (!skybox_node)
+			{
+				return;
+			}
+
+			//Does it need convolution? And does it have a cubemap already?
+			if (skybox_node->m_irradiance != std::nullopt && skybox_node->m_skybox != std::nullopt)
 			{
 				d3d12::TextureResource* irradiance = static_cast<d3d12::TextureResource*>(skybox_node->m_irradiance->m_pool->GetTextureResource(skybox_node->m_irradiance.value()));
 				bool did_resolution_change = irradiance->m_width != settings.m_runtime.m_resolution[0] || irradiance->m_height != settings.m_runtime.m_resolution[1];
@@ -189,6 +193,11 @@ namespace wr
 					}
 
 					d3d12::Transition(cmd_list, irradiance, irradiance->m_subresource_states[0], ResourceState::PIXEL_SHADER_RESOURCE);
+
+					//Once we're done we can mark the equirectangular texture for deletion in the next frame as it won't be used anymore
+					//Mark for unload makes the m_hdr handle invalid, if it's used anywhere else the program will probably break.
+					//If users want to keep using the equirectangular texture afterward, the following line of code can be removed.
+					skybox_node->m_hdr.m_pool->MarkForUnload(skybox_node->m_hdr, frame_idx);
 
 					fg.SetShouldExecute(handle, false);
 				}

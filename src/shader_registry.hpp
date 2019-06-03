@@ -13,6 +13,7 @@ namespace wr
 		std::string path;
 		std::string entry;
 		ShaderType type;
+		std::vector<std::pair<std::wstring, std::wstring>> defines;
 	};
 
 	class ShaderRegistry : public internal::Registry<ShaderRegistry, Shader, ShaderDescription>

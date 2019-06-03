@@ -24,6 +24,10 @@
 #include "../scene_graph/camera_node.hpp"
 #include "../scene_graph/light_node.hpp"
 #include "../scene_graph/skybox_node.hpp"
+
+#include "../render_tasks/d3d12_equirect_to_cubemap.hpp"
+#include "../render_tasks/d3d12_cubemap_convolution.hpp"
+
 #include <iostream>
 #include <string>
 
@@ -137,7 +141,7 @@ namespace wr
 
 		// Stage fullscreen quad
 		d3d12::StageBuffer(m_fullscreen_quad_vb, m_direct_cmd_list);
-
+		
 		// Execute
 		d3d12::End(m_direct_cmd_list);
 		d3d12::Execute(m_direct_queue, { m_direct_cmd_list }, m_fences[frame_idx]);
@@ -150,6 +154,14 @@ namespace wr
 
 	CPUTextures D3D12RenderSystem::Render(SceneGraph& scene_graph, FrameGraph& frame_graph)
 	{
+		if (m_skybox_changed)
+		{
+			frame_graph.SetShouldExecute<wr::EquirectToCubemapTaskData>(true);
+			frame_graph.SetShouldExecute<wr::CubemapConvolutionTaskData>(true);
+
+			m_skybox_changed = false;
+		}
+
 		// Perform render target save requests
 		while (!m_requested_rt_saves.empty())
 		{
@@ -175,6 +187,7 @@ namespace wr
 		for (auto pool : m_texture_pools)
 		{
 			pool->ReleaseTemporaryResources();
+			pool->UnloadTextures(frame_idx);
 		}
 
 		// Perform reload requests
@@ -617,7 +630,7 @@ namespace wr
 
 		for (auto desc : registry.m_descriptions)
 		{
-			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry, desc.second.defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
@@ -700,7 +713,8 @@ namespace wr
 
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
-				pipeline_shader->m_entry);
+				pipeline_shader->m_entry,
+				pipeline_shader->m_defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -747,7 +761,8 @@ namespace wr
 		{
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
-				pipeline_shader->m_entry);
+				pipeline_shader->m_entry,
+				pipeline_shader->m_defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -991,8 +1006,11 @@ namespace wr
 			temp::ProjectionView_CBData data;
 			data.m_projection = node->m_projection;
 			data.m_inverse_projection = node->m_inverse_projection;
+			data.m_prev_projection = node->m_prev_projection;
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
+			data.m_prev_view = node->m_prev_view;
+			
 			data.m_is_hybrid = 0;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);
@@ -1241,6 +1259,11 @@ namespace wr
 			LOGW("Called `D3D12RenderSystem::GetRenderWindow` without a window!");
 			return nullptr;
 		}
+	}
+
+	void D3D12RenderSystem::RequestSkyboxReload()
+	{
+		m_skybox_changed = true;
 	}
 
 	wr::Model* D3D12RenderSystem::GetSimpleShape(SimpleShapes type)

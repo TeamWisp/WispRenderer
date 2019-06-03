@@ -23,7 +23,8 @@ SplineNode::SplineNode(std::string name, bool looping) : Node(typeid(SplineNode)
 
 	wr::imgui::window::SceneGraphEditorDetails::sg_editor_type_inspect[typeid(SplineNode)] =
 	{
-		[](std::shared_ptr<Node> node, wr::SceneGraph* scene_graph) {
+		[](std::shared_ptr<Node> node, wr::SceneGraph* scene_graph) 
+		{
 			auto spline_node = std::static_pointer_cast<SplineNode>(node);
 
 			ImGui::Checkbox("Animate", &spline_node->m_animate);

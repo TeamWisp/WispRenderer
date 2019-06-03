@@ -33,6 +33,7 @@ namespace wr
 
 		struct ObjectData {
 			DirectX::XMMATRIX m_model;
+			DirectX::XMMATRIX m_prev_model;
 		};
 
 		struct MeshBatch_CBData
@@ -42,7 +43,7 @@ namespace wr
 
 		struct MeshBatch
 		{
-			unsigned int num_instances = 0, num_global_instances = 0;
+			unsigned int num_instances = 0, num_global_instances = 0, num_total_instances = 0;
 			ConstantBufferHandle* batch_buffer;
 			MeshBatch_CBData data;
 			std::vector<MaterialHandle> m_materials;
@@ -85,6 +86,8 @@ namespace wr
 		std::vector<std::shared_ptr<MeshNode>>& GetMeshNodes();
 		std::shared_ptr<SkyboxNode> GetCurrentSkybox();
 
+		void UpdateSkyboxNode(std::shared_ptr<SkyboxNode> node, TextureHandle new_equirectangular);
+
 		void Init();
 		void Update();
 		void Render(CommandList* cmd_list, CameraNode* camera);
@@ -100,6 +103,11 @@ namespace wr
 		Light* GetLight(uint32_t offset);			//Returns nullptr when out of bounds
 
 		uint32_t GetCurrentLightSize();
+		float GetRTCullingDistance();
+		bool GetRTCullingEnabled();
+
+		void SetRTCullingDistance(float dist);
+		void SetRTCullingEnable(bool b);
 
 	protected:
 
@@ -124,9 +132,12 @@ namespace wr
 		std::vector<std::shared_ptr<CameraNode>> m_camera_nodes;
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
 		std::vector<std::shared_ptr<LightNode>> m_light_nodes;
-		std::vector< std::shared_ptr<SkyboxNode>>	m_skybox_nodes;
+		std::vector< std::shared_ptr<SkyboxNode>> m_skybox_nodes;
+
+		std::shared_ptr<SkyboxNode> m_current_skybox = nullptr;
 
 		uint32_t m_next_light_id = 0;
+		float m_rt_culling_distance = -1;
 	};
 
 	//! Creates a child into the scene graph
@@ -157,6 +168,9 @@ namespace wr
 		else if constexpr (std::is_same<T, SkyboxNode>::value)
 		{
 			m_skybox_nodes.push_back(new_node);
+
+			//This matches Maya's behaviour of always showing the latest skybox created.
+			m_current_skybox = new_node;
 		}
 
 		return new_node;
@@ -213,6 +227,33 @@ namespace wr
 					//Stop tracking the node
 
 					m_light_nodes.erase(m_light_nodes.begin() + i);
+					break;
+				}
+			}
+		}
+		else if constexpr (std::is_base_of<SkyboxNode, T>::value)
+		{
+			for (size_t i = 0, j = m_skybox_nodes.size(); i < j; ++i)
+			{
+				if (m_skybox_nodes[i] == node)
+				{
+					if (m_current_skybox == m_skybox_nodes[i])
+					{
+						size_t num_nodes = m_skybox_nodes.size();
+
+						if (num_nodes > 1)
+						{
+							m_current_skybox = m_skybox_nodes[num_nodes - 1];
+						}
+						else
+						{
+							m_current_skybox = nullptr;
+							LOGW("[WARNING]: Last skybox node deleted, m_current_skybox is now a nullptr")
+						}
+					}
+
+					m_skybox_nodes.erase(m_skybox_nodes.begin() + i);
+					
 					break;
 				}
 			}

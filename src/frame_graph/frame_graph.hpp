@@ -21,14 +21,10 @@
 #define FG_MAX_PERFORMANCE
 #endif
 
-#define EXPAND(x) x // Because msvc handles the preprocessor differently
-#define FG_DEPS(N, ...) EXPAND(FG_DEPS##N(__VA_ARGS__))
-#define FG_DEPS1(A) { typeid(A) }
-#define FG_DEPS2(A, B) { typeid(A), typeid(B) }
-#define FG_DEPS3(A, B, C) { typeid(A), typeid(B), typeid(C) }
-#define FG_DEPS4(A, B, C, D) { typeid(A), typeid(B), typeid(C), typeid(D) }
-#define FG_DEPS5(A, B, C, D, E) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E) }
-#define FG_DEPS6(A, B, C, D, E, F) { typeid(A), typeid(B), typeid(C), typeid(D), typeid(E), typeid(F) }
+template<typename ...Ts>
+std::vector<std::reference_wrapper<const std::type_info>> FG_DEPS() {
+	return { (typeid(Ts))... };
+}
 
 namespace wr
 {
@@ -142,10 +138,10 @@ namespace wr
 		}
 
 		FrameGraph(const FrameGraph&) = delete;
-		FrameGraph(FrameGraph&&)      = delete;
+		FrameGraph(FrameGraph&&)	  = delete;
 
 		FrameGraph& operator=(const FrameGraph&) = delete;
-		FrameGraph& operator=(FrameGraph&&) 	 = delete;
+		FrameGraph& operator=(FrameGraph&&)		 = delete;
 
 		//! Setup the render tasks
 		/*!
@@ -478,7 +474,7 @@ namespace wr
 				{
 					WaitForCompletion(i);
 
-					return m_render_targets[i];			
+					return m_render_targets[i];
 				}
 			}
 
@@ -705,16 +701,18 @@ namespace wr
 			{
 			case wr::CPUTextureType::PIXEL_DATA:
 				if (m_output_cpu_textures.pixel_data != std::nullopt)
-					LOGW("Warning: CPU texture pixel data is written to more than once a frame!")
-
+				{
+					LOGW("Warning: CPU texture pixel data is written to more than once a frame!");
+				}
 				// Save the pixel data
 				m_output_cpu_textures.pixel_data = output_texture;
 				break;
 
 			case wr::CPUTextureType::DEPTH_DATA:
 				if (m_output_cpu_textures.depth_data != std::nullopt)
-					LOGW("Warning: CPU texture depth data is written to more than once a frame!")
-
+				{
+					LOGW("Warning: CPU texture depth data is written to more than once a frame!");
+				}
 				// Save the depth data
 				m_output_cpu_textures.depth_data = output_texture;
 				break;
@@ -727,14 +725,28 @@ namespace wr
 		}
 
 		/*! Enable or disable execution of a task. */
-		/*!
-			Note that this function is not thread safe.
-		*/
 		inline void SetShouldExecute(RenderTaskHandle handle, bool value)
 		{
 			m_should_execute_change_request.emplace(std::make_pair(handle, value));
 		}
-		
+
+		/*! Enable or disable execution of a task. Templated version */
+		template<typename T>
+		inline void SetShouldExecute(bool value)
+		{
+			auto handle = GetHandleFromType<T>();
+
+			if (handle.has_value())
+			{
+				SetShouldExecute(handle.value(), value);
+			}
+			else
+			{
+				LOGW("Failed to mark the task for execution, Task was not found.");
+			}
+		}
+
+
 		/*! Update the settings of a task. */
 		/*!
 			This is used to update settings of a render task.
@@ -783,7 +795,7 @@ namespace wr
 			LOGC("Failed to find task settings! Does your frame graph contain this task?");
 			return R();
 		}
-		catch (const std::bad_any_cast& e) {
+		catch (const std::bad_any_cast & e) {
 			LOGC("A task settings requested failed to cast to T. ({})", e.what());
 			return R();
 		}
@@ -804,7 +816,7 @@ namespace wr
 
 			return std::any_cast<T>(m_settings[handle].value());
 		}
-		catch (const std::bad_any_cast & e) {
+		catch (const std::bad_any_cast& e) {
 			LOGW("A task settings requested failed to cast to T. ({})", e.what());
 			return T();
 		}

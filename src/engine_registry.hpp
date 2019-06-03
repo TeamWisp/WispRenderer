@@ -284,6 +284,57 @@ namespace wr
 			rs_layout::Entry{(int)BasicE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
+		enum class SVGFDenoiserE
+		{
+			INPUT,
+			MOTION,
+			NORMAL,
+			DEPTH,
+
+			IN_HIST_LENGTH,
+
+			PREV_INPUT,
+			PREV_MOMENTS,
+			PREV_NORMAL,
+			PREV_DEPTH,
+
+			OUT_COLOR,
+			OUT_MOMENTS,
+			OUT_HIST_LENGTH,
+
+			CAMERA_PROPERTIES,
+			SVGF_PROPERTIES,
+
+			PING_PONG_UAV,
+			PING_PONG_SRV,
+			OUTPUT_SRV,
+		};
+
+		constexpr std::array<rs_layout::Entry, 17> svgf_denoiser = {
+			rs_layout::Entry{(int)SVGFDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::MOTION, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::DEPTH, 1, rs_layout::Type::SRV_RANGE},
+
+			rs_layout::Entry{(int)SVGFDenoiserE::IN_HIST_LENGTH, 1, rs_layout::Type::SRV_RANGE},
+
+			rs_layout::Entry{(int)SVGFDenoiserE::PREV_INPUT, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::PREV_MOMENTS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::PREV_NORMAL, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::PREV_DEPTH, 1, rs_layout::Type::SRV_RANGE},
+
+			rs_layout::Entry{(int)SVGFDenoiserE::OUT_COLOR, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::OUT_MOMENTS, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::OUT_HIST_LENGTH, 1, rs_layout::Type::UAV_RANGE},
+
+			rs_layout::Entry{(int)SVGFDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)SVGFDenoiserE::SVGF_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+
+			rs_layout::Entry{(int)SVGFDenoiserE::PING_PONG_UAV, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::PING_PONG_SRV, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SVGFDenoiserE::OUTPUT_SRV, 1, rs_layout::Type::SRV_RANGE},
+		};
+
 		enum class DeferredCompositionE
 		{
 			CAMERA_PROPERTIES,
@@ -296,13 +347,14 @@ namespace wr
 			IRRADIANCE_MAP,
 			PREF_ENV_MAP,
 			BRDF_LUT,
-			BUFFER_REFLECTION_SHADOW,
+			BUFFER_REFLECTION,
+			BUFFER_SHADOW,
 			BUFFER_SCREEN_SPACE_IRRADIANCE,
 			BUFFER_AO,
 			OUTPUT,
 		};
 
-		constexpr std::array<rs_layout::Entry, 14> deferred_composition = {
+		constexpr std::array<rs_layout::Entry, 15> deferred_composition = {
 			rs_layout::Entry{(int)DeferredCompositionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::GBUFFER_NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},			
@@ -313,7 +365,8 @@ namespace wr
 			rs_layout::Entry{(int)DeferredCompositionE::IRRADIANCE_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::PREF_ENV_MAP, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BRDF_LUT, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION_SHADOW, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_REFLECTION, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SHADOW, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::BUFFER_AO, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DeferredCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
@@ -539,17 +592,17 @@ namespace wr
 			SOURCE,
 			OUTPUT_NEAR,
 			OUTPUT_FAR,
-			OUTPUT_BRIGHT,
-			COC
+			COC,
 		};
 
-		constexpr std::array<rs_layout::Entry, 5> down_scale = {
+		constexpr std::array<rs_layout::Entry,4> down_scale = {
 			rs_layout::Entry{(int)DownScaleE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DownScaleE::OUTPUT_NEAR, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)DownScaleE::OUTPUT_FAR, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)DownScaleE::OUTPUT_BRIGHT, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)DownScaleE::COC, 1, rs_layout::Type::SRV_RANGE}
+			rs_layout::Entry{(int)DownScaleE::COC, 1, rs_layout::Type::SRV_RANGE},
 		};
+
+
 
 		enum class DoFDilateE
 		{
@@ -560,28 +613,6 @@ namespace wr
 		constexpr std::array<rs_layout::Entry, 2> dof_dilate = {
 			rs_layout::Entry{(int)DoFDilateE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)DoFDilateE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-		};
-
-		enum class DoFDilateFlattenE
-		{
-			SOURCE,
-			OUTPUT
-		};
-
-		constexpr std::array<rs_layout::Entry, 2> dof_dilate_flatten = {
-			rs_layout::Entry{(int)DoFDilateFlattenE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DoFDilateFlattenE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-		};
-
-		enum class DoFDilateFlattenHE
-		{
-			SOURCE,
-			OUTPUT
-		};
-
-		constexpr std::array<rs_layout::Entry, 2> dof_dilate_flatten_h = {
-			rs_layout::Entry{(int)DoFDilateFlattenHE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)DoFDilateFlattenHE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 		};
 
 		enum class DoFBokehE
@@ -635,39 +666,50 @@ namespace wr
 			rs_layout::Entry{(int)DoFCompositionE::COC, 1, rs_layout::Type::SRV_RANGE},
 		};
 
-		enum class BloomHE
+		enum class BloomExtractBrightE
 		{
 			SOURCE,
-			OUTPUT
+			G_EMISSIVE,
+			G_DEPTH,
+			OUTPUT_BRIGHT
 		};
 
-		constexpr std::array<rs_layout::Entry, 2> bloom_h = {
-			rs_layout::Entry{(int)BloomHE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BloomHE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		constexpr std::array<rs_layout::Entry, 4> bloom_extract_bright = {
+			rs_layout::Entry{(int)BloomExtractBrightE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomExtractBrightE::G_EMISSIVE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomExtractBrightE::G_DEPTH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomExtractBrightE::OUTPUT_BRIGHT, 1, rs_layout::Type::UAV_RANGE},
 		};
-
-		enum class BloomVE
+		enum class BloomBlurE
 		{
 			SOURCE,
-			OUTPUT
+			OUTPUT,
+			BLUR_DIRECTION
 		};
 
-		constexpr std::array<rs_layout::Entry, 2> bloom_v = {
-			rs_layout::Entry{(int)BloomVE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BloomVE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		constexpr std::array<rs_layout::Entry, 3> bloom_blur = {
+			rs_layout::Entry{(int)BloomBlurE::SOURCE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomBlurE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)BloomBlurE::BLUR_DIRECTION, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
 		enum class BloomCompositionE
 		{
 			BLOOM_PROPERTIES,
 			SOURCE_MAIN,
-			SOURCE_BLOOM,
+			SOURCE_BLOOM_HALF,
+			SOURCE_BLOOM_QUARTER,
+			SOURCE_BLOOM_EIGHTH,
+			SOURCE_BLOOM_SIXTEENTH,
 			OUTPUT
 		};
 
-		constexpr std::array<rs_layout::Entry, 4> bloom_composition = {
+		constexpr std::array<rs_layout::Entry, 7> bloom_composition = {
 			rs_layout::Entry{(int)BloomCompositionE::SOURCE_MAIN, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_HALF, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_QUARTER, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_EIGHTH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_SIXTEENTH, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::BLOOM_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
@@ -678,6 +720,7 @@ namespace wr
 	{
 		WISPRENDERER_EXPORT static RegistryHandle brdf_lut;
 		WISPRENDERER_EXPORT static RegistryHandle basic;
+		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser;
 		WISPRENDERER_EXPORT static RegistryHandle deferred_composition;
 		WISPRENDERER_EXPORT static RegistryHandle rt_test_global;
 		WISPRENDERER_EXPORT static RegistryHandle mip_mapping;
@@ -692,27 +735,32 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
 	struct shaders
 	{
 		WISPRENDERER_EXPORT static RegistryHandle brdf_lut_cs;
-		WISPRENDERER_EXPORT static RegistryHandle basic_vs;
-		WISPRENDERER_EXPORT static RegistryHandle basic_ps;
+		WISPRENDERER_EXPORT static RegistryHandle basic_deferred_vs;
+		WISPRENDERER_EXPORT static RegistryHandle basic_deferred_ps;
+		WISPRENDERER_EXPORT static RegistryHandle basic_hybrid_vs;
+		WISPRENDERER_EXPORT static RegistryHandle basic_hybrid_ps;
 		WISPRENDERER_EXPORT static RegistryHandle fullscreen_quad_vs;
+		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_reprojection_cs;
+		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_filter_moments_cs;
+		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_wavelet_filter_cs;
 		WISPRENDERER_EXPORT static RegistryHandle deferred_composition_cs;
 		WISPRENDERER_EXPORT static RegistryHandle rt_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_ao_lib;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_lib;
+		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_lib;
+		WISPRENDERER_EXPORT static RegistryHandle rt_reflection_lib;
 		WISPRENDERER_EXPORT static RegistryHandle mip_mapping_cs;
 		WISPRENDERER_EXPORT static RegistryHandle equirect_to_cubemap_vs;
 		WISPRENDERER_EXPORT static RegistryHandle equirect_to_cubemap_ps;
@@ -723,13 +771,11 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
@@ -737,6 +783,10 @@ namespace wr
 	{
 		WISPRENDERER_EXPORT static RegistryHandle brdf_lut_precalculation;
 		WISPRENDERER_EXPORT static RegistryHandle basic_deferred;
+		WISPRENDERER_EXPORT static RegistryHandle basic_hybrid;
+		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_reprojection;
+		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_filter_moments;
+		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_wavelet_filter;
 		WISPRENDERER_EXPORT static RegistryHandle deferred_composition;
 		WISPRENDERER_EXPORT static RegistryHandle mip_mapping;
 		WISPRENDERER_EXPORT static RegistryHandle equirect_to_cubemap;
@@ -747,13 +797,11 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten;
-		WISPRENDERER_EXPORT static RegistryHandle dof_dilate_flatten_h;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh_post_filter;
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_h;
-		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 	};
 
@@ -764,6 +812,9 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle rt_ao_state_opbject;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracing_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_reflection_state_object;
 	};
 
 } /* wr */
+
