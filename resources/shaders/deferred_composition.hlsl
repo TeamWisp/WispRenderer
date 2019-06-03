@@ -16,9 +16,10 @@ TextureCube skybox : register(t5);
 TextureCube irradiance_map   : register(t6);
 TextureCube pref_env_map	 : register(t7);
 Texture2D brdf_lut			 : register(t8);
-Texture2D buffer_refl_shadow : register(t9); // xyz: reflection, a: shadow factor
-Texture2D screen_space_irradiance : register(t10);
-Texture2D screen_space_ao : register(t11);
+Texture2D buffer_reflection : register(t9); // xyz: reflection, a: shadow factor
+Texture2D buffer_shadow		: register(t10);
+Texture2D screen_space_irradiance : register(t11);
+Texture2D screen_space_ao : register(t12);
 RWTexture2D<float4> output   : register(u0);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
@@ -29,10 +30,14 @@ cbuffer CameraProperties : register(b0)
 	float4x4 projection;
 	float4x4 inv_projection;
 	float4x4 inv_view;
-
+	float4x4 prev_projection;
+	float4x4 prev_view;
 	uint is_hybrid;
 	uint is_path_tracer;
 	uint is_ao;
+	uint has_shadows;
+	uint has_reflections;
+	float3 padding;
 };
 
 static uint min_depth = 0xFFFFFFFF;
@@ -104,27 +109,26 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		ao *= gbuffer_ao;
 
 		// Get shadow factor (0: fully shadowed, 1: no shadow)
-		float shadow_factor = lerp(
+		float3 shadow_factor = lerp(
 			// Do deferred shadow (fully lit for now)
-			1.0,
+			float3(1, 1, 1),
 			// Shadow buffer if its hybrid rendering
-			buffer_refl_shadow.SampleLevel(point_sampler, uv, 0.0f).a,
+			buffer_shadow.SampleLevel(point_sampler, uv, 0).rgb,
 			// Lerp factor (0: no hybrid, 1: hybrid)
-			is_hybrid);
-
-		shadow_factor = clamp(shadow_factor, 0.0f, 1.0f);
+			has_shadows);
 		
 		// Get reflection
 		float3 reflection = lerp(
 			// Sample from environment if it IS NOT hybrid rendering
 			sampled_environment_map,
 			// Reflection buffer if it IS hybrid rendering
-			buffer_refl_shadow.SampleLevel(point_sampler, uv, 0.0f).xyz,
+			buffer_reflection.SampleLevel(point_sampler, uv, 0).xyz,	
 			// Lerp factor (0: no hybrid, 1: hybrid)
-			is_hybrid);
+			has_reflections);
+
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, has_shadows);
 	}
 	else
 	{	

@@ -55,7 +55,7 @@ namespace wr
 		DirectX::XMVECTOR m_scale = { 1, 1, 1, 0 };
 
 		//Transformation
-		DirectX::XMMATRIX m_local_transform, m_transform;
+		DirectX::XMMATRIX m_local_transform, m_transform, m_prev_transform;
 
 		const std::type_info& m_type_info;
 

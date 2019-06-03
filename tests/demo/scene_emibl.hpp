@@ -21,6 +21,7 @@ namespace emibl_scene
 
 		static wr::Model* cube_model;
 		static wr::Model* plane_model;
+		static wr::Model* test_model;
 		static wr::Model* material_knob;
 
 		static wr::MaterialHandle rusty_metal_material;
@@ -243,6 +244,10 @@ namespace emibl_scene
 					{
 						m.second = material_handles[0];
 					}
+				}
+
+				{
+					test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 				}
 			}
 		}
