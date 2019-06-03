@@ -355,7 +355,10 @@ namespace wr
 				/*unsigned int verts_loc = 3; rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
 				This should be the Parameter index not the heap location, it was only working due to a ridiculous amount of luck and should be fixed, or we completely missunderstand this stuff...
 				Much love, Meine and Florian*/
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+				if (!as_build_data.out_blas_list.empty())
+				{
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+				}
 
 				//#ifdef _DEBUG
 				CreateShaderTables(device, data, raygen_entry, frame_idx);

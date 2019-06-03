@@ -471,7 +471,10 @@ namespace wr
 					d3d12::Transition(cmd_list, pool->GetIndexStagingBuffer(), ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::INDEX_BUFFER);
 				}
 
-				internal::CreateSRVs(data);
+				if (!data.out_blas_list.empty())
+				{
+					internal::CreateSRVs(data);
+				}
 
 				data.out_init = false;
 			}
