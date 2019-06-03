@@ -60,6 +60,36 @@ namespace wr
 		}
 	});
 
+	DESC_RANGE_ARRAY(svgf_denoiser_ranges,
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::INPUT),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::MOTION),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::NORMAL),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::DEPTH),
+
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::IN_HIST_LENGTH),
+
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_INPUT),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_MOMENTS),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_NORMAL),
+		DESC_RANGE(params::svgf_denoiser, Type::SRV_RANGE, params::SVGFDenoiserE::PREV_DEPTH),
+
+		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_COLOR),
+		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_MOMENTS),
+		DESC_RANGE(params::svgf_denoiser, Type::UAV_RANGE, params::SVGFDenoiserE::OUT_HIST_LENGTH),
+		);
+
+	REGISTER(root_signatures::svgf_denoiser, RootSignatureRegistry)({
+		.m_parameters ={
+			ROOT_PARAM_DESC_TABLE(svgf_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::svgf_denoiser, params::SVGFDenoiserE::CAMERA_PROPERTIES)),
+			ROOT_PARAM(GetCBV(params::svgf_denoiser, params::SVGFDenoiserE::SVGF_PROPERTIES)),
+		},
+		.m_samplers = {
+			{TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP},
+			{TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP}
+		}
+	});
+
 	//Deferred Composition Root Signature
 	DESC_RANGE_ARRAY(srv_ranges,
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::GBUFFER_ALBEDO_ROUGHNESS),
@@ -71,7 +101,8 @@ namespace wr
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::IRRADIANCE_MAP),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::PREF_ENV_MAP),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BRDF_LUT),
-		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_REFLECTION_SHADOW),
+		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_REFLECTION),
+		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_SHADOW),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_SCREEN_SPACE_IRRADIANCE),
 		DESC_RANGE(params::deferred_composition, Type::SRV_RANGE, params::DeferredCompositionE::BUFFER_AO),
 		DESC_RANGE(params::deferred_composition, Type::UAV_RANGE, params::DeferredCompositionE::OUTPUT),
@@ -153,61 +184,106 @@ namespace wr
 	REGISTER(shaders::brdf_lut_cs, ShaderRegistry)({
 		.path = "resources/shaders/brdf_lut_cs.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
-	REGISTER(shaders::basic_vs, ShaderRegistry)({
+	REGISTER(shaders::basic_deferred_vs, ShaderRegistry)({
 		.path = "resources/shaders/basic.hlsl",
 		.entry = "main_vs",
-		.type = ShaderType::VERTEX_SHADER
+		.type = ShaderType::VERTEX_SHADER,
+		.defines = {}
 	});
 
-	REGISTER(shaders::basic_ps, ShaderRegistry)({
+	REGISTER(shaders::basic_deferred_ps, ShaderRegistry)({
 		.path = "resources/shaders/basic.hlsl",
 		.entry = "main_ps",
-		.type = ShaderType::PIXEL_SHADER
+		.type = ShaderType::PIXEL_SHADER,
+		.defines = {}
 	});
+
+	REGISTER(shaders::basic_hybrid_vs, ShaderRegistry)({
+		.path = "resources/shaders/basic.hlsl",
+		.entry = "main_vs",
+		.type = ShaderType::VERTEX_SHADER,
+		.defines = {{L"IS_HYBRID", L"1"}}
+		});
+
+	REGISTER(shaders::basic_hybrid_ps, ShaderRegistry)({
+		.path = "resources/shaders/basic.hlsl",
+		.entry = "main_ps",
+		.type = ShaderType::PIXEL_SHADER,
+		.defines = {{L"IS_HYBRID", L"1"}}
+		});
 
 	REGISTER(shaders::fullscreen_quad_vs, ShaderRegistry)({
 		.path = "resources/shaders/fullscreen_quad.hlsl",
 		.entry = "main_vs",
-		.type = ShaderType::VERTEX_SHADER
+		.type = ShaderType::VERTEX_SHADER,
+		.defines = {}
+		});
+
+	REGISTER(shaders::svgf_denoiser_reprojection_cs, ShaderRegistry)({
+		.path = "resources/shaders/SVGF.hlsl",
+		.entry = "reprojection_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
+	});
+
+	REGISTER(shaders::svgf_denoiser_filter_moments_cs, ShaderRegistry)({
+		.path = "resources/shaders/SVGF.hlsl",
+		.entry = "filter_moments_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
+	});
+
+	REGISTER(shaders::svgf_denoiser_wavelet_filter_cs, ShaderRegistry)({
+		.path = "resources/shaders/SVGF.hlsl",
+		.entry = "wavelet_filter_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(shaders::deferred_composition_cs, ShaderRegistry)({
 		.path = "resources/shaders/deferred_composition.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(shaders::mip_mapping_cs, ShaderRegistry)({
 		.path = "resources/shaders/generate_mips_cs.hlsl",
 		.entry = "main",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(shaders::equirect_to_cubemap_vs, ShaderRegistry)({
 		.path = "resources/shaders/equirect_to_cubemap_conversion.hlsl",
 		.entry = "main_vs",
-		.type = ShaderType::VERTEX_SHADER
+		.type = ShaderType::VERTEX_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(shaders::equirect_to_cubemap_ps, ShaderRegistry)({
 		.path = "resources/shaders/equirect_to_cubemap_conversion.hlsl",
 		.entry = "main_ps",
-		.type = ShaderType::PIXEL_SHADER
+		.type = ShaderType::PIXEL_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(shaders::cubemap_convolution_ps, ShaderRegistry)({
 		.path = "resources/shaders/cubemap_convolution.hlsl",
 		.entry = "main_ps",
-		.type = ShaderType::PIXEL_SHADER
+		.type = ShaderType::PIXEL_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(shaders::cubemap_prefiltering_cs, ShaderRegistry)({
 		.path = "resources/shaders/prefilter_env_map_cs.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(pipelines::brdf_lut_precalculation, PipelineRegistry) < Vertex2D > ({
@@ -226,21 +302,81 @@ namespace wr
 	});
 
 	REGISTER(pipelines::basic_deferred, PipelineRegistry) < VertexColor > ({
-		.m_vertex_shader_handle = shaders::basic_vs,
-		.m_pixel_shader_handle = shaders::basic_ps,
+		.m_vertex_shader_handle = shaders::basic_deferred_vs,
+		.m_pixel_shader_handle = shaders::basic_deferred_ps,
 		.m_compute_shader_handle = std::nullopt,
 		.m_root_signature_handle = root_signatures::basic,
 		.m_dsv_format = Format::D32_FLOAT,
-		.m_rtv_formats = { Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM },
+		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM },
 		.m_num_rtv_formats = 3,
 		.m_type = PipelineType::GRAPHICS_PIPELINE,
 		.m_cull_mode = CullMode::CULL_NONE,
 		.m_depth_enabled = true,
 		.m_counter_clockwise = false,
 		.m_topology_type = TopologyType::TRIANGLE
+		});
+
+	REGISTER(pipelines::basic_hybrid, PipelineRegistry) < VertexColor > ({
+		.m_vertex_shader_handle = shaders::basic_hybrid_vs,
+		.m_pixel_shader_handle = shaders::basic_hybrid_ps,
+		.m_compute_shader_handle = std::nullopt,
+		.m_root_signature_handle = root_signatures::basic,
+		.m_dsv_format = Format::D32_FLOAT,
+		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R8G8B8A8_UNORM, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT },
+		.m_num_rtv_formats = 5,
+		.m_type = PipelineType::GRAPHICS_PIPELINE,
+		.m_cull_mode = CullMode::CULL_NONE,
+		.m_depth_enabled = true,
+		.m_counter_clockwise = false,
+		.m_topology_type = TopologyType::TRIANGLE
+		});
+
+	REGISTER(pipelines::svgf_denoiser_reprojection, PipelineRegistry) < Vertex2D > ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::svgf_denoiser_reprojection_cs,
+		.m_root_signature_handle = root_signatures::svgf_denoiser,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = {Format::R16G16B16A16_FLOAT},
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
 	});
 
-	REGISTER(pipelines::deferred_composition, PipelineRegistry) < Vertex2D > ({
+	REGISTER(pipelines::svgf_denoiser_filter_moments, PipelineRegistry) < Vertex2D > ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::svgf_denoiser_filter_moments_cs,
+		.m_root_signature_handle = root_signatures::svgf_denoiser,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = {Format::R16G16B16A16_FLOAT},
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
+	});
+
+	REGISTER(pipelines::svgf_denoiser_wavelet_filter, PipelineRegistry) < Vertex2D > ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::svgf_denoiser_wavelet_filter_cs,
+		.m_root_signature_handle = root_signatures::svgf_denoiser,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = {Format::R16G16B16A16_FLOAT},
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
+	});
+
+	REGISTER(pipelines::deferred_composition, PipelineRegistry)<Vertex2D>({
 		.m_vertex_shader_handle = std::nullopt,
 		.m_pixel_shader_handle = std::nullopt,
 		.m_compute_shader_handle = shaders::deferred_composition_cs,
@@ -253,7 +389,7 @@ namespace wr
 		.m_depth_enabled = false,
 		.m_counter_clockwise = true,
 		.m_topology_type = TopologyType::TRIANGLE
-	});
+		});
 
 	REGISTER(pipelines::mip_mapping, PipelineRegistry) < VertexColor > ({
 		.m_vertex_shader_handle = std::nullopt,
@@ -322,19 +458,22 @@ namespace wr
 	REGISTER(shaders::post_processing, ShaderRegistry)({
 		.path = "resources/shaders/post_processing.hlsl",
 		.entry = "main",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(shaders::accumulation, ShaderRegistry)({
 		.path = "resources/shaders/accumulation.hlsl",
 		.entry = "main",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	REGISTER(shaders::rt_lib, ShaderRegistry)({
 		.path = "resources/shaders/raytracing.hlsl",
 		.entry = "RaygenEntry",
-		.type = ShaderType::LIBRARY_SHADER
+		.type = ShaderType::LIBRARY_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(post_r,
@@ -458,7 +597,8 @@ namespace wr
 	REGISTER(shaders::dof_coc, ShaderRegistry) ({
 		.path = "resources/shaders/dof_coc.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(dofcoc_r,
@@ -495,7 +635,8 @@ namespace wr
 	REGISTER(shaders::down_scale, ShaderRegistry)({
 		.path = "resources/shaders/down_scale.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(dscale_r,
@@ -535,7 +676,8 @@ namespace wr
 	REGISTER(shaders::dof_dilate, ShaderRegistry)({
 		.path = "resources/shaders/dof_dilate.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(dilate_r,
@@ -571,7 +713,8 @@ namespace wr
 	REGISTER(shaders::dof_dilate_flatten, ShaderRegistry)({
 		.path = "resources/shaders/dof_dilate_flatten.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(dilate_flatten_r,
@@ -607,7 +750,8 @@ namespace wr
 	REGISTER(shaders::dof_dilate_flatten_h, ShaderRegistry)({
 		.path = "resources/shaders/dof_dilate_flatten_h.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(dilate_flattenh_r,
@@ -643,7 +787,8 @@ namespace wr
 	REGISTER(shaders::dof_bokeh, ShaderRegistry)({
 		.path = "resources/shaders/dof_bokeh.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(dof_bokeh_r,
@@ -684,7 +829,8 @@ namespace wr
 	REGISTER(shaders::dof_bokeh_post_filter, ShaderRegistry)({
 		.path = "resources/shaders/dof_bokeh_post_filter.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(dof_bokeh_post_filter_r,
@@ -723,7 +869,8 @@ namespace wr
 	REGISTER(shaders::dof_composition, ShaderRegistry)({
 		.path = "resources/shaders/dof_composition.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(dof_composition_r,
@@ -763,7 +910,8 @@ namespace wr
 	REGISTER(shaders::bloom_h, ShaderRegistry)({
 		.path = "resources/shaders/bloom_horizontal.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(bloom_h_r,
@@ -799,7 +947,8 @@ namespace wr
 	REGISTER(shaders::bloom_v, ShaderRegistry)({
 		.path = "resources/shaders/bloom_vertical.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(bloom_v_r,
@@ -835,7 +984,8 @@ namespace wr
 	REGISTER(shaders::bloom_composition, ShaderRegistry)({
 		.path = "resources/shaders/bloom_composition.hlsl",
 		.entry = "main_cs",
-		.type = ShaderType::DIRECT_COMPUTE_SHADER
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(bloom_comp_r,
@@ -873,9 +1023,10 @@ namespace wr
 
 	/* ### Hybrid Raytracing ### */
 	REGISTER(shaders::rt_hybrid_lib, ShaderRegistry)({
-		.path = "resources/shaders/rt_hybrid.hlsl",
-		.entry = "RaygenEntry",
-		.type = ShaderType::LIBRARY_SHADER
+		.path = "resources/shaders/rt_reflection_shadows.hlsl",
+		.entry = "HybridRaygenEntry",
+		.type = ShaderType::LIBRARY_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(rt_hybrid_ranges,
@@ -910,7 +1061,7 @@ namespace wr
 	{
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_hybrid_lib;
-		lib.exports.push_back(L"RaygenEntry");
+		lib.exports.push_back(L"HybridRaygenEntry");
 		lib.exports.push_back(L"ReflectionHit");
 		lib.exports.push_back(L"ReflectionMiss");
 		lib.exports.push_back(L"ShadowClosestHitEntry");
@@ -936,7 +1087,8 @@ namespace wr
 	REGISTER(shaders::rt_ao_lib, ShaderRegistry)({
 		.path = "resources/shaders/ambient_occlusion.hlsl",
 		.entry = "AORaygenEntry",
-		.type = ShaderType::LIBRARY_SHADER
+		.type = ShaderType::LIBRARY_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(rt_ao_ranges,
@@ -981,7 +1133,8 @@ namespace wr
 	REGISTER(shaders::path_tracer_lib, ShaderRegistry)({
 		.path = "resources/shaders/path_tracer.hlsl",
 		.entry = "RaygenEntry",
-		.type = ShaderType::LIBRARY_SHADER
+		.type = ShaderType::LIBRARY_SHADER,
+		.defines = {}
 	});
 
 	DESC_RANGE_ARRAY(path_tracer_ranges,
@@ -1037,5 +1190,71 @@ namespace wr
 		.global_root_signature = root_signatures::path_tracing_global,
 		.local_root_signatures = {},
 	});
+
+	/* ### Shadow Raytracing ### */
+	REGISTER(shaders::rt_shadow_lib, ShaderRegistry)({
+		.path = "resources/shaders/rt_reflection_shadows.hlsl",
+		.entry = "ShadowRaygenEntry",
+		.type = ShaderType::LIBRARY_SHADER,
+		.defines = {}
+		});
+	
+	StateObjectDescription::LibraryDesc rt_shadow_so_library = []()
+	{
+		StateObjectDescription::LibraryDesc lib;
+		lib.shader_handle = shaders::rt_shadow_lib;
+		lib.exports.push_back(L"ShadowRaygenEntry");
+		lib.exports.push_back(L"ReflectionHit");
+		lib.exports.push_back(L"ReflectionMiss");
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
+		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit" });
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
+
+		return lib;
+	}();
+	REGISTER(state_objects::rt_shadow_state_object, RTPipelineRegistry)(
+		{
+			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
+			.library_desc = rt_shadow_so_library,
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_attributes_size = sizeof(float) * 4,
+			.max_recursion_depth = 1,
+			.global_root_signature = root_signatures::rt_hybrid_global,
+			.local_root_signatures = {}
+		});
+
+	/* ### Reflection Raytracing ### */
+	REGISTER(shaders::rt_reflection_lib, ShaderRegistry)({
+		.path = "resources/shaders/rt_reflection_shadows.hlsl",
+		.entry = "ReflectionRaygenEntry",
+		.type = ShaderType::LIBRARY_SHADER,
+		.defines = {}
+		});
+
+	StateObjectDescription::LibraryDesc rt_reflection_so_library = []()
+	{
+		StateObjectDescription::LibraryDesc lib;
+		lib.shader_handle = shaders::rt_reflection_lib;
+		lib.exports.push_back(L"ReflectionRaygenEntry");
+		lib.exports.push_back(L"ReflectionHit");
+		lib.exports.push_back(L"ReflectionMiss");
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
+		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit" });
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
+
+		return lib;
+	}();
+	REGISTER(state_objects::rt_reflection_state_object, RTPipelineRegistry)(
+		{
+			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
+			.library_desc = rt_reflection_so_library,
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_attributes_size = sizeof(float) * 4,
+			.max_recursion_depth = 3,
+			.global_root_signature = root_signatures::rt_hybrid_global,
+			.local_root_signatures = {}
+		});
 
 } /* wr */

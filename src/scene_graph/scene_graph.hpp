@@ -33,6 +33,7 @@ namespace wr
 
 		struct ObjectData {
 			DirectX::XMMATRIX m_model;
+			DirectX::XMMATRIX m_prev_model;
 		};
 
 		struct MeshBatch_CBData

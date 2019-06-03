@@ -320,7 +320,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		emissive,
 		fN,
 		payload.seed,
-		payload.depth);
+		payload.depth + 1);
 
 	float3 specular = reflection * (F * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;

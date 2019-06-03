@@ -89,7 +89,7 @@ namespace wr::d3d12
 			UINT desc_heap_idx = index; // TODO don't hardcode this.
 			if (!device->m_fallback_native->UsingRaytracingDriver())
 			{
-				for (auto frame_idx = 0; frame_idx < 3; frame_idx++)
+				for (auto frame_idx = 0; frame_idx < d3d12::settings::num_back_buffers; frame_idx++)
 				{
 					bottom_level_descriptor = d3d12::GetCPUHandle(heap, frame_idx, 0); // TODO: Don't harcode this.
 					d3d12::Offset(bottom_level_descriptor, desc_heap_idx, heap->m_increment_size);
