@@ -20,10 +20,10 @@ cbuffer CBData : register(b0)
 	float radius;
 	float power;
 	float max_distance;
+	
+	float2 padding;
 	float frame_idx;
 	unsigned int sample_count;
-
-	float2 padding;
 };
 
 struct Attributes { };

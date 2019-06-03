@@ -89,10 +89,10 @@ namespace wr
 			float m_radius = 0.0f;
 			float m_power = 0.0f;
 			float m_max_distance = 0.0f;
-			float m_frame_idx = 0.0f;
-			std::uint32_t m_sample_count = 0u;
 
 			float m_padding[2];
+			float m_frame_idx = 0.0f;
+			std::uint32_t m_sample_count = 0u;
 		};
 
 		struct RayTracingCamera_CBData
