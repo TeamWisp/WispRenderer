@@ -419,9 +419,9 @@ namespace wr::d3d12
 
 		top_level_inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
 
-		bool rebuild_accel_structure = old_prebuild_info.ResultDataMaxSizeInBytes < tlas.m_prebuild_info.ResultDataMaxSizeInBytes ||
-			old_prebuild_info.ScratchDataSizeInBytes < tlas.m_prebuild_info.ScratchDataSizeInBytes ||
-			old_prebuild_info.UpdateScratchDataSizeInBytes < tlas.m_prebuild_info.UpdateScratchDataSizeInBytes;
+		bool rebuild_accel_structure = old_prebuild_info.ResultDataMaxSizeInBytes != tlas.m_prebuild_info.ResultDataMaxSizeInBytes ||
+			old_prebuild_info.ScratchDataSizeInBytes != tlas.m_prebuild_info.ScratchDataSizeInBytes ||
+			old_prebuild_info.UpdateScratchDataSizeInBytes != tlas.m_prebuild_info.UpdateScratchDataSizeInBytes;
 
 		if (rebuild_accel_structure)
 		{
