@@ -630,7 +630,7 @@ namespace wr
 
 		for (auto desc : registry.m_descriptions)
 		{
-			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry, desc.second.defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
@@ -713,7 +713,8 @@ namespace wr
 
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
-				pipeline_shader->m_entry);
+				pipeline_shader->m_entry,
+				pipeline_shader->m_defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -760,7 +761,8 @@ namespace wr
 		{
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
-				pipeline_shader->m_entry);
+				pipeline_shader->m_entry,
+				pipeline_shader->m_defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -1004,8 +1006,11 @@ namespace wr
 			temp::ProjectionView_CBData data;
 			data.m_projection = node->m_projection;
 			data.m_inverse_projection = node->m_inverse_projection;
+			data.m_prev_projection = node->m_prev_projection;
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
+			data.m_prev_view = node->m_prev_view;
+			
 			data.m_is_hybrid = 0;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);

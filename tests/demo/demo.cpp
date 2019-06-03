@@ -21,6 +21,7 @@
 #include "scene_viknell.hpp"
 #include "scene_emibl.hpp"
 #include "scene_spheres.hpp"
+#include "scene_sun_temple.hpp"
 
 #include "model_loader_assimp.hpp"
 #include "model_loader_tinygltf.hpp"

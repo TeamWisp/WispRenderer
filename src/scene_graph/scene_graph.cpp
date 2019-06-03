@@ -255,12 +255,12 @@ namespace wr
 				if (GetActiveCamera()->InView(node) || !d3d12::settings::enable_object_culling) 
 				{
 					unsigned int& offset = batch.num_instances;
-					batch.data.objects[offset] = { node->m_transform };
+					batch.data.objects[offset] = { node->m_transform, node->m_prev_transform };
 					++offset;
 				}
 
 				unsigned int& globalOffset = batch.num_global_instances;
-				obj->second[globalOffset] = { node->m_transform };
+				obj->second[globalOffset] = { node->m_transform, node->m_prev_transform };
 				++globalOffset;
 
 			}

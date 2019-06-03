@@ -540,7 +540,7 @@ namespace wr
 		return texture_handle;
 	}
 	
-	TextureHandle D3D12TexturePool::LoadFromCompressedMemory(char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips)
+	TextureHandle D3D12TexturePool::LoadFromMemory(unsigned char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips)
 	{
 		auto device = m_render_system.m_device;
 
@@ -573,6 +573,31 @@ namespace wr
 			//Assuming RGBA16_FLOAT for the time being, need to find a solution
 			hr = LoadFromHDRMemory(data, width * height * 16/*bits*/ * 4/*channels*/,
 				&metadata, *image);
+
+			break;
+		}
+		case wr::TextureFormat::RAW:
+		{
+			DirectX::Image temp_image = {};
+
+			temp_image.format = srgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+			temp_image.width = width;
+			temp_image.height = height;
+			temp_image.rowPitch = width * 4;
+			temp_image.slicePitch = width * height * 4;
+			temp_image.pixels = data;
+
+			hr = image->InitializeFromImage(temp_image);
+
+			metadata.width = width;
+			metadata.height = height;
+			metadata.arraySize = 1;
+			metadata.format = srgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+			metadata.mipLevels = 1;
+			metadata.depth = 1;
+			metadata.dimension = DirectX::TEX_DIMENSION::TEX_DIMENSION_TEXTURE2D;
+			metadata.miscFlags = 0;
+			metadata.miscFlags2 = 0;
 
 			break;
 		}
@@ -647,15 +672,6 @@ namespace wr
 
 		return texture_handle;
 
-	}
-
-	TextureHandle D3D12TexturePool::LoadFromRawMemory(char* data, size_t width, size_t height, bool srgb, bool generate_mips)
-	{
-		TextureHandle handle;
-
-		LOGC("THIS FUNCTION IS NOT IMPLEMENTED");
-
-		return handle;
 	}
 
 	void D3D12TexturePool::MoveStagedTextures(unsigned int frame_idx)
