@@ -535,6 +535,25 @@ namespace wr
 			rs_layout::Entry{(int)SpatialReconstructionE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE}
 		};
 
+    enum class ReflectionDenoiserE
+    {
+      INPUT,
+      RAY_DIR,
+      ALBEDO_ROUGHNESS,
+      NORMAL_METALLIC,
+      LINEAR_DEPTH,
+      OUTPUT
+    };
+
+    constexpr std::array<rs_layout::Entry, 6> reflection_denoiser = {
+      rs_layout::Entry{(int)ReflectionDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
+      rs_layout::Entry{(int)ReflectionDenoiserE::RAY_DIR, 1, rs_layout::Type::SRV_RANGE},
+      rs_layout::Entry{(int)ReflectionDenoiserE::ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
+      rs_layout::Entry{(int)ReflectionDenoiserE::NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
+      rs_layout::Entry{(int)ReflectionDenoiserE::LINEAR_DEPTH, 1, rs_layout::Type::SRV_RANGE},
+      rs_layout::Entry{(int)ReflectionDenoiserE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}
+    };
+
 		enum class RTAOE
 		{
 			CAMERA_PROPERTIES,
@@ -770,6 +789,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+    WISPRENDERER_EXPORT static RegistryHandle reflection_denoiser;
 	};
 
 	struct shaders
@@ -809,6 +829,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+    WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
 	};
 
 	struct pipelines
@@ -838,6 +859,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_v;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+    WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
 	};
 
 	struct state_objects

@@ -189,7 +189,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<SpatialReconstructionData>(desc, L"Spatial reconstruction", FG_DEPS(2, DeferredMainTaskData, RTReflectionData));
+		frame_graph.AddTask<SpatialReconstructionData>(desc, L"Spatial reconstruction", FG_DEPS<DeferredMainTaskData, RTReflectionData>());
 	}
 
 } /* wr */
