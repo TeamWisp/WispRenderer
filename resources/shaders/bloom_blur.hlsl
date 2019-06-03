@@ -22,7 +22,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = (screen_coord) / screen_size;
 
-	float sigma = sigma_amt;
+	float sigma = sigma_amt - 1.0f;
 
 	float2 blur_dir = float2(0.0f, 1.0f);
 
