@@ -221,7 +221,10 @@ namespace wr
 				d3d12::BindDescriptorHeaps(cmd_list, false);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_handle->m_native, 2, frame_idx);
 
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
+				if (!as_build_data.out_blas_list.empty())
+				{
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
+				}
 				
 #ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);

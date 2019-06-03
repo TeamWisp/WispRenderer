@@ -375,7 +375,10 @@ namespace wr
 					cmd_list->m_native_fallback->SetTopLevelAccelerationStructure(0, as_build_data.out_tlas.m_fallback_tlas_ptr);
 				}
 
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+				if (!as_build_data.out_blas_list.empty())
+				{
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+				}
 
 				//#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);

@@ -219,6 +219,28 @@ namespace wr::imgui::window
 		}
 	}
 
+	template<typename T>
+	static bool DefaultContextMenu(std::shared_ptr<T> node, SceneGraph* scene_graph)
+	{
+		if (ImGui::Button("Teleport To"))
+		{
+			scene_graph->GetActiveCamera()->SetPosition(node->m_position);
+
+			return true; // close popup.
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Remove"))
+		{
+			scene_graph->DestroyNode(node);
+
+			return true; // close popup.
+		}
+
+		return false;
+	}
+
 	decltype(SceneGraphEditorDetails::sg_editor_type_names) SceneGraphEditorDetails::sg_editor_type_names =
 	{
 		{ typeid(LightNode), [](std::shared_ptr<Node> node) -> std::string
@@ -245,7 +267,8 @@ namespace wr::imgui::window
 					model_path.erase(0, last_slash + 1);
 				}
 
-				return "Mesh (" + model_path + ")";
+				std::string prefix = (mesh_node->m_visible ? "" : "[H] ");
+				return prefix + "Mesh (" + model_path + ")";
 			}
 		},
 		{ typeid(CameraNode), [](std::shared_ptr<Node> node) -> std::string { return "Camera Node"; } },
@@ -380,43 +403,30 @@ namespace wr::imgui::window
 
 	decltype(SceneGraphEditorDetails::sg_editor_type_context_menu) SceneGraphEditorDetails::sg_editor_type_context_menu =
 	{
-		{ typeid(LightNode),
-			[](std::shared_ptr<Node> node, SceneGraph * scene_graph)
-			{
-				if (ImGui::Button("Remove"))
-				{
-					scene_graph->DestroyNode(std::static_pointer_cast<LightNode>(node));
-
-					return true; // close popup.
-				}
-
-				if (ImGui::Button("Teleport To"))
-				{
-					scene_graph->GetActiveCamera()->SetPosition(node->m_position);
-
-					return true; // close popup.
-				}
-
-				return false;
-			}
-		},
 		{ typeid(MeshNode),
 			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
 			{
-				if (ImGui::Button("Remove"))
-				{
-					scene_graph->DestroyNode(std::static_pointer_cast<MeshNode>(node));
+				auto mesh_node = std::static_pointer_cast<MeshNode>(node);
 
+				if (ImGui::Checkbox("Visibile", &mesh_node->m_visible))
+				{
 					return true; // close popup.
 				}
 
-				return false;
+				return DefaultContextMenu(mesh_node, scene_graph);
 			}
 		},
-		{ typeid(SkyboxNode),
+		{ typeid(LightNode),
 			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
 			{
-				return false;
+				auto mesh_node = std::static_pointer_cast<MeshNode>(node);
+
+				if (ImGui::Checkbox("Visibile", &mesh_node->m_visible))
+				{
+					return true; // close popup.
+				}
+
+				return DefaultContextMenu(mesh_node, scene_graph);
 			}
 		},
 	};
@@ -469,17 +479,24 @@ namespace wr::imgui::window
 					// Right click menu
 					if (ImGui::BeginPopupContextItem())
 					{
-						auto node_cm_function = SceneGraphEditorDetails::GetNodeContextMenuFunction(selected_node).value_or(nullptr);
+						auto right_clicked_node = root->m_children[child_i];
+						auto node_cm_function = SceneGraphEditorDetails::GetNodeContextMenuFunction(right_clicked_node).value_or(nullptr);
 
+						bool close_popup = true;
 						if (node_cm_function)
 						{
-							bool close_popup = node_cm_function(selected_node, scene_graph);
-							if (close_popup)
-							{
-								ImGui::CloseCurrentPopup();
-								ImGui::EndPopup();
-								continue;
-							}
+							close_popup = node_cm_function(right_clicked_node, scene_graph);
+						}
+						else
+						{
+							close_popup = DefaultContextMenu<Node>(right_clicked_node, scene_graph);
+						}
+
+						if (close_popup)
+						{
+							ImGui::CloseCurrentPopup();
+							ImGui::EndPopup();
+							continue;
 						}
 
 						ImGui::EndPopup();
@@ -687,30 +704,6 @@ namespace wr::imgui::window
 
 					ImGui::TreePop();
 				}
-			}
-
-
-			if (open_shader_compiler_popup)
-			{
-				ImGui::OpenPopup("DirectXCompiler Output");
-				open_shader_compiler_popup = false;
-			}
-
-			auto viewport_size = ImGui::GetMainViewport()->Size;
-
-			ImGui::SetNextWindowSize(viewport_size);
-			if (ImGui::BeginPopupModal("DirectXCompiler Output", nullptr, ImGuiWindowFlags_AlwaysAutoResize |
-				ImGuiWindowFlags_NoSavedSettings |
-				ImGuiWindowFlags_NoCollapse |
-				ImGuiWindowFlags_NoMove |
-				ImGuiWindowFlags_NoDocking))
-			{
-				ImGui::Text("%s", shader_compiler_error.c_str());
-
-				ImGui::Separator();
-
-				if (ImGui::IsKeyReleased(ImGuiKey_Enter) || ImGui::Button("OK")) { ImGui::CloseCurrentPopup(); }
-				ImGui::EndPopup();
 			}
 
 			ImGui::End();

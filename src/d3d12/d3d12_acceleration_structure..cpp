@@ -356,13 +356,19 @@ namespace wr::d3d12
 			internal::AllocateUAVBuffer(device, tlas.m_prebuild_info.ResultDataMaxSizeInBytes, &as, initial_resoruce_state, L"TopLevelAccelerationStructure");
 		}
 
-		// Create the instances to the bottom level instances.
-		internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, 0, false);
+		// Create the instances to the bottom level instances
+		if (!blas_list.empty())
+		{
+			internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, 0, false);
+		}
 
 		// Top Level Acceleration Structure desc
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
 		{
-			top_level_inputs.InstanceDescs = tlas.m_instance_descs[0]->GetGPUVirtualAddress();
+			if (!blas_list.empty())
+			{
+				top_level_inputs.InstanceDescs = tlas.m_instance_descs[0]->GetGPUVirtualAddress();
+			}
 			top_level_build_desc.Inputs = top_level_inputs;
 			top_level_build_desc.DestAccelerationStructureData = tlas.m_natives[0]->GetGPUVirtualAddress();
 			top_level_build_desc.ScratchAccelerationStructureData = tlas.m_scratch->GetGPUVirtualAddress();
@@ -431,7 +437,10 @@ namespace wr::d3d12
 		else
 		{
 			// Create the instances to the bottom level instances.
-			internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, frame_idx, true);
+			if (!blas_list.empty())
+			{
+				internal::CreateInstancesForTLAS(device, tlas, desc_heap, blas_list, frame_idx, true);
+			}
 
 			// Top Level Acceleration Structure desc
 			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC top_level_build_desc = {};
@@ -439,7 +448,10 @@ namespace wr::d3d12
 				auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(tlas.m_natives[frame_idx]);
 				cmd_list->m_native->ResourceBarrier(1, &barrier);
 
-				top_level_inputs.InstanceDescs = tlas.m_instance_descs[frame_idx]->GetGPUVirtualAddress();
+				if (!blas_list.empty())
+				{
+					top_level_inputs.InstanceDescs = tlas.m_instance_descs[frame_idx]->GetGPUVirtualAddress();
+				}
 				top_level_build_desc.Inputs = top_level_inputs;
 				top_level_build_desc.SourceAccelerationStructureData = tlas.m_natives[frame_idx]->GetGPUVirtualAddress(); //TODO: Benchmark performance when taking the previous source.
 				top_level_build_desc.DestAccelerationStructureData = tlas.m_natives[frame_idx]->GetGPUVirtualAddress();
