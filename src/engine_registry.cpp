@@ -1255,7 +1255,7 @@ namespace wr
 		{
 			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
 			.library_desc = rt_shadow_so_library,
-			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 3),
 			.max_attributes_size = sizeof(float) * 4,
 			.max_recursion_depth = 1,
 			.global_root_signature = root_signatures::rt_hybrid_global,
@@ -1288,7 +1288,7 @@ namespace wr
 		{
 			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
 			.library_desc = rt_reflection_so_library,
-			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 3),
 			.max_attributes_size = sizeof(float) * 4,
 			.max_recursion_depth = 3,
 			.global_root_signature = root_signatures::rt_hybrid_global,

@@ -190,7 +190,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 #define M_PI 3.14159265358979
 
 [shader("raygeneration")]
-void RaygenEntry()
+void HybridRaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
@@ -238,7 +238,7 @@ void RaygenEntry()
 	// Compute the initial ray cone from the gbuffers.
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
-	float shadow_result = DoShadowAllLights(wpos + normal * EPSILON, 0, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos + normal * EPSILON, V, normal, metallic, roughness, 0, rand_seed);
 
 	// Get reflection result
 	float4 dirT = float4(0, 0, 0, 0);
@@ -246,7 +246,118 @@ void RaygenEntry()
 
 	// Output data
 	output_reflection[screen_co] = reflection_result;
-	output_shadow[screen_co] = shadow_result;
+	output_shadow[screen_co] = shadow_result.a;
+	output_dirT_buffer[screen_co] = dirT;
+}
+
+[shader("raygeneration")]
+void ShadowRaygenEntry()
+{
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy + 0.5f) / float2(DispatchRaysDimensions().xy);
+
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screen_co = DispatchRaysIndex().xy;
+
+	// Get g-buffer information
+	float4 albedo_roughness = gbuffer_albedo.SampleLevel(s0, uv, 0);
+	float4 normal_metallic = gbuffer_normal.SampleLevel(s0, uv, 0);
+
+	// Unpack G-Buffer
+	float depth = gbuffer_depth.SampleLevel(s0, uv, 0).x;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 albedo = albedo_roughness.rgb;
+	float roughness = albedo_roughness.w;
+	float3 normal = normalize(normal_metallic.xyz);
+	float metallic = normal_metallic.w;
+
+	// Do lighting
+	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(cpos - wpos);
+
+	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
+	{
+		// A value of 1 in the output buffer, means that there is shadow
+		// So, the far plane pixels are set to 0
+		output_reflection[screen_co] = float4(0, 0, 0, 0);
+		return;
+	}
+
+	normal = lerp(normal, -normal, dot(normal, V) < 0);
+
+	// Describe the surface for mip level generation
+	SurfaceHit sfhit;
+	sfhit.pos = wpos;
+	sfhit.normal = normal;
+	sfhit.dist = length(cpos - wpos);
+	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
+
+	// Compute the initial ray cone from the gbuffers.
+ 	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
+	
+	float4 shadow_result = DoShadowAllLights(wpos + normal * EPSILON, V, normal, metallic, roughness, 0, rand_seed);
+
+	// Output data
+	output_reflection[screen_co] = shadow_result;
+}
+
+[shader("raygeneration")]
+void ReflectionRaygenEntry()
+{
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy + 0.5f) / float2(DispatchRaysDimensions().xy);
+
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screen_co = DispatchRaysIndex().xy;
+
+	// Get g-buffer information
+	float4 albedo_roughness = gbuffer_albedo.SampleLevel(s0, uv, 0);
+	float4 normal_metallic = gbuffer_normal.SampleLevel(s0, uv, 0);
+
+	// Unpack G-Buffer
+	float depth = gbuffer_depth.SampleLevel(s0, uv, 0).x;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 albedo = albedo_roughness.rgb;
+	float roughness = albedo_roughness.w;
+	float3 normal = normalize(normal_metallic.xyz);
+	float metallic = normal_metallic.w;
+
+	// Do lighting
+	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(cpos - wpos);
+
+	if (length(normal) == 0)		//TODO: Could be optimized by only marking pixels that need lighting, but that would require execute rays indirect
+	{
+		// A value of 1 in the output buffer, means that there is shadow
+		// So, the far plane pixels are set to 0
+		output_reflection[screen_co] = float4(0, 0, 0, 0);
+		output_reflection[screen_co] = 0;
+		output_dirT_buffer[screen_co] = float4(0, 0, 0, 0);
+		return;
+	}
+
+	normal = lerp(normal, -normal, dot(normal, V) < 0);
+
+	// Describe the surface for mip level generation
+	SurfaceHit sfhit;
+	sfhit.pos = wpos;
+	sfhit.normal = normal;
+	sfhit.dist = length(cpos - wpos);
+	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
+
+	// Compute the initial ray cone from the gbuffers.
+ 	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
+
+	// Get reflection result
+	float4 dirT = float4(0, 0, 0, 0);
+	float4 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT), 1e-5, 100000);
+
+	// Output data
+	output_reflection[screen_co] = reflection_result;
 	output_dirT_buffer[screen_co] = dirT;
 }
 
@@ -365,12 +476,13 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 
 	const float2 sampled_brdf = brdf_lut.SampleLevel(s0, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
 
-	//Lighting
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth);
 
 	//Reflection in reflections
 	float4 dirT = float4(0, 0, 0, 0);
 	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, roughness, payload.cone, dirT).xyz;
+
+	//Lighting
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth + 1);
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;

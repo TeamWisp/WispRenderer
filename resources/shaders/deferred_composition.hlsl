@@ -113,7 +113,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			// Do deferred shadow (fully lit for now)
 			float3(1, 1, 1),
 			// Shadow buffer if its hybrid rendering
-			buffer_refl_shadow.SampleLevel(linear_sampler, uv, 0.0f).rgb,
+			buffer_shadow.SampleLevel(linear_sampler, uv, 0.0f).rgb,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			has_shadows);
 		

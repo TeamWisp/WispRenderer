@@ -127,7 +127,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	return res + emissive;
 }
 
-float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, float roughness, float3 albedo, uint depth, inout float rand_seed)
+float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, float roughness, uint depth, inout float rand_seed)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 

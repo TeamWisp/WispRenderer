@@ -4,7 +4,7 @@
 #include "../d3d12/d3d12_renderer.hpp"
 #include "../d3d12/d3d12_functions.hpp"
 #include "../d3d12/d3d12_constant_buffer_pool.hpp"
-#include "../render_tasks/d3d12_rt_hybrid_task.hpp"
+#include "../render_tasks/d3d12_rt_reflection_task.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
 
 namespace wr
@@ -45,7 +45,7 @@ namespace wr
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto& data = fg.GetData<SpatialReconstructionData>(handle);
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-			auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<RTHybridData>());
+			auto hybrid_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<RTReflectionData>());
 			auto gbuffer_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 			if (!resize)
@@ -108,7 +108,7 @@ namespace wr
 			const auto viewport = n_render_system.m_viewport;
 
 			fg.WaitForPredecessorTask<DeferredMainTaskData>();
-			fg.WaitForPredecessorTask<RTHybridData>();
+			fg.WaitForPredecessorTask<RTReflectionData>();
 
 			d3d12::BindComputePipeline(cmd_list, data.pipeline);
 
@@ -189,7 +189,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<SpatialReconstructionData>(desc, L"Spatial reconstruction", FG_DEPS(2, DeferredMainTaskData, RTHybridData));
+		frame_graph.AddTask<SpatialReconstructionData>(desc, L"Spatial reconstruction", FG_DEPS(2, DeferredMainTaskData, RTReflectionData));
 	}
 
 } /* wr */
