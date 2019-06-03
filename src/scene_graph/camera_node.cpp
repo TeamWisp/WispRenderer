@@ -167,10 +167,17 @@ namespace wr
 
 	}
 
-	bool CameraNode::InView(std::shared_ptr<MeshNode>& node)
+	bool CameraNode::InView(const std::shared_ptr<MeshNode>& node) const
 	{
-		AABB aabb = node->m_aabb;
+		const AABB &aabb = node->m_aabb;
 		return aabb.InFrustum(m_planes);
+	}
+
+	bool CameraNode::InRange(const std::shared_ptr<MeshNode> &node, const float dist) const
+	{
+		const AABB &aabb = node->m_aabb;
+		const Sphere sphere{ m_position, dist };
+		return aabb.Contains(sphere);
 	}
 
 } /* wr */
