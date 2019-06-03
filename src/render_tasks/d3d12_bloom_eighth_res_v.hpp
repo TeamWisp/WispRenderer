@@ -89,7 +89,7 @@ namespace wr
 
 			Bloom_CB cb_data;
 			cb_data.isHorizontal = 0;
-			cb_data.sigma = 5.0f;
+			cb_data.sigma = 2.0f;
 
 			data.cb_handle->m_pool->Update(data.cb_handle, sizeof(Bokeh_CB), 0, frame_idx, (uint8_t*)& cb_data);
 			d3d12::BindComputeConstantBuffer(cmd_list, data.cb_handle->m_native, 1, frame_idx);

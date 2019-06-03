@@ -33,7 +33,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float4 color = 0;
 	float weightSum = 0.0f;
-	for (int i = -14; i < 14; i++)
+	for (int i = -7; i < 7; i++)
 	{
 		float weight = CalcGaussianWeight(i, sigma);
 		weightSum += weight;
