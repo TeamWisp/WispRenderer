@@ -83,7 +83,7 @@ void AORaygenEntry()
 	{
 		//SPP decreases the closer a pixel is to the max distance
 		//Total is always calculated using the full sample count to have further pixels less occluded
-		int spp = min(sample_count,sample_count * round((max_distance - cam_distance)/max_distance)); 
+		int spp = min(sample_count, round(sample_count * ((max_distance - cam_distance)/max_distance))); 
 		int ao_value = sample_count;
 		for(uint i = 0; i< spp; i++)
 		{
