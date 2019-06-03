@@ -267,7 +267,8 @@ namespace wr::imgui::window
 					model_path.erase(0, last_slash + 1);
 				}
 
-				return "Mesh (" + model_path + ")";
+				std::string prefix = (mesh_node->m_visible ? "" : "[H] ");
+				return prefix + "Mesh (" + model_path + ")";
 			}
 		},
 		{ typeid(CameraNode), [](std::shared_ptr<Node> node) -> std::string { return "Camera Node"; } },
