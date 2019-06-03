@@ -1,14 +1,10 @@
+#ifndef __RT_SHADOWS_FUNCTIONS__
+#define __RT_SHADOWS_FUNCTIONS__
+
 #include "rt_global.hlsl"
+#include "rt_structs.hlsl"
 
-struct ShadowHitInfo
-{
-  float is_hit;
-  float thisvariablesomehowmakeshybridrenderingwork_killme;
-};
-
-struct Attributes { };
-
-bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
+bool TraceShadowRay(float3 origin, float3 direction, float far, uint ray_contr_idx, uint miss_idx, unsigned int depth)
 {
 	if (depth >= MAX_RECURSION)
 	{
@@ -29,29 +25,17 @@ bool TraceShadowRay(uint idx, float3 origin, float3 direction, float far, unsign
 		Scene,
 		RAY_FLAG_NONE,
 		~0, // InstanceInclusionMask
-		1, // RayContributionToHitGroupIndex
+		ray_contr_idx, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
-		1, // miss shader index is set to idx but can probably be anything.
+		miss_idx, // miss shader index is set to idx but can probably be anything.
 		ray,
 		payload);
 
 	return payload.is_hit;
 }
 
-[shader("closesthit")]
-void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
-{
-    hit.is_hit = true;
-}
-
-[shader("miss")]
-void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
-{
-    hit.is_hit = false;
-}
-
 // Get shadow factor
-float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, inout uint rand_seed)
+float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, uint ray_contr_idx, uint miss_idx, inout uint rand_seed)
 {
 	float shadow_factor = 0.0f;
 
@@ -65,7 +49,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 		offset *= 0.05;
 		float3 shadow_direction = normalize(light_dir + offset);
 
-		bool shadow = TraceShadowRay(1, wpos, shadow_direction, t_max, depth);
+		bool shadow = TraceShadowRay(wpos, shadow_direction, t_max, ray_contr_idx, miss_idx, depth);
 
 		shadow_factor += lerp(1.0, 0.0, shadow);
 	}
@@ -74,7 +58,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 
 #else /* ifdef SOFT_SHADOWS */
 
-	bool shadow = TraceShadowRay(1, wpos, light_dir, t_max, depth);
+	bool shadow = TraceShadowRay(wpos, light_dir, t_max, ray_contr_idx, miss_idx, depth);
 	shadow_factor = !shadow;
 
 #endif
@@ -82,3 +66,4 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, in
 	return shadow_factor;
 }
 
+#endif //__RT_SHADOWS_FUNCTIONS__

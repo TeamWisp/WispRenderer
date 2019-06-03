@@ -8,26 +8,7 @@
 #define MATERIAL_HAS_EMISSIVE_TEXTURE 1<<4
 #define MATERIAL_HAS_AO_TEXTURE 1<<5
 
-struct MaterialData
-{
-	float3 color;
-	float metallic;
-
-	float roughness;
-	float emissive_multiplier;
-	float is_double_sided;
-	float use_alpha_masking;
-
-	float albedo_uv_scale;
-	float normal_uv_scale;
-	float roughness_uv_scale;
-	float metallic_uv_scale;
-
-	float emissive_uv_scale;
-	float ao_uv_scale;
-	float padding;
-	uint flags;
-};
+#include "rt_structs.hlsl"
 
 struct OutputMaterialData
 {

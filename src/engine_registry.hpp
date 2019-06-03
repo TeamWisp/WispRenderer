@@ -769,7 +769,6 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_wavelet_filter_cs;
 		WISPRENDERER_EXPORT static RegistryHandle deferred_composition_cs;
 		WISPRENDERER_EXPORT static RegistryHandle rt_lib;
-		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_ao_lib;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_lib;
@@ -825,7 +824,6 @@ namespace wr
 	struct state_objects
 	{
 		WISPRENDERER_EXPORT static RegistryHandle state_object;
-		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle rt_ao_state_opbject;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracing_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object;

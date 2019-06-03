@@ -29,7 +29,7 @@ TextureCube skybox : register(t6);
 TextureCube irradiance_map : register(t9);
 SamplerState s0 : register(s0);
 
-typedef BuiltInTriangleIntersectionAttributes MyAttributes;
+typedef BuiltInTriangleIntersectionAttributes Attributes;
 
 cbuffer CameraProperties : register(b0)
 {
@@ -96,7 +96,7 @@ void RaygenEntry()
 
 //Reflections
 [shader("closesthit")]
-void ReflectionHit(inout HitInfo payload, in MyAttributes attr)
+void ReflectionHit(inout HitInfo payload, in Attributes attr)
 {
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
@@ -180,3 +180,5 @@ void ReflectionMiss(inout HitInfo payload)
 {
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
 }
+
+#include "rt_shadow_entries.hlsl"

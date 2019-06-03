@@ -11,6 +11,27 @@ struct Vertex
 	float3 color;
 };
 
+struct MaterialData
+{
+	float3 color;
+	float metallic;
+
+	float roughness;
+	float emissive_multiplier;
+	float is_double_sided;
+	float use_alpha_masking;
+
+	float albedo_uv_scale;
+	float normal_uv_scale;
+	float roughness_uv_scale;
+	float metallic_uv_scale;
+
+	float emissive_uv_scale;
+	float ao_uv_scale;
+	float padding;
+	uint flags;
+};
+
 struct Material
 {
 	uint albedo_id;
@@ -50,6 +71,12 @@ struct ReflectionHitInfo
 	unsigned int seed;
 	unsigned int depth;
 	RayCone cone;
+};
+
+struct ShadowHitInfo
+{
+	float is_hit;
+	float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
 #endif //__RT_STRUCTS_HLSL__

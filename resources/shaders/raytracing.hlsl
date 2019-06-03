@@ -110,11 +110,11 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 #endif
 }
 
-float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
+float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
 {
 	if (depth >= MAX_RECURSION)
 	{
-		return skybox.SampleLevel(s0, direction, 0);
+		return skybox.SampleLevel(s0, direction, 0).rgb;
 	}
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
@@ -137,7 +137,7 @@ float4 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 		ray,
 		payload);
 
-	return float4(payload.color, 1);
+	return payload.color;
 }
 
 [shader("raygeneration")]
@@ -172,7 +172,7 @@ void RaygenEntry()
 [shader("miss")]
 void MissEntry(inout HitInfo payload)
 {
-	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
+	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
 }
 
 [shader("closesthit")]
@@ -273,13 +273,26 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		emissive,
 		fN,
 		payload.seed,
-		payload.depth + 1);
+		payload.depth + 1,
+		FULLRAYTRACING_PASS);
 
 	float3 specular = reflection * (F * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
 	float3 ambient = (kD * diffuse + specular) * ao;
 
 	payload.color = ambient + lighting;
+}
+
+[shader("closesthit")]
+void ShadowClosestHitEntry(inout ShadowHitInfo hit, MyAttributes bary)
+{
+	hit.is_hit = true;
+}
+
+[shader("miss")]
+void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
+{
+	hit.is_hit = false;
 }
 
 #endif //__FULL_RAYTRACING_HLSL__
