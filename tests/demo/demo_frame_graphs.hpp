@@ -16,7 +16,6 @@
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
 #include "render_tasks/d3d12_rtao_task.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
-#include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "render_tasks/d3d12_path_tracer.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
