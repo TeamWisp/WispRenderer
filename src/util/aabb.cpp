@@ -58,42 +58,44 @@ namespace wr
 
 	void AABB::Expand(DirectX::XMVECTOR pos)
 	{
-		m_corners.m_min =
+		m_min =
 		{
-			std::min(pos.m128_f32[0], *m_corners.m_min.m128_f32),
-			std::min(pos.m128_f32[1], m_corners.m_min.m128_f32[1]),
-			std::min(pos.m128_f32[2], m_corners.m_min.m128_f32[2]),
+			std::min(pos.m128_f32[0], *m_minf),
+			std::min(pos.m128_f32[1], m_minf[1]),
+			std::min(pos.m128_f32[2], m_minf[2]),
 			1
 		};
 
-		m_corners.m_max =
+		m_max =
 		{
-			std::max(pos.m128_f32[0], *m_corners.m_max.m128_f32),
-			std::max(pos.m128_f32[1], m_corners.m_max.m128_f32[1]),
-			std::max(pos.m128_f32[2], m_corners.m_max.m128_f32[2]),
+			std::max(pos.m128_f32[0], *m_maxf),
+			std::max(pos.m128_f32[1], m_maxf[1]),
+			std::max(pos.m128_f32[2], m_maxf[2]),
 			1
 		};
 	}
 
 	AABB::AABB() : 
-		m_corners
+		m_data
 		{
 			{
 				std::numeric_limits<float>::max(),
 				std::numeric_limits<float>::max(),
-				std::numeric_limits<float>::max()
+				std::numeric_limits<float>::max(),
+				1
 			},
 			{
 				-std::numeric_limits<float>::max(),
 				-std::numeric_limits<float>::max(),
-				-std::numeric_limits<float>::max()
+				-std::numeric_limits<float>::max(),
+				1
 			}
 		}
 	{
 
 	}
 
-	AABB::AABB(DirectX::XMVECTOR min, DirectX::XMVECTOR max) : m_corners{ min, max }
+	AABB::AABB(DirectX::XMVECTOR min, DirectX::XMVECTOR max) : m_data{ min, max }
 	{
 	}
 
@@ -152,9 +154,23 @@ namespace wr
 		ExpandFromVector(DirectX::XMVECTOR{ pos[0], pos[1], pos[2], 1 });
 	}
 
-	bool AABB::InFrustum(std::array<DirectX::XMVECTOR, 6> planes)
+	Sphere::Sphere(): m_sphere { 
+		std::numeric_limits<float>::max(), 
+		std::numeric_limits<float>::max(), 
+		std::numeric_limits<float>::max(), 
+		-std::numeric_limits<float>::max()
+	}{ }
+
+	Sphere::Sphere(DirectX::XMVECTOR center, float radius): m_sphere {
+		center.m128_f32[0],
+		center.m128_f32[1],
+		center.m128_f32[2],
+		radius
+	}{ }
+
+	bool AABB::InFrustum(const std::array<DirectX::XMVECTOR, 6>& planes) const
 	{
-		for (DirectX::XMVECTOR& plane : planes)
+		for (const DirectX::XMVECTOR& plane : planes)
 		{
 			/* Get point of AABB that's into the plane the most */
 
@@ -173,6 +189,26 @@ namespace wr
 
 		return true;
 
+	}
+
+	bool AABB::Contains(const Sphere& sphere) const
+	{
+		float square_dist = 0;
+
+		for(size_t i = 0; i < 3; ++i)
+		{
+			if(sphere.m_data[i] < m_minf[i])
+			{
+				square_dist += pow(sphere.m_data[i] - m_minf[i], 2);
+			}
+			else if(sphere.m_data[i] > m_maxf[i])
+			{
+				square_dist += pow(sphere.m_data[i] - m_maxf[i], 2);
+			}
+		}
+
+		const float r_squared = sphere.m_radius * sphere.m_radius;
+		return square_dist <= r_squared;
 	}
 
 }
