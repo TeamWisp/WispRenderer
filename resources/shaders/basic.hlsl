@@ -22,7 +22,6 @@ struct VS_OUTPUT
 	float3 tangent : TANGENT;
 	float3 bitangent : BITANGENT;
 	float3 color : COLOR;
-	float4 wpos : WORLDPOS;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -59,9 +58,8 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	output.uv = float2(input.uv.x, 1.0f - input.uv.y);
 	output.tangent = normalize(mul(inst.model, float4(input.tangent, 0))).xyz;
 	output.bitangent = normalize(mul(inst.model, float4(input.bitangent, 0))).xyz;
-	output.normal = normalize(mul(inst.model, float4(input.normal , 0))).xyz;
+	output.normal = normalize(mul(inst.model, float4(input.normal, 0))).xyz;
 	output.color = input.color;
-	output.wpos = mul(inst.model, float4(pos, 1.f));
 
 	return output;
 }
@@ -71,7 +69,6 @@ struct PS_OUTPUT
 	float4 albedo_roughness : SV_TARGET0;
 	float4 normal_metallic : SV_TARGET1;
 	float4 emissive_ao : SV_TARGET2;
-	float4 position : SV_TARGET3;
 };
 
 Texture2D material_albedo : register(t0);
@@ -115,6 +112,5 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	output.normal_metallic = float4(normal, output_data.metallic);
 	output.emissive_ao = float4(output_data.emissive, output_data.ao);
 
-	output.position = input.wpos;
 	return output;
 }

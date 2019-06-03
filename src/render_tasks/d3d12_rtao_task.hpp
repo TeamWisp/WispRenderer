@@ -49,6 +49,7 @@ namespace wr
 
 		DescriptorAllocation out_uav_from_rtv;
 		DescriptorAllocation in_gbuffers;
+		DescriptorAllocation in_depthbuffer;
 
 		bool tlas_requires_init = false;
 	};
@@ -114,7 +115,8 @@ namespace wr
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
 				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
-				data.in_gbuffers = std::move(as_build_data.out_allocator->Allocate(2));
+				data.in_gbuffers = std::move(as_build_data.out_allocator->Allocate(1));
+				data.in_depthbuffer = std::move(as_build_data.out_allocator->Allocate(1));
 			}
 
 			// Versioning
@@ -126,12 +128,12 @@ namespace wr
 
 				// Bind g-buffers
 				d3d12::DescHeapCPUHandle normal_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(0);
-				d3d12::DescHeapCPUHandle position_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(1);
+				d3d12::DescHeapCPUHandle depth_buffer_handle = data.in_depthbuffer.GetDescriptorHandle(0);
 				
 				auto deferred_main_rt = data.in_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_gbuffer_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, position_gbuffer_handle, 3, deferred_main_rt->m_create_info.m_rtv_formats.data()[3]);
+				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
 			}
 
 			if (!resize)
@@ -186,8 +188,8 @@ namespace wr
 				auto in_scene_normal_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(0);
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_normal_gbuffer_handle);
 				
-				auto in_scene_position_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(1);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_position_gbuffer_handle);
+				auto in_scene_depth_handle = data.in_depthbuffer.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_depth_handle);
 
 				// Update offset data
 				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
@@ -201,6 +203,7 @@ namespace wr
 				// Update constant buffer
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTAO_CBData cb_data;
+				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cb_data.m_inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
 				cb_data.m_bias = settings.m_runtime.bias;
 				cb_data.m_radius = settings.m_runtime.radius;
@@ -250,6 +253,7 @@ namespace wr
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
 				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
 				DescriptorAllocation temp2 = std::move(data.in_gbuffers);
+				DescriptorAllocation temp3 = std::move(data.in_depthbuffer);
 			}
 		}
 	}

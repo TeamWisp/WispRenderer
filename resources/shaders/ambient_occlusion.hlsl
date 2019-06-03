@@ -3,7 +3,7 @@
 
 RWTexture2D<float4> output : register(u0); // x: AO value
 Texture2D gbuffer_normal : register(t1);
-Texture2D gbuffer_position: register(t2);
+Texture2D gbuffer_depth : register(t2);
 
 struct AOHitInfo
 {
@@ -13,6 +13,7 @@ struct AOHitInfo
 
 cbuffer CBData : register(b0)
 {
+	float4x4 inv_vp;
 	float4x4 inv_view;
 
 	float bias;
@@ -26,6 +27,14 @@ cbuffer CBData : register(b0)
 };
 
 struct Attributes { };
+
+float3 unpack_position(float2 uv, float depth)
+{
+	// Get world space position
+	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
+	float4 wpos = mul(inv_vp, ndc);
+	return (wpos.xyz / wpos.w).xyz;
+}
 
 bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
@@ -56,13 +65,17 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 [shader("raygeneration")]
 void AORaygenEntry()
 {
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+
     uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
 
     float3 normal = gbuffer_normal[screen_co].xyz;
-	float3 wpos = gbuffer_position[screen_co].xyz;
+	float depth = gbuffer_depth[screen_co].x;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
 
 	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float cam_distance = length(wpos-camera_pos);
