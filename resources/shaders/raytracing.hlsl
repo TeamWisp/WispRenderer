@@ -320,6 +320,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		emissive,
 		fN,
 		payload.seed,
+		MAX_SHADOW_SAMPLES,
 		payload.depth + 1);
 
 	float3 specular = reflection * (F * sampled_brdf.x + sampled_brdf.y);

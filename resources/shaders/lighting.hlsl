@@ -84,7 +84,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	return ambient + res + emissive;
 }
 
-float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, inout uint rand_seed, uint depth)
+float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float metallic, float roughness, Light light, inout uint rand_seed, uint shadow_sample_count, uint depth)
 {
 	uint tid = light.tid & 3;
 
@@ -105,14 +105,14 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	float3 wpos = pos + (normal * EPSILON);
 	
 	// Offset shadow ray direction to get soft-shadows
-	float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, rand_seed);
+	float shadow_factor = GetShadowFactor(wpos, L, t_max, shadow_sample_count, depth, rand_seed);
 
 	lighting *= shadow_factor;
 
 	return lighting;
 }
 
-float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 emissive, float3 normal, inout uint rand_seed, uint depth)
+float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float roughness, float3 emissive, float3 normal, inout uint rand_seed, uint shadow_sample_count, uint depth)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
@@ -121,13 +121,13 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	[unroll]
 	for (uint i = 0; i < light_count; i++)
 	{
-		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i], rand_seed, depth);
+		res += shade_light(pos, V, albedo, normal, metallic, roughness, lights[i], rand_seed, shadow_sample_count, depth);
 	}
 
 	return res + emissive;
 }
 
-float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, float roughness, float3 albedo, uint depth, inout float rand_seed)
+float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, float roughness, float3 albedo, uint shadow_sample_count, uint depth, inout float rand_seed)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
@@ -154,7 +154,7 @@ float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, f
 		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
 		// Add shadow factor to final result
-		float shadow = GetShadowFactor(wpos, L, t_max, depth, rand_seed);
+		float shadow = GetShadowFactor(wpos, L, t_max, shadow_sample_count, depth, rand_seed);
 
 		res.w += shadow;
 
