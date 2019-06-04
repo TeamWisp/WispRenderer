@@ -103,13 +103,13 @@ namespace engine
 				viewport_pos = ImGui::GetCursorScreenPos();
 				viewport_size = ImGui::GetContentRegionAvail();
 
-				if (keep_aspect_ratio)
+				if (!keep_aspect_ratio && viewport_size.x > 10 && viewport_size.y > 10)
 				{
-					sg->GetActiveCamera()->SetAspectRatio(custom_aspect_ratio);
+					sg->GetActiveCamera()->SetAspectRatio(viewport_size.x / viewport_size.y);
 				}
 				else
 				{
-					sg->GetActiveCamera()->SetAspectRatio(viewport_size.x / viewport_size.y);
+					sg->GetActiveCamera()->SetAspectRatio(custom_aspect_ratio);
 				}
 
 				ImGui::Image(output, viewport_size);
