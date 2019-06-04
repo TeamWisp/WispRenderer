@@ -41,6 +41,7 @@ namespace wr
 	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
 	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
 	LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
+	LINK_SG_DELETE_SKYBOX(D3D12RenderSystem, Delete_Skybox)
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
@@ -631,7 +632,7 @@ namespace wr
 
 		for (auto desc : registry.m_descriptions)
 		{
-			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry);
+			auto shader_error = d3d12::LoadShader(m_device, desc.second.type, desc.second.path, desc.second.entry, desc.second.defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(shader_error))
 			{
@@ -714,7 +715,8 @@ namespace wr
 
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
-				pipeline_shader->m_entry);
+				pipeline_shader->m_entry,
+				pipeline_shader->m_defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -761,7 +763,8 @@ namespace wr
 		{
 			auto new_shader_variant = d3d12::LoadShader(m_device, pipeline_shader->m_type,
 				pipeline_shader->m_path,
-				pipeline_shader->m_entry);
+				pipeline_shader->m_entry,
+				pipeline_shader->m_defines);
 
 			if (std::holds_alternative<d3d12::Shader*>(new_shader_variant))
 			{
@@ -949,6 +952,20 @@ namespace wr
 
 	}
 
+	void D3D12RenderSystem::Delete_Skybox(SceneGraph& scene_graph, std::shared_ptr<SkyboxNode>& skybox_node)
+	{
+		unsigned int frame_idx = GetFrameIdx();
+
+		skybox_node->m_irradiance.value().m_pool->MarkForUnload(skybox_node->m_irradiance.value(), frame_idx);
+		skybox_node->m_skybox.value().m_pool->MarkForUnload(skybox_node->m_skybox.value(), frame_idx);
+		skybox_node->m_prefiltered_env_map.value().m_pool->MarkForUnload(skybox_node->m_prefiltered_env_map.value(), frame_idx);
+
+		if (skybox_node->m_hdr.m_pool)
+		{
+			skybox_node->m_hdr.m_pool->MarkForUnload(skybox_node->m_hdr, frame_idx);
+		}
+	}
+
 	void D3D12RenderSystem::PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx)
 	{
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
@@ -1005,8 +1022,11 @@ namespace wr
 			temp::ProjectionView_CBData data;
 			data.m_projection = node->m_projection;
 			data.m_inverse_projection = node->m_inverse_projection;
+			data.m_prev_projection = node->m_prev_projection;
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
+			data.m_prev_view = node->m_prev_view;
+			
 			data.m_is_hybrid = 0;
 
 			node->m_camera_cb->m_pool->Update(node->m_camera_cb, sizeof(temp::ProjectionView_CBData), 0, (uint8_t*)&data);

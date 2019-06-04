@@ -11,7 +11,6 @@
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
-#include "render_tasks/d3d12_pixel_data_readback.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "render_tasks/d3d12_path_tracer.hpp"
 #include "render_tasks/d3d12_accumulation.hpp"
@@ -50,7 +49,7 @@ static std::array<frame_graph_setup_func_t, static_cast<std::size_t>(FGType::COU
 		wr::AddBrdfLutPrecalculationTask(*fg);
 		wr::AddEquirectToCubemapTask(*fg);
 		wr::AddCubemapConvolutionTask(*fg);
-		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, false);
 		wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 		wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 		wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
@@ -68,7 +67,7 @@ static std::array<frame_graph_setup_func_t, static_cast<std::size_t>(FGType::COU
 		wr::AddBrdfLutPrecalculationTask(*fg);
 		wr::AddEquirectToCubemapTask(*fg);
 		wr::AddCubemapConvolutionTask(*fg);
-		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 		wr::AddBuildAccelerationStructuresTask(*fg);
 		wr::AddRTHybridTask(*fg);
 		wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
@@ -88,7 +87,7 @@ static std::array<frame_graph_setup_func_t, static_cast<std::size_t>(FGType::COU
 		wr::AddBrdfLutPrecalculationTask(*fg);
 		wr::AddEquirectToCubemapTask(*fg);
 		wr::AddCubemapConvolutionTask(*fg);
-		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt);
+		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 		wr::AddBuildAccelerationStructuresTask(*fg);
 		wr::AddRTHybridTask(*fg);
 		wr::AddPathTracerTask(*fg);

@@ -47,13 +47,14 @@ namespace wr::d3d12
 
 	} /* internal */
 
-	std::variant<Shader*, std::string> LoadShader(Device* device, ShaderType type, std::string const & path, std::string const & entry)
+	std::variant<Shader*, std::string> LoadShader(Device* device, ShaderType type, std::string const & path, std::string const & entry, std::vector<std::pair<std::wstring, std::wstring>> user_defines)
 	{
 		auto shader = new Shader();
 
 		shader->m_entry = entry;
 		shader->m_path = path;
 		shader->m_type = type;
+		shader->m_defines = user_defines;
 
 		std::wstring wpath(path.begin(), path.end());
 		std::wstring wentry(entry.begin(), entry.end());
@@ -74,6 +75,11 @@ namespace wr::d3d12
 		if (GetRaytracingType(device) == RaytracingType::FALLBACK)
 		{
 			defines.push_back({L"FALLBACK", L"1"});
+		}
+
+		for (auto& define : user_defines)
+		{
+			defines.push_back({ define.first.c_str(), define.second.c_str() });
 		}
 
 		IDxcOperationResult* result;

@@ -15,6 +15,8 @@
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../imgui_tools.hpp"
 
+#include <string>
+
 namespace wr
 {
 	struct RTHybridData
@@ -47,7 +49,7 @@ namespace wr
 	namespace internal
 	{
 
-		inline void CreateShaderTables(d3d12::Device* device, RTHybridData& data, int frame_idx)
+		inline void CreateShaderTables(d3d12::Device* device, RTHybridData& data, const std::string& raygen_entry, int frame_idx)
 		{
 			// Delete existing shader table
 			if (data.out_miss_shader_table[frame_idx])
@@ -68,7 +70,7 @@ namespace wr
 				// Create Record(s)
 				std::uint32_t shader_record_count = 1;
 				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "RaygenEntry");
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, raygen_entry);
 
 				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
 
@@ -114,7 +116,30 @@ namespace wr
 			}
 		}
 
-		inline void SetupRTHybridTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
+		inline void CreateUAVsAndSRVs(FrameGraph& fg, RTHybridData& data, d3d12::RenderTarget* n_render_target)
+		{
+			// Versioning
+			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
+			{
+				// Bind output texture
+				d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+
+				// Bind g-buffers (albedo, normal, depth)
+				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
+
+				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
+
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+
+				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
+			}
+		}
+
+		inline void SetupRTHybridTask(RenderSystem& render_system, FrameGraph& fg, RenderTaskHandle& handle, bool resize)
 		{
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
@@ -136,25 +161,7 @@ namespace wr
 				data.tlas_requires_init = true;
 			}
 
-			// Versioning
-			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
-			{
-				// Bind output texture
-				d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
-
-				// Bind g-buffers (albedo, normal, depth)
-				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
-				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
-				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
-
-				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
-
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
-
-				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
-			}
+			CreateUAVsAndSRVs(fg, data, n_render_target);
 
 			if (!resize)
 			{
@@ -170,23 +177,20 @@ namespace wr
 				data.out_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global));
 
 				// Create Shader Tables
-				CreateShaderTables(device, data, 0);
-				CreateShaderTables(device, data, 1);
-				CreateShaderTables(device, data, 2);
-			}
+				for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
+				{
+					CreateShaderTables(device, data, "HybridRaygenEntry", i);
+				}
 
-			// Setup frame index
-			data.frame_idx = 0;
+				// Setup frame index
+				data.frame_idx = 0;
+			}
 		}
 
-		inline void ExecuteRTHybridTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
+		inline void Render(D3D12RenderSystem& n_render_system, FrameGraph& fg, SceneGraph& scene_graph, RTHybridData& data, d3d12::CommandList* cmd_list, RenderTaskHandle& handle, const std::string& raygen_entry)
 		{
-			// Initialize variables
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto window = n_render_system.m_window.value();
 			auto device = n_render_system.m_device;
-			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			auto& data = fg.GetData<RTHybridData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
 			float scalar = 1.0f;
@@ -234,7 +238,7 @@ namespace wr
 				candidate for this.
 				*/
 				{
-					auto texture_handle = render_system.GetDefaultAlbedo();
+					auto texture_handle = n_render_system.GetDefaultAlbedo();
 					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
 					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::rt_hybrid, params::RTHybridE::TEXTURES));
@@ -300,7 +304,7 @@ namespace wr
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cam_data.m_intensity = n_render_system.temp_intensity;
 				cam_data.m_frame_idx = static_cast<float>(++data.frame_idx);
-				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
+				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*) & cam_data); // FIXME: Uhh wrong pool?
 
 				// Make sure the convolution pass wrote to the skybox.
 				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
@@ -344,11 +348,14 @@ namespace wr
 				/*unsigned int verts_loc = 3; rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::VERTICES);
 				This should be the Parameter index not the heap location, it was only working due to a ridiculous amount of luck and should be fixed, or we completely missunderstand this stuff...
 				Much love, Meine and Florian*/
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+				if (!as_build_data.out_blas_list.empty())
+				{
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+				}
 
-//#ifdef _DEBUG
-				CreateShaderTables(device, data, frame_idx);
-//#endif
+				//#ifdef _DEBUG
+				CreateShaderTables(device, data, raygen_entry, frame_idx);
+				//#endif
 
 				scalar = fg.GetRenderTargetResolutionScale(handle);
 
@@ -365,6 +372,16 @@ namespace wr
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}
+		}
+
+		inline void ExecuteRTHybridTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
+		{
+			// Initialize variables
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
+			auto& data = fg.GetData<RTHybridData>(handle);
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+
+			Render(n_render_system, fg, scene_graph, data, cmd_list, handle, "HybridRaygenEntry");
 		}
 
 		inline void DestroyRTHybridTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
@@ -421,7 +438,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<RTHybridData>(desc, L"Hybrid Raytracing", FG_DEPS(1, DeferredMainTaskData));
+		fg.AddTask<RTHybridData>(desc, L"Hybrid Raytracing", FG_DEPS<DeferredMainTaskData>());
 	}
 
 } /* wr */

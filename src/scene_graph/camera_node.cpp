@@ -73,6 +73,9 @@ namespace wr
 		DirectX::XMVECTOR forward = DirectX::XMVectorNegate(DirectX::XMVector3Normalize(m_transform.r[2]));
 		DirectX::XMVECTOR right = DirectX::XMVector3Normalize(m_transform.r[0]);
 
+		m_prev_view = m_view;
+		m_prev_projection = m_projection;
+
 		m_view = DirectX::XMMatrixLookToRH(pos, forward, up);
 		
 		if (!m_override_projection)
@@ -164,10 +167,17 @@ namespace wr
 
 	}
 
-	bool CameraNode::InView(std::shared_ptr<MeshNode>& node)
+	bool CameraNode::InView(const std::shared_ptr<MeshNode>& node) const
 	{
-		AABB aabb = node->m_aabb;
+		const AABB &aabb = node->m_aabb;
 		return aabb.InFrustum(m_planes);
+	}
+
+	bool CameraNode::InRange(const std::shared_ptr<MeshNode> &node, const float dist) const
+	{
+		const AABB &aabb = node->m_aabb;
+		const Sphere sphere{ m_position, dist };
+		return aabb.Contains(sphere);
 	}
 
 } /* wr */

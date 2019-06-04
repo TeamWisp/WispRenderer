@@ -14,6 +14,7 @@ namespace wr
 	struct DownScaleData
 	{
 		d3d12::RenderTarget* out_source_rt = nullptr;
+		d3d12::RenderTarget* out_source_emissive = nullptr;
 		d3d12::RenderTarget* out_source_coc = nullptr;
 		d3d12::PipelineState* out_pipeline = nullptr;
 		ID3D12Resource* out_previous = nullptr;
@@ -34,7 +35,7 @@ namespace wr
 			if (!resize)
 			{
 				data.out_allocator = new DescriptorAllocator(n_render_system, wr::DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
-				data.out_allocation = data.out_allocator->Allocate(5);
+				data.out_allocation = data.out_allocator->Allocate(4);
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -53,22 +54,18 @@ namespace wr
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR)));
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
 			}
-			// Bright output for bloom
-			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_BRIGHT)));
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 2, n_render_target->m_create_info.m_rtv_formats[2]);
-			}
 			// Source
 			{
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
 				d3d12::CreateSRVFromSpecificRTV(source_rt, cpu_handle, 0, source_rt->m_create_info.m_rtv_formats[0]);
 			}
+
 			// Cone of confusion
 			{
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
 				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
 			}
-			
+
 		}
 
 		template<typename T, typename T1>
@@ -95,11 +92,6 @@ namespace wr
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_FAR)));
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
 			}
-			// Bright output for bloom
-			{
-				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_BRIGHT)));
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, cpu_handle, 2, n_render_target->m_create_info.m_rtv_formats[2]);
-			}
 			// Source
 			{
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE)));
@@ -110,7 +102,7 @@ namespace wr
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(COMPILATION_EVAL(rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC)));
 				d3d12::CreateSRVFromSpecificRTV(source_coc, cpu_handle, 0, source_coc->m_create_info.m_rtv_formats[0]);
 			}
-			
+
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
@@ -127,12 +119,6 @@ namespace wr
 			}
 
 			{
-				constexpr unsigned int dest_b_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::OUTPUT_BRIGHT);
-				auto handle_uav = data.out_allocation.GetDescriptorHandle(dest_b_idx);
-				d3d12::SetShaderUAV(cmd_list, 0, dest_b_idx, handle_uav);
-			}
-
-			{
 				constexpr unsigned int source_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::SOURCE);
 				auto handle_b_srv = data.out_allocation.GetDescriptorHandle(source_idx);
 				d3d12::SetShaderSRV(cmd_list, 0, source_idx, handle_b_srv);
@@ -142,7 +128,8 @@ namespace wr
 				constexpr unsigned int source_coc_idx = rs_layout::GetHeapLoc(params::down_scale, params::DownScaleE::COC);
 				auto handle_m_srv = data.out_allocation.GetDescriptorHandle(source_coc_idx);
 				d3d12::SetShaderSRV(cmd_list, 0, source_coc_idx, handle_m_srv);
-			}
+			}			
+			
 
 			cmd_list->m_native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(data.out_source_rt->m_render_targets[frame_idx % versions]));
 
@@ -178,8 +165,8 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT,wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT}),
-			RenderTargetProperties::NumRTVFormats(3),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT,wr::Format::R16G16B16A16_FLOAT}),
+			RenderTargetProperties::NumRTVFormats(2),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),
 			RenderTargetProperties::ResolutionScalar(0.5f)

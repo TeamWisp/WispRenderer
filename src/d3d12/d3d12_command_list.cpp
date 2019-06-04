@@ -548,9 +548,12 @@ namespace wr::d3d12
 	void DispatchRays(CommandList* cmd_list, ShaderTable* hitgroup_table, ShaderTable* miss_table, ShaderTable* raygen_table, std::uint32_t width, std::uint32_t height, std::uint32_t depth, unsigned int frame_idx)
 	{
 		D3D12_DISPATCH_RAYS_DESC desc = {};
-		desc.HitGroupTable.StartAddress = hitgroup_table->m_resource->GetGPUVirtualAddress();
-		desc.HitGroupTable.SizeInBytes = hitgroup_table->m_resource->GetDesc().Width;
-		desc.HitGroupTable.StrideInBytes = hitgroup_table->m_shader_record_size;
+		if (hitgroup_table != nullptr)
+		{
+			desc.HitGroupTable.StartAddress = hitgroup_table->m_resource->GetGPUVirtualAddress();
+			desc.HitGroupTable.SizeInBytes = hitgroup_table->m_resource->GetDesc().Width;
+			desc.HitGroupTable.StrideInBytes = hitgroup_table->m_shader_record_size;
+		}
 
 		desc.MissShaderTable.StartAddress = miss_table->m_resource->GetGPUVirtualAddress();
 		desc.MissShaderTable.SizeInBytes = miss_table->m_resource->GetDesc().Width;

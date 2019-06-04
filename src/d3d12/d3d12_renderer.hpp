@@ -35,9 +35,38 @@ namespace wr
 			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
 			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
 			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
-			std::uint32_t m_is_hybrid = 0u;
-			std::uint32_t m_is_path_tracer = 0u;
-			std::uint32_t m_is_ao = 0u;
+			DirectX::XMMATRIX m_prev_projection = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_prev_view = DirectX::XMMatrixIdentity();
+			unsigned int m_is_hybrid = 0u;
+			unsigned int m_is_path_tracer = 0u;
+			unsigned int m_is_ao = 0u;
+			unsigned int m_has_shadows = 0u;
+			unsigned int m_has_reflections = 0u;
+			int padding[3];
+		};
+
+		struct ShadowDenoiserSettings_CBData
+		{
+			float m_alpha;
+			float m_moments_alpha;
+			float m_l_phi;
+			float m_n_phi;
+			float m_z_phi;
+			float m_step_distance;
+			float m_padding[2];
+		};
+
+		struct DenoiserCamera_CBData
+		{
+			DirectX::XMMATRIX m_view;
+			DirectX::XMMATRIX m_prev_view;
+			DirectX::XMMATRIX m_inverse_view;
+			DirectX::XMMATRIX m_projection;
+			DirectX::XMMATRIX m_prev_projection;
+			DirectX::XMMATRIX m_inverse_projection;
+			float m_padding[2];
+			float m_near_plane;
+			float m_far_plane;
 		};
 
 		struct RTHybridCamera_CBData
@@ -54,11 +83,16 @@ namespace wr
 		struct RTAO_CBData
 		{
 			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inv_view = DirectX::XMMatrixIdentity();
 
-			float bias = 0.0f;
-			float radius = 0.0f;
-			float power = 0.0f;
-			std::uint32_t sample_count = 0u;
+			float m_bias = 0.0f;
+			float m_radius = 0.0f;
+			float m_power = 0.0f;
+			float m_max_distance = 0.0f;
+
+			float m_padding[2];
+			float m_frame_idx = 0.0f;
+			std::uint32_t m_sample_count = 0u;
 		};
 
 		struct RayTracingCamera_CBData
@@ -92,6 +126,8 @@ namespace wr
 			std::uint32_t idx_offset = 0u;
 			std::uint32_t vertex_offset = 0u;
 		};
+
+
 
 		static const constexpr float size = 1.0f;
 		static const constexpr Vertex2D quad_vertices[] = {
@@ -165,6 +201,7 @@ namespace wr
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 		void Update_LightNodes(SceneGraph& scene_graph);
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
+		void Delete_Skybox(SceneGraph& scene_graph, std::shared_ptr<SkyboxNode>& skybox_node);
 
 		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
 

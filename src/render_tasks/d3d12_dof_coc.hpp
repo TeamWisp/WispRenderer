@@ -160,7 +160,7 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ wr::Format::R16_FLOAT }),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16_FLOAT }),
 			RenderTargetProperties::NumRTVFormats(1),
 			RenderTargetProperties::Clear(false),
 			RenderTargetProperties::ClearDepth(false),

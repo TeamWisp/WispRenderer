@@ -33,6 +33,7 @@ namespace wr
 
 		struct ObjectData {
 			DirectX::XMMATRIX m_model;
+			DirectX::XMMATRIX m_prev_model;
 		};
 
 		struct MeshBatch_CBData
@@ -42,7 +43,7 @@ namespace wr
 
 		struct MeshBatch
 		{
-			unsigned int num_instances = 0, num_global_instances = 0;
+			unsigned int num_instances = 0, num_global_instances = 0, num_total_instances = 0;
 			ConstantBufferHandle* batch_buffer;
 			MeshBatch_CBData data;
 			std::vector<MaterialHandle> m_materials;
@@ -68,6 +69,7 @@ namespace wr
 		static util::Delegate<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
 		static util::Delegate<void(RenderSystem* render_system, SceneGraph& scene_graph)> m_update_lights_func_impl;
 		static util::Delegate<void(RenderSystem* render_system, SceneGraph& scene_graph, std::shared_ptr<Node>&)> m_update_transforms_func_impl;
+		static util::Delegate<void(RenderSystem* render_system, SceneGraph& scene_graph, std::shared_ptr<SkyboxNode>&)> m_delete_skybox_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -102,6 +104,11 @@ namespace wr
 		Light* GetLight(uint32_t offset);			//Returns nullptr when out of bounds
 
 		uint32_t GetCurrentLightSize();
+		float GetRTCullingDistance();
+		bool GetRTCullingEnabled();
+
+		void SetRTCullingDistance(float dist);
+		void SetRTCullingEnable(bool b);
 
 	protected:
 
@@ -133,6 +140,7 @@ namespace wr
 		std::shared_ptr<SkyboxNode> m_current_skybox = nullptr;
 
 		uint32_t m_next_light_id = 0;
+		float m_rt_culling_distance = -1;
 	};
 
 	//! Creates a child into the scene graph
@@ -246,6 +254,8 @@ namespace wr
 							LOGW("[WARNING]: Last skybox node deleted, m_current_skybox is now a nullptr")
 						}
 					}
+
+					m_delete_skybox_func_impl(m_render_system, *this, node);
 
 					m_skybox_nodes.erase(m_skybox_nodes.begin() + i);
 					

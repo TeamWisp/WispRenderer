@@ -50,5 +50,7 @@ namespace wr::d3d12::settings
 	static const constexpr unsigned int fallback_ptrs_offset = 3500;
 	static const constexpr std::uint32_t res_skybox = 1024;
 	static const constexpr std::uint32_t res_envmap = 512;
+	static const constexpr unsigned int shadow_denoiser_wavelet_iterations = 4; // controls the number of iterations of the shadow denoiser, controlling the effective size of the kernel (size = 2^i + 1)
+	static const constexpr unsigned int shadow_denoiser_feedback_tap = 1; // After which of the iterations should the result be stored for denoising the next frame.
 	
 } /* wr::d3d12::settings */

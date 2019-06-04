@@ -12,18 +12,17 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	output_near.GetDimensions(screen_size.x, screen_size.y);
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
-	float2 texel_size = 1.0f / screen_size;
+
 	float2 uv = (screen_coord) / screen_size;
-	static const int SampleRadius = 1;
-	static const int SampleDiameter = SampleRadius * 2 + 1;
+	static const int sample_radius = 2;
 
 	float output = source_near.SampleLevel(s0, uv , 0).a;
 
 	[unroll]
-	for (int y = -SampleRadius; y <= SampleRadius; ++y)
+	for (int y = -sample_radius; y <= sample_radius; ++y)
 	{
 		[unroll]
-		for (int x = -SampleRadius; x <= SampleRadius; ++x)
+		for (int x = -sample_radius; x <= sample_radius; ++x)
 		{
 			output = max(output, source_near.SampleLevel(s0, ((screen_coord + 0.5f + float2(x, y)) / screen_size), 0).a);
 		}
