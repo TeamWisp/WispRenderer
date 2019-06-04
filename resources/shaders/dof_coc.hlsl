@@ -2,7 +2,7 @@
 #include "dof_util.hlsl"
 
 Texture2D gbuffer_depth : register(t0);
-RWTexture2D<float4> output : register(u0);
+RWTexture2D<float2> output : register(u0);
 SamplerState s0 : register(s0);
 
 cbuffer CameraProperties : register(b0)
@@ -61,7 +61,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = screen_coord / screen_size;
 	
-	float sample_depth = gbuffer_depth[screen_coord].r;
+	float sample_depth = gbuffer_depth.SampleLevel(s0, uv, 0).r;
 	float focus_depth = GetAutoFocusDepth(screen_size);
 
 	sample_depth = GetLinearDepth(sample_depth) * FFAR;
@@ -77,5 +77,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	{
 		coc = 0.0f;
 	}
-	output[int2(dispatch_thread_id.xy)] = coc;
+
+	float2 result = float2(coc, gbuffer_depth.SampleLevel(s0, uv, 0).r);
+	output[int2(dispatch_thread_id.xy)] = result;
 }

@@ -26,5 +26,4 @@ namespace wr
 
 		m_hdr = new_equirectangular;
 	}
-
 } /* wr */

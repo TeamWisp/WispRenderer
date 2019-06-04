@@ -83,11 +83,16 @@ namespace wr
 		struct RTAO_CBData
 		{
 			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
+			DirectX::XMMATRIX m_inv_view = DirectX::XMMatrixIdentity();
 
-			float bias = 0.0f;
-			float radius = 0.0f;
-			float power = 0.0f;
-			std::uint32_t sample_count = 0u;
+			float m_bias = 0.0f;
+			float m_radius = 0.0f;
+			float m_power = 0.0f;
+			float m_max_distance = 0.0f;
+
+			float m_padding[2];
+			float m_frame_idx = 0.0f;
+			std::uint32_t m_sample_count = 0u;
 		};
 
 		struct RayTracingCamera_CBData
@@ -196,6 +201,7 @@ namespace wr
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 		void Update_LightNodes(SceneGraph& scene_graph);
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
+		void Delete_Skybox(SceneGraph& scene_graph, std::shared_ptr<SkyboxNode>& skybox_node);
 
 		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
 
@@ -253,6 +259,7 @@ namespace wr
 	private:
 		void ResetBatches(SceneGraph& sg);
 		void LoadPrimitiveShapes();
+		void CreateDefaultResources();
 
 		d3d12::CommandSignature* m_cmd_signature;
 		d3d12::CommandSignature* m_cmd_signature_indexed;

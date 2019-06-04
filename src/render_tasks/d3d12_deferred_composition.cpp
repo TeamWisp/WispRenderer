@@ -272,11 +272,17 @@ namespace wr
 
 				//GetSkybox
 				auto skybox = scene_graph.GetCurrentSkybox();
-				if (skybox != nullptr)
+				if (skybox)
 				{
 					//data.out_skybox = static_cast<wr::d3d12::TextureResource*>(pred_data.in_radiance.m_pool->GetTexture(pred_data.in_radiance.m_id));
 					data.out_skybox = static_cast<wr::d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
 					d3d12::CreateSRVFromTexture(data.out_skybox);
+
+					data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
+					d3d12::CreateSRVFromTexture(data.out_irradiance);
+
+					data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
+					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
 				}
 
 				// Get Screen Space Environment Texture
@@ -293,20 +299,6 @@ namespace wr
 					d3d12::DescHeapCPUHandle desc_handle = data.out_screen_space_ao_alloc.GetDescriptorHandle();
 					d3d12::RenderTarget* ao_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::HBAOData>());
 					d3d12::CreateSRVFromSpecificRTV(ao_rt, desc_handle, 0, ao_rt->m_create_info.m_rtv_formats[0]);
-				}
-
-				// Get Irradiance Map
-				if (skybox != nullptr)
-				{
-					data.out_irradiance = static_cast<wr::d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
-					d3d12::CreateSRVFromTexture(data.out_irradiance);
-				}
-
-				// Get the prefiltered environment map	
-				if (skybox != nullptr)
-				{
-					data.out_pref_env_map = static_cast<wr::d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
-					d3d12::CreateSRVFromTexture(data.out_pref_env_map);
 				}
 
 				// Output UAV
