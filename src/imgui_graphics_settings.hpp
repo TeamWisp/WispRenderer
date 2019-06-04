@@ -4,7 +4,6 @@
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
-#include "render_tasks/d3d12_cubemap_convolution.hpp"
 
 namespace wr::imgui::window
 {
@@ -16,7 +15,6 @@ namespace wr::imgui::window
 	static wr::HBAOSettings hbao_user_settings;
 	static wr::AnselSettings ansel_user_settings;
 	static wr::ASBuildSettings as_build_user_settings;
-	static wr::CubemapConvolutionSettings cubemap_convolution_user_settings;
 
 	void GraphicsSettings(wr::FrameGraph* frame_graph)
 	{
@@ -87,18 +85,6 @@ namespace wr::imgui::window
 			if (frame_graph->HasTask<wr::ASBuildData>())
 			{
 				frame_graph->UpdateSettings<wr::ASBuildData>(as_build_user_settings);
-			}
-
-			
-			ImGui::Dummy(ImVec2(0.0f, 10.0f));
-			ImGui::LabelText("", "Cubemap Convolution");
-			ImGui::Separator();
-
-			ImGui::DragInt2("Camera Speed", cubemap_convolution_user_settings.m_runtime.m_resolution, 1.f, 1.f, 16384.f);
-
-			if (frame_graph->HasTask<wr::CubemapConvolutionTaskData>())
-			{
-				frame_graph->UpdateSettings<wr::CubemapConvolutionTaskData>(cubemap_convolution_user_settings);
 			}
 
 			ImGui::End();

@@ -109,12 +109,7 @@ namespace wr
 			//Does it need convolution? And does it have a cubemap already?
 			if (skybox_node->m_irradiance != std::nullopt && skybox_node->m_skybox != std::nullopt)
 			{
-				d3d12::TextureResource* irradiance = static_cast<d3d12::TextureResource*>(skybox_node->m_irradiance->m_pool->GetTextureResource(skybox_node->m_irradiance.value()));
-				bool did_resolution_change = irradiance->m_width != settings.m_runtime.m_resolution[0] || irradiance->m_height != settings.m_runtime.m_resolution[1];
-				if (!did_resolution_change)
-				{
-					return;
-				}
+				return;
 			}
 
 			data.in_radiance = pred_data.out_cubemap;
