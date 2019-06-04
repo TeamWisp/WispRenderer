@@ -33,17 +33,52 @@ namespace wr
 
 	};
 
-	struct AABB
+	struct Sphere 
 	{
-		struct Corners
-		{
-			DirectX::XMVECTOR m_min, m_max;
-		};
 		
 		union
 		{
-			Corners m_corners;
-			DirectX::XMVECTOR m_data[6];
+			DirectX::XMVECTOR m_sphere;
+
+			struct
+			{
+				DirectX::XMFLOAT3 m_center;
+				float m_radius;
+			};
+
+			struct {
+				float m_data[4];
+			};
+
+		};
+
+		Sphere();
+		Sphere(DirectX::XMVECTOR center, float radius);
+
+	};
+
+	struct AABB
+	{
+		union
+		{
+
+			DirectX::XMVECTOR m_data[2];
+
+			struct
+			{
+				DirectX::XMVECTOR m_min, m_max;
+			};
+
+			struct {
+
+				float m_minf[3];
+				float m_pad0;
+
+				float m_maxf[3];
+				float m_pad1;
+
+			};
+
 		};
 
 		AABB();
@@ -55,7 +90,10 @@ namespace wr
 		void Expand(DirectX::XMVECTOR pos);
 
 		//Check if the frustum planes intersect with the AABB
-		bool InFrustum(std::array<DirectX::XMVECTOR, 6> planes);
+		bool InFrustum(const std::array<DirectX::XMVECTOR, 6>& planes) const;
+
+		//Check if the sphere intersects with the AABB
+		bool Contains(const Sphere& sphere) const;
 
 		//Generates AABB from transform and box
 		static AABB FromTransform(Box box, DirectX::XMMATRIX transform);

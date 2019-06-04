@@ -159,6 +159,26 @@ namespace wr
 		return m_next_light_id;
 	}
 
+	float SceneGraph::GetRTCullingDistance()
+	{
+		return std::fabs(m_rt_culling_distance);
+	}
+
+	bool SceneGraph::GetRTCullingEnabled()
+	{
+		return m_rt_culling_distance > 0;
+	}
+
+	void SceneGraph::SetRTCullingDistance(float dist)
+	{
+		m_rt_culling_distance = dist * (GetRTCullingEnabled() * 2 - 1);
+	}
+
+	void SceneGraph::SetRTCullingEnable(bool b)
+	{
+		m_rt_culling_distance = GetRTCullingDistance() * (b * 2 - 1);
+	}
+
 	Light* SceneGraph::GetLight(uint32_t offset)
 	{
 		return offset >= m_next_light_id ? m_lights.data() : m_lights.data() + offset;
@@ -213,16 +233,14 @@ namespace wr
 			constexpr uint32_t max_size = d3d12::settings::num_instances_per_batch;
 			constexpr auto model_size = sizeof(temp::ObjectData) * max_size;
 
-			for (auto& node : m_mesh_nodes) {
-				if (!node->m_visible)
-				{
-					continue;
-				}
+			for (auto& node : m_mesh_nodes)
+			{
 
 				auto mesh_materials_pair = std::make_pair(node->m_model, node->m_materials);
 
 				auto it = m_batches.find(mesh_materials_pair);
 
+				//It won't keep track of anything if it has no model
 				if (node->m_model == nullptr)
 				{
 					continue;
@@ -248,20 +266,33 @@ namespace wr
 					it = m_batches.find(mesh_materials_pair);
 				}
 
-				//Replace data in buffer
+				//Mark batch as "active" and keep track of instances
+				++it->second.num_total_instances;
+
+				//Model should remain loaded, but not rendered
+				if (!node->m_visible)
+				{
+					continue;
+				}
+
 				temp::MeshBatch& batch = it->second;
 				batch.m_materials = node->GetMaterials();
 
-				if (GetActiveCamera()->InView(node) || !d3d12::settings::enable_object_culling) 
+				//Cull for rasterizer
+				if (!d3d12::settings::enable_object_culling || GetActiveCamera()->InView(node))
 				{
 					unsigned int& offset = batch.num_instances;
 					batch.data.objects[offset] = { node->m_transform, node->m_prev_transform };
 					++offset;
 				}
 
-				unsigned int& globalOffset = batch.num_global_instances;
-				obj->second[globalOffset] = { node->m_transform, node->m_prev_transform };
-				++globalOffset;
+				//Cull for raytracer
+				if (!GetRTCullingEnabled() || GetActiveCamera()->InRange(node, GetRTCullingDistance()))
+				{
+					unsigned int& globalOffset = batch.num_global_instances;
+					obj->second[globalOffset] = { node->m_transform, node->m_prev_transform };
+					++globalOffset;
+				}
 
 			}
 
@@ -270,7 +301,7 @@ namespace wr
 			for (auto& elem : m_batches)
 			{
 				//Release empty batches
-				if (elem.second.num_global_instances == 0)
+				if (elem.second.num_total_instances == 0)
 				{
 					m_to_remove.push(elem.first);
 					continue;
@@ -279,6 +310,7 @@ namespace wr
 				//Update object data
 				temp::MeshBatch& batch = elem.second;
 				m_constant_buffer_pool->Update(batch.batch_buffer, sizeof(temp::ObjectData) * elem.second.num_instances, 0, (uint8_t*)batch.data.objects.data());
+				elem.second.num_total_instances = 0;	//Clear for future use
 			}
 
 			while(!m_to_remove.empty())

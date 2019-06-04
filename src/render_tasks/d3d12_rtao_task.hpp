@@ -20,11 +20,12 @@ namespace wr
 	{
 		struct Runtime
 		{
-			float bias = 0.01f;
-			float radius = 1.f;
-			float power = 1.f;
+			float bias = 0.05f;
+			float radius = 2.f;
+			float power = 1.f; // The final AO output is pow(AO, powerExponent) // 1.0~4.0
+			float max_distance = 2000.f;
 			int sample_count = 8;
-		};
+		};//Currently setup to make screen shots in pica pica
 
 		Runtime m_runtime;
 	};
@@ -98,20 +99,6 @@ namespace wr
 				data.in_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
 				d3d12::AddShaderRecord(data.in_miss_shader_table[frame_idx], miss_record);
 			}
-
-			// Set up Hit Group Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
-
-				auto hit_identifier = d3d12::GetShaderIdentifier(device, data.in_state_object, "AOHitGroup");
-				auto hit_record = d3d12::CreateShaderRecord(hit_identifier, shader_identifier_size);
-
-				// Create Table(s)
-				data.in_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.in_hitgroup_shader_table[frame_idx], hit_record);
-			}
 		}
 
 		inline void SetupAOTask(RenderSystem& render_system, FrameGraph& fg, RenderTaskHandle& handle, bool resize)
@@ -127,9 +114,9 @@ namespace wr
 			{
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate());
-				data.in_gbuffers = std::move(as_build_data.out_allocator->Allocate());
-				data.in_depthbuffer = std::move(as_build_data.out_allocator->Allocate());
+				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
+				data.in_gbuffers = std::move(as_build_data.out_allocator->Allocate(1));
+				data.in_depthbuffer = std::move(as_build_data.out_allocator->Allocate(1));
 			}
 
 			// Versioning
@@ -139,15 +126,13 @@ namespace wr
 				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
-				// Bind g-buffers (albedo, normal, depth)
-				d3d12::DescHeapCPUHandle gbuffers_handle = data.in_gbuffers.GetDescriptorHandle();
-				d3d12::DescHeapCPUHandle depth_buffer_handle = data.in_depthbuffer.GetDescriptorHandle();
-
-				//cpu_handle = d3d12::GetCPUHandle(as_build_data.out_rt_heap, frame_idx, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)));
-
+				// Bind g-buffers
+				d3d12::DescHeapCPUHandle normal_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(0);
+				d3d12::DescHeapCPUHandle depth_buffer_handle = data.in_depthbuffer.GetDescriptorHandle(0);
+				
 				auto deferred_main_rt = data.in_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
-				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, gbuffers_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_gbuffer_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
 			}
 
@@ -181,7 +166,7 @@ namespace wr
 			auto& data = fg.GetData<RTAOData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
-			auto setting = fg.GetSettings<RTAOData, RTAOSettings>();
+			auto settings = fg.GetSettings<RTAOData, RTAOSettings>();
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 			float scalar = 1.0f;
 
@@ -200,9 +185,9 @@ namespace wr
 				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::OUTPUT)), out_uav_handle);
 
-				auto in_scene_gbuffers_handle1 = data.in_gbuffers.GetDescriptorHandle();
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_gbuffers_handle1);
-
+				auto in_scene_normal_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(0);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_normal_gbuffer_handle);
+				
 				auto in_scene_depth_handle = data.in_depthbuffer.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_depth_handle);
 
@@ -219,10 +204,13 @@ namespace wr
 				auto camera = scene_graph.GetActiveCamera();
 				temp::RTAO_CBData cb_data;
 				cb_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
-				cb_data.bias = setting.m_runtime.bias;
-				cb_data.radius = setting.m_runtime.radius;
-				cb_data.power = setting.m_runtime.power;
-				cb_data.sample_count = static_cast<unsigned int>(setting.m_runtime.sample_count);
+				cb_data.m_inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
+				cb_data.m_bias = settings.m_runtime.bias;
+				cb_data.m_radius = settings.m_runtime.radius;
+				cb_data.m_power = settings.m_runtime.power;
+				cb_data.m_max_distance = settings.m_runtime.max_distance;
+				cb_data.m_frame_idx = frame_idx;
+				cb_data.m_sample_count = static_cast<unsigned int>(settings.m_runtime.sample_count);
 
 				n_render_system.m_camera_pool->Update(data.out_cb_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
 
@@ -233,7 +221,10 @@ namespace wr
 				d3d12::BindDescriptorHeaps(cmd_list, false);
 				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_handle->m_native, 2, frame_idx);
 
-				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
+				if (!as_build_data.out_blas_list.empty())
+				{
+					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
+				}
 				
 #ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
