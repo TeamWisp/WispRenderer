@@ -8,7 +8,7 @@
 #define MATERIAL_HAS_EMISSIVE_TEXTURE 1<<4
 #define MATERIAL_HAS_AO_TEXTURE 1<<5
 
-#include "rt_structs.hlsl"
+#include "dxr_structs.hlsl"
 
 struct OutputMaterialData
 {

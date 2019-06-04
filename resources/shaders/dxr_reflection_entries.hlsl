@@ -1,20 +1,20 @@
 #ifndef __RT_REFLECTION_ENTRIES__
 #define __RT_REFLECTION_ENTRIES__
 
-#include "util.hlsl"
+#include "rand_util.hlsl"
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
-#include "rt_texture_lod.hlsl"
+#include "dxr_texture_lod.hlsl"
 
 // Definitions for: 
 // - Vertex, Material, Offset
 // - Ray, RayCone, ReflectionHitInfo
-#include "rt_structs.hlsl"
+#include "dxr_structs.hlsl"
 
 // Definitions for: 
 // - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
-#include "rt_functions.hlsl"
+#include "dxr_functions.hlsl"
 
 //Reflections
 [shader("closesthit")]

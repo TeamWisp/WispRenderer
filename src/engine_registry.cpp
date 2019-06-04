@@ -182,7 +182,7 @@ namespace wr
 
 
 	REGISTER(shaders::brdf_lut_cs, ShaderRegistry)({
-		.path = "resources/shaders/brdf_lut_cs.hlsl",
+		.path = "resources/shaders/pbr_brdf_lut.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -259,28 +259,28 @@ namespace wr
 	});
 
 	REGISTER(shaders::equirect_to_cubemap_vs, ShaderRegistry)({
-		.path = "resources/shaders/equirect_to_cubemap_conversion.hlsl",
+		.path = "resources/shaders/pbr_cubemap_conversion.hlsl",
 		.entry = "main_vs",
 		.type = ShaderType::VERTEX_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::equirect_to_cubemap_ps, ShaderRegistry)({
-		.path = "resources/shaders/equirect_to_cubemap_conversion.hlsl",
+		.path = "resources/shaders/pbr_cubemap_conversion.hlsl",
 		.entry = "main_ps",
 		.type = ShaderType::PIXEL_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::cubemap_convolution_ps, ShaderRegistry)({
-		.path = "resources/shaders/cubemap_convolution.hlsl",
+		.path = "resources/shaders/pbr_cubemap_convolution.hlsl",
 		.entry = "main_ps",
 		.type = ShaderType::PIXEL_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::cubemap_prefiltering_cs, ShaderRegistry)({
-		.path = "resources/shaders/prefilter_env_map_cs.hlsl",
+		.path = "resources/shaders/pbr_prefilter_env_map.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -470,7 +470,7 @@ namespace wr
 	});
 
 	REGISTER(shaders::rt_lib, ShaderRegistry)({
-		.path = "resources/shaders/raytracing.hlsl",
+		.path = "resources/shaders/dxr_raytracing.hlsl",
 		.entry = "RaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}
@@ -1030,7 +1030,7 @@ namespace wr
 	
 	/* ### Path Tracer ### */
 	REGISTER(shaders::path_tracer_lib, ShaderRegistry)({
-		.path = "resources/shaders/path_tracer.hlsl",
+		.path = "resources/shaders/dxr_pathtracer_main.hlsl",
 		.entry = "RaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}
@@ -1092,7 +1092,7 @@ namespace wr
 
 	/* ### Shadow Raytracing ### */
 	REGISTER(shaders::rt_shadow_lib, ShaderRegistry)({
-		.path = "resources/shaders/rt_shadow_main.hlsl",
+		.path = "resources/shaders/dxr_shadow_main.hlsl",
 		.entry = "ShadowRaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}
@@ -1122,7 +1122,7 @@ namespace wr
 
 	/* ### Reflection Raytracing ### */
 	REGISTER(shaders::rt_reflection_lib, ShaderRegistry)({
-		.path = "resources/shaders/rt_reflection_main.hlsl",
+		.path = "resources/shaders/dxr_reflection_main.hlsl",
 		.entry = "ReflectionRaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}

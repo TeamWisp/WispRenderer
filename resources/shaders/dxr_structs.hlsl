@@ -79,4 +79,12 @@ struct ShadowHitInfo
 	float thisvariablesomehowmakeshybridrenderingwork_killme;
 };
 
+struct PathTracingHitInfo
+{
+	float3 color;
+	unsigned int seed;
+	float3 origin;
+	unsigned int depth;
+};
+
 #endif //__RT_STRUCTS_HLSL__

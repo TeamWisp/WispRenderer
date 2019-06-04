@@ -1,3 +1,6 @@
+#ifndef __LENS_EFFECTS_HLSL__
+#define __LENS_EFFECTS_HLSL__
+
 #include "fxaa.hlsl"
 
 float2 barrelDistortion(float2 coord, float amt) {
@@ -96,3 +99,5 @@ float2 BarrelDistortUV(float2 uv, float kcube)
 
 	return float2(x, y);
 }
+
+#endif //__LENS_EFFECTS_HLSL__

@@ -2,7 +2,7 @@
 #define __FULL_RAYTRACING_HLSL__
 
 #define LIGHTS_REGISTER register(t2)
-#include "util.hlsl"
+#include "rand_util.hlsl"
 #include "pbr_util.hlsl"
 #include "lighting.hlsl"
 #include "material_util.hlsl"
@@ -10,11 +10,11 @@
 // Definitions for: 
 // - Vertex, Material, Offset
 // - Ray, RayCone, ReflectionHitInfo
-#include "rt_structs.hlsl"
+#include "dxr_structs.hlsl"
 
 // Definitions for: 
 // - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
-#include "rt_functions.hlsl"
+#include "dxr_functions.hlsl"
 
 static const float M_PI = 3.14159265f;
 

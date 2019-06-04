@@ -1,3 +1,6 @@
+#ifndef __HDR_UTILS_HLSL__
+#define __HDR_UTILS_HLSL__
+
 float3 linearToneMapping(float3 color, float exposure, float gamma)
 {
 	color = clamp(exposure * color, 0.f, 1.f);
@@ -141,3 +144,5 @@ float3 AllTonemappingAlgorithms(float3 color, float rotation, float exposure, fl
 
 	return result;
 }
+
+#endif //__HDR_UTILS_HLSL__

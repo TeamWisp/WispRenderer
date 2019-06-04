@@ -1,21 +1,22 @@
-#ifndef __RT_REFLECTION_MAIN__
-#define __RT_REFLECTION_MAIN__
+#ifndef __RT_SHADOW_MAIN__
+#define __RT_SHADOW_MAIN__
 
 #define LIGHTS_REGISTER register(t2)
-#include "util.hlsl"
+#include "rand_util.hlsl"
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
-#include "rt_texture_lod.hlsl"
+#include "dxr_texture_lod.hlsl"
+#include "dxr_global.hlsl"
 
 // Definitions for: 
 // - Vertex, Material, Offset
 // - Ray, RayCone, ReflectionHitInfo
-#include "rt_structs.hlsl"
+#include "dxr_structs.hlsl"
 
 // Definitions for: 
 // - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
-#include "rt_functions.hlsl"
+#include "dxr_functions.hlsl"
 
 RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
 ByteAddressBuffer g_indices : register(t1);
@@ -47,12 +48,11 @@ cbuffer CameraProperties : register(b0)
 
 #define M_PI 3.14159265358979
 
-#include "rt_reflection_functions.hlsl"
-#include "rt_reflection_entries.hlsl"
-#include "rt_shadow_entries.hlsl"
+#include "dxr_shadow_functions.hlsl"
+#include "dxr_shadow_entries.hlsl"
 
 [shader("raygeneration")]
-void ReflectionRaygenEntry()
+void ShadowRaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
@@ -69,10 +69,7 @@ void ReflectionRaygenEntry()
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
-	float3 albedo = albedo_roughness.rgb;
-	float roughness = albedo_roughness.w;
 	float3 normal = normal_metallic.xyz;
-	float metallic = normal_metallic.w;
 
 	// Do lighting
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
@@ -82,25 +79,16 @@ void ReflectionRaygenEntry()
 	{
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
-		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+		output_refl_shadow[screen_co] = float4(1, 1, 1, 1);
 		return;
 	}
 
-	// Describe the surface for mip level generation
-	SurfaceHit sfhit;
-	sfhit.pos = wpos;
-	sfhit.normal = normal;
-	sfhit.dist = length(cpos - wpos);
-	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
-
-	// Compute the initial ray cone from the gbuffers.
- 	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
-
-	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, cone);
+	wpos += normal * EPSILON;
+	// Get shadow factor
+	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, 0, 0, 0, rand_seed);
 
 	// xyz: reflection, a: shadow factor
-	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, 1.0);
+	output_refl_shadow[screen_co] = shadow_result;
 }
 
-#endif //__RT_REFLECTION_MAIN__
+#endif //__RT_SHADOW_MAIN__

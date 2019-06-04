@@ -1,17 +1,17 @@
 #ifndef __RT_REFLECTION_FUNCTIONS__
 #define __RT_REFLECTION_FUNCTIONS__
 
-#include "rt_global.hlsl"
-#include "rt_structs.hlsl"
+#include "dxr_global.hlsl"
+#include "dxr_structs.hlsl"
 
 // Definitions for: 
 // - Vertex, Material, Offset
 // - Ray, RayCone, ReflectionHitInfo
-#include "rt_structs.hlsl"
+#include "dxr_structs.hlsl"
 
 // Definitions for: 
 // - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
-#include "rt_functions.hlsl"
+#include "dxr_functions.hlsl"
 
 float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone)
 {

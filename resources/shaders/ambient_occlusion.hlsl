@@ -1,5 +1,5 @@
-#include "rt_global.hlsl"
-#include "util.hlsl"
+#include "rand_util.hlsl"
+#include "dxr_global.hlsl"
 
 RWTexture2D<float4> output : register(u0); // x: AO value
 Texture2D gbuffer_normal : register(t1);

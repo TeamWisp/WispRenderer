@@ -1,14 +1,13 @@
 #ifndef __RT_SHADOW_ENTRIES__
 #define __RT_SHADOW_ENTRIES__
 
-#include "util.hlsl"
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 
 // Definitions for: 
 // - Vertex, Material, Offset
 // - Ray, RayCone, ReflectionHitInfo
-#include "rt_structs.hlsl"
+#include "dxr_structs.hlsl"
 
 [shader("closesthit")]
 void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)

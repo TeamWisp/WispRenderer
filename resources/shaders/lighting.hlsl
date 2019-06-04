@@ -6,7 +6,7 @@
 #define PATHTRACER_PASS 2
 #define FULLRAYTRACING_PASS 3
 
-#include "rt_shadow_functions.hlsl"
+#include "dxr_shadow_functions.hlsl"
 
 struct Light
 {

@@ -1,12 +1,7 @@
-#define M_PI 3.14159265358979
+#ifndef __PATHTRACER_FUNCTIONS_HLSL__
+#define __PATHTRACER_FUNCTIONS_HLSL__
 
-struct HitInfo
-{
-	float3 color;
-	unsigned int seed;
-	float3 origin;
-	unsigned int depth;
-};
+#define M_PI 3.14159265358979
 
 float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
 {
@@ -23,7 +18,7 @@ float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	ray.TMin = 0;
 	ray.TMax = 1.0e38f;
 
-	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
+	PathTracingHitInfo payload = { float3(1, 1, 1), seed, origin, depth };
 
 	// Trace the ray
 	TraceRay(
@@ -192,3 +187,5 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		return color * irradiance;
 	}
 }
+
+#endif //__PATHTRACER_FUNCTIONS_HLSL__

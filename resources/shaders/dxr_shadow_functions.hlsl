@@ -1,8 +1,8 @@
 #ifndef __RT_SHADOWS_FUNCTIONS__
 #define __RT_SHADOWS_FUNCTIONS__
 
-#include "rt_global.hlsl"
-#include "rt_structs.hlsl"
+#include "dxr_global.hlsl"
+#include "dxr_structs.hlsl"
 
 bool TraceShadowRay(float3 origin, float3 direction, float far, uint ray_contr_idx, uint miss_idx, unsigned int depth)
 {
