@@ -41,6 +41,7 @@ namespace wr
 	LINK_SG_UPDATE_CAMERAS(D3D12RenderSystem, Update_CameraNodes)
 	LINK_SG_UPDATE_LIGHTS(D3D12RenderSystem, Update_LightNodes)
 	LINK_SG_UPDATE_TRANSFORMS(D3D12RenderSystem, Update_Transforms)
+	LINK_SG_DELETE_SKYBOX(D3D12RenderSystem, Delete_Skybox)
 
 	D3D12RenderSystem::~D3D12RenderSystem()
 	{
@@ -150,6 +151,7 @@ namespace wr
 
 		//Rendering engine creates a texture pool that will be used by the render tasks.
 		m_texture_pools.push_back(CreateTexturePool());
+		CreateDefaultResources();
 	}
 
 	CPUTextures D3D12RenderSystem::Render(SceneGraph& scene_graph, FrameGraph& frame_graph)
@@ -950,6 +952,20 @@ namespace wr
 
 	}
 
+	void D3D12RenderSystem::Delete_Skybox(SceneGraph& scene_graph, std::shared_ptr<SkyboxNode>& skybox_node)
+	{
+		unsigned int frame_idx = GetFrameIdx();
+
+		skybox_node->m_irradiance.value().m_pool->MarkForUnload(skybox_node->m_irradiance.value(), frame_idx);
+		skybox_node->m_skybox.value().m_pool->MarkForUnload(skybox_node->m_skybox.value(), frame_idx);
+		skybox_node->m_prefiltered_env_map.value().m_pool->MarkForUnload(skybox_node->m_prefiltered_env_map.value(), frame_idx);
+
+		if (skybox_node->m_hdr.m_pool)
+		{
+			skybox_node->m_hdr.m_pool->MarkForUnload(skybox_node->m_hdr, frame_idx);
+		}
+	}
+
 	void D3D12RenderSystem::PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx)
 	{
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
@@ -1152,18 +1168,12 @@ namespace wr
 
 		D3D12ConstantBufferHandle* handle = static_cast<D3D12ConstantBufferHandle*>(material_internal->GetConstantBufferHandle());
 
-		D3D12TexturePool* texture_pool = static_cast<D3D12TexturePool*>(material_internal->GetTexturePool());
-
-		if (texture_pool == nullptr)
-		{
-			texture_pool = static_cast<D3D12TexturePool*>(m_texture_pools[0].get());
-		}
-
 		auto albedo_handle = material_internal->GetTexture(TextureType::ALBEDO);
 		wr::d3d12::TextureResource* albedo_internal;
 		if (albedo_handle.m_pool == nullptr)
 		{
-			albedo_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultAlbedo());
+			auto default_albedo_handle = GetDefaultAlbedo();
+			albedo_internal = static_cast<wr::d3d12::TextureResource*>(default_albedo_handle.m_pool->GetTextureResource(default_albedo_handle));
 		}
 		else
 		{
@@ -1174,7 +1184,8 @@ namespace wr
 		wr::d3d12::TextureResource* normal_internal;
 		if (normal_handle.m_pool == nullptr)
 		{
-			normal_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultNormal());
+			auto default_normal_handle = GetDefaultNormal();
+			normal_internal = static_cast<wr::d3d12::TextureResource*>(default_normal_handle.m_pool->GetTextureResource(default_normal_handle));
 		}
 		else
 		{
@@ -1185,7 +1196,8 @@ namespace wr
 		wr::d3d12::TextureResource* roughness_internal;
 		if (roughness_handle.m_pool == nullptr)
 		{
-			roughness_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultRoughness());
+			auto default_roughness_handle = GetDefaultRoughness();
+			roughness_internal = static_cast<wr::d3d12::TextureResource*>(default_roughness_handle.m_pool->GetTextureResource(default_roughness_handle));
 		}
 		else
 		{
@@ -1196,7 +1208,8 @@ namespace wr
 		wr::d3d12::TextureResource* metallic_internal;
 		if (metallic_handle.m_pool == nullptr)
 		{
-			metallic_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultMetalic());
+			auto default_metallic_handle = GetDefaultMetalic();
+			metallic_internal = static_cast<wr::d3d12::TextureResource*>(default_metallic_handle.m_pool->GetTextureResource(default_metallic_handle));
 		}
 		else
 		{
@@ -1207,7 +1220,8 @@ namespace wr
 		wr::d3d12::TextureResource* emissive_internal;
 		if (emissive_handle.m_pool == nullptr)
 		{
-			emissive_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultEmissive());
+			auto default_emissive_handle = GetDefaultEmissive();
+			emissive_internal = static_cast<wr::d3d12::TextureResource*>(default_emissive_handle.m_pool->GetTextureResource(default_emissive_handle));
 		}
 		else
 		{
@@ -1218,7 +1232,8 @@ namespace wr
 		wr::d3d12::TextureResource* ao_internal;
 		if (ao_handle.m_pool == nullptr)
 		{
-			ao_internal = texture_pool->GetTextureResource(texture_pool->GetDefaultAO());
+			auto default_ao_handle = GetDefaultAO();
+			ao_internal = static_cast<wr::d3d12::TextureResource*>(default_ao_handle.m_pool->GetTextureResource(default_ao_handle));
 		}
 		else
 		{
@@ -1351,6 +1366,18 @@ namespace wr
 
 			m_simple_shapes[static_cast<std::size_t>(SimpleShapes::PLANE)] = m_shapes_pool->LoadCustom<wr::VertexColor>({ mesh });
 		}
+	}
+
+	void D3D12RenderSystem::CreateDefaultResources()
+	{
+		auto default_texture_pool = m_texture_pools.at(0);
+
+		m_default_cubemap = default_texture_pool->CreateCubemap("DefaultResource_Cubemap", 2, 2, 1, wr::Format::R8G8B8A8_UNORM, false);
+
+		m_default_albedo = default_texture_pool->LoadFromFile(settings::default_albedo_path, false, false);
+		m_default_normal = default_texture_pool->LoadFromFile(settings::default_normal_path, false, false);
+		m_default_white = default_texture_pool->LoadFromFile(settings::default_white_texture, false, false);
+		m_default_black = default_texture_pool->LoadFromFile(settings::default_black_texture, false, false);
 	}
 
 } /*  */

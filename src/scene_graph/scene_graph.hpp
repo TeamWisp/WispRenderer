@@ -69,6 +69,7 @@ namespace wr
 		static util::Delegate<void(RenderSystem*, std::vector<std::shared_ptr<CameraNode>>&)> m_update_cameras_func_impl;
 		static util::Delegate<void(RenderSystem* render_system, SceneGraph& scene_graph)> m_update_lights_func_impl;
 		static util::Delegate<void(RenderSystem* render_system, SceneGraph& scene_graph, std::shared_ptr<Node>&)> m_update_transforms_func_impl;
+		static util::Delegate<void(RenderSystem* render_system, SceneGraph& scene_graph, std::shared_ptr<SkyboxNode>&)> m_delete_skybox_func_impl;
 
 		SceneGraph(SceneGraph&&) = delete;
 		SceneGraph(SceneGraph const &) = delete;
@@ -133,6 +134,8 @@ namespace wr
 		std::vector<std::shared_ptr<MeshNode>> m_mesh_nodes;
 		std::vector<std::shared_ptr<LightNode>> m_light_nodes;
 		std::vector< std::shared_ptr<SkyboxNode>> m_skybox_nodes;
+
+		std::shared_ptr<SkyboxNode> m_default_skybox = nullptr;
 
 		std::shared_ptr<SkyboxNode> m_current_skybox = nullptr;
 
@@ -251,6 +254,8 @@ namespace wr
 							LOGW("[WARNING]: Last skybox node deleted, m_current_skybox is now a nullptr")
 						}
 					}
+
+					m_delete_skybox_func_impl(m_render_system, *this, node);
 
 					m_skybox_nodes.erase(m_skybox_nodes.begin() + i);
 					

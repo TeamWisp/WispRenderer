@@ -189,15 +189,8 @@ namespace wr
 				candidate for this.
 				*/
 				{
-					auto texture_pool = rs.GetDefaultTexturePool();
-
-					if (texture_pool == nullptr)
-					{
-						LOGC("ERROR: Texture Pool in Raytracing Task is nullptr. This is not supposed to happen.");
-					}
-
-					auto texture_handle = texture_pool->GetDefaultAlbedo();
-					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTextureResource(texture_handle));
+					auto texture_handle = n_render_system.GetDefaultAlbedo();
+					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
 					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::full_raytracing, params::FullRaytracingE::TEXTURES));
 					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::TEXTURES));
@@ -246,22 +239,23 @@ namespace wr
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::LIGHTS)), light_handle2);
 				}
 
+
+
 				// Get skybox
-				if (SkyboxNode *skybox = scene_graph.GetCurrentSkybox().get())
+				if (SkyboxNode* skybox = scene_graph.GetCurrentSkybox().get())
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::SKYBOX)), skybox_t);
 
-				// Get brdf lookup texture
-				if (scene_graph.GetCurrentSkybox() != nullptr)
-				{
-				  auto brdf_lut_texture = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
-				  d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::BRDF_LUT)), brdf_lut_texture);
-				}
-
 					// Get Environment Map
 					auto irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::IRRADIANCE_MAP)), irradiance_t);
+				}
+
+				{
+					// Get brdf lookup texture
+					auto brdf_lut_texture = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::BRDF_LUT)), brdf_lut_texture);
 				}
 
 				// Update offset data

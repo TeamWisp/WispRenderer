@@ -89,3 +89,8 @@ decltype(wr::SceneGraph::m_update_transforms_func_impl) wr::SceneGraph::m_update
 { \
 	static_cast<renderer_type*>(render_system)->function(scene_graph, node); \
 };
+#define LINK_SG_DELETE_SKYBOX(renderer_type, function) \
+decltype(wr::SceneGraph::m_delete_skybox_func_impl) wr::SceneGraph::m_delete_skybox_func_impl = [](wr::RenderSystem* render_system, wr::SceneGraph& scene_graph, std::shared_ptr<wr::SkyboxNode>& skybox_node) \
+{ \
+	static_cast<renderer_type*>(render_system)->function(scene_graph, skybox_node); \
+};
