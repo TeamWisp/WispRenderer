@@ -72,7 +72,7 @@ namespace engine
 					ImGui::MenuItem("Theme", nullptr, &open0);
 					ImGui::MenuItem("Statistics", nullptr, &stats_window.m_open);
 					ImGui::MenuItem("Camera Settings", nullptr, &open1);
-					ImGui::MenuItem("RTAO Settings", nullptr, &wr::imgui::window::rtao_settings_open);
+					ImGui::MenuItem("Graphics Settings", nullptr, &wr::imgui::window::graphics_settings_open);
 					ImGui::EndMenu();
 				}
 

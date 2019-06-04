@@ -232,6 +232,9 @@ namespace fg_manager
 
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+
+			wr::AddAnselTask(*fg);
+
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");
 
