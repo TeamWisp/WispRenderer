@@ -115,9 +115,6 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 
 	float3 wpos = pos + (normal * EPSILON);
 	
-	uint ray_contr_idx = 1;
-	uint miss_idx = 1;
-	
 	float shadow_factor = GetShadowFactor(wpos, L, light.light_size, t_max, depth, calling_pass, rand_seed);
 
 	lighting *= shadow_factor;
