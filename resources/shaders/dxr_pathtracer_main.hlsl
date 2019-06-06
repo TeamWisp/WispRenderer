@@ -85,9 +85,6 @@ void RaygenEntry()
 	const float3 rand_dir = getCosHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
 	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
-	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
-	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
-	//result += emissive;
 
 	if (any(isnan(result)))
 	{
