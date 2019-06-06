@@ -263,6 +263,7 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
 		emissive,
 		fN,
 		payload.seed,
+		MAX_SHADOW_SAMPLES,
 		payload.depth + 1,
 		CALLINGPASS_FULLRAYTRACING);
 
