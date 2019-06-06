@@ -4,6 +4,7 @@
 #include "render_tasks/d3d12_hbao.hpp"
 #include "render_tasks/d3d12_ansel.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
+#include "render_tasks/d3d12_rt_shadow_task.hpp"
 
 namespace wr::imgui::window
 {
@@ -11,13 +12,13 @@ namespace wr::imgui::window
 	static bool hbao_settings_open = true;
 	static bool ansel_settings_open = true;
 	static bool asbuild_settings_open = true;
+	static bool shadow_settings_open = true;
 
 	static wr::RTAOSettings rtao_user_settings;
 	static wr::HBAOSettings hbao_user_settings;
 	static wr::AnselSettings ansel_user_settings;
 	static wr::ASBuildSettings as_build_user_settings;
-
-	
+	static wr::RTShadowSettings shadow_user_settings;	
 
 	void GraphicsSettings(wr::FrameGraph* frame_graph)
 	{
@@ -81,12 +82,25 @@ namespace wr::imgui::window
 		{
 			ImGui::Begin("Acceleration Structure Settings", &asbuild_settings_open);
 
-			ImGui::Checkbox("Enable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
+			ImGui::Checkbox("Disable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
 
 			ImGui::End();
 			frame_graph->UpdateSettings<wr::ASBuildData>(as_build_user_settings);
 		}
 
+		if (frame_graph->HasTask<wr::RTShadowData>() && shadow_settings_open)
+		{
+			ImGui::Begin("RTAO Settings", &rtao_settings_open);
+
+			ImGui::DragFloat("Epsilon", &shadow_user_settings.m_runtime.m_epsilon, 0.01f, 0.0f, 15.f);
+			ImGui::DragInt("Sample Count", &shadow_user_settings.m_runtime.m_sample_count, 1, 1, 64);
+
+			ImGui::End();
+
+			frame_graph->UpdateSettings<wr::RTShadowData>(shadow_user_settings);
+
+		}
+	
 	}
 
 }// namepace imgui::window
@@ -112,6 +126,10 @@ namespace wr::imgui::menu
 			if (frame_graph->HasTask<wr::ASBuildData>())
 			{
 				ImGui::MenuItem("AS Build Settings", nullptr, &window::asbuild_settings_open);
+			}
+			if (frame_graph->HasTask<wr::RTShadowData>())
+			{
+				ImGui::MenuItem("Shadow Settings", nullptr, &window::shadow_settings_open);
 			}
 			ImGui::EndMenu();
 		}

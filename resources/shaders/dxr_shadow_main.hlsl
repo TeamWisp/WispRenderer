@@ -82,7 +82,7 @@ void ShadowRaygenEntry()
 		return;
 	}
 
-	wpos += normal * EPSILON;
+	wpos += normal * epsilon;
 	// Get shadow factor
 	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, shadow_sample_count, 0, CALLINGPASS_SHADOWS, rand_seed);
 
