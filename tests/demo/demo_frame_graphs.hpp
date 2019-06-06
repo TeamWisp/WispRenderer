@@ -38,6 +38,7 @@
 #include "render_tasks/d3d12_bloom_eighth_res_v.hpp"
 #include "render_tasks/d3d12_bloom_sixteenth_res.hpp"
 #include "render_tasks/d3d12_bloom_sixteenth_res_v.hpp"
+#include "render_tasks/d3d12_reflection_denoiser.hpp"
 
 
 namespace fg_manager
@@ -205,6 +206,8 @@ namespace fg_manager
 
 			wr::AddShadowDenoiserTask(*fg);
 			wr::AddSpatialReconstructionTask(*fg);
+
+			wr::AddReflectionDenoiserTask(*fg);
 
 			//Raytraced Ambient Occlusion task
 			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);

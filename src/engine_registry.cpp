@@ -322,8 +322,8 @@ namespace wr
 		.m_compute_shader_handle = std::nullopt,
 		.m_root_signature_handle = root_signatures::basic,
 		.m_dsv_format = Format::D32_FLOAT,
-		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT },
-		.m_num_rtv_formats = 5,
+		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT, wr::Format::R32G32B32A32_FLOAT },
+		.m_num_rtv_formats = 6,
 		.m_type = PipelineType::GRAPHICS_PIPELINE,
 		.m_cull_mode = CullMode::CULL_NONE,
 		.m_depth_enabled = true,
@@ -993,30 +993,35 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 	});
 
-  REGISTER(shaders::reflection_spatial_denoiser, ShaderRegistry)({
-    .path = "resources/shaders/reflection_denoiser.hlsl",
-    .entry = "spatial_denoiser_cs",
-    .type = ShaderType::DIRECT_COMPUTE_SHADER,
-    .defines = {}
-    });
+	REGISTER(shaders::reflection_spatial_denoiser, ShaderRegistry)({
+	  .path = "resources/shaders/reflection_denoiser.hlsl",
+	  .entry = "spatial_denoiser_cs",
+	  .type = ShaderType::DIRECT_COMPUTE_SHADER,
+	  .defines = {}
+	});
 
   DESC_RANGE_ARRAY(reflection_denoiser_ranges,
-    DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::INPUT),
-    DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::RAY_DIR),
-    DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::ALBEDO_ROUGHNESS),
-    DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::NORMAL_METALLIC),
-    DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::LINEAR_DEPTH),
-    DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUTPUT)
-    );
+	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::INPUT),
+	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::RAY_RAW),
+	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::RAY_DIR),
+	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::ALBEDO_ROUGHNESS),
+	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::NORMAL_METALLIC),
+	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::MOTION),
+	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::LINEAR_DEPTH),
+	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::WORLD_POS),
+	  DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUTPUT)
+  );
   
   REGISTER(root_signatures::reflection_denoiser, RootSignatureRegistry)({
-    .m_parameters = {
-      ROOT_PARAM_DESC_TABLE(reflection_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL)
-    },
-    .m_samplers = {
-      { TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
-    }
-    });
+	.m_parameters = {
+		ROOT_PARAM_DESC_TABLE(reflection_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
+		ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::CAMERA_PROPERTIES))
+	},
+	.m_samplers = {
+		{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER },
+		{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER }
+	}
+	});
 
   REGISTER(pipelines::reflection_spatial_denoiser, PipelineRegistry) <Vertex2D> ({
     .m_vertex_shader_handle = std::nullopt,

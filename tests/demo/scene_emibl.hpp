@@ -112,11 +112,14 @@ namespace emibl_scene
 
 				wr::Material* mahogfloor_material_internal = material_pool->GetMaterial(material_handles[0]);
 
-				mahogfloor_material_internal->SetTexture(wr::TextureType::ALBEDO, mahogfloor_albedo);
-				mahogfloor_material_internal->SetTexture(wr::TextureType::NORMAL, mahogfloor_normal);
-				mahogfloor_material_internal->SetTexture(wr::TextureType::ROUGHNESS, mahogfloor_roughness);
-				mahogfloor_material_internal->SetTexture(wr::TextureType::METALLIC, mahogfloor_metallic);
-				mahogfloor_material_internal->SetTexture(wr::TextureType::AO, mahogfloor_ao);
+				//mahogfloor_material_internal->SetTexture(wr::TextureType::ALBEDO, mahogfloor_albedo);
+				//mahogfloor_material_internal->SetTexture(wr::TextureType::NORMAL, mahogfloor_normal);
+				//mahogfloor_material_internal->SetTexture(wr::TextureType::ROUGHNESS, mahogfloor_roughness);
+				//mahogfloor_material_internal->SetTexture(wr::TextureType::METALLIC, mahogfloor_metallic);
+				//mahogfloor_material_internal->SetTexture(wr::TextureType::AO, mahogfloor_ao);
+
+				mahogfloor_material_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0.f);
+				mahogfloor_material_internal->SetConstant<wr::MaterialConstant::METALLIC>(1.f);
 
 				// Create Material
 				material_handles[1] = material_pool->Create(texture_pool.get());
