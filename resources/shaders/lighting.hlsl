@@ -144,25 +144,23 @@ float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, f
 	float4 res = float4(0.0, 0.0, 0.0, 0.0);
 	uint sampled_lights = 0;
 
-	//float3 offsetted_pos = wpos + normal * EPSILON;
-
 	for (uint i = 0; i < light_count; i++)
 	{
 		// Get light and light type
 		Light light = lights[i];
 		uint tid = light.tid & 3;
 
-		float dir_dot = dot(light.dir, normal);
+		//Light direction (constant with directional, position dependent with other)
+		float3 L = (lerp(light.pos - wpos, light.dir, tid == light_type_directional));
+		float light_dist = length(L);
+		L /= light_dist;
+
+		float dir_dot = dot(L, normal);
 
 		if (dir_dot < 0.0f)
 		{
 			continue;
 		}
-
-		//Light direction (constant with directional, position dependent with other)
-		float3 L = (lerp(light.pos - wpos, light.dir, tid == light_type_directional));
-		float light_dist = length(L);
-		L /= light_dist;
 
 		float attenuation = calc_attenuation(light, L, light_dist);
 
