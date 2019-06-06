@@ -1,4 +1,8 @@
-static const float PI = 3.14159265359;
+#ifndef __PBR_UTILS_HLSL__
+#define __PBR_UTILS_HLSL__
+
+//static const float PI = 3.14159265359;
+#define M_PI 3.14159265358979
  
 // Based omn http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
 float random(float2 co)
@@ -28,8 +32,8 @@ float3 importanceSample_GGX(float2 Xi, float roughness, float3 normal)
 {
 	// Maps a 2D point to a hemisphere with spread based on roughness
 	float alpha = roughness * roughness;
-	//float phi = 2.f * PI * Xi.x + random(normal.xz) * 0.1;
-	float phi = 2.f * PI * Xi.x;
+	//float phi = 2.f * M_PI * Xi.x + random(normal.xz) * 0.1;
+	float phi = 2.f * M_PI * Xi.x;
 	float cosTheta = sqrt((1.f - Xi.y) / (1.f + (alpha*alpha - 1.f) * Xi.y));
 	float sinTheta = sqrt(1.f - cosTheta * cosTheta);
 	
@@ -53,7 +57,7 @@ float D_GGX(float dotNH, float roughness)
 	float alpha = roughness * roughness;
 	float alpha2 = alpha * alpha;
 	float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
-	return (alpha2)/(PI * denom * denom); 
+	return (alpha2)/(M_PI * denom * denom);
 }
 
 // Get a GGX half vector / microfacet normal, sampled according to the distribution computed by
@@ -73,7 +77,7 @@ float3 getGGXMicrofacet(inout uint randSeed, float roughness, float3 hitNorm)
 	float a2 = roughness * roughness;
 	float cosThetaH = sqrt(max(0.0f, (1.0 - randVal.x) / ((a2 - 1.0) * randVal.x + 1)));
 	float sinThetaH = sqrt(max(0.0f, 1.0f - cosThetaH * cosThetaH));
-	float phiH = randVal.y * PI * 2.0f;
+	float phiH = randVal.y * M_PI * 2.0f;
 
 	// Get our GGX NDF sample (i.e., the half vector)
 	return T * (sinThetaH * cos(phiH)) + B * (sinThetaH * sin(phiH)) + hitNorm * cosThetaH;
@@ -150,7 +154,7 @@ float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness, float
  
 		float3 kD = (float3(1, 1, 1) - F) * (1.0 - metallic);
  
-		color += (kD * albedo / PI + spec) * radiance * dotNL;
+		color += (kD * albedo / M_PI + spec) * radiance * dotNL;
 	}
  
 	return color;

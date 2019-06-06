@@ -8,7 +8,6 @@
 #include "render_tasks/d3d12_deferred_composition.hpp"
 #include "render_tasks/d3d12_deferred_render_target_copy.hpp"
 #include "render_tasks/d3d12_raytracing_task.hpp"
-#include "render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "render_tasks/d3d12_rt_reflection_task.hpp"
 #include "render_tasks/d3d12_rt_shadow_task.hpp"
 #include "render_tasks/d3d12_shadow_denoiser_task.hpp"
@@ -160,8 +159,8 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTShadowTask(*fg);
 			wr::AddRTReflectionTask(*fg);
+			wr::AddRTShadowTask(*fg);
 
 			wr::AddShadowDenoiserTask(*fg);
 			wr::AddSpatialReconstructionTask(*fg);
