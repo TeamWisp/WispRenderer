@@ -1,3 +1,6 @@
+#ifndef __FULLSCREEN_QUAD_HLSL__
+#define __FULLSCREEN_QUAD_HLSL__
+
 struct VS_OUTPUT
 {
 	float4 pos : SV_POSITION;
@@ -11,3 +14,5 @@ VS_OUTPUT main_vs(float2 pos : POSITION)
 	output.uv = 0.5 * (pos.xy + float2(1.0, 1.0));
     return output;
 }
+
+#endif //__FULLSCREEN_QUAD_HLSL__

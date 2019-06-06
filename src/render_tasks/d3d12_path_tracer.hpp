@@ -117,9 +117,13 @@ namespace wr
 
 		inline void SetupPathTracerTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
 		{
-			if (fg.HasTask<RTHybridData>())
+			if (fg.HasTask<RTShadowData>())
 			{
-				fg.WaitForPredecessorTask<RTHybridData>();
+				fg.WaitForPredecessorTask<RTShadowData>();
+			}
+			if (fg.HasTask<RTReflectionData>())
+			{
+				fg.WaitForPredecessorTask<RTReflectionData>();
 			}
 
 			// Initialize variables
@@ -182,11 +186,15 @@ namespace wr
 
 		}
 
-		inline void ExecutePathTracerTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
+		inline void ExecutePathTracerTask(RenderSystem& render_system, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle& handle)
 		{
-			if (fg.HasTask<RTHybridData>())
+			if (fg.HasTask<RTShadowData>())
 			{
-				fg.WaitForPredecessorTask<RTHybridData>();
+				fg.WaitForPredecessorTask<RTShadowData>();
+			}
+			if (fg.HasTask<RTReflectionData>())
+			{
+				fg.WaitForPredecessorTask<RTReflectionData>();
 			}
 
 			// Initialize variables

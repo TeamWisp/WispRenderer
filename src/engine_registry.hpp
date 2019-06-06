@@ -259,7 +259,7 @@ namespace wr
 		};
 
 
-		enum class BasicE
+		enum class DeferredMainE
 		{
 			CAMERA_PROPERTIES,
 			OBJECT_PROPERTIES,
@@ -272,16 +272,16 @@ namespace wr
 			MATERIAL_PROPERTIES,
 		};
 
-		constexpr std::array<rs_layout::Entry, 9> basic = {
-			rs_layout::Entry{(int)BasicE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)BasicE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)BasicE::ALBEDO, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::METALLIC, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::AMBIENT_OCCLUSION, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::EMISSIVE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		constexpr std::array<rs_layout::Entry, 9> deferred_main = {
+			rs_layout::Entry{(int)DeferredMainE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)DeferredMainE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)DeferredMainE::ALBEDO, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::METALLIC, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::AMBIENT_OCCLUSION, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::EMISSIVE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
 		enum class SVGFDenoiserE
@@ -756,7 +756,6 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle svgf_denoiser_wavelet_filter_cs;
 		WISPRENDERER_EXPORT static RegistryHandle deferred_composition_cs;
 		WISPRENDERER_EXPORT static RegistryHandle rt_lib;
-		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_ao_lib;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_lib;
 		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_lib;
@@ -808,7 +807,6 @@ namespace wr
 	struct state_objects
 	{
 		WISPRENDERER_EXPORT static RegistryHandle state_object;
-		WISPRENDERER_EXPORT static RegistryHandle rt_hybrid_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle rt_ao_state_opbject;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracing_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object;

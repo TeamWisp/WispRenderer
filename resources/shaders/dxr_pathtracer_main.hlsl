@@ -1,0 +1,102 @@
+#ifndef __DXR_PATHTRACER_MAIN_HLSL__
+#define __DXR_PATHTRACER_MAIN_HLSL__
+
+#define LIGHTS_REGISTER register(t2)
+#include "rand_util.hlsl"
+#include "pbr_util.hlsl"
+#include "material_util.hlsl"
+#include "lighting.hlsl"
+
+// Definitions for: 
+// - Vertex, Material, Offset
+// - Ray, RayCone, ReflectionHitInfo, etc
+#include "dxr_structs.hlsl"
+
+// Definitions for: 
+// - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
+#include "dxr_functions.hlsl"
+
+RWTexture2D<float4> output : register(u0); // xyz: reflection, a: shadow factor
+ByteAddressBuffer g_indices : register(t1);
+StructuredBuffer<Vertex> g_vertices : register(t3);
+StructuredBuffer<Material> g_materials : register(t4);
+StructuredBuffer<Offset> g_offsets : register(t5);
+
+Texture2D g_textures[1000] : register(t10);
+Texture2D gbuffer_albedo : register(t1010);
+Texture2D gbuffer_normal : register(t1011);
+Texture2D gbuffer_emissive : register(t1012);
+Texture2D gbuffer_depth : register(t1013);
+TextureCube skybox : register(t6);
+TextureCube irradiance_map : register(t9);
+SamplerState s0 : register(s0);
+
+typedef BuiltInTriangleIntersectionAttributes Attributes;
+
+cbuffer CameraProperties : register(b0)
+{
+	float4x4 inv_view;
+	float4x4 inv_projection;
+	float4x4 inv_vp;
+
+	float2 padding;
+	float frame_idx;
+	float intensity;
+};
+
+#include "dxr_pathtracer_functions.hlsl"
+#include "dxr_pathtracer_entries.hlsl"
+
+[shader("raygeneration")]
+void RaygenEntry()
+{
+	uint rand_seed = initRand((DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x), frame_idx);
+
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screen_co = DispatchRaysIndex().xy;
+
+	// Get g-buffer information
+	float4 albedo_roughness = gbuffer_albedo[screen_co];
+	float4 normal_metallic = gbuffer_normal[screen_co];
+	float4 emissive_ao = gbuffer_emissive[screen_co];
+
+	// Unpack G-Buffer
+	float depth = gbuffer_depth[screen_co].x;
+	float3 albedo = albedo_roughness.rgb;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
+	float3 normal = normalize(normal_metallic.xyz);
+	float metallic = normal_metallic.w;
+	float roughness = albedo_roughness.w;
+	float3 emissive = emissive_ao.xyz;
+	float ao = emissive_ao.w;
+
+	// Do lighting
+	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 V = normalize(cpos - wpos);
+
+	normal = lerp(normal, -normal, dot(normal, V) < 0);
+
+	float3 result = float3(0, 0, 0);
+
+	nextRand(rand_seed);
+	const float3 rand_dir = getCosHemisphereSample(rand_seed, normal);
+	const float cos_theta = cos(dot(rand_dir, normal));
+	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
+	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
+	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
+	//result += emissive;
+
+	if (any(isnan(result)))
+	{
+		result = 0;
+	}
+
+	result = clamp(result, 0, 100);
+	
+	output[DispatchRaysIndex().xy] = float4(result, 1);
+}
+
+#endif //__DXR_PATHTRACER_MAIN_HLSL__

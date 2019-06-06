@@ -11,7 +11,6 @@
 #include "../render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_cubemap_convolution.hpp"
-#include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 #include "../render_tasks/d3d12_rt_shadow_task.hpp"
 #include "../render_tasks/d3d12_rt_reflection_task.hpp"
 #include "../render_tasks/d3d12_shadow_denoiser_task.hpp"
@@ -108,7 +107,7 @@ namespace wr
 			data.is_path_tracer = fg.HasTask<wr::PathTracerData>();
 			data.is_rtao = fg.HasTask<wr::RTAOData>();
 			data.is_hbao = fg.HasTask<wr::HBAOData>() && !data.is_rtao; //Don't use HBAO when RTAO is active
-			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTHybridData>() || fg.HasTask<wr::RTReflectionData>() || fg.HasTask<wr::ShadowDenoiserData>();
+			data.is_hybrid = fg.HasTask<wr::RTShadowData>() || fg.HasTask<wr::RTReflectionData>() || fg.HasTask<wr::ShadowDenoiserData>();
 			data.has_rt_shadows = fg.HasTask<wr::RTShadowData>();
 			data.has_rt_reflection = fg.HasTask<wr::RTReflectionData>();
 
@@ -208,11 +207,6 @@ namespace wr
       
 			if (data.is_hybrid)
 			{
-				if (data.has_rt_hybrid)
-				{
-					// Wait on hybrid task
-					const auto& hybrid_data = fg.GetPredecessorData<RTHybridData>();
-				}
 				if (data.has_rt_reflection)
 				{
 					// Wait on rt reflection task

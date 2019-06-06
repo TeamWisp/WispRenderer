@@ -71,7 +71,7 @@ namespace wr
 		if (handle.m_pool != m_texture_pool || !m_texture_pool)
 		{
 			ClearTexture(type);
-			LOGW("Textures in a material need to belong to the same texture pool");
+			//LOGW("Textures in a material need to belong to the same texture pool");
 		}
 		else
 		{
