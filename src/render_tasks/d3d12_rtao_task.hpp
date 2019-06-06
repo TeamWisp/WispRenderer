@@ -12,7 +12,6 @@
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
-#include "../render_tasks/d3d12_rt_hybrid_task.hpp"
 
 namespace wr
 {
@@ -169,12 +168,6 @@ namespace wr
 			auto settings = fg.GetSettings<RTAOData, RTAOSettings>();
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 			float scalar = 1.0f;
-
-			if (fg.HasTask<wr::RTHybridData>())
-			{
-				fg.WaitForPredecessorTask<wr::RTHybridData>(); //Wait for RTHybrid to avoid multi threading issues.
-				//TODO: Shouldn't we have a more robust system for this, Problem exists in rt_hybrid aswell....
-			}
 
 			if (n_render_system.m_render_window.has_value())
 			{

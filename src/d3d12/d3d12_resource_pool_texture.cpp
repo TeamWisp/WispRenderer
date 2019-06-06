@@ -62,15 +62,6 @@ namespace wr
 
 		m_mipmapping_allocator = new DescriptorAllocator(render_system, DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
-		// Load the default textures
-		m_default_albedo = LoadFromFile(settings::default_albedo_path, false, false);
-		m_default_normal = LoadFromFile(settings::default_normal_path, false, false);
-		m_default_roughness = LoadFromFile(settings::default_white_texture, false, false);
-		m_default_metallic = LoadFromFile(settings::default_black_texture, false, false);
-		m_default_ao = m_default_roughness;
-		m_default_emissive = m_default_metallic;
-		
-
 		// Default UAVs
 		m_default_uav = m_mipmapping_allocator->Allocate(4);
 

@@ -72,7 +72,7 @@ namespace engine
 					ImGui::MenuItem("Theme", nullptr, &open0);
 					ImGui::MenuItem("Statistics", nullptr, &stats_window.m_open);
 					ImGui::MenuItem("Camera Settings", nullptr, &open1);
-					ImGui::MenuItem("Graphics Settings", nullptr, &wr::imgui::window::graphics_settings_open);
+					wr::imgui::menu::GraphicsSettingsMenu(fg_manager::Get());
 					ImGui::EndMenu();
 				}
 
@@ -101,13 +101,13 @@ namespace engine
 				viewport_pos = ImGui::GetCursorScreenPos();
 				viewport_size = ImGui::GetContentRegionAvail();
 
-				if (keep_aspect_ratio)
+				if (!keep_aspect_ratio && viewport_size.x > 10 && viewport_size.y > 10)
 				{
-					sg->GetActiveCamera()->SetAspectRatio(custom_aspect_ratio);
+					sg->GetActiveCamera()->SetAspectRatio(viewport_size.x / viewport_size.y);
 				}
 				else
 				{
-					sg->GetActiveCamera()->SetAspectRatio(viewport_size.x / viewport_size.y);
+					sg->GetActiveCamera()->SetAspectRatio(custom_aspect_ratio);
 				}
 
 				ImGui::Image(output, viewport_size);

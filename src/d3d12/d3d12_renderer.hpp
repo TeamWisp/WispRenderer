@@ -75,10 +75,9 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
 			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
 
+			uint32_t m_padding[2] = { 0u };
 			float m_frame_idx = 0.0f;
 			float m_intensity = 0.0f;
-			float m_epsilon = 0.01f;
-			std::uint32_t m_sample_count = 1u;
 		};
 
 		struct RTAO_CBData
@@ -202,6 +201,7 @@ namespace wr
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 		void Update_LightNodes(SceneGraph& scene_graph);
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
+		void Delete_Skybox(SceneGraph& scene_graph, std::shared_ptr<SkyboxNode>& skybox_node);
 
 		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
 
@@ -259,6 +259,7 @@ namespace wr
 	private:
 		void ResetBatches(SceneGraph& sg);
 		void LoadPrimitiveShapes();
+		void CreateDefaultResources();
 
 		d3d12::CommandSignature* m_cmd_signature;
 		d3d12::CommandSignature* m_cmd_signature_indexed;
