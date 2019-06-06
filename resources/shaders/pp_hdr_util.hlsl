@@ -1,5 +1,5 @@
-#ifndef __HDR_UTILS_HLSL__
-#define __HDR_UTILS_HLSL__
+#ifndef __PP_HDR_UTIL_HLSL__
+#define __PP_HDR_UTIL_HLSL__
 
 float3 linearToneMapping(float3 color, float exposure, float gamma)
 {
@@ -145,4 +145,4 @@ float3 AllTonemappingAlgorithms(float3 color, float rotation, float exposure, fl
 	return result;
 }
 
-#endif //__HDR_UTILS_HLSL__
+#endif //__PP_HDR_UTIL_HLSL__

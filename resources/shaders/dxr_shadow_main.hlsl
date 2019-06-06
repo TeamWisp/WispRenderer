@@ -1,5 +1,5 @@
-#ifndef __RT_SHADOW_MAIN__
-#define __RT_SHADOW_MAIN__
+#ifndef __DXR_SHADOW_MAIN_HLSL__
+#define __DXR_SHADOW_MAIN_HLSL__
 
 #define LIGHTS_REGISTER register(t2)
 #include "rand_util.hlsl"
@@ -46,8 +46,6 @@ cbuffer CameraProperties : register(b0)
 	float intensity;
 };
 
-#define M_PI 3.14159265358979
-
 #include "dxr_shadow_functions.hlsl"
 #include "dxr_shadow_entries.hlsl"
 
@@ -85,10 +83,10 @@ void ShadowRaygenEntry()
 
 	wpos += normal * EPSILON;
 	// Get shadow factor
-	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, 0, 0, 0, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, 0, CALLINGPASS_SHADOWS, rand_seed);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[screen_co] = shadow_result;
 }
 
-#endif //__RT_SHADOW_MAIN__
+#endif //__DXR_SHADOW_MAIN_HLSL__

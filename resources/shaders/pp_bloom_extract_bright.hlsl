@@ -1,3 +1,6 @@
+#ifndef __PP_BLOOM_EXTRACT_BRIGHT_HLSL__
+#define __PP_BLOOM_EXTRACT_BRIGHT_HLSL__
+
 #include "pp_dof_util.hlsl"
 
 Texture2D source : register(t0);
@@ -32,3 +35,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	output_bright[int2(dispatch_thread_id.xy)] = out_bright;
 }
+
+#endif //__PP_BLOOM_EXTRACT_BRIGHT_HLSL__

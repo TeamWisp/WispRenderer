@@ -60,7 +60,7 @@ void main_cs(uint3 dt_id : SV_DispatchThreadID)
 
 			float pdf = D * NdotH / (4.0f * HdotV) + 0.0001f;
 
-			float sa_texel = 4.0f * PI / (6.0f * skybox_res.x * skybox_res.y);
+			float sa_texel = 4.0f * M_PI / (6.0f * skybox_res.x * skybox_res.y);
 			float sa_sample = 1.0f / (float(SAMPLE_COUNT) * pdf + 0.0001f);
 
 			float mip_level = roughness == 0.0f ? 0.0f : 0.5f * log2(sa_sample / sa_texel);

@@ -1,3 +1,6 @@
+#ifndef __DXR_PATHTRACER_MAIN_HLSL__
+#define __DXR_PATHTRACER_MAIN_HLSL__
+
 #define LIGHTS_REGISTER register(t2)
 #include "rand_util.hlsl"
 #include "pbr_util.hlsl"
@@ -95,3 +98,5 @@ void RaygenEntry()
 	
 	output[DispatchRaysIndex().xy] = float4(result, 1);
 }
+
+#endif //__DXR_PATHTRACER_MAIN_HLSL__

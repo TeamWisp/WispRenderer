@@ -1,3 +1,6 @@
+#ifndef __PP_BLOOM_COMPOSITION_HLSL__
+#define __PP_BLOOM_COMPOSITION_HLSL__
+
 #include "pp_hdr_util.hlsl"
 
 Texture2D source_main : register(t0);
@@ -41,3 +44,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	output[int2(dispatch_thread_id.xy)] = float4(finalcolor, 1.0f);
 }
+
+#endif //__PP_BLOOM_COMPOSITION_HLSL__

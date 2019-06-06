@@ -1,3 +1,6 @@
+#ifndef __PP_DOF_DILATE_HLSL__
+#define __PP_DOF_DILATE_HLSL__
+
 #include "pp_dof_properties.hlsl"
 #include "pp_dof_util.hlsl"
 
@@ -30,3 +33,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	output_near[int2(dispatch_thread_id.xy)] = output;
 }
+
+#endif //__PP_DOF_DILATE_HLSL__

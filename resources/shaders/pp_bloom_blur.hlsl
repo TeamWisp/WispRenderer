@@ -1,3 +1,6 @@
+#ifndef __PP_BLOOM_BLUR_HLSL__
+#define __PP_BLOOM_BLUR_HLSL__
+
 #include "pp_dof_util.hlsl"
 #include "pp_bloom_util.hlsl"
 
@@ -44,3 +47,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	output[int2(dispatch_thread_id.xy)] = color;
 }
+
+#endif //__PP_BLOOM_BLUR_HLSL__

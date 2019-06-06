@@ -1,3 +1,6 @@
+#ifndef __PP_FXAA_HLSL__
+#define __PP_FXAA_HLSL__
+
 #ifndef FXAA_REDUCE_MIN
     #define FXAA_REDUCE_MIN   (1.0/ 128.0)
 #endif
@@ -81,3 +84,5 @@ float4 SampleFXAA(Texture2D tex, SamplerState s, float2 frag_coord, float2 resol
 	texcoords(frag_coord, resolution, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
 	return fxaa(tex, s, frag_coord, resolution, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
 }
+
+#endif //__PP_FXAA_HLSL__

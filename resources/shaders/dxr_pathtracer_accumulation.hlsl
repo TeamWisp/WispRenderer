@@ -1,4 +1,7 @@
-#include "pp_utils.hlsl"
+#ifndef __DXR_PATHTRACER_ACCUMULATION_HLSL__
+#define __DXR_PATHTRACER_ACCUMULATION_HLSL__
+
+#include "pp_util.hlsl"
 #include "pp_hdr_util.hlsl"
 
 Texture2D<float4> input : register(t0);
@@ -23,3 +26,5 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	output[DTid.xy] = color; // update the output with the accumulated result.
 }
+
+#endif //__DXR_PATHTRACER_ACCUMULATION_HLSL__

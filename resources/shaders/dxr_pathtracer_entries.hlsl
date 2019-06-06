@@ -1,3 +1,8 @@
+#ifndef __DXR_PATHTRACER_ENTRIES_HLSL__
+#define __DXR_PATHTRACER_ENTRIES_HLSL__
+
+#include "dxr_shadow_entries.hlsl"
+
 //Reflections
 [shader("closesthit")]
 void ReflectionHit(inout PathTracingHitInfo payload, in Attributes attr)
@@ -85,4 +90,4 @@ void ReflectionMiss(inout PathTracingHitInfo payload)
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
 }
 
-#include "dxr_shadow_entries.hlsl"
+#endif //__DXR_PATHTRACER_ENTRIES_HLSL__

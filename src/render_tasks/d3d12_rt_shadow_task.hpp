@@ -24,65 +24,6 @@ namespace wr
 
 	namespace internal
 	{
-		inline void CreateShadowsShaderTables(d3d12::Device* device, RTHybrid_BaseData& data, int frame_idx)
-		{
-			// Delete existing shader table
-			if (data.out_miss_shader_table[frame_idx])
-			{
-				d3d12::Destroy(data.out_miss_shader_table[frame_idx]);
-			}
-			if (data.out_hitgroup_shader_table[frame_idx])
-			{
-				d3d12::Destroy(data.out_hitgroup_shader_table[frame_idx]);
-			}
-			if (data.out_raygen_shader_table[frame_idx])
-			{
-				d3d12::Destroy(data.out_raygen_shader_table[frame_idx]);
-			}
-
-			// Set up Raygen Shader Table
-			{
-				// Create Record(s)
-				std::uint32_t shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowRaygenEntry");
-
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
-
-				// Create Table
-				data.out_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_raygen_shader_table[frame_idx], shader_record);
-			}
-
-			// Set up Miss Shader Table
-			{
-				// Create Record(s)
-				std::uint32_t shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
-
-				auto shadow_miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowMissEntry");
-				auto shadow_miss_record = d3d12::CreateShaderRecord(shadow_miss_identifier, shader_identifier_size);
-
-				// Create Table(s)
-				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], shadow_miss_record);
-			}
-
-			// Set up Hit Group Shader Table
-			{
-				// Create Record(s)
-				std::uint32_t shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
-
-				auto shadow_hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, "ShadowHitGroup");
-				auto shadow_hit_record = d3d12::CreateShaderRecord(shadow_hit_identifier, shader_identifier_size);
-
-				// Create Table(s)
-				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], shadow_hit_record);
-			}
-		}
-
 		inline void SetupRTShadowTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
 		{
 			// Initialize variables
@@ -127,7 +68,9 @@ namespace wr
 			// Create Shader Tables
 			for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
-				CreateShadowsShaderTables(device, data.base_data, i);
+				CreateShaderTables(device, data.base_data, "ShadowRaygenEntry",
+									{ "ShadowMissEntry" },
+									{ "ShadowHitGroup" }, i);
 			}
 
 			// Setup frame index
@@ -303,7 +246,9 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
 				//#ifdef _DEBUG
-				CreateShadowsShaderTables(device, data.base_data, frame_idx);
+				CreateShaderTables(device, data.base_data, "ShadowRaygenEntry",
+								{ "ShadowMissEntry" },
+								{ "ShadowHitGroup" }, frame_idx);
 				//#endif
 
 				scalar = fg.GetRenderTargetResolutionScale(handle);

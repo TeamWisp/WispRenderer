@@ -1,5 +1,5 @@
-#ifndef __RT_FUNCTIONS_HLSL__
-#define __RT_FUNCTIONS_HLSL__
+#ifndef __DXR_FUNCTIONS_HLSL__
+#define __DXR_FUNCTIONS_HLSL__
 
 float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAttributes attr)
 {
@@ -33,4 +33,4 @@ float3 unpack_position(float2 uv, float depth, float4x4 inv_vp)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
-#endif //__RT_FUNCTIONS_HLSL__
+#endif //__DXR_FUNCTIONS_HLSL__

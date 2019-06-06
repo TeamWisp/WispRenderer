@@ -1,5 +1,5 @@
-#ifndef __RT_REFLECTION_MAIN__
-#define __RT_REFLECTION_MAIN__
+#ifndef __DXR_REFLECTION_MAIN_HLSL__
+#define __DXR_REFLECTION_MAIN_HLSL__
 
 #define LIGHTS_REGISTER register(t2)
 #include "rand_util.hlsl"
@@ -44,8 +44,6 @@ cbuffer CameraProperties : register(b0)
 	float frame_idx;
 	float intensity;
 };
-
-#define M_PI 3.14159265358979
 
 #include "dxr_reflection_functions.hlsl"
 #include "dxr_reflection_entries.hlsl"
@@ -103,4 +101,4 @@ void ReflectionRaygenEntry()
 	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, 1.0);
 }
 
-#endif //__RT_REFLECTION_MAIN__
+#endif //__DXR_REFLECTION_MAIN_HLSL__

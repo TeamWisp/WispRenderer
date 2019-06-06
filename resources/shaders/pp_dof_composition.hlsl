@@ -1,3 +1,6 @@
+#ifndef __PP_DOF_COMPOSITION_HLSL__
+#define __PP_DOF_COMPOSITION_HLSL__
+
 #include "pp_dof_properties.hlsl"
 
 Texture2D source : register(t0);
@@ -60,3 +63,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	output[int2(dispatch_thread_id.xy)] = float4(result, 1.0f);
 }
+
+#endif //__PP_DOF_COMPOSITION_HLSL__

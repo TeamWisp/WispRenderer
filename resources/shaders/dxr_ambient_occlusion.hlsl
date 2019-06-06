@@ -1,3 +1,6 @@
+#ifndef __DXR_AMBIENT_OCCLUSION_HLSL__
+#define __DXR_AMBIENT_OCCLUSION_HLSL__
+
 #include "rand_util.hlsl"
 #include "dxr_global.hlsl"
 
@@ -103,3 +106,5 @@ void MissEntry(inout AOHitInfo hit : SV_RayPayload)
 {
     hit.is_hit = 0.0f;
 }
+
+#endif //__DXR_AMBIENT_OCCLUSION_HLSL__

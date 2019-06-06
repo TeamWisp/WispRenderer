@@ -1,3 +1,6 @@
+#ifndef __DENOISING_SVGF_HLSL__
+#define __DENOISING_SVGF_HLSL__
+
 Texture2D input_texture : register(t0);
 Texture2D motion_texture : register(t1);
 Texture2D normal_texture : register(t2);
@@ -510,3 +513,5 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	out_color_texture[screen_coord] = float4(sum_direct / float4(sum_weights.xxx, sum_weights * sum_weights));
 }
+
+#endif //__DENOISING_SVGF_HLSL__

@@ -1,5 +1,5 @@
-#ifndef __RT_SHADOW_ENTRIES__
-#define __RT_SHADOW_ENTRIES__
+#ifndef __DXR_SHADOW_ENTRIES_HLSL__
+#define __DXR_SHADOW_ENTRIES_HLSL__
 
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
@@ -21,6 +21,4 @@ void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
 	hit.is_hit = false;
 }
 
-//TODO: Add any hit shader
-
-#endif //__RT_SHADOW_ENTRIES__
+#endif //__DXR_SHADOW_ENTRIES_HLSL__

@@ -1,19 +1,11 @@
-#ifndef __RT_TEXTURE_LOD__
-#define __RT_TEXTURE_LOD__
+#ifndef __DXR_TEXTURE_LOD_HLSL__
+#define __DXR_TEXTURE_LOD_HLSL__
 
 //Definition for RayCone
 #include "dxr_structs.hlsl" 
 
 // numbers prefixed with Cha mean its chapter x.x
 // numbers prefixed with Fig means its figure x.x
-
-struct SurfaceHit
-{
-	float3 pos;
-	float3 normal;
-	float surface_spread_angle;
-	float dist;
-};
 
 // pa Fig 20.5
 float ComputeTriangleArea(float3 P0, float3 P1, float3 P2)
@@ -222,4 +214,4 @@ RayCone ComputeRayConeFromGBuffer(SurfaceHit hit, float vertical_fov, float heig
 	return Propagate(cone, hit.surface_spread_angle, hit.dist);
 }
 
-#endif //__RT_TEXTURE_LOD__
+#endif //__DXR_TEXTURE_LOD_HLSL__

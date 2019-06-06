@@ -1,3 +1,6 @@
+#ifndef __PP_DOF_BOKEH_POST_FILTER_HLSL__
+#define __PP_DOF_BOKEH_POST_FILTER_HLSL__
+
 Texture2D source_near : register(t0);
 Texture2D source_far : register(t1);
 RWTexture2D<float4> output_near : register(u0);
@@ -55,3 +58,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	output_near[int2(dispatch_thread_id.xy)] = float4(near_color, nearcoc);
 	output_far[int2(dispatch_thread_id.xy)] = float4(far_color, farcoc);
 }
+
+#endif //__PP_DOF_BOKEH_POST_FILTER_HLSL__

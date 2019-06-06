@@ -1,7 +1,7 @@
-#ifndef __PATHTRACER_FUNCTIONS_HLSL__
-#define __PATHTRACER_FUNCTIONS_HLSL__
+#ifndef __DXR_PATHTRACER_FUNCTIONS_HLSL__
+#define __DXR_PATHTRACER_FUNCTIONS_HLSL__
 
-#define M_PI 3.14159265358979
+#include "pbr_util.hlsl"
 
 float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
 {
@@ -85,7 +85,7 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 	float3 H = normalize(V + L);
 
 	// Shadow
-	float shadow_mult = float(light_count) * GetShadowFactor(hit_pos + (L * EPSILON), L, max_light_dist, depth, 1, 1, seed);
+	float shadow_mult = float(light_count) * GetShadowFactor(hit_pos + (L * EPSILON), L, max_light_dist, depth, CALLINGPASS_PATHTRACING, seed);
 
 	// Compute some dot products needed for shading
 	float NdotV = saturate(dot(fN, V));
@@ -188,4 +188,4 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 	}
 }
 
-#endif //__PATHTRACER_FUNCTIONS_HLSL__
+#endif //__DXR_PATHTRACER_FUNCTIONS_HLSL__

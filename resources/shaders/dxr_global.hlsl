@@ -1,5 +1,5 @@
-#ifndef __RT_GLOBAL_HLSL__
-#define __RT_GLOBAL_HLSL__
+#ifndef __DXR_GLOBAL_HLSL__
+#define __DXR_GLOBAL_HLSL__
 
 #define MAX_RECURSION 3
 //#define FOUR_X_A
@@ -20,4 +20,4 @@
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 
-#endif //__RT_GLOBAL_HLSL__
+#endif //__DXR_GLOBAL_HLSL__

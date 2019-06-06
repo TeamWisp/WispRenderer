@@ -1,5 +1,5 @@
-#ifndef __PP_UTILS_HLSL__
-#define __PP_UTILS_HLSL__
+#ifndef __PP_UTIL_HLSL__
+#define __PP_UTIL_HLSL__
 
 #include "pp_fxaa.hlsl"
 
@@ -109,4 +109,4 @@ float2 BarrelDistortUV(float2 uv, float kcube)
 	return float2(x, y);
 }
 
-#endif //__PP_UTILS_HLSL__
+#endif //__PP_UTIL_HLSL__

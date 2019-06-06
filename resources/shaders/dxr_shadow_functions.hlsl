@@ -1,10 +1,10 @@
-#ifndef __RT_SHADOWS_FUNCTIONS__
-#define __RT_SHADOWS_FUNCTIONS__
+#ifndef __DXR_SHADOWS_FUNCTIONS__
+#define __DXR_SHADOWS_FUNCTIONS__
 
 #include "dxr_global.hlsl"
 #include "dxr_structs.hlsl"
 
-bool TraceShadowRay(float3 origin, float3 direction, float far, uint ray_contr_idx, uint miss_idx, unsigned int depth)
+bool TraceShadowRay(float3 origin, float3 direction, float far, uint calling_pass, unsigned int depth)
 {
 	if (depth >= MAX_RECURSION)
 	{
@@ -19,6 +19,16 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, uint ray_contr_i
 	ray.TMax = far;
 
 	ShadowHitInfo payload = { false, 0 };
+
+	uint ray_contr_idx = 1;
+	uint miss_idx = 1;
+
+	if (calling_pass == CALLINGPASS_SHADOWS)
+	{
+		ray_contr_idx = 0;
+		miss_idx = 0;
+	}
+
 
 	// Trace the ray
 	TraceRay(
@@ -35,7 +45,7 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, uint ray_contr_i
 }
 
 // Get shadow factor
-float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, uint ray_contr_idx, uint miss_idx, inout uint rand_seed)
+float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, uint calling_pass, inout uint rand_seed)
 {
 	float shadow_factor = 0.0f;
 
@@ -49,7 +59,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, ui
 		offset *= 0.05;
 		float3 shadow_direction = normalize(light_dir + offset);
 
-		bool shadow = TraceShadowRay(wpos, shadow_direction, t_max, ray_contr_idx, miss_idx, depth);
+		bool shadow = TraceShadowRay(wpos, shadow_direction, t_max, calling_pass, depth);
 
 		shadow_factor += lerp(1.0, 0.0, shadow);
 	}
@@ -58,7 +68,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, ui
 
 #else /* ifdef SOFT_SHADOWS */
 
-	bool shadow = TraceShadowRay(wpos, light_dir, t_max, ray_contr_idx, miss_idx, depth);
+	bool shadow = TraceShadowRay(wpos, light_dir, t_max, calling_pass, depth);
 	shadow_factor = !shadow;
 
 #endif
@@ -66,4 +76,4 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, ui
 	return shadow_factor;
 }
 
-#endif //__RT_SHADOWS_FUNCTIONS__
+#endif //__DXR_SHADOWS_FUNCTIONS__

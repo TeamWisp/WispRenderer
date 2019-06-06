@@ -1,5 +1,5 @@
-#ifndef __RT_REFLECTION_FUNCTIONS__
-#define __RT_REFLECTION_FUNCTIONS__
+#ifndef __DXR_REFLECTION_FUNCTIONS_HLSL__
+#define __DXR_REFLECTION_FUNCTIONS_HLSL__
 
 #include "dxr_global.hlsl"
 #include "dxr_structs.hlsl"
@@ -54,7 +54,6 @@ float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint d
 	float3 reflected = normalize(reflect(-V, normal));
 
 	// Shoot reflection ray
-	float3 reflection = TraceReflectionRay(wpos, normal, reflected, rand_seed, depth, cone);
-	return reflection;
+	return TraceReflectionRay(wpos, normal, reflected, rand_seed, depth, cone);
 }
-#endif //__RT_REFLECTION_FUNCTIONS__
+#endif //__DXR_REFLECTION_FUNCTIONS_HLSL__

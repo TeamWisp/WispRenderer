@@ -1,10 +1,12 @@
+#ifndef __DEFERRED_COMPOSITION_PASS_HLSL__
+#define __DEFERRED_COMPOSITION_PASS_HLSL__
+
 #define LIGHTS_REGISTER register(t4)
 #define MAX_REFLECTION_LOD 4
 
 #include "fullscreen_quad.hlsl"
 #include "rand_util.hlsl"
 #include "pbr_util.hlsl"
-//#include "hdr_util.hlsl"
 #include "lighting.hlsl"
 
 Texture2D gbuffer_albedo_roughness : register(t0);
@@ -144,3 +146,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(retval, 1.f);
 }
+
+
+#endif //__DEFERRED_COMPOSITION_PASS_HLSL__

@@ -1,10 +1,10 @@
 #ifndef __LIGHTING_HLSL__
 #define __LIGHTING_HLSL__
 
-#define SHADOW_PASS 0
-#define REFLECTION_PASS 1
-#define PATHTRACER_PASS 2
-#define FULLRAYTRACING_PASS 3
+#define CALLINGPASS_SHADOWS 0
+#define CALLINGPASS_REFLECTIONS 1
+#define CALLINGPASS_PATHTRACING 2
+#define CALLINGPASS_FULLRAYTRACING 3
 
 #include "dxr_shadow_functions.hlsl"
 
@@ -115,13 +115,7 @@ float3 shade_light(float3 pos, float3 V, float3 albedo, float3 normal, float met
 	uint ray_contr_idx = 1;
 	uint miss_idx = 1;
 	
-	if (calling_pass == SHADOW_PASS)
-	{
-		ray_contr_idx = 0;
-		miss_idx = 0;
-	}
-
-	float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, ray_contr_idx, miss_idx, rand_seed);
+	float shadow_factor = GetShadowFactor(wpos, L, t_max, depth, calling_pass, rand_seed);
 
 	lighting *= shadow_factor;
 
@@ -143,7 +137,7 @@ float3 shade_pixel(float3 pos, float3 V, float3 albedo, float metallic, float ro
 	return res + emissive;
 }
 
-float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, float roughness, float3 albedo, uint depth, uint ray_contr_idx, uint miss_idx, inout float rand_seed)
+float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, float roughness, float3 albedo, uint depth, uint calling_pass, inout float rand_seed)
 {
 	uint light_count = lights[0].tid >> 2;	//Light count is stored in 30 upper-bits of first light
 
@@ -170,7 +164,7 @@ float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, f
 		float t_max = lerp(light_dist, 100000, tid == light_type_directional);
 
 		// Add shadow factor to final result
-		float shadow = GetShadowFactor(wpos, L, t_max, depth, ray_contr_idx, miss_idx, rand_seed);
+		float shadow = GetShadowFactor(wpos, L, t_max, depth, calling_pass, rand_seed);
 
 		res.w += shadow;
 

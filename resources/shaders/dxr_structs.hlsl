@@ -1,5 +1,5 @@
-#ifndef __RT_STRUCTS_HLSL__
-#define __RT_STRUCTS_HLSL__
+#ifndef __DXR_STRUCTS_HLSL__
+#define __DXR_STRUCTS_HLSL__
 
 struct Vertex
 {
@@ -87,4 +87,21 @@ struct PathTracingHitInfo
 	unsigned int depth;
 };
 
-#endif //__RT_STRUCTS_HLSL__
+struct FullRTHitInfo
+{
+	float3 color;
+	unsigned int seed;
+	float3 origin;
+	unsigned int depth;
+};
+
+struct SurfaceHit
+{
+	float3 pos;
+	float3 normal;
+	float surface_spread_angle;
+	float dist;
+};
+
+
+#endif //__DXR_STRUCTS_HLSL__

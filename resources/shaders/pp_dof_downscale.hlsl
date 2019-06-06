@@ -1,3 +1,6 @@
+#ifndef __PP_DOF_DOWNSCALE_HLSL__
+#define __PP_DOF_DOWNSCALE_HLSL__
+
 #include "pp_dof_util.hlsl"
 
 Texture2D source : register(t0);
@@ -55,3 +58,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	output_near[int2(dispatch_thread_id.xy)] = out_near;
 	output_far[int2(dispatch_thread_id.xy)] = out_far;
 }
+
+#endif //__PP_DOF_DOWNSCALE_HLSL__

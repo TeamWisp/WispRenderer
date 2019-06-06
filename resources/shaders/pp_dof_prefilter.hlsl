@@ -1,3 +1,6 @@
+#ifndef __PP_DOF_PREFILTER_HLSL__
+#define __PP_DOF_PREFILTER_HLSL__
+
 #include "fullscreen_quad.hlsl"
 #include "hdr_util.hlsl"
 
@@ -276,3 +279,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	//Do shading
 	output[int2(dispatch_thread_id.xy)] = float4(vFinalColor, 1.f);
 }
+
+#endif //__PP_DOF_PREFILTER_HLSL__

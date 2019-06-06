@@ -1,5 +1,5 @@
-#ifndef __FULL_RAYTRACING_HLSL__
-#define __FULL_RAYTRACING_HLSL__
+#ifndef __DXR_RAYTRACING_HLSL__
+#define __DXR_RAYTRACING_HLSL__
 
 #define LIGHTS_REGISTER register(t2)
 #include "rand_util.hlsl"
@@ -16,8 +16,6 @@
 // - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
 #include "dxr_functions.hlsl"
 
-static const float M_PI = 3.14159265f;
-
 RWTexture2D<float4> gOutput : register(u0);
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
@@ -32,14 +30,6 @@ SamplerState s0 : register(s0);
 SamplerState point_sampler : register(s1);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
-
-struct HitInfo
-{
-	float3 color;
-	unsigned int seed;
-	float3 origin;
-	unsigned int depth;
-};
 
 cbuffer CameraProperties : register(b0)
 {
@@ -124,7 +114,7 @@ float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	ray.TMin = 0;
 	ray.TMax = 10000.0;
 
-	HitInfo payload = { float3(1, 1, 1), seed, origin, depth };
+	FullRTHitInfo payload = { float3(1, 1, 1), seed, origin, depth };
 
 	// Trace the ray
 	TraceRay(
@@ -170,13 +160,13 @@ void RaygenEntry()
 }
 
 [shader("miss")]
-void MissEntry(inout HitInfo payload)
+void MissEntry(inout FullRTHitInfo payload)
 {
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
 }
 
 [shader("closesthit")]
-void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
+void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
 {
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
@@ -274,7 +264,7 @@ void ClosestHitEntry(inout HitInfo payload, in MyAttributes attr)
 		fN,
 		payload.seed,
 		payload.depth + 1,
-		FULLRAYTRACING_PASS);
+		CALLINGPASS_FULLRAYTRACING);
 
 	float3 specular = reflection * (F * sampled_brdf.x + sampled_brdf.y);
 	float3 diffuse = albedo * sampled_irradiance;
@@ -295,4 +285,4 @@ void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
 	hit.is_hit = false;
 }
 
-#endif //__FULL_RAYTRACING_HLSL__
+#endif //__DXR_RAYTRACING_HLSL__

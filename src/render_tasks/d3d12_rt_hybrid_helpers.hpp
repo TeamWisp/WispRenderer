@@ -50,6 +50,71 @@ namespace wr
 
 	namespace internal
 	{
+		inline void CreateShaderTables(d3d12::Device* device, RTHybrid_BaseData& data, const std::string& raygen_entry, 
+									   const std::vector<std::string>& miss_entries, const std::vector<std::string>& hit_groups, int frame_idx)
+		{
+			// Delete existing shader table
+			if (data.out_miss_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_miss_shader_table[frame_idx]);
+			}
+			if (data.out_hitgroup_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_hitgroup_shader_table[frame_idx]);
+			}
+			if (data.out_raygen_shader_table[frame_idx])
+			{
+				d3d12::Destroy(data.out_raygen_shader_table[frame_idx]);
+			}
+
+			// Set up Raygen Shader Table
+			{
+				// Create Record(s)
+				std::uint32_t shader_record_count = 1;
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
+				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, raygen_entry);
+
+				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
+
+				// Create Table
+				data.out_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				d3d12::AddShaderRecord(data.out_raygen_shader_table[frame_idx], shader_record);
+			}
+
+			// Set up Miss Shader Table
+			{
+				// Create Record(s) and Table(s)
+				std::uint32_t shader_record_count = miss_entries.size();
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
+
+				data.out_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				
+				for (auto& entry : miss_entries)
+				{
+					auto miss_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, entry);
+					auto miss_record = d3d12::CreateShaderRecord(miss_identifier, shader_identifier_size);
+					d3d12::AddShaderRecord(data.out_miss_shader_table[frame_idx], miss_record);
+				}
+			}
+
+			// Set up Hit Group Shader Table
+			{
+				// Create Record(s)
+				std::uint32_t shader_record_count = hit_groups.size();
+				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
+
+				data.out_hitgroup_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
+				
+				for (auto& entry : hit_groups)
+				{
+					auto hit_identifier = d3d12::GetShaderIdentifier(device, data.out_state_object, entry);
+					auto hit_record = d3d12::CreateShaderRecord(hit_identifier, shader_identifier_size);
+					d3d12::AddShaderRecord(data.out_hitgroup_shader_table[frame_idx], hit_record);
+				}
+			}
+		}
+
+
 		inline void CreateUAVsAndSRVs(FrameGraph& fg, RTHybrid_BaseData& data, d3d12::RenderTarget* n_render_target)
 		{
 			// Versioning

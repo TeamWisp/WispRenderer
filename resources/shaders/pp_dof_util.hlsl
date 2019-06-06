@@ -1,3 +1,6 @@
+#ifndef __PP_DOF_UTIL_HLSL__
+#define __PP_DOF_UTIL_HLSL__
+
 static const float FNEAR = 0.1f;
 static const float FFAR = 1000.f;
 
@@ -131,3 +134,5 @@ float2 SquareToConcentricDiskMapping(float x, float y, float numSides, float pol
 
 	return result;
 }
+
+#endif //__PP_DOF_UTIL_HLSL__

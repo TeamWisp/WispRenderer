@@ -1,5 +1,5 @@
-#ifndef __UTILS_HLSL__
-#define __UTILS_HLSL__
+#ifndef __RAND_UTIL_HLSL__
+#define __RAND_UTIL_HLSL__
 
 // Initialize random seed
 uint initRand(uint val0, uint val1, uint backoff = 16)
@@ -64,4 +64,4 @@ float3 getUniformHemisphereSample(inout uint randSeed, float3 hitNorm)
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * randVal.x;
 }
 
-#endif // __UTILS_HLSL__
+#endif // __RAND_UTIL_HLSL__

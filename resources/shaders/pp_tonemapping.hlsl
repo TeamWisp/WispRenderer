@@ -1,4 +1,7 @@
-#include "pp_utils.hlsl"
+#ifndef __PP_TONEMAPPING_HLSL__
+#define __PP_TONEMAPPING_HLSL__
+
+#include "pp_util.hlsl"
 #include "pp_hdr_util.hlsl"
 
 Texture2D<float4> input : register(t0);
@@ -43,3 +46,5 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	output[DTid.xy] = float4(color, 1);
 }
+
+#endif //__PP_TONEMAPPING_HLSL__

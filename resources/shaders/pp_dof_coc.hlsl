@@ -1,3 +1,6 @@
+#ifndef __PP_DOF_COC_HLSL__
+#define __PP_DOF_COC_HLSL__
+
 #include "pp_dof_properties.hlsl"
 #include "pp_dof_util.hlsl"
 
@@ -81,3 +84,5 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float2 result = float2(coc, gbuffer_depth.SampleLevel(s0, uv, 0).r);
 	output[int2(dispatch_thread_id.xy)] = result;
 }
+
+#endif //__PP_DOF_COC_HLSL__

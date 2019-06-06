@@ -1,5 +1,5 @@
-#ifndef __RT_REFLECTION_ENTRIES__
-#define __RT_REFLECTION_ENTRIES__
+#ifndef __DXR_REFLECTION_ENTRIES_HLSL__
+#define __DXR_REFLECTION_ENTRIES_HLSL__
 
 #include "rand_util.hlsl"
 #include "pbr_util.hlsl"
@@ -124,7 +124,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 
 	//Lighting
 	#undef SOFT_SHADOWS
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth + 1, REFLECTION_PASS);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth + 1, CALLINGPASS_REFLECTIONS);
 	#define SOFT_SHADOWS
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
@@ -142,4 +142,4 @@ void ReflectionMiss(inout ReflectionHitInfo payload)
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
 }
 
-#endif //__RT_REFLECTION_ENTRIES__
+#endif //__DXR_REFLECTION_ENTRIES_HLSL__
