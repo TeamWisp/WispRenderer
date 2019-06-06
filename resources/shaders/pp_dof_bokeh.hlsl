@@ -1,5 +1,5 @@
-#include "dof_properties.hlsl"
-#include "dof_util.hlsl"
+#include "pp_dof_properties.hlsl"
+#include "pp_dof_util.hlsl"
 
 Texture2D source_near : register(t0);
 Texture2D source_far : register(t1);

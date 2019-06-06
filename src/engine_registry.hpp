@@ -259,7 +259,7 @@ namespace wr
 		};
 
 
-		enum class BasicE
+		enum class DeferredMainE
 		{
 			CAMERA_PROPERTIES,
 			OBJECT_PROPERTIES,
@@ -272,16 +272,16 @@ namespace wr
 			MATERIAL_PROPERTIES,
 		};
 
-		constexpr std::array<rs_layout::Entry, 9> basic = {
-			rs_layout::Entry{(int)BasicE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)BasicE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)BasicE::ALBEDO, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::METALLIC, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::AMBIENT_OCCLUSION, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::EMISSIVE, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BasicE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		constexpr std::array<rs_layout::Entry, 9> deferred_main = {
+			rs_layout::Entry{(int)DeferredMainE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)DeferredMainE::OBJECT_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)DeferredMainE::ALBEDO, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::NORMAL, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::METALLIC, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::AMBIENT_OCCLUSION, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::EMISSIVE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DeferredMainE::MATERIAL_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
 		enum class SVGFDenoiserE

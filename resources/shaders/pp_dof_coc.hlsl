@@ -1,5 +1,5 @@
-#include "dof_properties.hlsl"
-#include "dof_util.hlsl"
+#include "pp_dof_properties.hlsl"
+#include "pp_dof_util.hlsl"
 
 Texture2D gbuffer_depth : register(t0);
 RWTexture2D<float2> output : register(u0);

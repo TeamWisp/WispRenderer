@@ -1,4 +1,4 @@
-#include "dof_properties.hlsl"
+#include "pp_dof_properties.hlsl"
 
 Texture2D source : register(t0);
 RWTexture2D<float4> output : register(u0);

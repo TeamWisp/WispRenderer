@@ -1,4 +1,4 @@
-#include "dof_util.hlsl"
+#include "pp_dof_util.hlsl"
 
 Texture2D source : register(t0);
 RWTexture2D<float4> output_near : register(u0);

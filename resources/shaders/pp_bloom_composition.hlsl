@@ -1,4 +1,4 @@
-#include "hdr_util.hlsl"
+#include "pp_hdr_util.hlsl"
 
 Texture2D source_main : register(t0);
 Texture2D source_bloom_half : register(t1);

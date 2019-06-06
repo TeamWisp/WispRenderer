@@ -1,4 +1,4 @@
-#include "dof_util.hlsl"
+#include "pp_dof_util.hlsl"
 
 Texture2D source : register(t0);
 Texture2D g_emissive : register(t1);

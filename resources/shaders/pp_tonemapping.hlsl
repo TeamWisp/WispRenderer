@@ -1,6 +1,5 @@
-#include "vignette.hlsl"
-#include "hdr_util.hlsl"
-#include "lens_effects.hlsl"
+#include "pp_utils.hlsl"
+#include "pp_hdr_util.hlsl"
 
 Texture2D<float4> input : register(t0);
 RWTexture2D<float4> output : register(u0);

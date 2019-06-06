@@ -39,21 +39,21 @@ namespace wr
 
 
 	//Basic Deferred Pass Root Signature
-	DESC_RANGE_ARRAY(ranges_basic,
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ALBEDO),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::NORMAL),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ROUGHNESS),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::METALLIC), 
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::AMBIENT_OCCLUSION),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::EMISSIVE),
+	DESC_RANGE_ARRAY(ranges_deferred_main,
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::ALBEDO),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::NORMAL),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::ROUGHNESS),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::METALLIC),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::AMBIENT_OCCLUSION),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::EMISSIVE),
 	);
 
 	REGISTER(root_signatures::basic, RootSignatureRegistry)({
 		.m_parameters = {
-			ROOT_PARAM(GetCBV(params::basic, params::BasicE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
-			ROOT_PARAM(GetCBV(params::basic, params::BasicE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
-			ROOT_PARAM_DESC_TABLE(ranges_basic, D3D12_SHADER_VISIBILITY_PIXEL),
-			ROOT_PARAM(GetCBV(params::basic, params::BasicE::MATERIAL_PROPERTIES, D3D12_SHADER_VISIBILITY_PIXEL)),
+			ROOT_PARAM(GetCBV(params::deferred_main, params::DeferredMainE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
+			ROOT_PARAM(GetCBV(params::deferred_main, params::DeferredMainE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
+			ROOT_PARAM_DESC_TABLE(ranges_deferred_main, D3D12_SHADER_VISIBILITY_PIXEL),
+			ROOT_PARAM(GetCBV(params::deferred_main, params::DeferredMainE::MATERIAL_PROPERTIES, D3D12_SHADER_VISIBILITY_PIXEL)),
 		},
 		.m_samplers = {
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
@@ -189,28 +189,28 @@ namespace wr
 	});
 
 	REGISTER(shaders::basic_deferred_vs, ShaderRegistry)({
-		.path = "resources/shaders/basic.hlsl",
+		.path = "resources/shaders/deferred_geometry_pass.hlsl",
 		.entry = "main_vs",
 		.type = ShaderType::VERTEX_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::basic_deferred_ps, ShaderRegistry)({
-		.path = "resources/shaders/basic.hlsl",
+		.path = "resources/shaders/deferred_geometry_pass.hlsl",
 		.entry = "main_ps",
 		.type = ShaderType::PIXEL_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::basic_hybrid_vs, ShaderRegistry)({
-		.path = "resources/shaders/basic.hlsl",
+		.path = "resources/shaders/deferred_geometry_pass.hlsl",
 		.entry = "main_vs",
 		.type = ShaderType::VERTEX_SHADER,
 		.defines = {{L"IS_HYBRID", L"1"}}
 		});
 
 	REGISTER(shaders::basic_hybrid_ps, ShaderRegistry)({
-		.path = "resources/shaders/basic.hlsl",
+		.path = "resources/shaders/deferred_geometry_pass.hlsl",
 		.entry = "main_ps",
 		.type = ShaderType::PIXEL_SHADER,
 		.defines = {{L"IS_HYBRID", L"1"}}
@@ -224,28 +224,28 @@ namespace wr
 		});
 
 	REGISTER(shaders::svgf_denoiser_reprojection_cs, ShaderRegistry)({
-		.path = "resources/shaders/SVGF.hlsl",
+		.path = "resources/shaders/denoising_SVGF.hlsl",
 		.entry = "reprojection_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::svgf_denoiser_filter_moments_cs, ShaderRegistry)({
-		.path = "resources/shaders/SVGF.hlsl",
+		.path = "resources/shaders/denoising_SVGF.hlsl",
 		.entry = "filter_moments_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::svgf_denoiser_wavelet_filter_cs, ShaderRegistry)({
-		.path = "resources/shaders/SVGF.hlsl",
+		.path = "resources/shaders/denoising_SVGF.hlsl",
 		.entry = "wavelet_filter_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::deferred_composition_cs, ShaderRegistry)({
-		.path = "resources/shaders/deferred_composition.hlsl",
+		.path = "resources/shaders/deferred_composition_pass.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -456,14 +456,14 @@ namespace wr
 
 	/* ### Raytracing ### */
 	REGISTER(shaders::post_processing, ShaderRegistry)({
-		.path = "resources/shaders/post_processing.hlsl",
+		.path = "resources/shaders/pp_tonemapping.hlsl",
 		.entry = "main",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::accumulation, ShaderRegistry)({
-		.path = "resources/shaders/accumulation.hlsl",
+		.path = "resources/shaders/dxr_pathtracer_accumulation.hlsl",
 		.entry = "main",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -595,7 +595,7 @@ namespace wr
 
 	// Cone of confusion
 	REGISTER(shaders::dof_coc, ShaderRegistry) ({
-		.path = "resources/shaders/dof_coc.hlsl",
+		.path = "resources/shaders/pp_dof_coc.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -633,7 +633,7 @@ namespace wr
 
 	// Down Scale texture
 	REGISTER(shaders::down_scale, ShaderRegistry)({
-		.path = "resources/shaders/down_scale.hlsl",
+		.path = "resources/shaders/pp_dof_downscale.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -673,7 +673,7 @@ namespace wr
 
 	// dof dilate
 	REGISTER(shaders::dof_dilate, ShaderRegistry)({
-		.path = "resources/shaders/dof_dilate.hlsl",
+		.path = "resources/shaders/pp_dof_dilate.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -710,7 +710,7 @@ namespace wr
 
 	//dof bokeh
 	REGISTER(shaders::dof_bokeh, ShaderRegistry)({
-		.path = "resources/shaders/dof_bokeh.hlsl",
+		.path = "resources/shaders/pp_dof_bokeh.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -752,7 +752,7 @@ namespace wr
 
 	//dof bokeh post filter
 	REGISTER(shaders::dof_bokeh_post_filter, ShaderRegistry)({
-		.path = "resources/shaders/dof_bokeh_post_filter.hlsl",
+		.path = "resources/shaders/pp_dof_bokeh_post_filter.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -792,7 +792,7 @@ namespace wr
 
 	// depth of field composition
 	REGISTER(shaders::dof_composition, ShaderRegistry)({
-		.path = "resources/shaders/dof_composition.hlsl",
+		.path = "resources/shaders/pp_dof_composition.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -833,7 +833,7 @@ namespace wr
 
 	// Extract bright
 	REGISTER(shaders::bloom_extract_bright, ShaderRegistry)({
-		.path = "resources/shaders/bloom_extract_bright.hlsl",
+		.path = "resources/shaders/pp_bloom_extract_bright.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER
 		});
@@ -874,7 +874,7 @@ namespace wr
 
 	// bloom blur
 	REGISTER(shaders::bloom_blur, ShaderRegistry)({
-		.path = "resources/shaders/bloom_blur.hlsl",
+		.path = "resources/shaders/pp_bloom_blur.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -913,7 +913,7 @@ namespace wr
 
 	// bloom composition
 	REGISTER(shaders::bloom_composition, ShaderRegistry)({
-		.path = "resources/shaders/bloom_composition.hlsl",
+		.path = "resources/shaders/pp_bloom_composition.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -986,7 +986,7 @@ namespace wr
 
 	/*### Raytraced Ambient Oclusion ### */
 	REGISTER(shaders::rt_ao_lib, ShaderRegistry)({
-		.path = "resources/shaders/ambient_occlusion.hlsl",
+		.path = "resources/shaders/dxr_ambient_occlusion.hlsl",
 		.entry = "AORaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}
