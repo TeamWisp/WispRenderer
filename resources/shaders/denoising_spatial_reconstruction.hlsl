@@ -1,4 +1,5 @@
-#include "util.hlsl"
+#ifndef __DENOISING_SPATIAL_RECONSTRUCTION_HLSL__
+#define __DENOISING_SPATIAL_RECONSTRUCTION_HLSL__
 #include "pbr_util.hlsl"
 
 cbuffer CameraProperties : register(b0)
@@ -202,3 +203,5 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	filtered[pix] = float4(result3, 1);
 
 }
+
+#endif

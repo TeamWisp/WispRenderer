@@ -1,4 +1,5 @@
-#include "util.hlsl"
+#ifndef __DENOISING_REFLECTIONS_HLSL__
+#define __DENOISING_REFLECTIONS_HLSL__
 #include "pbr_util.hlsl"
 
 Texture2D input_texture : register(t0);
@@ -124,3 +125,5 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	
     output_texture[screen_coord] = input_texture[screen_coord];
 }
+
+#endif

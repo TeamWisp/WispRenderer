@@ -175,7 +175,7 @@ float3 importanceSamplePdf(float2 xi, float a, float3 N, inout float pdf) {
 	float m = a * a;
 	float m2 = m * m;
 
-	float phi = 2 * PI * xi.x;
+	float phi = 2 * M_PI * xi.x;
 	float cosTheta = sqrt((1.0 - xi.y) / (1.0 + (m2 - 1.0) * xi.y));
 	float sinTheta = sqrt(max(1e-5, 1.0 - cosTheta * cosTheta));
 
@@ -185,7 +185,7 @@ float3 importanceSamplePdf(float2 xi, float a, float3 N, inout float pdf) {
 	H.z = cosTheta;
 
 	float d = (cosTheta * m2 - cosTheta) * cosTheta + 1;
-	float D = m2 / (PI * d * d);
+	float D = m2 / (M_PI * d * d);
 	pdf = D * cosTheta;
 
 	float3 up = lerp(float3(1.0, 0.0, 0.0), float3(0.0, 0.0, 1.0), float(abs(N.z) < 0.999));
@@ -206,7 +206,9 @@ float brdf_weight(float3 V, float3 L, float3 N, float roughness) {
 	float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);		//This causes issues
 	float D = D_GGX(NdotH, roughness);
 
-	float weight = G * D * PI / 4;
+	float weight = G * D * M_PI / 4;
 
 	return max(weight, 1e-5);		//Perfect mirrors can have weights too
 }
+
+#endif
