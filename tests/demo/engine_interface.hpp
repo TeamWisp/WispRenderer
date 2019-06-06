@@ -72,7 +72,7 @@ namespace engine
 					ImGui::MenuItem("Theme", nullptr, &open0);
 					ImGui::MenuItem("Statistics", nullptr, &stats_window.m_open);
 					ImGui::MenuItem("Camera Settings", nullptr, &open1);
-					ImGui::MenuItem("Graphics Settings", nullptr, &wr::imgui::window::graphics_settings_open);
+					wr::imgui::menu::GraphicsSettingsMenu(fg_manager::Get());
 					ImGui::EndMenu();
 				}
 
