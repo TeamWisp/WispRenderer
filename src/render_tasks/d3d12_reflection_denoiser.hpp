@@ -16,6 +16,7 @@ namespace wr
 
 		DescriptorAllocator* m_descriptor_allocator;
 		DescriptorAllocation m_input_allocation;
+		DescriptorAllocation m_ray_raw_allocation;
 		DescriptorAllocation m_ray_dir_allocation;
 		DescriptorAllocation m_albedo_roughness_allocation;
 		DescriptorAllocation m_normal_metallic_allocation;
@@ -53,6 +54,7 @@ namespace wr
 				data.m_descriptor_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
 				data.m_input_allocation = std::move(data.m_descriptor_allocator->Allocate());
+				data.m_ray_raw_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_ray_dir_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_albedo_roughness_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_normal_metallic_allocation = std::move(data.m_descriptor_allocator->Allocate());
@@ -65,6 +67,11 @@ namespace wr
 			{
 				auto cpu_handle = data.m_input_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_spatial_reconstruction_render_target, cpu_handle, 0, data.m_spatial_reconstruction_render_target->m_create_info.m_rtv_formats[0]);
+			}
+
+			{
+				auto cpu_handle = data.m_ray_raw_allocation.GetDescriptorHandle();
+				d3d12::CreateSRVFromSpecificRTV(data.m_rt_reflection_render_target, cpu_handle, 0, data.m_rt_reflection_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
@@ -124,6 +131,12 @@ namespace wr
 				constexpr unsigned int input = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::INPUT);
 				auto cpu_handle = data.m_input_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int ray_raw = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::RAY_RAW);
+				auto cpu_handle = data.m_ray_raw_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, ray_raw, cpu_handle);
 			}
 
 			{

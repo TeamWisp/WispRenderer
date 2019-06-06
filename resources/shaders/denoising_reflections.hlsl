@@ -1,14 +1,16 @@
 #ifndef __DENOISING_REFLECTIONS_HLSL__
 #define __DENOISING_REFLECTIONS_HLSL__
 #include "pbr_util.hlsl"
+#include "rand_util.hlsl"
 
 Texture2D input_texture : register(t0);
-Texture2D dir_hitT_texture : register(t1);
-Texture2D albedo_roughness_texture : register(t2);
-Texture2D normal_metallic_texture : register(t3);
-Texture2D motion_texture : register(t4); // xy: motion, z: fwidth position, w: fwidth normal
-Texture2D linear_depth_texture : register(t5);
-Texture2D world_position_texture : register(t6);
+Texture2D ray_raw_texture : register(t1);
+Texture2D dir_hitT_texture : register(t2);
+Texture2D albedo_roughness_texture : register(t3);
+Texture2D normal_metallic_texture : register(t4);
+Texture2D motion_texture : register(t5); // xy: motion, z: fwidth position, w: fwidth normal
+Texture2D linear_depth_texture : register(t6);
+Texture2D world_position_texture : register(t7);
 RWTexture2D<float4> output_texture : register(u0);
 
 SamplerState point_sampler : register(s0);
@@ -104,14 +106,22 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     float2 screen_size = float2(0, 0);
     output_texture.GetDimensions(screen_size.x, screen_size.y);
 
-	/*
+	
     float2 uv = screen_coord / screen_size;
-
-    const float depth = linear_depth_texture[screen_coord].x;
 
     float3 world_pos = world_position_texture[screen_coord].xyz;
     float3 center_pos = world_position_texture[screen_size / 2].xyz;
     float3 cam_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+
+	float3 center_normal = float3(0, 0, 0);
+	float2 center_depth = float2(0, 0);
+
+	FetchNormalAndLinearZ(screen_size / 2.0, center_normal, center_depth);
+
+	float3 p_normal = float3(0, 0, 0);
+	float2 p_depth = float2(0, 0);
+
+	FetchNormalAndLinearZ(screen_coord, p_normal, p_depth);
 
     float3 V = normalize(cam_pos - world_pos);
 
@@ -120,10 +130,24 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
     float3 L = reflect(-center_V, N);
 
-    float roughness = albedo_roughness_texture[screen_size / 2].xyz;
-	*/
+    float roughness = max(albedo_roughness_texture[screen_size / 2].a, 1e-3);
 	
-    output_texture[screen_coord] = input_texture[screen_coord];
+	float pdf = ray_raw_texture.SampleLevel(point_sampler, float2(0.5, 0.5), 0).a;
+
+	float center_weight = brdf_weight(center_V, L, N, roughness);
+
+	float weight = (brdf_weight(V, L, N, roughness) / center_weight) * 
+	ComputeWeightNoLuminance(center_depth.x, p_depth.x, max(center_depth.y, 1e-8) * length(screen_coord - screen_size / 2.0), center_normal, p_normal);
+	
+	if(pdf==0.0)
+	{
+		output_texture[screen_coord] = input_texture[screen_coord];
+	}
+	else
+	{
+    	output_texture[screen_coord] = lerp(input_texture[screen_coord], float4(1, 1, 1, 1), min(weight, 1.0));
+	}
+	//output_texture[screen_coord] = albedo_roughness_texture[screen_coord].a;
 }
 
 #endif

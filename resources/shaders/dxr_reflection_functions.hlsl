@@ -13,7 +13,9 @@
 // - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
 #include "dxr_functions.hlsl"
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone)
+#include "pbr_util.hlsl"
+
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone, inout float4 dirT)
 {
 
 	if (depth >= MAX_RECURSION)
@@ -23,7 +25,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 
 	origin += norm * EPSILON;
 
-	ReflectionHitInfo payload = {origin, float3(0,0,1), rand_seed, depth, cone};
+	ReflectionHitInfo payload = {origin, float3(0,0,1), rand_seed, depth, 0, cone};
 
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -31,6 +33,12 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 	ray.Direction = direction;
 	ray.TMin = 0;
 	ray.TMax = 10000.0;
+
+	bool nan = isnan(origin) != bool3(false, false, false) || isnan(direction) != bool3(false, false, false);
+	if(nan)
+	{
+		return skybox.SampleLevel(s0, direction, 0).rgb;
+	}
 
 	// Trace the ray
 	TraceRay(
@@ -45,15 +53,56 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		ray,
 		payload);
 
+	dirT = float4(direction, payload.hitT);
 	return payload.color;
 }
 
-float3 DoReflection(float3 wpos, float3 V, float3 normal, uint rand_seed, uint depth, RayCone cone)
+float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, RayCone cone, inout float4 dirT)
 {
 	// Calculate ray info
-	float3 reflected = normalize(reflect(-V, normal));
+	float3 reflected = reflect(-V, N);
 
-	// Shoot reflection ray
-	return TraceReflectionRay(wpos, normal, reflected, rand_seed, depth, cone);
+	// Shoot an importance sampled ray
+
+	#ifndef PERFECT_MIRROR_REFLECTIONS
+
+
+		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
+
+		if (depth > 0 || roughness < 0.05)
+			return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), 1);
+
+		//Calculate an importance sampled ray
+
+		nextRand(rand_seed);
+		float2 xi = hammersley2d(rand_seed, 8192);
+		float pdf = 0;
+		float3 H = importanceSamplePdf(xi, roughness, N, pdf);
+		float3 L = reflect(-V, H);
+
+		float NdotL = max(dot(N, L), 0);
+
+		if(NdotL >= 0)
+		{
+			nextRand(rand_seed);
+			xi = hammersley2d(rand_seed, 8192);
+			H = importanceSamplePdf(xi, roughness, N, pdf);
+			L = reflect(-V, H);
+			NdotL = max(dot(N, L), 0);
+		}
+
+		float3 reflection = float3(0, 0, 0);
+		
+		if (NdotL >= 0)
+		{
+			reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dirT);
+		}
+
+		return float4(reflection, pdf);
+
+	#else
+		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
+		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), 1);
+	#endif
 }
 #endif //__DXR_REFLECTION_FUNCTIONS_HLSL__

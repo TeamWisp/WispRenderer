@@ -31,7 +31,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 finalcolor = float3(0, 0, 0);
 	float bloom_intensity = 1.f;
 
-	if (enable_bloom > 0)
+	if (enable_bloom < 0)
 	{
 		finalcolor += source_bloom_half.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;
 		finalcolor += source_bloom_quarter.SampleLevel(linear_sampler, uv, 0).rgb * bloom_intensity;

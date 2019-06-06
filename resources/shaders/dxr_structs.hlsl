@@ -70,6 +70,7 @@ struct ReflectionHitInfo
 	float3 color;
 	unsigned int seed;
 	unsigned int depth;
+	float hitT;
 	RayCone cone;
 };
 

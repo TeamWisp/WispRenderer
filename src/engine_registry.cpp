@@ -956,7 +956,7 @@ namespace wr
 
 	// spatial reconstruction
   REGISTER(shaders::spatial_reconstruction, ShaderRegistry)({
-    .path = "resources/shaders/spatial_reconstruction.hlsl",
+    .path = "resources/shaders/denoising_spatial_reconstruction.hlsl",
     .entry = "main",
     .type = ShaderType::DIRECT_COMPUTE_SHADER,
     .defines = {}
@@ -994,7 +994,7 @@ namespace wr
 	});
 
 	REGISTER(shaders::reflection_spatial_denoiser, ShaderRegistry)({
-	  .path = "resources/shaders/reflection_denoiser.hlsl",
+	  .path = "resources/shaders/denoising_reflections.hlsl",
 	  .entry = "spatial_denoiser_cs",
 	  .type = ShaderType::DIRECT_COMPUTE_SHADER,
 	  .defines = {}
@@ -1230,7 +1230,7 @@ namespace wr
 		{
 			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
 			.library_desc = rt_reflection_so_library,
-			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 3),
 			.max_attributes_size = sizeof(float) * 4,
 			.max_recursion_depth = 3,
 			.global_root_signature = root_signatures::rt_hybrid_global,

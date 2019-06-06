@@ -1,6 +1,7 @@
 #ifndef __DENOISING_SPATIAL_RECONSTRUCTION_HLSL__
 #define __DENOISING_SPATIAL_RECONSTRUCTION_HLSL__
 #include "pbr_util.hlsl"
+#include "rand_util.hlsl"
 
 cbuffer CameraProperties : register(b0)
 {
@@ -154,7 +155,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	const float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	const float3 V = normalize(camera_pos - pos);
 
-	const float roughness = max(albedo_roughness[pix].w, 0.05);
+	const float roughness = max(albedo_roughness[pix].w, 0.001);
 	const float3 N = normalize(normal_metallic[pix].xyz);
 
 	const float pdf = max(reflection_pdf.SampleLevel(nearest_sampler, uv, 0).w, 1e-5);

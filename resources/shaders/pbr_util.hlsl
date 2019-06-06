@@ -1,6 +1,8 @@
 #ifndef __PBR_UTILS_HLSL__
 #define __PBR_UTILS_HLSL__
 
+#include "rand_util.hlsl"
+
 //static const float PI = 3.14159265359;
 #define M_PI 3.14159265358979
  
