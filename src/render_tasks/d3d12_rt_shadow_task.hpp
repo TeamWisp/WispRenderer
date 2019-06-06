@@ -17,6 +17,13 @@
 
 namespace wr
 {
+	struct RTShadowSettings
+	{
+		struct Runtime
+		{
+
+		};
+	};
 	struct RTShadowData
 	{
 		RTHybrid_BaseData base_data;

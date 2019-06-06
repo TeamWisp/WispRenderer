@@ -40,9 +40,10 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float2 padding;
 	float frame_idx;
 	float intensity;
+	float epsilon;
+	unsigned int shadow_sample_count;
 };
 
 #include "dxr_reflection_functions.hlsl"
