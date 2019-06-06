@@ -201,6 +201,7 @@ namespace wr
 		void Update_CameraNodes(std::vector<std::shared_ptr<CameraNode>>& nodes);
 		void Update_LightNodes(SceneGraph& scene_graph);
 		void Update_Transforms(SceneGraph& scene_graph, std::shared_ptr<Node>& node);
+		void Delete_Skybox(SceneGraph& scene_graph, std::shared_ptr<SkyboxNode>& skybox_node);
 
 		void PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx);
 
@@ -258,6 +259,7 @@ namespace wr
 	private:
 		void ResetBatches(SceneGraph& sg);
 		void LoadPrimitiveShapes();
+		void CreateDefaultResources();
 
 		d3d12::CommandSignature* m_cmd_signature;
 		d3d12::CommandSignature* m_cmd_signature_indexed;

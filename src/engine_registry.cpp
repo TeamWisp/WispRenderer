@@ -39,21 +39,21 @@ namespace wr
 
 
 	//Basic Deferred Pass Root Signature
-	DESC_RANGE_ARRAY(ranges_basic,
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ALBEDO),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::NORMAL),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::ROUGHNESS),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::METALLIC), 
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::AMBIENT_OCCLUSION),
-		DESC_RANGE(params::basic, Type::SRV_RANGE, params::BasicE::EMISSIVE),
+	DESC_RANGE_ARRAY(ranges_deferred_main,
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::ALBEDO),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::NORMAL),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::ROUGHNESS),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::METALLIC),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::AMBIENT_OCCLUSION),
+		DESC_RANGE(params::deferred_main, Type::SRV_RANGE, params::DeferredMainE::EMISSIVE),
 	);
 
 	REGISTER(root_signatures::basic, RootSignatureRegistry)({
 		.m_parameters = {
-			ROOT_PARAM(GetCBV(params::basic, params::BasicE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
-			ROOT_PARAM(GetCBV(params::basic, params::BasicE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
-			ROOT_PARAM_DESC_TABLE(ranges_basic, D3D12_SHADER_VISIBILITY_PIXEL),
-			ROOT_PARAM(GetCBV(params::basic, params::BasicE::MATERIAL_PROPERTIES, D3D12_SHADER_VISIBILITY_PIXEL)),
+			ROOT_PARAM(GetCBV(params::deferred_main, params::DeferredMainE::CAMERA_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
+			ROOT_PARAM(GetCBV(params::deferred_main, params::DeferredMainE::OBJECT_PROPERTIES, D3D12_SHADER_VISIBILITY_VERTEX)),
+			ROOT_PARAM_DESC_TABLE(ranges_deferred_main, D3D12_SHADER_VISIBILITY_PIXEL),
+			ROOT_PARAM(GetCBV(params::deferred_main, params::DeferredMainE::MATERIAL_PROPERTIES, D3D12_SHADER_VISIBILITY_PIXEL)),
 		},
 		.m_samplers = {
 			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_WRAP }
@@ -182,35 +182,35 @@ namespace wr
 
 
 	REGISTER(shaders::brdf_lut_cs, ShaderRegistry)({
-		.path = "resources/shaders/brdf_lut_cs.hlsl",
+		.path = "resources/shaders/pbr_brdf_lut.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::basic_deferred_vs, ShaderRegistry)({
-		.path = "resources/shaders/basic.hlsl",
+		.path = "resources/shaders/deferred_geometry_pass.hlsl",
 		.entry = "main_vs",
 		.type = ShaderType::VERTEX_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::basic_deferred_ps, ShaderRegistry)({
-		.path = "resources/shaders/basic.hlsl",
+		.path = "resources/shaders/deferred_geometry_pass.hlsl",
 		.entry = "main_ps",
 		.type = ShaderType::PIXEL_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::basic_hybrid_vs, ShaderRegistry)({
-		.path = "resources/shaders/basic.hlsl",
+		.path = "resources/shaders/deferred_geometry_pass.hlsl",
 		.entry = "main_vs",
 		.type = ShaderType::VERTEX_SHADER,
 		.defines = {{L"IS_HYBRID", L"1"}}
 		});
 
 	REGISTER(shaders::basic_hybrid_ps, ShaderRegistry)({
-		.path = "resources/shaders/basic.hlsl",
+		.path = "resources/shaders/deferred_geometry_pass.hlsl",
 		.entry = "main_ps",
 		.type = ShaderType::PIXEL_SHADER,
 		.defines = {{L"IS_HYBRID", L"1"}}
@@ -224,28 +224,28 @@ namespace wr
 		});
 
 	REGISTER(shaders::svgf_denoiser_reprojection_cs, ShaderRegistry)({
-		.path = "resources/shaders/SVGF.hlsl",
+		.path = "resources/shaders/denoising_SVGF.hlsl",
 		.entry = "reprojection_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::svgf_denoiser_filter_moments_cs, ShaderRegistry)({
-		.path = "resources/shaders/SVGF.hlsl",
+		.path = "resources/shaders/denoising_SVGF.hlsl",
 		.entry = "filter_moments_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::svgf_denoiser_wavelet_filter_cs, ShaderRegistry)({
-		.path = "resources/shaders/SVGF.hlsl",
+		.path = "resources/shaders/denoising_SVGF.hlsl",
 		.entry = "wavelet_filter_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::deferred_composition_cs, ShaderRegistry)({
-		.path = "resources/shaders/deferred_composition.hlsl",
+		.path = "resources/shaders/deferred_composition_pass.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -259,28 +259,28 @@ namespace wr
 	});
 
 	REGISTER(shaders::equirect_to_cubemap_vs, ShaderRegistry)({
-		.path = "resources/shaders/equirect_to_cubemap_conversion.hlsl",
+		.path = "resources/shaders/pbr_cubemap_conversion.hlsl",
 		.entry = "main_vs",
 		.type = ShaderType::VERTEX_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::equirect_to_cubemap_ps, ShaderRegistry)({
-		.path = "resources/shaders/equirect_to_cubemap_conversion.hlsl",
+		.path = "resources/shaders/pbr_cubemap_conversion.hlsl",
 		.entry = "main_ps",
 		.type = ShaderType::PIXEL_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::cubemap_convolution_ps, ShaderRegistry)({
-		.path = "resources/shaders/cubemap_convolution.hlsl",
+		.path = "resources/shaders/pbr_cubemap_convolution.hlsl",
 		.entry = "main_ps",
 		.type = ShaderType::PIXEL_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::cubemap_prefiltering_cs, ShaderRegistry)({
-		.path = "resources/shaders/prefilter_env_map_cs.hlsl",
+		.path = "resources/shaders/pbr_prefilter_env_map.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -456,21 +456,21 @@ namespace wr
 
 	/* ### Raytracing ### */
 	REGISTER(shaders::post_processing, ShaderRegistry)({
-		.path = "resources/shaders/post_processing.hlsl",
+		.path = "resources/shaders/pp_tonemapping.hlsl",
 		.entry = "main",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::accumulation, ShaderRegistry)({
-		.path = "resources/shaders/accumulation.hlsl",
+		.path = "resources/shaders/dxr_pathtracer_accumulation.hlsl",
 		.entry = "main",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
 	});
 
 	REGISTER(shaders::rt_lib, ShaderRegistry)({
-		.path = "resources/shaders/raytracing.hlsl",
+		.path = "resources/shaders/dxr_raytracing.hlsl",
 		.entry = "RaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}
@@ -595,7 +595,7 @@ namespace wr
 
 	// Cone of confusion
 	REGISTER(shaders::dof_coc, ShaderRegistry) ({
-		.path = "resources/shaders/dof_coc.hlsl",
+		.path = "resources/shaders/pp_dof_coc.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -633,7 +633,7 @@ namespace wr
 
 	// Down Scale texture
 	REGISTER(shaders::down_scale, ShaderRegistry)({
-		.path = "resources/shaders/down_scale.hlsl",
+		.path = "resources/shaders/pp_dof_downscale.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -673,7 +673,7 @@ namespace wr
 
 	// dof dilate
 	REGISTER(shaders::dof_dilate, ShaderRegistry)({
-		.path = "resources/shaders/dof_dilate.hlsl",
+		.path = "resources/shaders/pp_dof_dilate.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -710,7 +710,7 @@ namespace wr
 
 	//dof bokeh
 	REGISTER(shaders::dof_bokeh, ShaderRegistry)({
-		.path = "resources/shaders/dof_bokeh.hlsl",
+		.path = "resources/shaders/pp_dof_bokeh.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -752,7 +752,7 @@ namespace wr
 
 	//dof bokeh post filter
 	REGISTER(shaders::dof_bokeh_post_filter, ShaderRegistry)({
-		.path = "resources/shaders/dof_bokeh_post_filter.hlsl",
+		.path = "resources/shaders/pp_dof_bokeh_post_filter.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -792,7 +792,7 @@ namespace wr
 
 	// depth of field composition
 	REGISTER(shaders::dof_composition, ShaderRegistry)({
-		.path = "resources/shaders/dof_composition.hlsl",
+		.path = "resources/shaders/pp_dof_composition.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -833,7 +833,7 @@ namespace wr
 
 	// Extract bright
 	REGISTER(shaders::bloom_extract_bright, ShaderRegistry)({
-		.path = "resources/shaders/bloom_extract_bright.hlsl",
+		.path = "resources/shaders/pp_bloom_extract_bright.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER
 		});
@@ -874,7 +874,7 @@ namespace wr
 
 	// bloom blur
 	REGISTER(shaders::bloom_blur, ShaderRegistry)({
-		.path = "resources/shaders/bloom_blur.hlsl",
+		.path = "resources/shaders/pp_bloom_blur.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -913,7 +913,7 @@ namespace wr
 
 	// bloom composition
 	REGISTER(shaders::bloom_composition, ShaderRegistry)({
-		.path = "resources/shaders/bloom_composition.hlsl",
+		.path = "resources/shaders/pp_bloom_composition.hlsl",
 		.entry = "main_cs",
 		.type = ShaderType::DIRECT_COMPUTE_SHADER,
 		.defines = {}
@@ -956,13 +956,6 @@ namespace wr
 
 
 	/* ### Hybrid Raytracing ### */
-	REGISTER(shaders::rt_hybrid_lib, ShaderRegistry)({
-		.path = "resources/shaders/rt_reflection_shadows.hlsl",
-		.entry = "HybridRaygenEntry",
-		.type = ShaderType::LIBRARY_SHADER,
-		.defines = {}
-	});
-
 	DESC_RANGE_ARRAY(rt_hybrid_ranges,
 		DESC_RANGE(params::rt_hybrid, Type::UAV_RANGE, params::RTHybridE::OUTPUT),
 		DESC_RANGE(params::rt_hybrid, Type::SRV_RANGE, params::RTHybridE::INDICES),
@@ -991,35 +984,9 @@ namespace wr
 		.m_rtx = true
 	});
 
-	StateObjectDescription::LibraryDesc rt_hybrid_so_library = []()
-	{
-		StateObjectDescription::LibraryDesc lib;
-		lib.shader_handle = shaders::rt_hybrid_lib;
-		lib.exports.push_back(L"HybridRaygenEntry");
-		lib.exports.push_back(L"ReflectionHit");
-		lib.exports.push_back(L"ReflectionMiss");
-		lib.exports.push_back(L"ShadowClosestHitEntry");
-		lib.exports.push_back(L"ShadowMissEntry");
-		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit" });
-		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
-
-		return lib;
-	}();
-
-	REGISTER(state_objects::rt_hybrid_state_object, RTPipelineRegistry)(
-	{
-		.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
-		.library_desc = rt_hybrid_so_library,
-		.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
-		.max_attributes_size = sizeof(float) * 4,
-		.max_recursion_depth = 3,
-		.global_root_signature = root_signatures::rt_hybrid_global,
-		.local_root_signatures = {},
-	});
-
 	/*### Raytraced Ambient Oclusion ### */
 	REGISTER(shaders::rt_ao_lib, ShaderRegistry)({
-		.path = "resources/shaders/ambient_occlusion.hlsl",
+		.path = "resources/shaders/dxr_ambient_occlusion.hlsl",
 		.entry = "AORaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}
@@ -1063,7 +1030,7 @@ namespace wr
 	
 	/* ### Path Tracer ### */
 	REGISTER(shaders::path_tracer_lib, ShaderRegistry)({
-		.path = "resources/shaders/path_tracer.hlsl",
+		.path = "resources/shaders/dxr_pathtracer_main.hlsl",
 		.entry = "RaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}
@@ -1125,7 +1092,7 @@ namespace wr
 
 	/* ### Shadow Raytracing ### */
 	REGISTER(shaders::rt_shadow_lib, ShaderRegistry)({
-		.path = "resources/shaders/rt_reflection_shadows.hlsl",
+		.path = "resources/shaders/dxr_shadow_main.hlsl",
 		.entry = "ShadowRaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}
@@ -1136,11 +1103,8 @@ namespace wr
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_shadow_lib;
 		lib.exports.push_back(L"ShadowRaygenEntry");
-		lib.exports.push_back(L"ReflectionHit");
-		lib.exports.push_back(L"ReflectionMiss");
 		lib.exports.push_back(L"ShadowClosestHitEntry");
 		lib.exports.push_back(L"ShadowMissEntry");
-		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit" });
 		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
 
 		return lib;
@@ -1158,7 +1122,7 @@ namespace wr
 
 	/* ### Reflection Raytracing ### */
 	REGISTER(shaders::rt_reflection_lib, ShaderRegistry)({
-		.path = "resources/shaders/rt_reflection_shadows.hlsl",
+		.path = "resources/shaders/dxr_reflection_main.hlsl",
 		.entry = "ReflectionRaygenEntry",
 		.type = ShaderType::LIBRARY_SHADER,
 		.defines = {}

@@ -416,17 +416,12 @@ namespace wr::imgui::window
 				return DefaultContextMenu(mesh_node, scene_graph);
 			}
 		},
-		{ typeid(LightNode),
+		{ typeid(SkyboxNode),
 			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
 			{
-				auto mesh_node = std::static_pointer_cast<MeshNode>(node);
+				auto sky_node = std::static_pointer_cast<SkyboxNode>(node);
 
-				if (ImGui::Checkbox("Visibile", &mesh_node->m_visible))
-				{
-					return true; // close popup.
-				}
-
-				return DefaultContextMenu(mesh_node, scene_graph);
+				return DefaultContextMenu(sky_node, scene_graph);
 			}
 		},
 	};

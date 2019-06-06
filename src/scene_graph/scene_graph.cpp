@@ -25,6 +25,9 @@ namespace wr
 		m_light_buffer()
 	{
 		m_lights.resize(d3d12::settings::num_lights);
+
+		m_default_skybox = std::make_shared<wr::SkyboxNode>(render_system->m_default_cubemap);
+		m_default_skybox->m_skybox = m_default_skybox->m_prefiltered_env_map = m_default_skybox->m_irradiance = render_system->m_default_cubemap;
 	}
 
 	SceneGraph::~SceneGraph()
@@ -80,7 +83,12 @@ namespace wr
 
 	std::shared_ptr<SkyboxNode> SceneGraph::GetCurrentSkybox()
 	{
-		return m_current_skybox;
+		if (m_current_skybox)
+		{
+			return m_current_skybox;
+		}
+		
+		return m_default_skybox;
 	}
 
 	void SceneGraph::UpdateSkyboxNode(std::shared_ptr<SkyboxNode> node, TextureHandle new_equirectangular)

@@ -117,9 +117,13 @@ namespace wr
 
 		inline void SetupPathTracerTask(RenderSystem & render_system, FrameGraph & fg, RenderTaskHandle & handle, bool resize)
 		{
-			if (fg.HasTask<RTHybridData>())
+			if (fg.HasTask<RTShadowData>())
 			{
-				fg.WaitForPredecessorTask<RTHybridData>();
+				fg.WaitForPredecessorTask<RTShadowData>();
+			}
+			if (fg.HasTask<RTReflectionData>())
+			{
+				fg.WaitForPredecessorTask<RTReflectionData>();
 			}
 
 			// Initialize variables
@@ -182,11 +186,15 @@ namespace wr
 
 		}
 
-		inline void ExecutePathTracerTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
+		inline void ExecutePathTracerTask(RenderSystem& render_system, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle& handle)
 		{
-			if (fg.HasTask<RTHybridData>())
+			if (fg.HasTask<RTShadowData>())
 			{
-				fg.WaitForPredecessorTask<RTHybridData>();
+				fg.WaitForPredecessorTask<RTShadowData>();
+			}
+			if (fg.HasTask<RTReflectionData>())
+			{
+				fg.WaitForPredecessorTask<RTReflectionData>();
 			}
 
 			// Initialize variables
@@ -258,15 +266,8 @@ namespace wr
 				candidate for this.
 				*/
 				{
-					auto texture_pool = render_system.GetDefaultTexturePool();
-
-					if (texture_pool == nullptr)
-					{
-						LOGC("ERROR: Texture Pool in Raytracing Task is nullptr. This is not supposed to happen.");
-					}
-
-					auto texture_handle = texture_pool->GetDefaultAlbedo();
-					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_pool->GetTextureResource(texture_handle));
+					auto texture_handle = render_system.GetDefaultAlbedo();
+					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
 
 					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::path_tracing, params::PathTracingE::TEXTURES));
 					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::TEXTURES));
@@ -340,7 +341,7 @@ namespace wr
 				// Make sure the convolution pass wrote to the skybox.
 				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 
-                                // Get skybox
+                // Get skybox
 				if (SkyboxNode *skybox = scene_graph.GetCurrentSkybox().get())
 				{
 					auto skybox_t = static_cast<d3d12::TextureResource*>(skybox->m_skybox->m_pool->GetTextureResource(skybox->m_skybox.value()));
@@ -350,14 +351,15 @@ namespace wr
 					auto irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_prefiltered_env_map->m_pool->GetTextureResource(skybox->m_prefiltered_env_map.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::PREF_ENV_MAP)), irradiance_t);
 
-					// Get brdf lookup texture
-					auto brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
-                                        d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::BRDF_LUT)), brdf_lut_text);
-
 					// Get Environment Map
 					irradiance_t = static_cast<d3d12::TextureResource*>(skybox->m_irradiance->m_pool->GetTextureResource(skybox->m_irradiance.value()));
 					d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::IRRADIANCE_MAP)), irradiance_t);
 				}
+
+				// Get brdf lookup texture
+				auto brdf_lut_text = static_cast<d3d12::TextureResource*>(n_render_system.m_brdf_lut.value().m_pool->GetTextureResource(n_render_system.m_brdf_lut.value()));
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::path_tracing, params::PathTracingE::BRDF_LUT)), brdf_lut_text);
+
 
 				// Transition depth to NON_PIXEL_RESOURCE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);

@@ -1,3 +1,6 @@
+#ifndef __MATERIAL_UTIL_HLSL__
+#define __MATERIAL_UTIL_HLSL__
+
 #define MATERIAL_HAS_ALBEDO_TEXTURE 1<<0
 #define MATERIAL_HAS_NORMAL_TEXTURE 1<<1
 #define MATERIAL_HAS_ROUGHNESS_TEXTURE 1<<2
@@ -5,26 +8,7 @@
 #define MATERIAL_HAS_EMISSIVE_TEXTURE 1<<4
 #define MATERIAL_HAS_AO_TEXTURE 1<<5
 
-struct MaterialData
-{
-	float3 color;
-	float metallic;
-
-	float roughness;
-	float emissive_multiplier;
-	float is_double_sided;
-	float use_alpha_masking;
-
-	float albedo_uv_scale;
-	float normal_uv_scale;
-	float roughness_uv_scale;
-	float metallic_uv_scale;
-
-	float emissive_uv_scale;
-	float ao_uv_scale;
-	float padding;
-	uint flags;
-};
+#include "dxr_structs.hlsl"
 
 struct OutputMaterialData
 {
@@ -133,3 +117,5 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 
 	return output;
 }
+
+#endif //__MATERIAL_UTIL_HLSL__
