@@ -67,10 +67,9 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
+	float2 padding;
 	float frame_idx;
 	float intensity;
-	float epsilon;
-	unsigned int sample_count;
 };
 
 struct Ray
@@ -99,7 +98,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		return skybox.SampleLevel(s0, direction, 0).rgb;
 	}
 
-	origin += norm * epsilon;
+	origin += norm * EPSILON;
 
 	ReflectionHitInfo payload = {origin, float3(0,0,1), rand_seed, depth, cone};
 
@@ -194,7 +193,7 @@ void HybridRaygenEntry()
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
 	// Get shadow factor
-	float4 shadow_result = DoShadowAllLights(wpos + normal * epsilon, V, normal, metallic, roughness, albedo, sample_count, 0, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos + normal * EPSILON, V, normal, metallic, roughness, albedo, 0, rand_seed);
 
 	// Get reflection result
 	float3 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, depth, cone), 0, 100000);
@@ -235,9 +234,9 @@ void ShadowRaygenEntry()
 		return;
 	}
 
-	wpos += normal * epsilon;
+	wpos += normal * EPSILON;
 	// Get shadow factor
-	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, sample_count, 0, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, 0, rand_seed);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[screen_co] = shadow_result;
@@ -416,7 +415,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 
 	//Lighting
 	#undef SOFT_SHADOWS
-	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, sample_count, payload.depth + 1);
+	float3 lighting = shade_pixel(hit_pos, V, albedo, metal, roughness, emissive, fN, payload.seed, payload.depth + 1);
 	#define SOFT_SHADOWS
 
 	float3 specular = reflection * (kS * sampled_brdf.x + sampled_brdf.y);
