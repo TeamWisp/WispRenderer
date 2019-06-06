@@ -143,7 +143,7 @@ namespace fg_manager
 		// Path Tracer
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::PATH_TRACER];
-			fg = new wr::FrameGraph(10);
+			fg = new wr::FrameGraph(18);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -160,8 +160,12 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTHybridTask(*fg);
+			wr::AddRTShadowTask(*fg);
+			wr::AddRTReflectionTask(*fg);
+
+			wr::AddShadowDenoiserTask(*fg);
 			wr::AddSpatialReconstructionTask(*fg);
+			wr::AddReflectionDenoiserTask(*fg);
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
@@ -187,7 +191,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(27);
+			fg = new wr::FrameGraph(31);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -202,15 +206,15 @@ namespace fg_manager
 
 			// Raytracing task
 			wr::AddRTReflectionTask(*fg);
-			wr::AddRTShadowTask(*fg);
+			//wr::AddRTShadowTask(*fg);
 
-			wr::AddShadowDenoiserTask(*fg);
+			//wr::AddShadowDenoiserTask(*fg);
 			wr::AddSpatialReconstructionTask(*fg);
 
 			wr::AddReflectionDenoiserTask(*fg);
 
 			//Raytraced Ambient Occlusion task
-			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
+			//wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 

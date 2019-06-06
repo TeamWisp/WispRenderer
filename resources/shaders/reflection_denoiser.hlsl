@@ -103,6 +103,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     float2 screen_size = float2(0, 0);
     output_texture.GetDimensions(screen_size.x, screen_size.y);
 
+	/*
     float2 uv = screen_coord / screen_size;
 
     const float depth = linear_depth_texture[screen_coord].x;
@@ -119,6 +120,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     float3 L = reflect(-center_V, N);
 
     float roughness = albedo_roughness_texture[screen_size / 2].xyz;
-
-    output_texture[screen_coord] = float4(brdf_weight(V, L, N, roughness).xxxx) + input_texture[screen_coord];
+	*/
+	
+    output_texture[screen_coord] = input_texture[screen_coord];
 }

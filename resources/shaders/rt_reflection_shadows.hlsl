@@ -112,13 +112,19 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 	ray.TMin = 0;
 	ray.TMax = 10000.0;
 
+	bool nan = isnan(origin)!=bool3(false, false, false) || isnan(direction) != bool3(false, false, false);
+	if(nan)
+	{
+		return skybox.SampleLevel(s0, direction, 0).rgb;
+	}
+
 	// Trace the ray
 	TraceRay(
 		Scene,
 		RAY_FLAG_NONE,
 		//RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH
 		//RAY_FLAG_CULL_BACK_FACING_TRIANGLES,
-		0xFF, // InstanceInclusionMask
+		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		1, // MultiplierForGeometryContributionToHitGroupIndex
 		0, // miss shader index
@@ -144,7 +150,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 	float3 reflected = reflect(-V, N);
 
 	// Shoot an importance sampled ray
-
+	
 	#ifndef PERFECT_MIRROR_REFLECTIONS
 
 
@@ -182,6 +188,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 		return float4(reflection, pdf);
 
 	#else
+	
 		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
 		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), 1);
 	#endif
@@ -238,7 +245,7 @@ void HybridRaygenEntry()
 	// Compute the initial ray cone from the gbuffers.
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 	
-	float4 shadow_result = DoShadowAllLights(wpos + normal * EPSILON, V, normal, metallic, roughness, 0, rand_seed);
+	float4 shadow_result = float4(0,0,0,0); //DoShadowAllLights(wpos + normal * EPSILON, V, normal, metallic, roughness, 0, rand_seed);
 
 	// Get reflection result
 	float4 dirT = float4(0, 0, 0, 0);
@@ -378,6 +385,8 @@ float3 HitAttribute(float3 a, float3 b, float3 c, BuiltInTriangleIntersectionAtt
 [shader("closesthit")]
 void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 {
+	
+
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
 	const Material material = g_materials[offset.material_idx];
@@ -431,6 +440,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 		v2.uv,
 		g_textures[material.albedo_id]);*/
 
+	
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
 		g_textures[material.normal_id],
@@ -491,6 +501,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in MyAttributes attr)
 	// Output the final reflections here
 	payload.color = ambient + lighting;
 	payload.hitT = RayTCurrent();
+
+	
 }
 
 //Reflection skybox

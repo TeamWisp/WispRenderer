@@ -1251,7 +1251,7 @@ namespace wr
 	StateObjectDescription::LibraryDesc rt_reflection_so_library = []()
 	{
 		StateObjectDescription::LibraryDesc lib;
-		lib.shader_handle = shaders::rt_reflection_lib;
+		lib.shader_handle = shaders::rt_shadow_lib;
 		lib.exports.push_back(L"ReflectionRaygenEntry");
 		lib.exports.push_back(L"ReflectionHit");
 		lib.exports.push_back(L"ReflectionMiss");
@@ -1268,7 +1268,7 @@ namespace wr
 			.library_desc = rt_reflection_so_library,
 			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 3),
 			.max_attributes_size = sizeof(float) * 4,
-			.max_recursion_depth = 3,
+			.max_recursion_depth = 1,
 			.global_root_signature = root_signatures::rt_hybrid_global,
 			.local_root_signatures = {}
 		});
