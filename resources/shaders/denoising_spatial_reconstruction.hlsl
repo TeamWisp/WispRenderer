@@ -123,7 +123,7 @@ static const float2 samples[4][64] = {
 float2 sample_neighbor_uv(uint sampleId, uint2 full_res_pixel, uint2 resolution, float rand, float kernelSize)
 {
 	uint pixId = full_res_pixel.x % 2 + full_res_pixel.y % 2 * 2;
-	float2 offset = samples[pixId][ceil(kernelSize) * rand];
+	float2 offset = samples[pixId][64 * rand] * kernelSize;
 	return (float2(full_res_pixel / 2) + offset) / float2(resolution / 2 - 1);
 }
 
@@ -178,7 +178,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 		float randomVar = nextRand(rand_seed);
 
-		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), randomVar, kernel_size);
+		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), randomVar, sampleCountScalar);
 
 		const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
 		const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
