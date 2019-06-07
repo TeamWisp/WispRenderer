@@ -41,9 +41,10 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float2 padding;
 	float frame_idx;
 	float intensity;
+	float epsilon;
+	unsigned int shadow_sample_count;
 };
 
 #include "dxr_shadow_functions.hlsl"
@@ -81,9 +82,9 @@ void ShadowRaygenEntry()
 		return;
 	}
 
-	wpos += normal * EPSILON;
+	wpos += normal * epsilon;
 	// Get shadow factor
-	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, 0, CALLINGPASS_SHADOWS, rand_seed);
+	float4 shadow_result = DoShadowAllLights(wpos, V, normal, normal_metallic.w, albedo_roughness.w, albedo_roughness.xyz, shadow_sample_count, 0, CALLINGPASS_SHADOWS, rand_seed);
 
 	// xyz: reflection, a: shadow factor
 	output_refl_shadow[screen_co] = shadow_result;

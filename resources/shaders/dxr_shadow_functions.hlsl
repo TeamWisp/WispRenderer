@@ -45,12 +45,12 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, uint calling_pas
 }
 
 // Get shadow factor
-float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, uint calling_pass, inout uint rand_seed)
+float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint sample_count, uint depth, uint calling_pass, inout uint rand_seed)
 {
 	float shadow_factor = 0.0f;
 
 #ifdef SOFT_SHADOWS
-	for (uint i = 0; i < MAX_SHADOW_SAMPLES; ++i)
+	for (uint i = 0; i < sample_count; ++i)
 	{
 		// Perhaps change randomness to not be purely random, but algorithm-random?
 		float3 offset = normalize(float3(nextRand(rand_seed), nextRand(rand_seed), nextRand(rand_seed))) - 0.5;
@@ -64,7 +64,7 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float t_max, uint depth, ui
 		shadow_factor += lerp(1.0, 0.0, shadow);
 	}
 
-	shadow_factor /= float(MAX_SHADOW_SAMPLES);
+	shadow_factor /= float(sample_count);
 
 #else /* ifdef SOFT_SHADOWS */
 
