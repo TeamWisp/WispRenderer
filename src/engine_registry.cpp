@@ -1083,7 +1083,7 @@ namespace wr
 	{
 		.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
 		.library_desc = path_tracer_so_library,
-		.max_payload_size = (sizeof(float) * 7) + (sizeof(unsigned int) * 1),
+		.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
 		.max_attributes_size = sizeof(float) * 4,
 		.max_recursion_depth = 6,
 		.global_root_signature = root_signatures::path_tracing_global,

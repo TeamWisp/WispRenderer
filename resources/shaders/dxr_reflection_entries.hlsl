@@ -90,23 +90,10 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 	float3 emissive = output_data.emissive;
 	float ao = output_data.ao;
 
-	float3 N = normalize(mul(model_matrix, float4(-normal, 0)));
-	float3 T = normalize(mul(model_matrix, float4(tangent, 0)));
-#define CALC_B
-#ifndef CALC_B
-	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
-#else
-	T = normalize(T - dot(T, N) * N);
-	float3 B = cross(N, T);
-#endif
-	float3x3 TBN = float3x3(T, B, N);
-
-	float3 fN = normalize(mul(output_data.normal, TBN));
-	fN = lerp(fN, -fN, dot(fN, V) < 0);
-
-	//Shading
-	float3 flipped_N = fN;
-	flipped_N.y *= -1;
+	// Normals
+	float3 fN = CalcPeturbedNormal(normal, output_data.normal, tangent, bitangent, V);
+	float3 flipped_N = fN * -1;
+	
 	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
 
 	// TODO: reflections in reflections
