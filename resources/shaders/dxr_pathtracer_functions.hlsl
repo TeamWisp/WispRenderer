@@ -80,7 +80,7 @@ float probabilityToSampleDiffuse(float3 difColor, float3 specColor)
 static RayCone null_cone = { 0, 0 };
 
 float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
- {
+{
 	// #################### GGX #####################
 	uint light_count = lights[0].tid >> 2;
 	if (light_count < 1) return 0;
