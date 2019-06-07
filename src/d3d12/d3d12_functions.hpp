@@ -281,7 +281,8 @@ namespace wr::d3d12
 	[[nodiscard]] AccelerationStructure CreateBottomLevelAccelerationStructures(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<desc::GeometryDesc> geometry);
+		std::vector<desc::GeometryDesc> geometry,
+		bool allow_transparency);
 
 	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,

@@ -22,12 +22,13 @@
 #include "scene_emibl.hpp"
 #include "scene_spheres.hpp"
 #include "scene_sun_temple.hpp"
+#include "scene_transparency.hpp"
 
 #include "model_loader_assimp.hpp"
 #include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-#define SCENE viknell_scene
+#define SCENE transparency_scene
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;

@@ -39,12 +39,25 @@ namespace wr::d3d12
 
 		// Hitgroup
 		{
-			for (auto def : desc.m_hit_groups)
+			for (auto& def : desc.m_hit_groups)
 			{
+				if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
+				{
+					def.m_anyhit = std::nullopt;
+				}
+
 				auto hitGroup = n_desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
-				hitGroup->SetClosestHitShaderImport(def.second.c_str());
-				hitGroup->SetHitGroupExport(def.first.c_str());
-				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+
+				hitGroup->SetHitGroupExport(def.m_hitgroup.c_str());
+
+				hitGroup->SetClosestHitShaderImport(def.m_closesthit.c_str());
+
+				if (def.m_anyhit.has_value())
+				{
+					hitGroup->SetAnyHitShaderImport(def.m_anyhit.value().c_str());
+				}
+
+				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);;
 			}
 		}
 

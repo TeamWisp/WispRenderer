@@ -110,11 +110,18 @@ namespace wr::d3d12
 			std::uint32_t m_vertex_stride = 0u;
 		};
 
+		struct HitGroupDesc
+		{
+			std::wstring m_hitgroup;
+			std::wstring m_closesthit;
+			std::optional<std::wstring> m_anyhit;
+		};
+
 		struct StateObjectDesc
 		{
 			Shader* m_library = nullptr;
 			std::vector<std::wstring> m_library_exports;
-			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
+			std::vector<HitGroupDesc> m_hit_groups; // hitgroup, closesthit and anyhit
 
 			std::uint32_t max_payload_size = 0u;
 			std::uint32_t max_attributes_size = 0u;

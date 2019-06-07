@@ -1105,7 +1105,8 @@ namespace wr
 		lib.exports.push_back(L"ShadowRaygenEntry");
 		lib.exports.push_back(L"ShadowClosestHitEntry");
 		lib.exports.push_back(L"ShadowMissEntry");
-		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
+		lib.exports.push_back(L"ShadowAnyHitEntry");
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry", L"ShadowAnyHitEntry" });
 
 		return lib;
 	}();
@@ -1135,10 +1136,12 @@ namespace wr
 		lib.exports.push_back(L"ReflectionRaygenEntry");
 		lib.exports.push_back(L"ReflectionHit");
 		lib.exports.push_back(L"ReflectionMiss");
+		lib.exports.push_back(L"ReflectionAnyHit");
 		lib.exports.push_back(L"ShadowClosestHitEntry");
 		lib.exports.push_back(L"ShadowMissEntry");
-		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit" });
-		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
+		lib.exports.push_back(L"ShadowAnyHitEntry");
+		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit", L"ReflectionAnyHit" });
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry", L"ShadowAnyHitEntry" });
 
 		return lib;
 	}();

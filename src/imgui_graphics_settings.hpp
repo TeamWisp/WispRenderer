@@ -84,6 +84,13 @@ namespace wr::imgui::window
 
 			ImGui::Checkbox("Disable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
 
+			ImGui::Checkbox("Allow transparency", &as_build_user_settings.m_runtime.m_allow_transparency);
+
+			if(ImGui::Button("Rebuild BLAS"))
+			{
+				as_build_user_settings.m_runtime.m_rebuild_bot_level = true;
+			}
+
 			ImGui::End();
 			frame_graph->UpdateSettings<wr::ASBuildData>(as_build_user_settings);
 		}
