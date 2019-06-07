@@ -170,11 +170,11 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		float3 irradiance = 0;
 		if (use_raycone)
 		{
-			TraceColorRayCone(hit_pos + (EPSILON * N), rand_dir, depth, seed, cone);
+			irradiance = TraceColorRayCone(hit_pos + (EPSILON * N), rand_dir, depth, seed, cone);
 		}
 		else
 		{
-			TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
+			irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
 		}
 
 		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
