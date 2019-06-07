@@ -132,8 +132,6 @@ void RaygenEntry()
 		result = float3(1000, 0, 0);
 	}
 
-	clamp(result, 0, 100);
-
 	float4 prev = gOutput[DispatchRaysIndex().xy];
 
 	float4 color = (frame_idx * prev + float4(result, 1)) / (frame_idx + 1); // accumulate

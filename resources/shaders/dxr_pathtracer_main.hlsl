@@ -40,9 +40,8 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float2 padding;
 	float frame_idx;
-	float intensity;
+	float3 padding;
 };
 
 #include "dxr_pathtracer_functions.hlsl"
