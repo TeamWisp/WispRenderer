@@ -10,6 +10,7 @@
 #define MAX_SHADOW_SAMPLES 1
 #define RUSSIAN_ROULETTE
 #define NO_PATH_TRACED_NORMALS
+#define CALC_BITANGENT // calculate bitangent in the shader instead of using the bitangent uploaded
 
 #ifdef FALLBACK
 	#undef MAX_RECURSION

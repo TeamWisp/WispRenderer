@@ -38,8 +38,7 @@ float3 CalcPeturbedNormal(float3 normal, float3 normal_map, float3 tangent, floa
 	float3x4 object_to_world = ObjectToWorld3x4();
 	float3 N = normalize(mul(object_to_world, float4(normal, 0)));
 	float3 T = normalize(mul(object_to_world, float4(tangent, 0)));
-#define CALC_B
-#ifndef CALC_B
+#ifndef CALC_BITANGENT
 	const float3 B = normalize(mul(object_to_world, float4(bitangent, 0)));
 #else
 	T = normalize(T - dot(T, N) * N);
