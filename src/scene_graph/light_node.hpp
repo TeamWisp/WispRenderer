@@ -38,6 +38,9 @@ namespace wr
 		//! Set data for a spot light
 		void SetSpot(DirectX::XMVECTOR pos, float rad, DirectX::XMVECTOR rot, float ang, DirectX::XMVECTOR col = { 1, 1, 1 });
 
+		//! Set data for light physical size
+		void SetLightSize(float size);
+
 		//! Update
 		void Update(uint32_t frame_idx);
 

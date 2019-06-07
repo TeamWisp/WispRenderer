@@ -332,8 +332,7 @@ namespace wr
 			// Currently default scales are set to 1 for all materials.
 			MaterialUVScales default_scales;
 
-
-			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, default_scales, false, true);
+			auto new_handle = material_pool->Create(texture_pool);
 			Material* mat = material_pool->GetMaterial(new_handle);
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
@@ -380,7 +379,8 @@ namespace wr
 			mat->SetConstant<MaterialConstant::METALLIC>(material->m_base_metallic);
 			mat->SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(material->m_base_emissive);
 			mat->SetConstant<MaterialConstant::ROUGHNESS>(material->m_base_roughness);
-
+			mat->SetConstant<MaterialConstant::IS_ALPHA_MASKED>(false);
+			mat->SetConstant<MaterialConstant::IS_DOUBLE_SIDED>(false);
 
 			material_handles.push_back(new_handle);
 		}

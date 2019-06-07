@@ -7,7 +7,6 @@ float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 {
 	if (depth >= MAX_RECURSION)
 	{
-		//return skybox.SampleLevel(s0, SampleSphericalMap(direction), 0);
 		return float3(0, 0, 0);
 	}
 
@@ -19,6 +18,36 @@ float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsign
 	ray.TMax = 1.0e38f;
 
 	PathTracingHitInfo payload = { float3(1, 1, 1), seed, origin, depth };
+
+	// Trace the ray
+	TraceRay(
+		Scene,
+		RAY_FLAG_NONE,
+		~0, // InstanceInclusionMask
+		0, // RayContributionToHitGroupIndex
+		0, // MultiplierForGeometryContributionToHitGroupIndex
+		0, // miss shader index
+		ray,
+		payload);
+
+	return payload.color;
+}
+
+float3 TraceColorRayCone(float3 origin, float3 direction, unsigned int depth, unsigned int seed, RayCone cone)
+{
+	if (depth >= MAX_RECURSION)
+	{
+		return float3(0, 0, 0);
+	}
+
+	// Define a ray, consisting of origin, direction, and the min-max distance values
+	RayDesc ray;
+	ray.Origin = origin;
+	ray.Direction = direction;
+	ray.TMin = 0;
+	ray.TMax = 1.0e38f;
+
+	PathTracingHitInfoCone payload = { float3(1, 1, 1), seed, origin, depth, cone };
 
 	// Trace the ray
 	TraceRay(
@@ -47,6 +76,8 @@ float probabilityToSampleDiffuse(float3 difColor, float3 specColor)
 	float lumSpecular = max(0.01f, luminance(specColor.rgb));
 	return lumDiffuse / (lumDiffuse + lumSpecular);
 }
+
+static RayCone null_cone = { 0, 0 };
 
 float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, unsigned int seed, unsigned int depth)
 {
@@ -85,7 +116,7 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 	float3 H = normalize(V + L);
 
 	// Shadow
-	float shadow_mult = float(light_count) * GetShadowFactor(hit_pos + (L * EPSILON), L, max_light_dist, MAX_SHADOW_SAMPLES, depth, CALLINGPASS_PATHTRACING, seed);
+	float shadow_mult = float(light_count) * GetShadowFactor(hit_pos + (L * EPSILON), L, light.light_size, max_light_dist, MAX_SHADOW_SAMPLES, depth, CALLINGPASS_PATHTRACING, seed);
 
 	// Compute some dot products needed for shading
 	float NdotV = saturate(dot(fN, V));
@@ -110,7 +141,7 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 	return (shadow_mult * lighting);
 }
 
-float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, float ao, unsigned int seed, unsigned int depth)
+float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, float ao, unsigned int seed, unsigned int depth, bool use_raycone = false, RayCone cone = null_cone)
 {
 	// #################### GGX #####################
 	float diffuse_probability = probabilityToSampleDiffuse(albedo, metal);
@@ -136,9 +167,17 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		// ##### BOUNCE #####
 		nextRand(seed);
 		const float3 rand_dir = getCosHemisphereSample(seed, N);
-		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
-		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
+		float3 irradiance = 0;
+		if (use_raycone)
+		{
+			irradiance = TraceColorRayCone(hit_pos + (EPSILON * N), rand_dir, depth, seed, cone);
+		}
+		else
+		{
+			irradiance = TraceColorRay(hit_pos + (EPSILON * N), rand_dir, depth, seed);
+		}
 
+		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
 
 		return irradiance * color;
 	}
@@ -181,7 +220,15 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 #endif
 
 		// #### BOUNCE ####
-		float3 irradiance = TraceColorRay(hit_pos + (EPSILON * N), L, depth, seed);
+		float3 irradiance = 0;
+		if (use_raycone)
+		{
+			irradiance = TraceColorRayCone(hit_pos + (EPSILON * N), L, depth, seed, cone);
+		}
+		else
+		{
+			irradiance = TraceColorRay(hit_pos + (EPSILON * N), L, depth, seed);
+		}
 		if (dot(N, L) <= 0.0f) irradiance = float3(0, 0, 0);
 
 		return color * irradiance;

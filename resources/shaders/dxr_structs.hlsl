@@ -87,6 +87,15 @@ struct PathTracingHitInfo
 	unsigned int depth;
 };
 
+struct PathTracingHitInfoCone
+{
+	float3 color;
+	unsigned int seed;
+	float3 origin;
+	unsigned int depth;
+	RayCone cone;
+};
+
 struct FullRTHitInfo
 {
 	float3 color;
