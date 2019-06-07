@@ -116,7 +116,7 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 	float3 H = normalize(V + L);
 
 	// Shadow
-	float shadow_mult = float(light_count) * GetShadowFactor(hit_pos + (L * EPSILON), L, max_light_dist, depth, CALLINGPASS_PATHTRACING, seed);
+	float shadow_mult = float(light_count) * GetShadowFactor(hit_pos + (L * EPSILON), L, light.light_size, max_light_dist, MAX_SHADOW_SAMPLES, depth, CALLINGPASS_PATHTRACING, seed);
 
 	// Compute some dot products needed for shading
 	float NdotV = saturate(dot(fN, V));
