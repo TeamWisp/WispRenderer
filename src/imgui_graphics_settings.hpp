@@ -5,6 +5,7 @@
 #include "render_tasks/d3d12_ansel.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "render_tasks/d3d12_rt_shadow_task.hpp"
+#include "render_tasks/d3d12_shadow_denoiser_task.hpp"
 
 namespace wr::imgui::window
 {
@@ -13,14 +14,16 @@ namespace wr::imgui::window
 	static bool ansel_settings_open = true;
 	static bool asbuild_settings_open = true;
 	static bool shadow_settings_open = true;
+	static bool shadow_denoiser_settings_open = true;
 
-	static wr::RTAOSettings rtao_user_settings;
-	static wr::HBAOSettings hbao_user_settings;
-	static wr::AnselSettings ansel_user_settings;
-	static wr::ASBuildSettings as_build_user_settings;
-	static wr::RTShadowSettings shadow_user_settings;	
+	static RTAOSettings rtao_user_settings;
+	static HBAOSettings hbao_user_settings;
+	static AnselSettings ansel_user_settings;
+	static ASBuildSettings as_build_user_settings;
+	static RTShadowSettings shadow_user_settings;	
+	static ShadowDenoiserSettings shadow_denoiser_user_settings;
 
-	void GraphicsSettings(wr::FrameGraph* frame_graph)
+	void GraphicsSettings(FrameGraph* frame_graph)
 	{
 		if (frame_graph->HasTask<wr::RTAOData>() && rtao_settings_open)
 		{
@@ -33,11 +36,11 @@ namespace wr::imgui::window
 
 			ImGui::End();
 
-			frame_graph->UpdateSettings<wr::RTAOData>(rtao_user_settings);
+			frame_graph->UpdateSettings<RTAOData>(rtao_user_settings);
 		}
 
 
-		if (frame_graph->HasTask<wr::HBAOData>() && hbao_settings_open)
+		if (frame_graph->HasTask<HBAOData>() && hbao_settings_open)
 		{
 			ImGui::Begin("HBAO+ Settings", &hbao_settings_open);
 
@@ -50,11 +53,11 @@ namespace wr::imgui::window
 
 			ImGui::End();
 
-			frame_graph->UpdateSettings<wr::HBAOData>(hbao_user_settings);
+			frame_graph->UpdateSettings<HBAOData>(hbao_user_settings);
 		}
 
 
-		if (frame_graph->HasTask<wr::AnselData>() && ansel_settings_open)
+		if (frame_graph->HasTask<AnselData>() && ansel_settings_open)
 		{
 			ImGui::Begin("NVIDIA Ansel Settings", &ansel_settings_open);
 
@@ -74,31 +77,53 @@ namespace wr::imgui::window
 
 			ImGui::End();
 
-			frame_graph->UpdateSettings<wr::AnselData>(ansel_user_settings);
+			frame_graph->UpdateSettings<AnselData>(ansel_user_settings);
 		}
 
 
-		if (frame_graph->HasTask<wr::ASBuildData>() && asbuild_settings_open)
+		if (frame_graph->HasTask<ASBuildData>() && asbuild_settings_open)
 		{
 			ImGui::Begin("Acceleration Structure Settings", &asbuild_settings_open);
 
 			ImGui::Checkbox("Disable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
 
 			ImGui::End();
-			frame_graph->UpdateSettings<wr::ASBuildData>(as_build_user_settings);
+			frame_graph->UpdateSettings<ASBuildData>(as_build_user_settings);
 		}
 
-		if (frame_graph->HasTask<wr::RTShadowData>() && shadow_settings_open)
+		if (frame_graph->HasTask<RTShadowData>() && shadow_settings_open)
 		{
 			ImGui::Begin("Shadow Settings", &rtao_settings_open);
 
 			ImGui::DragFloat("Epsilon", &shadow_user_settings.m_runtime.m_epsilon, 0.01f, 0.0f, 15.f);
 			ImGui::DragInt("Sample Count", &shadow_user_settings.m_runtime.m_sample_count, 1, 1, 64);
+			
+			frame_graph->UpdateSettings<RTShadowData>(shadow_user_settings);
+			
+			if (frame_graph->HasTask<ShadowDenoiserData>())
+			{
+				ImGui::Dummy(ImVec2(0.0f, 10.0f));
+				ImGui::LabelText("", "Denoising");
+				ImGui::Separator();
 
+				ImGui::DragFloat("Alpha", &shadow_denoiser_user_settings.m_runtime.m_alpha, 0.01f, 0.001f, 1.f);
+				ImGui::DragFloat("Moments Alpha", &shadow_denoiser_user_settings.m_runtime.m_moments_alpha, 0.01f, 0.001f, 1.f);
+				ImGui::DragFloat("L Phi", &shadow_denoiser_user_settings.m_runtime.m_l_phi, 0.1f, 0.1f, 16.f);
+				ImGui::DragFloat("N Phi", &shadow_denoiser_user_settings.m_runtime.m_n_phi, 1.f, 1.f, 360.f);
+				ImGui::DragFloat("Z Phi", &shadow_denoiser_user_settings.m_runtime.m_z_phi, 0.1f, 0.1f, 16.f);
+
+				frame_graph->UpdateSettings<ShadowDenoiserData>(shadow_denoiser_user_settings);
+			}
 			ImGui::End();
 
-			frame_graph->UpdateSettings<wr::RTShadowData>(shadow_user_settings);
 
+		}
+
+		if (frame_graph->HasTask<ShadowDenoiserData>())
+		{
+			ImGui::Begin("Shadow Denoising Settings", &shadow_denoiser_settings_open);
+			
+			ImGui::End();
 		}
 	
 	}

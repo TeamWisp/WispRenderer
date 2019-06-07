@@ -14,6 +14,18 @@
 
 namespace wr
 {
+	struct ShadowDenoiserSettings
+	{
+		struct Runtime
+		{
+			float m_alpha = 0.05f;
+			float m_moments_alpha = 0.2f;
+			float m_l_phi = 4.f;
+			float m_n_phi = 128.f;
+			float m_z_phi = 1.0f;
+		};
+		Runtime m_runtime;
+	};
 	struct ShadowDenoiserData
 	{		
 		d3d12::PipelineState* m_reprojection_pipeline;
@@ -73,29 +85,11 @@ namespace wr
 			{
 				data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(
 					SizeAlignTwoPower(
-						sizeof(temp::ShadowDenoiserSettings_CBData), 256) * d3d12::settings::num_back_buffers * data.m_denoiser_settings_buffer.size() +
-					SizeAlignTwoPower(sizeof(temp::DenoiserCamera_CBData), 256) * d3d12::settings::num_back_buffers);
+						sizeof(temp::ShadowDenoiserSettings_CBData), 256) * d3d12::settings::num_back_buffers * data.m_denoiser_settings_buffer.size());
 				for (int i = 0; i < data.m_denoiser_settings_buffer.size(); ++i)
 				{
 					data.m_denoiser_settings_buffer[i] = data.m_constant_buffer_pool->Create(sizeof(temp::ShadowDenoiserSettings_CBData));
-				}
-				data.m_denoiser_camera = data.m_constant_buffer_pool->Create(sizeof(temp::DenoiserCamera_CBData));
-
-				data.m_denoiser_settings = {};
-				data.m_denoiser_settings.m_alpha = 0.05f;
-				data.m_denoiser_settings.m_moments_alpha = 0.2f;
-				data.m_denoiser_settings.m_l_phi = 4.f;
-				data.m_denoiser_settings.m_n_phi = 128.f;
-				data.m_denoiser_settings.m_z_phi = 1.0;
-
-				for (int i = 0; i < data.m_denoiser_settings_buffer.size(); ++i)
-				{
-					data.m_denoiser_settings.m_step_distance = (float)(1<<i);
-					for (int j = 0; j < d3d12::settings::num_back_buffers; ++j)
-					{
-						data.m_constant_buffer_pool->Update(data.m_denoiser_settings_buffer[i], sizeof(temp::ShadowDenoiserSettings_CBData), 0, j, (uint8_t*)& data.m_denoiser_settings);
-					}
-				}
+				}			
 			}
 
 			data.m_input_render_target = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<RTShadowData>());
@@ -365,9 +359,7 @@ namespace wr
 
 			BindResources(n_render_system, cmd_list, data, is_fallback);
 
-			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb->m_native, 1, frame_idx);
-
-			d3d12::BindComputeConstantBuffer(cmd_list, static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer[0])->m_native, 2, frame_idx);
+			d3d12::BindComputeConstantBuffer(cmd_list, static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer[0])->m_native, 1, frame_idx);
 
 			d3d12::Dispatch(cmd_list,
 				static_cast<int>(std::ceil(n_render_system.m_viewport.m_viewport.Width / 16.f)),
@@ -417,9 +409,7 @@ namespace wr
 
 			BindResources(n_render_system, cmd_list, data, is_fallback);
 
-			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb->m_native, 1, frame_idx);
-
-			d3d12::BindComputeConstantBuffer(cmd_list, static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer[0])->m_native, 2, frame_idx);
+			d3d12::BindComputeConstantBuffer(cmd_list, static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer[0])->m_native, 1, frame_idx);
 
 			d3d12::Transition(cmd_list, data.m_out_color_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
@@ -453,11 +443,9 @@ namespace wr
 
 			BindResources(n_render_system, cmd_list, data, is_fallback);
 
-			d3d12::BindComputeConstantBuffer(cmd_list, camera_cb->m_native, 1, frame_idx);
-
 			for (int i = 0; i < data.m_denoiser_settings_buffer.size(); ++i)
 			{
-				d3d12::BindComputeConstantBuffer(cmd_list, static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer[i])->m_native, 2, frame_idx);
+				d3d12::BindComputeConstantBuffer(cmd_list, static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer[i])->m_native, 1, frame_idx);
 
 				if (i % 2 == 0)
 				{
@@ -551,21 +539,34 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			bool is_fallback = d3d12::GetRaytracingType(n_render_system.m_device) == RaytracingType::FALLBACK;
-
+			auto settings = fg.GetSettings<ShadowDenoiserData, ShadowDenoiserSettings>();
 			auto active_camera = sg.GetActiveCamera();
 
-			temp::DenoiserCamera_CBData camera_data;
-			camera_data.m_projection = active_camera->m_projection;
-			camera_data.m_inverse_projection = active_camera->m_inverse_projection;
-			camera_data.m_view = active_camera->m_view;
-			camera_data.m_inverse_view = active_camera->m_inverse_view;
-			camera_data.m_prev_projection = active_camera->m_prev_projection;
-			camera_data.m_prev_view = active_camera->m_prev_view;
-			camera_data.m_near_plane = active_camera->m_frustum_near;
-			camera_data.m_far_plane = active_camera->m_frustum_far;
+			//temp::DenoiserCamera_CBData camera_data;
+			//camera_data.m_projection = active_camera->m_projection;
+			//camera_data.m_inverse_projection = active_camera->m_inverse_projection;
+			//camera_data.m_view = active_camera->m_view;
+			//camera_data.m_inverse_view = active_camera->m_inverse_view;
+			//camera_data.m_prev_projection = active_camera->m_prev_projection;
+			//camera_data.m_prev_view = active_camera->m_prev_view;
+			//camera_data.m_near_plane = active_camera->m_frustum_near;
+			//camera_data.m_far_plane = active_camera->m_frustum_far;
 
-			data.m_constant_buffer_pool->Update(data.m_denoiser_camera, sizeof(temp::DenoiserCamera_CBData), 0, (uint8_t*)&camera_data);
-			const auto camera_cb = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_camera);
+			//data.m_constant_buffer_pool->Update(data.m_denoiser_camera, sizeof(temp::DenoiserCamera_CBData), 0, (uint8_t*)&camera_data);
+			
+			//Populating setting cb
+			data.m_denoiser_settings.m_alpha			= settings.m_runtime.m_alpha;
+			data.m_denoiser_settings.m_moments_alpha	= settings.m_runtime.m_moments_alpha;
+			data.m_denoiser_settings.m_l_phi			= settings.m_runtime.m_l_phi;
+			data.m_denoiser_settings.m_z_phi			= settings.m_runtime.m_z_phi;
+			data.m_denoiser_settings.m_n_phi			= settings.m_runtime.m_n_phi;
+
+			for (int i = 0; i < data.m_denoiser_settings_buffer.size(); ++i)
+			{
+				data.m_denoiser_settings.m_step_distance = (float)(1 << i);
+				
+				data.m_constant_buffer_pool->Update(data.m_denoiser_settings_buffer[i], sizeof(temp::ShadowDenoiserSettings_CBData), 0, n_render_system.GetFrameIdx(), (uint8_t*)& data.m_denoiser_settings);
+			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
@@ -653,6 +654,7 @@ namespace wr
 		desc.m_allow_multithreading = true;
 
 		fg.AddTask<ShadowDenoiserData>(desc, name, FG_DEPS<RTShadowData>());
+		fg.UpdateSettings<ShadowDenoiserData>(ShadowDenoiserSettings());
 	}
 
 }/* wr */

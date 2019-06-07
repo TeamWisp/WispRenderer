@@ -81,7 +81,6 @@ namespace wr
 	REGISTER(root_signatures::svgf_denoiser, RootSignatureRegistry)({
 		.m_parameters ={
 			ROOT_PARAM_DESC_TABLE(svgf_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM(GetCBV(params::svgf_denoiser, params::SVGFDenoiserE::CAMERA_PROPERTIES)),
 			ROOT_PARAM(GetCBV(params::svgf_denoiser, params::SVGFDenoiserE::SVGF_PROPERTIES)),
 		},
 		.m_samplers = {
