@@ -154,8 +154,14 @@ namespace wr
 		model->m_materials.push_back(mat_data);
 	}
 
-	inline void LoadMesh(ModelData* model, tinygltf::Model tg_model, tinygltf::Mesh mesh)
+	inline void LoadMesh(ModelData* model, tinygltf::Model tg_model, tinygltf::Node node, DirectX::XMMATRIX parent_transform)
 	{
+		auto mesh = tg_model.meshes[node.mesh];
+
+		auto translation = node.translation;
+		auto rotation = node.rotation;
+		auto scale = node.scale;
+		auto matrix = node.matrix;
 
 		for (auto primitive : mesh.primitives)
 		{
@@ -219,6 +225,13 @@ namespace wr
 				}
 			}
 
+			// Apply Transformation
+			for (auto& position : mesh_data->m_positions)
+			{
+				auto transformed_pos = DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&position), parent_transform);
+				DirectX::XMStoreFloat3(&position, transformed_pos);
+			}
+
 			auto tangent_bitangent = ComputeTangents(mesh_data);
 			mesh_data->m_tangents = tangent_bitangent.first;
 			mesh_data->m_bitangents = tangent_bitangent.second;
@@ -260,9 +273,65 @@ namespace wr
 			LoadMaterial(model, tg_model, mat);
 		}
 
-		for (auto mesh : tg_model.meshes)
+		std::function<void(int, DirectX::XMMATRIX)> recursive_func = [&](int node_id, DirectX::XMMATRIX parent_transform)
 		{
-			LoadMesh(model, tg_model, mesh);
+			auto node = tg_model.nodes[node_id];
+
+			auto translation = node.translation;
+			auto scale = node.scale;
+			auto rotation = node.rotation;
+			auto matrix = node.matrix;
+
+			DirectX::XMMATRIX transform;
+
+			if (matrix.empty())
+			{
+				DirectX::XMMATRIX translation_mat = translation.empty() ? DirectX::XMMatrixIdentity() : DirectX::XMMatrixTranslationFromVector({ (float)translation[0], (float)translation[1], (float)translation[2] });
+				DirectX::XMMATRIX rotation_mat = rotation.empty() ? DirectX::XMMatrixIdentity() : DirectX::XMMatrixRotationQuaternion({ (float)rotation[0], (float)rotation[1], (float)rotation[2], (float)rotation[3] });
+				DirectX::XMMATRIX scale_mat = scale.empty() ? DirectX::XMMatrixIdentity() : DirectX::XMMatrixScalingFromVector({ (float)scale[0], (float)scale[1], (float)scale[2] });
+				transform = scale_mat * rotation_mat * translation_mat;
+			}
+			else
+			{
+				transform.r[0].m128_f32[0] = matrix[0];
+				transform.r[0].m128_f32[1] = matrix[1];
+				transform.r[0].m128_f32[2] = matrix[2];
+				transform.r[0].m128_f32[3] = matrix[3];
+
+				transform.r[1].m128_f32[0] = matrix[4];
+				transform.r[1].m128_f32[1] = matrix[5];
+				transform.r[1].m128_f32[2] = matrix[6];
+				transform.r[1].m128_f32[3] = matrix[7];
+
+				transform.r[2].m128_f32[0] = matrix[8];
+				transform.r[2].m128_f32[1] = matrix[9];
+				transform.r[2].m128_f32[2] = matrix[10];
+				transform.r[2].m128_f32[3] = matrix[11];
+
+				transform.r[3].m128_f32[0] = matrix[12];
+				transform.r[3].m128_f32[1] = matrix[13];
+				transform.r[3].m128_f32[2] = matrix[14];
+				transform.r[3].m128_f32[3] = matrix[15];
+
+			}
+
+			parent_transform = parent_transform * transform;
+
+			if (node.mesh > -1)
+			{
+				LoadMesh(model, tg_model, node, parent_transform);
+			}
+
+			for (auto child_id : node.children)
+			{
+				recursive_func(child_id, parent_transform);
+			}
+		};
+
+		DirectX::XMMATRIX parent_transform = DirectX::XMMatrixIdentity();
+		for (auto node_id : tg_model.scenes[tg_model.defaultScene].nodes)
+		{
+			recursive_func(node_id, parent_transform);
 		}
 
 		return model;
