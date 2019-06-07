@@ -88,9 +88,9 @@ namespace wr
 		SetColor(col);
 	}
 
-	void LightNode::SetLightSize(float size)
+	void LightNode::SetLightSize(float size_in_deg)
 	{
-		m_light->light_size = size;
+		m_light->light_size = DirectX::XMConvertToRadians(size_in_deg);
 		SignalChange();
 	}
 

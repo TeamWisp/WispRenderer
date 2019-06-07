@@ -4,6 +4,7 @@
 #define LIGHTS_REGISTER register(t2)
 #include "rand_util.hlsl"
 #include "pbr_util.hlsl"
+#include "math.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
 #include "dxr_texture_lod.hlsl"

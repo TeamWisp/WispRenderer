@@ -1,6 +1,8 @@
 #ifndef __RAND_UTIL_HLSL__
 #define __RAND_UTIL_HLSL__
 
+#include "math.hlsl"
+
 // Initialize random seed
 uint initRand(uint val0, uint val1, uint backoff = 16)
 {
@@ -26,7 +28,7 @@ float nextRand(inout uint s)
 float3 rand_in_unit_sphere(inout uint rng_state)
 {
 	float z = nextRand(rng_state) * 2.0f - 1.0f;
-	float t = nextRand(rng_state) * 2.0f * 3.1415926f;
+	float t = nextRand(rng_state) * 2.0f * M_PI;
 	float r = sqrt(max(0.0, 1.0f - z * z));
 	float x = r * cos(t);
 	float y = r * sin(t);
@@ -54,7 +56,7 @@ float3 getCosHemisphereSample(inout uint randSeed, float3 hitNorm)
 	float3 bitangent = getPerpendicularVector(hitNorm);
 	float3 tangent = cross(bitangent, hitNorm);
 	float r = sqrt(randVal.x);
-	float phi = 2.0f * 3.14159265f * randVal.y;
+	float phi = 2.0f * M_PI * randVal.y;
 
 	// Get our cosine-weighted hemisphere lobe sample direction
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(max(0.0, 1.0f - randVal.x));
@@ -70,7 +72,7 @@ float3 getUniformHemisphereSample(inout uint randSeed, float3 hitNorm)
 	float3 bitangent = getPerpendicularVector(hitNorm);
 	float3 tangent = cross(bitangent, hitNorm);
 	float r = sqrt(max(0.0f,1.0f - randVal.x*randVal.x));
-	float phi = 2.0f * 3.14159265f * randVal.y;
+	float phi = 2.0f * M_PI * randVal.y;
 
 	// Get our cosine-weighted hemisphere lobe sample direction
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * randVal.x;
@@ -86,7 +88,7 @@ float3 getUniformHemisphereSample(inout uint randSeed, float3 hitNorm, float ang
 	float3 tangent = cross(bitangent, hitNorm);
 
 	float r = sqrt(max(0.0f, 1.0f - randVal.x * randVal.x)) * sin(angle);
-	float phi = 2.0f * 3.14159265f * randVal.y;
+	float phi = 2.0f * M_PI * randVal.y;
 
 	// Get our cosine-weighted hemisphere lobe sample direction
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * cos(asin(r));
@@ -99,7 +101,7 @@ float3 perturbDirectionVector(inout uint randSeed, float3 direction, float angle
 
 	float h = cos(angle);
 
-	float phi = 2.0f * 3.14159265f * s;
+	float phi = 2.0f * M_PI * s;
 
 	float z = h + (1.0f - h) * r;
 	float sinT = sqrt(1.0f - z * z);

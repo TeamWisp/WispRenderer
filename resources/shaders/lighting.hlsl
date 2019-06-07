@@ -164,7 +164,7 @@ float4 DoShadowAllLights(float3 wpos, float3 V, float3 normal, float metallic, f
 
 		float attenuation = calc_attenuation(light, L, light_dist);
 
-		if (attenuation < 0.2f)
+		if (light_dist > light.rad && tid != light_type_directional)
 		{
 			continue;
 		}

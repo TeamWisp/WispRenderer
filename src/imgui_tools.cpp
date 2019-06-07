@@ -314,8 +314,9 @@ namespace wr::imgui::window
 				}
 
 				static float light_size_temp = 0.0f;
-				ImGui::DragFloat("Light Size", &light_size_temp, 0.1f, 0.0f, 10.0f);
-				light.light_size = light_size_temp * 0.01f; //Map it back to small values that the shader can digest
+				ImGui::DragFloat("Light Size", &light_size_temp, 0.1f, 0.0f, 5.0f);
+				light_node->SetLightSize(light_size_temp);
+				
 
 				if (ImGui::Button("Take Camera Transform"))
 				{
