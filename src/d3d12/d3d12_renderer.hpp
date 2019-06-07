@@ -75,9 +75,10 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
 			DirectX::XMMATRIX m_inv_vp = DirectX::XMMatrixIdentity();
 
-			uint32_t m_padding[2] = { 0u };
 			float m_frame_idx = 0.0f;
 			float m_intensity = 0.0f;
+			float m_epsilon = 0.01f;
+			std::uint32_t m_sample_count = 1u;
 		};
 
 		struct RTAO_CBData
@@ -101,9 +102,9 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_view_projection = DirectX::XMMatrixIdentity();
 			DirectX::XMVECTOR m_camera_position = DirectX::XMVectorZero();
 
-			float light_radius = 0.0f;
-			float metal = 0.0f;
-			float roughness = 0.0f;
+			float focal_radius = 0.0f;
+			float focal_length = 0.0f;
+			float frame_idx = 0.0f;
 			float intensity = 0.0f;
 		};
 

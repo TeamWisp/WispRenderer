@@ -20,11 +20,11 @@ namespace wr
 		struct Runtime
 		{
 			float bias = 0.05f;
-			float radius = 2.f;
+			float radius = 0.5f;
 			float power = 1.f; // The final AO output is pow(AO, powerExponent) // 1.0~4.0
-			float max_distance = 2000.f;
+			float max_distance = 20.f;
 			int sample_count = 8;
-		};//Currently setup to make screen shots in pica pica
+		};//Currently setup to make work with retardedly small scenes
 
 		Runtime m_runtime;
 	};
