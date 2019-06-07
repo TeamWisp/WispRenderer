@@ -205,7 +205,17 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
 	float ao = output_data.ao;
 
 	float3 N = 0;
-	float3 fN = CalcPeturbedNormal(normal, output_data.normal, tangent, bitangent, V, N);
+	float3 fN = 0;
+	if (payload.depth > 0)
+	{
+		N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
+		fN = N;
+	}
+	else
+	{
+		N = 0;
+		fN = CalcPeturbedNormal(normal, output_data.normal, tangent, bitangent, V, N);
+	}
 
 	nextRand(payload.seed);
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
