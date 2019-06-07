@@ -416,6 +416,14 @@ namespace wr::imgui::window
 				return DefaultContextMenu(mesh_node, scene_graph);
 			}
 		},
+		{ typeid(LightNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
+				auto light_node = std::static_pointer_cast<LightNode>(node);
+
+				return DefaultContextMenu(light_node, scene_graph);
+			}
+		},
 		{ typeid(SkyboxNode),
 			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
 			{
