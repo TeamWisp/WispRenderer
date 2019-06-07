@@ -1014,6 +1014,7 @@ namespace wr
 		lib.shader_handle = shaders::rt_ao_lib;
 		lib.exports.push_back(L"AORaygenEntry");
 		lib.exports.push_back(L"MissEntry");
+		//lib.exports.push_back(L"AnyHitEntry");
 		return lib;
 	}();
 

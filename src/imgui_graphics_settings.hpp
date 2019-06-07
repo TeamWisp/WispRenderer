@@ -17,7 +17,6 @@ namespace wr::imgui::window
 	static wr::RTAOSettings rtao_user_settings;
 	static wr::HBAOSettings hbao_user_settings;
 	static wr::AnselSettings ansel_user_settings;
-	static wr::ASBuildSettings as_build_user_settings;
 	static wr::RTShadowSettings shadow_user_settings;	
 
 	void GraphicsSettings(wr::FrameGraph* frame_graph)
@@ -80,6 +79,8 @@ namespace wr::imgui::window
 
 		if (frame_graph->HasTask<wr::ASBuildData>() && asbuild_settings_open)
 		{
+			auto as_build_user_settings = frame_graph->GetSettings<ASBuildData, ASBuildSettings>();
+
 			ImGui::Begin("Acceleration Structure Settings", &asbuild_settings_open);
 
 			ImGui::Checkbox("Disable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);

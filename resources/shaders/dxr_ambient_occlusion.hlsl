@@ -3,10 +3,13 @@
 
 #include "rand_util.hlsl"
 #include "dxr_global.hlsl"
+#include "dxr_functions.hlsl"
 
 RWTexture2D<float4> output : register(u0); // x: AO value
 Texture2D gbuffer_normal : register(t1);
 Texture2D gbuffer_depth : register(t2);
+
+typedef BuiltInTriangleIntersectionAttributes Attributes;
 
 struct AOHitInfo
 {
@@ -29,15 +32,6 @@ cbuffer CBData : register(b0)
 	unsigned int sample_count;
 };
 
-struct Attributes { };
-
-float3 unpack_position(float2 uv, float depth)
-{
-	// Get world space position
-	const float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-	float4 wpos = mul(inv_vp, ndc);
-	return (wpos.xyz / wpos.w).xyz;
-}
 
 bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
@@ -53,7 +47,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+		RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -78,7 +72,7 @@ void AORaygenEntry()
 
     float3 normal = gbuffer_normal[screen_co].xyz;
 	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth);
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
 
 	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float cam_distance = length(wpos-camera_pos);
@@ -106,5 +100,11 @@ void MissEntry(inout AOHitInfo hit : SV_RayPayload)
 {
     hit.is_hit = 0.0f;
 }
+//
+//[shader("anyhit")]
+//void AnyHitEntry(inout AOHitInfo hit, in Attributes attr)
+//{
+//	AcceptHitAndEndSearch();
+//}
 
 #endif //__DXR_AMBIENT_OCCLUSION_HLSL__
