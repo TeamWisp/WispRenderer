@@ -47,7 +47,6 @@ float3 CalcPeturbedNormal(float3 normal, float3 normal_map, float3 tangent, floa
 #endif
 	const float3x3 TBN = float3x3(T, B, N);
 
-	//float3 fN = N;
 	float3 fN = normalize(mul(normal_map, TBN));
 	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
