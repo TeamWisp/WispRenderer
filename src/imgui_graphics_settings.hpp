@@ -117,15 +117,7 @@ namespace wr::imgui::window
 			ImGui::End();
 
 
-		}
-
-		if (frame_graph->HasTask<ShadowDenoiserData>())
-		{
-			ImGui::Begin("Shadow Denoising Settings", &shadow_denoiser_settings_open);
-			
-			ImGui::End();
-		}
-	
+		}	
 	}
 
 }// namepace imgui::window

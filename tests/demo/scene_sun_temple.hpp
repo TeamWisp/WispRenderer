@@ -36,7 +36,7 @@ namespace sun_temple_scene
 				equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/sun_temple/SunTemple_Skybox.hdr", false, false);
 			}
 
-			model_pool = render_system->CreateModelPool(128_mb, 128_mb);
+			model_pool = render_system->CreateModelPool(128_mb, 64_mb);
 
 			{
 				sun_temple_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple.fbx", true);
@@ -186,7 +186,7 @@ namespace sun_temple_scene
 		fire_bowl_node_2->SetRadius(2000.f);*/
 	}
 
-	void UpdateScene()
+	void UpdateScene(void* scam) //Argument needed to compile...
 	{
 		static float waiting = 0.0f;
 		static bool start_lerp = false;

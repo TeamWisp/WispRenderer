@@ -540,20 +540,7 @@ namespace wr
 			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			bool is_fallback = d3d12::GetRaytracingType(n_render_system.m_device) == RaytracingType::FALLBACK;
 			auto settings = fg.GetSettings<ShadowDenoiserData, ShadowDenoiserSettings>();
-			auto active_camera = sg.GetActiveCamera();
 
-			//temp::DenoiserCamera_CBData camera_data;
-			//camera_data.m_projection = active_camera->m_projection;
-			//camera_data.m_inverse_projection = active_camera->m_inverse_projection;
-			//camera_data.m_view = active_camera->m_view;
-			//camera_data.m_inverse_view = active_camera->m_inverse_view;
-			//camera_data.m_prev_projection = active_camera->m_prev_projection;
-			//camera_data.m_prev_view = active_camera->m_prev_view;
-			//camera_data.m_near_plane = active_camera->m_frustum_near;
-			//camera_data.m_far_plane = active_camera->m_frustum_far;
-
-			//data.m_constant_buffer_pool->Update(data.m_denoiser_camera, sizeof(temp::DenoiserCamera_CBData), 0, (uint8_t*)&camera_data);
-			
 			//Populating setting cb
 			data.m_denoiser_settings.m_alpha			= settings.m_runtime.m_alpha;
 			data.m_denoiser_settings.m_moments_alpha	= settings.m_runtime.m_moments_alpha;
