@@ -155,12 +155,20 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	const float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	const float3 V = normalize(camera_pos - pos);
 
-	const float roughness = max(albedo_roughness[pix].w, 0.001);
+	float roughness = albedo_roughness[pix].w;
 	const float3 N = normalize(normal_metallic[pix].xyz);
 
 	const float pdf = max(reflection_pdf.SampleLevel(nearest_sampler, uv, 0).w, 1e-5);
 
 	//Weigh the samples correctly
+
+	if(roughness == 0.0)
+	{		
+		filtered[pix] = float4(reflection_pdf.SampleLevel(nearest_sampler, uv, 0).xyz, 1);
+		return;
+	}
+
+	roughness = max(roughness, 0.01);
 
 	float3 result = float3(0, 0, 0);
 	float weight_sum = 0;
