@@ -120,10 +120,10 @@ static const float2 samples[4][64] = {
 };
 
 //Sample a neighbor; 0,0 -> 1,1; outside of that range indicates an invalid uv
-float2 sample_neighbor_uv(uint sampleId, uint2 full_res_pixel, uint2 resolution, float rand)
+float2 sample_neighbor_uv(uint sampleId, uint2 full_res_pixel, uint2 resolution, float rand, float kernelSize)
 {
 	uint pixId = full_res_pixel.x % 2 + full_res_pixel.y % 2 * 2;
-	float2 offset = samples[pixId][16 * rand];
+	float2 offset = samples[pixId][ceil(kernelSize) * rand];
 	return (float2(full_res_pixel / 2) + offset) / float2(resolution / 2 - 1);
 }
 
@@ -158,7 +158,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	const float roughness = max(albedo_roughness[pix].w, 0.001);
 	const float3 N = normalize(normal_metallic[pix].xyz);
 
-	const float pdf = max(reflection_pdf.SampleLevel(nearest_sampler, uv, 0).w, 1e-5);
+	const float pdf = max(reflection_pdf.SampleLevel(nearest_sampler, uv, 0).w, 0);
 
 	//Weigh the samples correctly
 
@@ -167,14 +167,18 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 	uint rand_seed = initRand(pix.x + pix.y * width, frame_idx);
 
-	[unroll]
-	for (uint i = 0; i < sample_count; ++i)
+	float distance = length(camera_pos - pos);
+	float sampleCountScalar = (1 - distance / far_plane) * roughness;
+
+	float kernel_size = 16 * sampleCountScalar;
+
+	for (uint i = 0; i < ceil(kernel_size); ++i)
 	{
 		//Get sample related data
 
 		float randomVar = nextRand(rand_seed);
 
-		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), randomVar);
+		const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), randomVar, kernel_size);
 
 		const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
 		const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
@@ -200,7 +204,9 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	//Output averaged result
 
 	float3 result3 = result / weight_sum;
+	//float3 result3 = float3((pdf > 1).xxx);
 	//result3 /= 1 + dot(luminance, result3);
+	//float3 result3 = reflection_pdf.SampleLevel(nearest_sampler, uv, 0).xyz;
 	filtered[pix] = float4(result3, 1);
 
 }
