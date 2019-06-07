@@ -33,6 +33,8 @@ namespace wr
 		DescriptorAllocation out_uav_from_rtv;
 
 		bool tlas_requires_init = false;
+		DirectX::XMVECTOR last_cam_pos = {};
+		DirectX::XMVECTOR last_cam_rot = {};
 	};
 
 	namespace internal
@@ -180,6 +182,19 @@ namespace wr
 				auto scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::full_raytracing, params::FullRaytracingE::OFFSETS)), scene_offset_handle);
 
+				// Reset accmulation if nessessary
+				if (DirectX::XMVector3Length(DirectX::XMVectorSubtract(scene_graph.GetActiveCamera()->m_position, data.last_cam_pos)).m128_f32[0] > 0.01)
+				{
+					data.last_cam_pos = scene_graph.GetActiveCamera()->m_position;
+					n_render_system.temp_rough = -1;
+				}
+
+				if (DirectX::XMVector3Length(DirectX::XMVectorSubtract(scene_graph.GetActiveCamera()->m_rotation_radians, data.last_cam_rot)).m128_f32[0] > 0.001)
+				{
+					data.last_cam_rot = scene_graph.GetActiveCamera()->m_rotation_radians;
+					n_render_system.temp_rough = -1;
+				}
+
 				/*
 				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
 				We fill the table with a single descriptor, then overwrite some spots with the he correct textures
@@ -273,8 +288,9 @@ namespace wr
 				cam_data.m_view = camera->m_view;
 				cam_data.m_camera_position = camera->m_position;
 				cam_data.m_inverse_view_projection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection));
-				cam_data.metal = n_render_system.temp_metal;
-				cam_data.light_radius = n_render_system.light_radius;
+				cam_data.focal_radius = camera->m_f_number;
+				cam_data.focal_length = camera->m_focal_length;
+				cam_data.frame_idx = ++n_render_system.temp_rough;
 				cam_data.intensity = n_render_system.temp_intensity;
 				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RayTracingCamera_CBData), 0, frame_idx, (std::uint8_t*)&cam_data); // FIXME: Uhh wrong pool?
 

@@ -101,9 +101,9 @@ namespace wr
 			DirectX::XMMATRIX m_inverse_view_projection = DirectX::XMMatrixIdentity();
 			DirectX::XMVECTOR m_camera_position = DirectX::XMVectorZero();
 
-			float light_radius = 0.0f;
-			float metal = 0.0f;
-			float roughness = 0.0f;
+			float focal_radius = 0.0f;
+			float focal_length = 0.0f;
+			float frame_idx = 0.0f;
 			float intensity = 0.0f;
 		};
 
