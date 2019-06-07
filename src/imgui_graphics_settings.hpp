@@ -90,7 +90,7 @@ namespace wr::imgui::window
 
 		if (frame_graph->HasTask<wr::RTShadowData>() && shadow_settings_open)
 		{
-			ImGui::Begin("RTAO Settings", &rtao_settings_open);
+			ImGui::Begin("Shadow Settings", &rtao_settings_open);
 
 			ImGui::DragFloat("Epsilon", &shadow_user_settings.m_runtime.m_epsilon, 0.01f, 0.0f, 15.f);
 			ImGui::DragInt("Sample Count", &shadow_user_settings.m_runtime.m_sample_count, 1, 1, 64);

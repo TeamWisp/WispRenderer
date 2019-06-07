@@ -21,7 +21,7 @@ namespace wr
 	{
 		struct Runtime
 		{
-			float m_epsilon = 0.0f;
+			float m_epsilon = 0.01f;
 			int m_sample_count = 1;
 		};
 
