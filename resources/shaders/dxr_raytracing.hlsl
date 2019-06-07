@@ -185,7 +185,7 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float mip_level = 0;
+	float mip_level = payload.depth;
 
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
@@ -204,19 +204,8 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
 	float3 emissive = output_data.emissive;
 	float ao = output_data.ao;
 
-	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
-	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
-#define CALC_B
-#ifndef CALC_B
-	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
-#else
-	T = normalize(T - dot(T, N) * N);
-	float3 B = cross(N, T);
-#endif
-	const float3x3 TBN = float3x3(T, B, N);
-
-	float3 fN = normalize(mul(output_data.normal, TBN));
-	fN = lerp(fN, -fN, dot(fN, V) < 0);
+	float3 N = 0;
+	float3 fN = CalcPeturbedNormal(normal, output_data.normal, tangent, bitangent, V, N);
 
 	nextRand(payload.seed);
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);

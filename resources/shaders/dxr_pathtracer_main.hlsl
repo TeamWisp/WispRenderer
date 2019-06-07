@@ -6,6 +6,7 @@
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
+#include "dxr_texture_lod.hlsl"
 
 // Definitions for: 
 // - Vertex, Material, Offset
@@ -79,10 +80,19 @@ void RaygenEntry()
 
 	float3 result = float3(0, 0, 0);
 
+	SurfaceHit sfhit;
+	sfhit.pos = wpos;
+	sfhit.normal = normal;
+	sfhit.dist = length(cpos - wpos);
+	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
+
+	// Compute the initial ray cone from the gbuffers.
+ 	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
+
 	nextRand(rand_seed);
 	const float3 rand_dir = getCosHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
+	result = TraceColorRayCone(wpos + (EPSILON * normal), rand_dir, 0, rand_seed, cone);
 
 	if (any(isnan(result)))
 	{
