@@ -82,7 +82,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 
 		float NdotL = max(dot(N, L), 0);
 
-		if(NdotL >= 0)
+		if(NdotL <= 0)
 		{
 			nextRand(rand_seed);
 			xi = hammersley2d(rand_seed, 8192);

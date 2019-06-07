@@ -61,18 +61,21 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 	payload.cone = Propagate(payload.cone, 0, length(payload.origin - hit_pos));
 
 	// Calculate the texture LOD level 
-	float mip_level = ComputeTextureLOD(
-		payload.cone,
-		V,
-		normalize(mul(model_matrix, float4(normal, 0))),
-		mul(model_matrix, float4(v0.pos, 1)),
-		mul(model_matrix, float4(v1.pos, 1)),
-		mul(model_matrix, float4(v2.pos, 1)),
-		v0.uv,
-		v1.uv,
-		v2.uv,
-		g_textures[material.albedo_id]);
+	// float mip_level = ComputeTextureLOD(
+	// 	payload.cone,
+	// 	V,
+	// 	normalize(mul(model_matrix, float4(normal, 0))),
+	// 	mul(model_matrix, float4(v0.pos, 1)),
+	// 	mul(model_matrix, float4(v1.pos, 1)),
+	// 	mul(model_matrix, float4(v2.pos, 1)),
+	// 	v0.uv,
+	// 	v1.uv,
+	// 	v2.uv,
+	// 	g_textures[material.albedo_id]);
 
+	//TODO: Fixme
+	float mip_level = 0;
+	
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
 		g_textures[material.normal_id],
