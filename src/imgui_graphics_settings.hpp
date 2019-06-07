@@ -16,17 +16,11 @@ namespace wr::imgui::window
 	static bool shadow_settings_open = true;
 	static bool shadow_denoiser_settings_open = true;
 
-	static RTAOSettings rtao_user_settings;
-	static HBAOSettings hbao_user_settings;
-	static AnselSettings ansel_user_settings;
-	static ASBuildSettings as_build_user_settings;
-	static RTShadowSettings shadow_user_settings;	
-	static ShadowDenoiserSettings shadow_denoiser_user_settings;
-
 	void GraphicsSettings(FrameGraph* frame_graph)
 	{
 		if (frame_graph->HasTask<wr::RTAOData>() && rtao_settings_open)
 		{
+			auto rtao_user_settings = frame_graph->GetSettings<RTAOData, RTAOSettings>();
 			ImGui::Begin("RTAO Settings", &rtao_settings_open);
 
 			ImGui::DragFloat("Bias", &rtao_user_settings.m_runtime.bias, 0.01f, 0.0f, 100.f);
@@ -42,6 +36,7 @@ namespace wr::imgui::window
 
 		if (frame_graph->HasTask<HBAOData>() && hbao_settings_open)
 		{
+			auto hbao_user_settings = frame_graph->GetSettings<HBAOData, HBAOSettings>();
 			ImGui::Begin("HBAO+ Settings", &hbao_settings_open);
 
 			ImGui::DragFloat("Meters to units", &hbao_user_settings.m_runtime.m_meters_to_view_space_units, 0.1f, 0.1f, 100.f);
@@ -59,6 +54,8 @@ namespace wr::imgui::window
 
 		if (frame_graph->HasTask<AnselData>() && ansel_settings_open)
 		{
+			auto ansel_user_settings = frame_graph->GetSettings<AnselData, AnselSettings>();
+
 			ImGui::Begin("NVIDIA Ansel Settings", &ansel_settings_open);
 
 			ImGui::Checkbox("Translation", &ansel_user_settings.m_runtime.m_allow_translation); ImGui::SameLine();
@@ -83,6 +80,8 @@ namespace wr::imgui::window
 
 		if (frame_graph->HasTask<ASBuildData>() && asbuild_settings_open)
 		{
+			auto as_build_user_settings = frame_graph->GetSettings<ASBuildData, ASBuildSettings>();
+
 			ImGui::Begin("Acceleration Structure Settings", &asbuild_settings_open);
 
 			ImGui::Checkbox("Disable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
@@ -93,6 +92,8 @@ namespace wr::imgui::window
 
 		if (frame_graph->HasTask<RTShadowData>() && shadow_settings_open)
 		{
+			auto shadow_user_settings = frame_graph->GetSettings<RTShadowData, RTShadowSettings>();
+
 			ImGui::Begin("Shadow Settings", &rtao_settings_open);
 
 			ImGui::DragFloat("Epsilon", &shadow_user_settings.m_runtime.m_epsilon, 0.01f, 0.0f, 15.f);
@@ -102,6 +103,8 @@ namespace wr::imgui::window
 			
 			if (frame_graph->HasTask<ShadowDenoiserData>())
 			{
+				auto shadow_denoiser_user_settings = frame_graph->GetSettings<ShadowDenoiserData, ShadowDenoiserSettings>();
+
 				ImGui::Dummy(ImVec2(0.0f, 10.0f));
 				ImGui::LabelText("", "Denoising");
 				ImGui::Separator();
