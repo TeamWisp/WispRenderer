@@ -132,7 +132,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
     float roughness = max(albedo_roughness_texture[screen_size / 4].a, 1e-3);
 	
-	float pdf = ray_raw_texture.SampleLevel(point_sampler, float2(0.25, 0.25), 0).a;
+	float pdf = ray_raw_texture.SampleLevel(point_sampler, uv, 0).a;
 
 	float center_weight = brdf_weight(center_V, L, N, roughness);
 
@@ -164,12 +164,12 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	//kernel = screen_coord.x > kernel_bottom_left.x && screen_coord.y > kernel_bottom_left.y;
 	//kernel = kernel && screen_coord.x < kernel_top_right.x && screen_coord.y < kernel_top_right.y;
 
-	float2 line_1 = float2(((screen_size - kernel_top_left.y) - (screen_size - kernel_bottom_left.y)) / (kernel_top_left.x - kernel_bottom_left.x), 0.0);
-	line_1.y = (screen_size - kernel_top_left.y) - line_1.x * kernel_top_left.x;
-	float2 line_2 = float2(((screen_size - kernel_top_right.y) - (screen_size - kernel_bottom_right.y)) / (kernel_top_right.x - kernel_bottom_right.x), 0.0);
-	line_2.y = (screen_size - kernel_top_right.y) - line_1.x * kernel_top_right.x;
-	float2 line_3 = float2(((screen_size - kernel_bottom_right.y) - (screen_size - kernel_bottom_left.y)) / (kernel_bottom_right.x - kernel_bottom_left.x), 0.0);
-	line_3.y = (screen_size - kernel_bottom_right.y) - line_1.x * kernel_bottom_right.x;
+	float2 line_1 = float2(((screen_size.y - kernel_top_left.y) - (screen_size.y - kernel_bottom_left.y)) / (kernel_top_left.x - kernel_bottom_left.x), 0.0);
+	line_1.y = (screen_size.y - kernel_top_left.y) - line_1.x * kernel_top_left.x;
+	float2 line_2 = float2(((screen_size.y - kernel_top_right.y) - (screen_size.y - kernel_bottom_right.y)) / (kernel_top_right.x - kernel_bottom_right.x), 0.0);
+	line_2.y = (screen_size.y - kernel_top_right.y) - line_1.x * kernel_top_right.x;
+	float2 line_3 = float2(((screen_size.y - kernel_bottom_right.y) - (screen_size.y - kernel_bottom_left.y)) / (kernel_bottom_right.x - kernel_bottom_left.x), 0.0);
+	line_3.y = (screen_size.y - kernel_bottom_right.y) - line_1.x * kernel_bottom_right.x;
 	
 	kernel = kernel && line_1.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_1.y == 0;
 	kernel = kernel || line_2.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_2.y == 0;
@@ -186,6 +186,52 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		output_texture[screen_coord] = output + kernel * float4(0, 1, 0, 0);
 	}
 	//output_texture[screen_coord] = albedo_roughness_texture[screen_coord].a;
+
+	center_normal = p_normal;
+	center_depth = p_depth;
+
+	N = center_normal.xyz;
+	L = reflect(-V, N);
+	roughness = max(albedo_roughness_texture[screen_coord].a, 1e-3);
+
+	float weights = 1.0;
+	float4 accum = ray_raw_texture.SampleLevel(point_sampler, screen_coord / screen_size, 0);
+
+	for(int x = -10; x < 11; ++x)
+	{
+		for(int y = -10; y < 11; ++y)
+		{
+			float2 location = screen_coord + float2(x, y);
+
+				float4 color = ray_raw_texture.SampleLevel(point_sampler, location / screen_size, 0);
+
+				float3 world_pos = world_position_texture[location].xyz;
+				float3 V = normalize(cam_pos - world_pos);
+
+				float3 p_normal = float3(0.0, 0.0, 1.0);
+				float2 p_depth = float2(0.0, 0.0);
+
+				FetchNormalAndLinearZ(location, p_normal, p_depth);
+
+				float phi_depth = max(center_depth.y, 1e-8) * length(location - screen_coord);
+
+				float weight = max(brdf_weight(V, L, N, roughness), 1e-5) * 
+				max(ComputeWeightNoLuminance(center_depth.x, p_depth.x, phi_depth, center_normal, p_normal), 1e-5);
+
+				weight *= !(pdf==0.0 || location.x < 0 || location.x >= screen_size.x || location.y < 0 || location.y >= screen_size.y || (x==0 && y == 0));
+				weights += weight;
+				accum += color * weight;
+		}
+	}
+
+	bool nan = isnan(weights)!=bool4(false, false, false, false);
+	if(nan)
+	{
+		output_texture[screen_coord] = float4(0, 1, 0, 1);
+		return;
+	}
+
+	output_texture[screen_coord] = accum / weights;
 }
 
 #endif

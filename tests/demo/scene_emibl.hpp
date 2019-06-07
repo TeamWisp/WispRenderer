@@ -120,6 +120,7 @@ namespace emibl_scene
 
 				mahogfloor_material_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0.f);
 				mahogfloor_material_internal->SetConstant<wr::MaterialConstant::METALLIC>(1.f);
+				mahogfloor_material_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1.f, 1.f, 1.f });
 
 				// Create Material
 				material_handles[1] = material_pool->Create(texture_pool.get());
