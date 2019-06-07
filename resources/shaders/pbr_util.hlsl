@@ -1,9 +1,8 @@
 #ifndef __PBR_UTILS_HLSL__
 #define __PBR_UTILS_HLSL__
 
-//static const float PI = 3.14159265359;
-#define M_PI 3.14159265358979
- 
+#include "math.hlsl"
+
 // Based omn http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
 float random(float2 co)
 {
