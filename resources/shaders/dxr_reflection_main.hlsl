@@ -102,7 +102,7 @@ void ReflectionRaygenEntry()
 
 	// Get reflection result
 	float4 dirT = float4(0, 0, 0, 0);
-	float4 reflection_result = clamp(DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT), 1e-5, 10000);
+	float4 reflection_result = min(DoReflection(wpos, V, normal, rand_seed, 0, roughness, cone, dirT), 10000);
 
 	// xyz: reflection, a: shadow factor
 	output_reflection[screen_co] = reflection_result;
