@@ -6,7 +6,7 @@ add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE )
 project(Wisp)
 
 option(WISP_BUILD_TESTS "Enable Wisp Tests" ON)
-option(WISP_LOG_TO_STDOUT "Allow printing to stdout" OFF)
+option(WISP_LOG_TO_STDOUT "Allow printing to stdout" ON)
 option(WISP_BUILD_SHARED "Build Wisp as a shared library" OFF)
 if (WISP_BUILD_SHARED)
 	set(BUILD_SHARED_LIBS ON)
@@ -202,23 +202,3 @@ if (WISP_BUILD_TESTS)
 	add_subdirectory(tests ${CMAKE_BINARY_DIR}/tests)
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Demo)
 endif()
-
-## Generate Include Directory
-macro(configure_files srcDir destDir)
-    message(STATUS "Configuring directory ${destDir}")
-    make_directory(${destDir})
-
-	file(GLOB_RECURSE templateFiles RELATIVE ${srcDir} ${srcDir}/*)
-    foreach(templateFile ${templateFiles})
-        set(srcTemplatePath ${srcDir}/${templateFile})
-        if(NOT IS_DIRECTORY ${srcTemplatePath})
-            message(STATUS "Configuring file ${templateFile}")
-            configure_file(
-                    ${srcTemplatePath}
-                    ${destDir}/${templateFile}
-                    @ONLY)
-        endif(NOT IS_DIRECTORY ${srcTemplatePath})
-    endforeach(templateFile)
-endmacro(configure_files)
-
-#configure_files("${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/include")
