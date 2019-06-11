@@ -301,7 +301,7 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 	});
 
-	REGISTER(pipelines::basic_deferred, PipelineRegistry) < VertexColor > ({
+	REGISTER(pipelines::basic_deferred, PipelineRegistry) < Vertex > ({
 		.m_vertex_shader_handle = shaders::basic_deferred_vs,
 		.m_pixel_shader_handle = shaders::basic_deferred_ps,
 		.m_compute_shader_handle = std::nullopt,
@@ -316,7 +316,7 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 		});
 
-	REGISTER(pipelines::basic_hybrid, PipelineRegistry) < VertexColor > ({
+	REGISTER(pipelines::basic_hybrid, PipelineRegistry) < Vertex > ({
 		.m_vertex_shader_handle = shaders::basic_hybrid_vs,
 		.m_pixel_shader_handle = shaders::basic_hybrid_ps,
 		.m_compute_shader_handle = std::nullopt,
@@ -391,7 +391,7 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 		});
 
-	REGISTER(pipelines::mip_mapping, PipelineRegistry) < VertexColor > ({
+	REGISTER(pipelines::mip_mapping, PipelineRegistry) < Vertex > ({
 		.m_vertex_shader_handle = std::nullopt,
 		.m_pixel_shader_handle = std::nullopt,
 		.m_compute_shader_handle = shaders::mip_mapping_cs,
