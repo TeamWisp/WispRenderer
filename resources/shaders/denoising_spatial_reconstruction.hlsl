@@ -121,10 +121,11 @@ static const float2 samples[4][64] = {
 };
 
 //Sample a neighbor; 0,0 -> 1,1; outside of that range indicates an invalid uv
-float2 sample_neighbor_uv(uint sampleId, uint2 full_res_pixel, uint2 resolution, float rand, float kernelSize)
+float2 sample_neighbor_uv(uint sampleId, uint2 full_res_pixel, uint2 resolution, float2 rand, float kernelSize)
 {
 	uint pixId = full_res_pixel.x % 2 + full_res_pixel.y % 2 * 2;
-	float2 offset = samples[pixId][64 * rand] * kernelSize;
+	float2 offset = samples[pixId][sampleId] * kernelSize;
+	offset = mul(float2x2(rand.x, rand.y, -rand.y, rand.x), offset);
 	return (float2(full_res_pixel / 2) + offset) / float2(resolution / 2 - 1);
 }
 
@@ -150,13 +151,13 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	//Get per pixel values
 
 	const float depth = depth_buffer[pix].r;
-	const float2 uv = float2(pix.xy) / float2(width, height);
+	const float2 uv = float2(pix.xy) / float2(width - 1, height - 1);
 	const float3 pos = unpack_position(uv, depth);
 
 	const float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	const float3 V = normalize(camera_pos - pos);
 
-	float roughness = albedo_roughness[pix].w;
+	const float roughness = max(albedo_roughness[pix].w, 0.001);
 	const float3 N = normalize(normal_metallic[pix].xyz);
 
 	const float pdf = reflection_pdf.SampleLevel(nearest_sampler, uv, 0).w;
@@ -164,7 +165,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	float3 result3;
 
 	//pdf < 0 disables spatial reconstruction
-	if (pdf >= 0 && roughness != 0.0)
+	if (pdf >= 0)
 	{
 
 		//Weigh the samples correctly
@@ -176,52 +177,45 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 		float distance = length(camera_pos - pos);
 		float sampleCountScalar = (1 - distance / far_plane) * roughness;
+		//float sampleCountScalar = 1;
 
 		float kernel_size = 16 * sampleCountScalar;
 
 		for (uint i = 0; i < ceil(kernel_size); ++i) {
+
 			//Get sample related data
 
-			float randomVar = nextRand(rand_seed);
+			float2 random = float2(nextRand(rand_seed), nextRand(rand_seed));
 
-			const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), randomVar, sampleCountScalar);
+			const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), random, sampleCountScalar);
 
-			const float4 local_reflection = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0);
+			const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
+			const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
 
-			const float3 color = clamp(local_reflection.xyz, 0, 1);
-			const float local_pdf = local_reflection.w;
-			if(local_pdf>0)
-			{
+			const float4 hitT = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
+			//const float3 hit_pos = hitT.xyz * hitT.w + pos_neighbor;
 
-				const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
-				const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
+			const float3 V_neighbor = normalize(camera_pos - pos_neighbor);
 
-				const float4 hitT = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
-				//const float3 hit_pos = hitT.xyz * hitT.w + pos_neighbor;
+			const float3 color = clamp(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz, 0, 1);
+			const float3 L = hitT.xyz;
+			const float pdf_neighbor = max(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).w, 1e-5);
+			const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
 
-				const float3 V_neighbor = normalize(camera_pos - pos_neighbor);
-				const float3 L = hitT.xyz;
-				const float pdf_neighbor = max(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).w, 1e-5);
-				const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
+			//Calculate weight and weight sum
 
-				//Calculate weight and weight sum
-
-				const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
-				const float weight = brdf_weight(V, L, N, roughness) / local_pdf * neighbor_weight;
-				result += color * weight;
-				weight_sum += weight;
-			}
+			const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
+			float weight = brdf_weight(V, L, N, roughness) / pdf_neighbor * neighbor_weight;
+			weight = lerp(weight, 1e-5, isnan(weight));
+			result += color * weight;
+			weight_sum += weight;
 		}
 
 		result3 = result / weight_sum;
-		if(weight_sum==0)
-		{
-			result3 = reflection_pdf.SampleLevel(linear_sampler, uv, 0).xyz;
-		}
 	}
 	else
 	{
-		result3 = reflection_pdf.SampleLevel(linear_sampler, uv, 0).xyz;
+		result3 = reflection_pdf.SampleLevel(nearest_sampler, uv, 0).xyz;
 	}
 
 	filtered[pix] = float4(result3, 1);
