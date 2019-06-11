@@ -176,14 +176,16 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	//kernel = kernel && line_3.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_3.y == 0;
 	//kernel = screen_coord.y < kernel_bottom_right.y;
 
-	if(pdf==0.0)
+	if(pdf<0.0)
 	{
 		output_texture[screen_coord] = input_texture[screen_coord];
+		return;
 	}
 	else
 	{
     	float4 output = lerp(input_texture[screen_coord], float4(0, 0, 1, 1), min(weight, 1.0));
 		output_texture[screen_coord] = output + kernel * float4(0, 1, 0, 0);
+		//return;
 	}
 	//output_texture[screen_coord] = albedo_roughness_texture[screen_coord].a;
 
@@ -192,18 +194,32 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	N = center_normal.xyz;
 	L = reflect(-V, N);
-	roughness = max(albedo_roughness_texture[screen_coord].a, 1e-3);
+	roughness = max(albedo_roughness_texture[screen_coord].a, 1e-2);
 
 	float weights = 1.0;
-	float4 accum = ray_raw_texture.SampleLevel(point_sampler, screen_coord / screen_size, 0);
-
-	for(int x = -10; x < 11; ++x)
+	float4 accum = input_texture[screen_coord];
+	for(int x = -15; x < 16; ++x)
 	{
-		for(int y = -10; y < 11; ++y)
+		for(int y = -15; y < 16; ++y)
 		{
 			float2 location = screen_coord + float2(x, y);
 
-				float4 color = ray_raw_texture.SampleLevel(point_sampler, location / screen_size, 0);
+			float pdf = ray_raw_texture[screen_coord].w;
+
+			if(pdf < 0 || location.x < 0 || location.x >= screen_size.x || location.y < 0 || location.y >= screen_size.y)
+			{
+				
+			}
+			else
+			{
+				float4 color = input_texture[location];
+
+				bool4 nan = isnan(color);
+				if(nan.x == true || nan.y == true || nan.z == true || nan.w == true)
+				{
+					output_texture[screen_coord] = float4(1, 0, 0, 1);
+					return;
+				}
 
 				float3 world_pos = world_position_texture[location].xyz;
 				float3 V = normalize(cam_pos - world_pos);
@@ -218,17 +234,12 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float weight = max(brdf_weight(V, L, N, roughness), 1e-5) * 
 				max(ComputeWeightNoLuminance(center_depth.x, p_depth.x, phi_depth, center_normal, p_normal), 1e-5);
 
-				weight *= !(pdf==0.0 || location.x < 0 || location.x >= screen_size.x || location.y < 0 || location.y >= screen_size.y || (x==0 && y == 0));
+				weight *= x!=0 || y!=0;
+
 				weights += weight;
 				accum += color * weight;
+			}
 		}
-	}
-
-	bool nan = isnan(weights)!=bool4(false, false, false, false);
-	if(nan)
-	{
-		output_texture[screen_coord] = float4(0, 1, 0, 1);
-		return;
 	}
 
 	output_texture[screen_coord] = accum / weights;

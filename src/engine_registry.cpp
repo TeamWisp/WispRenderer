@@ -974,7 +974,8 @@ namespace wr
 			ROOT_PARAM(GetCBV(params::spatial_reconstruction, params::SpatialReconstructionE::CAMERA_PROPERTIES))
 		},
 		.m_samplers = {
-			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER }
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER },
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
 		}
 	});
 

@@ -302,7 +302,7 @@ namespace wr
 			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
-			RenderTargetProperties::ResolutionScalar(1.0f)
+			RenderTargetProperties::ResolutionScalar(0.5f)
 		};
 
 		RenderTaskDesc desc;
