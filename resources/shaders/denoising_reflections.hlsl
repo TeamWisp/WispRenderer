@@ -172,7 +172,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	line_3.y = (screen_size.y - kernel_bottom_right.y) - line_1.x * kernel_bottom_right.x;
 	
 	kernel = kernel && line_1.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_1.y == 0;
-	kernel = kernel || line_2.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_2.y == 0;
+	//kernel = kernel || line_2.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_2.y == 0;
 	//kernel = kernel && line_3.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_3.y == 0;
 	//kernel = screen_coord.y < kernel_bottom_right.y;
 
@@ -199,7 +199,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float weights = 1.0;
 	float4 accum = input_texture[screen_coord];
 
-	const int kernel_size = 1;
+	const int kernel_size = 31;
 	for(int x = -floor(kernel_size/2); x <= floor(kernel_size/2); ++x)
 	{
 		for(int y = -floor(kernel_size/2); y <= floor(kernel_size/2); ++y)

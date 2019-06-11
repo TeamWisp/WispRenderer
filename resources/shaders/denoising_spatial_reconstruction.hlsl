@@ -157,7 +157,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	const float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	const float3 V = normalize(camera_pos - pos);
 
-	const float roughness = max(albedo_roughness[pix].w, 0.001);
+	float roughness = albedo_roughness[pix].w;
 	const float3 N = normalize(normal_metallic[pix].xyz);
 
 	const float pdf = reflection_pdf.SampleLevel(nearest_sampler, uv, 0).w;
@@ -176,8 +176,9 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		uint rand_seed = initRand(pix.x + pix.y * width, frame_idx);
 
 		float distance = length(camera_pos - pos);
-		//float sampleCountScalar = (1 - distance / far_plane) * roughness;
-		float sampleCountScalar = 1;
+		float sampleCountScalar = lerp(1, (1 - distance / far_plane) * roughness, roughness > 0.0);
+		//float sampleCountScalar = 1;
+		roughness = max(roughness, 1e-3);
 
 		float kernel_size = 16 * sampleCountScalar;
 
@@ -198,6 +199,8 @@ void main(int3 pix3 : SV_DispatchThreadID)
 			const float3 V_neighbor = normalize(camera_pos - pos_neighbor);
 
 			const float4 reflection_pdf_neighbor = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0);
+			if(reflection_pdf_neighbor.w>0.0)
+			{
 			const float3 color = clamp(reflection_pdf_neighbor.xyz, 0, 1);
 			const float3 L = hitT.xyz;
 			const float pdf_neighbor = max(reflection_pdf_neighbor.w, 1e-5);
@@ -210,6 +213,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 			weight = lerp(weight, 1e-5, isnan(weight));
 			result += color * weight;
 			weight_sum += weight;
+			}
 		}
 
 		result3 = result / weight_sum;

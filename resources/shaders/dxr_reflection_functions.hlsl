@@ -34,7 +34,8 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 	ray.TMin = 0;
 	ray.TMax = 10000.0;
 
-	bool nan = isnan(origin) != bool3(false, false, false) || isnan(direction) != bool3(false, false, false);
+	bool nan = isnan(origin.x) == true || isnan(origin.y) == true || isnan(origin.z) == true;
+	nan = nan || isnan(direction.x) == true || isnan(direction.y) == true || isnan(direction.z) == true;
 	if(nan)
 	{
 		return skybox.SampleLevel(s0, direction, 0).rgb;
