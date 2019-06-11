@@ -120,10 +120,11 @@ static const float2 samples[4][64] = {
 };
 
 //Sample a neighbor; 0,0 -> 1,1; outside of that range indicates an invalid uv
-float2 sample_neighbor_uv(uint sampleId, uint2 full_res_pixel, uint2 resolution, float rand, float kernelSize)
+float2 sample_neighbor_uv(uint sampleId, uint2 full_res_pixel, uint2 resolution, float2 rand, float kernelSize)
 {
 	uint pixId = full_res_pixel.x % 2 + full_res_pixel.y % 2 * 2;
-	float2 offset = samples[pixId][64 * rand] * kernelSize;
+	float2 offset = samples[pixId][sampleId] * kernelSize;
+	offset = mul(float2x2(rand.x, rand.y, -rand.y, rand.x), offset);
 	return (float2(full_res_pixel / 2) + offset) / float2(resolution / 2 - 1);
 }
 
@@ -175,15 +176,17 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 		float distance = length(camera_pos - pos);
 		float sampleCountScalar = (1 - distance / far_plane) * roughness;
+		//float sampleCountScalar = 1;
 
 		float kernel_size = 16 * sampleCountScalar;
 
 		for (uint i = 0; i < ceil(kernel_size); ++i) {
+
 			//Get sample related data
 
-			float randomVar = nextRand(rand_seed);
+			float2 random = float2(nextRand(rand_seed), nextRand(rand_seed));
 
-			const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), randomVar, sampleCountScalar);
+			const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), random, sampleCountScalar);
 
 			const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
 			const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
@@ -201,7 +204,8 @@ void main(int3 pix3 : SV_DispatchThreadID)
 			//Calculate weight and weight sum
 
 			const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
-			const float weight = brdf_weight(V, L, N, roughness) / pdf * neighbor_weight;
+			float weight = brdf_weight(V, L, N, roughness) / pdf_neighbor * neighbor_weight;
+			weight = lerp(weight, 1e-5, isnan(weight));
 			result += color * weight;
 			weight_sum += weight;
 		}
