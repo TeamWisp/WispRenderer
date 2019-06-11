@@ -99,7 +99,9 @@ namespace util::internal
 		}
 #endif
 
+#ifdef WISPRENDERER_LOG_TO_STDOUT
 		fmt::print(stdout, str, args...);
+#endif
 		#if defined(LOG_PRINT_TO_OUTPUT) && defined(_WIN32)
 			OutputDebugStringA(str.c_str());
 		#endif

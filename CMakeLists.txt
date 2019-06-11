@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.13)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
+add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE )
 
 project(Wisp)
 
 option(WISP_BUILD_TESTS "Enable Wisp Tests" ON)
+option(WISP_LOG_TO_STDOUT "Allow printing to stdout" OFF)
 option(WISP_BUILD_SHARED "Build Wisp as a shared library" OFF)
 if (WISP_BUILD_SHARED)
 	set(BUILD_SHARED_LIBS ON)
@@ -14,6 +15,11 @@ else()
 	add_definitions(-DWISPRENDERER_STATIC_DEFINE)
 	message(STATUS "Building wisp as a STATIC library")
 	set(BUILD_SHARED_LIBS OFF)
+endif()
+
+if (WISP_LOG_TO_STDOUT)
+	message(STATUS "Wisp Renderer is allowed to print to stdout")
+	add_definitions(-DWISPRENDERER_LOG_TO_STDOUT)
 endif()
 
 #Detect whether we have HBAO+ SDK available.
