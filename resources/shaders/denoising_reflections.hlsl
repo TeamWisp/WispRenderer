@@ -198,15 +198,17 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float weights = 1.0;
 	float4 accum = input_texture[screen_coord];
-	for(int x = -15; x < 16; ++x)
+
+	const int kernel_size = 1;
+	for(int x = -floor(kernel_size/2); x <= floor(kernel_size/2); ++x)
 	{
-		for(int y = -15; y < 16; ++y)
+		for(int y = -floor(kernel_size/2); y <= floor(kernel_size/2); ++y)
 		{
 			float2 location = screen_coord + float2(x, y);
 
-			float pdf = ray_raw_texture[screen_coord].w;
+			float pdf = ray_raw_texture.SampleLevel(point_sampler, uv, 0).w;
 
-			if(pdf < 0 || location.x < 0 || location.x >= screen_size.x || location.y < 0 || location.y >= screen_size.y)
+			if(pdf <= 0 || location.x < 0 || location.x >= screen_size.x || location.y < 0 || location.y >= screen_size.y)
 			{
 				
 			}

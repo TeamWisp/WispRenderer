@@ -176,8 +176,8 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		uint rand_seed = initRand(pix.x + pix.y * width, frame_idx);
 
 		float distance = length(camera_pos - pos);
-		float sampleCountScalar = (1 - distance / far_plane) * roughness;
-		//float sampleCountScalar = 1;
+		//float sampleCountScalar = (1 - distance / far_plane) * roughness;
+		float sampleCountScalar = 1;
 
 		float kernel_size = 16 * sampleCountScalar;
 
@@ -213,6 +213,10 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		}
 
 		result3 = result / weight_sum;
+		if(weight_sum == 0.0)
+		{
+			result3 = reflection_pdf.SampleLevel(nearest_sampler, uv, 0).xyz;
+		}
 	}
 	else
 	{
