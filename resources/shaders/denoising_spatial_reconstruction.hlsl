@@ -196,9 +196,10 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 			const float3 V_neighbor = normalize(camera_pos - pos_neighbor);
 
-			const float3 color = clamp(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz, 0, 1);
+			const float4 reflection_pdf_neighbor = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0);
+			const float3 color = clamp(reflection_pdf_neighbor.xyz, 0, 1);
 			const float3 L = hitT.xyz;
-			const float pdf_neighbor = max(reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0).w, 1e-5);
+			const float pdf_neighbor = max(reflection_pdf_neighbor.w, 1e-5);
 			const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
 
 			//Calculate weight and weight sum
