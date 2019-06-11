@@ -58,9 +58,9 @@ namespace viknell_scene
 			bamboo_material_internal->SetTexture(wr::TextureType::ROUGHNESS, bamboo_roughness);
 			bamboo_material_internal->SetTexture(wr::TextureType::METALLIC, bamboo_metallic);
 
-			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
+			plane_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
+			test_model = model_pool->LoadWithMaterials<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+			sphere_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 		}
 
 		void ReleaseResources()
