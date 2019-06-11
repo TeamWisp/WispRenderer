@@ -582,7 +582,6 @@ namespace wr
 
 			if (!resize)
 			{
-				data.m_constant_buffer_pool->Destroy(data.m_denoiser_camera);
 				for (auto buffer : data.m_denoiser_settings_buffer)
 				{
 					data.m_constant_buffer_pool->Destroy(buffer);
