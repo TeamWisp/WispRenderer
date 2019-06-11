@@ -134,8 +134,6 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float2 prev_m
 
 	float2 uv = screen_coord / screen_size;
 
-	//uv.y = 1.f - uv.y;
-
 	float4 motion = motion_texture.SampleLevel(point_sampler, uv, 0);
 	float2 q_uv = uv - motion.xy;
 
