@@ -200,6 +200,7 @@ namespace wr
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto window = n_render_system.m_window.value();
+			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto device = n_render_system.m_device;
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<PathTracerData>(handle);
@@ -387,7 +388,15 @@ namespace wr
 				//#endif
 
 				// Dispatch hybrid ray tracing rays
-				d3d12::DispatchRays(cmd_list, data.out_hitgroup_shader_table[frame_idx], data.out_miss_shader_table[frame_idx], data.out_raygen_shader_table[frame_idx], window->GetWidth(), window->GetHeight(), 1, frame_idx);
+				d3d12::DispatchRays(
+					cmd_list,
+					data.out_hitgroup_shader_table[frame_idx],
+					data.out_miss_shader_table[frame_idx],
+					data.out_raygen_shader_table[frame_idx],
+					d3d12::GetRenderTargetWidth(render_target),
+					d3d12::GetRenderTargetHeight(render_target),
+					1,
+					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
 				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);

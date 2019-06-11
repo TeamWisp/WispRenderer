@@ -152,6 +152,7 @@ namespace wr
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 			auto window = n_render_system.m_window.value();
+			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto device = n_render_system.m_device;
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RaytracingData>(handle);
@@ -324,8 +325,8 @@ namespace wr
 					data.out_hitgroup_shader_table[frame_idx], 
 					data.out_miss_shader_table[frame_idx], 
 					data.out_raygen_shader_table[frame_idx], 
-					static_cast<std::uint32_t>(std::ceil(scalar * window->GetWidth())), 
-					static_cast<std::uint32_t>(std::ceil(scalar * window->GetHeight())), 
+					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
 					1, 
 					0);
 			}
