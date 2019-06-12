@@ -55,8 +55,9 @@ namespace wr
 
 		Box m_box;
 
-		void Expand(float (&pos)[3]);
+		ModelData* m_data;
 
+		void Expand(float (&pos)[3]);
 	};
 
 	class ModelPool
@@ -236,6 +237,7 @@ namespace wr
 		ModelData* data = loader->Load(path);
 
 		Model* model = new Model;
+		model->m_data = data;
 
 		MaterialHandle default_material = { nullptr, 0 };
 
@@ -254,7 +256,7 @@ namespace wr
 			return nullptr;
 		}
 
-		loader->DeleteModel(data);
+		//loader->DeleteModel(data);
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
@@ -298,6 +300,7 @@ namespace wr
 		dir.erase(dir.begin() + dir.find_last_of('/') + 1, dir.end());
 
 		Model* model = new Model;
+		model->m_data = data;
 		std::vector<MaterialHandle> material_handles;
 
 		for (int i = 0; i < data->m_materials.size(); ++i)
@@ -396,7 +399,7 @@ namespace wr
 			return nullptr;
 		}
 
-		loader->DeleteModel(data);
+	//	loader->DeleteModel(data);
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
