@@ -64,13 +64,19 @@ void ShadowAnyHitEntry(inout ShadowHitInfo hit, Attributes attr)
 
 	float alpha = output_data.alpha;
 
-	if (alpha < 0.5f)
+	if (alpha >= 0.5f)
 	{
-		IgnoreHit();
+		hit.ray_power -= (1.0f / 3.0f);
+	}
+
+	if (hit.ray_power < 0.01f)
+	{
+		hit.ray_power = 0.1f;
+		AcceptHitAndEndSearch();
 	}
 	else
 	{
-		AcceptHitAndEndSearch();
+		IgnoreHit();
 	}
 #else
 	hit.is_hit = false;

@@ -4,7 +4,7 @@
 #include "dxr_global.hlsl"
 #include "dxr_structs.hlsl"
 
-bool TraceShadowRay(float3 origin, float3 direction, float far, uint calling_pass, unsigned int depth)
+float TraceShadowRay(float3 origin, float3 direction, float far, uint calling_pass, unsigned int depth)
 {
 	if (depth >= MAX_RECURSION)
 	{
@@ -18,7 +18,7 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, uint calling_pas
 	ray.TMin = 0;
 	ray.TMax = far;
 
-	ShadowHitInfo payload = { false, 0 };
+	ShadowHitInfo payload = { false, 1.0f };
 
 	uint ray_contr_idx = 1;
 	uint miss_idx = 1;
@@ -40,7 +40,7 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, uint calling_pas
 		ray,
 		payload);
 
-	return payload.is_hit;
+	return payload.ray_power;
 }
 
 // Get shadow factor
@@ -55,18 +55,18 @@ float GetShadowFactor(float3 wpos, float3 light_dir, float light_size, float t_m
 		float3 dir = perturbDirectionVector(rand_seed, light_dir, light_size);
 		float3 ray_direction = normalize(dir);
 
-		bool shadow = TraceShadowRay(wpos, ray_direction, t_max, calling_pass, depth);
+		float shadow = TraceShadowRay(wpos, ray_direction, t_max, calling_pass, depth);
 
-		shadow_factor += lerp(1.0, 0.0, shadow);
+		shadow_factor += shadow;
 	}
 
 	shadow_factor /= float(sample_count);
 
 #else //SOFT_SHADOWS
 
-	bool shadow = TraceShadowRay(wpos, light_dir, t_max, calling_pass, depth);
+	float shadow = TraceShadowRay(wpos, light_dir, t_max, calling_pass, depth);
 
-	shadow_factor = !shadow;
+	shadow_factor = shadow ;
 
 #endif //SOFT_SHADOWS
 
