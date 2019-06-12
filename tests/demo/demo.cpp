@@ -109,7 +109,7 @@ void startCrashpad()
 
 int WispEntry()
 {
-	auto version = wr::GetVersion();
+	constexpr auto version = wr::GetVersion();
 	LOG("Wisp Version {}.{}.{}", version.m_major, version.m_minor, version.m_patch);
 
 	// ImGui Logging
