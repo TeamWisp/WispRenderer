@@ -50,7 +50,8 @@ namespace wr
 		}
 	}
 
-	constexpr Version GetVersion() {
+	constexpr Version GetVersion()
+	{
 		const char* str = static_cast<const char*>(
 			#include VERSION_FILE
 		);
@@ -61,26 +62,32 @@ namespace wr
 
 		std::uint32_t num = 0;
 		std::uint32_t itt = 0;
-		for (std::uint32_t i = 0; i < std_cexpr::strlen(str); i++) {
-			if (str[i] == '.') {
+		for (std::uint32_t i = 0; i < std_cexpr::strlen(str); i++)
+		{
+			if (str[i] == '.')
+			{
 				num++;
 				itt = 0;
 				continue;
 			}
-			else if (num == 0) {
+			else if (num == 0)
+			{
 				major_buf[itt] = str[i];
 			}
-			else if (num == 1) {
+			else if (num == 1)
+			{
 				minor_buf[itt] = str[i];
 			}
-			else if (num == 2) {
+			else if (num == 2)
+			{
 				patch_buf[itt] = str[i];
 			}
 
 			itt++;
 		}
 
-		if (num != 2) {
+		if (num != 2)
+		{
 			throw std::logic_error("compile-time-error: Incorrect length");
 		}
 
