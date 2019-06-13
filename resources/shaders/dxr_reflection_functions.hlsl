@@ -76,7 +76,9 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 		#ifdef GROUND_TRUTH_REFLECTIONS
 
 			float3 reflection = float3(0, 0, 0);
-			float weightSum = 0;
+			float weightSum = 0, sampled_count = 0;
+			float pdfWeight = 0;	/* Used for further weighting by spatial reconstruction */
+			float3 total_hit = float3(0, 0, 0);
 
 			//[unroll]
 			for (uint i = 0; i < MAX_GT_REFLECTION_SAMPLES; ++i) {
@@ -99,12 +101,17 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 
 				if (NdotL >= 0) {
 					float weight = brdf_weight(V, L, N, roughness) / pdf;
-					reflection += TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dirT) * weight;
+					float4 ray_dir_t;
+					reflection += TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, ray_dir_t) * weight;
 					weightSum += weight;
+					pdfWeight += pdf;
+					total_hit += ray_dir_t.xyz * ray_dir_t.w;
+					++sampled_count;
 				}
 			}
 
-			return float4(reflection / weightSum, -1);
+			dirT = float4(normalize(total_hit), length(total_hit) / sampled_count);
+			return float4(reflection / weightSum, pdfWeight / sampled_count);
 
 		#else
 

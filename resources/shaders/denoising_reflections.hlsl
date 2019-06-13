@@ -199,7 +199,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float weights = 1.0;
 	float4 accum = input_texture[screen_coord];
 
-	const int kernel_size = 31;
+	const int kernel_size = 3;
 	for(int x = -floor(kernel_size/2); x <= floor(kernel_size/2); ++x)
 	{
 		for(int y = -floor(kernel_size/2); y <= floor(kernel_size/2); ++y)
