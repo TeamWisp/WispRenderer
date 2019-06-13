@@ -463,7 +463,6 @@ namespace wr
 			else
 			{
 				LOGE("Texture {} not loaded. Format not supported.", path);
-				throw std::exception("Texture format not supported. Check the output for more information.");
 				return {};
 			}
 
@@ -473,7 +472,6 @@ namespace wr
 				LPCTSTR errMsg = err.ErrorMessage();
 
 				LOGE("ERROR: DirectXTex error: {}", errMsg);
-				throw std::exception("A DirectXTex error occured! Check the output for more information.");
 				return {};
 			}
 		}
