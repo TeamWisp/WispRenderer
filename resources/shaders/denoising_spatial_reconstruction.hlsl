@@ -153,18 +153,18 @@ void main(int3 pix3 : SV_DispatchThreadID)
 			const float4 reflection_pdf_neighbor = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0);
 			if(reflection_pdf_neighbor.w>0.0)
 			{
-			const float3 color = clamp(reflection_pdf_neighbor.xyz, 0, 1);
-			const float3 L = hitT.xyz;
-			const float pdf_neighbor = max(reflection_pdf_neighbor.w, 1e-5);
-			const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
-
-			//Calculate weight and weight sum
-
-			const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
-			float weight = brdf_weight(V, L, N, roughness) / pdf_neighbor * neighbor_weight;
-			weight = lerp(weight, 1e-5, isnan(weight));
-			result += color * weight;
-			weight_sum += weight;
+				const float3 color = clamp(reflection_pdf_neighbor.xyz, 0, 1);
+				const float3 L = hitT.xyz;
+				const float pdf_neighbor = max(reflection_pdf_neighbor.w, 1e-5);
+				const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
+	
+				//Calculate weight and weight sum
+	
+				const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
+				float weight = brdf_weight(V, L, N, roughness) / pdf_neighbor * neighbor_weight;
+				weight = lerp(weight, 1e-5, isnan(weight));
+				result += color * weight;
+				weight_sum += weight;
 			}
 		}
 
