@@ -91,7 +91,7 @@ namespace phys
 #else
 		btRigidBody* body = new btRigidBody(mass, 0, shape, localInertia);
 		body->setWorldTransform(startTransform);
-#endif  //
+#endif 
 
 		body->setUserIndex(-1);
 		phys_world->addRigidBody(body);
@@ -114,13 +114,6 @@ namespace phys
 				}
 			}
 		}
-
-		/*auto& player_cam = std::dynamic_pointer_cast<DebugCamera>(sg.GetActiveCamera());
-		{
-			auto world_position = player_cam->m_rigid_body->getWorldTransform().getOrigin();
-			player_cam->m_position = util::DXV3toBV3(world_position);
-			player_cam->SignalTransformChange();
-		}*/
 	}
 
 	void PhysicsEngine::Destroy()
