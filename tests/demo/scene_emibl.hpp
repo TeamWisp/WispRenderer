@@ -108,9 +108,9 @@ namespace emibl_scene
 				rusty_metal_internal->SetTexture(wr::TextureType::METALLIC, metal_splotchy_metallic);
 
 				// Create Material
-				material_handles[0] = material_pool->Create(texture_pool.get());
+				material_handles[7] = material_pool->Create(texture_pool.get());
 
-				wr::Material* mahogfloor_material_internal = material_pool->GetMaterial(material_handles[0]);
+				wr::Material* mahogfloor_material_internal = material_pool->GetMaterial(material_handles[7]);
 
 				//mahogfloor_material_internal->SetTexture(wr::TextureType::ALBEDO, mahogfloor_albedo);
 				//mahogfloor_material_internal->SetTexture(wr::TextureType::NORMAL, mahogfloor_normal);
@@ -151,36 +151,36 @@ namespace emibl_scene
 				brick_tiles_mat_internal->SetTexture(wr::TextureType::ROUGHNESS, brick_tiles_roughness);
 				brick_tiles_mat_internal->SetTexture(wr::TextureType::METALLIC, brick_tiles_metallic);
 
-				material_handles[4] = material_pool->Create(texture_pool.get());
+				material_handles[6] = material_pool->Create(texture_pool.get());
 
-				wr::Material* leather_material_internal = material_pool->GetMaterial(material_handles[4]);
+				wr::Material* leather_material_internal = material_pool->GetMaterial(material_handles[6]);
 
 				leather_material_internal->SetTexture(wr::TextureType::ALBEDO, leather_albedo);
 				leather_material_internal->SetTexture(wr::TextureType::NORMAL, leather_normal);
 				leather_material_internal->SetTexture(wr::TextureType::ROUGHNESS, leather_roughness);
 				leather_material_internal->SetTexture(wr::TextureType::METALLIC, leather_metallic);
 
-				material_handles[5] = material_pool->Create(texture_pool.get());
+				material_handles[4] = material_pool->Create(texture_pool.get());
 
-				wr::Material* blue_tiles_material_internal = material_pool->GetMaterial(material_handles[5]);
+				wr::Material* blue_tiles_material_internal = material_pool->GetMaterial(material_handles[4]);
 
 				blue_tiles_material_internal->SetTexture(wr::TextureType::ALBEDO, blue_tiles_albedo);
 				blue_tiles_material_internal->SetTexture(wr::TextureType::NORMAL, blue_tiles_normal);
 				blue_tiles_material_internal->SetTexture(wr::TextureType::ROUGHNESS, blue_tiles_roughness);
 				blue_tiles_material_internal->SetTexture(wr::TextureType::METALLIC, blue_tiles_metallic);
 
-				material_handles[6] = material_pool->Create(texture_pool.get());
+				material_handles[5] = material_pool->Create(texture_pool.get());
 
-				wr::Material* gold_material_internal = material_pool->GetMaterial(material_handles[6]);
+				wr::Material* gold_material_internal = material_pool->GetMaterial(material_handles[5]);
 
 				gold_material_internal->SetTexture(wr::TextureType::ALBEDO, gold_albedo);
 				gold_material_internal->SetTexture(wr::TextureType::NORMAL, gold_normal);
 				gold_material_internal->SetTexture(wr::TextureType::ROUGHNESS, gold_roughness);
 				gold_material_internal->SetTexture(wr::TextureType::METALLIC, gold_metallic);
 
-				material_handles[7] = material_pool->Create(texture_pool.get());
+				material_handles[0] = material_pool->Create(texture_pool.get());
 
-				wr::Material* marble_material_internal = material_pool->GetMaterial(material_handles[7]);
+				wr::Material* marble_material_internal = material_pool->GetMaterial(material_handles[0]);
 
 				marble_material_internal->SetTexture(wr::TextureType::ALBEDO, marble_albedo);
 				marble_material_internal->SetTexture(wr::TextureType::NORMAL, marble_normal);
@@ -272,14 +272,14 @@ namespace emibl_scene
 	std::shared_ptr<wr::MeshNode> models[10];
 	std::shared_ptr<wr::MeshNode> platforms[10];
 
-	static DirectX::XMVECTOR camera_start_pos = { 500.0f, 60.0f, 260.0f };
+	static DirectX::XMVECTOR camera_start_pos = { 638.876709, 111.943939, -70.696083 };
 
 
 	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition(camera_start_pos);
-		camera->SetRotation({ -16._deg, 0._deg, 0._deg });
+		camera->SetRotation({ -0.379252, 1.98999, 0._deg });
 		camera->SetSpeed(100.0f);
 
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
@@ -296,35 +296,35 @@ namespace emibl_scene
 			platforms[i]->SetScale({ 38, 1, 38 });
 		}
 
-		models[9]->SetPosition({ -500,	0	,	-160 });
-		platforms[9]->SetPosition({ -500, -3, -160 });
+		models[9]->SetPosition({ -500,	0	,	-130 });
+		platforms[9]->SetPosition({ -500, -3, -130 });
 
-		models[8]->SetPosition({ -250,	0	,	-160 });
-		platforms[8]->SetPosition({ -250,	-3	,	-160 });
+		models[8]->SetPosition({ -250,	0	,	-130 });
+		platforms[8]->SetPosition({ -250,	-3	,	-130 });
 
-		models[7]->SetPosition({ 0,		0	,	-160 });
-		platforms[7]->SetPosition({ 0,		-3	,	-160 });
+		models[7]->SetPosition({ 0,		0	,	-130 });
+		platforms[7]->SetPosition({ 0,		-3	,	-130 });
 
-		models[6]->SetPosition({ +250,		0	,-160 });
-		platforms[6]->SetPosition({ +250,		-3	,-160 });
+		models[6]->SetPosition({ +250,		0	,-130 });
+		platforms[6]->SetPosition({ +250,		-3	,-130 });
 
-		models[5]->SetPosition({ +500,		0	,	-160 });
-		platforms[5]->SetPosition({ +500,		-3	,	-160 });
+		models[5]->SetPosition({ +500,		0	,	-130 });
+		platforms[5]->SetPosition({ +500,		-3	,	-130 });
 
-		models[4]->SetPosition({ -500,0	,	160 });
-		platforms[4]->SetPosition({ -500, -3 ,	160 });
+		models[4]->SetPosition({ -500,0	,	130 });
+		platforms[4]->SetPosition({ -500, -3 ,	130 });
 
-		models[3]->SetPosition({ -250,		0	,	160 });
-		platforms[3]->SetPosition({ -250,		-3	,	160 });
+		models[3]->SetPosition({ -250,		0	,	130 });
+		platforms[3]->SetPosition({ -250,		-3	,	130 });
 
-		models[2]->SetPosition({ 0,				0	,160 });
-		platforms[2]->SetPosition({ 0,				-3	,160 });
+		models[2]->SetPosition({ 0,				0	,130 });
+		platforms[2]->SetPosition({ 0,				-3	,130 });
 
-		models[1]->SetPosition({ +250,0	,	160 });
-		platforms[1]->SetPosition({ +250, -3	,	160 });
+		models[1]->SetPosition({ +250,0	,	130 });
+		platforms[1]->SetPosition({ +250, -3	,	130 });
 
-		models[0]->SetPosition({ +500,		0	,	160 });
-		platforms[0]->SetPosition({ +500,		-3	,	160 });
+		models[0]->SetPosition({ +500,		0	,	130 });
+		platforms[0]->SetPosition({ +500,		-3	,	130 });
 
 		for (auto& model : models)
 		{
