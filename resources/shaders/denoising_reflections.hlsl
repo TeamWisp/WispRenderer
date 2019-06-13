@@ -116,6 +116,19 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = screen_coord / screen_size;
 
+	float4 motion = motion_texture.SampleLevel(point_sampler, uv, 0);
+	float2 q_uv = uv - motion.xy;
+
+	float2 prev_coords = q_uv * screen_size;
+
+	float4 prev_color = accum_texture[prev_coords];
+
+	float history = prev_color.w;
+
+	float4 input_color = input_texture[screen_coord];
+
+	
+
 	output_texture[screen_coord] = input_texture[screen_coord];
 }
 
