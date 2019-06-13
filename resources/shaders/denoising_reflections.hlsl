@@ -116,7 +116,7 @@ bool IsReprojectionValid(int2 coord, float z, float z_prev, float fwidth_z, floa
 	int2 screen_size = int2(0, 0);
 	output_texture.GetDimensions(screen_size.x, screen_size.y);
 
-	bool ret = (coord.x >= 0 && coord.x < screen_size.x && coord.y >= 0 && coord.y < screen_size.y);
+	bool ret = (coord.x > -1 && coord.x < screen_size.x && coord.y > -1 && coord.y < screen_size.y);
 
 	ret = ret && ((abs(z_prev - z) / (fwidth_z + 1e-4)) < 2.0);
 
@@ -254,11 +254,11 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float weight = brdf_weight(V, ray_dir, N, roughness) / pdf;
 
-	history += 1;
+	history = min(32, history + 1);
 
 	float3 output = (accum_color.xyz * (history - 1) + input_color.xyz) / history;
 
-	output_texture[screen_coord] = float4(input_color.xyz, history);
+	output_texture[screen_coord] = float4(output.xyz, history);
 }
 
 [numthreads(16, 16, 1)]
@@ -362,7 +362,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float weights = 1.0;
 	float4 accum = input_texture[screen_coord];
 
-	const int kernel_size = 1;//5 + 31 * roughness;
+	const int kernel_size = 1 + 31 * roughness;
 	for(int x = -floor(kernel_size/2); x <= floor(kernel_size/2); ++x)
 	{
 		for(int y = -floor(kernel_size/2); y <= floor(kernel_size/2); ++y)

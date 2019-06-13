@@ -325,13 +325,13 @@ namespace wr
 
 			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[0], data.m_output_render_target->m_render_targets[0]);
 			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[1], data.m_gbuffer_render_target->m_render_targets[1]);
-			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[2], data.m_output_render_target->m_render_targets[4]);
+			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[2], data.m_gbuffer_render_target->m_render_targets[4]);
 
 			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 			d3d12::Transition(cmd_list, data.m_gbuffer_render_target, ResourceState::COPY_SOURCE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 			d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
-			//SpatialDenoiser(n_render_system, sg, data, cmd_list);
+			SpatialDenoiser(n_render_system, sg, data, cmd_list);
 
 			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 		}
