@@ -186,7 +186,7 @@ namespace sun_temple_scene
 		fire_bowl_node_2->SetRadius(2000.f);*/
 	}
 
-	void UpdateScene(void* dummy_value)
+	void UpdateScene(void*)
 	{
 		static float waiting = 0.0f;
 		static bool start_lerp = false;
