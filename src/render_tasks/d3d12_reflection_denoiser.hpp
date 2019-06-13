@@ -12,10 +12,12 @@ namespace wr
 {
 	struct ReflectionDenoiserData
 	{
+		d3d12::PipelineState* m_temporal_denoiser_pipeline;
 		d3d12::PipelineState* m_spatial_denoiser_pipeline;
 
 		DescriptorAllocator* m_descriptor_allocator;
 		DescriptorAllocation m_input_allocation;
+		DescriptorAllocation m_accum_allocation;
 		DescriptorAllocation m_ray_raw_allocation;
 		DescriptorAllocation m_ray_dir_allocation;
 		DescriptorAllocation m_albedo_roughness_allocation;
@@ -29,6 +31,12 @@ namespace wr
 		d3d12::RenderTarget* m_rt_reflection_render_target;
 		d3d12::RenderTarget* m_gbuffer_render_target;
 		d3d12::RenderTarget* m_output_render_target;
+		d3d12::RenderTarget* m_accum_render_target;
+
+		temp::ReflectionDenoiserSettings_CBData m_denoiser_settings;
+
+		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
+		ConstantBufferHandle* m_denoiser_settings_buffer;
 	};
 
 	namespace internal
@@ -54,6 +62,7 @@ namespace wr
 				data.m_descriptor_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
 				data.m_input_allocation = std::move(data.m_descriptor_allocator->Allocate());
+				data.m_accum_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_ray_raw_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_ray_dir_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_albedo_roughness_allocation = std::move(data.m_descriptor_allocator->Allocate());
@@ -62,11 +71,41 @@ namespace wr
 				data.m_linear_depth_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_world_pos_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_output_allocation = std::move(data.m_descriptor_allocator->Allocate());
+
+				data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(SizeAlignTwoPower(sizeof(temp::ReflectionDenoiserSettings_CBData), 256) * d3d12::settings::num_back_buffers);
+				data.m_denoiser_settings_buffer = data.m_constant_buffer_pool->Create(sizeof(temp::ReflectionDenoiserSettings_CBData));
+
+				data.m_denoiser_settings = {};
+				data.m_denoiser_settings.m_integration_alpha = 0.2f;
+				data.m_denoiser_settings.m_variance_clipping_sigma = 1.5f;
+				data.m_denoiser_settings.m_n_phi = 128.f;
+				data.m_denoiser_settings.m_z_phi = 1.f;
 			}
 
 			{
 				auto cpu_handle = data.m_input_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_spatial_reconstruction_render_target, cpu_handle, 0, data.m_spatial_reconstruction_render_target->m_create_info.m_rtv_formats[0]);
+			}
+
+			{
+				d3d12::desc::RenderTargetDesc render_target_desc = {};
+				render_target_desc.m_clear_color[0] = 0.f;
+				render_target_desc.m_clear_color[1] = 0.f;
+				render_target_desc.m_clear_color[2] = 0.f;
+				render_target_desc.m_clear_color[3] = 0.f;
+				render_target_desc.m_create_dsv_buffer = false;
+				render_target_desc.m_dsv_format = Format::UNKNOWN;
+				render_target_desc.m_initial_state = ResourceState::NON_PIXEL_SHADER_RESOURCE;
+				render_target_desc.m_num_rtv_formats = 1;
+				render_target_desc.m_rtv_formats[0] = Format::R16G16B16A16_FLOAT;
+
+				data.m_accum_render_target = d3d12::CreateRenderTarget(n_render_system.m_device, 
+					n_render_system.m_viewport.m_viewport.Width, 
+					n_render_system.m_viewport.m_viewport.Height, 
+					render_target_desc);
+
+				auto cpu_handle = data.m_accum_allocation.GetDescriptorHandle();
+				d3d12::CreateSRVFromSpecificRTV(data.m_accum_render_target, cpu_handle, 0, data.m_accum_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
@@ -110,27 +149,22 @@ namespace wr
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
+			data.m_temporal_denoiser_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::reflection_temporal_denoiser);
 			data.m_spatial_denoiser_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::reflection_spatial_denoiser);
 		}
 
-		inline void ExecuteReflectionDenoiserTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
+		inline void BindRenderTargets(ReflectionDenoiserData& data, d3d12::CommandList* cmd_list)
 		{
-			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
-			auto& n_device = n_render_system.m_device->m_native;
-			auto& data = fg.GetData<ReflectionDenoiserData>(handle);
-			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
-			auto frame_idx = n_render_system.GetFrameIdx();
-			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
-			const auto viewport = n_render_system.m_viewport;
-
-			fg.WaitForPredecessorTask<SpatialReconstructionData>();
-
-			d3d12::BindComputePipeline(cmd_list, data.m_spatial_denoiser_pipeline);
-
 			{
 				constexpr unsigned int input = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::INPUT);
 				auto cpu_handle = data.m_input_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int accum = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::ACCUM);
+				auto cpu_handle = data.m_accum_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, accum, cpu_handle);
 			}
 
 			{
@@ -180,17 +214,87 @@ namespace wr
 				auto cpu_handle = data.m_output_allocation.GetDescriptorHandle();
 				d3d12::SetShaderUAV(cmd_list, 0, output, cpu_handle);
 			}
+		}
+
+		inline void TemporalDenoiser(D3D12RenderSystem& n_render_system, SceneGraph& sg, ReflectionDenoiserData& data, d3d12::CommandList* cmd_list)
+		{
+			const auto viewport = n_render_system.m_viewport;
+			auto frame_idx = n_render_system.GetFrameIdx();
+
+			d3d12::BindComputePipeline(cmd_list, data.m_temporal_denoiser_pipeline);
+
+			BindRenderTargets(data, cmd_list);
 
 			d3d12::HeapResource* camera_buffer = static_cast<D3D12ConstantBufferHandle*>(sg.GetActiveCamera()->m_camera_cb)->m_native;
 
 			d3d12::BindComputeConstantBuffer(cmd_list, camera_buffer, 1, frame_idx);
 
-			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+			d3d12::HeapResource* denoiser_settings = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer)->m_native;
+
+			d3d12::BindComputeConstantBuffer(cmd_list, denoiser_settings, 2, frame_idx);
 
 			d3d12::Dispatch(cmd_list,
 				uint32_t(std::ceil(viewport.m_viewport.Width / 16.f)),
 				uint32_t(std::ceil(viewport.m_viewport.Height / 16.f)),
 				1);
+		}
+
+		inline void SpatialDenoiser(D3D12RenderSystem& n_render_system, SceneGraph& sg, ReflectionDenoiserData& data, d3d12::CommandList* cmd_list)
+		{
+			const auto viewport = n_render_system.m_viewport;
+			auto frame_idx = n_render_system.GetFrameIdx();
+
+			d3d12::BindComputePipeline(cmd_list, data.m_spatial_denoiser_pipeline);
+
+			BindRenderTargets(data, cmd_list);
+
+			d3d12::HeapResource* camera_buffer = static_cast<D3D12ConstantBufferHandle*>(sg.GetActiveCamera()->m_camera_cb)->m_native;
+
+			d3d12::BindComputeConstantBuffer(cmd_list, camera_buffer, 1, frame_idx);
+
+			d3d12::HeapResource* denoiser_settings = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer)->m_native;
+
+			d3d12::BindComputeConstantBuffer(cmd_list, denoiser_settings, 2, frame_idx);
+
+			{
+				constexpr unsigned int input = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::INPUT);
+				auto cpu_handle = data.m_accum_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
+			}
+
+			d3d12::Dispatch(cmd_list,
+				uint32_t(std::ceil(viewport.m_viewport.Width / 16.f)),
+				uint32_t(std::ceil(viewport.m_viewport.Height / 16.f)),
+				1);
+		}		
+
+		inline void ExecuteReflectionDenoiserTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
+		{
+			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
+			auto& n_device = n_render_system.m_device->m_native;
+			auto& data = fg.GetData<ReflectionDenoiserData>(handle);
+			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
+			auto frame_idx = n_render_system.GetFrameIdx();
+			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
+			const auto viewport = n_render_system.m_viewport;
+
+			fg.WaitForPredecessorTask<SpatialReconstructionData>();
+
+			data.m_constant_buffer_pool->Update(data.m_denoiser_settings_buffer, sizeof(data.m_denoiser_settings), 0, frame_idx, (uint8_t*)&data.m_denoiser_settings);
+
+			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+
+			TemporalDenoiser(n_render_system, sg, data, cmd_list);
+
+			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+			d3d12::Transition(cmd_list, data.m_accum_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
+
+			cmd_list->m_native->CopyResource(data.m_accum_render_target->m_render_targets[0], data.m_output_render_target->m_render_targets[0]);
+
+			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+			d3d12::Transition(cmd_list, data.m_accum_render_target, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+			SpatialDenoiser(n_render_system, sg, data, cmd_list);
 
 			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 		}
@@ -201,6 +305,7 @@ namespace wr
 			if (!resize)
 			{
 				std::move(data.m_input_allocation);
+				std::move(data.m_accum_allocation);
 				std::move(data.m_ray_dir_allocation);
 				std::move(data.m_albedo_roughness_allocation);
 				std::move(data.m_normal_metallic_allocation);
@@ -209,6 +314,7 @@ namespace wr
 				std::move(data.m_world_pos_allocation);
 				std::move(data.m_output_allocation);
 			}
+			d3d12::Destroy(data.m_accum_render_target);
 		}
 	} /* internal */
 

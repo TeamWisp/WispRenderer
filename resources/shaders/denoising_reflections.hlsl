@@ -4,13 +4,14 @@
 #include "rand_util.hlsl"
 
 Texture2D input_texture : register(t0);
-Texture2D ray_raw_texture : register(t1);
-Texture2D dir_hitT_texture : register(t2);
-Texture2D albedo_roughness_texture : register(t3);
-Texture2D normal_metallic_texture : register(t4);
-Texture2D motion_texture : register(t5); // xy: motion, z: fwidth position, w: fwidth normal
-Texture2D linear_depth_texture : register(t6);
-Texture2D world_position_texture : register(t7);
+Texture2D accum_texture : register(t1);
+Texture2D ray_raw_texture : register(t2);
+Texture2D dir_hitT_texture : register(t3);
+Texture2D albedo_roughness_texture : register(t4);
+Texture2D normal_metallic_texture : register(t5);
+Texture2D motion_texture : register(t6); // xy: motion, z: fwidth position, w: fwidth normal
+Texture2D linear_depth_texture : register(t7);
+Texture2D world_position_texture : register(t8);
 RWTexture2D<float4> output_texture : register(u0);
 
 SamplerState point_sampler : register(s0);
@@ -30,6 +31,14 @@ cbuffer CameraProperties : register(b0)
 	uint has_shadows;
 	uint has_reflections;
 	float3 padding;
+};
+
+cbuffer DenoiserSettings : register(b1)
+{
+	float integration_alpha;
+	float variance_clipping_sigma;
+	float n_phi;
+	float z_phi;
 };
 
 float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
@@ -96,6 +105,18 @@ float ComputeWeight(
 	const float w_direct   = exp(0.0 - max(w_l_direct, 0.0)   - max(w_z, 0.0)) * w_normal;
 
 	return w_direct;
+}
+
+[numthreads(16, 16, 1)]
+void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
+{
+	float2 screen_coord = float2(dispatch_thread_id.xy);
+	float2 screen_size = float2(0, 0);
+	output_texture.GetDimensions(screen_size.x, screen_size.y);
+
+	float2 uv = screen_coord / screen_size;
+
+	output_texture[screen_coord] = input_texture[screen_coord];
 }
 
 [numthreads(16, 16, 1)]
@@ -199,7 +220,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float weights = 1.0;
 	float4 accum = input_texture[screen_coord];
 
-	const int kernel_size = 31;
+	const int kernel_size = 1;
 	for(int x = -floor(kernel_size/2); x <= floor(kernel_size/2); ++x)
 	{
 		for(int y = -floor(kernel_size/2); y <= floor(kernel_size/2); ++y)

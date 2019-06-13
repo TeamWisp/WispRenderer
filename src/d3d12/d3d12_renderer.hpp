@@ -56,6 +56,14 @@ namespace wr
 			float m_padding[2];
 		};
 
+		struct ReflectionDenoiserSettings_CBData
+		{
+			float m_integration_alpha;
+			float m_variance_clipping_sigma;
+			float m_n_phi;
+			float m_z_phi;
+		};
+
 		struct DenoiserCamera_CBData
 		{
 			DirectX::XMMATRIX m_view;

@@ -538,28 +538,32 @@ namespace wr
     enum class ReflectionDenoiserE
     {
       INPUT,
-	  RAY_RAW,
+			ACCUM,
+			RAY_RAW,
       RAY_DIR,
       ALBEDO_ROUGHNESS,
       NORMAL_METALLIC,
-	  MOTION,
+			MOTION,
       LINEAR_DEPTH,
-	  WORLD_POS,
+			WORLD_POS,
       OUTPUT,
-	  CAMERA_PROPERTIES
+			CAMERA_PROPERTIES,
+			DENOISER_SETTINGS,
     };
 
-    constexpr std::array<rs_layout::Entry, 10> reflection_denoiser = {
+    constexpr std::array<rs_layout::Entry, 12> reflection_denoiser = {
       rs_layout::Entry{(int)ReflectionDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
-	  rs_layout::Entry{(int)ReflectionDenoiserE::RAY_RAW, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ReflectionDenoiserE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ReflectionDenoiserE::RAY_RAW, 1, rs_layout::Type::SRV_RANGE},
       rs_layout::Entry{(int)ReflectionDenoiserE::RAY_DIR, 1, rs_layout::Type::SRV_RANGE},
       rs_layout::Entry{(int)ReflectionDenoiserE::ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
       rs_layout::Entry{(int)ReflectionDenoiserE::NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
-	  rs_layout::Entry{(int)ReflectionDenoiserE::MOTION, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ReflectionDenoiserE::MOTION, 1, rs_layout::Type::SRV_RANGE},
       rs_layout::Entry{(int)ReflectionDenoiserE::LINEAR_DEPTH, 1, rs_layout::Type::SRV_RANGE},
-	  rs_layout::Entry{(int)ReflectionDenoiserE::WORLD_POS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)ReflectionDenoiserE::WORLD_POS, 1, rs_layout::Type::SRV_RANGE},
       rs_layout::Entry{(int)ReflectionDenoiserE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-	  rs_layout::Entry{(int)ReflectionDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST}
+			rs_layout::Entry{(int)ReflectionDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)ReflectionDenoiserE::DENOISER_SETTINGS, 1, rs_layout::Type::CBV_OR_CONST}
     };
 
 		enum class RTAOE
@@ -821,6 +825,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
     WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
 	};
 
@@ -849,6 +854,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
     WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
 	};
 

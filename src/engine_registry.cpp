@@ -994,6 +994,13 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 	});
 
+	REGISTER(shaders::reflection_temporal_denoiser, ShaderRegistry)({
+		.path = "resources/shaders/denoising_reflections.hlsl",
+		.entry = "temporal_denoiser_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
+		});
+
 	REGISTER(shaders::reflection_spatial_denoiser, ShaderRegistry)({
 	  .path = "resources/shaders/denoising_reflections.hlsl",
 	  .entry = "spatial_denoiser_cs",
@@ -1003,6 +1010,7 @@ namespace wr
 
   DESC_RANGE_ARRAY(reflection_denoiser_ranges,
 	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::INPUT),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::ACCUM),
 	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::RAY_RAW),
 	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::RAY_DIR),
 	  DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::ALBEDO_ROUGHNESS),
@@ -1016,13 +1024,29 @@ namespace wr
   REGISTER(root_signatures::reflection_denoiser, RootSignatureRegistry)({
 	.m_parameters = {
 		ROOT_PARAM_DESC_TABLE(reflection_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
-		ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::CAMERA_PROPERTIES))
+		ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::CAMERA_PROPERTIES)),
+		ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::DENOISER_SETTINGS)),
 	},
 	.m_samplers = {
 		{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER },
 		{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER }
 	}
 	});
+
+	REGISTER(pipelines::reflection_temporal_denoiser, PipelineRegistry) < Vertex2D > ({
+	.m_vertex_shader_handle = std::nullopt,
+	.m_pixel_shader_handle = std::nullopt,
+	.m_compute_shader_handle = shaders::reflection_temporal_denoiser,
+	.m_root_signature_handle = root_signatures::reflection_denoiser,
+	.m_dsv_format = Format::UNKNOWN,
+	.m_rtv_formats = { Format::R16G16B16A16_FLOAT },
+	.m_num_rtv_formats = 1,
+	.m_type = PipelineType::COMPUTE_PIPELINE,
+	.m_cull_mode = CullMode::CULL_BACK,
+	.m_depth_enabled = false,
+	.m_counter_clockwise = true,
+	.m_topology_type = TopologyType::TRIANGLE
+		});
 
   REGISTER(pipelines::reflection_spatial_denoiser, PipelineRegistry) <Vertex2D> ({
     .m_vertex_shader_handle = std::nullopt,
