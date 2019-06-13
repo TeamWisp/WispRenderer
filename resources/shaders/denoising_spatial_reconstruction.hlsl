@@ -140,7 +140,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 
 			float2 random = float2(nextRand(rand_seed), nextRand(rand_seed));
 
-			const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), random, 1);
+			const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), random, roughness * 8);
 
 			const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
 			const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
