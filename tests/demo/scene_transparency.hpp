@@ -97,6 +97,8 @@ namespace transparency_scene
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 		auto scene = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
 
+		scene->SetScale({ 0.1f, 0.1f, 0.1f });
+
 		mats.resize(3);
 		mats[0] = resources::gray_material;
 		mats[1] = resources::leaves_material;
@@ -131,8 +133,8 @@ namespace transparency_scene
 		//leaves_rots_offsets.resize(200);
 
 		// Lights
-		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
-		point_light_0->SetRotation({ -50.0_deg, 0.0f, 0.0f });
+		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 2000, 2000, 2000 });
+		point_light_0->SetRotation({ 200.0_deg, 0.0f, 0.0f });
 	}
 
 	void UpdateScene(wr::SceneGraph* sg)

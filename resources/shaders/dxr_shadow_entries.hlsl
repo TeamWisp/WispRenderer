@@ -62,22 +62,36 @@ void ShadowAnyHitEntry(inout ShadowHitInfo hit, Attributes attr)
 		s0,
 		uv);
 
-	float alpha = output_data.alpha;
-
-	if (alpha >= 0.5f)
+	if (material.data.use_alpha_masking == 1.0f)
 	{
-		hit.ray_power -= (1.0f / 3.0f);
-	}
+		float alpha = output_data.alpha;
 
-	if (hit.ray_power < 0.01f)
-	{
-		hit.ray_power = 0.1f;
-		AcceptHitAndEndSearch();
+		if (alpha <= 0.5f)
+		{
+			hit.is_hit = false;
+			hit.ray_power = 0.0f;
+			IgnoreHit();
+		}
+		else
+		{
+			hit.ray_power -= (1.0f / 3.0f);
+
+			if (hit.ray_power < 0.01f)
+			{
+				hit.ray_power = 0.1f;
+				AcceptHitAndEndSearch();
+			}
+			else
+			{
+				IgnoreHit();
+			}
+		}
 	}
 	else
 	{
-		IgnoreHit();
+		AcceptHitAndEndSearch();
 	}
+
 #else
 	hit.is_hit = false;
 #endif

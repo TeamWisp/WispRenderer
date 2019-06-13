@@ -45,8 +45,8 @@ namespace viknell_scene
 			mirror_material = material_pool->Create(texture_pool.get());
 			wr::Material* mirror_internal = material_pool->GetMaterial(mirror_material);
 
-			mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0);
-			mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1);
+			mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0.0f);
+			mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1.0f);
 			mirror_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1, 1, 1 });
 
 			bamboo_material = material_pool->Create(texture_pool.get());
@@ -60,6 +60,12 @@ namespace viknell_scene
 			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
 			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
+
+			auto mat_1 = test_model->m_meshes[0].second.m_pool->GetMaterial(test_model->m_meshes[0].second);
+			mat_1->SetConstant<wr::MaterialConstant::IS_ALPHA_MASKED>(false);
+
+			auto mat_2 = test_model->m_meshes[1].second.m_pool->GetMaterial(test_model->m_meshes[1].second);
+			mat_2->SetConstant<wr::MaterialConstant::IS_ALPHA_MASKED>(false);
 		}
 
 		void ReleaseResources()

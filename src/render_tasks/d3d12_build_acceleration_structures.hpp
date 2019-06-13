@@ -73,7 +73,7 @@ namespace wr
 			// Structured buffer for the materials.
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 
-			// Structured buffer for the materials.
+			// Structured buffer for the offsets.
 			data.out_sb_offset_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_offset_sb_pool->Create(sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingOffset_CBData), false));
 
 			// Resize the materials
