@@ -462,6 +462,7 @@ namespace wr
 			}
 			else
 			{
+				// Return an invalid texture handle when format is not supported
 				LOGE("Texture {} not loaded. Format not supported.", path);
 				return {};
 			}
@@ -471,6 +472,7 @@ namespace wr
 				_com_error err(hr);
 				LPCTSTR errMsg = err.ErrorMessage();
 
+				// Return an invalid texture handle when texture couldn't be loaded
 				LOGE("ERROR: DirectXTex error: {}", errMsg);
 				return {};
 			}

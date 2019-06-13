@@ -60,6 +60,10 @@ namespace wr
 		void ReleaseTemporaryResources() final;
 
 		d3d12::TextureResource* GetTextureResource(TextureHandle handle) final;
+
+		// Load a texture from file.
+		// Returns the texture handle to the loaded texture.
+		// When the texture failed to load it returns an invalid texture handle.
 		[[nodiscard]] TextureHandle LoadFromFile(std::string_view path, bool srgb, bool generate_mips) final;
 		[[nodiscard]] TextureHandle LoadFromMemory(unsigned char* data, size_t width, size_t height, TextureFormat type, bool srgb, bool generate_mips) final;
 		[[nodiscard]] TextureHandle CreateCubemap(std::string_view name, uint32_t width, uint32_t height, uint32_t mip_levels, Format format, bool allow_render_dest) final;
