@@ -50,7 +50,7 @@ namespace phys
 			{
 
 				auto pos = mesh_data->m_positions[idx];
-				shape->addPoint(btVector3(pos.x, pos.y, pos.z));
+				shape->addPoint(btVector3(pos.x, pos.y, pos.z), false);
 			}
 			shape->recalcLocalAabb();
 
