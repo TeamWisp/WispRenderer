@@ -58,7 +58,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 	return payload.color;
 }
 
-float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, RayCone cone, inout float4 dirT)
+float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, float metallic, RayCone cone, inout float4 dirT)
 {
 	// Calculate ray info
 	float3 reflected = reflect(-V, N);
@@ -82,7 +82,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 			float3 total_hit = float3(0, 0, 0);
 
 			//[unroll]
-			for (uint i = 0; i < MAX_GT_REFLECTION_SAMPLES; ++i) {
+			for (uint i = 0; i < max(MAX_GT_REFLECTION_SAMPLES * metallic, 2); ++i) {
 
 				nextRand(rand_seed);
 				float2 xi = hammersley2d(rand_seed, 8192);
