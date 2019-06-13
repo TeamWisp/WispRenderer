@@ -20,20 +20,8 @@ RWTexture2D<float> out_hist_length_texture : register(u2);
 SamplerState point_sampler   : register(s0);
 SamplerState linear_sampler  : register(s1);
 
-cbuffer CameraProperties : register(b0)
-{
-	float4x4 view;
-    float4x4 prev_view;
-	float4x4 inv_view;
-	float4x4 projection;
-    float4x4 prev_projection;
-	float4x4 inv_projection;
-	float2 padding_1;
-	float near_plane;
-	float far_plane;
-};
 
-cbuffer DenoiserSettings : register(b1)
+cbuffer DenoiserSettings : register(b0)
 {
 	float blending_alpha;
 	float blending_moments_alpha;
@@ -71,11 +59,6 @@ void FetchNormalAndLinearZ(in int2 ipos, out float3 norm, out float2 zLinear)
 {
 	norm = normal_texture[ipos];
 	zLinear = depth_texture[ipos].xy;
-}
-
-float NormalizeDepth(float depth)
-{
-	return (depth - near_plane) / far_plane;
 }
 
 float NormalDistanceCos(float3 n1, float3 n2, float power)

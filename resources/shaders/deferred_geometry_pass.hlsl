@@ -14,7 +14,6 @@ struct VS_INPUT
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 bitangent : BITANGENT;
-	float3 color : COLOR;
 };
 
 struct VS_OUTPUT
@@ -34,7 +33,6 @@ struct VS_OUTPUT
 	float3 obj_tangent : OBJECT_TANGENT;
 	float3 obj_bitangent : OBJECT_BITANGENT;
 	#endif
-	float3 color : COLOR;
 };
 
 cbuffer CameraProperties : register(b0)
@@ -89,7 +87,6 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	output.obj_tangent = input.tangent.xyz;
 	output.obj_bitangent = input.bitangent.xyz;
 	#endif
-	output.color = input.color;
 
 	return output;
 }

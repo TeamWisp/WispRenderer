@@ -18,6 +18,7 @@
 #include "client/crash_report_database.h"
 
 #include "engine_interface.hpp"
+#include "physics_engine.hpp"
 #include "scene_viknell.hpp"
 #include "scene_emibl.hpp"
 #include "scene_spheres.hpp"
@@ -29,6 +30,7 @@
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
 #define SCENE transparency_scene
+//#define ENABLE_PHYSICS
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -128,6 +130,8 @@ int WispEntry()
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
 
+	phys::PhysicsEngine phys_engine;
+
 	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
 
 	window->SetKeyCallback([](int key, int action, int mods)
@@ -178,9 +182,11 @@ int WispEntry()
 
 	SCENE::resources::CreateResources(render_system.get());
 
+	phys_engine.CreatePhysicsWorld();
+
 	scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
-	SCENE::CreateScene(scene_graph.get(), window.get());
+	SCENE::CreateScene(scene_graph.get(), window.get(), phys_engine);
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
@@ -200,6 +206,10 @@ int WispEntry()
 
 	window->SetRenderLoop([&]() {
 		SCENE::UpdateScene(scene_graph.get());
+
+#ifdef ENABLE_PHYSICS
+		phys_engine.UpdateSim(ImGui::GetIO().DeltaTime, *scene_graph.get());
+#endif
 
 		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
 	});

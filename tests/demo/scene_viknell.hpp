@@ -4,6 +4,7 @@
 #include "window.hpp"
 #include "scene_graph/scene_graph.hpp"
 #include "imgui/imgui.hpp"
+#include "physics_node.hpp"
 #include "debug_camera.hpp"
 #include "spline_node.hpp"
 
@@ -22,6 +23,8 @@ namespace viknell_scene
 		static wr::Model* sphere_model;
 		static wr::Model* plane_model;
 		static wr::Model* test_model;
+
+		static wr::ModelData* plane_model_data;
 
 		static wr::MaterialHandle bamboo_material;
 		static wr::MaterialHandle mirror_material;
@@ -57,15 +60,9 @@ namespace viknell_scene
 			bamboo_material_internal->SetTexture(wr::TextureType::ROUGHNESS, bamboo_roughness);
 			bamboo_material_internal->SetTexture(wr::TextureType::METALLIC, bamboo_metallic);
 
-			plane_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx");
-			test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
-			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
-
-			auto mat_1 = test_model->m_meshes[0].second.m_pool->GetMaterial(test_model->m_meshes[0].second);
-			mat_1->SetConstant<wr::MaterialConstant::IS_ALPHA_MASKED>(false);
-
-			auto mat_2 = test_model->m_meshes[1].second.m_pool->GetMaterial(test_model->m_meshes[1].second);
-			mat_2->SetConstant<wr::MaterialConstant::IS_ALPHA_MASKED>(false);
+			plane_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/plane.fbx", &plane_model_data);
+			test_model = model_pool->LoadWithMaterials<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+			sphere_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 		}
 
 		void ReleaseResources()
@@ -80,10 +77,10 @@ namespace viknell_scene
 	static std::shared_ptr<DebugCamera> camera;
 	static std::shared_ptr<SplineNode> camera_spline_node;
 	static std::shared_ptr<wr::LightNode> directional_light_node;
-	static std::shared_ptr<wr::MeshNode> test_model;
+	static std::shared_ptr<PhysicsMeshNode> test_model;
 	static float t = 0;
 
-	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
+	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window, phys::PhysicsEngine& phys_engine)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 0, 0, 2 });
@@ -94,13 +91,16 @@ namespace viknell_scene
 		auto skybox = scene_graph->CreateChild<wr::SkyboxNode>(nullptr, resources::equirectangular_environment_map);
 
 		// Geometry
-		auto floor = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
+		auto floor = scene_graph->CreateChild<PhysicsMeshNode>(nullptr, resources::plane_model);
 		auto roof = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto back_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto left_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
 		auto right_wall = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::plane_model);
-		test_model = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::test_model);
+		test_model = scene_graph->CreateChild<PhysicsMeshNode>(nullptr, resources::test_model);
 		auto sphere = scene_graph->CreateChild<wr::MeshNode>(nullptr, resources::sphere_model);
+
+		floor->SetupConvex(phys_engine, resources::plane_model_data);
+		floor->SetRestitution(1.f);
 		floor->SetPosition({ 0, -1, 0 });
 		floor->SetRotation({ 90_deg, 0, 0 });
 		floor->AddMaterial(resources::bamboo_material);
@@ -119,9 +119,17 @@ namespace viknell_scene
 		right_wall->SetPosition({ 1, 0, 0 });
 		right_wall->SetRotation({ 0, 90_deg, 0 });
 		right_wall->AddMaterial(resources::bamboo_material);
+
+		test_model->SetMass(0.01f);
+		test_model->SetupSimpleSphereColl(phys_engine, 0.5);
+		test_model->m_rigid_body->setRestitution(0.4);
+		test_model->m_rigid_body->setFriction(0);
+		test_model->m_rigid_body->setRollingFriction(0);
+		test_model->m_rigid_body->setSpinningFriction(0);
 		test_model->SetPosition({ 0, -1, 0 });
 		test_model->SetRotation({ 0, 180_deg, 0 });
 		test_model->SetScale({ 0.01f,0.01f,0.01f });
+		test_model->m_rigid_body->activate(true);
 
 		// Lights
 		auto point_light_0 = scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
@@ -143,11 +151,13 @@ namespace viknell_scene
 	{
 		t += 10.f * ImGui::GetIO().DeltaTime;
 
+		test_model->m_rigid_body->activate(true);
+
 		//auto pos = test_model->m_position;
 		//pos.m128_f32[0] = sin(t * 0.1) * 0.5;
 		//test_model->SetPosition(pos);
 
-		camera->Update(ImGui::GetIO().DeltaTime);
+		//camera->Update(ImGui::GetIO().DeltaTime);
 		camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, camera);
 	}
 } /* cube_scene */

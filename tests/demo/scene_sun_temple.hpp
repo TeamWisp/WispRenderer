@@ -36,7 +36,7 @@ namespace sun_temple_scene
 				equirectangular_environment_map = texture_pool->LoadFromFile("resources/materials/sun_temple/SunTemple_Skybox.hdr", false, false);
 			}
 
-			model_pool = render_system->CreateModelPool(64_mb, 64_mb);
+			model_pool = render_system->CreateModelPool(128_mb, 64_mb);
 
 			{
 				sun_temple_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple.fbx", true);
@@ -86,7 +86,7 @@ namespace sun_temple_scene
 	static DirectX::XMVECTOR camera_end_pos = { -500.0f, 60.0f, 260.0f };
 
 
-	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
+	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window, phys::PhysicsEngine& phys_engine)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 600.f, 700.f, 250.f });
@@ -186,7 +186,7 @@ namespace sun_temple_scene
 		fire_bowl_node_2->SetRadius(2000.f);*/
 	}
 
-	void UpdateScene()
+	void UpdateScene(void*)
 	{
 		static float waiting = 0.0f;
 		static bool start_lerp = false;
