@@ -19,11 +19,11 @@ namespace phys
 {
 	namespace util
 	{
-		inline btVector3 BV3toDXV3(DirectX::XMVECTOR v)
+		inline btVector3 DXV3toBV3(DirectX::XMVECTOR v)
 		{
 			return btVector3(v.m128_f32[0], v.m128_f32[1], v.m128_f32[2]);
 		}
-		inline DirectX::XMVECTOR DXV3toBV3(btVector3 v)
+		inline DirectX::XMVECTOR BV3toDXV3(btVector3 v)
 		{
 			return { v.x(), v.y(), v.z() };
 		}
