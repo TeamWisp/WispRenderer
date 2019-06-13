@@ -33,7 +33,7 @@ void PhysicsMeshNode::SetupSimpleBoxColl(phys::PhysicsEngine& phys_engine, Direc
 	btTransform transform;
 	transform.setIdentity();
 
-	m_shape = phys_engine.CreateBoxShape(phys::util::BV3toDXV3(scale));
+	m_shape = phys_engine.CreateBoxShape(phys::util::DXV3toBV3(scale));
 	m_rigid_body = phys_engine.CreateRigidBody(btScalar(m_mass), transform, m_shape);
 }
 
@@ -71,13 +71,13 @@ void PhysicsMeshNode::SetPosition(DirectX::XMVECTOR position)
 		for (auto& body : m_rigid_bodys.value())
 		{
 			auto& world_trans = body->getWorldTransform();
-			world_trans.setOrigin(phys::util::BV3toDXV3(position));
+			world_trans.setOrigin(phys::util::DXV3toBV3(position));
 		}
 	}
 	else if (m_rigid_body)
 	{
 		auto& world_trans = m_rigid_body->getWorldTransform();
-		world_trans.setOrigin(phys::util::BV3toDXV3(position));
+		world_trans.setOrigin(phys::util::DXV3toBV3(position));
 	}
 
 	m_position = position;
@@ -111,12 +111,12 @@ void PhysicsMeshNode::SetScale(DirectX::XMVECTOR scale)
 	{
 		for (auto& shape : m_shapes.value())
 		{
-			shape->setLocalScaling(phys::util::BV3toDXV3(scale));
+			shape->setLocalScaling(phys::util::DXV3toBV3(scale));
 		}
 	}
 	else if (m_shape)
 	{
-		m_shape->setLocalScaling(phys::util::BV3toDXV3(scale));
+		m_shape->setLocalScaling(phys::util::DXV3toBV3(scale));
 	}
 
 	m_scale = scale;
