@@ -9,6 +9,7 @@
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../render_tasks/d3d12_rt_shadow_task.hpp"
 
 #include <optional>
 
@@ -148,7 +149,7 @@ namespace wr
 				render_target_desc
 			);
 
-			render_target_desc.m_rtv_formats[0] = data.m_gbuffer_render_target->m_create_info.m_rtv_formats[3];
+			render_target_desc.m_rtv_formats[0] = data.m_gbuffer_render_target->m_create_info.m_rtv_formats[4];
 
 			data.m_in_prev_depth = d3d12::CreateRenderTarget(
 				n_render_system.m_device,
@@ -196,7 +197,7 @@ namespace wr
 			{
 				constexpr unsigned int motion = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::MOTION);
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(motion);
-				d3d12::CreateSRVFromSpecificRTV(data.m_gbuffer_render_target, cpu_handle, 2, data.m_gbuffer_render_target->m_create_info.m_rtv_formats[2]);
+				d3d12::CreateSRVFromSpecificRTV(data.m_gbuffer_render_target, cpu_handle, 3, data.m_gbuffer_render_target->m_create_info.m_rtv_formats[3]);
 			}
 
 			{
@@ -208,7 +209,7 @@ namespace wr
 			{
 				constexpr unsigned int depth = rs_layout::GetHeapLoc(params::svgf_denoiser, params::SVGFDenoiserE::DEPTH);
 				auto cpu_handle = data.out_allocation.GetDescriptorHandle(depth);
-				d3d12::CreateSRVFromSpecificRTV(data.m_gbuffer_render_target, cpu_handle, 3, data.m_gbuffer_render_target->m_create_info.m_rtv_formats[3]);
+				d3d12::CreateSRVFromSpecificRTV(data.m_gbuffer_render_target, cpu_handle, 4, data.m_gbuffer_render_target->m_create_info.m_rtv_formats[4]);
 			}
 
 			{
@@ -391,7 +392,7 @@ namespace wr
 
 			cmd_list->m_native->CopyResource(data.m_in_prev_moments->m_render_targets[0], data.m_out_moments_render_target->m_render_targets[0]);
 			cmd_list->m_native->CopyResource(data.m_in_prev_normals->m_render_targets[0], data.m_gbuffer_render_target->m_render_targets[1]);
-			cmd_list->m_native->CopyResource(data.m_in_prev_depth->m_render_targets[0], data.m_gbuffer_render_target->m_render_targets[3]);
+			cmd_list->m_native->CopyResource(data.m_in_prev_depth->m_render_targets[0], data.m_gbuffer_render_target->m_render_targets[4]);
 			cmd_list->m_native->CopyResource(data.m_in_hist_length->m_render_targets[0], data.m_out_hist_length_render_target->m_render_targets[0]);
 
 			d3d12::Transition(cmd_list, data.m_gbuffer_render_target, ResourceState::COPY_SOURCE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
