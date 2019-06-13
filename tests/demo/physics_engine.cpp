@@ -39,11 +39,11 @@ namespace phys
 		return shape;
 	}
 
-	std::vector<btConvexHullShape*> PhysicsEngine::CreateConvexShape(wr::Model* model)
+	std::vector<btConvexHullShape*> PhysicsEngine::CreateConvexShape(wr::ModelData* model)
 	{
 		std::vector<btConvexHullShape*> hulls;
 
-		for (auto& mesh_data : model->m_data->m_meshes)
+		for (auto& mesh_data : model->m_meshes)
 		{
 			btConvexHullShape* shape = new btConvexHullShape();
 			for (auto& idx : mesh_data->m_indices)

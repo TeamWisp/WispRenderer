@@ -271,7 +271,7 @@ namespace emibl_scene
 	static DirectX::XMVECTOR camera_start_pos = { 500.0f, 60.0f, 260.0f };
 
 
-	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
+	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window, phys::PhysicsEngine& phys_engine)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition(camera_start_pos);

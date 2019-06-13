@@ -29,6 +29,7 @@
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
 #define SCENE viknell_scene
+//#define ENABLE_PHYSICS
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -205,7 +206,9 @@ int WispEntry()
 	window->SetRenderLoop([&]() {
 		SCENE::UpdateScene(scene_graph.get());
 
+#ifdef ENABLE_PHYSICS
 		phys_engine.UpdateSim(ImGui::GetIO().DeltaTime, *scene_graph.get());
+#endif
 
 		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
 	});

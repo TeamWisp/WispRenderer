@@ -55,8 +55,6 @@ namespace wr
 
 		Box m_box;
 
-		ModelData* m_data;
-
 		void Expand(float (&pos)[3]);
 	};
 
@@ -73,9 +71,9 @@ namespace wr
 		ModelPool& operator=(ModelPool&&) = delete;
 
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path);
+		[[nodiscard]] Model* Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, std::optional<ModelData**> out_model_data = std::nullopt);
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals = false);
+		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals = false, std::optional<ModelData**> out_model_data = std::nullopt);
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
 
@@ -222,7 +220,7 @@ namespace wr
 
 	//! Loads a model without materials
 	template<typename TV, typename TI>
-	Model* ModelPool::Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path)
+	Model* ModelPool::Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, std::optional<ModelData**> out_model_data)
 	{
 		IS_PROPER_VERTEX_CLASS(TV);
 
@@ -237,7 +235,6 @@ namespace wr
 		ModelData* data = loader->Load(path);
 
 		Model* model = new Model;
-		model->m_data = data;
 
 		MaterialHandle default_material = { nullptr, 0 };
 
@@ -256,7 +253,15 @@ namespace wr
 			return nullptr;
 		}
 
-		//loader->DeleteModel(data);
+		if (out_model_data.has_value())
+		{
+			(*out_model_data.value()) = data;
+
+		}
+		else
+		{
+			loader->DeleteModel(data);
+		}
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
@@ -268,7 +273,7 @@ namespace wr
 
 	//! Loads a model with materials
 	template<typename TV, typename TI>
-	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals)
+	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals, std::optional<ModelData**> out_model_data)
 	{
 		IS_PROPER_VERTEX_CLASS(TV);
 
@@ -300,7 +305,6 @@ namespace wr
 		dir.erase(dir.begin() + dir.find_last_of('/') + 1, dir.end());
 
 		Model* model = new Model;
-		model->m_data = data;
 		std::vector<MaterialHandle> material_handles;
 
 		for (int i = 0; i < data->m_materials.size(); ++i)
@@ -399,7 +403,15 @@ namespace wr
 			return nullptr;
 		}
 
-	//	loader->DeleteModel(data);
+		if (out_model_data.has_value())
+		{
+			(*out_model_data.value()) = data;
+
+		}
+		else
+		{
+			loader->DeleteModel(data);
+		}
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
