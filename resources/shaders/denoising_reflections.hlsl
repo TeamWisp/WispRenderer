@@ -107,6 +107,108 @@ float ComputeWeight(
 	return w_direct;
 }
 
+bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history_length)
+{
+	float2 screen_size = float2(0.f, 0.f);
+	input_texture.GetDimensions(screen_size.x, screen_size.y);
+
+	float2 uv = screen_coord / screen_size;
+
+	float4 motion = motion_texture.SampleLevel(point_sampler, uv, 0);
+	float2 q_uv = uv - motion.xy;
+
+	float2 prev_coords = q_uv * screen_size;
+
+	float4 depth = depth_texture[prev_coords];
+	float3 normal = OctToDir(asuint(depth.w));
+
+	prev_direct = float4(0, 0, 0, 0);
+	prev_moments = float2(0, 0);
+
+	bool v[4];
+	const float2 pos_prev = prev_coords;
+	int2 offset[4] = {int2(0, 0), int2(1, 0), int2(0, 1), int2(1, 1)};
+
+	bool valid = false;
+	[unroll]
+	for(int sample_idx = 0; sample_idx < 4; ++sample_idx)
+	{
+		int2 loc = int2(pos_prev) + offset[sample_idx];
+		float4 depth_prev = prev_depth_texture[loc];
+		float3 normal_prev = OctToDir(asuint(depth_prev.w));
+
+		v[sample_idx] = IsReprojectionValid(loc, depth.z, depth_prev.x, depth.y, normal, normal_prev, motion.w);
+
+		valid = valid || v[sample_idx];
+	}
+
+	if(valid)
+	{
+		float sum_weights = 0;
+		float x = frac(pos_prev.x);
+		float y = frac(pos_prev.y);
+
+		float weights[4] = {(1 - x) * (1 - y),
+							x * (1 - y),
+							(1 - x) * y,
+							x * y };
+
+		[unroll]
+		for(int sample_idx = 0; sample_idx < 4; ++sample_idx)
+		{
+			int2 loc = int2(pos_prev) + offset[sample_idx];
+
+			prev_direct += weights[sample_idx] * prev_input_texture[loc] * float(v[sample_idx]);
+			prev_moments += weights[sample_idx] * prev_moments_texture[loc] * float(v[sample_idx]);
+			sum_weights += weights[sample_idx] * float(v[sample_idx]);
+		}
+
+		valid = (sum_weights >= 0.01);
+		prev_direct = lerp(float4(0, 0, 0, 0), prev_direct / sum_weights, valid);
+		prev_moments = lerp(float2(0, 0), prev_moments / sum_weights, valid);
+
+	}
+	if(!valid)
+	{
+		float cnt = 0.0;
+
+		const int radius = 1;
+		for(int y = -radius; y <= radius; ++y)
+		{
+			for(int x = -radius; x <= radius; ++x)
+			{
+				int2 p = prev_coords + int2(x, y);
+				float4 depth_filter = prev_depth_texture[p];
+				float3 normal_filter = OctToDir(asuint(depth_filter.w));
+
+				if(IsReprojectionValid(prev_coords, depth.z, depth_filter.x, depth.y, normal, normal_filter, motion.w))
+				{
+					prev_direct += prev_input_texture[p];
+					prev_moments += prev_moments_texture[p];
+					cnt += 1.0;
+				}
+			}
+		}
+
+		valid = cnt > 0;
+		prev_direct /= lerp(1, cnt, cnt > 0);
+		prev_moments /= lerp(1, cnt, cnt > 0);
+	}
+
+	if(valid)
+	{
+		history_length = in_hist_length_texture[prev_coords].r;
+	}
+	else
+	{
+		prev_direct = float4(0, 0, 0, 0);
+		prev_moments = float2(0, 0);
+		history_length = 0;
+	}
+
+	return valid;
+}
+
 [numthreads(16, 16, 1)]
 void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
@@ -116,20 +218,34 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = screen_coord / screen_size;
 
-	float4 motion = motion_texture.SampleLevel(point_sampler, uv, 0);
-	float2 q_uv = uv - motion.xy;
+	float4 accum_color = float4(0, 0, 0, 0);
+	float history = 0;
 
-	float2 prev_coords = q_uv * screen_size;
-
-	float4 prev_color = accum_texture[prev_coords];
-
-	float history = prev_color.w;
+	bool valid = LoadPrevData(screen_coord, accum_color, history);
 
 	float4 input_color = input_texture[screen_coord];
 
-	
+	float pdf = ray_raw_texture.SampleLevel(point_sampler, uv, 0).w;
 
-	output_texture[screen_coord] = input_texture[screen_coord];
+	float3 ray_dir = dir_hitT_texture.SampleLevel(point_sampler, uv, 0).xyz;
+	
+    float3 world_pos = world_position_texture[screen_coord].xyz;
+
+    float3 cam_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+
+	float3 V = normalize(cam_pos - world_pos);
+
+	float3 N = normal_metallic_texture[screen_coord].xyz;
+
+	float roughness = albedo_roughness_texture[screen_coord].w;
+
+	float weight = brdf_weight(V, ray_dir, N, roughness) / pdf;
+
+	history += 1;
+
+	float3 output = (prev_color.xyz * (history - 1) + input_color.xyz) / history;
+
+	output_texture[screen_coord] = float4(output.xyz, history);
 }
 
 [numthreads(16, 16, 1)]
@@ -233,7 +349,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float weights = 1.0;
 	float4 accum = input_texture[screen_coord];
 
-	const int kernel_size = 5 + 31 * roughness;
+	const int kernel_size = 1;//5 + 31 * roughness;
 	for(int x = -floor(kernel_size/2); x <= floor(kernel_size/2); ++x)
 	{
 		for(int y = -floor(kernel_size/2); y <= floor(kernel_size/2); ++y)
