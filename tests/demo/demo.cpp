@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "wisp.hpp"
+#include "version.hpp"
 #include "demo_frame_graphs.hpp"
 #include "util/file_watcher.hpp"
 
@@ -30,6 +31,7 @@
 
 #define SCENE viknell_scene
 //#define ENABLE_PHYSICS
+
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -109,6 +111,9 @@ void startCrashpad()
 
 int WispEntry()
 {
+	constexpr auto version = wr::GetVersion();
+	LOG("Wisp Version {}.{}.{}", version.m_major, version.m_minor, version.m_patch);
+
 	// ImGui Logging
 	util::log_callback::impl = [&](std::string const & str)
 	{
