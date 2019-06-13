@@ -76,7 +76,7 @@ namespace spheres_scene
 		return (1.0f - t) * v0 + t * v1;
 	}
 
-	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
+	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window, phys::PhysicsEngine& phys_engine)
 	{
 		//wr::Model* spheres[49];
 

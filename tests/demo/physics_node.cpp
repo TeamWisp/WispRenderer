@@ -46,7 +46,7 @@ void PhysicsMeshNode::SetupSimpleSphereColl(phys::PhysicsEngine& phys_engine, fl
 	m_rigid_body = phys_engine.CreateRigidBody(btScalar(m_mass), transform, m_shape);
 }
 
-void PhysicsMeshNode::SetupConvex(phys::PhysicsEngine& phys_engine, wr::Model* model)
+void PhysicsMeshNode::SetupConvex(phys::PhysicsEngine& phys_engine, wr::ModelData* model)
 {
 	m_rigid_bodys = std::vector<btRigidBody*>();
 	m_shapes = std::vector<btCollisionShape*>();

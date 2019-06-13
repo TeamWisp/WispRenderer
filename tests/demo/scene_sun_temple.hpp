@@ -86,7 +86,7 @@ namespace sun_temple_scene
 	static DirectX::XMVECTOR camera_end_pos = { -500.0f, 60.0f, 260.0f };
 
 
-	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window)
+	void CreateScene(wr::SceneGraph* scene_graph, wr::Window* window, phys::PhysicsEngine& phys_engine)
 	{
 		camera = scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)window->GetWidth() / (float)window->GetHeight());
 		camera->SetPosition({ 600.f, 700.f, 250.f });
