@@ -17,7 +17,6 @@ namespace wr
 
 		DescriptorAllocator* m_descriptor_allocator;
 		DescriptorAllocation m_input_allocation;
-		DescriptorAllocation m_accum_allocation;
 		DescriptorAllocation m_ray_raw_allocation;
 		DescriptorAllocation m_ray_dir_allocation;
 		DescriptorAllocation m_albedo_roughness_allocation;
@@ -25,13 +24,18 @@ namespace wr
 		DescriptorAllocation m_motion_allocation;
 		DescriptorAllocation m_linear_depth_allocation;
 		DescriptorAllocation m_world_pos_allocation;
+
+		DescriptorAllocation m_accum_allocation;
+		DescriptorAllocation m_prev_normal_allocation;
+		DescriptorAllocation m_prev_depth_allocation;
+
 		DescriptorAllocation m_output_allocation;
 
 		d3d12::RenderTarget* m_spatial_reconstruction_render_target;
 		d3d12::RenderTarget* m_rt_reflection_render_target;
 		d3d12::RenderTarget* m_gbuffer_render_target;
 		d3d12::RenderTarget* m_output_render_target;
-		d3d12::RenderTarget* m_accum_render_target;
+		d3d12::RenderTarget* m_prev_data_render_target;
 
 		temp::ReflectionDenoiserSettings_CBData m_denoiser_settings;
 
@@ -62,7 +66,6 @@ namespace wr
 				data.m_descriptor_allocator = texture_pool->GetAllocator(DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV);
 
 				data.m_input_allocation = std::move(data.m_descriptor_allocator->Allocate());
-				data.m_accum_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_ray_raw_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_ray_dir_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_albedo_roughness_allocation = std::move(data.m_descriptor_allocator->Allocate());
@@ -70,6 +73,11 @@ namespace wr
 				data.m_motion_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_linear_depth_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_world_pos_allocation = std::move(data.m_descriptor_allocator->Allocate());
+
+				data.m_accum_allocation = std::move(data.m_descriptor_allocator->Allocate());
+				data.m_prev_normal_allocation = std::move(data.m_descriptor_allocator->Allocate());
+				data.m_prev_depth_allocation = std::move(data.m_descriptor_allocator->Allocate());
+
 				data.m_output_allocation = std::move(data.m_descriptor_allocator->Allocate());
 
 				data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(SizeAlignTwoPower(sizeof(temp::ReflectionDenoiserSettings_CBData), 256) * d3d12::settings::num_back_buffers);
@@ -82,30 +90,28 @@ namespace wr
 				data.m_denoiser_settings.m_z_phi = 1.f;
 			}
 
+
+			d3d12::desc::RenderTargetDesc render_target_desc = {};
+			render_target_desc.m_clear_color[0] = 0.f;
+			render_target_desc.m_clear_color[1] = 0.f;
+			render_target_desc.m_clear_color[2] = 0.f;
+			render_target_desc.m_clear_color[3] = 0.f;
+			render_target_desc.m_create_dsv_buffer = false;
+			render_target_desc.m_dsv_format = Format::UNKNOWN;
+			render_target_desc.m_initial_state = ResourceState::NON_PIXEL_SHADER_RESOURCE;
+			render_target_desc.m_num_rtv_formats = 3;
+			render_target_desc.m_rtv_formats[0] = Format::R16G16B16A16_FLOAT;
+			render_target_desc.m_rtv_formats[1] = Format::R16G16B16A16_FLOAT;
+			render_target_desc.m_rtv_formats[2] = Format::R32G32B32A32_FLOAT;
+
+			data.m_prev_data_render_target = d3d12::CreateRenderTarget(n_render_system.m_device,
+				n_render_system.m_viewport.m_viewport.Width,
+				n_render_system.m_viewport.m_viewport.Height,
+				render_target_desc);
+
 			{
 				auto cpu_handle = data.m_input_allocation.GetDescriptorHandle();
 				d3d12::CreateSRVFromSpecificRTV(data.m_spatial_reconstruction_render_target, cpu_handle, 0, data.m_spatial_reconstruction_render_target->m_create_info.m_rtv_formats[0]);
-			}
-
-			{
-				d3d12::desc::RenderTargetDesc render_target_desc = {};
-				render_target_desc.m_clear_color[0] = 0.f;
-				render_target_desc.m_clear_color[1] = 0.f;
-				render_target_desc.m_clear_color[2] = 0.f;
-				render_target_desc.m_clear_color[3] = 0.f;
-				render_target_desc.m_create_dsv_buffer = false;
-				render_target_desc.m_dsv_format = Format::UNKNOWN;
-				render_target_desc.m_initial_state = ResourceState::NON_PIXEL_SHADER_RESOURCE;
-				render_target_desc.m_num_rtv_formats = 1;
-				render_target_desc.m_rtv_formats[0] = Format::R16G16B16A16_FLOAT;
-
-				data.m_accum_render_target = d3d12::CreateRenderTarget(n_render_system.m_device, 
-					n_render_system.m_viewport.m_viewport.Width, 
-					n_render_system.m_viewport.m_viewport.Height, 
-					render_target_desc);
-
-				auto cpu_handle = data.m_accum_allocation.GetDescriptorHandle();
-				d3d12::CreateSRVFromSpecificRTV(data.m_accum_render_target, cpu_handle, 0, data.m_accum_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
@@ -144,6 +150,21 @@ namespace wr
 			}
 
 			{
+				auto cpu_handle = data.m_accum_allocation.GetDescriptorHandle();
+				d3d12::CreateSRVFromSpecificRTV(data.m_prev_data_render_target, cpu_handle, 0, data.m_prev_data_render_target->m_create_info.m_rtv_formats[0]);
+			}
+
+			{
+				auto cpu_handle = data.m_prev_normal_allocation.GetDescriptorHandle();
+				d3d12::CreateSRVFromSpecificRTV(data.m_prev_data_render_target, cpu_handle, 1, data.m_prev_data_render_target->m_create_info.m_rtv_formats[1]);
+			}
+
+			{
+				auto cpu_handle = data.m_prev_depth_allocation.GetDescriptorHandle();
+				d3d12::CreateSRVFromSpecificRTV(data.m_prev_data_render_target, cpu_handle, 2, data.m_prev_data_render_target->m_create_info.m_rtv_formats[2]);
+			}
+
+			{
 				auto cpu_handle = data.m_output_allocation.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(data.m_output_render_target, cpu_handle, 0, data.m_output_render_target->m_create_info.m_rtv_formats[0]);
 			}
@@ -159,12 +180,6 @@ namespace wr
 				constexpr unsigned int input = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::INPUT);
 				auto cpu_handle = data.m_input_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
-			}
-
-			{
-				constexpr unsigned int accum = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::ACCUM);
-				auto cpu_handle = data.m_accum_allocation.GetDescriptorHandle();
-				d3d12::SetShaderSRV(cmd_list, 0, accum, cpu_handle);
 			}
 
 			{
@@ -207,6 +222,24 @@ namespace wr
 				constexpr unsigned int world_pos = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::WORLD_POS);
 				auto cpu_handle = data.m_world_pos_allocation.GetDescriptorHandle();
 				d3d12::SetShaderSRV(cmd_list, 0, world_pos, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int accum = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::ACCUM);
+				auto cpu_handle = data.m_accum_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, accum, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int prev_normal = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::PREV_NORMAL);
+				auto cpu_handle = data.m_prev_normal_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, prev_normal, cpu_handle);
+			}
+
+			{
+				constexpr unsigned int prev_depth = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::PREV_DEPTH);
+				auto cpu_handle = data.m_prev_depth_allocation.GetDescriptorHandle();
+				d3d12::SetShaderSRV(cmd_list, 0, prev_depth, cpu_handle);
 			}
 
 			{
@@ -287,14 +320,18 @@ namespace wr
 			TemporalDenoiser(n_render_system, sg, data, cmd_list);
 
 			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
-			d3d12::Transition(cmd_list, data.m_accum_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
+			d3d12::Transition(cmd_list, data.m_gbuffer_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_SOURCE);
+			d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
 
-			cmd_list->m_native->CopyResource(data.m_accum_render_target->m_render_targets[0], data.m_output_render_target->m_render_targets[0]);
+			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[0], data.m_output_render_target->m_render_targets[0]);
+			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[1], data.m_gbuffer_render_target->m_render_targets[1]);
+			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[2], data.m_output_render_target->m_render_targets[4]);
 
 			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
-			d3d12::Transition(cmd_list, data.m_accum_render_target, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+			d3d12::Transition(cmd_list, data.m_gbuffer_render_target, ResourceState::COPY_SOURCE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+			d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
-			SpatialDenoiser(n_render_system, sg, data, cmd_list);
+			//SpatialDenoiser(n_render_system, sg, data, cmd_list);
 
 			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 		}
@@ -305,16 +342,20 @@ namespace wr
 			if (!resize)
 			{
 				std::move(data.m_input_allocation);
-				std::move(data.m_accum_allocation);
 				std::move(data.m_ray_dir_allocation);
 				std::move(data.m_albedo_roughness_allocation);
 				std::move(data.m_normal_metallic_allocation);
 				std::move(data.m_motion_allocation);
 				std::move(data.m_linear_depth_allocation);
 				std::move(data.m_world_pos_allocation);
+
+				std::move(data.m_accum_allocation);
+				std::move(data.m_prev_normal_allocation);
+				std::move(data.m_prev_depth_allocation);
+
 				std::move(data.m_output_allocation);
 			}
-			d3d12::Destroy(data.m_accum_render_target);
+			d3d12::Destroy(data.m_prev_data_render_target);
 		}
 	} /* internal */
 

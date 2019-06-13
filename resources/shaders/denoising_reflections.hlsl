@@ -4,14 +4,18 @@
 #include "rand_util.hlsl"
 
 Texture2D input_texture : register(t0);
-Texture2D accum_texture : register(t1);
-Texture2D ray_raw_texture : register(t2);
-Texture2D dir_hitT_texture : register(t3);
-Texture2D albedo_roughness_texture : register(t4);
-Texture2D normal_metallic_texture : register(t5);
-Texture2D motion_texture : register(t6); // xy: motion, z: fwidth position, w: fwidth normal
-Texture2D linear_depth_texture : register(t7);
-Texture2D world_position_texture : register(t8);
+Texture2D ray_raw_texture : register(t1);
+Texture2D dir_hitT_texture : register(t2);
+Texture2D albedo_roughness_texture : register(t3);
+Texture2D normal_metallic_texture : register(t4);
+Texture2D motion_texture : register(t5); // xy: motion, z: fwidth position, w: fwidth normal
+Texture2D linear_depth_texture : register(t6);
+Texture2D world_position_texture : register(t7);
+
+Texture2D accum_texture : register(t8);
+Texture2D prev_normal_texture : register(t9);
+Texture2D prev_depth_texture : register(t10);
+
 RWTexture2D<float4> output_texture : register(u0);
 
 SamplerState point_sampler : register(s0);
@@ -107,10 +111,24 @@ float ComputeWeight(
 	return w_direct;
 }
 
+bool IsReprojectionValid(int2 coord, float z, float z_prev, float fwidth_z, float3 normal, float3 normal_prev, float fwidth_normal)
+{
+	int2 screen_size = int2(0, 0);
+	output_texture.GetDimensions(screen_size.x, screen_size.y);
+
+	bool ret = (coord.x >= 0 && coord.x < screen_size.x && coord.y >= 0 && coord.y < screen_size.y);
+
+	ret = ret && ((abs(z_prev - z) / (fwidth_z + 1e-4)) < 2.0);
+
+	ret = ret && ((distance(normal, normal_prev) / (fwidth_normal + 1e-2)) < 16.0);
+
+	return ret;
+}
+
 bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history_length)
 {
 	float2 screen_size = float2(0.f, 0.f);
-	input_texture.GetDimensions(screen_size.x, screen_size.y);
+	output_texture.GetDimensions(screen_size.x, screen_size.y);
 
 	float2 uv = screen_coord / screen_size;
 
@@ -119,11 +137,10 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history
 
 	float2 prev_coords = q_uv * screen_size;
 
-	float4 depth = depth_texture[prev_coords];
+	float4 depth = linear_depth_texture[prev_coords];
 	float3 normal = OctToDir(asuint(depth.w));
 
 	prev_direct = float4(0, 0, 0, 0);
-	prev_moments = float2(0, 0);
 
 	bool v[4];
 	const float2 pos_prev = prev_coords;
@@ -158,14 +175,12 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history
 		{
 			int2 loc = int2(pos_prev) + offset[sample_idx];
 
-			prev_direct += weights[sample_idx] * prev_input_texture[loc] * float(v[sample_idx]);
-			prev_moments += weights[sample_idx] * prev_moments_texture[loc] * float(v[sample_idx]);
+			prev_direct += weights[sample_idx] * accum_texture[loc] * float(v[sample_idx]);
 			sum_weights += weights[sample_idx] * float(v[sample_idx]);
 		}
 
 		valid = (sum_weights >= 0.01);
 		prev_direct = lerp(float4(0, 0, 0, 0), prev_direct / sum_weights, valid);
-		prev_moments = lerp(float2(0, 0), prev_moments / sum_weights, valid);
 
 	}
 	if(!valid)
@@ -183,8 +198,7 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history
 
 				if(IsReprojectionValid(prev_coords, depth.z, depth_filter.x, depth.y, normal, normal_filter, motion.w))
 				{
-					prev_direct += prev_input_texture[p];
-					prev_moments += prev_moments_texture[p];
+					prev_direct += accum_texture[p];
 					cnt += 1.0;
 				}
 			}
@@ -192,17 +206,15 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history
 
 		valid = cnt > 0;
 		prev_direct /= lerp(1, cnt, cnt > 0);
-		prev_moments /= lerp(1, cnt, cnt > 0);
 	}
 
 	if(valid)
 	{
-		history_length = in_hist_length_texture[prev_coords].r;
+		history_length = accum_texture[screen_coord].w;
 	}
 	else
 	{
 		prev_direct = float4(0, 0, 0, 0);
-		prev_moments = float2(0, 0);
 		history_length = 0;
 	}
 
@@ -222,6 +234,7 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float history = 0;
 
 	bool valid = LoadPrevData(screen_coord, accum_color, history);
+	history = lerp(0, history, valid);
 
 	float4 input_color = input_texture[screen_coord];
 
@@ -243,9 +256,9 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	history += 1;
 
-	float3 output = (prev_color.xyz * (history - 1) + input_color.xyz) / history;
+	float3 output = (accum_color.xyz * (history - 1) + input_color.xyz) / history;
 
-	output_texture[screen_coord] = float4(output.xyz, history);
+	output_texture[screen_coord] = float4(input_color.xyz, history);
 }
 
 [numthreads(16, 16, 1)]

@@ -537,33 +537,43 @@ namespace wr
 
     enum class ReflectionDenoiserE
     {
-      INPUT,
-			ACCUM,
-			RAY_RAW,
-      RAY_DIR,
-      ALBEDO_ROUGHNESS,
-      NORMAL_METALLIC,
-			MOTION,
-      LINEAR_DEPTH,
-			WORLD_POS,
-      OUTPUT,
-			CAMERA_PROPERTIES,
-			DENOISER_SETTINGS,
+		INPUT,
+		RAY_RAW,
+		RAY_DIR,
+		ALBEDO_ROUGHNESS,
+		NORMAL_METALLIC,
+		MOTION,
+		LINEAR_DEPTH,
+		WORLD_POS,
+
+		ACCUM,
+		PREV_NORMAL,
+		PREV_DEPTH,
+
+		OUTPUT,
+
+		CAMERA_PROPERTIES,
+		DENOISER_SETTINGS,
     };
 
-    constexpr std::array<rs_layout::Entry, 12> reflection_denoiser = {
-      rs_layout::Entry{(int)ReflectionDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ReflectionDenoiserE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ReflectionDenoiserE::RAY_RAW, 1, rs_layout::Type::SRV_RANGE},
-      rs_layout::Entry{(int)ReflectionDenoiserE::RAY_DIR, 1, rs_layout::Type::SRV_RANGE},
-      rs_layout::Entry{(int)ReflectionDenoiserE::ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
-      rs_layout::Entry{(int)ReflectionDenoiserE::NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ReflectionDenoiserE::MOTION, 1, rs_layout::Type::SRV_RANGE},
-      rs_layout::Entry{(int)ReflectionDenoiserE::LINEAR_DEPTH, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)ReflectionDenoiserE::WORLD_POS, 1, rs_layout::Type::SRV_RANGE},
-      rs_layout::Entry{(int)ReflectionDenoiserE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
-			rs_layout::Entry{(int)ReflectionDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)ReflectionDenoiserE::DENOISER_SETTINGS, 1, rs_layout::Type::CBV_OR_CONST}
+    constexpr std::array<rs_layout::Entry, 14> reflection_denoiser = {
+		rs_layout::Entry{(int)ReflectionDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::RAY_RAW, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::RAY_DIR, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::MOTION, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::LINEAR_DEPTH, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::WORLD_POS, 1, rs_layout::Type::SRV_RANGE},
+
+		rs_layout::Entry{(int)ReflectionDenoiserE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::PREV_NORMAL, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::PREV_DEPTH, 1, rs_layout::Type::SRV_RANGE},
+
+		rs_layout::Entry{(int)ReflectionDenoiserE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+
+		rs_layout::Entry{(int)ReflectionDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		rs_layout::Entry{(int)ReflectionDenoiserE::DENOISER_SETTINGS, 1, rs_layout::Type::CBV_OR_CONST}
     };
 
 		enum class RTAOE
