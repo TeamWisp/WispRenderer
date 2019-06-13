@@ -5,7 +5,7 @@
 
 //Reflections
 [shader("closesthit")]
-void ReflectionHit(inout PathTracingHitInfo payload, in Attributes attr)
+void ReflectionHit(inout PathTracingHitInfoCone payload, in Attributes attr)
 {
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
@@ -61,31 +61,24 @@ void ReflectionHit(inout PathTracingHitInfo payload, in Attributes attr)
 	float3 emissive = output_data.emissive;
 	float ao = output_data.ao;
 
+#ifdef NO_PATH_TRACED_NORMALS
 	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
-	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
-#define CALC_B
-#ifndef CALC_B
-	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
+	float3 fN = N;
 #else
-	T = normalize(T - dot(T, N) * N);
-	float3 B = cross(N, T);
+	float3 N = 0;
+	float3 fN = CalcPeturbedNormal(normal, output_data.normal, tangent, bitangent, V, N);
 #endif
-	const float3x3 TBN = float3x3(T, B, N);
-
-	//float3 fN = N;
-	float3 fN = normalize(mul(output_data.normal, TBN));
-	fN = lerp(fN, -fN, dot(fN, V) < 0);
 
 	// #################### GGX #####################
 	nextRand(payload.seed);
-	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
+	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1, true, payload.cone);
 	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 	payload.color += emissive;
 }
 
 //Reflection skybox
 [shader("miss")]
-void ReflectionMiss(inout PathTracingHitInfo payload)
+void ReflectionMiss(inout PathTracingHitInfoCone payload)
 {
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
 }

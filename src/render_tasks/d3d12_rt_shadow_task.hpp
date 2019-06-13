@@ -17,6 +17,17 @@
 
 namespace wr
 {
+	struct RTShadowSettings
+	{
+		struct Runtime
+		{
+			float m_epsilon = 0.01f;
+			int m_sample_count = 1;
+		};
+
+		Runtime m_runtime;
+	};
+
 	struct RTShadowData
 	{
 		RTHybrid_BaseData base_data;
@@ -85,9 +96,11 @@ namespace wr
 			auto& data = fg.GetData<RTShadowData>(handle);
 
 			auto window = n_render_system.m_window.value();
+			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto device = n_render_system.m_device;
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
+			auto settings = fg.GetSettings<RTShadowData, RTShadowSettings>();
 			float scalar = 1.0f;
 
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
@@ -204,6 +217,8 @@ namespace wr
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cam_data.m_intensity = n_render_system.temp_intensity;
 				cam_data.m_frame_idx = static_cast<float>(++data.base_data.frame_idx);
+				cam_data.m_epsilon = settings.m_runtime.m_epsilon;
+				cam_data.m_sample_count = settings.m_runtime.m_sample_count;
 				n_render_system.m_camera_pool->Update(data.base_data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*) & cam_data); // FIXME: Uhh wrong pool?
 
 				// Make sure the convolution pass wrote to the skybox.
@@ -262,8 +277,8 @@ namespace wr
 					data.base_data.out_hitgroup_shader_table[frame_idx],
 					data.base_data.out_miss_shader_table[frame_idx],
 					data.base_data.out_raygen_shader_table[frame_idx],
-					window->GetWidth() * scalar,
-					window->GetHeight() * scalar,
+					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 
@@ -327,6 +342,7 @@ namespace wr
 		desc.m_allow_multithreading = true;
 
 		fg.AddTask<RTShadowData>(desc, name, FG_DEPS<DeferredMainTaskData>());
+		fg.UpdateSettings<RTShadowData>(RTShadowSettings());
 	}
 
 } /* wr */

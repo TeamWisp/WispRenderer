@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "wisp.hpp"
+#include "version.hpp"
 #include "demo_frame_graphs.hpp"
 #include "util/file_watcher.hpp"
 
@@ -18,6 +19,7 @@
 #include "client/crash_report_database.h"
 
 #include "engine_interface.hpp"
+#include "physics_engine.hpp"
 #include "scene_viknell.hpp"
 #include "scene_emibl.hpp"
 #include "scene_spheres.hpp"
@@ -28,6 +30,7 @@
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
 #define SCENE emibl_scene
+
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 std::shared_ptr<wr::SceneGraph> scene_graph;
@@ -107,6 +110,9 @@ void startCrashpad()
 
 int WispEntry()
 {
+	constexpr auto version = wr::GetVersion();
+	LOG("Wisp Version {}.{}.{}", version.m_major, version.m_minor, version.m_patch);
+
 	// ImGui Logging
 	util::log_callback::impl = [&](std::string const & str)
 	{
@@ -126,6 +132,8 @@ int WispEntry()
 	startCrashpad();
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
+
+	phys::PhysicsEngine phys_engine;
 
 	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
 
@@ -177,9 +185,11 @@ int WispEntry()
 
 	SCENE::resources::CreateResources(render_system.get());
 
+	phys_engine.CreatePhysicsWorld();
+
 	scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
 
-	SCENE::CreateScene(scene_graph.get(), window.get());
+	SCENE::CreateScene(scene_graph.get(), window.get(), phys_engine);
 
 	render_system->InitSceneGraph(*scene_graph.get());
 
@@ -199,6 +209,10 @@ int WispEntry()
 
 	window->SetRenderLoop([&]() {
 		SCENE::UpdateScene(scene_graph.get());
+
+#ifdef ENABLE_PHYSICS
+		phys_engine.UpdateSim(ImGui::GetIO().DeltaTime, *scene_graph.get());
+#endif
 
 		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
 	});

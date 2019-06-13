@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.13)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
+add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE )
 
 project(Wisp)
 
 option(WISP_BUILD_TESTS "Enable Wisp Tests" ON)
+option(WISP_LOG_TO_STDOUT "Allow printing to stdout" ON)
 option(WISP_BUILD_SHARED "Build Wisp as a shared library" OFF)
 if (WISP_BUILD_SHARED)
 	set(BUILD_SHARED_LIBS ON)
@@ -14,6 +15,11 @@ else()
 	add_definitions(-DWISPRENDERER_STATIC_DEFINE)
 	message(STATUS "Building wisp as a STATIC library")
 	set(BUILD_SHARED_LIBS OFF)
+endif()
+
+if (WISP_LOG_TO_STDOUT)
+	message(STATUS "Wisp Renderer is allowed to print to stdout")
+	add_definitions(-DWISPRENDERER_LOG_TO_STDOUT)
 endif()
 
 #Detect whether we have HBAO+ SDK available.
@@ -74,10 +80,23 @@ set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MT")
 
+# Bullet Options
+set(BUILD_CPU_DEMOSON OFF CACHE BOOL "" FORCE)
+set(USE_GRAPHICAL_BENCHMARKON OFF CACHE BOOL "" FORCE)
+set(BUILD_ENETON OFF CACHE BOOL "" FORCE)
+set(BUILD_CLSOCKETON OFF CACHE BOOL "" FORCE)
+set(BUILD_BULLET2_DEMOSON OFF CACHE BOOL "" FORCE)
+set(BUILD_EXTRASON OFF CACHE BOOL "" FORCE)
+set(BUILD_UNIT_TESTSON OFF CACHE BOOL "" FORCE)
+set(USE_GRAPHICAL_BENCHMARKON OFF CACHE BOOL "" FORCE)
+set(BUILD_STATIC_LIBON ON CACHE BOOL "" FORCE)
+set(NO_EXPORTON ON CACHE BOOL "" FORCE)
+
 ## dependencies ##
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fmt ${CMAKE_BINARY_DIR}/fmt)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/DirectXTex ${CMAKE_BINARY_DIR}/DirectXTex)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fallback ${CMAKE_BINARY_DIR}/fallback)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/bullet3 ${CMAKE_BINARY_DIR}/bullet3)
 
 set(ASSIMP_BUILD_SHARED_LIBS OFF)
 
@@ -153,6 +172,12 @@ if (MSVC)
 	target_compile_options(DirectXTex PRIVATE /W0)
 endif()
 
+set_target_properties(Bullet3Common PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(BulletCollision PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(BulletDynamics PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(BulletInverseDynamics PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(BulletSoftBody PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(LinearMath PROPERTIES FOLDER "ThirdParty/Bullet")
 set_target_properties(assimp PROPERTIES FOLDER ThirdParty)
 set_target_properties(assimp_cmd PROPERTIES FOLDER ThirdParty)
 set_target_properties(IrrXML PROPERTIES FOLDER ThirdParty)
@@ -185,10 +210,11 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/hbao+/in
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/ansel/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/crashpad)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/crashpad/third_party/mini_chromium/mini_chromium)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/bullet3/src)
 
 link_directories(${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/client/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/util/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/third_party/mini_chromium/mini_chromium/base/)
 
-target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB} ${NVIDIA_GAMEWORKS_ANSEL_LIB}  crashpad_client crashpad_util base)
+target_link_libraries(WispRenderer BulletCollision BulletDynamics LinearMath DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB} ${NVIDIA_GAMEWORKS_ANSEL_LIB}  crashpad_client crashpad_util base)
 
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 
@@ -196,23 +222,3 @@ if (WISP_BUILD_TESTS)
 	add_subdirectory(tests ${CMAKE_BINARY_DIR}/tests)
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Demo)
 endif()
-
-## Generate Include Directory
-macro(configure_files srcDir destDir)
-    message(STATUS "Configuring directory ${destDir}")
-    make_directory(${destDir})
-
-	file(GLOB_RECURSE templateFiles RELATIVE ${srcDir} ${srcDir}/*)
-    foreach(templateFile ${templateFiles})
-        set(srcTemplatePath ${srcDir}/${templateFile})
-        if(NOT IS_DIRECTORY ${srcTemplatePath})
-            message(STATUS "Configuring file ${templateFile}")
-            configure_file(
-                    ${srcTemplatePath}
-                    ${destDir}/${templateFile}
-                    @ONLY)
-        endif(NOT IS_DIRECTORY ${srcTemplatePath})
-    endforeach(templateFile)
-endmacro(configure_files)
-
-#configure_files("${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/include")

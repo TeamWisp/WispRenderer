@@ -33,4 +33,31 @@ float3 unpack_position(float2 uv, float depth, float4x4 inv_vp)
 	return (wpos.xyz / wpos.w).xyz;
 }
 
+float3 CalcPeturbedNormal(float3 normal, float3 normal_map, float3 tangent, float3 bitangent, float3 V, out float3 world_normal)
+{
+	float3x4 object_to_world = ObjectToWorld3x4();
+	float3 N = normalize(mul(object_to_world, float4(normal, 0)));
+	float3 T = normalize(mul(object_to_world, float4(tangent, 0)));
+#ifndef CALC_BITANGENT
+	const float3 B = normalize(mul(object_to_world, float4(bitangent, 0)));
+#else
+	T = normalize(T - dot(T, N) * N);
+	float3 B = cross(N, T);
+#endif
+	const float3x3 TBN = float3x3(T, B, N);
+
+	float3 fN = normalize(mul(normal_map, TBN));
+
+	world_normal = N;
+
+	return fN;
+}
+
+float3 CalcPeturbedNormal(float3 normal, float3 normal_map, float3 tangent, float3 bitangent, float3 V)
+{
+	float3 temp = 0;
+	return CalcPeturbedNormal(normal, normal_map, tangent, bitangent, V, temp);
+}
+
+
 #endif //__DXR_FUNCTIONS_HLSL__

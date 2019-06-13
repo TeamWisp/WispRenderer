@@ -56,7 +56,6 @@ namespace wr
 		Box m_box;
 
 		void Expand(float (&pos)[3]);
-
 	};
 
 	class ModelPool
@@ -72,9 +71,9 @@ namespace wr
 		ModelPool& operator=(ModelPool&&) = delete;
 
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path);
+		[[nodiscard]] Model* Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, std::optional<ModelData**> out_model_data = std::nullopt);
 		template<typename TV, typename TI = std::uint32_t>
-		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals = false);
+		[[nodiscard]] Model* LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals = false, std::optional<ModelData**> out_model_data = std::nullopt);
 		template<typename TV, typename TI = std::uint32_t>
 		[[nodiscard]] Model* LoadCustom(std::vector<MeshData<TV, TI>> meshes);
 
@@ -221,7 +220,7 @@ namespace wr
 
 	//! Loads a model without materials
 	template<typename TV, typename TI>
-	Model* ModelPool::Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path)
+	Model* ModelPool::Load(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, std::optional<ModelData**> out_model_data)
 	{
 		IS_PROPER_VERTEX_CLASS(TV);
 
@@ -254,7 +253,15 @@ namespace wr
 			return nullptr;
 		}
 
-		loader->DeleteModel(data);
+		if (out_model_data.has_value())
+		{
+			(*out_model_data.value()) = data;
+
+		}
+		else
+		{
+			loader->DeleteModel(data);
+		}
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;
@@ -266,7 +273,7 @@ namespace wr
 
 	//! Loads a model with materials
 	template<typename TV, typename TI>
-	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals)
+	Model* ModelPool::LoadWithMaterials(MaterialPool* material_pool, TexturePool* texture_pool, std::string_view path, bool flip_normals, std::optional<ModelData**> out_model_data)
 	{
 		IS_PROPER_VERTEX_CLASS(TV);
 
@@ -332,8 +339,7 @@ namespace wr
 			// Currently default scales are set to 1 for all materials.
 			MaterialUVScales default_scales;
 
-
-			auto new_handle = material_pool->Create(texture_pool, albedo, normals, roughness, metallic, emissive, ambient_occlusion, default_scales, false, true);
+			auto new_handle = material_pool->Create(texture_pool);
 			Material* mat = material_pool->GetMaterial(new_handle);
 
 			if (material->m_albedo_texture_location!=TextureLocation::NON_EXISTENT)
@@ -380,7 +386,8 @@ namespace wr
 			mat->SetConstant<MaterialConstant::METALLIC>(material->m_base_metallic);
 			mat->SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(material->m_base_emissive);
 			mat->SetConstant<MaterialConstant::ROUGHNESS>(material->m_base_roughness);
-
+			mat->SetConstant<MaterialConstant::IS_ALPHA_MASKED>(false);
+			mat->SetConstant<MaterialConstant::IS_DOUBLE_SIDED>(false);
 
 			material_handles.push_back(new_handle);
 		}
@@ -396,7 +403,15 @@ namespace wr
 			return nullptr;
 		}
 
-		loader->DeleteModel(data);
+		if (out_model_data.has_value())
+		{
+			(*out_model_data.value()) = data;
+
+		}
+		else
+		{
+			loader->DeleteModel(data);
+		}
 
 		model->m_model_name = path.data();
 		model->m_model_pool = this;

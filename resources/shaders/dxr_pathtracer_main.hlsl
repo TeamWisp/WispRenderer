@@ -6,6 +6,7 @@
 #include "pbr_util.hlsl"
 #include "material_util.hlsl"
 #include "lighting.hlsl"
+#include "dxr_texture_lod.hlsl"
 
 // Definitions for: 
 // - Vertex, Material, Offset
@@ -39,9 +40,8 @@ cbuffer CameraProperties : register(b0)
 	float4x4 inv_projection;
 	float4x4 inv_vp;
 
-	float2 padding;
 	float frame_idx;
-	float intensity;
+	float3 padding;
 };
 
 #include "dxr_pathtracer_functions.hlsl"
@@ -77,17 +77,21 @@ void RaygenEntry()
 	float3 cpos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
 	float3 V = normalize(cpos - wpos);
 
-	normal = lerp(normal, -normal, dot(normal, V) < 0);
-
 	float3 result = float3(0, 0, 0);
+
+	SurfaceHit sfhit;
+	sfhit.pos = wpos;
+	sfhit.normal = normal;
+	sfhit.dist = length(cpos - wpos);
+	sfhit.surface_spread_angle = ComputeSurfaceSpreadAngle(gbuffer_depth, gbuffer_normal, inv_vp, wpos, normal);
+
+	// Compute the initial ray cone from the gbuffers.
+ 	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 
 	nextRand(rand_seed);
 	const float3 rand_dir = getCosHemisphereSample(rand_seed, normal);
 	const float cos_theta = cos(dot(rand_dir, normal));
-	result = TraceColorRay(wpos + (EPSILON * normal), rand_dir, 0, rand_seed);
-	//result += ggxIndirect(wpos, normal, normal, V, albedo, metallic, roughness, ao, rand_seed, 0);
-	//result += ggxDirect(wpos, normal, normal, V, albedo, metallic, roughness, rand_seed, 0);
-	//result += emissive;
+	result = TraceColorRayCone(wpos + (EPSILON * normal), rand_dir, 0, rand_seed, cone);
 
 	if (any(isnan(result)))
 	{

@@ -81,7 +81,6 @@ namespace wr
 	REGISTER(root_signatures::svgf_denoiser, RootSignatureRegistry)({
 		.m_parameters ={
 			ROOT_PARAM_DESC_TABLE(svgf_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
-			ROOT_PARAM(GetCBV(params::svgf_denoiser, params::SVGFDenoiserE::CAMERA_PROPERTIES)),
 			ROOT_PARAM(GetCBV(params::svgf_denoiser, params::SVGFDenoiserE::SVGF_PROPERTIES)),
 		},
 		.m_samplers = {
@@ -301,7 +300,7 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 	});
 
-	REGISTER(pipelines::basic_deferred, PipelineRegistry) < VertexColor > ({
+	REGISTER(pipelines::basic_deferred, PipelineRegistry) < Vertex > ({
 		.m_vertex_shader_handle = shaders::basic_deferred_vs,
 		.m_pixel_shader_handle = shaders::basic_deferred_ps,
 		.m_compute_shader_handle = std::nullopt,
@@ -316,7 +315,7 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 		});
 
-	REGISTER(pipelines::basic_hybrid, PipelineRegistry) < VertexColor > ({
+	REGISTER(pipelines::basic_hybrid, PipelineRegistry) < Vertex > ({
 		.m_vertex_shader_handle = shaders::basic_hybrid_vs,
 		.m_pixel_shader_handle = shaders::basic_hybrid_ps,
 		.m_compute_shader_handle = std::nullopt,
@@ -391,7 +390,7 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 		});
 
-	REGISTER(pipelines::mip_mapping, PipelineRegistry) < VertexColor > ({
+	REGISTER(pipelines::mip_mapping, PipelineRegistry) < Vertex > ({
 		.m_vertex_shader_handle = std::nullopt,
 		.m_pixel_shader_handle = std::nullopt,
 		.m_compute_shader_handle = shaders::mip_mapping_cs,
@@ -1196,7 +1195,7 @@ namespace wr
 	{
 		.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
 		.library_desc = path_tracer_so_library,
-		.max_payload_size = (sizeof(float) * 7) + (sizeof(unsigned int) * 1),
+		.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
 		.max_attributes_size = sizeof(float) * 4,
 		.max_recursion_depth = 6,
 		.global_root_signature = root_signatures::path_tracing_global,

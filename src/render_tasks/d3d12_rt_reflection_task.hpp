@@ -83,6 +83,7 @@ namespace wr
 			auto& data = fg.GetData<RTReflectionData>(handle);
 			
 			auto window = n_render_system.m_window.value();
+			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto device = n_render_system.m_device;
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
@@ -259,8 +260,8 @@ namespace wr
 					data.base_data.out_hitgroup_shader_table[frame_idx],
 					data.base_data.out_miss_shader_table[frame_idx],
 					data.base_data.out_raygen_shader_table[frame_idx],
-					window->GetWidth() * scalar,
-					window->GetHeight() * scalar,
+					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 

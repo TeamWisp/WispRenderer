@@ -313,6 +313,11 @@ namespace wr::imgui::window
 					light.ang = light.ang / 180.f * 3.1415926535f;
 				}
 
+				static float light_size_temp = 0.0f;
+				ImGui::DragFloat("Light Size", &light_size_temp, 0.1f, 0.0f, 5.0f);
+				light_node->SetLightSize(light_size_temp);
+				
+
 				if (ImGui::Button("Take Camera Transform"))
 				{
 					light_node->SetPosition(scene_graph->GetActiveCamera()->m_position);
@@ -414,6 +419,14 @@ namespace wr::imgui::window
 				}
 
 				return DefaultContextMenu(mesh_node, scene_graph);
+			}
+		},
+		{ typeid(LightNode),
+			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
+			{
+				auto light_node = std::static_pointer_cast<LightNode>(node);
+
+				return DefaultContextMenu(light_node, scene_graph);
 			}
 		},
 		{ typeid(SkyboxNode),

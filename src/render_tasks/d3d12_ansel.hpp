@@ -110,7 +110,7 @@ namespace wr
 			return ansel_camera;
 		}
 
-		void AnselToNativeCamera(ansel::Camera const & ansel_camera, std::shared_ptr<CameraNode> & camera)
+		void AnselToNativeCamera(ansel::Camera const & ansel_camera, std::shared_ptr<CameraNode> camera)
 		{
 			camera->SetProjectionOffset(ansel_camera.projectionOffsetX, ansel_camera.projectionOffsetY);
 			camera->SetPosition({ ansel_camera.position.x, ansel_camera.position.y, ansel_camera.position.z });

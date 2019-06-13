@@ -19,7 +19,7 @@ namespace wr
 		m_vertex_buffer = d3d12::CreateStagingBuffer(render_system.m_device,
 			nullptr,
 			SizeAlignAnyAlignment(vertex_buffer_size_in_bytes, 65536),
-			sizeof(VertexColor),
+			sizeof(Vertex),
 			ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 		SetName(m_vertex_buffer, L"Model Pool Vertex Buffer");
 		m_vertex_buffer_size = SizeAlignAnyAlignment(vertex_buffer_size_in_bytes, 65536);

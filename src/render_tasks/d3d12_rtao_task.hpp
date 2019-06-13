@@ -20,11 +20,11 @@ namespace wr
 		struct Runtime
 		{
 			float bias = 0.05f;
-			float radius = 2.f;
+			float radius = 0.5f;
 			float power = 1.f; // The final AO output is pow(AO, powerExponent) // 1.0~4.0
-			float max_distance = 2000.f;
+			float max_distance = 20.f;
 			int sample_count = 8;
-		};//Currently setup to make screen shots in pica pica
+		};//Currently setup to make work with retardedly small scenes
 
 		Runtime m_runtime;
 	};
@@ -160,6 +160,7 @@ namespace wr
 			// Initialize variables
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(render_system);
 			auto window = n_render_system.m_window.value();
+			auto render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			auto device = n_render_system.m_device;
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 			auto& data = fg.GetData<RTAOData>(handle);
@@ -230,8 +231,8 @@ namespace wr
 					data.in_hitgroup_shader_table[frame_idx], 
 					data.in_miss_shader_table[frame_idx], 
 					data.in_raygen_shader_table[frame_idx], 
-					static_cast<std::uint32_t>(std::ceil(scalar * window->GetWidth())),
-					static_cast<std::uint32_t>(std::ceil(scalar * window->GetHeight())),
+					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 

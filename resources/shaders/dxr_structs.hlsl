@@ -8,7 +8,6 @@ struct Vertex
 	float3 normal;
 	float3 tangent;
 	float3 bitangent;
-	float3 color;
 };
 
 struct MaterialData
@@ -86,6 +85,15 @@ struct PathTracingHitInfo
 	unsigned int seed;
 	float3 origin;
 	unsigned int depth;
+};
+
+struct PathTracingHitInfoCone
+{
+	float3 color;
+	unsigned int seed;
+	float3 origin;
+	unsigned int depth;
+	RayCone cone;
 };
 
 struct FullRTHitInfo

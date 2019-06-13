@@ -31,6 +31,8 @@ SamplerState point_sampler : register(s1);
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
 
+#include "dxr_pathtracer_functions.hlsl"
+
 cbuffer CameraProperties : register(b0)
 {
 	float4x4 view;
@@ -100,42 +102,11 @@ inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 
 #endif
 }
 
-float3 TraceColorRay(float3 origin, float3 direction, unsigned int depth, unsigned int seed)
-{
-	if (depth >= MAX_RECURSION)
-	{
-		return skybox.SampleLevel(s0, direction, 0).rgb;
-	}
-
-	// Define a ray, consisting of origin, direction, and the min-max distance values
-	RayDesc ray;
-	ray.Origin = origin;
-	ray.Direction = direction;
-	ray.TMin = 0;
-	ray.TMax = 10000.0;
-
-	FullRTHitInfo payload = { float3(1, 1, 1), seed, origin, depth };
-
-	// Trace the ray
-	TraceRay(
-		Scene,
-		RAY_FLAG_CULL_FRONT_FACING_TRIANGLES,
-		~0, // InstanceInclusionMask
-		0, // RayContributionToHitGroupIndex
-		0, // MultiplierForGeometryContributionToHitGroupIndex
-		0, // miss shader index
-		ray,
-		payload);
-
-	return payload.color;
-}
-
 [shader("raygeneration")]
 void RaygenEntry()
 {
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
-	//#define FOUR_X_AA
 #ifdef FOUR_X_AA
 	Ray a = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(0.5, 0), rand_seed);
 	Ray b = GenerateCameraRay(DispatchRaysIndex().xy, camera_position, inv_projection_view, float2(-0.5, 0), rand_seed);
@@ -156,7 +127,16 @@ void RaygenEntry()
 	float3 result = TraceColorRay(ray.origin, ray.direction, 0, rand_seed);
 #endif
 
-	gOutput[DispatchRaysIndex().xy] = float4(result, 1);
+	if (any(isnan(result)))
+	{
+		result = float3(1000, 0, 0);
+	}
+
+	float4 prev = gOutput[DispatchRaysIndex().xy];
+
+	float4 color = (frame_idx * prev + float4(result, 1)) / (frame_idx + 1); // accumulate
+
+	gOutput[DispatchRaysIndex().xy] = color;
 }
 
 [shader("miss")]
@@ -203,7 +183,7 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
 	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
 	uv.y = 1.0f - uv.y;
 
-	float mip_level = payload.depth + 1;
+	float mip_level = payload.depth;
 
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
@@ -222,55 +202,23 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
 	float3 emissive = output_data.emissive;
 	float ao = output_data.ao;
 
-	float3 N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
-	float3 T = normalize(mul(ObjectToWorld3x4(), float4(tangent, 0)));
-#define CALC_B
-#ifndef CALC_B
-	const float3 B = normalize(mul(ObjectToWorld3x4(), float4(bitangent, 0)));
-#else
-	T = normalize(T - dot(T, N) * N);
-	float3 B = cross(N, T);
-#endif
-	const float3x3 TBN = float3x3(T, B, N);
+	float3 N = 0;
+	float3 fN = 0;
+	if (payload.depth > 0)
+	{
+		N = normalize(mul(ObjectToWorld3x4(), float4(normal, 0)));
+		fN = N;
+	}
+	else
+	{
+		N = 0;
+		fN = CalcPeturbedNormal(normal, output_data.normal, tangent, bitangent, V, N);
+	}
 
-	float3 fN = normalize(mul(output_data.normal, TBN));
-	fN = lerp(fN, -fN, dot(fN, V) < 0);
-
-	// Irradiance
-	float3 flipped_N = fN;
-	flipped_N.y *= -1;
-	const float3 sampled_irradiance = irradiance_map.SampleLevel(s0, flipped_N, 0).xyz;
-
-	const float2 sampled_brdf = brdf_lut.SampleLevel(point_sampler, float2(max(dot(fN, V), 0.01f), roughness), 0).rg;
-
-	// Direct
-	float3 reflect_dir = reflect(-V, fN);
-	float3 reflection = TraceColorRay(hit_pos + fN * EPSILON, reflect_dir, payload.depth + 1, payload.seed);
-
-	const float3 F = F_SchlickRoughness(max(dot(fN, V), 0.0),
-		metal,
-		albedo,
-		roughness);
-
-	float3 kS = F;
-	float3 kD = 1.0 - kS;
-	kD *= 1.0 - metal;
-
-	float3 lighting = shade_pixel(hit_pos, V,
-		albedo,
-		metal,
-		roughness,
-		emissive,
-		fN,
-		payload.seed,
-		payload.depth + 1,
-		CALLINGPASS_FULLRAYTRACING);
-
-	float3 specular = reflection * (F * sampled_brdf.x + sampled_brdf.y);
-	float3 diffuse = albedo * sampled_irradiance;
-	float3 ambient = (kD * diffuse + specular) * ao;
-
-	payload.color = ambient + lighting;
+	nextRand(payload.seed);
+	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
+	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	payload.color += emissive;
 }
 
 [shader("closesthit")]
