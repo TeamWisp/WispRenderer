@@ -223,10 +223,6 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 		}
 #endif
 
-		float3 kS = F_SchlickRoughness(max(dot(fN, V), 0.0f), metal, albedo, roughness);
-		float3 kD = 1.0f - kS;
-		kD *= 1.0f - metal;
-
 		// #### BOUNCE ####
 		float3 irradiance = 0;
 		if (use_raycone)
