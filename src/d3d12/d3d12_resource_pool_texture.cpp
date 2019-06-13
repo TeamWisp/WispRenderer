@@ -490,6 +490,11 @@ namespace wr
 
 		Format texture_format = static_cast<wr::Format>(metadata.format);
 
+		if (srgb)
+		{
+			texture_format = static_cast<Format>(DirectX::MakeSRGB(static_cast<DXGI_FORMAT>(texture_format)));
+		}
+
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = static_cast<std::uint32_t>(metadata.width);
