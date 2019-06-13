@@ -109,7 +109,7 @@ namespace phys
 				if (!node->m_rigid_bodys.has_value() && node->m_rigid_body)
 				{
 					auto world_position = node->m_rigid_body->getWorldTransform().getOrigin();
-					node->m_position = util::DXV3toBV3(world_position);
+					node->m_position = util::BV3toDXV3(world_position);
 					node->SignalTransformChange();
 				}
 			}
