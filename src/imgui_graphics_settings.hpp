@@ -15,6 +15,16 @@ namespace wr::imgui::window
 	static bool asbuild_settings_open = true;
 	static bool shadow_settings_open = true;
 	static bool shadow_denoiser_settings_open = true;
+	static bool frame_graph_editor_open = true;
+
+	bool VectorOfStringGetter(void* data, int n, const char** out_text)
+	{
+		const std::vector<std::wstring>* names = static_cast<std::vector<std::wstring>*>(data);
+		char* name_as_char;
+		std::wcstombs(name_as_char, names->at(n).c_str(), names->at(n).size());
+		//out_text = &name_as_char;
+		return true;
+	}
 
 	void GraphicsSettings(FrameGraph* frame_graph)
 	{
@@ -118,9 +128,34 @@ namespace wr::imgui::window
 				frame_graph->UpdateSettings<ShadowDenoiserData>(shadow_denoiser_user_settings);
 			}
 			ImGui::End();
+		}
 
+		ImGui::Begin("FrameGraph Editor", &frame_graph_editor_open);
+		
+		auto names = frame_graph->GetNames();
 
-		}	
+		ImVec2 size = ImGui::GetContentRegionAvail();
+		//size.y -= ImGui::GetItemsLineHeightWithSpacing();
+
+		if (ImGui::ListBoxHeader("##", size))
+		{
+			for (std::wstring name : names)
+			{
+				//setup converter
+				using convert_type = std::codecvt_utf8<wchar_t>;
+				std::wstring_convert<convert_type, wchar_t> converter;
+
+				//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+				std::string converted_str = converter.to_bytes(name);
+				
+				ImGui::Text(converted_str.c_str());
+				
+			}
+			ImGui::ListBoxFooter();
+		}
+		
+		ImGui::End();
+
 	}
 
 }// namepace imgui::window

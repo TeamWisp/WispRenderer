@@ -563,6 +563,15 @@ namespace wr
 
 			return static_cast<T*>(m_render_targets[handle]);
 		}
+#ifndef MAX_PERFORMANCE
+		
+		[[nodiscard]] inline const std::vector<std::wstring>& GetNames() const
+		{
+			return m_names;
+		}
+
+#endif // !_DEBUG
+
 
 		/*! Check if this frame graph has a task. */
 		/*!
