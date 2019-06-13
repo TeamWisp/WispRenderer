@@ -25,15 +25,18 @@ namespace wr
 
 	namespace std_cexpr
 	{
-		constexpr size_t strlen(const char* str) {
+		constexpr size_t strlen(const char* str)
+		{
 			return (*str == 0) ? 0 : strlen(str + 1) + 1;
 		}
 
-		constexpr bool isdigit(char c) {
+		constexpr bool isdigit(char c)
+		{
 			return c <= '9' && c >= '0';
 		}
 
-		constexpr std::uint32_t stoi_impl(const char* str, std::uint32_t max, std::uint32_t n = 0, std::uint32_t value = 0) {
+		constexpr std::uint32_t stoi_impl(const char* str, std::uint32_t max, std::uint32_t n = 0, std::uint32_t value = 0)
+		{
 			if (n >= max)
 				return value;
 
@@ -65,17 +68,21 @@ namespace wr
 
 		std::uint32_t num = 0;
 		std::uint32_t itt = 0;
-		for (std::uint32_t i = 0; i < std_cexpr::strlen(str); i++) {
-			if (str[i] == '.') {
+		for (std::uint32_t i = 0; i < std_cexpr::strlen(str); i++)
+		{
+			if (str[i] == '.')
+			{
 				num++;
 				itt = 0;
 				continue;
 			}
-			else if (num == 0) {
+			else if (num == 0)
+			{
 				major_buf[itt] = str[i];
 				major_buf_size++;
 			}
-			else if (num == 1) {
+			else if (num == 1)
+			{
 				minor_buf[itt] = str[i];
 				minor_buf_size++;
 			}
@@ -87,7 +94,8 @@ namespace wr
 			itt++;
 		}
 
-		if (num != 2) {
+		if (num != 2)
+		{
 			throw "compile-time-error: Incorrect length";
 		}
 
