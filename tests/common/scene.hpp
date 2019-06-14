@@ -13,13 +13,15 @@ public:
 		  std::size_t model_pool_vb_size,
 		  std::size_t model_pool_ib_size);
 
-	virtual void Init(wr::D3D12RenderSystem* rs, unsigned int width, unsigned int height);
+	virtual void Init(wr::D3D12RenderSystem* rs, unsigned int width, unsigned int height, void* extra = nullptr);
 	virtual void Update() = 0;
 	std::shared_ptr<wr::SceneGraph> GetSceneGraph();
+	template<typename T>
+	std::shared_ptr<T> GetCamera();
 
 protected:
 	virtual void LoadResources() = 0;
-	virtual void BuildScene(unsigned int width, unsigned int height) = 0;
+	virtual void BuildScene(unsigned int width, unsigned int height, void* extra = nullptr) = 0;
 
 	const std::size_t m_material_pool_size;
 	const std::size_t m_model_pool_vb_size;
@@ -30,3 +32,9 @@ protected:
 	std::shared_ptr<wr::TexturePool> m_texture_pool;
 	std::shared_ptr<wr::MaterialPool> m_material_pool;
 };
+
+template<typename T>
+std::shared_ptr<T> Scene::GetCamera()
+{
+	return std::static_pointer_cast<T>(m_scene_graph->GetActiveCamera());
+}

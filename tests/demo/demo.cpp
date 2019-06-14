@@ -22,23 +22,20 @@
 #include "physics_engine.hpp"
 #include "scene_viknell.hpp"
 #include "scene_emibl.hpp"
-#include "scene_spheres.hpp"
-#include "scene_sun_temple.hpp"
 
 #include "model_loader_assimp.hpp"
 #include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-#define SCENE viknell_scene
+using DefaultScene = EmiblScene;
 //#define ENABLE_PHYSICS
 
-
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
-std::shared_ptr<wr::SceneGraph> scene_graph;
+Scene* current_scene = nullptr;
 
 void RenderEditor(ImTextureID output)
 {
-	engine::RenderEngine(output, render_system.get(), scene_graph.get());
+	engine::RenderEngine(output, render_system.get(), current_scene->GetSceneGraph().get());
 }
 
 void ShaderDirChangeDetected(std::string const & path, util::FileWatcher::FileStatus status)
@@ -62,53 +59,6 @@ void ShaderDirChangeDetected(std::string const & path, util::FileWatcher::FileSt
 	}
 }
 
-void startCrashpad() 
-{
-	// Cache directory that will store crashpad information and minidumps
-	base::FilePath database(L"CrashPadDB");
-	// Path to the out-of-process handler executable
-	base::FilePath handler(L"deps/crashpad/out/Release/crashpad_handler.exe");
-	// URL used to submit minidumps to
-	std::string url;
-	url = "https://WispRenderer.bugsplat.com/post/bp/crash/postBP.php";
-	// Optional annotations passed via --annotations to the handler
-	std::map<std::string, std::string> annotations;
-	annotations["format"] = "minidump";			// Crashpad setting to save crash as a minidump
-	annotations["prod"] = "WispRenderer";	    // BugSplat appName
-	annotations["ver"] = "1.2.0";				// BugSplat appVersion
-
-	// Optional arguments to pass to the handler
-	std::vector<std::string> arguments;
-
-	std::unique_ptr<crashpad::CrashReportDatabase> db =
-		crashpad::CrashReportDatabase::Initialize(database);
-
-	if (db != nullptr && db->GetSettings() != nullptr) 
-	{
-		db->GetSettings()->SetUploadsEnabled(true);
-	}
-
-	arguments.push_back("--no-rate-limit");
-
-	crashpad::CrashpadClient client;
-	bool success = client.StartHandler(
-		handler,
-		database,
-		database,
-		url,
-		annotations,
-		arguments,
-		/* restartable */ true,
-		/* asynchronous_start */ true
-	);
-
-	if (success) 
-	{
-		success = client.WaitForHandlerStart(INFINITE);
-	}
-}
-
-
 int WispEntry()
 {
 	constexpr auto version = wr::GetVersion();
@@ -119,18 +69,6 @@ int WispEntry()
 	{
 		engine::debug_console.AddLog(str.c_str());
 	};
-	
-#ifndef _DEBUG //prevents log spam for developers
-	std::time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	auto local_time = std::localtime(&current_time);
-
-	std::stringstream ss;
-	ss << "log-" << local_time->tm_mday << "-" << (local_time->tm_mon + 1) << "-" << (local_time->tm_year + 1900);
-	std::string log_file_name("WispDemo.log");
-	util::log_file_handler = new wr::LogfileHandler(std::filesystem::path(ss.str()), log_file_name);
-#endif // _DEBUG //prevents log spam for developers
-
-	startCrashpad();
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
 
@@ -140,7 +78,7 @@ int WispEntry()
 
 	window->SetKeyCallback([](int key, int action, int mods)
 	{
-		SCENE::camera->KeyAction(key, action);
+		current_scene->GetCamera<DebugCamera>()->KeyAction(key, action);
 
 		if (action == WM_KEYUP && key == 0xC0)
 		{
@@ -159,24 +97,16 @@ int WispEntry()
 		{
 			fg_manager::Prev();
 		}
-		if (action == WM_KEYUP && key == VK_F4)
-		{
-			SCENE::resources::model_pool->Defragment();
-		}
-		if (action == WM_KEYUP && key == VK_F5)
-		{
-			SCENE::resources::model_pool->ShrinkToFit();
-		}
 	});
 
 	window->SetMouseCallback([](int key, int action, int mods)
 	{
-		SCENE::camera->MouseAction(key, action);
+		current_scene->GetCamera<DebugCamera>()->MouseAction(key, action);
 	});
 
 	window->SetMouseWheelCallback([](int amount, int action, int mods)
 	{
-		SCENE::camera->MouseWheel(amount);
+		current_scene->GetCamera<DebugCamera>()->MouseWheel(amount);
 	});
 
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
@@ -184,15 +114,10 @@ int WispEntry()
 
 	render_system->Init(window.get());	
 
-	SCENE::resources::CreateResources(render_system.get());
-
 	phys_engine.CreatePhysicsWorld();
 
-	scene_graph = std::make_shared<wr::SceneGraph>(render_system.get());
-
-	SCENE::CreateScene(scene_graph.get(), window.get(), phys_engine);
-
-	render_system->InitSceneGraph(*scene_graph.get());
+	current_scene = new DefaultScene();
+	current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), &phys_engine);
 
 	fg_manager::Setup(*render_system, &RenderEditor);
 
@@ -200,8 +125,8 @@ int WispEntry()
 	{
 		render_system->WaitForAllPreviousWork();
 		render_system->Resize(width, height);
-		SCENE::camera->SetAspectRatio((float)width / (float)height);
-		SCENE::camera->SetOrthographicResolution(width, height);
+		current_scene->GetCamera<wr::CameraNode>()->SetAspectRatio((float)width / (float)height);
+		current_scene->GetCamera<wr::CameraNode>()->SetOrthographicResolution(width, height);
 		fg_manager::Resize(*render_system, width, height);
 	});
 
@@ -209,13 +134,13 @@ int WispEntry()
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
 	window->SetRenderLoop([&]() {
-		SCENE::UpdateScene(scene_graph.get());
+		current_scene->Update();
 
 #ifdef ENABLE_PHYSICS
 		phys_engine.UpdateSim(ImGui::GetIO().DeltaTime, *scene_graph.get());
 #endif
 
-		auto texture = render_system->Render(*scene_graph, *fg_manager::Get());
+		auto texture = render_system->Render(*current_scene->GetSceneGraph(), *fg_manager::Get());
 	});
 
 	window->StartRenderLoop();
@@ -225,14 +150,10 @@ int WispEntry()
 
 	render_system->WaitForAllPreviousWork(); // Make sure GPU is finished before destruction.
 
-	SCENE::resources::ReleaseResources();
+	delete current_scene;
 
 	fg_manager::Destroy();
 	render_system.reset();
-
-#ifndef _DEBUG //cleanup
-	delete util::log_file_handler;
-#endif 
 
 	return 0;
 }
