@@ -56,6 +56,19 @@ float3 GrayscaleToneMapping(float3 color) {
 	return color;
 }
 
+float3 ACESToneMapping(float3 color, float exposure, float gamma)
+{
+	color = clamp(exposure * color, 0.f, 1.f);
+	color = pow(color, 1.f / gamma);
+
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return saturate((color*(a*color+b))/(color*(c*color+d)+e));
+}
+
 float3 Uncharted2ToneMapping(float3 color, float gamma, float exposure)
 {
 	float A = 0.15;
@@ -130,7 +143,7 @@ float4x4 ContrastMatrix(float contrast)
 float3 AllTonemappingAlgorithms(float3 color, float rotation, float exposure, float gamma) {
 	float3 result = color;
 
-	float n = 7;
+	float n = 8;
 	int i = int(n * (rotation / 2));
 
 	if (i == 0) result = linearToneMapping(color, exposure, gamma);
@@ -139,8 +152,9 @@ float3 AllTonemappingAlgorithms(float3 color, float rotation, float exposure, fl
 	if (i == 3) result = whitePreservingLumaBasedReinhardToneMapping(color, gamma);
 	if (i == 4) result = RomBinDaHouseToneMapping(color, gamma);
 	if (i == 5) result = filmicToneMapping(color);
-	if (i == 6) result = Uncharted2ToneMapping(color, gamma, exposure);
-	if (i == 7) result = GrayscaleToneMapping(color);
+	if (i == 6) result = ACESToneMapping(color, exposure, gamma);
+	if (i == 7) result = Uncharted2ToneMapping(color, gamma, exposure);
+	if (i == 8) result = GrayscaleToneMapping(color);
 
 	return result;
 }

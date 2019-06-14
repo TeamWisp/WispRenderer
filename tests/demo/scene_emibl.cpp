@@ -185,21 +185,21 @@ void EmiblScene::LoadResources()
 	}
 
 	{
-		wr::MeshData<wr::VertexColor> mesh;
+		wr::MeshData<wr::Vertex> mesh;
 
 		mesh.m_indices = {
 			2, 1, 0, 3, 2, 0
 		};
 
 		mesh.m_vertices = {
-			//POS                UV            NORMAL                TANGENT            BINORMAL	COLOR
-			{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-			{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-			{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
-			{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0,			0, 0, 0 },
+			//POS                UV           NORMAL               TANGENT         BINORMAL
+			{  1,  1,  0,        1, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0, },
+			{  1, -1,  0,        1, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0, },
+			{ -1, -1,  0,        0, 0,        0, 0, -1,            0, 0, 1,        0, 1, 0, },
+			{ -1,  1,  0,        0, 1,        0, 0, -1,            0, 0, 1,        0, 1, 0, },
 		};
 
-		m_plane_model = m_model_pool->Load<wr::VertexColor>(m_material_pool.get(), m_texture_pool.get(), "resources/models/plane.fbx");
+		m_plane_model = m_model_pool->Load<wr::Vertex>(m_material_pool.get(), m_texture_pool.get(), "resources/models/plane.fbx");
 
 		for (auto& m : m_plane_model->m_meshes)
 		{
@@ -209,7 +209,7 @@ void EmiblScene::LoadResources()
 
 	{
 		{
-			m_cube_model = m_model_pool->Load<wr::VertexColor>(m_material_pool.get(), m_texture_pool.get(), "resources/models/cube.fbx");
+			m_cube_model = m_model_pool->Load<wr::Vertex>(m_material_pool.get(), m_texture_pool.get(), "resources/models/cube.fbx");
 			for (auto& m : m_cube_model->m_meshes)
 			{
 				m.second = m_material_handles[0];
@@ -218,7 +218,7 @@ void EmiblScene::LoadResources()
 		}
 
 		{
-			m_material_knob_model = m_model_pool->Load<wr::VertexColor>(m_material_pool.get(), m_texture_pool.get(), "resources/models/material_ball.fbx");
+			m_material_knob_model = m_model_pool->Load<wr::Vertex>(m_material_pool.get(), m_texture_pool.get(), "resources/models/material_ball.fbx");
 			for (auto& m : m_material_knob_model->m_meshes)
 			{
 				m.second = m_material_handles[0];
