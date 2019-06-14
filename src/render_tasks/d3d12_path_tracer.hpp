@@ -16,6 +16,16 @@
 
 namespace wr
 {
+	struct PathTracerSettings
+	{
+		struct Runtime
+		{
+			bool m_allow_transparency = false;
+		};
+		Runtime m_runtime;
+	};
+
+
 	//TODO, this struct is unpadded, manual padding might be usefull.
 	struct PathTracerData
 	{
@@ -176,7 +186,7 @@ namespace wr
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object));
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object_transparency));
 
 				// Create Shader Tables
 				CreateShaderTables(device, data, 0);
@@ -206,6 +216,19 @@ namespace wr
 			auto& data = fg.GetData<PathTracerData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
+			auto settings = fg.GetSettings<PathTracerSettings>(handle);
+
+			// Pipeline State Object
+			auto& rt_registry = RTPipelineRegistry::Get();
+
+			if (settings.m_runtime.m_allow_transparency)
+			{
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object_transparency));
+			}
+			else
+			{
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object_no_transparency));
+			}
 
 			// Rebuild acceleratrion structure a 2e time for fallback
 			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
@@ -454,7 +477,8 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<PathTracerData>(desc, L"Path Traced Global Illumination", FG_DEPS<DeferredMainTaskData>());
+		fg.AddTask<PathTracerData>(desc, L"Path Traced Global Illumination", FG_DEPS<DeferredMainTaskData>());		
+		fg.UpdateSettings<PathTracerData>(PathTracerSettings());
 	}
 
 } /* wr */

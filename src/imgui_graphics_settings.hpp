@@ -15,6 +15,7 @@ namespace wr::imgui::window
 	static bool asbuild_settings_open = true;
 	static bool shadow_settings_open = true;
 	static bool shadow_denoiser_settings_open = true;
+	static bool path_tracer_settings_open = true;
 
 	void GraphicsSettings(FrameGraph* frame_graph)
 	{
@@ -128,6 +129,20 @@ namespace wr::imgui::window
 
 
 		}	
+
+		if (frame_graph->HasTask<PathTracerData>() && path_tracer_settings_open)
+		{
+			auto pt_user_settings = frame_graph->GetSettings<PathTracerData, PathTracerSettings>();
+
+			ImGui::Begin("Path Tracing Settings", &path_tracer_settings_open);
+
+			ImGui::Checkbox("Allow transparency", &pt_user_settings.m_runtime.m_allow_transparency);
+
+			ImGui::End();
+			frame_graph->UpdateSettings<PathTracerData>(pt_user_settings);
+
+
+		}
 	}
 
 }// namepace imgui::window
