@@ -214,7 +214,7 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/bullet3/
 
 link_directories(${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/client/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/util/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/third_party/mini_chromium/mini_chromium/base/)
 
-target_link_libraries(WispRenderer BulletCollision BulletDynamics LinearMath DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB} ${NVIDIA_GAMEWORKS_ANSEL_LIB}  crashpad_client crashpad_util base)
+target_link_libraries(WispRenderer DXRFallback dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler DirectXTex fmt assimp ${NVIDIA_GAMEWORKS_HBAO_LIB} ${NVIDIA_GAMEWORKS_ANSEL_LIB}  crashpad_client crashpad_util base)
 
 set_target_properties(WispRenderer PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 
