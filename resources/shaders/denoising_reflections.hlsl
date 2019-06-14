@@ -240,6 +240,12 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float pdf = ray_raw_texture.SampleLevel(point_sampler, uv, 0).w;
 
+	if(pdf <= 0.0)
+	{
+		output_texture[screen_coord] = float4(0, 0, 0, 0);
+		return;
+	}
+
 	float3 ray_dir = dir_hitT_texture.SampleLevel(point_sampler, uv, 0).xyz;
 	
     float3 world_pos = world_position_texture[screen_coord].xyz;
@@ -248,7 +254,7 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float3 V = normalize(cam_pos - world_pos);
 
-	float3 N = normal_metallic_texture[screen_coord].xyz;
+	float3 N = OctToDir(asuint(linear_depth_texture[screen_coord].w)).xyz;
 
 	float roughness = albedo_roughness_texture[screen_coord].w;
 
@@ -256,7 +262,9 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	history = min(32, history + 1);
 
-	float3 output = (accum_color.xyz * (history - 1) + input_color.xyz) / history;
+	const float alpha = lerp(1.0, max(integration_alpha, 1.0/history), valid);
+
+	float3 output = lerp(accum_color, input_color, alpha);
 
 	output_texture[screen_coord] = float4(output.xyz, history);
 }

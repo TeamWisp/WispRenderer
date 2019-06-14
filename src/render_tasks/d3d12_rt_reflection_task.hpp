@@ -260,8 +260,8 @@ namespace wr
 					data.base_data.out_hitgroup_shader_table[frame_idx],
 					data.base_data.out_miss_shader_table[frame_idx],
 					data.base_data.out_raygen_shader_table[frame_idx],
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 
