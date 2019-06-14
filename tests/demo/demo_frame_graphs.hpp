@@ -208,9 +208,9 @@ namespace fg_manager
 			wr::AddRTShadowTask(*fg);
 
 			wr::AddShadowDenoiserTask(*fg);
-			//wr::AddSpatialReconstructionTask(*fg);
+			wr::AddSpatialReconstructionTask(*fg);
 
-			//wr::AddReflectionDenoiserTask(*fg);
+			wr::AddReflectionDenoiserTask(*fg);
 
 			//Raytraced Ambient Occlusion task
 			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);

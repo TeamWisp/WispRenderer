@@ -29,7 +29,7 @@
 #include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-#define SCENE emibl_scene
+#define SCENE viknell_scene
 
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;

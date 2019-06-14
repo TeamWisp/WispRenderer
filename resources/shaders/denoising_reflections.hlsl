@@ -15,6 +15,8 @@ Texture2D world_position_texture : register(t7);
 Texture2D accum_texture : register(t8);
 Texture2D prev_normal_texture : register(t9);
 Texture2D prev_depth_texture : register(t10);
+Texture2D prev_position_texture : register(t11);
+Texture2D prev_dir_hitT_texture : register(t12);
 
 RWTexture2D<float4> output_texture : register(u0);
 
@@ -34,13 +36,16 @@ cbuffer CameraProperties : register(b0)
 	uint is_ao;
 	uint has_shadows;
 	uint has_reflections;
-	float3 padding;
+	float3 padding1;
 };
 
 cbuffer DenoiserSettings : register(b1)
 {
 	float integration_alpha;
 	float variance_clipping_sigma;
+	float roughness_reprojection_threshold;
+	int max_history_samples;
+	float2 padding2;
 	float n_phi;
 	float z_phi;
 };
@@ -118,11 +123,19 @@ bool IsReprojectionValid(int2 coord, float z, float z_prev, float fwidth_z, floa
 
 	bool ret = (coord.x > -1 && coord.x < screen_size.x && coord.y > -1 && coord.y < screen_size.y);
 
-	ret = ret && ((abs(z_prev - z) / (fwidth_z + 1e-4)) < 2.0);
+	ret = ret && ((abs(z_prev - z) / (fwidth_z + 1e-4)) < 4.0);
 
 	ret = ret && ((distance(normal, normal_prev) / (fwidth_normal + 1e-2)) < 16.0);
 
 	return ret;
+}
+
+float3 GetReflectionWorldPos(float2 screen_coord, Texture2D origin_pos_texture, Texture2D reflection_dir_texture)
+{
+	float2 screen_size = float2(0, 0);
+	output_texture.GetDimensions(screen_size.x, screen_size.y);
+	float4 ray_data = reflection_dir_texture.SampleLevel(point_sampler, screen_coord / screen_size, 0);
+	return origin_pos_texture.SampleLevel(point_sampler, screen_coord / screen_size, 0).xyz + ray_data.xyz * ray_data.w;
 }
 
 bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history_length)
@@ -137,88 +150,190 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history
 
 	float2 prev_coords = q_uv * screen_size;
 
-	float4 depth = linear_depth_texture[prev_coords];
-	float3 normal = OctToDir(asuint(depth.w));
+	const float roughness = albedo_roughness_texture[screen_coord].w;
 
-	prev_direct = float4(0, 0, 0, 0);
-
-	bool v[4];
-	const float2 pos_prev = prev_coords;
-	int2 offset[4] = {int2(0, 0), int2(1, 0), int2(0, 1), int2(1, 1)};
-
-	bool valid = false;
-	[unroll]
-	for(int sample_idx = 0; sample_idx < 4; ++sample_idx)
+	if(roughness < 0.2)
 	{
-		int2 loc = int2(pos_prev) + offset[sample_idx];
-		float4 depth_prev = prev_depth_texture[loc];
-		float3 normal_prev = OctToDir(asuint(depth_prev.w));
+		int step_size = 4;
+		float2 best_pos = screen_coord;
+		float2 center_pos = screen_coord;
+		float3 coord_world_pos = GetReflectionWorldPos(screen_coord, world_position_texture, dir_hitT_texture);
+		float best_dist = length(coord_world_pos - GetReflectionWorldPos(screen_coord, prev_position_texture, prev_dir_hitT_texture));
 
-		v[sample_idx] = IsReprojectionValid(loc, depth.z, depth_prev.x, depth.y, normal, normal_prev, motion.w);
-
-		valid = valid || v[sample_idx];
-	}
-
-	if(valid)
-	{
-		float sum_weights = 0;
-		float x = frac(pos_prev.x);
-		float y = frac(pos_prev.y);
-
-		float weights[4] = {(1 - x) * (1 - y),
-							x * (1 - y),
-							(1 - x) * y,
-							x * y };
-
-		[unroll]
-		for(int sample_idx = 0; sample_idx < 4; ++sample_idx)
+		if(prev_coords.x >= 0 && prev_coords.x < screen_size.x && prev_coords.y >= 0 && prev_coords.y < screen_size.y)
 		{
-			int2 loc = int2(pos_prev) + offset[sample_idx];
-
-			prev_direct += weights[sample_idx] * accum_texture[loc] * float(v[sample_idx]);
-			sum_weights += weights[sample_idx] * float(v[sample_idx]);
+			float motion_vec_dist = length(GetReflectionWorldPos(screen_coord, world_position_texture, dir_hitT_texture) -
+				GetReflectionWorldPos(prev_coords, prev_position_texture, prev_dir_hitT_texture));
+			if(motion_vec_dist < best_dist)
+			{
+				best_dist = motion_vec_dist;
+				best_pos = prev_coords;
+				center_pos = best_pos;
+			}
 		}
 
-		valid = (sum_weights >= 0.01);
-		prev_direct = lerp(float4(0, 0, 0, 0), prev_direct / sum_weights, valid);
-
-	}
-	if(!valid)
-	{
-		float cnt = 0.0;
-
-		const int radius = 1;
-		for(int y = -radius; y <= radius; ++y)
+		float2 LDSP[4] = 
 		{
-			for(int x = -radius; x <= radius; ++x)
-			{
-				int2 p = prev_coords + int2(x, y);
-				float4 depth_filter = prev_depth_texture[p];
-				float3 normal_filter = OctToDir(asuint(depth_filter.w));
+			{1, 0},
+			{0, -1},
+			{-1, 0},
+			{0, 1}
+		};
 
-				if(IsReprojectionValid(prev_coords, depth.z, depth_filter.x, depth.y, normal, normal_filter, motion.w))
+		while(true)
+		{
+			[unroll]
+			for(int i = 0; i < 4; ++i)
+			{
+				float2 position = center_pos + LDSP[i] * step_size;
+				if(position.x >= 0 && position.x < screen_size.x && position.y >= 0 && position.y < screen_size.y)
 				{
-					prev_direct += accum_texture[p];
-					cnt += 1.0;
+					float3 prev_pos = GetReflectionWorldPos(position, prev_position_texture, prev_dir_hitT_texture);
+					if(length(coord_world_pos - prev_pos) < best_dist)
+					{
+						best_dist = length(coord_world_pos - prev_pos);
+						best_pos = position;
+					}
+				}
+			}
+
+			if(best_pos.x == center_pos.x && best_pos.y == center_pos.y)
+			{
+				if(step_size==1)
+				{
+					break;
+				}
+				else
+				{
+					step_size /= 2;
+				}
+			}
+			center_pos = best_pos;
+		}
+
+		float2 SDSP[8] = 
+		{
+			{1, 0},
+			{1, -1},
+			{0, -1},
+			{-1, -1},
+			{-1, 0},
+			{-1, 1},
+			{0, 1},
+			{1, 1}
+		};
+
+		[unroll]
+		for(int i = 0; i < 8; ++i)
+		{
+			float2 position = center_pos + SDSP[i];
+			if(position.x >= 0 && position.x < screen_size.x && position.y >= 0 && position.y < screen_size.y)
+			{
+				float3 prev_pos = GetReflectionWorldPos(position, prev_position_texture, prev_dir_hitT_texture);
+				if(length(coord_world_pos - prev_pos) < best_dist)
+				{
+					best_dist = length(coord_world_pos - prev_pos);
+					best_pos = position;
 				}
 			}
 		}
 
-		valid = cnt > 0;
-		prev_direct /= lerp(1, cnt, cnt > 0);
-	}
-
-	if(valid)
-	{
-		history_length = accum_texture[screen_coord].w;
+		prev_direct = accum_texture[best_pos];
+		history_length = prev_direct.w;
+		return true;
 	}
 	else
 	{
-		prev_direct = float4(0, 0, 0, 0);
-		history_length = 0;
-	}
+		
+		float4 depth = linear_depth_texture[prev_coords];
+		float3 normal = OctToDir(asuint(depth.w));
 
-	return valid;
+		prev_direct = float4(0, 0, 0, 0);
+
+		bool v[4];
+		const float2 pos_prev = prev_coords;
+		int2 offset[4] = {int2(0, 0), int2(1, 0), int2(0, 1), int2(1, 1)};
+		bool valid = false;
+		[unroll]
+		for(int sample_idx = 0; sample_idx < 4; ++sample_idx)
+		{
+			int2 loc = int2(pos_prev) + offset[sample_idx];
+			float4 depth_prev = prev_depth_texture[loc];
+			float3 normal_prev = OctToDir(asuint(depth_prev.w));
+			v[sample_idx] = IsReprojectionValid(loc, depth.z, depth_prev.x, depth.y, normal, normal_prev, motion.w);
+			valid = valid || v[sample_idx];
+		}
+		if(valid)
+		{
+			float sum_weights = 0;
+			float x = frac(pos_prev.x);
+			float y = frac(pos_prev.y);
+			float weights[4] = {(1 - x) * (1 - y),
+								x * (1 - y),
+								(1 - x) * y,
+								x * y };
+			[unroll]
+			for(int sample_idx = 0; sample_idx < 4; ++sample_idx)
+			{
+				int2 loc = int2(pos_prev) + offset[sample_idx];
+				prev_direct += weights[sample_idx] * accum_texture[loc] * float(v[sample_idx]);
+				sum_weights += weights[sample_idx] * float(v[sample_idx]);
+			}
+			valid = (sum_weights >= 0.01);
+			prev_direct = lerp(float4(0, 0, 0, 0), prev_direct / sum_weights, valid);
+		}
+		if(!valid)
+		{
+			float cnt = 0.0;
+			const int radius = 1;
+			for(int y = -radius; y <= radius; ++y)
+			{
+				for(int x = -radius; x <= radius; ++x)
+				{
+					int2 p = prev_coords + int2(x, y);
+					float4 depth_filter = prev_depth_texture[p];
+					float3 normal_filter = OctToDir(asuint(depth_filter.w));
+					if(IsReprojectionValid(prev_coords, depth.z, depth_filter.x, depth.y, normal, normal_filter, motion.w))
+					{
+						prev_direct += accum_texture[p];
+						cnt += 1.0;
+					}
+				}
+			}
+			valid = cnt > 0;
+			prev_direct /= lerp(1, cnt, cnt > 0);
+		}
+		if(valid)
+		{
+			history_length = accum_texture[screen_coord].w;
+		}
+		else
+		{
+			prev_direct = float4(0, 0, 0, 0);
+			history_length = 0;
+		}
+		return valid;
+	}
+}
+
+float4 LineBoxIntersection(float3 box_min, float3 box_max, float3 c_in, float3 c_hist)
+{
+    float3 p_clip = 0.5 * (box_max + box_min);
+    float3 e_clip = 0.5 * (box_max - box_min);
+
+    float3 v_clip = c_hist - p_clip;
+    float3 v_unit = v_clip.xyz / e_clip;
+    float3 a_unit = abs(v_unit);
+    float ma_unit = max(a_unit.x, max(a_unit.y, a_unit.z));
+
+    if(ma_unit > 1.0)
+    {
+        return float4((p_clip + v_clip / ma_unit).xyz, ma_unit);
+    }
+    else
+    {
+        return float4(c_hist.xyz, ma_unit);
+    }
 }
 
 [numthreads(16, 16, 1)]
@@ -242,25 +357,41 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	if(pdf <= 0.0)
 	{
-		output_texture[screen_coord] = float4(0, 0, 0, 0);
+		output_texture[screen_coord] = input_color;
 		return;
 	}
 
-	float3 ray_dir = dir_hitT_texture.SampleLevel(point_sampler, uv, 0).xyz;
-	
-    float3 world_pos = world_position_texture[screen_coord].xyz;
+	float3 moment_1 = float3(0.0, 0.0, 0.0);
+	float3 moment_2 = float3(0.0, 0.0, 0.0);
 
-    float3 cam_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float3 clamp_min = 1.0;
+	float3 clamp_max = 0.0;
 
-	float3 V = normalize(cam_pos - world_pos);
+	[unroll]
+	for(int y = -2; y <= 2; ++y)
+	{
+		[unroll]
+		for(int x = -2; x <= 2; ++x)
+		{
+			float3 color = input_texture[screen_coord + int2(x, y)].xyz;
+			moment_1 += color;
+			moment_2 += color * color;
+			clamp_min = min(color, clamp_min);
+			clamp_max = max(color, clamp_max);
+		}
+	}
 
-	float3 N = OctToDir(asuint(linear_depth_texture[screen_coord].w)).xyz;
+	float3 mu = moment_1 / 25.0;
+	float3 sigma = sqrt(moment_2 / 25.0 - mu*mu);
 
-	float roughness = albedo_roughness_texture[screen_coord].w;
+	float3 box_min = max(mu - variance_clipping_sigma * sigma, clamp_min);
+	float3 box_max = min(mu + variance_clipping_sigma * sigma, clamp_max);
 
-	float weight = brdf_weight(V, ray_dir, N, roughness) / pdf;
+	float4 clipped = LineBoxIntersection(box_min, box_max, input_color.xyz, accum_color.xyz);
 
-	history = min(32, history + 1);
+	accum_color = clipped;
+
+	history = min(max_history_samples, history + 1);
 
 	const float alpha = lerp(1.0, max(integration_alpha, 1.0/history), valid);
 
@@ -281,13 +412,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
     float2 uv = screen_coord / screen_size;
 
     float3 world_pos = world_position_texture[screen_coord].xyz;
-    float3 center_pos = world_position_texture[screen_size / 4].xyz;
     float3 cam_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
-
-	float3 center_normal = float3(0, 0, 0);
-	float2 center_depth = float2(0, 0);
-
-	FetchNormalAndLinearZ(screen_size / 4.0, center_normal, center_depth);
 
 	float3 p_normal = float3(0, 0, 0);
 	float2 p_depth = float2(0, 0);
@@ -295,77 +420,22 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	FetchNormalAndLinearZ(screen_coord, p_normal, p_depth);
 
     float3 V = normalize(cam_pos - world_pos);
-
-    float3 center_V = normalize(cam_pos - center_pos);
-    float3 N = normalize(normal_metallic_texture[screen_size / 4].xyz);
-
-    float3 L = reflect(-center_V, N);
-
-    float roughness = max(albedo_roughness_texture[screen_size / 4].a, 1e-3);
 	
-	float pdf = ray_raw_texture.SampleLevel(point_sampler, uv, 0).a;
-
-	float center_weight = brdf_weight(center_V, L, N, roughness);
-
-	float weight = (brdf_weight(V, L, N, roughness) / center_weight);// * 
-	ComputeWeightNoLuminance(center_depth.x, p_depth.x, max(center_depth.y, 1e-8) * length(screen_coord - screen_size / 4.0), center_normal, p_normal);
-	
-	int kernel = 1;
-
-	float kernel_width = 20.0;
-	float kernel_height = 20.0;
-
-	float2 kernel_bottom_left = float2(-kernel_width, -kernel_height);
-	float2 kernel_bottom_right = float2(kernel_width, -kernel_height);
-	float2 kernel_top_left = float2(-kernel_width, kernel_height);
-	float2 kernel_top_right = float2(kernel_width, kernel_height);
-
-	float2x2 kernel_shear = {1, 1, 0, 1};
-
-	kernel_bottom_left = mul(kernel_shear, kernel_bottom_left);
-	kernel_bottom_right = mul(kernel_shear, kernel_bottom_right);
-	kernel_top_left = mul(kernel_shear, kernel_top_left);
-	kernel_top_right = mul(kernel_shear, kernel_top_right);
-
-	kernel_bottom_left += screen_size / 4.f;
-	kernel_bottom_right += screen_size / 4.f;
-	kernel_top_left += screen_size / 4.f;
-	kernel_top_right += screen_size / 4.f;
-
-	//kernel = screen_coord.x > kernel_bottom_left.x && screen_coord.y > kernel_bottom_left.y;
-	//kernel = kernel && screen_coord.x < kernel_top_right.x && screen_coord.y < kernel_top_right.y;
-
-	float2 line_1 = float2(((screen_size.y - kernel_top_left.y) - (screen_size.y - kernel_bottom_left.y)) / (kernel_top_left.x - kernel_bottom_left.x), 0.0);
-	line_1.y = (screen_size.y - kernel_top_left.y) - line_1.x * kernel_top_left.x;
-	float2 line_2 = float2(((screen_size.y - kernel_top_right.y) - (screen_size.y - kernel_bottom_right.y)) / (kernel_top_right.x - kernel_bottom_right.x), 0.0);
-	line_2.y = (screen_size.y - kernel_top_right.y) - line_1.x * kernel_top_right.x;
-	float2 line_3 = float2(((screen_size.y - kernel_bottom_right.y) - (screen_size.y - kernel_bottom_left.y)) / (kernel_bottom_right.x - kernel_bottom_left.x), 0.0);
-	line_3.y = (screen_size.y - kernel_bottom_right.y) - line_1.x * kernel_bottom_right.x;
-	
-	kernel = kernel && line_1.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_1.y == 0;
-	//kernel = kernel || line_2.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_2.y == 0;
-	//kernel = kernel && line_3.x * screen_coord.x - (screen_size.y - screen_coord.y) + line_3.y == 0;
-	//kernel = screen_coord.y < kernel_bottom_right.y;
-
+	float pdf = ray_raw_texture.SampleLevel(point_sampler, uv, 0).w;
 	if(pdf<0.0)
 	{
 		output_texture[screen_coord] = input_texture[screen_coord];
 		return;
 	}
-	else
-	{
-    	float4 output = lerp(input_texture[screen_coord], float4(0, 0, 1, 1), min(weight, 1.0));
-		output_texture[screen_coord] = output + kernel * float4(0, 1, 0, 0);
-		//return;
-	}
-	//output_texture[screen_coord] = albedo_roughness_texture[screen_coord].a;
 
-	center_normal = p_normal;
-	center_depth = p_depth;
+	float3 center_normal = float3(0, 0, 0);
+	float2 center_depth = float2(0, 0);
 
-	N = center_normal.xyz;
-	L = reflect(-V, N);
-	roughness = max(albedo_roughness_texture[screen_coord].a, 1e-2);
+	FetchNormalAndLinearZ(screen_coord, center_normal, center_depth);
+
+	float3 N = center_normal.xyz;
+	float3 L = reflect(-V, N);
+	float roughness = max(albedo_roughness_texture[screen_coord].a, 1e-2);
 
 	float weights = 1.0;
 	float4 accum = input_texture[screen_coord];
@@ -377,7 +447,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		{
 			float2 location = screen_coord + float2(x, y);
 
-			float pdf = ray_raw_texture.SampleLevel(point_sampler, uv, 0).w;
+			float pdf = ray_raw_texture.SampleLevel(point_sampler, location / screen_size, 0).w;
 
 			if(pdf <= 0 || location.x < 0 || location.x >= screen_size.x || location.y < 0 || location.y >= screen_size.y)
 			{
