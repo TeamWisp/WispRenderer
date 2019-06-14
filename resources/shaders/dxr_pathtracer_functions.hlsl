@@ -138,7 +138,7 @@ float3 ggxDirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, f
 
 	float3 lighting = (light_intensity * (NdotL * spec + NdotL * albedo / M_PI));
 
-	return (shadow_mult * lighting);
+	return (shadow_mult * lighting) * kD;
 }
 
 float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo, float metal, float roughness, float ao, unsigned int seed, unsigned int depth, bool use_raycone = false, RayCone cone = null_cone)
@@ -179,7 +179,11 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 
 		if (dot(N, rand_dir) <= 0.0f) irradiance = float3(0, 0, 0);
 
-		return irradiance * color;
+		float3 kS = F_SchlickRoughness(max(dot(fN, V), 0.0f), metal, albedo, roughness);
+		float3 kD = 1.0f - kS;
+		kD *= 1.0f - metal;
+
+		return kD * (irradiance * color);
 	}
 	else
 	{
