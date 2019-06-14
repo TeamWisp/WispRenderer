@@ -22,6 +22,7 @@
 #include "physics_engine.hpp"
 #include "scene_viknell.hpp"
 #include "scene_emibl.hpp"
+#include "scene_sponza.hpp"
 
 #include "model_loader_assimp.hpp"
 #include "model_loader_tinygltf.hpp"
