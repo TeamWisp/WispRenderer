@@ -17,14 +17,7 @@ namespace wr::imgui::window
 	static bool shadow_denoiser_settings_open = true;
 	static bool frame_graph_editor_open = true;
 
-	bool VectorOfStringGetter(void* data, int n, const char** out_text)
-	{
-		const std::vector<std::wstring>* names = static_cast<std::vector<std::wstring>*>(data);
-		char* name_as_char;
-		std::wcstombs(name_as_char, names->at(n).c_str(), names->at(n).size());
-		//out_text = &name_as_char;
-		return true;
-	}
+	static RenderTaskHandle selected_task = -1;
 
 	void GraphicsSettings(FrameGraph* frame_graph)
 	{
@@ -131,31 +124,86 @@ namespace wr::imgui::window
 		}
 
 		ImGui::Begin("FrameGraph Editor", &frame_graph_editor_open);
-		
-		auto names = frame_graph->GetNames();
+
+		const std::vector<std::wstring> names = frame_graph->GetNames();
+		const std::vector<bool> should_execute = frame_graph->GetShouldExecute();
 
 		ImVec2 size = ImGui::GetContentRegionAvail();
-		//size.y -= ImGui::GetItemsLineHeightWithSpacing();
 
 		if (ImGui::ListBoxHeader("##", size))
 		{
-			for (std::wstring name : names)
+			for (int i = 0; i < names.size(); i++)
 			{
 				//setup converter
 				using convert_type = std::codecvt_utf8<wchar_t>;
 				std::wstring_convert<convert_type, wchar_t> converter;
 
 				//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
-				std::string converted_str = converter.to_bytes(name);
-				
-				ImGui::Text(converted_str.c_str());
-				
+				std::string converted_str = converter.to_bytes(names[i]);
+
+				bool pressed = ImGui::Selectable(converted_str.c_str(), selected_task == i);
+
+				// if we don't have that node selected.
+				if (pressed && selected_task != i)
+				{
+					selected_task = i;
+				}
+				// if we already have that node selected.
+				else if (pressed && selected_task == i)
+				{
+					selected_task = -1;
+				}
+
+				// Right click menu
+				if (ImGui::BeginPopupContextItem())
+				{
+					RenderTaskHandle right_clicked_task = i;
+					ImGui::Text("Je moeder xoxo");
+					
+					if (should_execute[i])
+					{
+						if (ImGui::Button("Disable"))
+						{
+							frame_graph->WaitForCompletion(right_clicked_task);
+							frame_graph->SetShouldExecute(i, false);
+						}
+					}
+					else
+					{
+						if (ImGui::Button("Enable"))
+						{
+							frame_graph->SetShouldExecute(i, true);
+						}
+					}
+					
+					/*auto node_cm_function = SceneGraphEditorDetails::GetNodeContextMenuFunction(right_clicked_task).value_or(nullptr);
+
+					bool close_popup = true;
+					if (node_cm_function)
+					{
+						close_popup = node_cm_function(right_clicked_node, scene_graph);
+					}
+					else
+					{
+						close_popup = DefaultContextMenu<Node>(right_clicked_node, scene_graph);
+					}*/
+
+					/*if (close_popup)
+					{
+						ImGui::CloseCurrentPopup();
+						ImGui::EndPopup();
+						continue;
+					}*/
+
+					ImGui::EndPopup();
+
+				}
 			}
 			ImGui::ListBoxFooter();
-		}
-		
-		ImGui::End();
 
+			ImGui::End();
+
+		}
 	}
 
 }// namepace imgui::window

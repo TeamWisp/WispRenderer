@@ -93,6 +93,8 @@ namespace wr
 		using destroy_func_t = RenderTaskDesc::destroy_func_t;
 	public:
 
+		std::vector<std::function<void()>> functions;
+
 		//! Constructor.
 		/*!
 			This constructor is able to reserve space for render tasks.
@@ -143,6 +145,12 @@ namespace wr
 		FrameGraph& operator=(const FrameGraph&) = delete;
 		FrameGraph& operator=(FrameGraph&&)		 = delete;
 
+
+		inline void LoadFromVector()
+		{
+			for (auto add_function : functions)
+				add_function();
+		}
 		//! Setup the render tasks
 		/*!
 			Calls all setup function pointers and obtains the required render targets and command lists.
@@ -563,14 +571,20 @@ namespace wr
 
 			return static_cast<T*>(m_render_targets[handle]);
 		}
-#ifndef MAX_PERFORMANCE
 		
+		//Getter functions for graphics settings
+#ifndef MAX_PERFORMANCE
 		[[nodiscard]] inline const std::vector<std::wstring>& GetNames() const
 		{
 			return m_names;
 		}
-
 #endif // !_DEBUG
+
+		[[nodiscard]] inline const std::vector<bool>& GetShouldExecute() const
+		{
+			return m_should_execute;
+			;
+		}
 
 
 		/*! Check if this frame graph has a task. */
@@ -586,7 +600,7 @@ namespace wr
 		/*! Validates the frame graph for correctness */
 		/*!
 			This function uses the dependencies to check whether the frame graph is constructed properly by the user.
-			Note: This function only works when `FG_MAX_PERFORMANCE` is defined.
+			Note: This function only works when `FG_MAX_PERFORMANCE` is not defined.
 		*/
 		bool Validate()
 		{
