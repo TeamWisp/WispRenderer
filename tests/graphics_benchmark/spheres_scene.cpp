@@ -13,7 +13,7 @@ SpheresScene::SpheresScene() :
 void SpheresScene::LoadResources()
 {
 	// Models
-	m_sphere_model = m_model_pool->Load<wr::VertexColor>(m_material_pool.get(), m_texture_pool.get(), "resources/models/sphere.fbx");
+	m_sphere_model = m_model_pool->Load<wr::Vertex>(m_material_pool.get(), m_texture_pool.get(), "resources/models/sphere.fbx");
 
 	// Textures
 	m_skybox = m_texture_pool->LoadFromFile("resources/materials/Circus_Backstage_3k.hdr", false, false);

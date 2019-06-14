@@ -39,8 +39,8 @@ namespace sun_temple_scene
 			model_pool = render_system->CreateModelPool(128_mb, 64_mb);
 
 			{
-				sun_temple_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple.fbx", true);
-				test_model = model_pool->LoadWithMaterials<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
+				sun_temple_model = model_pool->LoadWithMaterials<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/SunTemple.fbx", true);
+				test_model = model_pool->LoadWithMaterials<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/xbot.fbx");
 			}
 
 		}

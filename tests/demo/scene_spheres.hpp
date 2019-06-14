@@ -50,7 +50,7 @@ namespace spheres_scene
 			spheres_material_internal->SetTexture(wr::TextureType::METALLIC, spheres_metallic);
 
 			// Create Models
-			sphere_model = model_pool->Load<wr::VertexColor>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
+			sphere_model = model_pool->Load<wr::Vertex>(material_pool.get(), texture_pool.get(), "resources/models/sphere.fbx");
 			for (auto& m : sphere_model->m_meshes)
 			{
 				m.second = spheres_material;
