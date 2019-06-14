@@ -12,7 +12,7 @@ ViknellScene::ViknellScene() :
 	m_plane_model_data(nullptr),
 	m_time(0)
 {
-
+	m_lights_path = "resources/viknell_lights.json";
 }
 
 void ViknellScene::LoadResources()
@@ -98,7 +98,7 @@ void ViknellScene::BuildScene(unsigned int width, unsigned int height, void* ext
 	m_xbot_node->m_rigid_body->activate(true);
 
 	// Lights
-	auto point_light_0 = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
+	/*auto point_light_0 = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL, DirectX::XMVECTOR{ 1, 1, 1 });
 	point_light_0->SetRotation({ 20.950f, 0.98f, 0.f });
 	point_light_0->SetPosition({ -0.002f, 0.080f, 1.404f });
 
@@ -108,7 +108,9 @@ void ViknellScene::BuildScene(unsigned int width, unsigned int height, void* ext
 
 	auto point_light_2 = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT, DirectX::XMVECTOR{ 0, 0, 1 });
 	point_light_2->SetRadius(5.0f);
-	point_light_2->SetPosition({ -0.5f, 0.5f, -0.3f });
+	point_light_2->SetPosition({ -0.5f, 0.5f, -0.3f });*/
+
+	LoadLightsFromJSON();
 }
 
 void ViknellScene::Update()

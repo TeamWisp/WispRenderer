@@ -9,6 +9,9 @@
 #include "d3d12/d3d12_renderer.hpp"
 #include "imgui/ImGuizmo.h"
 #include "demo_frame_graphs.hpp"
+#include "../common/scene.hpp"
+#include "scene_emibl.hpp"
+#include "scene_viknell.hpp"
 #include "imgui_graphics_settings.hpp"
 
 namespace engine
@@ -21,6 +24,8 @@ namespace engine
 	static bool open_viewport = true;
 	static bool open1 = true;
 	static bool open_console = false;
+	static bool open_scene = true;
+	static int selected_scene = 0;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
 	static wr::imgui::window::Stats stats_window { false };
@@ -28,9 +33,10 @@ namespace engine
 
 	static wr::imgui::special::DebugConsole debug_console;
 
-
-	void RenderEngine(ImTextureID output, wr::D3D12RenderSystem* render_system, wr::SceneGraph* sg)
+	void RenderEngine(ImTextureID output, wr::D3D12RenderSystem* render_system, Scene* scene, Scene** new_scene)
 	{
+		auto sg = scene->GetSceneGraph();
+
 		ImVec2 viewport_pos(0, 0);
 		ImVec2 viewport_size(0, 0);
 
@@ -114,6 +120,32 @@ namespace engine
 				ImGui::End();
 			}
 
+			if (open_scene)
+			{
+				ImGui::Begin("Demo Scene", &open_scene);
+				if (ImGui::Button("Save Lights"))
+				{
+					scene->SaveLightsToJSON();
+				}
+
+				ImGui::Separator();
+
+				const char* items[] = { "Viknell", "Emibl" };
+
+				ImGui::Combo("##", &selected_scene, items, IM_ARRAYSIZE(items));
+				ImGui::SameLine();
+				if (ImGui::Button("Load"))
+				{
+					switch (selected_scene)
+					{
+						case 0: (*new_scene) = new ViknellScene();
+						case 1: (*new_scene) = new EmiblScene();
+						default: LOGW("Tried to load a scene that is not supported");
+					}
+				}
+				ImGui::End();
+			}
+
 			if (open0)
 			{
 				ImGui::Begin("Theme", &open0);
@@ -175,8 +207,8 @@ namespace engine
 			}
 
 			stats_window.Draw(*render_system, viewport_pos);
-			wr::imgui::window::SceneGraphEditor(sg);
-			wr::imgui::window::Inspector(sg, viewport_pos, viewport_size);
+			wr::imgui::window::SceneGraphEditor(sg.get());
+			wr::imgui::window::Inspector(sg.get(), viewport_pos, viewport_size);
 			wr::imgui::window::ShaderRegistry();
 			wr::imgui::window::PipelineRegistry();
 			wr::imgui::window::RootSignatureRegistry();

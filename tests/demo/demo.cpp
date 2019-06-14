@@ -27,15 +27,16 @@
 #include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-using DefaultScene = EmiblScene;
+using DefaultScene = ViknellScene;
 //#define ENABLE_PHYSICS
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 Scene* current_scene = nullptr;
+Scene* new_scene = nullptr;
 
 void RenderEditor(ImTextureID output)
 {
-	engine::RenderEngine(output, render_system.get(), current_scene->GetSceneGraph().get());
+	engine::RenderEngine(output, render_system.get(), current_scene, &new_scene);
 }
 
 void ShaderDirChangeDetected(std::string const & path, util::FileWatcher::FileStatus status)
@@ -134,6 +135,15 @@ int WispEntry()
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
 	window->SetRenderLoop([&]() {
+		if (new_scene && new_scene != current_scene)
+		{
+			//delete current_scene;
+			current_scene = new_scene;
+			current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), &phys_engine);
+			fg_manager::Get()->SetShouldExecute<wr::EquirectToCubemapTaskData>(true);
+			fg_manager::Get()->SetShouldExecute<wr::CubemapConvolutionTaskData>(true);
+		}
+
 		current_scene->Update();
 
 #ifdef ENABLE_PHYSICS
