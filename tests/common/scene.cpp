@@ -10,7 +10,7 @@ Scene::Scene(std::size_t material_pool_size,
 
 }
 
-void Scene::Init(wr::D3D12RenderSystem* rs, unsigned int width, unsigned int height)
+void Scene::Init(wr::D3D12RenderSystem* rs, unsigned int width, unsigned int height, void* extra)
 {
 	m_texture_pool = rs->CreateTexturePool();
 	m_material_pool = rs->CreateMaterialPool(m_material_pool_size);
@@ -19,7 +19,7 @@ void Scene::Init(wr::D3D12RenderSystem* rs, unsigned int width, unsigned int hei
 	LoadResources();
 
 	m_scene_graph = std::make_shared<wr::SceneGraph>(rs);
-	BuildScene(width, height);
+	BuildScene(width, height, extra);
 	rs->InitSceneGraph(*m_scene_graph.get());
 }
 
