@@ -22,4 +22,4 @@
 	url = https://github.com/syoyo/tinygltf
 [submodule "deps/bullet3"]
 	path = deps/bullet3
-	url = https://github.com/bulletphysics/bullet3
+	url = https://github.com/TeamWisp/bullet3
