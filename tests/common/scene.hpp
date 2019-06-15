@@ -12,12 +12,16 @@ public:
 	Scene(std::size_t material_pool_size,
 		  std::size_t model_pool_vb_size,
 		  std::size_t model_pool_ib_size);
+	virtual ~Scene();
 
 	virtual void Init(wr::D3D12RenderSystem* rs, unsigned int width, unsigned int height, void* extra = nullptr);
 	virtual void Update() = 0;
 	std::shared_ptr<wr::SceneGraph> GetSceneGraph();
 	template<typename T>
 	std::shared_ptr<T> GetCamera();
+
+	void LoadLightsFromJSON();
+	void SaveLightsToJSON();
 
 protected:
 	virtual void LoadResources() = 0;
@@ -31,6 +35,8 @@ protected:
 	std::shared_ptr<wr::ModelPool> m_model_pool;
 	std::shared_ptr<wr::TexturePool> m_texture_pool;
 	std::shared_ptr<wr::MaterialPool> m_material_pool;
+
+	std::optional<std::string> m_lights_path;
 };
 
 template<typename T>
