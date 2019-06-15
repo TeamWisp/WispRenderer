@@ -39,7 +39,7 @@ float4 GetBlurFactor(float2 screen_coord, float res_scale)
 	return color;
 }
 
-float4 GetBlurFactorQES(float2 screen_coord, float res_scale)
+float4 GetBlurFactorQES(float2 screen_coord)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
@@ -52,9 +52,6 @@ float4 GetBlurFactorQES(float2 screen_coord, float res_scale)
 	{
 		float weight = CalcGaussianWeight(i, r_sigma);
 		weightSum += weight;
-		//float2 o_uv = saturate((screen_coord + (blur_dir * i)) / (screen_size / res_scale));
-		//float2 o_uv = saturate((screen_coord + (blur_dir * i) / screen_size)) + (1 - 1 / res_scale);
-		//float4 s = source_qes.SampleLevel(s0, o_uv, 0);
 		float4 s = source_qes[screen_coord + blur_dir * i].rgba;
 		color += s * weight;
 	}
@@ -74,20 +71,8 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	if (screen_coord.x > screen_size.x)
 	{
-		if (screen_coord.x > (screen_size.x * 1.75f))
-		{
-			color = GetBlurFactorQES(screen_coord - screen_size, 16.0f);
-			
-		}
-		else if (screen_coord.x > (screen_size.x * 1.5f))
-		{
-			color = GetBlurFactorQES(screen_coord - screen_size, 8.0f);
-			
-		}
-		else
-		{
-			color = GetBlurFactorQES(screen_coord - screen_size, 2.0f);
-		}
+
+		color = GetBlurFactorQES(screen_coord - screen_size);
 		output_qes[screen_coord - int2(screen_size)] = color;
 	}
 	else
