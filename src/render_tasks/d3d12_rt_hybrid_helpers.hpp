@@ -29,7 +29,6 @@ namespace wr
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
 		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
 
-
 		// Pipeline objects
 		d3d12::StateObject* out_state_object = nullptr;
 		d3d12::RootSignature* out_root_signature = nullptr;
@@ -82,6 +81,7 @@ namespace wr
 			}
 
 			// Set up Miss Shader Table
+			if (miss_entries.size() > 0)
 			{
 				// Create Record(s) and Table(s)
 				std::uint32_t shader_record_count = miss_entries.size();
@@ -98,6 +98,7 @@ namespace wr
 			}
 
 			// Set up Hit Group Shader Table
+			if (hit_groups.size() > 0)
 			{
 				// Create Record(s)
 				std::uint32_t shader_record_count = hit_groups.size();

@@ -1014,8 +1014,9 @@ namespace wr
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_ao_lib;
 		lib.exports.push_back(L"AORaygenEntry");
-		lib.exports.push_back(L"MissEntry");
+		lib.exports.push_back(L"AOMissEntry");
 		//lib.exports.push_back(L"AnyHitEntry");
+		//lib.m_hit_groups.push_back({ L"AOHitGroup", L"AOHitEntry", L"AnyHitEntry" });
 		return lib;
 	}();
 

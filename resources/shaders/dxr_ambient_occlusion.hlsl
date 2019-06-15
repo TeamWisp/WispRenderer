@@ -32,7 +32,6 @@ cbuffer CBData : register(b0)
 	unsigned int sample_count;
 };
 
-
 bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
 	// Define a ray, consisting of origin, direction, and the min-max distance values
@@ -48,6 +47,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	TraceRay(
 		Scene,
 		RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+		//RAY_FLAG_NONE,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -57,7 +57,6 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 
 	return payload.is_hit;
 }
-
 
 [shader("raygeneration")]
 void AORaygenEntry()
@@ -80,9 +79,9 @@ void AORaygenEntry()
 	{
 		//SPP decreases the closer a pixel is to the max distance
 		//Total is always calculated using the full sample count to have further pixels less occluded
-		int spp = min(sample_count, round(sample_count * ((max_distance - cam_distance)/max_distance))); 
+		int spp = min(sample_count, round(sample_count * ((max_distance - cam_distance) / max_distance)));
 		int ao_value = sample_count;
-		for(uint i = 0; i< spp; i++)
+		for(uint i = 0; i < spp; i++)
 		{
 			 ao_value -= TraceAORay(0, wpos + normal * bias , getCosHemisphereSample(rand_seed, normal), radius, 0);
 		}
@@ -96,10 +95,11 @@ void AORaygenEntry()
 }
 
 [shader("miss")]
-void MissEntry(inout AOHitInfo hit : SV_RayPayload)
+void AOMissEntry(inout AOHitInfo hit : SV_RayPayload)
 {
     hit.is_hit = 0.0f;
 }
+
 //
 //[shader("anyhit")]
 //void AnyHitEntry(inout AOHitInfo hit, in Attributes attr)

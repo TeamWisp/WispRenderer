@@ -12,6 +12,7 @@
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
+#include "../render_tasks/d3d12_rt_hybrid_helpers.hpp"
 
 namespace wr
 {
@@ -31,75 +32,11 @@ namespace wr
 
 	struct RTAOData
 	{
-
-		d3d12::AccelerationStructure out_tlas = {};
-
-		// Shader tables
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_raygen_shader_table = { nullptr, nullptr, nullptr };
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_miss_shader_table = { nullptr, nullptr, nullptr };
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_hitgroup_shader_table = { nullptr, nullptr, nullptr };
-
-		// Pipeline objects
-		d3d12::StateObject* in_state_object;
-		d3d12::RootSignature* in_root_signature;
-
-		D3D12ConstantBufferHandle* out_cb_handle;
-		d3d12::RenderTarget* in_deferred_main_rt;
-
-		DescriptorAllocation out_uav_from_rtv;
-		DescriptorAllocation in_gbuffers;
-		DescriptorAllocation in_depthbuffer;
-
-		bool tlas_requires_init = false;
+		RTHybrid_BaseData base_data;
 	};
 	
 	namespace internal
 	{
-		inline void CreateShaderTables(d3d12::Device* device, RTAOData& data, int frame_idx)
-		{
-			// Delete existing shader table
-			if (data.in_miss_shader_table[frame_idx])
-			{
-				d3d12::Destroy(data.in_miss_shader_table[frame_idx]);
-			}
-			if (data.in_hitgroup_shader_table[frame_idx])
-			{
-				d3d12::Destroy(data.in_hitgroup_shader_table[frame_idx]);
-			}
-			if (data.in_raygen_shader_table[frame_idx])
-			{
-				d3d12::Destroy(data.in_raygen_shader_table[frame_idx]);
-			}
-
-			// Set up Raygen Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
-				auto shader_identifier = d3d12::GetShaderIdentifier(device, data.in_state_object, "AORaygenEntry");
-
-				auto shader_record = d3d12::CreateShaderRecord(shader_identifier, shader_identifier_size);
-
-				// Create Table
-				data.in_raygen_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.in_raygen_shader_table[frame_idx], shader_record);
-			}
-
-			// Set up Miss Shader Table
-			{
-				// Create Record(s)
-				UINT shader_record_count = 1;
-				auto shader_identifier_size = d3d12::GetShaderIdentifierSize(device);
-
-				auto miss_identifier = d3d12::GetShaderIdentifier(device, data.in_state_object, "MissEntry");
-				auto miss_record = d3d12::CreateShaderRecord(miss_identifier, shader_identifier_size);
-
-				// Create Table(s)
-				data.in_miss_shader_table[frame_idx] = d3d12::CreateShaderTable(device, shader_record_count, shader_identifier_size);
-				d3d12::AddShaderRecord(data.in_miss_shader_table[frame_idx], miss_record);
-			}
-		}
-
 		inline void SetupAOTask(RenderSystem& render_system, FrameGraph& fg, RenderTaskHandle& handle, bool resize)
 		{
 			// Initialize variables
@@ -109,27 +46,29 @@ namespace wr
 			auto n_render_target = fg.GetRenderTarget<d3d12::RenderTarget>(handle);
 			d3d12::SetName(n_render_target, L"AO Target");
 
+			RTHybrid_BaseData& h_data = data.base_data;
+
 			if (!resize)
 			{
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_uav_from_rtv = std::move(as_build_data.out_allocator->Allocate(1));
-				data.in_gbuffers = std::move(as_build_data.out_allocator->Allocate(1));
-				data.in_depthbuffer = std::move(as_build_data.out_allocator->Allocate(1));
+				h_data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate(1));
+				h_data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate(1));
+				h_data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate(1));
 			}
 
 			// Versioning
 			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
-				d3d12::DescHeapCPUHandle rtv_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				d3d12::DescHeapCPUHandle rtv_handle = h_data.out_output_alloc.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 
 				// Bind g-buffers
-				d3d12::DescHeapCPUHandle normal_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(0);
-				d3d12::DescHeapCPUHandle depth_buffer_handle = data.in_depthbuffer.GetDescriptorHandle(0);
+				d3d12::DescHeapCPUHandle normal_gbuffer_handle = h_data.out_gbuffer_normal_alloc.GetDescriptorHandle(0);
+				d3d12::DescHeapCPUHandle depth_buffer_handle = h_data.out_gbuffer_depth_alloc.GetDescriptorHandle(0);
 				
-				auto deferred_main_rt = data.in_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
+				auto deferred_main_rt = h_data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_gbuffer_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats.data()[1]);
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_buffer_handle);
@@ -138,20 +77,20 @@ namespace wr
 			if (!resize)
 			{
 				// Camera constant buffer
-				data.out_cb_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTAO_CBData)));
+				h_data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTAO_CBData)));
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.in_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::rt_ao_state_opbject));
+				h_data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::rt_ao_state_opbject));
 
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
-				data.in_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_ao_global));
+				h_data.out_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_ao_global));
 
 				// Create Shader Tables
-				CreateShaderTables(device, data, 0);
-				CreateShaderTables(device, data, 1);
-				CreateShaderTables(device, data, 2);
+				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, {}, 0);
+				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, {}, 1);
+				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, {}, 2);
 			}
 		}
 
@@ -170,19 +109,21 @@ namespace wr
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 			float scalar = 1.0f;
 
+			RTHybrid_BaseData& h_data = data.base_data;
+
 			if (n_render_system.m_render_window.has_value())
 			{
 
-				d3d12::BindRaytracingPipeline(cmd_list, data.in_state_object, false);
+				d3d12::BindRaytracingPipeline(cmd_list, h_data.out_state_object, false);
 
 				// Bind output, indices and materials, offsets, etc
-				auto out_uav_handle = data.out_uav_from_rtv.GetDescriptorHandle();
+				auto out_uav_handle = h_data.out_output_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::OUTPUT)), out_uav_handle);
 
-				auto in_scene_normal_gbuffer_handle = data.in_gbuffers.GetDescriptorHandle(0);
+				auto in_scene_normal_gbuffer_handle = h_data.out_gbuffer_normal_alloc.GetDescriptorHandle(0);
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_normal_gbuffer_handle);
 				
-				auto in_scene_depth_handle = data.in_depthbuffer.GetDescriptorHandle();
+				auto in_scene_depth_handle = h_data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_depth_handle);
 
 				// Update offset data
@@ -206,14 +147,14 @@ namespace wr
 				cb_data.m_frame_idx = frame_idx;
 				cb_data.m_sample_count = static_cast<unsigned int>(settings.m_runtime.sample_count);
 
-				n_render_system.m_camera_pool->Update(data.out_cb_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
+				n_render_system.m_camera_pool->Update(h_data.out_cb_camera_handle, sizeof(temp::RTAO_CBData), 0, frame_idx, (std::uint8_t*)& cb_data); // FIXME: Uhh wrong pool?
 
 				// Transition depth to NON_PIXEL_RESOURCE
-				d3d12::TransitionDepth(cmd_list, data.in_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+				d3d12::TransitionDepth(cmd_list, h_data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, false);
 				d3d12::BindDescriptorHeaps(cmd_list, false);
-				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_handle->m_native, 2, frame_idx);
+				d3d12::BindComputeConstantBuffer(cmd_list, h_data.out_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (!as_build_data.out_blas_list.empty())
 				{
@@ -221,23 +162,23 @@ namespace wr
 				}
 				
 #ifdef _DEBUG
-				CreateShaderTables(device, data, frame_idx);
+				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, {}, frame_idx);
 #endif // _DEBUG
 
 				scalar = fg.GetRenderTargetResolutionScale(handle);
 
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, 
-					data.in_hitgroup_shader_table[frame_idx], 
-					data.in_miss_shader_table[frame_idx], 
-					data.in_raygen_shader_table[frame_idx], 
+					h_data.out_hitgroup_shader_table[frame_idx], 
+					h_data.out_miss_shader_table[frame_idx],
+					h_data.out_raygen_shader_table[frame_idx],
 					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
 					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
-				d3d12::TransitionDepth(cmd_list, data.in_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
+				d3d12::TransitionDepth(cmd_list, h_data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}
 		}
 
@@ -248,9 +189,9 @@ namespace wr
 			if (!resize)
 			{
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
-				DescriptorAllocation temp2 = std::move(data.in_gbuffers);
-				DescriptorAllocation temp3 = std::move(data.in_depthbuffer);
+				DescriptorAllocation temp1 = std::move(data.base_data.out_output_alloc);
+				DescriptorAllocation temp2 = std::move(data.base_data.out_gbuffer_normal_alloc);
+				DescriptorAllocation temp3 = std::move(data.base_data.out_gbuffer_depth_alloc);
 			}
 		}
 	}
