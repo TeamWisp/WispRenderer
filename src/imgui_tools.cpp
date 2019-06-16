@@ -399,8 +399,7 @@ namespace wr::imgui::window
 
 					if (ext.compare(L".hdr") == 0)
 					{
-						std::wstring path(entry.path().filename().c_str());
-						hdr_maps.push_back(std::string(path.begin(), path.end()));
+						hdr_maps.push_back(entry.path().filename().string());
 					}
 				}
 				
