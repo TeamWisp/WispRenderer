@@ -185,7 +185,7 @@ namespace wr
 			
 			skybox_node->m_skybox = skybox_node->m_hdr.m_pool->CreateCubemap("Skybox", d3d12::settings::res_skybox, d3d12::settings::res_skybox, 0, wr::Format::R16G16B16A16_FLOAT, true);
 
-			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", d3d12::settings::res_envmap, d3d12::settings::res_envmap, 5, wr::Format::R16G16B16A16_FLOAT, true);
+			skybox_node->m_prefiltered_env_map = skybox_node->m_hdr.m_pool->CreateCubemap("FilteredEnvMap", d3d12::settings::res_envmap, d3d12::settings::res_envmap, 6, wr::Format::R16G16B16A16_FLOAT, true);
 
 
 			data.out_cubemap = skybox_node->m_skybox.value();
