@@ -413,9 +413,7 @@ namespace wr::imgui::window
 
 				static int selected_item = 0;
 
-				if (ImGui::ListBox("Environment Maps", &selected_item, vector_getter, static_cast<void*>(&hdr_maps), hdr_maps.size()))
-				{
-				}
+				ImGui::ListBox("Environment Maps", &selected_item, vector_getter, static_cast<void*>(&hdr_maps), hdr_maps.size());
 
 				auto skybox_node = std::static_pointer_cast<SkyboxNode>(node);
 				
