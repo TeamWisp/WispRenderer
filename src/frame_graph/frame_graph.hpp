@@ -573,7 +573,7 @@ namespace wr
 		}
 		
 		//Getter functions for graphics settings
-#ifndef MAX_PERFORMANCE
+#ifndef FG_MAX_PERFORMANCE
 		[[nodiscard]] inline const std::vector<std::wstring>& GetNames() const
 		{
 			return m_names;

@@ -123,6 +123,7 @@ namespace wr::imgui::window
 			ImGui::End();
 		}
 
+#ifndef FG_MAX_PERFORMANCE
 		ImGui::Begin("FrameGraph Editor", &frame_graph_editor_open);
 
 		const std::vector<std::wstring> names = frame_graph->GetNames();
@@ -202,8 +203,9 @@ namespace wr::imgui::window
 			ImGui::ListBoxFooter();
 
 			ImGui::End();
-
 		}
+#endif //FG_MAX_PERFORMANCE
+
 	}
 
 }// namepace imgui::window
