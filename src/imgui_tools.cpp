@@ -390,8 +390,10 @@ namespace wr::imgui::window
 			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
 			{
 				std::vector<std::string> hdr_maps;
+				std::string path = "resources/materials/";
 
-				for (const auto& entry : std::filesystem::directory_iterator("resources/materials/"))
+
+				for (const auto& entry : std::filesystem::directory_iterator(path))
 				{
 					std::filesystem::path ext(entry.path().extension());
 
@@ -419,7 +421,6 @@ namespace wr::imgui::window
 				
 				if (ImGui::Button("Change Sky"))
 				{
-					std::string path = "resources/materials/";
 					path += hdr_maps[selected_item];
 
 					TextureHandle new_texture = skybox_node->m_skybox.value().m_pool->LoadFromFile(path, false, false);
