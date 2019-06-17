@@ -5,13 +5,15 @@
 #include "window.hpp"
 #include "scene_graph/scene_graph.hpp"
 #include "imgui/imgui.hpp"
+#include "physics_node.hpp"
 #include "debug_camera.hpp"
+#include "spline_node.hpp"
 #include "../common/scene.hpp"
 
-class EmiblScene : public Scene
+class SponzaScene : public Scene
 {
 public:
-	EmiblScene();
+	SponzaScene();
 
 	void Update() final;
 
@@ -21,20 +23,14 @@ protected:
 
 private:
 	// Models
-	wr::Model* m_cube_model;
-	wr::Model* m_plane_model;
-	wr::Model* m_material_knob_model;
+	wr::Model* m_sponza_model;
 
 	// Textures
 	wr::TextureHandle m_skybox;
 
-	// Materials
-	wr::MaterialHandle m_rusty_metal_material;
-	wr::MaterialHandle m_knob_material;
-	wr::MaterialHandle m_material_handles[10];
-
 	// Nodes
 	std::shared_ptr<DebugCamera> m_camera;
-	std::shared_ptr<wr::MeshNode> m_models[10];
-	std::shared_ptr<wr::MeshNode> m_platforms[10];
+	std::shared_ptr<SplineNode> m_camera_spline_node;
+
+	float m_time;
 };

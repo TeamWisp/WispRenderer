@@ -2,7 +2,7 @@
 #define __DEFERRED_COMPOSITION_PASS_HLSL__
 
 #define LIGHTS_REGISTER register(t4)
-#define MAX_REFLECTION_LOD 4
+#define MAX_REFLECTION_LOD 6
 
 #include "fullscreen_quad.hlsl"
 #include "rand_util.hlsl"
@@ -127,7 +127,6 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			buffer_reflection.SampleLevel(linear_sampler, uv, 0).xyz,
 			// Lerp factor (0: no hybrid, 1: hybrid)
 			has_reflections);
-
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, has_shadows);

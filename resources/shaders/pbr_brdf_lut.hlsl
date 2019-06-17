@@ -54,7 +54,5 @@ void main_cs(uint3 dt_id : SV_DispatchThreadID)
 	float2 screen_coord = int2(dt_id.x, dt_id.y) + 0.5f;
 	float2 uv = screen_coord / screen_size;
 
-	uv.y = 1.0f - uv.y;
-
-	output[dt_id.xy] = IntegrateBRDF(uv.y, uv.x);
+	output[dt_id.xy] = IntegrateBRDF(uv.x, uv.y);
 }
