@@ -101,8 +101,11 @@ namespace wr
 
 				if (!m_has_time_point) {
 					dt = 0;
-					m_resize_callback(m_window_width, m_window_height);
 					m_has_time_point = true;
+
+					if (m_resize_callback) {
+						m_resize_callback(m_window_width, m_window_height);
+					}
 				}
 
 				m_prev_time = std::chrono::high_resolution_clock::now();
