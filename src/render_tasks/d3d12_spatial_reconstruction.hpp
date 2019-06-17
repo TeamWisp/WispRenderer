@@ -12,6 +12,7 @@ namespace wr
 	struct SpatialReconstructionData
 	{
 		d3d12::PipelineState* pipeline;
+		std::shared_ptr<ConstantBufferPool> m_cb_pool;
 		D3D12ConstantBufferHandle* camera_cb;
 		DescriptorAllocator* allocator;
 		DescriptorAllocation output;
@@ -61,7 +62,9 @@ namespace wr
 				auto& ps_registry = PipelineRegistry::Get();
 				data.pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::spatial_reconstruction);
 
-				data.camera_cb = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_camera_pool->Create(sizeof(temp::SpatialReconstructionCameraData)));
+				data.m_cb_pool = n_render_system.CreateConstantBufferPool(sizeof(temp::SpatialReconstructionCameraData) * d3d12::settings::num_back_buffers);
+
+				data.camera_cb = static_cast<D3D12ConstantBufferHandle*>(data.m_cb_pool->Create(sizeof(temp::SpatialReconstructionCameraData)));
 			}
 
 			// Deferred data
@@ -116,11 +119,11 @@ namespace wr
 			auto camera = sg.GetActiveCamera();
 			temp::SpatialReconstructionCameraData cam_data;
 			cam_data.inv_view = DirectX::XMMatrixInverse(nullptr, camera->m_view);
-      cam_data.inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
+			cam_data.inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 			cam_data.near_plane = camera->m_frustum_near;
 			cam_data.far_plane = camera->m_frustum_far;
 			cam_data.frame_idx = ++data.frame_idx;
-			n_render_system.m_camera_pool->Update(data.camera_cb, sizeof(temp::SpatialReconstructionCameraData), 0, frame_idx, (std::uint8_t*)&cam_data);
+			data.m_cb_pool->Update(data.camera_cb, sizeof(temp::SpatialReconstructionCameraData), 0, frame_idx, (std::uint8_t*)&cam_data);
 
 			d3d12::BindComputeConstantBuffer(cmd_list, data.camera_cb->m_native, 1, frame_idx);
 

@@ -121,8 +121,12 @@ namespace wr
 			for (int frame_idx = 0; frame_idx < 1; ++frame_idx)
 			{
 				// Bind output texture
-				d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+				d3d12::DescHeapCPUHandle rtv_handle = data.out_output_alloc.GetDescriptorHandle(0);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
+				rtv_handle = data.out_output_alloc.GetDescriptorHandle(1);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 1, n_render_target->m_create_info.m_rtv_formats[1]);
+				rtv_handle = data.out_output_alloc.GetDescriptorHandle(2);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, rtv_handle, 2, n_render_target->m_create_info.m_rtv_formats[2]);
 
 				// Bind g-buffers (albedo, normal, depth)
 				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();

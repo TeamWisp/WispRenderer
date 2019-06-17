@@ -12,13 +12,18 @@ Texture2D motion_texture : register(t5); // xy: motion, z: fwidth position, w: f
 Texture2D linear_depth_texture : register(t6);
 Texture2D world_position_texture : register(t7);
 
-Texture2D accum_texture : register(t8);
-Texture2D prev_normal_texture : register(t9);
-Texture2D prev_depth_texture : register(t10);
-Texture2D prev_position_texture : register(t11);
-Texture2D prev_dir_hitT_texture : register(t12);
+Texture2D in_history_texture : register(t8);
+
+Texture2D accum_texture : register(t9);
+Texture2D prev_normal_texture : register(t10);
+Texture2D prev_depth_texture : register(t11);
+Texture2D prev_position_texture : register(t12);
+Texture2D prev_dir_hitT_texture : register(t13);
+Texture2D in_moments_texture : register(t14);
 
 RWTexture2D<float4> output_texture : register(u0);
+RWTexture2D<float> out_history_texture : register(u1);
+RWTexture2D<float2> out_moments_texture : register(u2);
 
 SamplerState point_sampler : register(s0);
 SamplerState linear_sampler : register(s0);
@@ -138,7 +143,7 @@ float3 GetReflectionWorldPos(float2 screen_coord, Texture2D origin_pos_texture, 
 	return origin_pos_texture.SampleLevel(point_sampler, screen_coord / screen_size, 0).xyz + ray_data.xyz * ray_data.w;
 }
 
-bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history_length)
+bool LoadPrevData(float2 screen_coord, inout float2 found_pos, out float4 prev_direct, out float history_length)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	output_texture.GetDimensions(screen_size.x, screen_size.y);
@@ -152,7 +157,7 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history
 
 	const float roughness = albedo_roughness_texture[screen_coord].w;
 
-	if(roughness < 0.2)
+	if(roughness < roughness_reprojection_threshold && dir_hitT_texture.SampleLevel(point_sampler, uv, 0).w == 0.0)
 	{
 		int step_size = 4;
 		float2 best_pos = screen_coord;
@@ -239,8 +244,10 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history
 		}
 
 		prev_direct = accum_texture[best_pos];
-		history_length = prev_direct.w;
-		return true;
+		history_length = in_history_texture[best_pos].r;
+		found_pos = screen_coord - best_pos;
+		
+		return best_dist < 100.0;
 	}
 	else
 	{
@@ -305,13 +312,16 @@ bool LoadPrevData(float2 screen_coord, out float4 prev_direct, out float history
 		}
 		if(valid)
 		{
-			history_length = accum_texture[screen_coord].w;
+			history_length = in_history_texture[prev_coords].r;
 		}
 		else
 		{
 			prev_direct = float4(0, 0, 0, 0);
 			history_length = 0;
 		}
+
+		found_pos = lerp(float2(-1, -1), pos_prev, valid);
+
 		return valid;
 	}
 }
@@ -348,7 +358,11 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float4 accum_color = float4(0, 0, 0, 0);
 	float history = 0;
 
-	bool valid = LoadPrevData(screen_coord, accum_color, history);
+	float2 prev_pos = float2(0, 0);
+
+	float2 screen_center = screen_size / 4;
+
+	bool valid = LoadPrevData(screen_coord, prev_pos, accum_color, history);
 	history = lerp(0, history, valid);
 
 	float4 input_color = input_texture[screen_coord];
@@ -396,8 +410,9 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	const float alpha = lerp(1.0, max(integration_alpha, 1.0/history), valid);
 
 	float3 output = lerp(accum_color, input_color, alpha);
-
+	
 	output_texture[screen_coord] = float4(output.xyz, history);
+	out_history_texture[screen_coord] = history;
 }
 
 [numthreads(16, 16, 1)]
@@ -441,6 +456,8 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float4 accum = input_texture[screen_coord];
 
 	const int kernel_size = 1 + 31 * roughness;
+
+	const float kernel_weights[3] = {1.0, 2.0/3.0, 1.0/6.0};
 	for(int x = -floor(kernel_size/2); x <= floor(kernel_size/2); ++x)
 	{
 		for(int y = -floor(kernel_size/2); y <= floor(kernel_size/2); ++y)
@@ -474,7 +491,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 				float phi_depth = max(center_depth.y, 1e-8) * length(location - screen_coord);
 
-				float weight = max(brdf_weight(V, L, N, roughness), 1e-5) * 
+				float weight = brdf_weight(V, L, N, roughness) * 
 				max(ComputeWeightNoLuminance(center_depth.x, p_depth.x, phi_depth, center_normal, p_normal), 1e-5);
 
 				weight *= x!=0 || y!=0;

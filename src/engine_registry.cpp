@@ -1017,13 +1017,18 @@ namespace wr
 		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::LINEAR_DEPTH),
 		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::WORLD_POS),
 
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::IN_HISTORY),
+
 		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::ACCUM),
 		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::PREV_NORMAL),
 		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::PREV_DEPTH),
 		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::PREV_POSITION),
 		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::PREV_RAY_DIR),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::IN_MOMENTS),
 
-		DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUTPUT)
+		DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUTPUT),
+		DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUT_HISTORY),
+		DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUT_MOMENTS)
 	);
   
 	REGISTER(root_signatures::reflection_denoiser, RootSignatureRegistry)({

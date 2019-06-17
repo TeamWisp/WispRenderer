@@ -110,8 +110,8 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 					++sampled_count;
 				}
 			}
-
-			dirT = float4(normalize(total_hit), length(total_hit) / sampled_count);
+			total_hit /= sampled_count;
+			dirT = float4(normalize(total_hit), length(total_hit));
 			return float4(reflection / weightSum, pdfWeight / sampled_count);
 
 		#else
