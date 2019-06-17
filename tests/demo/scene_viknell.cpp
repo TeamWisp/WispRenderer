@@ -113,8 +113,8 @@ void ViknellScene::BuildScene(unsigned int width, unsigned int height, void* ext
 	LoadLightsFromJSON();
 }
 
-void ViknellScene::Update()
+void ViknellScene::Update(float delta)
 {
-	m_camera->Update(ImGui::GetIO().DeltaTime);
+	m_camera->Update(delta);
 	m_camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, m_camera);
 }

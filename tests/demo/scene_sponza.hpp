@@ -15,7 +15,7 @@ class SponzaScene : public Scene
 public:
 	SponzaScene();
 
-	void Update() final;
+	void Update(float delta = 0) final;
 
 protected:
 	void LoadResources() final;

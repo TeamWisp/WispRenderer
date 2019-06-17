@@ -15,7 +15,7 @@ public:
 	virtual ~Scene();
 
 	virtual void Init(wr::D3D12RenderSystem* rs, unsigned int width, unsigned int height, void* extra = nullptr);
-	virtual void Update() = 0;
+	virtual void Update(float delta = 0) = 0;
 	std::shared_ptr<wr::SceneGraph> GetSceneGraph();
 	template<typename T>
 	std::shared_ptr<T> GetCamera();
