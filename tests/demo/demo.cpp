@@ -114,7 +114,7 @@ int WispEntry()
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
 	wr::ModelLoader* gltf_model_loader = new wr::TinyGLTFModelLoader();
 
-	CoInitialize(nullptr);
+	TRY_M(CoInitialize(nullptr), "Couldn't CoInitialize");
 	render_system->Init(window.get());	
 
 	phys_engine.CreatePhysicsWorld();
