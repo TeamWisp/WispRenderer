@@ -80,10 +80,23 @@ set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MT")
 
+# Bullet Options
+set(BUILD_CPU_DEMOSON OFF CACHE BOOL "" FORCE)
+set(USE_GRAPHICAL_BENCHMARKON OFF CACHE BOOL "" FORCE)
+set(BUILD_ENETON OFF CACHE BOOL "" FORCE)
+set(BUILD_CLSOCKETON OFF CACHE BOOL "" FORCE)
+set(BUILD_BULLET2_DEMOSON OFF CACHE BOOL "" FORCE)
+set(BUILD_EXTRASON OFF CACHE BOOL "" FORCE)
+set(BUILD_UNIT_TESTSON OFF CACHE BOOL "" FORCE)
+set(USE_GRAPHICAL_BENCHMARKON OFF CACHE BOOL "" FORCE)
+set(BUILD_STATIC_LIBON ON CACHE BOOL "" FORCE)
+set(NO_EXPORTON ON CACHE BOOL "" FORCE)
+
 ## dependencies ##
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fmt ${CMAKE_BINARY_DIR}/fmt)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/DirectXTex ${CMAKE_BINARY_DIR}/DirectXTex)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/fallback ${CMAKE_BINARY_DIR}/fallback)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/bullet3 ${CMAKE_BINARY_DIR}/bullet3)
 
 set(ASSIMP_BUILD_SHARED_LIBS OFF)
 
@@ -159,6 +172,12 @@ if (MSVC)
 	target_compile_options(DirectXTex PRIVATE /W0)
 endif()
 
+set_target_properties(Bullet3Common PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(BulletCollision PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(BulletDynamics PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(BulletInverseDynamics PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(BulletSoftBody PROPERTIES FOLDER "ThirdParty/Bullet")
+set_target_properties(LinearMath PROPERTIES FOLDER "ThirdParty/Bullet")
 set_target_properties(assimp PROPERTIES FOLDER ThirdParty)
 set_target_properties(assimp_cmd PROPERTIES FOLDER ThirdParty)
 set_target_properties(IrrXML PROPERTIES FOLDER ThirdParty)
@@ -191,6 +210,7 @@ target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/hbao+/in
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/ansel/include)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/crashpad)
 target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/crashpad/third_party/mini_chromium/mini_chromium)
+target_include_directories(WispRenderer PUBLIC ${CMAKE_SOURCE_DIR}/deps/bullet3/src)
 
 link_directories(${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/client/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/util/ ${CMAKE_SOURCE_DIR}/deps/crashpad/out/$(ConfigurationName)/obj/third_party/mini_chromium/mini_chromium/base/)
 

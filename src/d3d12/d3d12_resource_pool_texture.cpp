@@ -462,7 +462,8 @@ namespace wr
 			}
 			else
 			{
-				LOGC("Texture {} not loaded. Format not supported.", path);
+				// Return an invalid texture handle when format is not supported
+				LOGE("Texture {} not loaded. Format not supported.", path);
 				return {};
 			}
 
@@ -471,7 +472,9 @@ namespace wr
 				_com_error err(hr);
 				LPCTSTR errMsg = err.ErrorMessage();
 
-				LOGC("ERROR: DirectXTex error: {}", errMsg);
+				// Return an invalid texture handle when texture couldn't be loaded
+				LOGE("ERROR: DirectXTex error: {}", errMsg);
+				return {};
 			}
 		}
 
@@ -489,7 +492,7 @@ namespace wr
 		}
 
 		Format texture_format = static_cast<wr::Format>(metadata.format);
-
+		
 		d3d12::desc::TextureDesc desc;
 
 		desc.m_width = static_cast<std::uint32_t>(metadata.width);

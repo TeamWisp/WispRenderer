@@ -32,7 +32,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	if (hdr == 0)
 	{
-		color = linearToneMapping(color, exposure, gamma);
+		//color = linearToneMapping(color, exposure, gamma);
 		//color = simpleReinhardToneMapping(color, exposure, gamma);
 		//color = lumaBasedReinhardToneMapping(color, gamma);
 		//color = whitePreservingLumaBasedReinhardToneMapping(color, gamma);
@@ -40,6 +40,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		//color = filmicToneMapping(color);
 		//color = Uncharted2ToneMapping(color, gamma, exposure);
 		//color = GrayscaleToneMapping(color);
+		color = ACESToneMapping(color, exposure, gamma);
 		//color = AllTonemappingAlgorithms(color.rgb, uv.x + uv.y, exposure, gamma);
 		//color = Vignette(color, uv, 1.5, 0.5, 0.5);
 	}
