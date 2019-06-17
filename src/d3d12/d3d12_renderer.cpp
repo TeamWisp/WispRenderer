@@ -282,6 +282,8 @@ namespace wr
 		// Optional CPU-visible copy of the render target pixel data
 		const auto cpu_output_texture = frame_graph.GetOutputTexture();
 
+		++frame_counter;
+
 		// Optional CPU-visible copy of the render target pixel and/or depth data
 		return frame_graph.GetOutputTexture();
 	}
@@ -1251,8 +1253,7 @@ namespace wr
 		}
 		else
 		{
-			LOGW("Called `D3D12RenderSystem::GetFrameIdx` without a window!");
-			return 0;
+			return frame_counter % 3;
 		}
 	}
 
