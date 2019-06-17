@@ -136,22 +136,31 @@ int WispEntry()
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
 	window->SetRenderLoop([&]() {
+		// Find delta
+		float delta = ImGui::GetIO().DeltaTime;
+		bool capture_frame = engine::recorder.ShouldCaptureAndIncrement(delta);
+		if (capture_frame)
+		{
+			fg_manager::Get()->SaveTaskToDisc<wr::PostProcessingData>(engine::recorder.GetNextFilename(".tga"), 0);
+		}
+
 		if (new_scene && new_scene != current_scene)
 		{
-			//delete current_scene;
+			delete current_scene;
 			current_scene = new_scene;
 			current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), &phys_engine);
 			fg_manager::Get()->SetShouldExecute<wr::EquirectToCubemapTaskData>(true);
 			fg_manager::Get()->SetShouldExecute<wr::CubemapConvolutionTaskData>(true);
 		}
 
-		current_scene->Update();
+		current_scene->Update(delta);
 
 #ifdef ENABLE_PHYSICS
-		phys_engine.UpdateSim(ImGui::GetIO().DeltaTime, *scene_graph.get());
+		phys_engine.UpdateSim(delta, *scene_graph.get());
 #endif
 
 		auto texture = render_system->Render(*current_scene->GetSceneGraph(), *fg_manager::Get());
+
 	});
 
 	window->StartRenderLoop();

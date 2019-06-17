@@ -761,23 +761,51 @@ namespace wr
 			rs_layout::Entry{(int)BloomBlurE::BLUR_DIRECTION, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
+		enum class BloomBlurHorizontalE
+		{
+			BLOOM_PROPERTIES,
+			SOURCE_MAIN,
+			OUTPUT,
+			OUTPUT_QES
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> bloom_blur_horizontal = {
+			rs_layout::Entry{(int)BloomBlurHorizontalE::SOURCE_MAIN, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomBlurHorizontalE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)BloomBlurHorizontalE::OUTPUT_QES, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)BloomBlurHorizontalE::BLOOM_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
+		enum class BloomBlurVerticalE
+		{
+			BLOOM_PROPERTIES,
+			SOURCE_MAIN,
+			SOURCE_QES,
+			OUTPUT,
+			OUTPUT_QES
+		};
+
+		constexpr std::array<rs_layout::Entry, 5> bloom_blur_vertical = {
+			rs_layout::Entry{(int)BloomBlurVerticalE::SOURCE_MAIN, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomBlurVerticalE::SOURCE_QES, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomBlurVerticalE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)BloomBlurVerticalE::OUTPUT_QES, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)BloomBlurVerticalE::BLOOM_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		};
+
 		enum class BloomCompositionE
 		{
 			BLOOM_PROPERTIES,
 			SOURCE_MAIN,
 			SOURCE_BLOOM_HALF,
-			SOURCE_BLOOM_QUARTER,
-			SOURCE_BLOOM_EIGHTH,
-			SOURCE_BLOOM_SIXTEENTH,
+			SOURCE_BLOOM_QES,
 			OUTPUT
 		};
 
-		constexpr std::array<rs_layout::Entry, 7> bloom_composition = {
+		constexpr std::array<rs_layout::Entry, 5> bloom_composition = {
 			rs_layout::Entry{(int)BloomCompositionE::SOURCE_MAIN, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_HALF, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_QUARTER, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_EIGHTH, 1, rs_layout::Type::SRV_RANGE},
-			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_SIXTEENTH, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)BloomCompositionE::SOURCE_BLOOM_QES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)BloomCompositionE::BLOOM_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
@@ -808,6 +836,8 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_horizontal;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
     WISPRENDERER_EXPORT static RegistryHandle reflection_denoiser;
@@ -845,6 +875,8 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_horizontal;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
@@ -874,6 +906,8 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle dof_composition;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_extract_bright;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_horizontal;
+		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;

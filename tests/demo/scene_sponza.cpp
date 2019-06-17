@@ -40,8 +40,8 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	LoadLightsFromJSON();
 }
 
-void SponzaScene::Update()
+void SponzaScene::Update(float delta)
 {
-	m_camera->Update(ImGui::GetIO().DeltaTime);
-	m_camera_spline_node->UpdateSplineNode(ImGui::GetIO().DeltaTime, m_camera);
+	m_camera->Update(delta);
+	m_camera_spline_node->UpdateSplineNode(delta, m_camera);
 }
