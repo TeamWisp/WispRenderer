@@ -28,15 +28,8 @@
 #include "render_tasks/d3d12_ansel.hpp"
 #include "render_tasks/d3d12_bloom_extract_bright.hpp"
 #include "render_tasks/d3d12_bloom_composition.hpp"
-#include "render_tasks/d3d12_bloom_half_res.hpp"
-#include "render_tasks/d3d12_bloom_half_res_v.hpp"
-#include "render_tasks/d3d12_bloom_quarter_res.hpp"
-#include "render_tasks/d3d12_bloom_quarter_res_v.hpp"
-#include "render_tasks/d3d12_bloom_eighth_res.hpp"
-#include "render_tasks/d3d12_bloom_eighth_res_v.hpp"
-#include "render_tasks/d3d12_bloom_sixteenth_res.hpp"
-#include "render_tasks/d3d12_bloom_sixteenth_res_v.hpp"
-
+#include "render_tasks/d3d12_bloom_horizontal_blur.hpp"
+#include "render_tasks/d3d12_bloom_vertical_blur.hpp"
 
 namespace fg_manager
 {
@@ -106,15 +99,9 @@ namespace fg_manager
 
 			//High quality bloom pass
 			wr::AddBloomExtractBrightTask<wr::DeferredCompositionTaskData, wr::DeferredMainTaskData>(*fg);
-			wr::AddBloomHalfTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
-			wr::AddBloomQuarterTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
-			wr::AddBloomEighthTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
-			wr::AddBloomSixteenthTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
-			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
+			wr::AddBloomBlurHorizontalTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomBlurVerticalTask<wr::BloomBlurHorizontalData>(*fg);
+			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomBlurVerticalData>(*fg);
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
@@ -211,15 +198,9 @@ namespace fg_manager
 
 			//High quality bloom pass
 			wr::AddBloomExtractBrightTask<wr::DeferredCompositionTaskData, wr::DeferredMainTaskData>(*fg);
-			wr::AddBloomHalfTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
-			wr::AddBloomQuarterTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
-			wr::AddBloomEighthTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
-			wr::AddBloomSixteenthTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
-			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
+			wr::AddBloomBlurHorizontalTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomBlurVerticalTask<wr::BloomBlurHorizontalData>(*fg);
+			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomBlurVerticalData>(*fg);
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);

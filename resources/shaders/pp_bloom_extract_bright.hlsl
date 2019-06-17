@@ -26,12 +26,19 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float brightness = dot(final_color, float3(0.2126f, 0.7152f, 0.0722f));
 
-	if (brightness > 1.0f && g_depth.SampleLevel(s1, uv, 0).r < 1)
+	for (int i = -1; i < 2; ++i)
 	{
-		out_bright = saturate(float4(final_color, 1.0f));
+		uv = float2(screen_coord.x + i, screen_coord.y + i) / screen_size;
+
+		if (brightness > 1.0f && g_depth.SampleLevel(s1, uv, 0).r < 1)
+		{
+			out_bright = saturate(float4(final_color, 1.0f));
+		}
+
+		out_bright += float4(g_emissive.SampleLevel(s0, uv, 0).rgb, 1.0f);
 	}
 
-	out_bright += float4(g_emissive.SampleLevel(s0, uv, 0).rgb, 1.0f);
+	out_bright /= 3;
 
 	output_bright[int2(dispatch_thread_id.xy)] = out_bright;
 }
