@@ -139,10 +139,10 @@ namespace engine
 				{
 					switch (selected_scene)
 					{
-						case 0: (*new_scene) = new ViknellScene();
-						case 1: (*new_scene) = new EmiblScene();
-						case 2: (*new_scene) = new SponzaScene();
-						default: LOGW("Tried to load a scene that is not supported");
+						case 0: (*new_scene) = new ViknellScene(); break;
+						case 1: (*new_scene) = new EmiblScene(); break;
+						case 2: (*new_scene) = new SponzaScene(); break;
+						default: LOGW("Tried to load a scene that is not supported"); break;
 					}
 				}
 				ImGui::End();
