@@ -170,7 +170,6 @@ namespace wr
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 			float scalar = 1.0f;
 
-			if (n_render_system.m_render_window.has_value())
 			{
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.in_state_object, false);

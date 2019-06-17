@@ -93,7 +93,7 @@ namespace wr
 		SetName(m_compute_queue, L"Default D3D12 Compute Command Queue");
 		SetName(m_copy_queue, L"Default D3D12 Copy Command Queue");
 
-		if (window.has_value())
+		if (window.has_value() && window.value()->HasPhysicalWindow())
 		{
 			m_render_window = d3d12::CreateRenderWindow(m_device, window.value()->GetWindowHandle(), m_direct_queue, d3d12::settings::num_back_buffers);
 		}
@@ -137,7 +137,7 @@ namespace wr
 		m_raytracing_offset_sb_pool = CreateStructuredBufferPool(rt_offset_align_size);
 
 		// Begin Recording
-		auto frame_idx = m_render_window.has_value() ? m_render_window.value()->m_frame_idx : 0;
+		auto frame_idx = GetFrameIdx();
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
 
 		// Stage fullscreen quad
@@ -969,13 +969,6 @@ namespace wr
 	void D3D12RenderSystem::PreparePreRenderCommands(bool clear_frame_buffer, int frame_idx)
 	{
 		d3d12::Begin(m_direct_cmd_list, frame_idx);
-
-		if (clear_frame_buffer)
-		{
-			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_descriptor(m_render_window.value()->m_rtv_descriptor_heap->GetCPUDescriptorHandleForHeapStart());
-
-			rtv_descriptor.Offset(frame_idx, m_render_window.value()->m_rtv_descriptor_increment_size);
-		}
 
 		for (int i = 0; i < m_structured_buffer_pools.size(); ++i)
 		{

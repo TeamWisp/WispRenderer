@@ -13,7 +13,9 @@ namespace wr
 		using ResizeCallback = std::function<void(std::uint32_t width, std::uint32_t height)>;
 		using MouseWheelCallback = std::function<void(int key, int action, int mods)>;
 	public:
+
 		/*!
+		Creates a physical window
 		* @param instance A handle to the current instance of the application.
 		* @param name Window title.
 		* @param width Initial window width.
@@ -21,7 +23,15 @@ namespace wr
 		* @param show Controls whether the window will be shown. Default is true.
 		*/
 		Window(HINSTANCE instance, std::string const& name, std::uint32_t width, std::uint32_t height, bool show = true);
-		Window(HINSTANCE instance, int show_cmd, std::string const& name, std::uint32_t width, std::uint32_t height);
+
+		/*!
+		Creates a non-physical window
+		* @param name Window title.
+		* @param width Initial window width.
+		* @param height Initial window height.
+		*/
+		Window(std::string const &name, std::uint32_t width, std::uint32_t height);
+
 		~Window();
 
 		Window(const Window&) = delete;
@@ -62,6 +72,8 @@ namespace wr
 		HWND GetWindowHandle() const;
 		/*! Checks whether the window is fullscreen */
 		bool IsFullscreen() const;
+		/*! Checks whether the window is OS backed or not */
+		bool HasPhysicalWindow() const;
 
 	private:
 		/*! WindowProc that calls `WindowProc_Impl` */
@@ -78,9 +90,9 @@ namespace wr
 
 		std::string m_title;
 
-		bool m_running;
-		HWND m_handle;
-		HINSTANCE m_instance;
+		bool m_running = true;
+		HWND m_handle = nullptr;
+		HINSTANCE m_instance = nullptr;
 
 		std::int32_t m_window_width = 0;
 		std::int32_t m_window_height = 0;

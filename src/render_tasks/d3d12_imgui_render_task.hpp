@@ -26,7 +26,7 @@ namespace wr
 		{
 			auto& n_render_system = static_cast<D3D12RenderSystem&>(rs);
 
-			if (!n_render_system.m_window.has_value())
+			if (!n_render_system.m_window.has_value() || !n_render_system.m_window.value()->HasPhysicalWindow())
 			{
 				LOGC("Tried using imgui without a window!");
 			}
@@ -76,7 +76,6 @@ namespace wr
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 
 			// Temp rendering
-			if (n_render_system.m_render_window.has_value())
 			{
 				auto frame_idx = n_render_system.GetFrameIdx();
 

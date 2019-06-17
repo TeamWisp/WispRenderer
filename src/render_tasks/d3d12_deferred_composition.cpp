@@ -224,7 +224,6 @@ namespace wr
 				}
 			}
 
-			if (n_render_system.m_render_window.has_value())
 			{
 				const auto viewport = n_render_system.m_viewport;
 				const auto frame_idx = n_render_system.GetFrameIdx();

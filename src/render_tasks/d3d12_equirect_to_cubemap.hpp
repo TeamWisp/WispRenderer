@@ -194,11 +194,10 @@ namespace wr
 			d3d12::TextureResource* equirect_text = static_cast<d3d12::TextureResource*>(data.in_equirect.m_pool->GetTextureResource(data.in_equirect));
 			d3d12::TextureResource* cubemap_text = static_cast<d3d12::TextureResource*>(data.out_cubemap.m_pool->GetTextureResource(data.out_cubemap));
 
-			if (n_render_system.m_render_window.has_value())
 			{
 				auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 				const auto viewport = d3d12::CreateViewport(static_cast<int>(cubemap_text->m_width), static_cast<int>(cubemap_text->m_height));
-				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
+				const auto frame_idx = n_render_system.GetFrameIdx();
 
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindPipeline(cmd_list, data.in_pipeline);

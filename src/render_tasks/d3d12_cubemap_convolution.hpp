@@ -123,11 +123,10 @@ namespace wr
 
 			if (radiance->m_is_staged)
 			{
-				if (n_render_system.m_render_window.has_value())
 				{
 					auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 					const auto viewport = d3d12::CreateViewport(static_cast<int>(irradiance->m_width), static_cast<int>(irradiance->m_height));
-					const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
+					const auto frame_idx = n_render_system.GetFrameIdx();
 
 					d3d12::BindViewport(cmd_list, viewport);
 					d3d12::BindPipeline(cmd_list, data.in_pipeline);

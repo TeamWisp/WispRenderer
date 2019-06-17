@@ -229,7 +229,6 @@ namespace wr
 			// Wait for AS to be built
 			d3d12::UAVBarrierAS(cmd_list, as_build_data.out_tlas, frame_idx);
 
-			if (n_render_system.m_render_window.has_value())
 			{
 				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
