@@ -282,7 +282,7 @@ void EmiblScene::BuildScene(unsigned int width, unsigned int height, void* extra
 	dir_light->SetDirectional({ 360_deg - 136_deg, 0, 0 }, { 4, 4, 4 });
 }
 
-void EmiblScene::Update()
+void EmiblScene::Update(float delta)
 {
-	m_camera->Update(ImGui::GetIO().DeltaTime);
+	m_camera->Update(delta);
 }

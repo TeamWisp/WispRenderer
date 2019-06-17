@@ -15,7 +15,7 @@ class ViknellScene : public Scene
 public:
 	ViknellScene();
 
-	void Update() final;
+	void Update(float delta = 0) final;
 
 protected:
 	void LoadResources() final;

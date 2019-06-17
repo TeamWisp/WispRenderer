@@ -26,6 +26,8 @@ namespace engine
 	static bool open1 = true;
 	static bool open_console = false;
 	static bool open_scene = true;
+	static bool open_recorder = true;
+	static char recorder_name[256] = "unamed";
 	static int selected_scene = 0;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
@@ -33,6 +35,71 @@ namespace engine
 	static char message_buffer[600];
 
 	static wr::imgui::special::DebugConsole debug_console;
+
+	struct Recorder
+	{
+		bool m_recording = false;
+		int m_target_framerate = 30;
+		int m_record_frame_inverval = 1;
+		int m_frames_since_last_capture = 0;
+		int m_frames_recorded = 0;
+		std::string m_output_dir;
+		std::string m_name;
+
+		void Start(std::string name)
+		{
+			m_frames_recorded = 0;
+			m_frames_since_last_capture = 0;
+
+			m_output_dir = "D:\\WispRecorder\\" + name;
+			m_name = name;
+
+			std::filesystem::create_directory(m_output_dir);
+
+			show_imgui = false;
+
+			m_recording = true;
+		}
+
+		void Stop()
+		{
+			m_recording = false;
+		}
+
+		std::string GetNextFilename(std::string ext)
+		{
+			m_frames_recorded++;
+			return m_output_dir + "\\" + m_name + "_"+ std::to_string(m_target_framerate) + "fps_frame" + std::to_string(m_frames_recorded) + ext;
+		}
+
+		bool ShouldCaptureAndIncrement(float& out_delta)
+		{
+			if (!m_recording) return false;
+
+			bool retval = false;
+
+			if (m_frames_since_last_capture == m_record_frame_inverval)
+			{
+				retval = true;
+				m_frames_since_last_capture = 0;
+				out_delta = 1.f / (float)m_target_framerate;;
+			}
+			else
+			{
+				m_frames_since_last_capture++;
+				out_delta = 0;
+			}
+
+			return retval;
+		}
+
+		bool IsRecording()
+		{
+			return m_recording;
+		}
+	};
+
+	static Recorder recorder;
 
 	void RenderEngine(ImTextureID output, wr::D3D12RenderSystem* render_system, Scene* scene, Scene** new_scene)
 	{
@@ -145,6 +212,23 @@ namespace engine
 						default: LOGW("Tried to load a scene that is not supported"); break;
 					}
 				}
+				ImGui::End();
+			}
+
+			if (open_recorder)
+			{
+				recorder.Stop(); // don't record while in imgui.
+
+				ImGui::Begin("Recorder", &open_recorder);
+				if (ImGui::Button("Record"))
+				{
+					recorder.Start(recorder_name);
+				}
+
+				ImGui::InputText("Recording Name", recorder_name, IM_ARRAYSIZE(recorder_name));
+				ImGui::InputInt("Target Framerate", &recorder.m_target_framerate);
+				ImGui::InputInt("Frame Interval", &recorder.m_record_frame_inverval);
+
 				ImGui::End();
 			}
 
