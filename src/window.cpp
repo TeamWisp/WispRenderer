@@ -196,7 +196,7 @@ namespace wr
 
 	void Window::SetResizeCallback(ResizeCallback callback)
 	{
-		m_resize_callback = std::move(callback);	//TODO: Call once?
+		m_resize_callback = std::move(callback);
 	}
 
 	bool Window::IsRunning() const
