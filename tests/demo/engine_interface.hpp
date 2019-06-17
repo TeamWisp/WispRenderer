@@ -39,52 +39,56 @@ namespace engine
 
 	struct Recorder
 	{
-		bool recording = false;
-		float fixed_delta = 0.033333;
-		int record_frame_inverval = 1;
-		int frames_since_last_capture = 0;
-		int frames_recorded = 0;
-		std::string output_dir;
-		std::string name;
+		bool m_recording = false;
+		float m_fixed_delta = 0.033333;
+		int m_record_frame_inverval = 1;
+		int m_frames_since_last_capture = 0;
+		int m_frames_recorded = 0;
+		std::string m_output_dir;
+		std::string m_name;
 
 		void Start(std::string name)
 		{
-			output_dir = "D:\\WispRecorder\\" + name;
-			this->name = name;
+			m_frames_recorded = 0;
+			m_frames_since_last_capture = 0;
+
+
+			m_output_dir = "D:\\WispRecorder\\" + name;
+			m_name = name;
 
 			std::filesystem::create_directory(output_dir);
 
-			show_imgui = false;
+			m_show_imgui = false;
 
-			recording = true;
+			m_recording = true;
 		}
 
 		void Stop()
 		{
-			recording = false;
+			m_recording = false;
 		}
 
 		std::string GetNextFilename(std::string ext)
 		{
-			frames_recorded++;
-			return output_dir + "\\" + name + "_frame" + std::to_string(frames_recorded) + ext;
+			m_frames_recorded++;
+			return m_output_dir + "\\" + m_name + "_frame" + std::to_string(m_frames_recorded) + ext;
 		}
 
 		bool ShouldCaptureAndIncrement(float& out_delta)
 		{
-			if (!recording) return false;
+			if (!m_recording) return false;
 
 			bool retval = false;
 
-			if (frames_since_last_capture == record_frame_inverval)
+			if (m_frames_since_last_capture == m_record_frame_inverval)
 			{
 				retval = true;
-				frames_since_last_capture = 0;
-				out_delta = fixed_delta;
+				m_frames_since_last_capture = 0;
+				out_delta = m_fixed_delta;
 			}
 			else
 			{
-				frames_since_last_capture++;
+				m_frames_since_last_capture++;
 				out_delta = 0;
 			}
 
@@ -93,7 +97,7 @@ namespace engine
 
 		bool IsRecording()
 		{
-			return recording;
+			return m_recording;
 		}
 	};
 
@@ -225,9 +229,9 @@ namespace engine
 
 				ImGui::InputText("Recording Name", recorder_name, IM_ARRAYSIZE(recorder_name));
 				ImGui::InputInt("Target Framerate", &recorder_frame_rate);
-				ImGui::InputInt("Frame Interval", &recorder.record_frame_inverval);
+				ImGui::InputInt("Frame Interval", &recorder.m_record_frame_inverval);
 
-				recorder.fixed_delta = 1.f / (float)recorder_frame_rate;
+				recorder.m_fixed_delta = 1.f / (float)recorder_frame_rate;
 
 				ImGui::End();
 			}
