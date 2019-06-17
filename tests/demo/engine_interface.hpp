@@ -56,9 +56,9 @@ namespace engine
 			m_output_dir = "D:\\WispRecorder\\" + name;
 			m_name = name;
 
-			std::filesystem::create_directory(output_dir);
+			std::filesystem::create_directory(m_output_dir);
 
-			m_show_imgui = false;
+			show_imgui = false;
 
 			m_recording = true;
 		}
