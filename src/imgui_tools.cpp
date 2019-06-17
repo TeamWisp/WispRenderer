@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <optional>
+#include <filesystem>
 
 #include "scene_graph/camera_node.hpp"
 #include "shader_registry.hpp"
@@ -388,17 +389,40 @@ namespace wr::imgui::window
 		{ typeid(SkyboxNode),
 			[](std::shared_ptr<Node> node, SceneGraph* scene_graph)
 			{
-				auto skybox_node = std::static_pointer_cast<SkyboxNode>(node);
+				std::vector<std::string> hdr_maps;
+				std::string path = "resources/materials/";
 
+
+				for (const auto& entry : std::filesystem::directory_iterator(path))
+				{
+					std::filesystem::path ext(entry.path().extension());
+
+					if (ext.compare(L".hdr") == 0)
+					{
+						hdr_maps.push_back(entry.path().filename().string());
+					}
+				}
+				
+				//Lambda to get char* out of the string vector for ImGui
+				static auto vector_getter = [](void* vec, int idx, const char** out_text)
+				{
+					auto& vector = *static_cast<std::vector<std::string>*>(vec);
+					if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
+					*out_text = vector.at(idx).c_str();
+					return true;
+				};
+
+				static int selected_item = 0;
+
+				ImGui::ListBox("Environment Maps", &selected_item, vector_getter, static_cast<void*>(&hdr_maps), hdr_maps.size());
+
+				auto skybox_node = std::static_pointer_cast<SkyboxNode>(node);
+				
 				if (ImGui::Button("Change Sky"))
 				{
-					//TODO: tool for skybox selection.
+					path += hdr_maps[selected_item];
 
-					std::string skybox_name;
-
-					skybox_name = "resources/materials/Arches_E_PineTree_3k.hdr";
-
-					TextureHandle new_texture = skybox_node->m_skybox.value().m_pool->LoadFromFile(skybox_name, false, false);
+					TextureHandle new_texture = skybox_node->m_skybox.value().m_pool->LoadFromFile(path, false, false);
 
 					scene_graph->UpdateSkyboxNode(skybox_node, new_texture);
 				}

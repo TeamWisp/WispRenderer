@@ -523,16 +523,27 @@ namespace wr
 			CAMERA_PROPERTIES,
 			ACCELERATION_STRUCTURE,
 			OUTPUT,
+			INDICES,
+			VERTICES,
+			MATERIALS,
+			OFFSETS,
+			TEXTURES,
 			GBUFFERS,
 			FALLBACK_PTRS
 		};
 
-		constexpr std::array<rs_layout::Entry, 5> rt_ao = {
+		constexpr std::array<rs_layout::Entry, 20> rt_ao = {
 			rs_layout::Entry{(int)RTAOE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 			rs_layout::Entry{(int)RTAOE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)RTAOE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)RTAOE::INDICES, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTAOE::VERTICES, 1, rs_layout::Type::SRV},
+			rs_layout::Entry{(int)RTAOE::MATERIALS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTAOE::OFFSETS, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)RTAOE::TEXTURES, d3d12::settings::num_max_rt_textures, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTAOE::GBUFFERS, 2, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTAOE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
+
 		};
 
 		enum class PathTracingE
@@ -805,7 +816,7 @@ namespace wr
 	struct state_objects
 	{
 		WISPRENDERER_EXPORT static RegistryHandle state_object;
-		WISPRENDERER_EXPORT static RegistryHandle rt_ao_state_opbject;
+		WISPRENDERER_EXPORT static RegistryHandle rt_ao_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracing_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object_transparency;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object_no_transparency;

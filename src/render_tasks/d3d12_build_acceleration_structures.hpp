@@ -390,7 +390,9 @@ namespace wr
 
 						if (blas_iterator == data.blasses.end() || n_mesh->data_changed)
 						{
-							if (n_mesh->data_changed)
+							// Check if data changed in the mesh and if the blas iterator isn't an end iterator,
+							// since it will be dereferenced (end iterators can't be dereferenced).
+							if (n_mesh->data_changed && blas_iterator != data.blasses.end())
 							{
 								data.old_blasses[data.current_frame_index].push_back((*blas_iterator).second);
 								data.blasses.erase(blas_iterator);

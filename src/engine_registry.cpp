@@ -995,6 +995,10 @@ namespace wr
 
 	DESC_RANGE_ARRAY(rt_ao_ranges,
 		DESC_RANGE(params::rt_ao, Type::UAV_RANGE, params::RTAOE::OUTPUT),
+		DESC_RANGE(params::rt_ao, Type::SRV_RANGE, params::RTAOE::INDICES),
+		DESC_RANGE(params::rt_ao, Type::SRV_RANGE, params::RTAOE::MATERIALS),
+		DESC_RANGE(params::rt_ao, Type::SRV_RANGE, params::RTAOE::OFFSETS),
+		DESC_RANGE(params::rt_ao, Type::SRV_RANGE, params::RTAOE::TEXTURES),
 		DESC_RANGE(params::rt_ao, Type::SRV_RANGE, params::RTAOE::GBUFFERS),
 		DESC_RANGE_H(D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 9, d3d12::settings::fallback_ptrs_offset),
 	);
@@ -1004,8 +1008,11 @@ namespace wr
 			ROOT_PARAM_DESC_TABLE(rt_ao_ranges, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetSRV(params::rt_ao, params::RTAOE::ACCELERATION_STRUCTURE)),
 			ROOT_PARAM(GetCBV(params::rt_ao, params::RTAOE::CAMERA_PROPERTIES)),
+			ROOT_PARAM(GetSRV(params::rt_ao, params::RTAOE::VERTICES)),
 		},
-		.m_samplers = {},
+		.m_samplers = {
+			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+		},
 		.m_rtx = true
 	});
 
@@ -1014,13 +1021,14 @@ namespace wr
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_ao_lib;
 		lib.exports.push_back(L"AORaygenEntry");
+		lib.exports.push_back(L"AOClosestHitEntry");
 		lib.exports.push_back(L"AOMissEntry");
-		//lib.exports.push_back(L"AnyHitEntry");
-		//lib.m_hit_groups.push_back({ L"AOHitGroup", L"AOHitEntry", L"AnyHitEntry" });
+		lib.exports.push_back(L"AOAnyHitEntry");
+		lib.m_hit_groups.push_back({ L"AOHitGroup", L"AOClosestHitEntry", L"AOAnyHitEntry" });
 		return lib;
 	}();
 
-	REGISTER(state_objects::rt_ao_state_opbject, RTPipelineRegistry)(
+	REGISTER(state_objects::rt_ao_state_object, RTPipelineRegistry)(
 	{
 		.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
 		.library_desc = rt_ao_so_library,

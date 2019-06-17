@@ -4,10 +4,21 @@
 #include "rand_util.hlsl"
 #include "dxr_global.hlsl"
 #include "dxr_functions.hlsl"
+#include "dxr_structs.hlsl"
+#include "material_util.hlsl"
 
 RWTexture2D<float4> output : register(u0); // x: AO value
-Texture2D gbuffer_normal : register(t1);
-Texture2D gbuffer_depth : register(t2);
+
+ByteAddressBuffer g_indices : register(t1);
+StructuredBuffer<Vertex> g_vertices : register(t2);
+StructuredBuffer<Material> g_materials : register(t3);
+StructuredBuffer<Offset> g_offsets : register(t4);
+
+Texture2D g_textures[1000] : register(t5);
+Texture2D gbuffer_normal : register(t1005);
+Texture2D gbuffer_depth : register(t1006);
+
+SamplerState s0 : register(s0);
 
 typedef BuiltInTriangleIntersectionAttributes Attributes;
 
@@ -46,8 +57,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	// Trace the ray
 	TraceRay(
 		Scene,
-		RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
-		//RAY_FLAG_NONE,
+		RAY_FLAG_NONE,
 		~0, // InstanceInclusionMask
 		0, // RayContributionToHitGroupIndex
 		0, // MultiplierForGeometryContributionToHitGroupIndex
@@ -94,17 +104,73 @@ void AORaygenEntry()
 
 }
 
+[shader("closesthit")]
+void AOClosestHitEntry(inout AOHitInfo hit, in Attributes attr)
+{
+	hit.is_hit = 1.0f;
+}
+
 [shader("miss")]
 void AOMissEntry(inout AOHitInfo hit : SV_RayPayload)
 {
     hit.is_hit = 0.0f;
 }
 
-//
-//[shader("anyhit")]
-//void AnyHitEntry(inout AOHitInfo hit, in Attributes attr)
-//{
-//	AcceptHitAndEndSearch();
-//}
+[shader("anyhit")]
+void AOAnyHitEntry(inout AOHitInfo hit, in Attributes attr)
+{
+//#define FALLBACK
+#ifndef FALLBACK
+	// Calculate the essentials
+	const Offset offset = g_offsets[InstanceID()];
+	const Material material = g_materials[offset.material_idx];
+	const float index_offset = offset.idx_offset;
+	const float vertex_offset = offset.vertex_offset;
+
+	// Find first index location
+	const uint index_size = 4;
+	const uint indices_per_triangle = 3;
+	const uint triangle_idx_stride = indices_per_triangle * index_size;
+
+	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
+	base_idx += index_offset * 4; // offset the start
+
+	uint3 indices = Load3x32BitIndices(g_indices, base_idx);
+	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
+
+	// Gather triangle vertices
+	const Vertex v0 = g_vertices[indices.x];
+	const Vertex v1 = g_vertices[indices.y];
+	const Vertex v2 = g_vertices[indices.z];
+
+	//Get data from VBO
+	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
+	uv.y = 1.0f - uv.y;
+
+	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
+		g_textures[material.albedo_id],
+		g_textures[material.normal_id],
+		g_textures[material.roughness_id],
+		g_textures[material.metalicness_id],
+		g_textures[material.emissive_id],
+		g_textures[material.ao_id],
+		0,
+		s0,
+		uv);
+
+	float alpha = output_data.alpha;
+
+	if (alpha < 0.5f)
+	{
+		IgnoreHit();
+	}
+	else
+	{
+		AcceptHitAndEndSearch();
+	}
+#else
+	AcceptHitAndEndSearch();
+#endif
+}
 
 #endif //__DXR_AMBIENT_OCCLUSION_HLSL__

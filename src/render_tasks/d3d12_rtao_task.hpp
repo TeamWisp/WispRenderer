@@ -81,16 +81,16 @@ namespace wr
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				h_data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::rt_ao_state_opbject));
+				h_data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::rt_ao_state_object));
 
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
 				h_data.out_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_ao_global));
 
 				// Create Shader Tables
-				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, {}, 0);
-				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, {}, 1);
-				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, {}, 2);
+				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, { "AOHitGroup" }, 0);
+				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, { "AOHitGroup" }, 1);
+				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, { "AOHitGroup" }, 2);
 			}
 		}
 
@@ -113,18 +113,71 @@ namespace wr
 
 			if (n_render_system.m_render_window.has_value())
 			{
-
 				d3d12::BindRaytracingPipeline(cmd_list, h_data.out_state_object, false);
 
 				// Bind output, indices and materials, offsets, etc
 				auto out_uav_handle = h_data.out_output_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::OUTPUT)), out_uav_handle);
 
-				auto in_scene_normal_gbuffer_handle = h_data.out_gbuffer_normal_alloc.GetDescriptorHandle(0);
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, in_scene_normal_gbuffer_handle);
-				
-				auto in_scene_depth_handle = h_data.out_gbuffer_depth_alloc.GetDescriptorHandle();
-				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, in_scene_depth_handle);
+				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::INDICES)), out_scene_ib_handle);
+
+				auto out_scene_mat_handle = as_build_data.out_scene_mat_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::MATERIALS)), out_scene_mat_handle);
+
+				auto out_scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::OFFSETS)), out_scene_offset_handle);
+
+				auto out_normal_gbuffer_handle = h_data.out_gbuffer_normal_alloc.GetDescriptorHandle(0);
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 0, out_normal_gbuffer_handle);
+
+				auto out_scene_depth_handle = h_data.out_gbuffer_depth_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::GBUFFERS)) + 1, out_scene_depth_handle);
+
+
+				/*
+				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
+				We fill the table with a single descriptor, then overwrite some spots with the he correct textures
+				If a spot is unused, then a default descriptor will be still bound, but not used in the shaders.
+				Since the renderer creates a texture pool that can be used by the render tasks, and
+				the texture pool also has default textures for albedo/roughness/etc... one of those textures is a good
+				candidate for this.
+				*/
+				{
+					auto texture_handle = n_render_system.GetDefaultAlbedo();
+					auto* texture_resource = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
+
+					size_t num_textures_in_heap = COMPILATION_EVAL(rs_layout::GetSize(params::rt_ao, params::RTAOE::TEXTURES));
+					unsigned int heap_loc_start = COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::TEXTURES));
+
+					for (size_t i = 0; i < num_textures_in_heap; ++i)
+					{
+						d3d12::SetRTShaderSRV(cmd_list, 0, static_cast<std::uint32_t>(heap_loc_start + i), texture_resource);
+					}
+				}
+
+				// Fill descriptor heap with textures used by the scene
+				for (auto material_handle : as_build_data.out_material_handles)
+				{
+					auto* material_internal = material_handle.m_pool->GetMaterial(material_handle);
+
+					auto set_srv = [&data, material_internal, cmd_list](auto texture_handle)
+					{
+						auto* texture_internal = static_cast<wr::d3d12::TextureResource*>(texture_handle.m_pool->GetTextureResource(texture_handle));
+
+						d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_ao, params::RTAOE::TEXTURES)) + static_cast<std::uint32_t>(texture_handle.m_id), texture_internal);
+					};
+
+					std::array<TextureType, static_cast<size_t>(TextureType::COUNT)> types = { TextureType::ALBEDO, TextureType::NORMAL,
+																							   TextureType::ROUGHNESS, TextureType::METALLIC,
+																							   TextureType::EMISSIVE, TextureType::AO };
+
+					for (auto t : types)
+					{
+						if (material_internal->HasTexture(t))
+							set_srv(material_internal->GetTexture(t));
+					}
+				}
 
 				// Update offset data
 				n_render_system.m_raytracing_offset_sb_pool->Update(as_build_data.out_sb_offset_handle, (void*)as_build_data.out_offsets.data(), sizeof(temp::RayTracingOffset_CBData) * as_build_data.out_offsets.size(), 0);
@@ -161,8 +214,10 @@ namespace wr
 					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_tlas.m_natives[frame_idx], 1);
 				}
 				
+				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
+
 #ifdef _DEBUG
-				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, {}, frame_idx);
+				CreateShaderTables(device, h_data, "AORaygenEntry", { "AOMissEntry" }, { "AOHitGroup" }, frame_idx);
 #endif // _DEBUG
 
 				scalar = fg.GetRenderTargetResolutionScale(handle);
