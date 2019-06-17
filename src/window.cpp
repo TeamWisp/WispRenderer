@@ -97,7 +97,15 @@ namespace wr
 		{
 			if (m_render_func)
 			{
-				m_render_func();
+				float dt = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - m_prev_time).count();
+
+				if (!m_has_time_point) {
+					dt = 0;
+					m_has_time_point = true;
+				}
+
+				m_prev_time = std::chrono::high_resolution_clock::now();
+				m_render_func(dt);
 			}
 
 			return;
@@ -136,7 +144,7 @@ namespace wr
 		}
 	}
 
-	void Window::SetRenderLoop(std::function<void()> render_func)
+	void Window::SetRenderLoop(std::function<void (float dt)> render_func)
 	{
 		m_render_func = std::move(render_func);
 	}
@@ -265,7 +273,15 @@ namespace wr
 		case WM_PAINT:
 			if (m_render_func)
 			{
-				m_render_func();
+				float dt = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - m_prev_time).count();
+
+				if (!m_has_time_point) {
+					dt = 0;
+					m_has_time_point = true;
+				}
+
+				m_prev_time = std::chrono::high_resolution_clock::now();
+				m_render_func(dt);
 			}
 			return 0;
 		case WM_DESTROY:

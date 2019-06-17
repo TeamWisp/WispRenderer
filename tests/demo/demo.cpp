@@ -114,6 +114,7 @@ int WispEntry()
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
 	wr::ModelLoader* gltf_model_loader = new wr::TinyGLTFModelLoader();
 
+	CoInitialize(nullptr);
 	render_system->Init(window.get());	
 
 	phys_engine.CreatePhysicsWorld();
@@ -135,7 +136,7 @@ int WispEntry()
 	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
-	window->SetRenderLoop([&]() {
+	window->SetRenderLoop([&](float dt) {
 		if (new_scene && new_scene != current_scene)
 		{
 			//delete current_scene;
@@ -145,7 +146,7 @@ int WispEntry()
 			fg_manager::Get()->SetShouldExecute<wr::CubemapConvolutionTaskData>(true);
 		}
 
-		current_scene->Update();
+		current_scene->Update(dt);
 
 #ifdef ENABLE_PHYSICS
 		phys_engine.UpdateSim(ImGui::GetIO().DeltaTime, *scene_graph.get());

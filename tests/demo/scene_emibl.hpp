@@ -13,7 +13,7 @@ class EmiblScene : public Scene
 public:
 	EmiblScene();
 
-	void Update() final;
+	void Update(float dt) final;
 
 protected:
 	void LoadResources() final;

@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include <functional>
+#include <chrono>
 
 namespace wr
 {
@@ -47,7 +48,7 @@ namespace wr
 		void Stop();
 
 		/*! Give the window a function to call on repaint */
-		void SetRenderLoop(std::function<void()> render_func);
+		void SetRenderLoop(std::function<void (float dt)> render_func);
 		/*! Start a loop that runs until the window is closed. */
 		void StartRenderLoop();
 
@@ -86,7 +87,7 @@ namespace wr
 		ResizeCallback m_resize_callback;
 		MouseWheelCallback m_mouse_wheel_callback;
 
-		std::function<void()> m_render_func;
+		std::function<void (float dt)> m_render_func;
 
 		std::string m_title;
 
@@ -96,6 +97,9 @@ namespace wr
 
 		std::int32_t m_window_width = 0;
 		std::int32_t m_window_height = 0;
+
+		decltype(std::chrono::high_resolution_clock::now()) m_prev_time;
+		bool m_has_time_point = false;
 	};
 
 } /* wr */
