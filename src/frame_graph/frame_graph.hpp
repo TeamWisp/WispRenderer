@@ -95,6 +95,7 @@ namespace wr
 
 		std::vector<std::function<void()>> functions;
 
+		bool m_should_reload = false;
 		//! Constructor.
 		/*!
 			This constructor is able to reserve space for render tasks.
@@ -578,13 +579,26 @@ namespace wr
 		{
 			return m_names;
 		}
-#endif // !_DEBUG
 
-		[[nodiscard]] inline const std::vector<bool>& GetShouldExecute() const
+		[[nodiscard]] inline RenderSystem& GetRenderSystem() const
 		{
-			return m_should_execute;
-			;
+			return *m_render_system;
 		}
+
+		inline void ReloadIfRequested()
+		{
+			if (!m_should_reload)
+			{
+				return;
+			}
+
+			Destroy();
+			LoadFromVector();
+			Setup(*m_render_system);
+			m_should_reload = false;
+		}
+
+#endif // !_DEBUG
 
 
 		/*! Check if this frame graph has a task. */

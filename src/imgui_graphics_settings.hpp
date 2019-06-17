@@ -19,8 +19,12 @@ namespace wr::imgui::window
 
 	static RenderTaskHandle selected_task = -1;
 
+	wr::FrameGraph* fg = nullptr;
+	auto hbaoptr = [&]() {wr::AddHBAOTask(*fg); };
+
 	void GraphicsSettings(FrameGraph* frame_graph)
 	{
+		fg = frame_graph;
 		if (frame_graph->HasTask<wr::RTAOData>() && rtao_settings_open)
 		{
 			auto rtao_user_settings = frame_graph->GetSettings<RTAOData, RTAOSettings>();
@@ -124,96 +128,77 @@ namespace wr::imgui::window
 		}
 
 #ifndef FG_MAX_PERFORMANCE
-		ImGui::Begin("FrameGraph Editor", &frame_graph_editor_open);
-
-		const std::vector<std::wstring> names = frame_graph->GetNames();
-		const std::vector<bool> should_execute = frame_graph->GetShouldExecute();
-
-		ImVec2 size = ImGui::GetContentRegionAvail();
-
-		if (ImGui::ListBoxHeader("##", size))
+		if (frame_graph_editor_open)
 		{
-			for (int i = 0; i < names.size(); i++)
+			ImGui::Begin("FrameGraph Editor", &frame_graph_editor_open);
+
+			const std::vector<std::wstring> names = frame_graph->GetNames();
+
+			ImVec2 size = ImGui::GetContentRegionAvail();
+
+			if (ImGui::ListBoxHeader("##", size))
 			{
-				//setup converter
-				using convert_type = std::codecvt_utf8<wchar_t>;
-				std::wstring_convert<convert_type, wchar_t> converter;
-
-				//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
-				std::string converted_str = converter.to_bytes(names[i]);
-
-				bool pressed = ImGui::Selectable(converted_str.c_str(), selected_task == i);
-
-				// if we don't have that node selected.
-				if (pressed && selected_task != i)
+				if (ImGui::Button("Reload"))
 				{
-					selected_task = i;
-				}
-				// if we already have that node selected.
-				else if (pressed && selected_task == i)
-				{
-					selected_task = -1;
+					frame_graph->m_should_reload = true;
 				}
 
-				// Right click menu
-				if (ImGui::BeginPopupContextItem())
+				ImGui::SameLine();
+
+				if (ImGui::Button("Add HBAO+"))
 				{
-					RenderTaskHandle right_clicked_task = i;
-					ImGui::Text("Je moeder xoxo");
-					
-					if (should_execute[i])
+					frame_graph->functions.push_back(hbaoptr);
+				}
+
+				for (int i = 0; i < names.size(); i++)
+				{
+					//setup converter
+					using convert_type = std::codecvt_utf8<wchar_t>;
+					std::wstring_convert<convert_type, wchar_t> converter;
+
+					//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+					std::string converted_str = converter.to_bytes(names[i]);
+
+					bool pressed = ImGui::Selectable(converted_str.c_str(), selected_task == i);
+
+					// if we don't have that node selected.
+					if (pressed && selected_task != i)
 					{
+						selected_task = i;
+					}
+					// if we already have that node selected.
+					else if (pressed && selected_task == i)
+					{
+						selected_task = -1;
+					}
+
+					// Right click menu
+					if (ImGui::BeginPopupContextItem())
+					{
+						RenderTaskHandle right_clicked_task = i;
+
 						if (ImGui::Button("Disable"))
 						{
 							frame_graph->WaitForCompletion(right_clicked_task);
-							frame_graph->SetShouldExecute(i, false);
+							//TODO: Remove render task
 						}
-					}
-					else
-					{
-						if (ImGui::Button("Enable"))
-						{
-							frame_graph->SetShouldExecute(i, true);
-						}
-					}
-					
-					/*auto node_cm_function = SceneGraphEditorDetails::GetNodeContextMenuFunction(right_clicked_task).value_or(nullptr);
 
-					bool close_popup = true;
-					if (node_cm_function)
-					{
-						close_popup = node_cm_function(right_clicked_node, scene_graph);
-					}
-					else
-					{
-						close_popup = DefaultContextMenu<Node>(right_clicked_node, scene_graph);
-					}*/
-
-					/*if (close_popup)
-					{
-						ImGui::CloseCurrentPopup();
 						ImGui::EndPopup();
-						continue;
-					}*/
-
-					ImGui::EndPopup();
-
+					}
 				}
+				ImGui::ListBoxFooter();
 			}
-			ImGui::ListBoxFooter();
-
 			ImGui::End();
 		}
 #endif //FG_MAX_PERFORMANCE
-
 	}
-
 }// namepace imgui::window
 
 namespace wr::imgui::menu
 {
 	void GraphicsSettingsMenu(wr::FrameGraph* frame_graph)
 	{
+		ImGui::MenuItem("Frame Graph Editor", nullptr, &window::frame_graph_editor_open);
 		if (ImGui::BeginMenu("Graphics Settings"))
 		{
 			if (frame_graph->HasTask<wr::RTAOData>())

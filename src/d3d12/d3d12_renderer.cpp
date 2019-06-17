@@ -267,6 +267,8 @@ namespace wr
 
 		d3d12::Execute(m_direct_queue, n_cmd_lists, m_fences[frame_idx]);
 
+		frame_graph.ReloadIfRequested();
+
 		if (m_render_window.has_value())
 		{
 			d3d12::Present(m_render_window.value());

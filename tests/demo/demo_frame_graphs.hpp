@@ -99,11 +99,9 @@ namespace fg_manager
 			
 			fg->functions.push_back([&]() {wr::AddBrdfLutPrecalculationTask(*fg); });
 			fg->functions.push_back([&]() {wr::AddEquirectToCubemapTask(*fg); });
-			/*wr::AddBrdfLutPrecalculationTask(*fg);
-			wr::AddEquirectToCubemapTask(*fg);*/
 			fg->functions.push_back([&]() {wr::AddCubemapConvolutionTask(*fg);							   });
 			fg->functions.push_back([&]() {wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, false);});
-			fg->functions.push_back([&]() {wr::AddHBAOTask(*fg);										   });
+			//fg->functions.push_back([&]() {wr::AddHBAOTask(*fg);										   });
 			fg->functions.push_back([&]() {wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);});
 
 			//High quality bloom pass
