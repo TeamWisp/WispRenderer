@@ -52,7 +52,6 @@ namespace engine
 			m_frames_recorded = 0;
 			m_frames_since_last_capture = 0;
 
-
 			m_output_dir = "D:\\WispRecorder\\" + name;
 			m_name = name;
 
