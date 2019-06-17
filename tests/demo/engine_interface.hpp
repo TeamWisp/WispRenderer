@@ -27,7 +27,6 @@ namespace engine
 	static bool open_console = false;
 	static bool open_scene = true;
 	static bool open_recorder = true;
-	static int recorder_frame_rate = 30;
 	static char recorder_name[256] = "unamed";
 	static int selected_scene = 0;
 	static bool show_imgui = true;
@@ -40,7 +39,7 @@ namespace engine
 	struct Recorder
 	{
 		bool m_recording = false;
-		float m_fixed_delta = 0.033333;
+		int m_target_framerate = 30;
 		int m_record_frame_inverval = 1;
 		int m_frames_since_last_capture = 0;
 		int m_frames_recorded = 0;
@@ -70,7 +69,7 @@ namespace engine
 		std::string GetNextFilename(std::string ext)
 		{
 			m_frames_recorded++;
-			return m_output_dir + "\\" + m_name + "_frame" + std::to_string(m_frames_recorded) + ext;
+			return m_output_dir + "\\" + m_name + "_"+ std::to_string(m_target_framerate) + "fps_frame" + std::to_string(m_frames_recorded) + ext;
 		}
 
 		bool ShouldCaptureAndIncrement(float& out_delta)
@@ -83,7 +82,7 @@ namespace engine
 			{
 				retval = true;
 				m_frames_since_last_capture = 0;
-				out_delta = m_fixed_delta;
+				out_delta = 1.f / (float)m_target_framerate;;
 			}
 			else
 			{
@@ -227,10 +226,8 @@ namespace engine
 				}
 
 				ImGui::InputText("Recording Name", recorder_name, IM_ARRAYSIZE(recorder_name));
-				ImGui::InputInt("Target Framerate", &recorder_frame_rate);
+				ImGui::InputInt("Target Framerate", &recorder.m_target_framerate);
 				ImGui::InputInt("Frame Interval", &recorder.m_record_frame_inverval);
-
-				recorder.m_fixed_delta = 1.f / (float)recorder_frame_rate;
 
 				ImGui::End();
 			}
