@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-﻿#include "d3d12_functions.hpp"
+#include "d3d12_functions.hpp"
 
 #include <variant>
 
