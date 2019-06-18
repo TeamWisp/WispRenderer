@@ -571,12 +571,10 @@ namespace wr
 		lib.exports.push_back(L"RaygenEntry");
 		lib.exports.push_back(L"ClosestHitEntry");
 		lib.exports.push_back(L"MissEntry");
-		//lib.exports.push_back(L"AnyHitEntry");
 		lib.exports.push_back(L"ShadowClosestHitEntry");
 		lib.exports.push_back(L"ShadowMissEntry");
-		//lib.exports.push_back(L"ShadowAnyHitEntry");
-		lib.m_hit_groups.push_back({ L"MyHitGroup", L"ClosestHitEntry" /*, L"AnyHitEntry"*/ });
-		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" /*, L"ShadowAnyHitEntry"*/ });
+		lib.m_hit_groups.push_back({ L"MyHitGroup", L"ClosestHitEntry"});
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry"});
 
 		return lib;
 	}();

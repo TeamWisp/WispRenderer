@@ -145,64 +145,6 @@ void MissEntry(inout FullRTHitInfo payload)
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
 }
 
-//[shader("anyhit")]
-//void AnyHitEntry(inout FullRTHitInfo payload, in Attributes attr)
-//{
-//#ifndef FALLBACK
-//	// Calculate the essentials
-//	const Offset offset = g_offsets[InstanceID()];
-//	const Material material = g_materials[offset.material_idx];
-//	const float3 hit_pos = HitWorldPosition();
-//	const float index_offset = offset.idx_offset;
-//	const float vertex_offset = offset.vertex_offset;
-//
-//	// Find first index location
-//	const uint index_size = 4;
-//	const uint indices_per_triangle = 3;
-//	const uint triangle_idx_stride = indices_per_triangle * index_size;
-//
-//	uint base_idx = PrimitiveIndex() * triangle_idx_stride;
-//	base_idx += index_offset * 4; // offset the start
-//
-//	uint3 indices = Load3x32BitIndices(g_indices, base_idx);
-//	indices += float3(vertex_offset, vertex_offset, vertex_offset); // offset the start
-//
-//	// Gather triangle vertices
-//	const Vertex v0 = g_vertices[indices.x];
-//	const Vertex v1 = g_vertices[indices.y];
-//	const Vertex v2 = g_vertices[indices.z];
-//
-//	//Get data from VBO
-//	float2 uv = HitAttribute(float3(v0.uv, 0), float3(v1.uv, 0), float3(v2.uv, 0), attr).xy;
-//	uv.y = 1.0f - uv.y;
-//
-//	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
-//		g_textures[material.albedo_id],
-//		g_textures[material.normal_id],
-//		g_textures[material.roughness_id],
-//		g_textures[material.metalicness_id],
-//		g_textures[material.emissive_id],
-//		g_textures[material.ao_id],
-//		0,
-//		s0,
-//		uv);
-//
-//	float alpha = output_data.alpha;
-//
-//	if (alpha < 0.5f)
-//	{
-//		IgnoreHit();
-//	}
-//	else
-//	{
-//		AcceptHitAndEndSearch();
-//	}
-//#else
-//	payload.color = float3(0.0f, 0.0f, 0.0f);
-//#endif
-//}
-
-
 [shader("closesthit")]
 void ClosestHitEntry(inout FullRTHitInfo payload, in Attributes attr)
 {
@@ -274,21 +216,21 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in Attributes attr)
 	}
 
 	nextRand(payload.seed);
-	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
-	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	//payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
+	payload.color = ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 	payload.color += emissive;
 }
 
 [shader("closesthit")]
 void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
 {
-	hit.is_hit = true;
+	hit.ray_power = 0.1f;
 }
 
 [shader("miss")]
 void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
 {
-	hit.is_hit = false;
+	hit.ray_power = 1.0f;
 }
 
 //[shader("anyhit")]
