@@ -21,6 +21,7 @@
 #include "engine_interface.hpp"
 #include "physics_engine.hpp"
 #include "scene_viknell.hpp"
+#include "scene_alien.hpp"
 #include "scene_emibl.hpp"
 #include "scene_sponza.hpp"
 

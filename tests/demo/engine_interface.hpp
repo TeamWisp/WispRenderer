@@ -13,6 +13,7 @@
 #include "scene_emibl.hpp"
 #include "scene_viknell.hpp"
 #include "scene_sponza.hpp"
+#include "scene_alien.hpp"
 #include "imgui_graphics_settings.hpp"
 
 namespace engine
@@ -198,7 +199,7 @@ namespace engine
 
 				ImGui::Separator();
 
-				const char* items[] = { "Viknell", "Emibl", "Sponza" };
+				const char* items[] = { "Viknell", "Emibl", "Sponza", "Alien" };
 
 				ImGui::Combo("##", &selected_scene, items, IM_ARRAYSIZE(items));
 				ImGui::SameLine();
@@ -209,6 +210,7 @@ namespace engine
 						case 0: (*new_scene) = new ViknellScene(); break;
 						case 1: (*new_scene) = new EmiblScene(); break;
 						case 2: (*new_scene) = new SponzaScene(); break;
+						case 3: (*new_scene) = new AlienScene(); break;
 						default: LOGW("Tried to load a scene that is not supported"); break;
 					}
 				}
