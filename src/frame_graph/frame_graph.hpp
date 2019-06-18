@@ -334,9 +334,9 @@ namespace wr
 			}
 
 			// Make sure we free the data objects we allocated.
-			for (auto& data : m_data)
+			for (void *data : m_data)
 			{
-				delete data;
+				free(data);
 			}
 
 			for (auto& cmd_list : m_cmd_lists)
@@ -643,7 +643,11 @@ namespace wr
 			m_settings.resize(m_num_tasks + 1ull);
 			m_types.emplace_back(desc.m_type);
 			m_rt_properties.emplace_back(desc.m_properties);
-			m_data.emplace_back(new (std::nothrow) T());
+
+			void *data = malloc(sizeof(T));
+			m_data.emplace_back(data);
+			::new (data) T();		//TODO: This destructor can't be called, because of how it is stored in m_data
+
 			m_data_type_info.emplace_back(typeid(T));
 
 			// If we are allowed to do multithreading place the task in the appropriate vector

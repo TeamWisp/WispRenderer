@@ -49,7 +49,7 @@ namespace phys
 
 		void UpdateSim(float delta, wr::SceneGraph& sg);
 
-		void Destroy();
+		~PhysicsEngine();
 	};
 
 } /* phys*/

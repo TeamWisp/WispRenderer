@@ -116,9 +116,8 @@ namespace phys
 		}
 	}
 
-	void PhysicsEngine::Destroy()
+	PhysicsEngine::~PhysicsEngine()
 	{
-
 		delete broadphase;
 		delete coll_dispatcher;
 		delete constraint_solver;
