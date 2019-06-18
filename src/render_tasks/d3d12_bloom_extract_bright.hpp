@@ -146,10 +146,8 @@ namespace wr
 			if (!resize)
 			{
 				auto& data = fg.GetData<BloomExtractBrightData>(handle);
-
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_allocation);
 				delete data.out_allocator;
+				data.~BloomExtractBrightData();
 			}
 		}
 

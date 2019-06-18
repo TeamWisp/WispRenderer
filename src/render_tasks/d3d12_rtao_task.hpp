@@ -51,6 +51,7 @@ namespace wr
 		DescriptorAllocation in_depthbuffer;
 
 		bool tlas_requires_init = false;
+
 	};
 	
 	namespace internal
@@ -243,14 +244,10 @@ namespace wr
 
 		inline void DestroyAOTask(FrameGraph& fg, RenderTaskHandle handle, bool resize) 
 		{
-			auto& data = fg.GetData<RTAOData>(handle);
-
 			if (!resize)
 			{
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
-				DescriptorAllocation temp2 = std::move(data.in_gbuffers);
-				DescriptorAllocation temp3 = std::move(data.in_depthbuffer);
+				auto& data = fg.GetData<RTAOData>(handle);
+				data.~RTAOData();
 			}
 		}
 	}

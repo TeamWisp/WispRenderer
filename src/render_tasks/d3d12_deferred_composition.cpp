@@ -359,18 +359,7 @@ namespace wr
 			if (!resize)
 			{
 				auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
-
-				// Small hack to force the allocations to go out of scope, which will tell the texture pool to free them
-				std::move(data.out_gbuffer_albedo_alloc);
-				std::move(data.out_gbuffer_normal_alloc);
-				std::move(data.out_gbuffer_emissive_alloc);
-				std::move(data.out_gbuffer_depth_alloc);
-				std::move(data.out_lights_alloc);
-				std::move(data.out_buffer_refl_alloc);
-				std::move(data.out_buffer_shadow_alloc);
-				std::move(data.out_screen_space_irradiance_alloc);
-				std::move(data.out_screen_space_ao_alloc);
-				std::move(data.out_output_alloc);
+				data.~DeferredCompositionTaskData();
 			}
 		}
 

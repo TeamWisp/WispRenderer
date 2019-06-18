@@ -285,15 +285,10 @@ namespace wr
 
 		inline void DestroyRTShadowTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& data = fg.GetData<RTShadowData>(handle);
-
 			if (!resize)
 			{
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				std::move(data.base_data.out_output_alloc);
-				std::move(data.base_data.out_gbuffer_albedo_alloc);
-				std::move(data.base_data.out_gbuffer_normal_alloc);
-				std::move(data.base_data.out_gbuffer_depth_alloc);
+				auto& data = fg.GetData<RTShadowData>(handle);
+				data.~RTShadowData();
 			}
 		}
 

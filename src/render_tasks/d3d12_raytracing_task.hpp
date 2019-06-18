@@ -337,9 +337,7 @@ namespace wr
 			if (!resize)
 			{
 				auto& data = fg.GetData<RaytracingData>(handle);
-
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
+				data.~RaytracingData();
 			}
 		}
 
