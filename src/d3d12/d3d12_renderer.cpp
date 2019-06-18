@@ -1253,7 +1253,7 @@ namespace wr
 		}
 		else
 		{
-			return frame_counter % 3;
+			return frame_counter % d3d12::settings::num_back_buffers;
 		}
 	}
 
