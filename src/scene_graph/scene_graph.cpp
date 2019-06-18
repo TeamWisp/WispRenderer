@@ -327,7 +327,7 @@ namespace wr
 
 				if (m_batches[key].batch_buffer)
 				{
-					delete m_batches[key].batch_buffer;
+					m_constant_buffer_pool->Destroy(m_batches[key].batch_buffer);
 				}
 
 				m_objects.erase(key);
