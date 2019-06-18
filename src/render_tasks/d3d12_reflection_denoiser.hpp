@@ -38,6 +38,8 @@ namespace wr
 		DescriptorAllocation m_out_history_allocation;
 		DescriptorAllocation m_out_moments_allocation;
 
+		DescriptorAllocation m_ping_pong_allocation;
+
 		d3d12::RenderTarget* m_spatial_reconstruction_render_target;
 		d3d12::RenderTarget* m_rt_reflection_render_target;
 		d3d12::RenderTarget* m_gbuffer_render_target;
@@ -51,10 +53,13 @@ namespace wr
 		d3d12::RenderTarget* m_in_moments_render_target;
 		d3d12::RenderTarget* m_out_moments_render_target;
 
+		d3d12::RenderTarget* m_ping_pong_render_target;
+
 		temp::ReflectionDenoiserSettings_CBData m_denoiser_settings;
 
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
 		ConstantBufferHandle* m_denoiser_settings_buffer;
+		std::array<ConstantBufferHandle*, d3d12::settings::shadow_denoiser_wavelet_iterations> m_wavelet_sizes;
 	};
 
 	namespace internal
@@ -97,20 +102,37 @@ namespace wr
 				data.m_prev_ray_dir_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_in_moments_allocation = std::move(data.m_descriptor_allocator->Allocate());
 
-				data.m_output_allocation = std::move(data.m_descriptor_allocator->Allocate());
+				data.m_output_allocation = std::move(data.m_descriptor_allocator->Allocate(2));
 				data.m_out_history_allocation = std::move(data.m_descriptor_allocator->Allocate());
 				data.m_out_moments_allocation = std::move(data.m_descriptor_allocator->Allocate());
+				
+				data.m_ping_pong_allocation = std::move(data.m_descriptor_allocator->Allocate(2));
 
-				data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(SizeAlignTwoPower(sizeof(temp::ReflectionDenoiserSettings_CBData), 256) * d3d12::settings::num_back_buffers);
+				data.m_constant_buffer_pool = n_render_system.CreateConstantBufferPool(
+					SizeAlignTwoPower(sizeof(temp::ReflectionDenoiserSettings_CBData), 256) * d3d12::settings::num_back_buffers + 
+					SizeAlignTwoPower(sizeof(float), 256) * d3d12::settings::num_back_buffers * d3d12::settings::shadow_denoiser_wavelet_iterations);
 				data.m_denoiser_settings_buffer = data.m_constant_buffer_pool->Create(sizeof(temp::ReflectionDenoiserSettings_CBData));
 
 				data.m_denoiser_settings = {};
-				data.m_denoiser_settings.m_integration_alpha = 0.04f;
+				data.m_denoiser_settings.m_color_integration_alpha = 0.04f;
+				data.m_denoiser_settings.m_moments_integration_alpha = 0.2f;
 				data.m_denoiser_settings.m_variance_clipping_sigma = 1.5f;
-				data.m_denoiser_settings.m_roughness_reprojection_threshold = 0.4f;
+				data.m_denoiser_settings.m_roughness_reprojection_threshold = 0.2f;
 				data.m_denoiser_settings.m_max_history_samples = 32;
 				data.m_denoiser_settings.m_n_phi = 128.f;
 				data.m_denoiser_settings.m_z_phi = 1.f;
+				data.m_denoiser_settings.m_l_phi = 4.f;
+
+				for (int i = 0; i < data.m_wavelet_sizes.size(); ++i)
+				{
+					data.m_wavelet_sizes[i] = data.m_constant_buffer_pool->Create(sizeof(float));
+
+					float size = 1 << i;
+					for (int j = 0; j < d3d12::settings::num_back_buffers; ++j)
+					{
+						data.m_constant_buffer_pool->Update(data.m_wavelet_sizes[i], sizeof(float), 0, j, (std::uint8_t*)&size);
+					}
+				}
 			}
 
 
@@ -156,6 +178,13 @@ namespace wr
 				n_render_system.m_viewport.m_viewport.Height,
 				render_target_desc);
 
+			render_target_desc.m_rtv_formats[0] = data.m_output_render_target->m_create_info.m_rtv_formats[0];
+
+			data.m_ping_pong_render_target = d3d12::CreateRenderTarget(n_render_system.m_device,
+				n_render_system.m_viewport.m_viewport.Width,
+				n_render_system.m_viewport.m_viewport.Height,
+				render_target_desc);
+
 			render_target_desc.m_initial_state = ResourceState::UNORDERED_ACCESS;
 			render_target_desc.m_num_rtv_formats = 1;
 			render_target_desc.m_rtv_formats[0] = data.m_in_history_render_target->m_create_info.m_rtv_formats[0];
@@ -171,6 +200,7 @@ namespace wr
 				n_render_system.m_viewport.m_viewport.Width,
 				n_render_system.m_viewport.m_viewport.Height,
 				render_target_desc);
+
 
 			{
 				auto cpu_handle = data.m_input_allocation.GetDescriptorHandle();
@@ -248,8 +278,11 @@ namespace wr
 			}
 
 			{
-				auto cpu_handle = data.m_output_allocation.GetDescriptorHandle();
+				auto cpu_handle = data.m_output_allocation.GetDescriptorHandle(0);
 				d3d12::CreateUAVFromSpecificRTV(data.m_output_render_target, cpu_handle, 0, data.m_output_render_target->m_create_info.m_rtv_formats[0]);
+
+				cpu_handle = data.m_output_allocation.GetDescriptorHandle(1);
+				d3d12::CreateSRVFromSpecificRTV(data.m_output_render_target, cpu_handle, 0, data.m_output_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			{
@@ -260,6 +293,14 @@ namespace wr
 			{
 				auto cpu_handle = data.m_out_moments_allocation.GetDescriptorHandle();
 				d3d12::CreateUAVFromSpecificRTV(data.m_out_moments_render_target, cpu_handle, 0, data.m_out_moments_render_target->m_create_info.m_rtv_formats[0]);
+			}
+
+			{
+				auto cpu_handle = data.m_ping_pong_allocation.GetDescriptorHandle(0);
+				d3d12::CreateUAVFromSpecificRTV(data.m_ping_pong_render_target, cpu_handle, 0, data.m_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
+				
+				cpu_handle = data.m_ping_pong_allocation.GetDescriptorHandle(1);
+				d3d12::CreateSRVFromSpecificRTV(data.m_ping_pong_render_target, cpu_handle, 0, data.m_ping_pong_render_target->m_create_info.m_rtv_formats[0]);
 			}
 
 			auto& ps_registry = PipelineRegistry::Get();
@@ -417,16 +458,87 @@ namespace wr
 
 			d3d12::BindComputeConstantBuffer(cmd_list, denoiser_settings, 2, frame_idx);
 
+			for (int i = 0; i < data.m_wavelet_sizes.size(); ++i)
 			{
-				constexpr unsigned int input = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::INPUT);
-				auto cpu_handle = data.m_accum_allocation.GetDescriptorHandle();
-				d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
-			}
+				d3d12::HeapResource* wavelet_size = static_cast<D3D12ConstantBufferHandle*>(data.m_wavelet_sizes[i])->m_native;
+				d3d12::BindComputeConstantBuffer(cmd_list, wavelet_size, 3, frame_idx);
 
-			d3d12::Dispatch(cmd_list,
-				uint32_t(std::ceil(viewport.m_viewport.Width / 16.f)),
-				uint32_t(std::ceil(viewport.m_viewport.Height / 16.f)),
-				1);
+				if (i % 2 == 0)
+				{
+					d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+					{
+						constexpr unsigned int input = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::INPUT);
+						auto cpu_handle = data.m_output_allocation.GetDescriptorHandle(1);
+						d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
+					}
+
+					d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+
+					{
+						constexpr unsigned int output = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::OUTPUT);
+						auto cpu_handle = data.m_ping_pong_allocation.GetDescriptorHandle(0);
+						d3d12::SetShaderUAV(cmd_list, 0, output, cpu_handle);
+					}
+				}
+				else
+				{
+					d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+					{
+						constexpr unsigned int input = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::INPUT);
+						auto cpu_handle = data.m_ping_pong_allocation.GetDescriptorHandle(1);
+						d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
+					}
+
+					d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+
+					{
+						constexpr unsigned int output = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::OUTPUT);
+						auto cpu_handle = data.m_output_allocation.GetDescriptorHandle(0);
+						d3d12::SetShaderUAV(cmd_list, 0, output, cpu_handle);
+					}
+				}
+
+				d3d12::Dispatch(cmd_list,
+					uint32_t(std::ceil(viewport.m_viewport.Width / 16.f)),
+					uint32_t(std::ceil(viewport.m_viewport.Height / 16.f)),
+					1);
+
+				if (i == d3d12::settings::shadow_denoiser_feedback_tap)
+				{
+					if (i % 2 == 0)
+					{
+						d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+						d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
+
+						cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[0], data.m_ping_pong_render_target->m_render_targets[0]);
+
+						d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+						d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					}
+					else
+					{
+						d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+						d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
+
+						cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[0], data.m_output_render_target->m_render_targets[0]);
+
+						d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+						d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+					}
+				}
+			}
+			if (data.m_wavelet_sizes.size() % 2 == 0)
+			{
+				d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
+				d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
+
+				cmd_list->m_native->CopyResource(data.m_output_render_target->m_render_targets[0], data.m_ping_pong_render_target->m_render_targets[0]);
+
+				d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::COPY_DEST, ResourceState::UNORDERED_ACCESS);
+				d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::COPY_SOURCE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+			}
 		}		
 
 		inline void ExecuteReflectionDenoiserTask(RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle)
@@ -447,7 +559,6 @@ namespace wr
 
 			TemporalDenoiser(n_render_system, sg, data, cmd_list);
 
-			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 			d3d12::Transition(cmd_list, data.m_gbuffer_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_SOURCE);
 			d3d12::Transition(cmd_list, data.m_rt_reflection_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_SOURCE);
 			d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
@@ -457,8 +568,6 @@ namespace wr
 			d3d12::Transition(cmd_list, data.m_in_moments_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
 			d3d12::Transition(cmd_list, data.m_out_moments_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 
-
-			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[0], data.m_output_render_target->m_render_targets[0]);
 			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[1], data.m_gbuffer_render_target->m_render_targets[1]);
 			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[2], data.m_gbuffer_render_target->m_render_targets[4]);
 			cmd_list->m_native->CopyResource(data.m_prev_data_render_target->m_render_targets[3], data.m_gbuffer_render_target->m_render_targets[5]);
@@ -466,7 +575,6 @@ namespace wr
 			cmd_list->m_native->CopyResource(data.m_in_history_render_target->m_render_targets[0], data.m_out_history_render_target->m_render_targets[0]);
 			cmd_list->m_native->CopyResource(data.m_in_moments_render_target->m_render_targets[0], data.m_out_moments_render_target->m_render_targets[0]);
 
-			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 			d3d12::Transition(cmd_list, data.m_gbuffer_render_target, ResourceState::COPY_SOURCE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 			d3d12::Transition(cmd_list, data.m_rt_reflection_render_target, ResourceState::COPY_SOURCE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 			d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
@@ -510,6 +618,8 @@ namespace wr
 			d3d12::Destroy(data.m_prev_ray_data_render_target);
 			d3d12::Destroy(data.m_in_history_render_target);
 			d3d12::Destroy(data.m_out_history_render_target);
+			d3d12::Destroy(data.m_in_moments_render_target);
+			d3d12::Destroy(data.m_out_moments_render_target);
 		}
 	} /* internal */
 

@@ -130,7 +130,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		float distance = length(camera_pos - pos);
 		float sampleCountScalar = lerp(1, (1 - distance / far_plane) * roughness, 1);
 		//float sampleCountScalar = 1;
-		roughness = max(roughness, 1e-3);
+		roughness = max(roughness, 1e-2);
 
 		float kernel_size = 8 * 1;
 
@@ -162,7 +162,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 	
 				const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
 				float weight = brdf_weight(V, L, N, roughness) / pdf_neighbor * neighbor_weight;
-				weight = lerp(weight, 1e-5, isnan(weight));
+				weight = isnan(weight) || isinf(weight) ? 1e-5 : weight;
 				result += color * weight;
 				weight_sum += weight;
 			}
@@ -172,6 +172,14 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		if(weight_sum == 0.0)
 		{
 			result3 = reflection_pdf.SampleLevel(nearest_sampler, uv, 0).xyz;
+		}
+
+		
+		if(isnan(weight_sum) == true)
+		{
+			result3 = float3(0, 0, 1);
+			filtered[pix] = float4(result3, 1);
+			return;
 		}
 	}
 	else

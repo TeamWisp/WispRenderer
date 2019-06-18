@@ -559,9 +559,10 @@ namespace wr
 
 		CAMERA_PROPERTIES,
 		DENOISER_SETTINGS,
+		WAVELET_ITERATION,
     };
 
-    constexpr std::array<rs_layout::Entry, 20> reflection_denoiser = {
+    constexpr std::array<rs_layout::Entry, 21> reflection_denoiser = {
 		rs_layout::Entry{(int)ReflectionDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
 		rs_layout::Entry{(int)ReflectionDenoiserE::RAY_RAW, 1, rs_layout::Type::SRV_RANGE},
 		rs_layout::Entry{(int)ReflectionDenoiserE::RAY_DIR, 1, rs_layout::Type::SRV_RANGE},
@@ -585,7 +586,8 @@ namespace wr
 		rs_layout::Entry{(int)ReflectionDenoiserE::OUT_MOMENTS, 1, rs_layout::Type::UAV_RANGE},
 
 		rs_layout::Entry{(int)ReflectionDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-		rs_layout::Entry{(int)ReflectionDenoiserE::DENOISER_SETTINGS, 1, rs_layout::Type::CBV_OR_CONST}
+		rs_layout::Entry{(int)ReflectionDenoiserE::DENOISER_SETTINGS, 1, rs_layout::Type::CBV_OR_CONST},
+		rs_layout::Entry{(int)ReflectionDenoiserE::WAVELET_ITERATION, 1, rs_layout::Type::CBV_OR_CONST},
     };
 
 		enum class RTAOE

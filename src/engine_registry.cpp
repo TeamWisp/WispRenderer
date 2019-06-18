@@ -1115,6 +1115,7 @@ namespace wr
 			ROOT_PARAM_DESC_TABLE(reflection_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
 			ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::CAMERA_PROPERTIES)),
 			ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::DENOISER_SETTINGS)),
+			ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::WAVELET_ITERATION))
 		},
 		.m_samplers = {
 			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER },

@@ -58,13 +58,14 @@ namespace wr
 
 		struct ReflectionDenoiserSettings_CBData
 		{
-			float m_integration_alpha;
+			float m_color_integration_alpha;
+			float m_moments_integration_alpha;
 			float m_variance_clipping_sigma;
 			float m_roughness_reprojection_threshold;
 			int m_max_history_samples;
-			float padding[2];
 			float m_n_phi;
 			float m_z_phi;
+			float m_l_phi;
 		};
 
 		struct DenoiserCamera_CBData
