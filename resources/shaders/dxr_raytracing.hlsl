@@ -216,8 +216,8 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in Attributes attr)
 	}
 
 	nextRand(payload.seed);
-	//payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
-	payload.color = ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
+	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
+	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 	payload.color += emissive;
 }
 

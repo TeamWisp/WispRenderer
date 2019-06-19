@@ -1009,7 +1009,7 @@ namespace wr
 			ROOT_PARAM(GetSRV(params::rt_ao, params::RTAOE::VERTICES)),
 		},
 		.m_samplers = {
-			{ TextureFilter::FILTER_ANISOTROPIC, TextureAddressMode::TAM_WRAP }
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_WRAP }
 		},
 		.m_rtx = true
 	});
