@@ -131,13 +131,13 @@ namespace wr::d3d12
 	void CreateRTVFromCubemap(TextureResource* tex);
 	//void CreateUAVFromTexture(TextureResource* tex, DescHeapCPUHandle& handle, unsigned int mip_slice = 0, unsigned int array_slice = 0);
 	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
-	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void SetShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t root_parameter_index, uint32_t descriptor_offset, d3d12::DescHeapCPUHandle& handle, uint32_t descriptor_count = 1);
 	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
-	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void SetShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t root_parameter_index, uint32_t descriptor_offset, d3d12::DescHeapCPUHandle& handle, uint32_t descriptor_count = 1);
 	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
-	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void SetRTShaderSRV(wr::d3d12::CommandList* cmd_list, uint32_t root_parameter_index, uint32_t descriptor_offset, d3d12::DescHeapCPUHandle& handle, uint32_t descriptor_count = 1);
 	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, TextureResource* tex);
-	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t rootParameterIndex, uint32_t descriptorOffset, d3d12::DescHeapCPUHandle& handle);
+	void SetRTShaderUAV(wr::d3d12::CommandList* cmd_list, uint32_t root_parameter_index, uint32_t descriptor_offset, d3d12::DescHeapCPUHandle& handle, uint32_t descriptor_count = 1);
 	void CopyResource(wr::d3d12::CommandList* cmd_list, TextureResource* src_texture, TextureResource* dst_texture);
 	void Destroy(TextureResource* tex);
 

@@ -65,7 +65,7 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate(3));
 				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
@@ -137,6 +137,10 @@ namespace wr
 				// Bind output, indices and materials, offsets, etc
 				auto out_uav_handle = data.out_output_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
+				out_uav_handle = data.out_output_alloc.GetDescriptorHandle(1);
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle);
+				out_uav_handle = data.out_output_alloc.GetDescriptorHandle(2);
+				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 2, out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::INDICES)), out_scene_ib_handle);
@@ -284,15 +288,13 @@ namespace wr
 								{ "ShadowHitGroup" }, frame_idx);
 				//#endif
 
-				scalar = fg.GetRenderTargetResolutionScale(handle);
-
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list,
 					data.out_hitgroup_shader_table[frame_idx],
 					data.out_miss_shader_table[frame_idx],
 					data.out_raygen_shader_table[frame_idx],
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 
@@ -330,8 +332,8 @@ namespace wr
 			RenderTargetProperties::FinishedResourceState(ResourceState::COPY_SOURCE),
 			RenderTargetProperties::CreateDSVBuffer(false),
 			RenderTargetProperties::DSVFormat(Format::UNKNOWN),
-			RenderTargetProperties::RTVFormats({ Format::R16G16B16A16_FLOAT }),
-			RenderTargetProperties::NumRTVFormats(1),
+			RenderTargetProperties::RTVFormats({ wr::Format::R16G16B16A16_FLOAT, wr::Format::R8_UNORM, wr::Format::R16G16B16A16_FLOAT }),
+			RenderTargetProperties::NumRTVFormats(3),
 			RenderTargetProperties::Clear(true),
 			RenderTargetProperties::ClearDepth(true),
 			RenderTargetProperties::ResolutionScalar(1.0f)
