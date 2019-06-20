@@ -83,7 +83,7 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	return payload.is_hit;
 }
 
-bool TraceAORay_Optimized(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
+bool TraceAORay_SkipClosestHit(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
 {
 	// Define a ray, consisting of origin, direction, and the min-max distance values
 	RayDesc ray;
@@ -133,7 +133,7 @@ void AORaygenEntry()
 		int ao_value = sample_count;
 		for (uint i = 0; i < spp; i++)
 		{
-			ao_value -= TraceAORay_Optimized(0, wpos + normal * bias, getCosHemisphereSample(rand_seed, normal), radius, 0);
+			ao_value -= TraceAORay_SkipClosestHit(0, wpos + normal * bias, getCosHemisphereSample(rand_seed, normal), radius, 0);
 		}
 		output[DispatchRaysIndex().xy].x = pow(ao_value / float(sample_count), power);
 	}
