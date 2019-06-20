@@ -13,22 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
-#include <filesystem>
 
-namespace wr
+#include "wisp.hpp"
+#include "window.hpp"
+#include "scene_graph/scene_graph.hpp"
+#include "imgui/imgui.hpp"
+#include "physics_node.hpp"
+#include "debug_camera.hpp"
+#include "spline_node.hpp"
+#include "../common/scene.hpp"
+
+class AlienScene : public Scene
 {
-	class LogfileHandler {
-	public:
-		LogfileHandler();
-		LogfileHandler(std::filesystem::path& dir_path, std::string& file_name);
-		~LogfileHandler();
+public:
+	AlienScene();
 
-		std::FILE* GetFilePtr();
-		const std::filesystem::path& GetDirPath();
+	void Update(float delta = 0) final;
 
-	private:
-		std::FILE* m_file = nullptr;
-		std::filesystem::path dir_path;
-	};
-}
+protected:
+	void LoadResources() final;
+	void BuildScene(unsigned int width, unsigned int height, void* extra = nullptr) final;
+
+private:
+	// Models
+	wr::Model* m_alien_model;
+
+	// Textures
+	wr::TextureHandle m_skybox;
+
+	// Nodes
+	std::shared_ptr<DebugCamera> m_camera;
+	std::shared_ptr<SplineNode> m_camera_spline_node;
+};

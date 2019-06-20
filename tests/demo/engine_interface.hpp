@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #pragma once
 
 #include <algorithm>
@@ -13,6 +28,7 @@
 #include "scene_emibl.hpp"
 #include "scene_viknell.hpp"
 #include "scene_sponza.hpp"
+#include "scene_alien.hpp"
 #include "imgui_graphics_settings.hpp"
 
 namespace engine
@@ -198,7 +214,7 @@ namespace engine
 
 				ImGui::Separator();
 
-				const char* items[] = { "Viknell", "Emibl", "Sponza" };
+				const char* items[] = { "Viknell", "Emibl", "Sponza", "Alien" };
 
 				ImGui::Combo("##", &selected_scene, items, IM_ARRAYSIZE(items));
 				ImGui::SameLine();
@@ -209,6 +225,7 @@ namespace engine
 						case 0: (*new_scene) = new ViknellScene(); break;
 						case 1: (*new_scene) = new EmiblScene(); break;
 						case 2: (*new_scene) = new SponzaScene(); break;
+						case 3: (*new_scene) = new AlienScene(); break;
 						default: LOGW("Tried to load a scene that is not supported"); break;
 					}
 				}
