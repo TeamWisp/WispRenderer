@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <memory>
 #include <algorithm>
 #include <thread>
@@ -21,6 +36,7 @@
 #include "engine_interface.hpp"
 #include "physics_engine.hpp"
 #include "scene_viknell.hpp"
+#include "scene_alien.hpp"
 #include "scene_emibl.hpp"
 #include "scene_sponza.hpp"
 
@@ -136,22 +152,31 @@ int WispEntry()
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
 	window->SetRenderLoop([&]() {
+		// Find delta
+		float delta = ImGui::GetIO().DeltaTime;
+		bool capture_frame = engine::recorder.ShouldCaptureAndIncrement(delta);
+		if (capture_frame)
+		{
+			fg_manager::Get()->SaveTaskToDisc<wr::PostProcessingData>(engine::recorder.GetNextFilename(".tga"), 0);
+		}
+
 		if (new_scene && new_scene != current_scene)
 		{
-			//delete current_scene;
+			delete current_scene;
 			current_scene = new_scene;
 			current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), &phys_engine);
 			fg_manager::Get()->SetShouldExecute<wr::EquirectToCubemapTaskData>(true);
 			fg_manager::Get()->SetShouldExecute<wr::CubemapConvolutionTaskData>(true);
 		}
 
-		current_scene->Update();
+		current_scene->Update(delta);
 
 #ifdef ENABLE_PHYSICS
-		phys_engine.UpdateSim(ImGui::GetIO().DeltaTime, *scene_graph.get());
+		phys_engine.UpdateSim(delta, *scene_graph.get());
 #endif
 
 		auto texture = render_system->Render(*current_scene->GetSceneGraph(), *fg_manager::Get());
+
 	});
 
 	window->StartRenderLoop();
