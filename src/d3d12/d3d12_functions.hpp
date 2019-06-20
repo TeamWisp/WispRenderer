@@ -310,6 +310,6 @@ namespace wr::d3d12
 			std::uint64_t shader_record_size);
 	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
 	void SetName(AccelerationStructure& acceleration_structure, std::wstring name);
-	void Destroy(ShaderTable* table);
+	void Destroy(ShaderTable*& table);
 
 } /* wr::d3d12 */

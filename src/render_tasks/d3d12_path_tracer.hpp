@@ -155,6 +155,22 @@ namespace wr
 				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
+
+
+				// Camera constant buffer
+				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
+
+				// Pipeline State Object
+				auto& rt_registry = RTPipelineRegistry::Get();
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(as_build_data.out_using_transparency
+																							? state_objects::path_tracer_state_object_transparency
+																							: state_objects::path_tracer_state_object));
+
+				// Create Shader Tables
+				for (int frame_idx = 0; frame_idx < d3d12::settings::num_back_buffers; ++frame_idx)
+				{
+					CreateShaderTables(device, data, frame_idx);
+				}
 			}
 
 			// Versioning
@@ -177,21 +193,6 @@ namespace wr
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, emissive_handle, 2, deferred_main_rt->m_create_info.m_rtv_formats[2]);
 
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
-			}
-
-			if (!resize)
-			{
-				// Camera constant buffer
-				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
-
-				// Pipeline State Object
-				auto& rt_registry = RTPipelineRegistry::Get();
-				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object_transparency));
-
-				// Create Shader Tables
-				CreateShaderTables(device, data, 0);
-				CreateShaderTables(device, data, 1);
-				CreateShaderTables(device, data, 2);
 			}
 
 		}
@@ -223,11 +224,15 @@ namespace wr
 
 			if (settings.m_runtime.m_allow_transparency)
 			{
-				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object_transparency));
+				// Pipeline State Object
+				auto& rt_registry = RTPipelineRegistry::Get();
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(as_build_data.out_using_transparency
+																							? state_objects::path_tracer_state_object_transparency
+																							: state_objects::path_tracer_state_object));
 			}
 			else
 			{
-				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object_no_transparency));
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object));
 			}
 
 			// Rebuild acceleratrion structure a 2e time for fallback

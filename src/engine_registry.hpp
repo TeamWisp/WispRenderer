@@ -817,11 +817,13 @@ namespace wr
 	{
 		WISPRENDERER_EXPORT static RegistryHandle state_object;
 		WISPRENDERER_EXPORT static RegistryHandle rt_ao_state_object;
-		WISPRENDERER_EXPORT static RegistryHandle path_tracing_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_ao_state_object_transparency;
+		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object;
 		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object_transparency;
-		WISPRENDERER_EXPORT static RegistryHandle path_tracer_state_object_no_transparency;
 		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_shadow_state_object_transparency;
 		WISPRENDERER_EXPORT static RegistryHandle rt_reflection_state_object;
+		WISPRENDERER_EXPORT static RegistryHandle rt_reflection_state_object_transparency;
 	};
 
 } /* wr */

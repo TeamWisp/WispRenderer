@@ -86,17 +86,23 @@ namespace wr::imgui::window
 
 			ImGui::Begin("Acceleration Structure Settings", &asbuild_settings_open);
 
-			ImGui::Checkbox("Disable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
+			static bool rebuild_as = false;
+			static bool allow_transparency = false;
 
-			ImGui::Checkbox("Allow transparency", &as_build_user_settings.m_runtime.m_allow_transparency);
+			ImGui::Checkbox("Disable rebuilding", &rebuild_as);
+
+			ImGui::Checkbox("Allow transparency", &allow_transparency);
 
 			if(ImGui::Button("Rebuild BLAS"))
 			{
 				as_build_user_settings.m_runtime.m_rebuild_bot_level = true;
+				as_build_user_settings.m_runtime.m_rebuild_as = rebuild_as;
+				as_build_user_settings.m_runtime.m_allow_transparency = allow_transparency;
+
+				frame_graph->UpdateSettings<ASBuildData>(as_build_user_settings);
 			}
 
 			ImGui::End();
-			frame_graph->UpdateSettings<ASBuildData>(as_build_user_settings);
 		}
 
 		if (frame_graph->HasTask<RTShadowData>() && shadow_settings_open)

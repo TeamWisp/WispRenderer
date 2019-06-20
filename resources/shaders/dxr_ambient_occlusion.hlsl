@@ -25,7 +25,7 @@ typedef BuiltInTriangleIntersectionAttributes Attributes;
 struct AOHitInfo
 {
   float is_hit;
-  float thisvariablesomehowmakeshybridrenderingwork_killme;
+  float padding;
 };
 
 cbuffer CBData : register(b0)
@@ -68,8 +68,68 @@ bool TraceAORay(uint idx, float3 origin, float3 direction, float far, unsigned i
 	return payload.is_hit;
 }
 
+bool TraceAORay_Optimized(uint idx, float3 origin, float3 direction, float far, unsigned int depth)
+{
+	// Define a ray, consisting of origin, direction, and the min-max distance values
+	RayDesc ray;
+	ray.Origin = origin;
+	ray.Direction = direction;
+	ray.TMin = 0.f;
+	ray.TMax = far;
+
+	AOHitInfo payload = { 1.0f, 0.0f };
+
+	// Trace the ray
+	TraceRay(
+		Scene,
+		RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+		~0, // InstanceInclusionMask
+		0, // RayContributionToHitGroupIndex
+		0, // MultiplierForGeometryContributionToHitGroupIndex
+		0, // miss shader index is set to idx but can probably be anything.
+		ray,
+		payload);
+
+	return payload.is_hit;
+}
+
 [shader("raygeneration")]
 void AORaygenEntry()
+{
+	// Texture UV coordinates [0, 1]
+	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+
+	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
+
+	// Screen coordinates [0, resolution] (inverted y)
+	int2 screen_co = DispatchRaysIndex().xy;
+
+	float3 normal = gbuffer_normal[screen_co].xyz;
+	float depth = gbuffer_depth[screen_co].x;
+	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
+
+	float3 camera_pos = float3(inv_view[0][3], inv_view[1][3], inv_view[2][3]);
+	float cam_distance = length(wpos - camera_pos);
+	if (cam_distance < max_distance)
+	{
+		//SPP decreases the closer a pixel is to the max distance
+		//Total is always calculated using the full sample count to have further pixels less occluded
+		int spp = min(sample_count, round(sample_count * ((max_distance - cam_distance) / max_distance)));
+		int ao_value = sample_count;
+		for (uint i = 0; i < spp; i++)
+		{
+			ao_value -= TraceAORay_Optimized(0, wpos + normal * bias, getCosHemisphereSample(rand_seed, normal), radius, 0);
+		}
+		output[DispatchRaysIndex().xy].x = pow(ao_value / float(sample_count), power);
+	}
+	else
+	{
+		output[DispatchRaysIndex().xy].x = 1.f;
+	}
+}
+
+[shader("raygeneration")]
+void AORaygenEntry_Transparency()
 {
 	// Texture UV coordinates [0, 1]
 	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
@@ -101,7 +161,6 @@ void AORaygenEntry()
 	{
 		output[DispatchRaysIndex().xy].x = 1.f;
 	}
-
 }
 
 [shader("closesthit")]

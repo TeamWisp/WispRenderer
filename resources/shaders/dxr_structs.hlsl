@@ -75,7 +75,7 @@ struct ReflectionHitInfo
 struct ShadowHitInfo
 {
 	float is_hit;
-	float ray_power;
+	float padding;
 };
 
 struct PathTracingHitInfo

@@ -32,6 +32,7 @@ SamplerState point_sampler : register(s1);
 typedef BuiltInTriangleIntersectionAttributes Attributes;
 
 #include "dxr_pathtracer_functions.hlsl"
+#include "dxr_shadow_entries.hlsl"
 
 cbuffer CameraProperties : register(b0)
 {
@@ -219,18 +220,6 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in Attributes attr)
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
 	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 	payload.color += emissive;
-}
-
-[shader("closesthit")]
-void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
-{
-	hit.ray_power = 0.1f;
-}
-
-[shader("miss")]
-void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
-{
-	hit.ray_power = 1.0f;
 }
 
 #endif //__DXR_RAYTRACING_HLSL__

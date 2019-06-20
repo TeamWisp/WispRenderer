@@ -1014,11 +1014,11 @@ namespace wr
 		.m_rtx = true
 	});
 
-	StateObjectDescription::LibraryDesc rt_ao_so_library = []()
+	StateObjectDescription::LibraryDesc rt_ao_so_transparency_library = []()
 	{
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_ao_lib;
-		lib.exports.push_back(L"AORaygenEntry");
+		lib.exports.push_back(L"AORaygenEntry_Transparency");
 		lib.exports.push_back(L"AOClosestHitEntry");
 		lib.exports.push_back(L"AOMissEntry");
 		lib.exports.push_back(L"AOAnyHitEntry");
@@ -1026,10 +1026,30 @@ namespace wr
 		return lib;
 	}();
 
+	StateObjectDescription::LibraryDesc rt_ao_so_no_transparency_library = []()
+	{
+		StateObjectDescription::LibraryDesc lib;
+		lib.shader_handle = shaders::rt_ao_lib;
+		lib.exports.push_back(L"AORaygenEntry");
+		lib.exports.push_back(L"AOMissEntry");
+		return lib;
+	}();
+
 	REGISTER(state_objects::rt_ao_state_object, RTPipelineRegistry)(
 	{
 		.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
-		.library_desc = rt_ao_so_library,
+		.library_desc = rt_ao_so_no_transparency_library,
+		.max_payload_size = (sizeof(float) * 2),
+		.max_attributes_size = sizeof(float) * 4,
+		.max_recursion_depth = 1,
+		.global_root_signature = root_signatures::rt_ao_global,
+		.local_root_signatures = {},
+	});
+
+	REGISTER(state_objects::rt_ao_state_object_transparency, RTPipelineRegistry)(
+	{
+		.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
+		.library_desc = rt_ao_so_transparency_library,
 		.max_payload_size =  (sizeof(float) * 2), 
 		.max_attributes_size = sizeof(float) * 4,
 		.max_recursion_depth = 1,
@@ -1105,6 +1125,17 @@ namespace wr
 		return lib;
 	}();
 
+	REGISTER(state_objects::path_tracer_state_object, RTPipelineRegistry)(
+	{
+		.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
+		.library_desc = path_tracer_so_library_no_transparency,
+		.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+		.max_attributes_size = sizeof(float) * 4,
+		.max_recursion_depth = 6,
+		.global_root_signature = root_signatures::path_tracing_global,
+		.local_root_signatures = {},
+	});
+
 	REGISTER(state_objects::path_tracer_state_object_transparency, RTPipelineRegistry)(
 	{
 		.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
@@ -1116,17 +1147,6 @@ namespace wr
 		.local_root_signatures = {},
 	});
 
-	REGISTER(state_objects::path_tracer_state_object_no_transparency, RTPipelineRegistry)(
-		{
-			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
-			.library_desc = path_tracer_so_library_no_transparency,
-			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
-			.max_attributes_size = sizeof(float) * 4,
-			.max_recursion_depth = 6,
-			.global_root_signature = root_signatures::path_tracing_global,
-			.local_root_signatures = {},
-		});
-
 	/* ### Shadow Raytracing ### */
 	REGISTER(shaders::rt_shadow_lib, ShaderRegistry)({
 		.path = "resources/shaders/dxr_shadow_main.hlsl",
@@ -1135,7 +1155,19 @@ namespace wr
 		.defines = {}
 		});
 	
-	StateObjectDescription::LibraryDesc rt_shadow_so_library = []()
+	StateObjectDescription::LibraryDesc rt_shadow_so_library_no_transparency = []()
+	{
+		StateObjectDescription::LibraryDesc lib;
+		lib.shader_handle = shaders::rt_shadow_lib;
+		lib.exports.push_back(L"ShadowRaygenEntry");
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
+
+		return lib;
+	}();
+
+	StateObjectDescription::LibraryDesc rt_shadow_so_library_transparency = []()
 	{
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_shadow_lib;
@@ -1147,10 +1179,23 @@ namespace wr
 
 		return lib;
 	}();
+
+
 	REGISTER(state_objects::rt_shadow_state_object, RTPipelineRegistry)(
 		{
 			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
-			.library_desc = rt_shadow_so_library,
+			.library_desc = rt_shadow_so_library_no_transparency,
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_attributes_size = sizeof(float) * 4,
+			.max_recursion_depth = 1,
+			.global_root_signature = root_signatures::rt_hybrid_global,
+			.local_root_signatures = {}
+		});
+
+	REGISTER(state_objects::rt_shadow_state_object_transparency, RTPipelineRegistry)(
+		{
+			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
+			.library_desc = rt_shadow_so_library_transparency,
 			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
 			.max_attributes_size = sizeof(float) * 4,
 			.max_recursion_depth = 1,
@@ -1166,7 +1211,22 @@ namespace wr
 		.defines = {}
 		});
 
-	StateObjectDescription::LibraryDesc rt_reflection_so_library = []()
+	StateObjectDescription::LibraryDesc rt_reflection_so_library_no_transparency = []()
+	{
+		StateObjectDescription::LibraryDesc lib;
+		lib.shader_handle = shaders::rt_reflection_lib;
+		lib.exports.push_back(L"ReflectionRaygenEntry");
+		lib.exports.push_back(L"ReflectionHit");
+		lib.exports.push_back(L"ReflectionMiss");
+		lib.exports.push_back(L"ShadowClosestHitEntry");
+		lib.exports.push_back(L"ShadowMissEntry");
+		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit" });
+		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry" });
+
+		return lib;
+	}();
+
+	StateObjectDescription::LibraryDesc rt_reflection_so_library_transparency = []()
 	{
 		StateObjectDescription::LibraryDesc lib;
 		lib.shader_handle = shaders::rt_reflection_lib;
@@ -1180,12 +1240,25 @@ namespace wr
 		lib.m_hit_groups.push_back({ L"ReflectionHitGroup", L"ReflectionHit", L"ReflectionAnyHit" });
 		lib.m_hit_groups.push_back({ L"ShadowHitGroup", L"ShadowClosestHitEntry", L"ShadowAnyHitEntry" });
 
+
 		return lib;
 	}();
+
 	REGISTER(state_objects::rt_reflection_state_object, RTPipelineRegistry)(
 		{
 			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
-			.library_desc = rt_reflection_so_library,
+			.library_desc = rt_reflection_so_library_no_transparency,
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_attributes_size = sizeof(float) * 4,
+			.max_recursion_depth = 3,
+			.global_root_signature = root_signatures::rt_hybrid_global,
+			.local_root_signatures = {}
+		});
+
+	REGISTER(state_objects::rt_reflection_state_object_transparency, RTPipelineRegistry)(
+		{
+			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
+			.library_desc = rt_reflection_so_library_transparency,
 			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
 			.max_attributes_size = sizeof(float) * 4,
 			.max_recursion_depth = 3,

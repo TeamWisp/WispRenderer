@@ -12,7 +12,6 @@
 [shader("closesthit")]
 void ShadowClosestHitEntry(inout ShadowHitInfo hit, Attributes bary)
 {
-	hit.ray_power = 0.1f;
 	hit.is_hit = true;
 }
 
@@ -71,16 +70,9 @@ void ShadowAnyHitEntry(inout ShadowHitInfo hit, Attributes attr)
 		{
 			IgnoreHit();
 		}
-
-		hit.ray_power -= (1.0f / 3.0f);
-
-		if (hit.ray_power <= 0.02f)
-		{
-			AcceptHitAndEndSearch();
-		}
 		else
 		{
-			IgnoreHit();
+			AcceptHitAndEndSearch();
 		}
 	}
 	else

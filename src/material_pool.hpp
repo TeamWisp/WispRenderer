@@ -95,11 +95,6 @@ namespace wr
 		}
 
 		template<MaterialConstant type>
-		void SetConstant(typename std::enable_if<uint8_t(type) == 0, bool>::type x) {
-			m_material_data.m_constant_data[uint32_t(type) >> 16] = x;
-		}
-
-		template<MaterialConstant type>
 		void SetConstant(const typename std::enable_if<uint16_t(type) != 0, std::array<float, 3>>::type& val) {
 			float* arr = m_material_data.m_constant_data;
 			uint32_t i = uint32_t(type) >> 16;
