@@ -145,7 +145,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<DownScaleData>(handle);
 				delete data.out_allocator;
-				data.~DownScaleData();
 			}
 		}
 

@@ -97,11 +97,6 @@ namespace wr
 
 		inline void DestroyAccumulation(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if(!resize)
-			{
-				auto& data = fg.GetData<AccumulationData>(handle);
-				data.~AccumulationData();
-			}
 		}
 
 	} /* internal */

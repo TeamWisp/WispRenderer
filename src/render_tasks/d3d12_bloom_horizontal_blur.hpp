@@ -156,7 +156,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<BloomBlurHorizontalData>(handle);
 				delete data.out_allocator;
-				data.~BloomBlurHorizontalData();
 			}
 		}
 

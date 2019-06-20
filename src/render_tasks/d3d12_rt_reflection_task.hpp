@@ -268,11 +268,6 @@ namespace wr
 
 		inline void DestroyRTReflectionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<RTReflectionData>(handle);
-				data.~RTReflectionData();
-			}
 		}
 
 	} /* internal */

@@ -588,11 +588,12 @@ namespace wr
 			d3d12::Destroy(data.m_out_moments_render_target);
 			d3d12::Destroy(data.m_ping_pong_render_target);
 
-			if (!resize) {
-				for (auto buffer : data.m_denoiser_settings_buffer) {
+			if (!resize)
+			{
+				for (auto buffer : data.m_denoiser_settings_buffer)
+				{
 					data.m_constant_buffer_pool->Destroy(buffer);
 				}
-				data.~ShadowDenoiserData();
 			}
 		}
 

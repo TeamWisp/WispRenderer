@@ -356,11 +356,6 @@ namespace wr
 
 		void DestroyDeferredCompositionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<DeferredCompositionTaskData>(handle);
-				data.~DeferredCompositionTaskData();
-			}
 		}
 
 	}

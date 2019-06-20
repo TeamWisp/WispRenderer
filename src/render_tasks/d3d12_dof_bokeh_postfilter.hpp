@@ -138,7 +138,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<DoFBokehPostFilterData>(handle);
 				delete data.out_allocator;
-				data.~DoFBokehPostFilterData();
 			}
 		}
 

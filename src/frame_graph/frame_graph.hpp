@@ -334,9 +334,9 @@ namespace wr
 			}
 
 			// Make sure we free the data objects we allocated.
-			for (void *data : m_data)
+			for (auto& data : m_data)
 			{
-				free(data);
+				data.reset();
 			}
 
 			for (auto& cmd_list : m_cmd_lists)
@@ -422,7 +422,7 @@ namespace wr
 			static_assert(!std::is_pointer<T>::value,
 				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
 
-			return *static_cast<T*>(m_data[handle]);
+			return *static_cast<T*>(m_data[handle].get());
 		}
 
 		/*! Get the data of a previously ran task. (Constant) */
@@ -447,7 +447,7 @@ namespace wr
 				{
 					WaitForCompletion(i);
 
-					return *static_cast<T*>(m_data[i]);
+					return *static_cast<T*>(m_data[i].get());
 				}
 			}
 
@@ -644,9 +644,7 @@ namespace wr
 			m_types.emplace_back(desc.m_type);
 			m_rt_properties.emplace_back(desc.m_properties);
 
-			void *data = malloc(sizeof(T));
-			m_data.emplace_back(data);
-			::new (data) T();		//TODO: This destructor can't be called, because of how it is stored in m_data
+			m_data.emplace_back(std::make_shared<T>());
 
 			m_data_type_info.emplace_back(typeid(T));
 
@@ -1006,7 +1004,7 @@ namespace wr
 		std::vector<CommandList*> m_cmd_lists;
 		std::vector<RenderTarget*> m_render_targets;
 		/*! Task data and the type information of the original data structure. */
-		std::vector<void*> m_data;
+		std::vector<std::shared_ptr<void>> m_data;
 		std::vector<std::reference_wrapper<const std::type_info>> m_data_type_info;
 		/*! Task settings that can be passed to the frame graph from outside the task. */
 		std::vector<std::optional<std::any>> m_settings;

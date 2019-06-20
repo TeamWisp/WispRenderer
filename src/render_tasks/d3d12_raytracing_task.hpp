@@ -334,11 +334,6 @@ namespace wr
 
 		inline void DestroyRaytracingTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<RaytracingData>(handle);
-				data.~RaytracingData();
-			}
 		}
 
 	} /* internal */

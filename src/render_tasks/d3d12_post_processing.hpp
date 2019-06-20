@@ -108,11 +108,6 @@ namespace wr
 
 		inline void DestroyPostProcessing(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto &data = fg.GetData<PostProcessingData>(handle);
-				data.~PostProcessingData();
-			}
 		}
 
 	} /* internal */

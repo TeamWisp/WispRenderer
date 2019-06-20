@@ -108,7 +108,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<DoFDilateFlattenData>(handle);
 				delete data.out_allocator;
-				data.~DoFDilateFlattenData();
 			}
 		}
 	} /* internal */

@@ -189,7 +189,6 @@ namespace wr
 				auto& data = fg.GetData<DoFBokehData>(handle);
 				data.camera_cb_pool->Destroy(data.cb_handle);
 				delete data.out_allocator;
-				data.~DoFBokehData();
 			}
 		}
 

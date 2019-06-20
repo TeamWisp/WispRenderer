@@ -405,11 +405,6 @@ namespace wr
 
 		inline void DestroyPathTracerTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<PathTracerData>(handle);
-				data.~PathTracerData();
-			}
 		}
 
 

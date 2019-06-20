@@ -285,11 +285,6 @@ namespace wr
 
 		inline void DestroyRTShadowTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<RTShadowData>(handle);
-				data.~RTShadowData();
-			}
 		}
 
 	} /* internal */

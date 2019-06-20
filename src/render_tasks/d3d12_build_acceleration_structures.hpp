@@ -514,11 +514,6 @@ namespace wr
 
 		inline void DestroyBuildASTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<ASBuildData>(handle);
-				data.~ASBuildData();
-			}
 		}
 
 	} /* internal */

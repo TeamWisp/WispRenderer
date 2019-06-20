@@ -244,11 +244,6 @@ namespace wr
 
 		inline void DestroyAOTask(FrameGraph& fg, RenderTaskHandle handle, bool resize) 
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<RTAOData>(handle);
-				data.~RTAOData();
-			}
 		}
 	}
 	inline void AddRTAOTask(FrameGraph& fg, d3d12::Device* device)

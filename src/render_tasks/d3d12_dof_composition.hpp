@@ -165,7 +165,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<DoFCompositionData>(handle);
 				delete data.out_allocator;
-				data.~DoFCompositionData();
 			}
 		}
 
