@@ -405,10 +405,21 @@ namespace wr
 
 		inline void DestroyPathTracerTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
+			PathTracerData& data = fg.GetData<PathTracerData>(handle);
+
+			for (d3d12::ShaderTable* shader : data.out_raygen_shader_table)
 			{
-				auto& data = fg.GetData<PathTracerData>(handle);
-				data.~PathTracerData();
+				delete shader;
+			}
+
+			for (d3d12::ShaderTable* shader : data.out_miss_shader_table)
+			{
+				delete shader;
+			}
+
+			for (d3d12::ShaderTable* shader : data.out_hitgroup_shader_table)
+			{
+				delete shader;
 			}
 		}
 

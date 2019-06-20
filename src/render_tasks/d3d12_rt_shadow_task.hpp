@@ -285,10 +285,21 @@ namespace wr
 
 		inline void DestroyRTShadowTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
+			RTShadowData& data = fg.GetData<RTShadowData>(handle);
+
+			for (d3d12::ShaderTable* shader : data.base_data.out_raygen_shader_table)
 			{
-				auto& data = fg.GetData<RTShadowData>(handle);
-				data.~RTShadowData();
+				delete shader;
+			}
+
+			for (d3d12::ShaderTable* shader : data.base_data.out_miss_shader_table)
+			{
+				delete shader;
+			}
+
+			for (d3d12::ShaderTable* shader : data.base_data.out_hitgroup_shader_table)
+			{
+				delete shader;
 			}
 		}
 
