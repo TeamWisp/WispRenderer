@@ -69,7 +69,7 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		ray,
 		payload);
 
-	dir_t = float4(direction, payload.hitT);
+	dir_t = float4(direction, payload.hit_t);
 	return payload.color;
 }
 

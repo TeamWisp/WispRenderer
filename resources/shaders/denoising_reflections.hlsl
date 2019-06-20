@@ -20,7 +20,7 @@
 
 Texture2D input_texture : register(t0);
 Texture2D ray_raw_texture : register(t1);
-Texture2D dir_hitT_texture : register(t2);
+Texture2D dir_hit_t_texture : register(t2);
 Texture2D albedo_roughness_texture : register(t3);
 Texture2D normal_metallic_texture : register(t4);
 Texture2D motion_texture : register(t5); // xy: motion, z: fwidth position, w: fwidth normal

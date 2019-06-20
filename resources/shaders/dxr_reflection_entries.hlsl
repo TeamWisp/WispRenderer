@@ -139,7 +139,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 
 	// Output the final reflections here
 	payload.color = ambient + lighting;
-	payload.hitT = RayTCurrent();
+	payload.hit_t = RayTCurrent();
 }
 
 //Reflection skybox
@@ -147,7 +147,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
-	payload.hitT = RayTCurrent();
+	payload.hit_t = RayTCurrent();
 }
 
 #endif //__DXR_REFLECTION_ENTRIES_HLSL__

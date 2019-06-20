@@ -30,7 +30,7 @@ cbuffer CameraProperties : register(b0)
 
 RWTexture2D<float4> filtered : register(u0);
 Texture2D reflection_pdf : register(t0);
-Texture2D dir_hitT : register(t1);
+Texture2D dir_hit_t : register(t1);
 Texture2D albedo_roughness : register(t2);
 Texture2D normal_metallic : register(t3);
 Texture2D depth_buffer : register(t4);
@@ -160,7 +160,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 			const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
 			const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
 
-			const float4 hitT = dir_hitT.SampleLevel(nearest_sampler, neighbor_uv, 0);
+			const float4 hit_t = dir_hit_t.SampleLevel(nearest_sampler, neighbor_uv, 0);
 			//const float3 hit_pos = hitT.xyz * hitT.w + pos_neighbor;
 
 			const float3 V_neighbor = normalize(camera_pos - pos_neighbor);
@@ -169,7 +169,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 			if(reflection_pdf_neighbor.w>0.0)
 			{
 				const float3 color = clamp(reflection_pdf_neighbor.xyz, 0, 1);
-				const float3 L = hitT.xyz;
+				const float3 L = hit_t.xyz;
 				const float pdf_neighbor = max(reflection_pdf_neighbor.w, 1e-5);
 				const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
 	
