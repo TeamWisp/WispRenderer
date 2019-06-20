@@ -365,7 +365,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	const float variance = ComputeVarianceCenter(int2(screen_coord.xy));
 
-	if(isnan(variance)==true)
+	if(isnan(variance))
 	{
 		output_texture[screen_coord] = float4(0.0f, 1.0f, 0.0f, 0.0f);
 		return;
@@ -425,7 +425,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 	}
 
-	output_texture[floor(screen_coord)] = direct_center;sum_direct / sum_weights;
+	output_texture[screen_coord] = sum_direct / sum_weights;
 }
 
 #endif

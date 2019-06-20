@@ -143,7 +143,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		float sampleCountScalar = lerp(1.f, (1.f - distance / far_plane) * roughness, 1);
 		roughness = max(roughness, 1e-2);
 
-		float kernel_size = 10.f;
+		float kernel_size = 8.f;
 
 		for (uint i = 0; i < max(ceil(kernel_size), 1); ++i) {
 
@@ -171,6 +171,7 @@ void main(int3 pix3 : SV_DispatchThreadID)
 				//Calculate weight and weight sum
 	
 				const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
+				
 				float weight = (brdf_weight(-V, L, N, roughness) / pdf_neighbor) * neighbor_weight;
 				weight = isnan(weight) || isinf(weight) ? 0 : weight;
 				result += color * weight;
