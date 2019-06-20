@@ -23,9 +23,9 @@ namespace wr
 	{
 		d3d12::AccelerationStructure out_tlas;
 
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { };
 		d3d12::StateObject* out_state_object = nullptr;
 		d3d12::RootSignature* out_root_signature = nullptr;
 		D3D12ConstantBufferHandle* out_cb_camera_handle = nullptr;
@@ -136,15 +136,13 @@ namespace wr
 
 				data.tlas_requires_init = true;
 
-				CreateShaderTables(device, data, 0);
-				CreateShaderTables(device, data, 1);
-				CreateShaderTables(device, data, 2);
+				for(int i = 0; i < d3d12::settings::num_back_buffers; ++i)
+					CreateShaderTables(device, data, i);
 			}
 
-			for (auto frame_idx = 0; frame_idx < 1; frame_idx++)
 			{
 				d3d12::DescHeapCPUHandle desc_handle = data.out_uav_from_rtv.GetDescriptorHandle();
-				d3d12::CreateUAVFromSpecificRTV(n_render_target, desc_handle, frame_idx, n_render_target->m_create_info.m_rtv_formats[frame_idx]);
+				d3d12::CreateUAVFromSpecificRTV(n_render_target, desc_handle, 0, n_render_target->m_create_info.m_rtv_formats[0]);
 			}
 		}
 

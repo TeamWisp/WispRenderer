@@ -22,9 +22,9 @@ namespace wr
 		d3d12::AccelerationStructure out_tlas = {};
 
 		// Shader tables
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { nullptr, nullptr, nullptr };
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { nullptr, nullptr, nullptr };
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { nullptr, nullptr, nullptr };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_raygen_shader_table = { };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_miss_shader_table = { };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> out_hitgroup_shader_table = { };
 
 		// Pipeline objects
 		d3d12::StateObject* out_state_object = nullptr;
@@ -179,9 +179,8 @@ namespace wr
 				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object));
 
 				// Create Shader Tables
-				CreateShaderTables(device, data, 0);
-				CreateShaderTables(device, data, 1);
-				CreateShaderTables(device, data, 2);
+				for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
+					CreateShaderTables(device, data, i);
 			}
 
 		}
