@@ -17,7 +17,7 @@
 
 #include "scene_sponza.hpp"
 
-static constexpr bool spawn_physics_balls = true;
+static constexpr bool spawn_physics_balls = false;
 static constexpr int num_materials = 30;
 static constexpr int num_balls = 600;
 
