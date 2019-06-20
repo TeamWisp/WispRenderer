@@ -202,7 +202,13 @@ namespace wr
 		desc.m_execute_func = [](RenderSystem & rs, FrameGraph & fg, SceneGraph & sg, RenderTaskHandle handle) {
 			internal::ExecuteSpatialReconstructionTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph & fg, RenderTaskHandle handle, bool resize) { };
+		desc.m_destroy_func = [](FrameGraph & fg, RenderTaskHandle handle, bool resize) { 
+			if (!resize)
+			{
+				fg.GetData<SpatialReconstructionData>(handle).~SpatialReconstructionData();
+			}
+		};
+
 		desc.m_properties = rt_properties;
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
