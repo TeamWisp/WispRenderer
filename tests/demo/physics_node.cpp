@@ -15,9 +15,9 @@ void PhysicsMeshNode::SetMass(float mass)
 
 void PhysicsMeshNode::SetRestitution(float value)
 {
-	if (m_rigid_bodys.has_value())
+	if (m_rigid_bodies.has_value())
 	{
-		for (auto& body : m_rigid_bodys.value())
+		for (auto& body : m_rigid_bodies.value())
 		{
 			body->setRestitution(value);
 		}
@@ -48,7 +48,7 @@ void PhysicsMeshNode::SetupSimpleSphereColl(phys::PhysicsEngine& phys_engine, fl
 
 void PhysicsMeshNode::SetupConvex(phys::PhysicsEngine& phys_engine, wr::ModelData* model)
 {
-	m_rigid_bodys = std::vector<btRigidBody*>();
+	m_rigid_bodies = std::vector<btRigidBody*>();
 	m_shapes = std::vector<btCollisionShape*>();
 
 	auto hulls = phys_engine.CreateConvexShape(model);
@@ -60,15 +60,15 @@ void PhysicsMeshNode::SetupConvex(phys::PhysicsEngine& phys_engine, wr::ModelDat
 		btTransform transform;
 		transform.setIdentity();
 		auto body = phys_engine.CreateRigidBody(0.f, transform, hull);
-		m_rigid_bodys->push_back(body);
+		m_rigid_bodies->push_back(body);
 	}
 }
 
 void PhysicsMeshNode::SetPosition(DirectX::XMVECTOR position)
 {
-	if (m_rigid_bodys.has_value())
+	if (m_rigid_bodies.has_value())
 	{
-		for (auto& body : m_rigid_bodys.value())
+		for (auto& body : m_rigid_bodies.value())
 		{
 			auto& world_trans = body->getWorldTransform();
 			world_trans.setOrigin(phys::util::DXV3toBV3(position));
@@ -87,9 +87,9 @@ void PhysicsMeshNode::SetPosition(DirectX::XMVECTOR position)
 void PhysicsMeshNode::SetRotation(DirectX::XMVECTOR roll_pitch_yaw)
 {
 	auto quat = DirectX::XMQuaternionRotationRollPitchYawFromVector(roll_pitch_yaw);
-	if (m_rigid_bodys.has_value())
+	if (m_rigid_bodies.has_value())
 	{
-		for (auto& body : m_rigid_bodys.value())
+		for (auto& body : m_rigid_bodies.value())
 		{
 			auto& world_trans = body->getWorldTransform();
 			world_trans.setRotation(btQuaternion(quat.m128_f32[0], quat.m128_f32[1], quat.m128_f32[2], quat.m128_f32[3]));
@@ -107,7 +107,7 @@ void PhysicsMeshNode::SetRotation(DirectX::XMVECTOR roll_pitch_yaw)
 
 void PhysicsMeshNode::SetScale(DirectX::XMVECTOR scale)
 {
-	if (m_rigid_bodys.has_value())
+	if (m_rigid_bodies.has_value())
 	{
 		for (auto& shape : m_shapes.value())
 		{

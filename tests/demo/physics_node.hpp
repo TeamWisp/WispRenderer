@@ -18,7 +18,7 @@ struct PhysicsMeshNode : public wr::MeshNode
 	btRigidBody* m_rigid_body = nullptr;
 
 	std::optional<std::vector<btCollisionShape*>> m_shapes;
-	std::optional<std::vector<btRigidBody*>> m_rigid_bodys;
+	std::optional<std::vector<btRigidBody*>> m_rigid_bodies;
 
 	float m_mass = 0;
 
