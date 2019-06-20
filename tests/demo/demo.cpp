@@ -162,6 +162,7 @@ int WispEntry()
 
 		if (new_scene && new_scene != current_scene)
 		{
+			render_system->WaitForAllPreviousWork();
 			delete current_scene;
 			current_scene = new_scene;
 			current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), &phys_engine);
