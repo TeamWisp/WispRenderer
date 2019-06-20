@@ -54,20 +54,27 @@ namespace phys
 		return shape;
 	}
 
-	std::vector<btConvexHullShape*> PhysicsEngine::CreateConvexShape(wr::ModelData* model)
+	std::vector<btBvhTriangleMeshShape*> PhysicsEngine::CreateConvexShape(wr::ModelData* model)
 	{
-		std::vector<btConvexHullShape*> hulls;
+		std::vector<btBvhTriangleMeshShape*> hulls;
 
 		for (auto& mesh_data : model->m_meshes)
 		{
-			btConvexHullShape* shape = new btConvexHullShape();
+			btTriangleIndexVertexArray* va = new btTriangleIndexVertexArray(mesh_data->m_indices.size() / 3,
+				(int*)mesh_data->m_indices.data(),
+				3 * sizeof(std::uint32_t),
+				mesh_data->m_positions.size(), (btScalar*)mesh_data->m_positions.data(), sizeof(DirectX::XMFLOAT3));
+			btBvhTriangleMeshShape* shape = new btBvhTriangleMeshShape(va, true);
+			/*btConvexHullShape* shape = new btConvexHullShape();
+
+
 			for (auto& idx : mesh_data->m_indices)
 			{
 
 				auto pos = mesh_data->m_positions[idx];
 				shape->addPoint(btVector3(pos.x, pos.y, pos.z), false);
 			}
-			shape->recalcLocalAabb();
+			shape->recalcLocalAabb();*/
 
 			collision_shapes.push_back(shape);
 			hulls.push_back(shape);

@@ -44,8 +44,8 @@
 #include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-using DefaultScene = ViknellScene;
-//#define ENABLE_PHYSICS
+using DefaultScene = SponzaScene;
+#define ENABLE_PHYSICS
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 Scene* current_scene = nullptr;
@@ -151,7 +151,13 @@ int WispEntry()
 	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
-	window->SetRenderLoop([&]() {
+	CoInitializeEx(NULL, COINIT_MULTITHREADED);
+
+	//window->SetRenderLoop([&]() {
+	while (window->IsRunning())
+	{
+		window->PollEvents();
+
 		// Find delta
 		float delta = ImGui::GetIO().DeltaTime;
 		bool capture_frame = engine::recorder.ShouldCaptureAndIncrement(delta);
@@ -171,15 +177,16 @@ int WispEntry()
 
 		current_scene->Update(delta);
 
-#ifdef ENABLE_PHYSICS
-		phys_engine.UpdateSim(delta, *scene_graph.get());
-#endif
-
 		auto texture = render_system->Render(*current_scene->GetSceneGraph(), *fg_manager::Get());
 
-	});
+#ifdef ENABLE_PHYSICS
+		phys_engine.UpdateSim(delta, *current_scene->GetSceneGraph().get());
+#endif
+	}
 
-	window->StartRenderLoop();
+	//});
+
+	//window->StartRenderLoop();
 
 	delete assimp_model_loader;
 	delete gltf_model_loader;
