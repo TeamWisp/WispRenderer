@@ -49,6 +49,12 @@ namespace wr
 		{
 			m_structured_buffer_pools[i].reset();
 		}
+
+		for (auto* shape : m_simple_shapes)
+		{
+			m_shapes_pool->Destroy(shape);
+		}
+
 		for (int i = 0; i < m_model_pools.size(); ++i)
 		{
 			m_model_pools[i].reset();
@@ -873,6 +879,8 @@ namespace wr
 					d3d12::Destroy(native);
 				}
 			}
+
+			registry.~R();
 		}
 
 	} /* internal */
