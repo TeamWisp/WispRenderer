@@ -17,8 +17,9 @@
 
 #include "scene_sponza.hpp"
 
-static int num_materials = 30;
-static int num_balls = 600;
+static constexpr bool spawn_physics_balls = true;
+static constexpr int num_materials = 30;
+static constexpr int num_balls = 600;
 
 SponzaScene::SponzaScene() :
 	Scene(256, 20_mb, 20_mb),
@@ -28,6 +29,7 @@ SponzaScene::SponzaScene() :
 {
 	m_lights_path = "resources/sponza_lights.json";
 }
+
 
 inline float RandRange(float min, float max)
 {
@@ -81,37 +83,40 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	m_sponza_node->SetRotation({ 0, 90_deg, 0 });
 	m_sponza_node->SetScale({ 0.01f,0.01f,0.01f });
 
-	// BigBallz
-	for (auto i = 0; i < num_balls / 2; i++)
+	if constexpr (spawn_physics_balls)
 	{
-		auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sphere_model);
-		ball->SetMass(0.004f);
-		ball->SetupSimpleSphereColl(phys_engine, 1.f);
-		ball->m_rigid_body->setRestitution(0.5);
-		ball->m_rigid_body->setFriction(0.2);
-		ball->m_rigid_body->setLinearVelocity({ 2, 0, 0 });
-		ball->m_rigid_body->setRollingFriction(0);
-		ball->m_rigid_body->setSpinningFriction(0);
-		ball->SetPosition({ -2.440, 5.5, RandRange(-7.7, 8.8) });
-		ball->SetScale({ 0.2f, 0.2f, 0.2f });
-		ball->AddMaterial(m_mirror_materials[RandRangeI(0, num_materials-1)]);
-		ball->m_rigid_body->activate(true);
-	}
-	// BigBallz
-	for (auto i = 0; i < num_balls / 2; i++)
-	{
-		auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sphere_model);
-		ball->SetMass(0.004f);
-		ball->SetupSimpleSphereColl(phys_engine, 1.f);
-		ball->m_rigid_body->setRestitution(0.5);
-		ball->m_rigid_body->setFriction(0.2);
-		ball->m_rigid_body->setLinearVelocity({ -2, 0, 0 });
-		ball->m_rigid_body->setRollingFriction(0);
-		ball->m_rigid_body->setSpinningFriction(0);
-		ball->SetPosition({ 2.440, 5.5, RandRange(-7.7, 8.8) });
-		ball->SetScale({ 0.2f, 0.2f, 0.2f });
-		ball->AddMaterial(m_mirror_materials[RandRangeI(0, num_materials-1)]);
-		ball->m_rigid_body->activate(true);
+		// Left Ballfall
+		for (auto i = 0; i < num_balls / 2; i++)
+		{
+			auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sphere_model);
+			ball->SetMass(0.004f);
+			ball->SetupSimpleSphereColl(phys_engine, 1.f);
+			ball->m_rigid_body->setRestitution(0.5);
+			ball->m_rigid_body->setFriction(0.2);
+			ball->m_rigid_body->setLinearVelocity({ 2, 0, 0 });
+			ball->m_rigid_body->setRollingFriction(0);
+			ball->m_rigid_body->setSpinningFriction(0);
+			ball->SetPosition({ -2.440, 5.5, RandRange(-7.7, 8.8) });
+			ball->SetScale({ 0.2f, 0.2f, 0.2f });
+			ball->AddMaterial(m_mirror_materials[RandRangeI(0, num_materials - 1)]);
+			ball->m_rigid_body->activate(true);
+		}
+		// Right Ballfall
+		for (auto i = 0; i < num_balls / 2; i++)
+		{
+			auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sphere_model);
+			ball->SetMass(0.004f);
+			ball->SetupSimpleSphereColl(phys_engine, 1.f);
+			ball->m_rigid_body->setRestitution(0.5);
+			ball->m_rigid_body->setFriction(0.2);
+			ball->m_rigid_body->setLinearVelocity({ -2, 0, 0 });
+			ball->m_rigid_body->setRollingFriction(0);
+			ball->m_rigid_body->setSpinningFriction(0);
+			ball->SetPosition({ 2.440, 5.5, RandRange(-7.7, 8.8) });
+			ball->SetScale({ 0.2f, 0.2f, 0.2f });
+			ball->AddMaterial(m_mirror_materials[RandRangeI(0, num_materials - 1)]);
+			ball->m_rigid_body->activate(true);
+		}
 	}
 
 	// Lights
