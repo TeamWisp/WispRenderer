@@ -25,6 +25,8 @@
 
 #include "../render_tasks/d3d12_brdf_lut_precalculation.hpp"
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../render_tasks/d3d12_spatial_reconstruction.hpp"
+#include "../render_tasks/d3d12_reflection_denoiser.hpp"
 #include "../render_tasks/d3d12_cubemap_convolution.hpp"
 #include "../render_tasks/d3d12_rt_shadow_task.hpp"
 #include "../render_tasks/d3d12_rt_reflection_task.hpp"
@@ -170,15 +172,25 @@ namespace wr
 					constexpr auto reflection_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_REFLECTION);
 					auto reflection_handle = data.out_buffer_refl_alloc.GetDescriptorHandle();
 					
-					if (data.has_rt_reflection)
+					if (fg.HasTask<wr::ReflectionDenoiserData>())
+					{
+						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::ReflectionDenoiserData>());
+						d3d12::CreateSRVFromSpecificRTV(reflection_rt, reflection_handle, 0, reflection_rt->m_create_info.m_rtv_formats[0]);
+					}
+					if (fg.HasTask<wr::SpatialReconstructionData>())
+					{
+						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::SpatialReconstructionData>());
+						d3d12::CreateSRVFromSpecificRTV(reflection_rt, reflection_handle, 0, reflection_rt->m_create_info.m_rtv_formats[0]);
+					}
+					else if (data.has_rt_reflection)
 					{
 						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTReflectionData>());
-						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
+						d3d12::CreateSRVFromSpecificRTV(reflection_rt, reflection_handle, 0, reflection_rt->m_create_info.m_rtv_formats[0]);
 					}
 					else if(data.has_rt_shadows)
 					{
 						auto reflection_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
-						d3d12::CreateSRVFromRTV(reflection_rt, reflection_handle, 1, reflection_rt->m_create_info.m_rtv_formats.data());
+						d3d12::CreateSRVFromSpecificRTV(reflection_rt, reflection_handle, 0, reflection_rt->m_create_info.m_rtv_formats[0]);
 					}
 
 					constexpr auto shadow_id = rs_layout::GetHeapLoc(params::deferred_composition, params::DeferredCompositionE::BUFFER_SHADOW);
@@ -187,18 +199,18 @@ namespace wr
 					if (fg.HasTask<wr::ShadowDenoiserData>())
 					{
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::ShadowDenoiserData>());
-						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+						d3d12::CreateSRVFromSpecificRTV(shadow_rt, shadow_handle, 0, shadow_rt->m_create_info.m_rtv_formats[0]);
 						data.has_rt_shadows_denoiser = true;
 					}
 					else if(fg.HasTask<wr::RTShadowData>())
 					{
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTShadowData>());
-						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+						d3d12::CreateSRVFromSpecificRTV(shadow_rt, shadow_handle, 0, shadow_rt->m_create_info.m_rtv_formats[0]);
 					}
 					else if(data.has_rt_reflection)
 					{
 						auto shadow_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<wr::RTReflectionData>());
-						d3d12::CreateSRVFromRTV(shadow_rt, shadow_handle, 1, shadow_rt->m_create_info.m_rtv_formats.data());
+						d3d12::CreateSRVFromSpecificRTV(shadow_rt, shadow_handle, 0, shadow_rt->m_create_info.m_rtv_formats[0]);
 					}
 					if (data.is_rtao)
 					{

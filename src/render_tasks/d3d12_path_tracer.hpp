@@ -26,6 +26,8 @@
 #include "../engine_registry.hpp"
 
 #include "../render_tasks/d3d12_deferred_main.hpp"
+#include "../render_tasks/d3d12_rt_shadow_task.hpp"
+#include "../render_tasks/d3d12_rt_reflection_task.hpp"
 #include "../render_tasks/d3d12_build_acceleration_structures.hpp"
 #include "../imgui_tools.hpp"
 

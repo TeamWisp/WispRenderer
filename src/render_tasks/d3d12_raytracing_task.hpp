@@ -334,14 +334,13 @@ namespace wr
 //#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
 //#endif
-				scalar = fg.GetRenderTargetResolutionScale(handle);
 
 				d3d12::DispatchRays(cmd_list,
 					data.out_hitgroup_shader_table[frame_idx], 
 					data.out_miss_shader_table[frame_idx], 
 					data.out_raygen_shader_table[frame_idx], 
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetHeight(render_target))),
 					1, 
 					0);
 			}
