@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #ifndef __DENOISING_REFLECTIONS_HLSL__
 #define __DENOISING_REFLECTIONS_HLSL__
 #include "pbr_util.hlsl"
@@ -17,9 +32,7 @@ Texture2D in_history_texture : register(t8);
 Texture2D accum_texture : register(t9);
 Texture2D prev_normal_texture : register(t10);
 Texture2D prev_depth_texture : register(t11);
-Texture2D prev_position_texture : register(t12);
-Texture2D prev_dir_hitT_texture : register(t13);
-Texture2D in_moments_texture : register(t14);
+Texture2D in_moments_texture : register(t12);
 
 RWTexture2D<float4> output_texture : register(u0);
 RWTexture2D<float> out_history_texture : register(u1);
@@ -61,18 +74,6 @@ cbuffer WaveletPass : register(b2)
 	float wavelet_size;
 }
 
-float3 unpack_position(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
-	const float4 ndc = float4(uv * 2.0f - 1.f, depth, 1.0f);
-	const float4 pos = mul( view_inv, mul(proj_inv, ndc));
-	return (pos / pos.w).xyz;
-}
-
-float3 unpack_position_linear_depth(float2 uv, float depth, float4x4 proj_inv, float4x4 view_inv) {
-	const float4 ndc = float4(uv * 2.0f - 1.f, 1.f, 1.0f);
-	const float4 pos = mul( view_inv, mul(proj_inv, ndc));
-	return normalize((pos / pos.w).xyz) * depth;
-}
-
 float3 OctToDir(uint octo)
 {
 	float2 e = float2( f16tof32(octo & 0xFFFF), f16tof32((octo>>16) & 0xFFFF) ); 
@@ -85,13 +86,6 @@ float3 OctToDir(uint octo)
 float Luminance(float3 color)
 {
 	return (color.r + color.r + color.b + color.g + color.g + color.g) / 6.0;
-}
-
-uint DirToOct(float3 normal)
-{
-	float2 p = normal.xy * (1.0 / dot(abs(normal), 1.0.xxx));
-	float2 e = normal.z > 0.0 ? p : (1.0 - abs(p.yx)) * (step(0.0, p)*2.0 - (float2)(1.0));
-	return (asuint(f32tof16(e.y)) << 16) + (asuint(f32tof16(e.x)));
 }
 
 void FetchNormalAndLinearZ(in float2 ipos, out float3 norm, out float2 zLinear)
@@ -113,20 +107,6 @@ float ComputeWeightNoLuminance(float depth_center, float depth_p, float phi_dept
 	return exp(-max(w_z, 0.0)) * w_normal;
 }
 
-float ComputeWeight(
-	float depth_center, float depth_p, float phi_depth,
-	float3 normal_center, float3 normal_p, float norm_power, 
-	float luminance_direct_center, float luminance_direct_p, float phi_direct)
-{
-	const float w_normal    = NormalDistanceCos(normal_center, normal_p, norm_power);
-	const float w_z         = (phi_depth == 0) ? 0.0f : abs(depth_center - depth_p) / phi_depth;
-	const float w_l_direct   = abs(luminance_direct_center - luminance_direct_p) / phi_direct;
-
-	const float w_direct   = exp(0.0 - max(w_l_direct, 0.0)   - max(w_z, 0.0)) * w_normal;
-
-	return w_direct;
-}
-
 bool IsReprojectionValid(float2 coord, float z, float z_prev, float fwidth_z, float3 normal, float3 normal_prev, float fwidth_normal)
 {
 	int2 screen_size = int2(0, 0);
@@ -139,14 +119,6 @@ bool IsReprojectionValid(float2 coord, float z, float z_prev, float fwidth_z, fl
 	ret = ret && ((distance(normal, normal_prev) / (fwidth_normal + 1e-2)) < 16.0);
 
 	return ret;
-}
-
-float3 GetReflectionWorldPos(float2 screen_coord, Texture2D origin_pos_texture, Texture2D reflection_dir_texture)
-{
-	float2 screen_size = float2(0, 0);
-	output_texture.GetDimensions(screen_size.x, screen_size.y);
-	float4 ray_data = reflection_dir_texture.SampleLevel(point_sampler, screen_coord / screen_size, 0);
-	return origin_pos_texture.SampleLevel(point_sampler, screen_coord / screen_size, 0).xyz + ray_data.xyz * ray_data.w;
 }
 
 bool LoadPrevData(float2 screen_coord, inout float2 found_pos, out float4 prev_direct, out float2 prev_moments, out float history_length)
@@ -310,7 +282,7 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	if(pdf <= 0.0)
 	{
-		output_texture[screen_coord] = input_color;
+		output_texture[screen_coord] = float4(input_color.xyz, 0.f);
 		return;
 	}
 
@@ -321,10 +293,10 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	float3 clamp_max = 0.0;
 
 	[unroll]
-	for(int y = -2; y <= 2; ++y)
+	for(int y = -3; y <= 3; ++y)
 	{
 		[unroll]
-		for(int x = -2; x <= 2; ++x)
+		for(int x = -3; x <= 3; ++x)
 		{
 			float3 color = input_texture[screen_coord + int2(x, y)].xyz;
 			moment_1 += color;
@@ -334,17 +306,20 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 	}
 
-	float3 mu = moment_1 / 25.0;
-	float3 sigma = sqrt(moment_2 / 25.0 - mu*mu);
+	float3 mu = moment_1 / 49.0;
+	float3 sigma = sqrt(moment_2 / 49.0 - mu*mu);
 
-	float3 box_min = max(mu - variance_clipping_sigma * sigma, clamp_min);
-	float3 box_max = min(mu + variance_clipping_sigma * sigma, clamp_max);
+	float3 box_min = mu - variance_clipping_sigma * sigma;
+	float3 box_max = mu + variance_clipping_sigma * sigma;
 
 	float4 clipped = LineBoxIntersection(box_min, box_max, input_color.xyz, accum_color.xyz);
 
-	//accum_color = clipped;
+	const float roughness = albedo_roughness_texture[screen_coord].w;
 
-	history = min(16, history + 1);
+	//perhaps replace the 0.25 with a clamping strength variable for the settings screen
+	accum_color = lerp(clipped, accum_color, pow(clamp(roughness, 0.0, 1.0), 0.25));
+
+	history = min(max_history_samples, history + 1);
 
 	const float alpha = lerp(1.0, max(color_integration_alpha, 1.0/history), valid);
 	const float moments_alpha = lerp(1.0, max(moments_integration_alpha, 1.0/history), valid);
@@ -356,50 +331,6 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	cur_moments = lerp(prev_moments, cur_moments, moments_alpha);
 
 	float variance = cur_moments.y - cur_moments.x * cur_moments.x;
-
-	if(history < 4)
-	{
-		float weights = 1.0;
-
-		float3 center_normal = float3(0, 0, 0);
-		float2 center_depth = float2(0, 0);
-
-		FetchNormalAndLinearZ(screen_coord, center_normal, center_depth);
-
-		const float phi_depth = max(center_depth.y, 1e-8) * 3.0;
-
-		[unroll]
-		for(int x = -3; x <= 3; ++x)
-		{
-			[unroll]
-			for(int y = -3; y <= 3; ++y)
-			{
-				float2 location = screen_coord + float2(x, y);
-				bool center = x == 0 && y == 0;
-				bool inside = location.x >= 0 && location.x < screen_size.x && location.y >= 0 && location.y < screen_size.y;
-				if(inside && !center)
-				{
-					float2 local_moments = float2(0, 0);
-					local_moments.x = Luminance(input_texture[location].xyz);
-					local_moments.y = local_moments.x * local_moments.x;
-
-					float3 p_normal = float3(0, 0, 0);
-					float2 p_depth = float2(0, 0);
-
-					float weight = ComputeWeightNoLuminance(
-						center_depth.x, p_depth.x, phi_depth * length(float2(x, y)),
-						center_normal, p_normal);
-
-					cur_moments += local_moments * weight;
-					weights += weight;
-				}
-			}
-		}
-		cur_moments /= weights;
-		variance = cur_moments.y - cur_moments.x * cur_moments.x;
-
-		variance *= 4.0/history;
-	}
 
 	float3 output = lerp(accum_color, input_color, alpha);
 	
@@ -427,6 +358,12 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	const float variance = ComputeVarianceCenter(int2(screen_coord.xy));
 
+	if(isnan(variance)==true)
+	{
+		output_texture[screen_coord] = float4(0, 1, 0, 0);
+		return;
+	}
+
 	output_texture[screen_coord] = direct_center;
 	
 	const float history_length = in_history_texture[screen_coord].r;
@@ -443,7 +380,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	const float roughness = albedo_roughness_texture[screen_coord].w;
 
-	const float phi_l_direct = l_phi * sqrt(max(0.0, eps_variance + variance)) * sqrt(sqrt(max(0.0, roughness)));
+	const float phi_l_direct = l_phi * sqrt(sqrt(max(0.0, roughness)));
 	const float phi_depth = max(depth_center.y, 1e-8) * wavelet_size;
 
 	float sum_weights = 1.0;
@@ -469,10 +406,9 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float2 depth_p;
 				FetchNormalAndLinearZ(p, normal_p, depth_p);		
 
-				const float w = ComputeWeight(
+				const float w = ComputeWeightNoLuminance(
 					depth_center.x, depth_p.x, phi_depth*length(float2(x, y)),
-					normal_center, normal_p, n_phi,
-					luminance_direct_center, luminance_direct_p, phi_l_direct);
+					normal_center, normal_p) * sqrt(max(1e-15, roughness)) * sqrt(max(1e-15, variance)); 
 
 				const float w_direct = w * kernel;
 
@@ -482,7 +418,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 	}
 
-	output_texture[floor(screen_coord)] = sum_direct / sum_weights;
+	output_texture[floor(screen_coord)] = direct_center;sum_direct / sum_weights;
 }
 
 #endif

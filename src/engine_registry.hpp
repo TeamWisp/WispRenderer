@@ -564,8 +564,6 @@ namespace wr
 		ACCUM,
 		PREV_NORMAL,
 		PREV_DEPTH,
-		PREV_POSITION,
-		PREV_RAY_DIR,
 		IN_MOMENTS,
 
 		OUTPUT,
@@ -577,7 +575,7 @@ namespace wr
 		WAVELET_ITERATION,
     };
 
-    constexpr std::array<rs_layout::Entry, 21> reflection_denoiser = {
+    constexpr std::array<rs_layout::Entry, 19> reflection_denoiser = {
 		rs_layout::Entry{(int)ReflectionDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
 		rs_layout::Entry{(int)ReflectionDenoiserE::RAY_RAW, 1, rs_layout::Type::SRV_RANGE},
 		rs_layout::Entry{(int)ReflectionDenoiserE::RAY_DIR, 1, rs_layout::Type::SRV_RANGE},
@@ -592,8 +590,6 @@ namespace wr
 		rs_layout::Entry{(int)ReflectionDenoiserE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
 		rs_layout::Entry{(int)ReflectionDenoiserE::PREV_NORMAL, 1, rs_layout::Type::SRV_RANGE},
 		rs_layout::Entry{(int)ReflectionDenoiserE::PREV_DEPTH, 1, rs_layout::Type::SRV_RANGE},
-		rs_layout::Entry{(int)ReflectionDenoiserE::PREV_POSITION, 1, rs_layout::Type::SRV_RANGE},
-		rs_layout::Entry{(int)ReflectionDenoiserE::PREV_RAY_DIR, 1, rs_layout::Type::SRV_RANGE},
 		rs_layout::Entry{(int)ReflectionDenoiserE::IN_MOMENTS, 1, rs_layout::Type::SRV_RANGE},
 
 		rs_layout::Entry{(int)ReflectionDenoiserE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
