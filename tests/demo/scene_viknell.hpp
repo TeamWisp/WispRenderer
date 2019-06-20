@@ -14,6 +14,7 @@ class ViknellScene : public Scene
 {
 public:
 	ViknellScene();
+	~ViknellScene();
 
 	void Update(float delta = 0) final;
 

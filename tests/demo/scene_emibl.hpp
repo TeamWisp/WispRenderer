@@ -12,6 +12,7 @@ class EmiblScene : public Scene
 {
 public:
 	EmiblScene();
+	~EmiblScene();
 
 	void Update(float delta = 0) final;
 

@@ -15,6 +15,16 @@ ViknellScene::ViknellScene() :
 	m_lights_path = "resources/viknell_lights.json";
 }
 
+ViknellScene::~ViknellScene()
+{
+	if(m_plane_model)
+	{
+		m_model_pool->Destroy(m_plane_model);
+		m_model_pool->Destroy(m_xbot_model);
+		m_model_pool->Destroy(m_sphere_model);
+	}
+}
+
 void ViknellScene::LoadResources()
 {
 	// Models
