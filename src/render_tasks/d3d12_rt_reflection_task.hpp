@@ -268,6 +268,22 @@ namespace wr
 
 		inline void DestroyRTReflectionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
+			RTReflectionData& data = fg.GetData<RTReflectionData>(handle);
+
+			for(d3d12::ShaderTable* shader : data.base_data.out_raygen_shader_table)
+			{
+				delete shader;
+			}
+
+			for(d3d12::ShaderTable* shader : data.base_data.out_miss_shader_table)
+			{
+				delete shader;
+			}
+
+			for(d3d12::ShaderTable* shader : data.base_data.out_hitgroup_shader_table)
+			{
+				delete shader;
+			}
 		}
 
 	} /* internal */

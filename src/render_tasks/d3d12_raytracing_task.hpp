@@ -334,6 +334,22 @@ namespace wr
 
 		inline void DestroyRaytracingTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
+			RaytracingData& data = fg.GetData<RaytracingData>(handle);
+
+			for (d3d12::ShaderTable* shader : data.out_raygen_shader_table)
+			{
+				delete shader;
+			}
+
+			for (d3d12::ShaderTable* shader : data.out_miss_shader_table)
+			{
+				delete shader;
+			}
+
+			for (d3d12::ShaderTable* shader : data.out_hitgroup_shader_table)
+			{
+				delete shader;
+			}
 		}
 
 	} /* internal */
