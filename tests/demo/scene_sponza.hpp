@@ -46,7 +46,7 @@ private:
 	wr::TextureHandle m_skybox;
 
 	// Materials
-	wr::MaterialHandle m_mirror_material;
+	std::vector<wr::MaterialHandle> m_mirror_materials;
 
 	// Nodes
 	std::shared_ptr<DebugCamera> m_camera;

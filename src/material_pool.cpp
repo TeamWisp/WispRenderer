@@ -31,7 +31,7 @@ namespace wr
 	{
 		memset(&m_material_data, 0, sizeof(m_material_data));
 
-		SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(1.0f);
+		SetConstant<MaterialConstant::EMISSIVE_MULTIPLIER>(0.0f);
 		SetConstant<MaterialConstant::ALBEDO_UV_SCALE>(1.0f);
 		SetConstant<MaterialConstant::NORMAL_UV_SCALE>(1.0f);
 		SetConstant<MaterialConstant::ROUGHNESS_UV_SCALE>(1.0f);

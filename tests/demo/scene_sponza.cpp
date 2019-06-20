@@ -17,6 +17,9 @@
 
 #include "scene_sponza.hpp"
 
+static int num_materials = 30;
+static int num_balls = 600;
+
 SponzaScene::SponzaScene() :
 	Scene(256, 20_mb, 20_mb),
 	m_sponza_model(nullptr),
@@ -24,6 +27,16 @@ SponzaScene::SponzaScene() :
 	m_time(0)
 {
 	m_lights_path = "resources/sponza_lights.json";
+}
+
+inline float RandRange(float min, float max)
+{
+	return min + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max - min)));
+}
+
+inline float RandRangeI(float min, float max)
+{
+	return min + static_cast <int> (rand()) / (static_cast <int> (RAND_MAX / (max - min)));
 }
 
 void SponzaScene::LoadResources()
@@ -36,16 +49,16 @@ void SponzaScene::LoadResources()
 	m_skybox = m_texture_pool->LoadFromFile("resources/materials/Barce_Rooftop_C_3k.hdr", false, false);
 
 	// Materials
-	m_mirror_material = m_material_pool->Create(m_texture_pool.get());
-	wr::Material* mirror_internal = m_material_pool->GetMaterial(m_mirror_material);
-	mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0);
-	mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1);
-	mirror_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1, 1, 1 });
-}
-
-inline float RandRange(float min, float max)
-{
-	return min + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max - min)));
+	for (auto i = 0; i < num_materials; i++)
+	{
+		auto mat = m_material_pool->Create(m_texture_pool.get());
+		wr::Material* mat_internal = m_material_pool->GetMaterial(mat);
+		mat_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(RandRange(0, 0.5));
+		mat_internal->SetConstant<wr::MaterialConstant::METALLIC>(RandRange(0.5, 1));
+		mat_internal->SetConstant<wr::MaterialConstant::EMISSIVE_MULTIPLIER>(RandRange(0, 1) > 0.8 ? 5 : 0);
+		mat_internal->SetConstant<wr::MaterialConstant::COLOR>({ RandRange(0.3, 1), RandRange(0.3, 1), RandRange(0.3, 1) });
+		m_mirror_materials.push_back(mat);
+	}
 }
 
 void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extra)
@@ -69,7 +82,7 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	m_sponza_node->SetScale({ 0.01f,0.01f,0.01f });
 
 	// BigBallz
-	for (auto i = 0; i < 300; i++)
+	for (auto i = 0; i < num_balls / 2; i++)
 	{
 		auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sphere_model);
 		ball->SetMass(0.004f);
@@ -81,11 +94,11 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 		ball->m_rigid_body->setSpinningFriction(0);
 		ball->SetPosition({ -2.440, 5.5, RandRange(-7.7, 8.8) });
 		ball->SetScale({ 0.2f, 0.2f, 0.2f });
-		ball->AddMaterial(m_mirror_material);
+		ball->AddMaterial(m_mirror_materials[RandRangeI(0, num_materials-1)]);
 		ball->m_rigid_body->activate(true);
 	}
 	// BigBallz
-	for (auto i = 0; i < 300; i++)
+	for (auto i = 0; i < num_balls / 2; i++)
 	{
 		auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sphere_model);
 		ball->SetMass(0.004f);
@@ -97,7 +110,7 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 		ball->m_rigid_body->setSpinningFriction(0);
 		ball->SetPosition({ 2.440, 5.5, RandRange(-7.7, 8.8) });
 		ball->SetScale({ 0.2f, 0.2f, 0.2f });
-		ball->AddMaterial(m_mirror_material);
+		ball->AddMaterial(m_mirror_materials[RandRangeI(0, num_materials-1)]);
 		ball->m_rigid_body->activate(true);
 	}
 
