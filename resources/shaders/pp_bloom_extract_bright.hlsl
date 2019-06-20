@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #ifndef __PP_BLOOM_EXTRACT_BRIGHT_HLSL__
 #define __PP_BLOOM_EXTRACT_BRIGHT_HLSL__
 
@@ -26,12 +41,19 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float brightness = dot(final_color, float3(0.2126f, 0.7152f, 0.0722f));
 
-	if (brightness > 1.0f && g_depth.SampleLevel(s1, uv, 0).r < 1)
+	for (int i = -1; i < 2; ++i)
 	{
-		out_bright = saturate(float4(final_color, 1.0f));
+		uv = float2(screen_coord.x + i, screen_coord.y + i) / screen_size;
+
+		if (brightness > 1.0f && g_depth.SampleLevel(s1, uv, 0).r < 1)
+		{
+			out_bright = saturate(float4(final_color, 1.0f));
+		}
+
+		out_bright += float4(g_emissive.SampleLevel(s0, uv, 0).rgb, 1.0f);
 	}
 
-	out_bright += float4(g_emissive.SampleLevel(s0, uv, 0).rgb, 1.0f);
+	out_bright /= 3;
 
 	output_bright[int2(dispatch_thread_id.xy)] = out_bright;
 }
