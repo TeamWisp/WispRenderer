@@ -34,7 +34,7 @@
 
 RWTexture2D<float4> output_reflection : register(u0); // rgb: reflection, a: pdf
 RWTexture2D<unorm float> output_shadow : register(u1); // r: shadow factor
-RWTexture2D<float4> output_dirT_buffer : register(u2); // xyz: direction, w: hitT; dirT to calculate hit position
+RWTexture2D<float4> output_dir_t_buffer : register(u2); // xyz: direction, w: hitT; dirT to calculate hit position
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -100,7 +100,7 @@ void ReflectionRaygenEntry()
 		// So, the far plane pixels are set to 0
 		output_reflection[screen_co] = float4(0, 0, 0, 0);
 		output_shadow[screen_co] = 0;
-		output_dirT_buffer[screen_co] = float4(0, 0, 0, 0);
+		output_dir_t_buffer[screen_co] = float4(0, 0, 0, 0);
 		return;
 	}
 
@@ -117,12 +117,12 @@ void ReflectionRaygenEntry()
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 
 	// Get reflection result
-	float4 dirT = float4(0, 0, 0, 0);
-	float4 reflection_result = min(DoReflection(wpos, V, normal, rand_seed, 0, roughness, metallic, cone, dirT), 10000);
+	float4 dir_t = float4(0, 0, 0, 0);
+	float4 reflection_result = min(DoReflection(wpos, V, normal, rand_seed, 0, roughness, metallic, cone, dir_t), 10000);
 
 	// xyz: reflection, a: shadow factor
 	output_reflection[screen_co] = reflection_result;
-	output_dirT_buffer[screen_co] = dirT;
+	output_dir_t_buffer[screen_co] = dir_t;
 }
 
 #endif //__DXR_REFLECTION_MAIN_HLSL__

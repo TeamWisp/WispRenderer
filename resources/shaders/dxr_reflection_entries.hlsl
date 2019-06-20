@@ -125,8 +125,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 
 
 	//Reflection in reflections
-	float4 dirT = float4(0, 0, 0, 0);
-	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, roughness, metal, payload.cone, dirT).xyz;
+	float4 dir_t = float4(0, 0, 0, 0);
+	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, roughness, metal, payload.cone, dir_t).xyz;
 
 	//Lighting
 	#undef SOFT_SHADOWS

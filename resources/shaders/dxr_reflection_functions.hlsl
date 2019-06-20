@@ -30,7 +30,7 @@
 
 #include "pbr_util.hlsl"
 
-float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone, inout float4 dirT)
+float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint rand_seed, uint depth, RayCone cone, inout float4 dir_t)
 {
 
 	if (depth >= MAX_RECURSION)
@@ -69,11 +69,11 @@ float3 TraceReflectionRay(float3 origin, float3 norm, float3 direction, uint ran
 		ray,
 		payload);
 
-	dirT = float4(direction, payload.hitT);
+	dir_t = float4(direction, payload.hitT);
 	return payload.color;
 }
 
-float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, float metallic, RayCone cone, inout float4 dirT)
+float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth, float roughness, float metallic, RayCone cone, inout float4 dir_t)
 {
 	// Calculate ray info
 	float3 reflected = reflect(-V, N);
@@ -86,7 +86,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
 
 		if (depth > 0 || roughness < 0.05)
-			return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), 1);
+			return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dir_t), 1);
 
 		#ifdef GROUND_TRUTH_REFLECTIONS
 
@@ -126,7 +126,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 				}
 			}
 			total_hit /= sampled_count;
-			dirT = float4(normalize(total_hit), length(total_hit));
+			dir_t = float4(normalize(total_hit), length(total_hit));
 			return float4(reflection / weightSum, pdfWeight / sampled_count);
 
 		#else
@@ -154,7 +154,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 			
 			if (NdotL >= 0)
 			{
-				reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dirT);
+				reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dir_t);
 			}
 
 			#ifndef DISABLE_SPATIAL_RECONSTRUCTION
@@ -167,7 +167,7 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 
 	#else
 		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
-		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dirT), -1);
+		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dir_t), -1);
 	#endif
 }
 #endif //__DXR_REFLECTION_FUNCTIONS_HLSL__
