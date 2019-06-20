@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #pragma once
 
 #include "frame_graph/frame_graph.hpp"
@@ -28,15 +43,8 @@
 #include "render_tasks/d3d12_ansel.hpp"
 #include "render_tasks/d3d12_bloom_extract_bright.hpp"
 #include "render_tasks/d3d12_bloom_composition.hpp"
-#include "render_tasks/d3d12_bloom_half_res.hpp"
-#include "render_tasks/d3d12_bloom_half_res_v.hpp"
-#include "render_tasks/d3d12_bloom_quarter_res.hpp"
-#include "render_tasks/d3d12_bloom_quarter_res_v.hpp"
-#include "render_tasks/d3d12_bloom_eighth_res.hpp"
-#include "render_tasks/d3d12_bloom_eighth_res_v.hpp"
-#include "render_tasks/d3d12_bloom_sixteenth_res.hpp"
-#include "render_tasks/d3d12_bloom_sixteenth_res_v.hpp"
-
+#include "render_tasks/d3d12_bloom_horizontal_blur.hpp"
+#include "render_tasks/d3d12_bloom_vertical_blur.hpp"
 
 namespace fg_manager
 {
@@ -106,15 +114,9 @@ namespace fg_manager
 
 			//High quality bloom pass
 			wr::AddBloomExtractBrightTask<wr::DeferredCompositionTaskData, wr::DeferredMainTaskData>(*fg);
-			wr::AddBloomHalfTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
-			wr::AddBloomQuarterTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
-			wr::AddBloomEighthTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
-			wr::AddBloomSixteenthTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
-			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
+			wr::AddBloomBlurHorizontalTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomBlurVerticalTask<wr::BloomBlurHorizontalData>(*fg);
+			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomBlurVerticalData>(*fg);
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
@@ -211,15 +213,9 @@ namespace fg_manager
 
 			//High quality bloom pass
 			wr::AddBloomExtractBrightTask<wr::DeferredCompositionTaskData, wr::DeferredMainTaskData>(*fg);
-			wr::AddBloomHalfTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomHalfVTask<wr::BloomHalfData>(*fg);
-			wr::AddBloomQuarterTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomQuarterVTask<wr::BloomQuarterData>(*fg);
-			wr::AddBloomEighthTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomEighthVTask<wr::BloomEighthData>(*fg);
-			wr::AddBloomSixteenthTask<wr::BloomExtractBrightData>(*fg);
-			wr::AddBloomSixteenthVTask<wr::BloomSixteenthData>(*fg);
-			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomHalfVData, wr::BloomQuarterVData, wr::BloomEighthVData, wr::BloomSixteenthVData>(*fg);
+			wr::AddBloomBlurHorizontalTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomBlurVerticalTask<wr::BloomBlurHorizontalData>(*fg);
+			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomBlurVerticalData>(*fg);
 
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
