@@ -76,18 +76,21 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 	payload.cone = Propagate(payload.cone, 0, length(payload.origin - hit_pos));
 
 	// Calculate the texture LOD level 
-	float mip_level = ComputeTextureLOD(
-		payload.cone,
-		V,
-		normalize(mul(model_matrix, float4(normal, 0))),
-		mul(model_matrix, float4(v0.pos, 1)),
-		mul(model_matrix, float4(v1.pos, 1)),
-		mul(model_matrix, float4(v2.pos, 1)),
-		v0.uv,
-		v1.uv,
-		v2.uv,
-		g_textures[material.albedo_id]);
+	// float mip_level = ComputeTextureLOD(
+	// 	payload.cone,
+	// 	V,
+	// 	normalize(mul(model_matrix, float4(normal, 0))),
+	// 	mul(model_matrix, float4(v0.pos, 1)),
+	// 	mul(model_matrix, float4(v1.pos, 1)),
+	// 	mul(model_matrix, float4(v2.pos, 1)),
+	// 	v0.uv,
+	// 	v1.uv,
+	// 	v2.uv,
+	// 	g_textures[material.albedo_id]);
 
+	//TODO: Fixme
+	float mip_level = 0;
+	
 	OutputMaterialData output_data = InterpretMaterialDataRT(material.data,
 		g_textures[material.albedo_id],
 		g_textures[material.normal_id],
@@ -122,7 +125,8 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 
 
 	//Reflection in reflections
-	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, payload.cone);
+	float4 dir_t = float4(0, 0, 0, 0);
+	float3 reflection = DoReflection(hit_pos, V, fN, payload.seed, payload.depth + 1, roughness, metal, payload.cone, dir_t).xyz;
 
 	//Lighting
 	#undef SOFT_SHADOWS
@@ -135,6 +139,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 
 	// Output the final reflections here
 	payload.color = ambient + lighting;
+	payload.hit_t = RayTCurrent();
 }
 
 //Reflection skybox
@@ -142,6 +147,7 @@ void ReflectionHit(inout ReflectionHitInfo payload, in Attributes attr)
 void ReflectionMiss(inout ReflectionHitInfo payload)
 {
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0);
+	payload.hit_t = RayTCurrent();
 }
 
 #endif //__DXR_REFLECTION_ENTRIES_HLSL__

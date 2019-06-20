@@ -517,7 +517,7 @@ namespace wr
 
 		constexpr std::array<rs_layout::Entry, 20> rt_hybrid = {
 			rs_layout::Entry{(int)RTHybridE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
-			rs_layout::Entry{(int)RTHybridE::OUTPUT, 1, rs_layout::Type::UAV_RANGE}, // TEMPORARY: This should be 1. its 2 so the path tracer doesn't overwrite it.
+			rs_layout::Entry{(int)RTHybridE::OUTPUT, 3, rs_layout::Type::UAV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::ACCELERATION_STRUCTURE, 1, rs_layout::Type::SRV},
 			rs_layout::Entry{(int)RTHybridE::INDICES, 1, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::LIGHTS, 1, rs_layout::Type::SRV_RANGE},
@@ -532,6 +532,74 @@ namespace wr
 			rs_layout::Entry{(int)RTHybridE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE},
 			rs_layout::Entry{(int)RTHybridE::FALLBACK_PTRS, 9, rs_layout::Type::SRV_RANGE},
 		};
+
+		enum class SpatialReconstructionE
+		{
+			CAMERA_PROPERTIES,
+			OUTPUT,
+			REFLECTION_BUFFER,
+			GBUFFERS
+		};
+
+		constexpr std::array<rs_layout::Entry, 4> spatial_reconstruction = {
+			rs_layout::Entry{(int)SpatialReconstructionE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+			rs_layout::Entry{(int)SpatialReconstructionE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)SpatialReconstructionE::REFLECTION_BUFFER, 2, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)SpatialReconstructionE::GBUFFERS, 3, rs_layout::Type::SRV_RANGE}
+		};
+
+    enum class ReflectionDenoiserE
+    {
+		INPUT,
+		RAY_RAW,
+		RAY_DIR,
+		ALBEDO_ROUGHNESS,
+		NORMAL_METALLIC,
+		MOTION,
+		LINEAR_DEPTH,
+		WORLD_POS,
+
+		IN_HISTORY,
+
+		ACCUM,
+		PREV_NORMAL,
+		PREV_DEPTH,
+		IN_MOMENTS,
+
+		OUTPUT,
+		OUT_HISTORY,
+		OUT_MOMENTS,
+
+		CAMERA_PROPERTIES,
+		DENOISER_SETTINGS,
+		WAVELET_ITERATION,
+    };
+
+    constexpr std::array<rs_layout::Entry, 19> reflection_denoiser = {
+		rs_layout::Entry{(int)ReflectionDenoiserE::INPUT, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::RAY_RAW, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::RAY_DIR, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::ALBEDO_ROUGHNESS, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::NORMAL_METALLIC, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::MOTION, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::LINEAR_DEPTH, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::WORLD_POS, 1, rs_layout::Type::SRV_RANGE},
+
+		rs_layout::Entry{(int)ReflectionDenoiserE::IN_HISTORY, 1, rs_layout::Type::SRV_RANGE},
+
+		rs_layout::Entry{(int)ReflectionDenoiserE::ACCUM, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::PREV_NORMAL, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::PREV_DEPTH, 1, rs_layout::Type::SRV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::IN_MOMENTS, 1, rs_layout::Type::SRV_RANGE},
+
+		rs_layout::Entry{(int)ReflectionDenoiserE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::OUT_HISTORY, 1, rs_layout::Type::UAV_RANGE},
+		rs_layout::Entry{(int)ReflectionDenoiserE::OUT_MOMENTS, 1, rs_layout::Type::UAV_RANGE},
+
+		rs_layout::Entry{(int)ReflectionDenoiserE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
+		rs_layout::Entry{(int)ReflectionDenoiserE::DENOISER_SETTINGS, 1, rs_layout::Type::CBV_OR_CONST},
+		rs_layout::Entry{(int)ReflectionDenoiserE::WAVELET_ITERATION, 1, rs_layout::Type::CBV_OR_CONST},
+    };
 
 		enum class RTAOE
 		{
@@ -784,6 +852,8 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_horizontal;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
+		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+    WISPRENDERER_EXPORT static RegistryHandle reflection_denoiser;
 	};
 
 	struct shaders
@@ -821,6 +891,9 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_horizontal;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
+		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
+    WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
 	};
 
 	struct pipelines
@@ -849,6 +922,9 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_horizontal;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
+		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
+    WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
 	};
 
 	struct state_objects

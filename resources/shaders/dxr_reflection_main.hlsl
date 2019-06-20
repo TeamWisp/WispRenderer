@@ -32,7 +32,9 @@
 // - HitWorldPosition, Load3x32BitIndices, unpack_position, HitAttribute
 #include "dxr_functions.hlsl"
 
-RWTexture2D<float4> output_refl_shadow : register(u0); // xyz: reflection, a: shadow factor
+RWTexture2D<float4> output_reflection : register(u0); // rgb: reflection, a: pdf
+RWTexture2D<unorm float> output_shadow : register(u1); // r: shadow factor
+RWTexture2D<float4> output_dir_t_buffer : register(u2); // xyz: direction, w: hitT; dirT to calculate hit position
 ByteAddressBuffer g_indices : register(t1);
 StructuredBuffer<Vertex> g_vertices : register(t3);
 StructuredBuffer<Material> g_materials : register(t4);
@@ -71,17 +73,17 @@ void ReflectionRaygenEntry()
 	uint rand_seed = initRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, frame_idx);
 
 	// Texture UV coordinates [0, 1]
-	float2 uv = float2(DispatchRaysIndex().xy) / float2(DispatchRaysDimensions().xy - 1);
+	float2 uv = float2(DispatchRaysIndex().xy + 0.5) / float2(DispatchRaysDimensions().xy);
 
 	// Screen coordinates [0, resolution] (inverted y)
 	int2 screen_co = DispatchRaysIndex().xy;
 
 	// Get g-buffer information
-	float4 albedo_roughness = gbuffer_albedo[screen_co];
-	float4 normal_metallic = gbuffer_normal[screen_co];
+	float4 albedo_roughness = gbuffer_albedo.SampleLevel(s0, uv, 0);
+	float4 normal_metallic = gbuffer_normal.SampleLevel(s0, uv, 0);
 
 	// Unpack G-Buffer
-	float depth = gbuffer_depth[screen_co].x;
+	float depth = gbuffer_depth.SampleLevel(s0, uv, 0).x;
 	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
 	float3 albedo = albedo_roughness.rgb;
 	float roughness = albedo_roughness.w;
@@ -96,9 +98,13 @@ void ReflectionRaygenEntry()
 	{
 		// A value of 1 in the output buffer, means that there is shadow
 		// So, the far plane pixels are set to 0
-		output_refl_shadow[DispatchRaysIndex().xy] = float4(0, 0, 0, 0);
+		output_reflection[screen_co] = float4(0, 0, 0, 0);
+		output_shadow[screen_co] = 0;
+		output_dir_t_buffer[screen_co] = float4(0, 0, 0, 0);
 		return;
 	}
+
+	normal = lerp(normal, -normal, dot(normal, V) < 0);
 
 	// Describe the surface for mip level generation
 	SurfaceHit sfhit;
@@ -111,10 +117,12 @@ void ReflectionRaygenEntry()
  	RayCone cone = ComputeRayConeFromGBuffer(sfhit, 1.39626, DispatchRaysDimensions().y);
 
 	// Get reflection result
-	float3 reflection_result = DoReflection(wpos, V, normal, rand_seed, 0, cone);
+	float4 dir_t = float4(0, 0, 0, 0);
+	float4 reflection_result = min(DoReflection(wpos, V, normal, rand_seed, 0, roughness, metallic, cone, dir_t), 10000);
 
 	// xyz: reflection, a: shadow factor
-	output_refl_shadow[DispatchRaysIndex().xy] = float4(reflection_result.xyz, 1.0);
+	output_reflection[screen_co] = reflection_result;
+	output_dir_t_buffer[screen_co] = dir_t;
 }
 
 #endif //__DXR_REFLECTION_MAIN_HLSL__

@@ -68,7 +68,8 @@ static std::array<frame_graph_setup_func_t, static_cast<std::size_t>(FGType::COU
 		wr::AddCubemapConvolutionTask(*fg);
 		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 		wr::AddBuildAccelerationStructuresTask(*fg);
-		wr::AddRTHybridTask(*fg);
+		wr::AddRTReflectionTask(*fg);
+		wr::AddRTShadowTask(*fg);
 		wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 		wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
 		wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
@@ -88,7 +89,8 @@ static std::array<frame_graph_setup_func_t, static_cast<std::size_t>(FGType::COU
 		wr::AddCubemapConvolutionTask(*fg);
 		wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 		wr::AddBuildAccelerationStructuresTask(*fg);
-		wr::AddRTHybridTask(*fg);
+		wr::AddRTReflectionTask(*fg);
+		wr::AddRTShadowTask(*fg);
 		wr::AddPathTracerTask(*fg);
 		wr::AddAccumulationTask<wr::PathTracerData>(*fg);
 		wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
