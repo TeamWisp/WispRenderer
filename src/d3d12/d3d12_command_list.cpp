@@ -586,6 +586,7 @@ namespace wr::d3d12
 	void Destroy(CommandSignature* cmd_signature)
 	{
 		SAFE_RELEASE(cmd_signature->m_native);
+		delete cmd_signature;
 	}
 
 } /* wr::d3d12 */

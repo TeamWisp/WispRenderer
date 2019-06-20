@@ -247,6 +247,7 @@ namespace wr::d3d12
 		render_window->m_frame_idx = 0;
 
 		render_window->m_swap_chain->Release();
+		delete render_window;
 	}
 
 } /* wr::d3d12 */
