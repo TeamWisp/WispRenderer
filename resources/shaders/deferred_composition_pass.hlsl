@@ -44,17 +44,24 @@ SamplerState linear_sampler  : register(s1);
 cbuffer CameraProperties : register(b0)
 {
 	float4x4 view;
+
 	float4x4 projection;
+
 	float4x4 inv_projection;
+
 	float4x4 inv_view;
+
 	float4x4 prev_projection;
+
 	float4x4 prev_view;
+
 	uint is_hybrid;
 	uint is_path_tracer;
 	uint is_ao;
 	uint has_shadows;
+
+	float3 padding1;
 	uint has_reflections;
-	float3 padding;
 };
 
 static uint min_depth = 0xFFFFFFFF;

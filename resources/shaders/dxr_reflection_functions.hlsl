@@ -85,49 +85,49 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 
 		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
 
-		if (depth > 0 || roughness < 0.05)
+		if (depth > 0 || roughness < 0.05f)
 			return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dir_t), 1);
 
 		#ifdef GROUND_TRUTH_REFLECTIONS
 
-			float3 reflection = float3(0, 0, 0);
-			float weightSum = 0;
-			float sampled_count = 0;
-			float pdfWeight = 0;	/* Used for further weighting by spatial reconstruction */
-			float3 total_hit = float3(0, 0, 0);
+			float3 reflection = float3(0.f, 0.f, 0.f);
+			float weight_sum = 0.f;
+			float sampled_count = 0.f;
+			float pdf_weight = 0.f;	/* Used for further weighting by spatial reconstruction */
+			float3 total_hit = float3(0.f, 0.f, 0.f);
 
 			//[unroll]
 			for (uint i = 0; i < max(MAX_GT_REFLECTION_SAMPLES * metallic, 2); ++i) {
 
 				nextRand(rand_seed);
 				float2 xi = hammersley2d(rand_seed, 8192);
-				float pdf = 0;
+				float pdf = 0.f;
 				float3 H = importanceSamplePdf(xi, roughness, N, pdf);
 				float3 L = reflect(-V, H);
 
-				float NdotL = max(dot(N, L), 0);
+				float NdotL = max(dot(N, L), 0.f);
 
-				if (NdotL <= 0) {
+				if (NdotL <= 0.f) {
 					nextRand(rand_seed);
 					xi = hammersley2d(rand_seed, 8192);
 					H = importanceSamplePdf(xi, roughness, N, pdf);
 					L = reflect(-V, H);
-					NdotL = max(dot(N, L), 0);
+					NdotL = max(dot(N, L), 0.f);
 				}
 
-				if (NdotL >= 0) {
+				if (NdotL >= 0.f) {
 					float weight = brdf_weight(V, L, N, roughness) / pdf;
-					float4 ray_dir_t = float4(0, 0, 0, 0);
+					float4 ray_dir_t = float4(0.f, 0.f, 0.f, 0.f);
 					reflection += TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, ray_dir_t) * weight;
-					weightSum += weight;
-					pdfWeight += pdf;
+					weight_sum += weight;
+					pdf_weight += pdf;
 					total_hit += ray_dir_t.xyz * ray_dir_t.w;
 					++sampled_count;
 				}
 			}
 			total_hit /= sampled_count;
 			dir_t = float4(normalize(total_hit), length(total_hit));
-			return float4(reflection / weightSum, pdfWeight / sampled_count);
+			return float4(reflection / weight_sum, pdf_weight / sampled_count);
 
 		#else
 
@@ -139,20 +139,20 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 			float3 H = importanceSamplePdf(xi, roughness, N, pdf);
 			float3 L = reflect(-V, H);
 
-			float NdotL = max(dot(N, L), 0);
+			float NdotL = max(dot(N, L), 0.f);
 
-			if(NdotL <= 0)
+			if(NdotL <= 0.f)
 			{
 				nextRand(rand_seed);
 				xi = hammersley2d(rand_seed, 8192);
 				H = importanceSamplePdf(xi, roughness, N, pdf);
 				L = reflect(-V, H);
-				NdotL = max(dot(N, L), 0);
+				NdotL = max(dot(N, L), 0.f);
 			}
 
-			float3 reflection = float3(0, 0, 0);
+			float3 reflection = float3(0.f, 0.f, 0.f);
 			
-			if (NdotL >= 0)
+			if (NdotL >= 0.f)
 			{
 				reflection = TraceReflectionRay(wpos, N, L, rand_seed, depth, cone, dir_t);
 			}
@@ -160,14 +160,14 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 			#ifndef DISABLE_SPATIAL_RECONSTRUCTION
 			return float4(reflection, pdf);
 			#else
-			return float4(reflection, -1);
+			return float4(reflection, -1.f);
 			#endif
 
 		#endif
 
 	#else
 		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
-		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dir_t), -1);
+		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dir_t), -1.f);
 	#endif
 }
 #endif //__DXR_REFLECTION_FUNCTIONS_HLSL__

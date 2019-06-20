@@ -285,8 +285,6 @@ namespace wr
 								{ "ShadowHitGroup" }, frame_idx);
 				//#endif
 
-				scalar = fg.GetRenderTargetResolutionScale(handle);
-
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list,
 					data.base_data.out_hitgroup_shader_table[frame_idx],
