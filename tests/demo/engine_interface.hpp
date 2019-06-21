@@ -45,6 +45,7 @@ namespace engine
 	static bool open_recorder = true;
 	static char recorder_name[256] = "unamed";
 	static char recorder_base_dir[256] = "D:\\WispRecorder\\";
+	static bool recorder_reset_scene = false;
 	static int selected_scene = 0;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
@@ -72,13 +73,6 @@ namespace engine
 			m_name = name;
 
 			std::filesystem::create_directory(m_output_dir);
-
-			if (fg_manager::Get()->HasTask<wr::ASBuildData>())
-			{
-				auto settings = fg_manager::Get()->GetSettings<wr::ASBuildData, wr::ASBuildSettings>();
-				settings.m_runtime.m_full_rebuild = true;
-				fg_manager::Get()->UpdateSettings<wr::ASBuildData>(settings);
-			}
 
 			show_imgui = false;
 
@@ -248,13 +242,29 @@ namespace engine
 				if (ImGui::Button("Record"))
 				{
 					recorder.Start(recorder_name, recorder_base_dir);
-					(*new_scene) = new SponzaScene();
+
+					switch (selected_scene)
+					{
+						case 0: (*new_scene) = new ViknellScene(); break;
+						case 1: (*new_scene) = new EmiblScene(); break;
+						case 2: (*new_scene) = new SponzaScene(); break;
+						case 3: (*new_scene) = new AlienScene(); break;
+						default: LOGW("Tried to load a scene that is not supported"); break;
+					}
 				}
 
 				ImGui::InputText("Recording Name", recorder_name, IM_ARRAYSIZE(recorder_name));
 				ImGui::InputText("Base Output Dir", recorder_base_dir, IM_ARRAYSIZE(recorder_base_dir));
 				ImGui::InputInt("Target Framerate", &recorder.m_target_framerate);
 				ImGui::InputInt("Frame Interval", &recorder.m_record_frame_inverval);
+				ImGui::Checkbox("Reload Scene", &recorder_reset_scene);
+
+				if (recorder_reset_scene && fg_manager::Get()->HasTask<wr::ASBuildData>())
+				{
+					auto settings = fg_manager::Get()->GetSettings<wr::ASBuildData, wr::ASBuildSettings>();
+					settings.m_runtime.m_full_rebuild = true;
+					fg_manager::Get()->UpdateSettings<wr::ASBuildData>(settings);
+				}
 
 				ImGui::End();
 			}
