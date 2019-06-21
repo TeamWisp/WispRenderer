@@ -51,7 +51,7 @@ namespace wr
 	inline void AddRenderTargetCopyTask(FrameGraph& frame_graph)
 	{
 		std::string name_temp = std::string("Render Target (") + std::string(typeid(T).name()) + std::string(") Copy task");
-		std::wstring w_name(name_temp.begin(), name_temp.end());
+		std::wstring w_name = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().from_bytes(name_temp);
 
 		RenderTargetProperties rt_properties{
 			RenderTargetProperties::IsRenderWindow(true),
