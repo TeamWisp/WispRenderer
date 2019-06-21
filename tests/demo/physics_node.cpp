@@ -1,6 +1,39 @@
 #include "physics_node.hpp"
 #include "physics_engine.hpp"
 
+PhysicsMeshNode::~PhysicsMeshNode()
+{
+	if(m_shape)
+	{
+		delete m_shape;
+	}
+	
+	if(m_rigid_body)
+	{
+		delete m_rigid_body->getMotionState();
+		m_phys_engine.phys_world->removeRigidBody(m_rigid_body);
+		delete m_rigid_body;
+	}
+	
+	if(m_shapes.has_value())
+	{
+		for(auto* shape : m_shapes.value())
+		{
+			delete shape;
+		}
+	}
+
+	if(m_rigid_bodies.has_value())
+	{
+		for(auto* rigid_body : m_rigid_bodies.value())
+		{
+			delete rigid_body->getMotionState();
+			m_phys_engine.phys_world->removeRigidBody(rigid_body);
+			delete rigid_body;
+		}
+	}
+}
+
 void PhysicsMeshNode::SetMass(float mass)
 {
 	m_mass = mass;

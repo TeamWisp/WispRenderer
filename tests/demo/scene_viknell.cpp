@@ -22,6 +22,8 @@ ViknellScene::~ViknellScene()
 		m_model_pool->Destroy(m_plane_model);
 		m_model_pool->Destroy(m_xbot_model);
 		m_model_pool->Destroy(m_sphere_model);
+		m_material_pool->DestroyMaterial(m_bamboo_material);
+		m_material_pool->DestroyMaterial(m_mirror_material);
 	}
 }
 
@@ -67,12 +69,12 @@ void ViknellScene::BuildScene(unsigned int width, unsigned int height, void* ext
 	auto skybox = m_scene_graph->CreateChild<wr::SkyboxNode>(nullptr, m_skybox);
 
 	// Geometry
-	auto floor = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_plane_model);
+	auto floor = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, &phys_engine, m_plane_model);
 	auto roof = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_plane_model);
 	auto back_wall = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_plane_model);
 	auto left_wall = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_plane_model);
 	auto right_wall = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_plane_model);
-	m_xbot_node = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_xbot_model);
+	m_xbot_node = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, &phys_engine, m_xbot_model);
 	auto sphere = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_sphere_model);
 
 	floor->SetupConvex(phys_engine, m_plane_model_data);
