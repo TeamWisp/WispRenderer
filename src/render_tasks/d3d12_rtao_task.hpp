@@ -244,10 +244,24 @@ namespace wr
 
 		inline void DestroyAOTask(FrameGraph& fg, RenderTaskHandle handle, bool resize) 
 		{
-			if (!resize)
+			if(!resize)
 			{
-				auto& data = fg.GetData<RTAOData>(handle);
-				data.~RTAOData();
+				RTAOData & data = fg.GetData<RTAOData>(handle);
+
+				for(d3d12::ShaderTable* shader : data.in_raygen_shader_table)
+				{
+					delete shader;
+				}
+
+				for(d3d12::ShaderTable* shader : data.in_miss_shader_table)
+				{
+					delete shader;
+				}
+
+				for(d3d12::ShaderTable* shader : data.in_hitgroup_shader_table)
+				{
+					delete shader;
+				}
 			}
 		}
 	}

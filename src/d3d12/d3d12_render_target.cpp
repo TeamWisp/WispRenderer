@@ -275,6 +275,11 @@ namespace wr::d3d12
 
 	void Destroy(RenderTarget* render_target)
 	{
+		if(!render_target)
+		{
+			return;
+		}
+
 		if (render_target->m_create_info.m_create_dsv_buffer)
 		{
 			DestroyDepthStencilBuffer(render_target);
