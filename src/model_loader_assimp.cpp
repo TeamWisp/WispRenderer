@@ -295,16 +295,19 @@ namespace wr
 					uint32_t index = atoi(path.C_Str() + 1);
 					material_data->m_emissive_embedded_texture = index;
 					material_data->m_emissive_texture_location = TextureLocation::EMBEDDED;
+					material_data->m_base_emissive = 1;
 				}
 				else
 				{
 					material_data->m_emissive_texture = std::string(path.C_Str());
 					material_data->m_emissive_texture_location = TextureLocation::EXTERNAL;
+					material_data->m_base_emissive = 1;
 				}
 			}
 			else
 			{
 				material_data->m_emissive_texture_location = TextureLocation::NON_EXISTENT;
+				material_data->m_base_emissive = 0;
 			}
 
 			aiColor3D color;

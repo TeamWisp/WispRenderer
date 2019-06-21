@@ -28,6 +28,7 @@ namespace engine
 	static bool open_scene = true;
 	static bool open_recorder = true;
 	static char recorder_name[256] = "unamed";
+	static char recorder_base_dir[256] = "D:\\WispRecorder\\";
 	static int selected_scene = 0;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
@@ -46,12 +47,12 @@ namespace engine
 		std::string m_output_dir;
 		std::string m_name;
 
-		void Start(std::string name)
+		void Start(std::string name, std::string base_output_dir = "D:\\WispRecorder\\")
 		{
 			m_frames_recorded = 0;
 			m_frames_since_last_capture = 0;
 
-			m_output_dir = "D:\\WispRecorder\\" + name;
+			m_output_dir = base_output_dir + name;
 			m_name = name;
 
 			std::filesystem::create_directory(m_output_dir);
@@ -222,10 +223,11 @@ namespace engine
 				ImGui::Begin("Recorder", &open_recorder);
 				if (ImGui::Button("Record"))
 				{
-					recorder.Start(recorder_name);
+					recorder.Start(recorder_name, recorder_base_dir);
 				}
 
 				ImGui::InputText("Recording Name", recorder_name, IM_ARRAYSIZE(recorder_name));
+				ImGui::InputText("Base Output Dir", recorder_base_dir, IM_ARRAYSIZE(recorder_base_dir));
 				ImGui::InputInt("Target Framerate", &recorder.m_target_framerate);
 				ImGui::InputInt("Frame Interval", &recorder.m_record_frame_inverval);
 

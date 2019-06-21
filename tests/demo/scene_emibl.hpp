@@ -32,7 +32,7 @@ private:
 	// Materials
 	wr::MaterialHandle m_rusty_metal_material;
 	wr::MaterialHandle m_knob_material;
-	wr::MaterialHandle m_material_handles[10];
+	wr::MaterialHandle m_material_handles[11];
 
 	// Nodes
 	std::shared_ptr<DebugCamera> m_camera;

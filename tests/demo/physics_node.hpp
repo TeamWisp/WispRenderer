@@ -33,6 +33,7 @@ struct PhysicsMeshNode : public wr::MeshNode
 	void SetupSimpleBoxColl(phys::PhysicsEngine& phys_engine, DirectX::XMVECTOR scale);
 	void SetupSimpleSphereColl(phys::PhysicsEngine& phys_engine, float radius);
 	void SetupConvex(phys::PhysicsEngine& phys_engine, wr::ModelData* model);
+	void SetupTriangleMesh(phys::PhysicsEngine& phys_engine, wr::ModelData* model);
 
 	void SetPosition(DirectX::XMVECTOR position) override;
 	void SetRotation(DirectX::XMVECTOR roll_pitch_yaw) override;

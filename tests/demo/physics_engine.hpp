@@ -44,6 +44,7 @@ namespace phys
 		btSphereShape* CreateSphereShape(const float radius);
 		btCapsuleShape* CreateCapsuleShape(const float width, const float height);
 		std::vector<btConvexHullShape*> CreateConvexShape(wr::ModelData* model);
+		std::vector<btBvhTriangleMeshShape*> CreateTriangleMeshShape(wr::ModelData* model);
 
 		btRigidBody* CreateRigidBody(float mass, const btTransform& startTransform, btCollisionShape* shape);
 
