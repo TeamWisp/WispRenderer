@@ -26,6 +26,15 @@ inline float RandRangeI(float min, float max)
 	return min + static_cast <int> (rand()) / (static_cast <int> (RAND_MAX / (max - min)));
 }
 
+SponzaScene::~SponzaScene()
+{
+	if(m_sphere_model)
+	{
+		m_model_pool->Destroy(m_sphere_model);
+		m_model_pool->Destroy(m_sponza_model);
+	}
+}
+
 void SponzaScene::LoadResources()
 {
 	// Models

@@ -14,6 +14,7 @@ class SponzaScene : public Scene
 {
 public:
 	SponzaScene();
+	~SponzaScene();
 
 	void Update(float delta = 0) final;
 
