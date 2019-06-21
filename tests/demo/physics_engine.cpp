@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "physics_engine.hpp"
 
 #include "physics_node.hpp"
@@ -46,6 +61,8 @@ namespace phys
 		for (auto& mesh_data : model->m_meshes)
 		{
 			btConvexHullShape* shape = new btConvexHullShape();
+
+
 			for (auto& idx : mesh_data->m_indices)
 			{
 
@@ -54,6 +71,25 @@ namespace phys
 			}
 			shape->recalcLocalAabb();
 
+			collision_shapes.push_back(shape);
+			hulls.push_back(shape);
+		}
+
+		return hulls;
+	}
+
+	std::vector<btBvhTriangleMeshShape*> PhysicsEngine::CreateTriangleMeshShape(wr::ModelData* model)
+	{
+		std::vector<btBvhTriangleMeshShape*> hulls;
+
+		for (auto& mesh_data : model->m_meshes)
+		{
+			btTriangleIndexVertexArray* va = new btTriangleIndexVertexArray(mesh_data->m_indices.size() / 3,
+				reinterpret_cast<int*>(mesh_data->m_indices.data()),
+				3 * sizeof(std::uint32_t),
+				mesh_data->m_positions.size(), reinterpret_cast<btScalar*>(mesh_data->m_positions.data()), sizeof(DirectX::XMFLOAT3));
+
+			btBvhTriangleMeshShape* shape = new btBvhTriangleMeshShape(va, true);
 			collision_shapes.push_back(shape);
 			hulls.push_back(shape);
 		}

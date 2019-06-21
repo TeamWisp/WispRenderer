@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #pragma once
 
 #include "../d3d12/d3d12_renderer.hpp"
@@ -225,15 +240,13 @@ namespace wr
 				CreateShaderTables(device, data, frame_idx);
 #endif // _DEBUG
 
-				scalar = fg.GetRenderTargetResolutionScale(handle);
-
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, 
 					data.in_hitgroup_shader_table[frame_idx], 
 					data.in_miss_shader_table[frame_idx], 
 					data.in_raygen_shader_table[frame_idx], 
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 
@@ -246,7 +259,7 @@ namespace wr
 		{
 			if(!resize)
 			{
-				RTAOData & data = fg.GetData<RTAOData>(handle);
+				RTAOData& data = fg.GetData<RTAOData>(handle);
 
 				for(d3d12::ShaderTable* shader : data.in_raygen_shader_table)
 				{

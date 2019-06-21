@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #pragma once
 
 #include "scene_emibl.hpp"
@@ -198,6 +213,14 @@ void EmiblScene::LoadResources()
 		bw_tiles_internal->SetTexture(wr::TextureType::ROUGHNESS, bw_tiles_roughness);
 		bw_tiles_internal->SetTexture(wr::TextureType::METALLIC, bw_tiles_metallic);
 		bw_tiles_internal->SetTexture(wr::TextureType::EMISSIVE, bw_tiles_emissive);
+
+		m_material_handles[10] = m_material_pool->Create(m_texture_pool.get());
+
+		wr::Material* mirror_internal = m_material_pool->GetMaterial(m_material_handles[10]);
+
+		mirror_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1.f, 1.f, 1.f });
+		mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1.f);
+		mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0.f);
 	}
 
 	{

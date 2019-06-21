@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "physics_node.hpp"
 #include "physics_engine.hpp"
 
@@ -85,6 +100,24 @@ void PhysicsMeshNode::SetupConvex(phys::PhysicsEngine& phys_engine, wr::ModelDat
 	m_shapes = std::vector<btCollisionShape*>();
 
 	auto hulls = phys_engine.CreateConvexShape(model);
+
+	for (auto& hull : hulls)
+	{
+		m_shapes->push_back(hull);
+
+		btTransform transform;
+		transform.setIdentity();
+		auto body = phys_engine.CreateRigidBody(0.f, transform, hull);
+		m_rigid_bodies->push_back(body);
+	}
+}
+
+void PhysicsMeshNode::SetupTriangleMesh(phys::PhysicsEngine& phys_engine, wr::ModelData* model)
+{
+	m_rigid_bodies = std::vector<btRigidBody*>();
+	m_shapes = std::vector<btCollisionShape*>();
+
+	auto hulls = phys_engine.CreateTriangleMeshShape(model);
 
 	for (auto& hull : hulls)
 	{

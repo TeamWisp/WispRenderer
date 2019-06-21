@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #pragma once
 
 #include "engine_registry.hpp"
@@ -321,8 +336,8 @@ namespace wr
 		.m_compute_shader_handle = std::nullopt,
 		.m_root_signature_handle = root_signatures::basic,
 		.m_dsv_format = Format::D32_FLOAT,
-		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT },
-		.m_num_rtv_formats = 5,
+		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, Format::R16G16B16A16_FLOAT, wr::Format::R16G16B16A16_FLOAT, wr::Format::R32G32B32A32_FLOAT, wr::Format::R32G32B32A32_FLOAT },
+		.m_num_rtv_formats = 6,
 		.m_type = PipelineType::GRAPHICS_PIPELINE,
 		.m_cull_mode = CullMode::CULL_NONE,
 		.m_depth_enabled = true,
@@ -1032,6 +1047,125 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 	});
 
+	// spatial reconstruction
+  REGISTER(shaders::spatial_reconstruction, ShaderRegistry)({
+    .path = "resources/shaders/denoising_spatial_reconstruction.hlsl",
+    .entry = "main",
+    .type = ShaderType::DIRECT_COMPUTE_SHADER,
+    .defines = {}
+	});
+
+	DESC_RANGE_ARRAY(spatial_reconstruction_r,
+		DESC_RANGE(params::spatial_reconstruction, Type::UAV_RANGE, params::SpatialReconstructionE::OUTPUT),
+		DESC_RANGE(params::spatial_reconstruction, Type::SRV_RANGE, params::SpatialReconstructionE::REFLECTION_BUFFER),
+		DESC_RANGE(params::spatial_reconstruction, Type::SRV_RANGE, params::SpatialReconstructionE::GBUFFERS)
+	);
+
+	REGISTER(root_signatures::spatial_reconstruction, RootSignatureRegistry)({
+		.m_parameters = {
+			ROOT_PARAM_DESC_TABLE(spatial_reconstruction_r, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::spatial_reconstruction, params::SpatialReconstructionE::CAMERA_PROPERTIES))
+		},
+		.m_samplers = {
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER },
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER}
+		}
+	});
+
+	REGISTER(pipelines::spatial_reconstruction, PipelineRegistry) < Vertex2D > ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::spatial_reconstruction,
+		.m_root_signature_handle = root_signatures::spatial_reconstruction,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = { Format::R16G16B16A16_FLOAT },
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
+	});
+
+	REGISTER(shaders::reflection_temporal_denoiser, ShaderRegistry)({
+		.path = "resources/shaders/denoising_reflections.hlsl",
+		.entry = "temporal_denoiser_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
+		});
+
+	REGISTER(shaders::reflection_spatial_denoiser, ShaderRegistry)({
+	  .path = "resources/shaders/denoising_reflections.hlsl",
+	  .entry = "spatial_denoiser_cs",
+	  .type = ShaderType::DIRECT_COMPUTE_SHADER,
+	  .defines = {}
+	});
+
+	DESC_RANGE_ARRAY(reflection_denoiser_ranges,
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::INPUT),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::RAY_RAW),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::RAY_DIR),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::ALBEDO_ROUGHNESS),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::NORMAL_METALLIC),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::MOTION),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::LINEAR_DEPTH),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::WORLD_POS),
+
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::IN_HISTORY),
+
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::ACCUM),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::PREV_NORMAL),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::PREV_DEPTH),
+		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::IN_MOMENTS),
+
+		DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUTPUT),
+		DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUT_HISTORY),
+		DESC_RANGE(params::reflection_denoiser, Type::UAV_RANGE, params::ReflectionDenoiserE::OUT_MOMENTS)
+	);
+  
+	REGISTER(root_signatures::reflection_denoiser, RootSignatureRegistry)({
+		.m_parameters = {
+			ROOT_PARAM_DESC_TABLE(reflection_denoiser_ranges, D3D12_SHADER_VISIBILITY_ALL),
+			ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::CAMERA_PROPERTIES)),
+			ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::DENOISER_SETTINGS)),
+			ROOT_PARAM(GetCBV(params::reflection_denoiser, params::ReflectionDenoiserE::WAVELET_ITERATION))
+		},
+		.m_samplers = {
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_BORDER },
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_BORDER }
+		}
+	});
+
+	REGISTER(pipelines::reflection_temporal_denoiser, PipelineRegistry) < Vertex2D > ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::reflection_temporal_denoiser,
+		.m_root_signature_handle = root_signatures::reflection_denoiser,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = { Format::R16G16B16A16_FLOAT },
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
+	});
+
+	REGISTER(pipelines::reflection_spatial_denoiser, PipelineRegistry) <Vertex2D> ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::reflection_spatial_denoiser,
+		.m_root_signature_handle = root_signatures::reflection_denoiser,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = { Format::R16G16B16A16_FLOAT },
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
+	});
+
 
 	/* ### Hybrid Raytracing ### */
 	DESC_RANGE_ARRAY(rt_hybrid_ranges,
@@ -1191,7 +1325,7 @@ namespace wr
 		{
 			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
 			.library_desc = rt_shadow_so_library,
-			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 3),
 			.max_attributes_size = sizeof(float) * 4,
 			.max_recursion_depth = 1,
 			.global_root_signature = root_signatures::rt_hybrid_global,
@@ -1224,7 +1358,7 @@ namespace wr
 		{
 			.desc = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
 			.library_desc = rt_reflection_so_library,
-			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 2),
+			.max_payload_size = (sizeof(float) * 6) + (sizeof(unsigned int) * 2) + (sizeof(float) * 3),
 			.max_attributes_size = sizeof(float) * 4,
 			.max_recursion_depth = 3,
 			.global_root_signature = root_signatures::rt_hybrid_global,

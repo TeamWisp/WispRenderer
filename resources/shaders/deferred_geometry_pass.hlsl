@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #ifndef __DEFERRED_GEOMETRY_PASS_HLSL__
 #define __DEFERRED_GEOMETRY_PASS_HLSL__
 
@@ -38,13 +53,24 @@ struct VS_OUTPUT
 cbuffer CameraProperties : register(b0)
 {
 	float4x4 view;
+
 	float4x4 projection;
+
 	float4x4 inv_projection;
+
 	float4x4 inv_view;
+
 	float4x4 prev_projection;
+
 	float4x4 prev_view;
+
 	uint is_hybrid;
 	uint is_path_tracer;
+	uint is_ao;
+	uint has_shadows;
+
+	float3 padding1;
+	uint has_reflections;
 };
 
 struct ObjectData
@@ -99,6 +125,7 @@ struct PS_OUTPUT
 	#ifdef IS_HYBRID
 	float4 velocity : SV_TARGET3;
 	float4 depth : SV_TARGET4;
+	float4 world_position : SV_TARGET5;
 	#endif
 };
 
@@ -168,6 +195,8 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float max_change_z = max(abs(ddx(linear_z)), abs(ddy(linear_z)));
 	float compressed_obj_normal = asfloat(dirToOct(normalize(obj_normal)));
 	output.depth = float4(linear_z, max_change_z, prev_z, compressed_obj_normal);
+
+	output.world_position = input.world_pos;
 	#endif
 
 	return output;

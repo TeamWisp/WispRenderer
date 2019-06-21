@@ -1,3 +1,18 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #pragma once
 
 #include "../renderer.hpp"
@@ -32,17 +47,24 @@ namespace wr
 		struct ProjectionView_CBData
 		{
 			DirectX::XMMATRIX m_view = DirectX::XMMatrixIdentity();
+
 			DirectX::XMMATRIX m_projection = DirectX::XMMatrixIdentity();
+
 			DirectX::XMMATRIX m_inverse_projection = DirectX::XMMatrixIdentity();
+
 			DirectX::XMMATRIX m_inverse_view = DirectX::XMMatrixIdentity();
+
 			DirectX::XMMATRIX m_prev_projection = DirectX::XMMatrixIdentity();
+
 			DirectX::XMMATRIX m_prev_view = DirectX::XMMatrixIdentity();
+
 			unsigned int m_is_hybrid = 0u;
 			unsigned int m_is_path_tracer = 0u;
 			unsigned int m_is_ao = 0u;
 			unsigned int m_has_shadows = 0u;
-			unsigned int m_has_reflections = 0u;
+
 			int padding[3];
+			unsigned int m_has_reflections = 0u;
 		};
 
 		struct ShadowDenoiserSettings_CBData
@@ -54,6 +76,18 @@ namespace wr
 			float m_z_phi;
 			float m_step_distance;
 			float m_padding[2];
+		};
+
+		struct ReflectionDenoiserSettings_CBData
+		{
+			float m_color_integration_alpha;
+			float m_moments_integration_alpha;
+			float m_variance_clipping_sigma;
+			float m_roughness_reprojection_threshold;
+			int m_max_history_samples;
+			float m_n_phi;
+			float m_z_phi;
+			float m_l_phi;
 		};
 
 		struct DenoiserCamera_CBData

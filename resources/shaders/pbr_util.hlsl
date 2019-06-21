@@ -1,8 +1,25 @@
+/*!
+ * Copyright 2019 Breda University of Applied Sciences and Team Wisp (Viktor Zoutman, Emilio Laiso, Jens Hagen, Meine Zeinstra, Tahar Meijs, Koen Buitenhuis, Niels Brunekreef, Darius Bouma, Florian Schut)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #ifndef __PBR_UTILS_HLSL__
 #define __PBR_UTILS_HLSL__
 
 #include "math.hlsl"
 
+#include "rand_util.hlsl"
+ 
 // Based omn http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
 float random(float2 co)
 {
@@ -168,4 +185,46 @@ float2 SampleSphericalMap(float3 v)
 	return uv;
 }
 
-#endif //__PBR_UTILS_HLSL__
+// Brian Karis, Epic Games "Real Shading in Unreal Engine 4"
+// Modified version to do pdf and tangent to world conversions
+float3 importanceSamplePdf(float2 xi, float a, float3 N, inout float pdf) {
+	float m = a * a;
+	float m2 = m * m;
+
+	float phi = 2 * M_PI * xi.x;
+	float cosTheta = sqrt((1.0 - xi.y) / (1.0 + (m2 - 1.0) * xi.y));
+	float sinTheta = sqrt(max(1e-5, 1.0 - cosTheta * cosTheta));
+
+	float3 H;
+	H.x = sinTheta * cos(phi);
+	H.y = sinTheta * sin(phi);
+	H.z = cosTheta;
+
+	float d = (cosTheta * m2 - cosTheta) * cosTheta + 1;
+	float D = m2 / (M_PI * d * d);
+	pdf = D * cosTheta;
+
+	float3 up = lerp(float3(1.0, 0.0, 0.0), float3(0.0, 0.0, 1.0), float(abs(N.z) < 0.999));
+	float3 T = normalize(cross(up, N));
+	float3 B = cross(N, T);
+
+	return normalize(T * H.x + B * H.y + N * H.z);
+}
+
+//Get weight from roughness, view direction, light direction and normal (view space)
+float brdf_weight(float3 V, float3 L, float3 N, float roughness) {
+	float3 H = normalize(V + L);
+
+	float NdotH = saturate(dot(N, H));
+	float NdotL = saturate(dot(N, L));
+	float NdotV = saturate(dot(N, V));
+
+	float G = G_SchlicksmithGGX(NdotL, NdotV, roughness);		//This causes issues
+	float D = D_GGX(NdotH, roughness);
+
+	float weight = G * D * M_PI / 4;
+
+	return max(weight, 1e-5);		//Perfect mirrors can have weights too
+}
+
+#endif
