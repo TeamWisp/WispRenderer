@@ -52,6 +52,7 @@ namespace wr
 		std::vector<std::pair<Mesh*, MaterialHandle>> m_meshes;
 		ModelPool* m_model_pool = nullptr;
 		std::string m_model_name;
+		bool m_owns_materials = false;			//Whether the model has to take care of the materials
 
 		Box m_box;
 
@@ -305,6 +306,7 @@ namespace wr
 		dir.erase(dir.begin() + dir.find_last_of('/') + 1, dir.end());
 
 		Model* model = new Model;
+		model->m_owns_materials = true;
 		std::vector<MaterialHandle> material_handles;
 
 		for (int i = 0; i < data->m_materials.size(); ++i)

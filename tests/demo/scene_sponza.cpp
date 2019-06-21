@@ -32,6 +32,10 @@ SponzaScene::~SponzaScene()
 	{
 		m_model_pool->Destroy(m_sphere_model);
 		m_model_pool->Destroy(m_sponza_model);
+		for(auto& material : m_mirror_materials)
+		{
+			m_material_pool->DestroyMaterial(material);
+		}
 	}
 }
 

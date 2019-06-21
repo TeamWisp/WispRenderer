@@ -109,8 +109,14 @@ namespace wr
 	//	MATERIAL POOL FUNCTIONS	//
 	//////////////////////////////
 
-	MaterialPool::MaterialPool()
+	MaterialPool::MaterialPool() {}
+
+	MaterialPool::~MaterialPool()
 	{
+		for(auto& m : m_materials)
+		{
+			delete m.second;
+		}
 	}
 
 	MaterialHandle MaterialPool::Create(TexturePool* pool)
@@ -161,7 +167,10 @@ namespace wr
 		auto it = m_materials.find(handle.m_id);
 
 		if (it == m_materials.end())
-			LOGC("Can't destroy material; it's not part of the material pool");
+		{
+			return;
+			//LOGC("Can't destroy material; it's not part of the material pool");
+		}
 
 		auto *ptr = it->second;
 		m_materials.erase(it);
