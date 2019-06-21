@@ -25,7 +25,7 @@ namespace wr
 	class D3D12MaterialPool : public MaterialPool
 	{
 	public:
-		explicit D3D12MaterialPool(D3D12RenderSystem& render_system);
+		explicit D3D12MaterialPool(D3D12RenderSystem& render_system, size_t material_count);
 		~D3D12MaterialPool() final;
 
 		void Evict() final;

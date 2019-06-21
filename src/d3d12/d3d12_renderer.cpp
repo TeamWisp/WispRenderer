@@ -317,9 +317,9 @@ namespace wr
 		return pool;
 	}
 
-	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t size_in_bytes)
+	std::shared_ptr<MaterialPool> D3D12RenderSystem::CreateMaterialPool(std::size_t material_count)
 	{
-		return std::make_shared<D3D12MaterialPool>(*this);
+		return std::make_shared<D3D12MaterialPool>(*this, material_count);
 	}
 
 	std::shared_ptr<ModelPool> D3D12RenderSystem::CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes)

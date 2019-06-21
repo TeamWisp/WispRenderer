@@ -17,10 +17,10 @@
 
 namespace wr
 {
-	D3D12MaterialPool::D3D12MaterialPool(D3D12RenderSystem & render_system) :
+	D3D12MaterialPool::D3D12MaterialPool(D3D12RenderSystem & render_system, size_t num_materials) :
 		m_render_system(render_system)
 	{
-		m_constant_buffer_pool = m_render_system.CreateConstantBufferPool(1_mb);		
+		m_constant_buffer_pool = m_render_system.CreateConstantBufferPool(num_materials * sizeof(Material::MaterialData) * d3d12::settings::num_back_buffers);
 	}
 
 	D3D12MaterialPool::~D3D12MaterialPool()
