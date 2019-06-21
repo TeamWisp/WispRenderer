@@ -344,6 +344,14 @@ namespace wr
 				m_render_system->DestroyCommandList(cmd_list);
 			}
 
+			for(decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				if(m_rt_properties[i].has_value() && !m_rt_properties[i]->m_is_render_window)
+				{
+					m_render_system->DestroyRenderTarget(&m_render_targets[i]);
+				}
+			}
+
 			// Reset all members in the case of the user wanting to reuse this frame graph after `FrameGraph::Destroy`.
 			m_setup_funcs.clear();
 			m_execute_funcs.clear();
