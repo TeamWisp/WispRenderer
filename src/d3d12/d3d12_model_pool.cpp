@@ -1725,7 +1725,13 @@ namespace wr
 			m_loaded_models.erase(it);
 		}
 
-		//TODO: Destroy possible materials owned by model. Material might be used by multiple models, use ref counts?
+		if(model->m_owns_materials)
+		{
+			for(auto& mesh : model->m_meshes)
+			{
+				mesh.second.m_pool->DestroyMaterial(mesh.second);
+			}
+		}
 
 		delete model;
 	}
