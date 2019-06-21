@@ -185,7 +185,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<BloomCompostionData>(handle);
 				delete data.out_allocator;
-				data.~BloomCompostionData();
 			}
 		}
 

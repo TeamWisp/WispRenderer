@@ -154,11 +154,11 @@ namespace phys
 
 	PhysicsEngine::~PhysicsEngine()
 	{
+		delete phys_world;
 		delete broadphase;
 		delete coll_dispatcher;
 		delete constraint_solver;
 		delete collision_config;
-		delete phys_world;
 	}
 
 } /* phys*/

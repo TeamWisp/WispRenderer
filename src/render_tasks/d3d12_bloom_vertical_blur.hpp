@@ -180,7 +180,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<BloomBlurVerticalData>(handle);
 				delete data.out_allocator;
-				data.~BloomBlurVerticalData();
 			}
 		}
 

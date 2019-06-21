@@ -122,7 +122,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<DoFDilateData>(handle);
 				delete data.out_allocator;
-				data.~DoFDilateData();
 			}
 		}
 

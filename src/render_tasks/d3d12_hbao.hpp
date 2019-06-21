@@ -204,7 +204,6 @@ namespace wr
 			d3d12::Destroy(data.out_descriptor_heap_rtv);
 
 			delete data.ssao_context;
-			data.~HBAOData();
 #endif
 		}
 

@@ -242,10 +242,6 @@ namespace wr
 			internal::ExecuteCubemapConvolutionTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			if(!resize)
-			{
-				fg.GetData<CubemapConvolutionTaskData>(handle).~CubemapConvolutionTaskData();
-			}
 		};
 
 		desc.m_properties = rt_properties;

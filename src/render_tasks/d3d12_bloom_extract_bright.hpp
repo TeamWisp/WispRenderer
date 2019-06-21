@@ -162,7 +162,6 @@ namespace wr
 			{
 				auto& data = fg.GetData<BloomExtractBrightData>(handle);
 				delete data.out_allocator;
-				data.~BloomExtractBrightData();
 			}
 		}
 
