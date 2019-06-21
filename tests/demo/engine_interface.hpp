@@ -73,6 +73,13 @@ namespace engine
 
 			std::filesystem::create_directory(m_output_dir);
 
+			if (fg_manager::Get()->HasTask<wr::ASBuildData>())
+			{
+				auto settings = fg_manager::Get()->GetSettings<wr::ASBuildData, wr::ASBuildSettings>();
+				settings.m_runtime.m_full_rebuild = true;
+				fg_manager::Get()->UpdateSettings<wr::ASBuildData>(settings);
+			}
+
 			show_imgui = false;
 
 			m_recording = true;
@@ -241,6 +248,7 @@ namespace engine
 				if (ImGui::Button("Record"))
 				{
 					recorder.Start(recorder_name, recorder_base_dir);
+					(*new_scene) = new SponzaScene();
 				}
 
 				ImGui::InputText("Recording Name", recorder_name, IM_ARRAYSIZE(recorder_name));

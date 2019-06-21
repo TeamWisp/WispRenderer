@@ -17,8 +17,8 @@
 
 #include "scene_sponza.hpp"
 
-static constexpr bool spawn_physics_balls = false;
-static constexpr int num_materials = 30;
+static constexpr bool spawn_physics_balls = true;
+static constexpr int num_materials = 60;
 static constexpr int num_balls = 600;
 
 SponzaScene::SponzaScene() :
@@ -29,7 +29,6 @@ SponzaScene::SponzaScene() :
 {
 	m_lights_path = "resources/sponza_lights.json";
 }
-
 
 inline float RandRange(float min, float max)
 {
@@ -55,8 +54,8 @@ void SponzaScene::LoadResources()
 	{
 		auto mat = m_material_pool->Create(m_texture_pool.get());
 		wr::Material* mat_internal = m_material_pool->GetMaterial(mat);
-		mat_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(RandRange(0, 0.5));
-		mat_internal->SetConstant<wr::MaterialConstant::METALLIC>(RandRange(0.5, 1));
+		mat_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(RandRange(0, 0.35));
+		mat_internal->SetConstant<wr::MaterialConstant::METALLIC>(RandRange(0.7, 1));
 		mat_internal->SetConstant<wr::MaterialConstant::EMISSIVE_MULTIPLIER>(RandRange(0, 1) > 0.8 ? 5 : 0);
 		mat_internal->SetConstant<wr::MaterialConstant::COLOR>({ RandRange(0.3, 1), RandRange(0.3, 1), RandRange(0.3, 1) });
 		m_mirror_materials.push_back(mat);
@@ -77,7 +76,7 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 
 	// Geometry
 	m_sponza_node = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sponza_model);
-	m_sponza_node->SetupConvex(phys_engine, m_sponza_model_data);
+	m_sponza_node->SetupTriangleMesh(phys_engine, m_sponza_model_data);
 	m_sponza_node->SetRestitution(1.f);
 	m_sponza_node->SetPosition({ 0, -1, 0 });
 	m_sponza_node->SetRotation({ 0, 90_deg, 0 });

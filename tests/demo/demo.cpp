@@ -44,8 +44,8 @@
 #include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-using DefaultScene = ViknellScene;
-//#define ENABLE_PHYSICS
+using DefaultScene = SponzaScene;
+#define ENABLE_PHYSICS
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
 Scene* current_scene = nullptr;
@@ -162,6 +162,7 @@ int WispEntry()
 
 		if (new_scene && new_scene != current_scene)
 		{
+			fg_manager::Get()->Wait();
 			render_system->WaitForAllPreviousWork();
 			delete current_scene;
 			current_scene = new_scene;

@@ -279,6 +279,15 @@ namespace wr
 			}
 		}
 
+		inline void Wait()
+		{
+			// Make sure the tasks are finished executing
+			for (decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				WaitForCompletion(i);
+			}
+		}
+
 		/*! Resize all render tasks */
 		/*!
 			This function calls resize all render tasks to a specific width and height.

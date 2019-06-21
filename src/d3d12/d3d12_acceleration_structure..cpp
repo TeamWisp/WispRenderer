@@ -75,7 +75,7 @@ namespace wr::d3d12
 		{
 			void *mapped_data;
 			resource->Map(0, nullptr, &mapped_data);
-			memcpy(mapped_data, data, size);
+ 			memcpy(mapped_data, data, size);
 			resource->Unmap(0, nullptr);
 		}
 

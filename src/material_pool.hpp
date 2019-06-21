@@ -231,8 +231,8 @@ namespace wr
 
 		void DestroyMaterial(MaterialHandle handle);
 
-	protected:
 		std::shared_ptr<ConstantBufferPool> m_constant_buffer_pool;
+	protected:
 
 		std::unordered_map<uint64_t, Material*> m_materials;
 

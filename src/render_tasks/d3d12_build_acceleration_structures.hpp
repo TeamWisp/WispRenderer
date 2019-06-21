@@ -34,6 +34,7 @@ namespace wr
 		struct Runtime
 		{
 			bool m_rebuild_as = false;
+			bool m_full_rebuild = false;
 		};
 		Runtime m_runtime;
 	};
@@ -476,8 +477,11 @@ namespace wr
 			d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
 			// Initialize requirements
-			if (data.out_init)
+			if (data.out_init || settings.m_runtime.m_full_rebuild)
 			{
+				settings.m_runtime.m_full_rebuild = false;
+				fg.UpdateSettings<ASBuildData>(settings);
+
 				std::vector<std::shared_ptr<D3D12ModelPool>> model_pools = n_render_system.m_model_pools;
 				// Transition all model pools for accel structure creation
 				for (auto& pool : model_pools)

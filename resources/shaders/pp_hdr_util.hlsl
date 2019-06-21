@@ -73,9 +73,6 @@ float3 GrayscaleToneMapping(float3 color) {
 
 float3 ACESToneMapping(float3 color, float exposure, float gamma)
 {
-	color = clamp(exposure * color, 0.f, 1.f);
-	color = pow(color, 1.f / gamma);
-
     float a = 2.51f;
     float b = 0.03f;
     float c = 2.43f;

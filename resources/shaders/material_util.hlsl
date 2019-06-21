@@ -74,7 +74,7 @@ OutputMaterialData InterpretMaterialData(MaterialData data,
 	output.roughness = roughness;
 	output.normal = tex_normal;
 	output.metallic = metallic;
-	output.emissive = pow(emissive,2.2f) * data.emissive_multiplier;
+	output.emissive = pow(albedo.xyz,2.2f) * data.emissive_multiplier;
 	output.ao = ao;
 
 	return output;
@@ -127,7 +127,7 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 	output.roughness = roughness;
 	output.normal = normal_t;
 	output.metallic = metallic;
-	output.emissive = pow(emissive, 2.2f) * data.emissive_multiplier;
+	output.emissive = pow(albedo.xyz, 2.2f) * data.emissive_multiplier;
 	output.ao = ao;
 
 	return output;
