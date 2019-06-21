@@ -173,7 +173,7 @@ int WispEntry()
 		current_scene->Update(delta);
 
 #ifdef ENABLE_PHYSICS
-		phys_engine.UpdateSim(delta, *scene_graph.get());
+		phys_engine.UpdateSim(delta, *current_scene->GetSceneGraph());
 #endif
 
 		auto texture = render_system->Render(*current_scene->GetSceneGraph(), *fg_manager::Get());
