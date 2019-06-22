@@ -40,7 +40,7 @@ typedef BuiltInTriangleIntersectionAttributes Attributes;
 struct AOHitInfo
 {
   float is_hit;
-  float padding;
+  float padding_for_fallback;
 };
 
 cbuffer CBData : register(b0)
@@ -193,7 +193,6 @@ void AOMissEntry(inout AOHitInfo hit : SV_RayPayload)
 [shader("anyhit")]
 void AOAnyHitEntry(inout AOHitInfo hit, in Attributes attr)
 {
-//#define FALLBACK
 #ifndef FALLBACK
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];

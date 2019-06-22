@@ -68,7 +68,6 @@ namespace wr
 				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate(1));
 				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate(1));
 
-
 				// Camera constant buffer
 				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTAO_CBData)));
 
@@ -243,7 +242,6 @@ namespace wr
 				
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
-#ifdef _DEBUG
 				if (as_build_data.out_using_transparency)
 				{
 					CreateShaderTables(device, data, "AORaygenEntry_Transparency", { "AOMissEntry" }, { "AOHitGroup" }, frame_idx);
@@ -252,7 +250,6 @@ namespace wr
 				{
 					CreateShaderTables(device, data, "AORaygenEntry", { "AOMissEntry" }, { }, frame_idx);
 				}
-#endif // _DEBUG
 
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, 
