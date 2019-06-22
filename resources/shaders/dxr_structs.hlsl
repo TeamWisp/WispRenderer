@@ -91,7 +91,7 @@ struct ReflectionHitInfo
 struct ShadowHitInfo
 {
 	float is_hit;
-	float thisvariablesomehowmakeshybridrenderingwork_killme;
+	float padding;
 };
 
 struct PathTracingHitInfo

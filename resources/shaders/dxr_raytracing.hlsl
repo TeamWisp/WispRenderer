@@ -44,9 +44,10 @@ Texture2D g_textures[1000] : register(t9);
 SamplerState s0 : register(s0);
 SamplerState point_sampler : register(s1);
 
-typedef BuiltInTriangleIntersectionAttributes MyAttributes;
+typedef BuiltInTriangleIntersectionAttributes Attributes;
 
 #include "dxr_pathtracer_functions.hlsl"
+#include "dxr_shadow_entries.hlsl"
 
 cbuffer CameraProperties : register(b0)
 {
@@ -161,7 +162,7 @@ void MissEntry(inout FullRTHitInfo payload)
 }
 
 [shader("closesthit")]
-void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
+void ClosestHitEntry(inout FullRTHitInfo payload, in Attributes attr)
 {
 	// Calculate the essentials
 	const Offset offset = g_offsets[InstanceID()];
@@ -234,18 +235,6 @@ void ClosestHitEntry(inout FullRTHitInfo payload, in MyAttributes attr)
 	payload.color = ggxIndirect(hit_pos, fN, N, V, albedo, metal, roughness, ao, payload.seed, payload.depth + 1);
 	payload.color += ggxDirect(hit_pos, fN, N, V, albedo, metal, roughness, payload.seed, payload.depth + 1);
 	payload.color += emissive;
-}
-
-[shader("closesthit")]
-void ShadowClosestHitEntry(inout ShadowHitInfo hit, MyAttributes bary)
-{
-	hit.is_hit = true;
-}
-
-[shader("miss")]
-void ShadowMissEntry(inout ShadowHitInfo hit : SV_RayPayload)
-{
-	hit.is_hit = false;
 }
 
 #endif //__DXR_RAYTRACING_HLSL__

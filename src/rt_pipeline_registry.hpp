@@ -23,6 +23,7 @@
 #include "vertex.hpp"
 #include "d3d12/d3dx12.hpp"
 #include "d3d12/d3d12_enums.hpp"
+#include "d3d12/d3d12_structs.hpp"
 #include "util/named_type.hpp"
 
 namespace wr
@@ -36,7 +37,7 @@ namespace wr
 		{
 			RegistryHandle shader_handle;
 			std::vector<std::wstring> exports;
-			std::vector<std::pair<std::wstring, std::wstring>> m_hit_groups; // first = hit group | second = entry
+			std::vector<d3d12::desc::HitGroupDesc> m_hit_groups;
 		};
 
 		CD3DX12_STATE_OBJECT_DESC desc;

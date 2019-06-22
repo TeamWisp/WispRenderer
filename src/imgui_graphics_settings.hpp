@@ -30,6 +30,7 @@ namespace wr::imgui::window
 	static bool asbuild_settings_open = true;
 	static bool shadow_settings_open = true;
 	static bool shadow_denoiser_settings_open = true;
+	static bool path_tracer_settings_open = true;
 
 	void GraphicsSettings(FrameGraph* frame_graph)
 	{
@@ -40,6 +41,7 @@ namespace wr::imgui::window
 
 			ImGui::DragFloat("Bias", &rtao_user_settings.m_runtime.bias, 0.01f, 0.0f, 100.f);
 			ImGui::DragFloat("Radius", &rtao_user_settings.m_runtime.radius, 0.1f, 0.0f, 1000.f);
+			ImGui::DragFloat("Max Distance", &rtao_user_settings.m_runtime.max_distance, 0.1f, 0.0f, 5000.f);
 			ImGui::DragFloat("Power", &rtao_user_settings.m_runtime.power, 0.1f, 0.0f, 10.f);
 			ImGui::DragInt("SPP", &rtao_user_settings.m_runtime.sample_count, 1, 0, 1073741824);
 
@@ -99,17 +101,30 @@ namespace wr::imgui::window
 
 			ImGui::Begin("Acceleration Structure Settings", &asbuild_settings_open);
 
-			ImGui::Checkbox("Disable rebuilding", &as_build_user_settings.m_runtime.m_rebuild_as);
+			static bool rebuild_as = false;
+			static bool allow_transparency = false;
+
+			ImGui::Checkbox("Disable rebuilding", &rebuild_as);
+
+			ImGui::Checkbox("Allow transparency", &allow_transparency);
+
+			if(ImGui::Button("Rebuild BLAS"))
+			{
+				as_build_user_settings.m_runtime.m_rebuild_bot_level = true;
+				as_build_user_settings.m_runtime.m_rebuild_as = rebuild_as;
+				as_build_user_settings.m_runtime.m_allow_transparency = allow_transparency;
+
+				frame_graph->UpdateSettings<ASBuildData>(as_build_user_settings);
+			}
 
 			ImGui::End();
-			frame_graph->UpdateSettings<ASBuildData>(as_build_user_settings);
 		}
 
 		if (frame_graph->HasTask<RTShadowData>() && shadow_settings_open)
 		{
 			auto shadow_user_settings = frame_graph->GetSettings<RTShadowData, RTShadowSettings>();
 
-			ImGui::Begin("Shadow Settings", &rtao_settings_open);
+			ImGui::Begin("Shadow Settings", &shadow_settings_open);
 
 			ImGui::DragFloat("Epsilon", &shadow_user_settings.m_runtime.m_epsilon, 0.01f, 0.0f, 15.f);
 			ImGui::DragInt("Sample Count", &shadow_user_settings.m_runtime.m_sample_count, 1, 1, 64);
@@ -136,6 +151,20 @@ namespace wr::imgui::window
 
 
 		}	
+
+		if (frame_graph->HasTask<PathTracerData>() && path_tracer_settings_open)
+		{
+			auto pt_user_settings = frame_graph->GetSettings<PathTracerData, PathTracerSettings>();
+
+			ImGui::Begin("Path Tracing Settings", &path_tracer_settings_open);
+
+			ImGui::Checkbox("Allow transparency", &pt_user_settings.m_runtime.m_allow_transparency);
+
+			ImGui::End();
+			frame_graph->UpdateSettings<PathTracerData>(pt_user_settings);
+
+
+		}
 	}
 
 }// namepace imgui::window

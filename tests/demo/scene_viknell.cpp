@@ -47,8 +47,8 @@ void ViknellScene::LoadResources()
 	// Materials
 	m_mirror_material = m_material_pool->Create(m_texture_pool.get());
 	wr::Material* mirror_internal = m_material_pool->GetMaterial(m_mirror_material);
-	mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0);
-	mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1);
+	mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0.0f);
+	mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1.0f);
 	mirror_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1, 1, 1 });
 
 	m_bamboo_material = m_material_pool->Create(m_texture_pool.get());

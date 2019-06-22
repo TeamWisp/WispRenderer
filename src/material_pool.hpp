@@ -147,7 +147,7 @@ namespace wr
 				float m_roughness;
 				float m_emissive_multiplier;
 				float m_is_double_sided;
-				float m_use_alpha_constant;
+				float m_use_alpha_masking;
 
 				float albedo_scale;
 				float normal_scale;

@@ -33,7 +33,7 @@ bool TraceShadowRay(float3 origin, float3 direction, float far, uint calling_pas
 	ray.TMin = 0;
 	ray.TMax = far;
 
-	ShadowHitInfo payload = { false, 0 };
+	ShadowHitInfo payload = { false, 0.0f };
 
 	uint ray_contr_idx = 1;
 	uint miss_idx = 1;

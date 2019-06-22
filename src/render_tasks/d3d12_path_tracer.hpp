@@ -33,6 +33,16 @@
 
 namespace wr
 {
+	struct PathTracerSettings
+	{
+		struct Runtime
+		{
+			bool m_allow_transparency = false;
+		};
+		Runtime m_runtime;
+	};
+
+
 	//TODO, this struct is unpadded, manual padding might be usefull.
 	struct PathTracerData
 	{
@@ -162,6 +172,22 @@ namespace wr
 				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
 
 				data.tlas_requires_init = true;
+
+
+				// Camera constant buffer
+				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
+
+				// Pipeline State Object
+				auto& rt_registry = RTPipelineRegistry::Get();
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(as_build_data.out_using_transparency
+																							? state_objects::path_tracer_state_object_transparency
+																							: state_objects::path_tracer_state_object));
+
+				// Create Shader Tables
+				for (int frame_idx = 0; frame_idx < d3d12::settings::num_back_buffers; ++frame_idx)
+				{
+					CreateShaderTables(device, data, frame_idx);
+				}
 			}
 
 			// Versioning
@@ -186,21 +212,6 @@ namespace wr
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 			}
 
-			if (!resize)
-			{
-				// Camera constant buffer
-				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
-
-				// Pipeline State Object
-				auto& rt_registry = RTPipelineRegistry::Get();
-				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object));
-
-				// Create Shader Tables
-				CreateShaderTables(device, data, 0);
-				CreateShaderTables(device, data, 1);
-				CreateShaderTables(device, data, 2);
-			}
-
 		}
 
 		inline void ExecutePathTracerTask(RenderSystem& render_system, FrameGraph& fg, SceneGraph& scene_graph, RenderTaskHandle& handle)
@@ -223,6 +234,23 @@ namespace wr
 			auto& data = fg.GetData<PathTracerData>(handle);
 			auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 			auto frame_idx = n_render_system.GetFrameIdx();
+			auto settings = fg.GetSettings<PathTracerSettings>(handle);
+
+			// Pipeline State Object
+			auto& rt_registry = RTPipelineRegistry::Get();
+
+			if (settings.m_runtime.m_allow_transparency)
+			{
+				// Pipeline State Object
+				auto& rt_registry = RTPipelineRegistry::Get();
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(as_build_data.out_using_transparency
+																							? state_objects::path_tracer_state_object_transparency
+																							: state_objects::path_tracer_state_object));
+			}
+			else
+			{
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::path_tracer_state_object));
+			}
 
 			// Rebuild acceleratrion structure a 2e time for fallback
 			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
@@ -471,7 +499,8 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		fg.AddTask<PathTracerData>(desc, L"Path Traced Global Illumination", FG_DEPS<DeferredMainTaskData>());
+		fg.AddTask<PathTracerData>(desc, L"Path Traced Global Illumination", FG_DEPS<DeferredMainTaskData>());		
+		fg.UpdateSettings<PathTracerData>(PathTracerSettings());
 	}
 
 } /* wr */

@@ -34,6 +34,8 @@ namespace wr
 		struct Runtime
 		{
 			bool m_rebuild_as = false;
+			bool m_allow_transparency = false;
+			bool m_rebuild_bot_level = false;
 		};
 		Runtime m_runtime;
 	};
@@ -66,6 +68,7 @@ namespace wr
 
 		bool out_init = true;
 		bool out_materials_require_update = true;
+		bool out_using_transparency = false;
 	};
 
 	namespace internal
@@ -86,7 +89,7 @@ namespace wr
 			// Structured buffer for the materials.
 			data.out_sb_material_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_material_sb_pool->Create(sizeof(temp::RayTracingMaterial_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingMaterial_CBData), false));
 
-			// Structured buffer for the materials.
+			// Structured buffer for the offsets.
 			data.out_sb_offset_handle = static_cast<D3D12StructuredBufferHandle*>(n_render_system.m_raytracing_offset_sb_pool->Create(sizeof(temp::RayTracingOffset_CBData) * d3d12::settings::num_max_rt_materials, sizeof(temp::RayTracingOffset_CBData), false));
 
 			// Resize the materials
@@ -183,7 +186,7 @@ namespace wr
 				d3d12::desc::GeometryDesc obj = CreateGeometryDescFromMesh(n_mesh, vb, ib);
 
 				// Build Bottom level BVH
-				auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
+				auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj }, data.out_using_transparency);
 				d3d12::UAVBarrierAS(cmd_list, blas, frame_idx);
 				d3d12::SetName(blas, L"Bottom Level Acceleration Structure");
 
@@ -243,7 +246,7 @@ namespace wr
 						d3d12::desc::GeometryDesc obj = CreateGeometryDescFromMesh(n_mesh, vb, ib);
 
 						// Build Bottom level BVH
-						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj });
+						auto blas = d3d12::CreateBottomLevelAccelerationStructures(device, cmd_list, out_heap, { obj }, data.out_using_transparency);
 						d3d12::UAVBarrierAS(cmd_list, blas, frame_idx);
 						d3d12::SetName(blas, L"Bottom Level Acceleration Structure");
 
@@ -470,14 +473,37 @@ namespace wr
 			auto frame_idx = n_render_system.GetFrameIdx();
 
 			data.out_materials_require_update = false;
+			data.out_using_transparency = settings.m_runtime.m_allow_transparency;
 
 			data.current_frame_index = n_render_system.GetFrameIdx();
 
 			d3d12::DescriptorHeap* out_heap = cmd_list->m_rt_descriptor_heap->GetHeap();
 
+			if (settings.m_runtime.m_rebuild_bot_level)
+			{
+				data.out_init = true;
+				settings.m_runtime.m_rebuild_bot_level = false;
+
+				fg.UpdateSettings<wr::ASBuildData>(settings);
+			}
+
 			// Initialize requirements
 			if (data.out_init)
 			{
+				if (data.current_frame_index != data.previous_frame_index)
+				{
+					for (int i = 0; i < data.old_blasses[data.current_frame_index].size(); ++i)
+					{
+						d3d12::DestroyAccelerationStructure(data.old_blasses[data.current_frame_index][i]);
+					}
+					data.old_blasses[data.current_frame_index].clear();
+
+					d3d12::DestroyAccelerationStructure(data.old_tlas[data.current_frame_index]);
+
+					data.old_tlas[data.current_frame_index] = {};
+				}
+
+
 				std::vector<std::shared_ptr<D3D12ModelPool>> model_pools = n_render_system.m_model_pools;
 				// Transition all model pools for accel structure creation
 				for (auto& pool : model_pools)

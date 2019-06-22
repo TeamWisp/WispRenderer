@@ -296,7 +296,8 @@ namespace wr::d3d12
 	[[nodiscard]] AccelerationStructure CreateBottomLevelAccelerationStructures(Device* device,
 		CommandList* cmd_list,
 		DescriptorHeap* desc_heap,
-		std::vector<desc::GeometryDesc> geometry);
+		std::vector<desc::GeometryDesc> geometry,
+		bool allow_transparency);
 
 	[[nodiscard]] AccelerationStructure CreateTopLevelAccelerationStructure(Device* device,
 		CommandList* cmd_list,
@@ -324,6 +325,6 @@ namespace wr::d3d12
 			std::uint64_t shader_record_size);
 	void AddShaderRecord(ShaderTable* table, ShaderRecord record);
 	void SetName(AccelerationStructure& acceleration_structure, std::wstring name);
-	void Destroy(ShaderTable* table);
+	void Destroy(ShaderTable*& table);
 
 } /* wr::d3d12 */

@@ -43,9 +43,8 @@ namespace wr
 		Runtime m_runtime;
 	};
 
-	struct RTShadowData
+	struct RTShadowData : RTHybrid_BaseData
 	{
-		RTHybrid_BaseData base_data;
 	};
 
 	namespace internal
@@ -66,41 +65,40 @@ namespace wr
 				// Get AS build data
 				auto& as_build_data = fg.GetPredecessorData<wr::ASBuildData>();
 
-				data.base_data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate(3));
-				data.base_data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
-				data.base_data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
-				data.base_data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_output_alloc = std::move(as_build_data.out_allocator->Allocate(3));
+				data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
 
-				data.base_data.tlas_requires_init = true;
-			}
+				data.tlas_requires_init = true;
 
-			// Versioning
-			CreateUAVsAndSRVs(fg, data.base_data, n_render_target);
-
-			if (!resize)
-			{
 				// Camera constant buffer
-				data.base_data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
+				data.out_cb_camera_handle = static_cast<D3D12ConstantBufferHandle*>(n_render_system.m_raytracing_cb_pool->Create(sizeof(temp::RTHybridCamera_CBData)));
 
 				// Pipeline State Object
 				auto& rt_registry = RTPipelineRegistry::Get();
-				data.base_data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(state_objects::rt_shadow_state_object));
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(as_build_data.out_using_transparency
+																							? state_objects::rt_shadow_state_object_transparency
+																							: state_objects::rt_shadow_state_object));
 
 				// Root Signature
 				auto& rs_registry = RootSignatureRegistry::Get();
-				data.base_data.out_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global));
+				data.out_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_hybrid_global));
 			}
+
+			// Versioning
+			CreateUAVsAndSRVs(fg, data, n_render_target);
 
 			// Create Shader Tables
 			for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
 			{
-				CreateShaderTables(device, data.base_data, "ShadowRaygenEntry",
+				CreateShaderTables(device, data, "ShadowRaygenEntry",
 									{ "ShadowMissEntry" },
 									{ "ShadowHitGroup" }, i);
 			}
 
 			// Setup frame index
-			data.base_data.frame_idx = 0;
+			data.frame_idx = 0;
 		}
 
 		inline void ExecuteRTShadowTask(RenderSystem & render_system, FrameGraph & fg, SceneGraph & scene_graph, RenderTaskHandle & handle)
@@ -123,20 +121,25 @@ namespace wr
 			// Rebuild acceleratrion structure a 2e time for fallback
 			if (d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK)
 			{
-				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.base_data.tlas_requires_init, data.base_data.out_tlas, as_build_data.out_blas_list, frame_idx);
+				d3d12::CreateOrUpdateTLAS(device, cmd_list, data.tlas_requires_init, data.out_tlas, as_build_data.out_blas_list, frame_idx);
 				d3d12::UAVBarrierAS(cmd_list, as_build_data.out_tlas, frame_idx);
 			}
 
 			if (n_render_system.m_render_window.has_value())
 			{
-				d3d12::BindRaytracingPipeline(cmd_list, data.base_data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
+				auto& rt_registry = RTPipelineRegistry::Get();
+				data.out_state_object = static_cast<d3d12::StateObject*>(rt_registry.Find(as_build_data.out_using_transparency
+																							? state_objects::rt_shadow_state_object_transparency
+																							: state_objects::rt_shadow_state_object));
+
+				d3d12::BindRaytracingPipeline(cmd_list, data.out_state_object, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 
 				// Bind output, indices and materials, offsets, etc
-				auto out_uav_handle = data.base_data.out_output_alloc.GetDescriptorHandle();
+				auto out_uav_handle = data.out_output_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)), out_uav_handle);
-				out_uav_handle = data.base_data.out_output_alloc.GetDescriptorHandle(1);
+				out_uav_handle = data.out_output_alloc.GetDescriptorHandle(1);
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 1, out_uav_handle);
-				out_uav_handle = data.base_data.out_output_alloc.GetDescriptorHandle(2);
+				out_uav_handle = data.out_output_alloc.GetDescriptorHandle(2);
 				d3d12::SetRTShaderUAV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OUTPUT)) + 2, out_uav_handle);
 
 				auto out_scene_ib_handle = as_build_data.out_scene_ib_alloc.GetDescriptorHandle();
@@ -148,13 +151,13 @@ namespace wr
 				auto out_scene_offset_handle = as_build_data.out_scene_offset_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::OFFSETS)), out_scene_offset_handle);
 
-				auto out_albedo_gbuffer_handle = data.base_data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
+				auto out_albedo_gbuffer_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 0, out_albedo_gbuffer_handle);
 
-				auto out_normal_gbuffer_handle = data.base_data.out_gbuffer_normal_alloc.GetDescriptorHandle();
+				auto out_normal_gbuffer_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 1, out_normal_gbuffer_handle);
 
-				auto out_scene_depth_handle = data.base_data.out_gbuffer_depth_alloc.GetDescriptorHandle();
+				auto out_scene_depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, out_scene_depth_handle);
 
 				/*
@@ -231,10 +234,10 @@ namespace wr
 				cam_data.m_inverse_projection = DirectX::XMMatrixInverse(nullptr, camera->m_projection);
 				cam_data.m_inv_vp = DirectX::XMMatrixInverse(nullptr, camera->m_view * camera->m_projection);
 				cam_data.m_intensity = n_render_system.temp_intensity;
-				cam_data.m_frame_idx = static_cast<float>(++data.base_data.frame_idx);
+				cam_data.m_frame_idx = static_cast<float>(++data.frame_idx);
 				cam_data.m_epsilon = settings.m_runtime.m_epsilon;
 				cam_data.m_sample_count = settings.m_runtime.m_sample_count;
-				n_render_system.m_camera_pool->Update(data.base_data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*) & cam_data); // FIXME: Uhh wrong pool?
+				n_render_system.m_camera_pool->Update(data.out_cb_camera_handle, sizeof(temp::RTHybridCamera_CBData), 0, frame_idx, (std::uint8_t*) & cam_data); // FIXME: Uhh wrong pool?
 
 				// Make sure the convolution pass wrote to the skybox.
 				fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
@@ -259,11 +262,11 @@ namespace wr
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::BRDF_LUT)), brdf_lut_text);
 
 				// Transition depth to NON_PIXEL_RESOURCE
-				d3d12::TransitionDepth(cmd_list, data.base_data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::DEPTH_WRITE, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
 				d3d12::BindDescriptorHeap(cmd_list, cmd_list->m_rt_descriptor_heap.get()->GetHeap(), DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV, frame_idx, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
 				d3d12::BindDescriptorHeaps(cmd_list, d3d12::GetRaytracingType(device) == RaytracingType::FALLBACK);
-				d3d12::BindComputeConstantBuffer(cmd_list, data.base_data.out_cb_camera_handle->m_native, 2, frame_idx);
+				d3d12::BindComputeConstantBuffer(cmd_list, data.out_cb_camera_handle->m_native, 2, frame_idx);
 
 				if (d3d12::GetRaytracingType(device) == RaytracingType::NATIVE)
 				{
@@ -280,23 +283,23 @@ namespace wr
 				d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 
 				//#ifdef _DEBUG
-				CreateShaderTables(device, data.base_data, "ShadowRaygenEntry",
+				CreateShaderTables(device, data, "ShadowRaygenEntry",
 								{ "ShadowMissEntry" },
 								{ "ShadowHitGroup" }, frame_idx);
 				//#endif
 
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list,
-					data.base_data.out_hitgroup_shader_table[frame_idx],
-					data.base_data.out_miss_shader_table[frame_idx],
-					data.base_data.out_raygen_shader_table[frame_idx],
+					data.out_hitgroup_shader_table[frame_idx],
+					data.out_miss_shader_table[frame_idx],
+					data.out_raygen_shader_table[frame_idx],
 					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetWidth(render_target))),
 					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 
 				// Transition depth back to DEPTH_WRITE
-				d3d12::TransitionDepth(cmd_list, data.base_data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
+				d3d12::TransitionDepth(cmd_list, data.out_deferred_main_rt, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::DEPTH_WRITE);
 			}
 		}
 
@@ -307,10 +310,10 @@ namespace wr
 			if (!resize)
 			{
 				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				std::move(data.base_data.out_output_alloc);
-				std::move(data.base_data.out_gbuffer_albedo_alloc);
-				std::move(data.base_data.out_gbuffer_normal_alloc);
-				std::move(data.base_data.out_gbuffer_depth_alloc);
+				std::move(data.out_output_alloc);
+				std::move(data.out_gbuffer_albedo_alloc);
+				std::move(data.out_gbuffer_normal_alloc);
+				std::move(data.out_gbuffer_depth_alloc);
 			}
 		}
 
