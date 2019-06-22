@@ -162,6 +162,7 @@ int WispEntry()
 
 		if (new_scene && new_scene != current_scene)
 		{
+			render_system->WaitForAllPreviousWork();
 			delete current_scene;
 			current_scene = new_scene;
 			current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), &phys_engine);
@@ -172,7 +173,7 @@ int WispEntry()
 		current_scene->Update(delta);
 
 #ifdef ENABLE_PHYSICS
-		phys_engine.UpdateSim(delta, *scene_graph.get());
+		phys_engine.UpdateSim(delta, *current_scene->GetSceneGraph());
 #endif
 
 		auto texture = render_system->Render(*current_scene->GetSceneGraph(), *fg_manager::Get());
