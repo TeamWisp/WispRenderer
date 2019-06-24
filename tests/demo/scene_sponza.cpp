@@ -41,6 +41,19 @@ inline float RandRangeI(float min, float max)
 	return min + static_cast <int> (rand()) / (static_cast <int> (RAND_MAX / (max - min)));
 }
 
+SponzaScene::~SponzaScene()
+{
+	if(m_sphere_model)
+	{
+		m_model_pool->Destroy(m_sphere_model);
+		m_model_pool->Destroy(m_sponza_model);
+		for(auto& material : m_mirror_materials)
+		{
+			m_material_pool->DestroyMaterial(material);
+		}
+	}
+}
+
 void SponzaScene::LoadResources()
 {
 	// Models
@@ -76,7 +89,7 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	auto skybox = m_scene_graph->CreateChild<wr::SkyboxNode>(nullptr, m_skybox);
 
 	// Geometry
-	m_sponza_node = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sponza_model);
+	m_sponza_node = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, &phys_engine, m_sponza_model);
 	m_sponza_node->SetupConvex(phys_engine, m_sponza_model_data);
 	m_sponza_node->SetRestitution(1.f);
 	m_sponza_node->SetPosition({ 0, -1, 0 });
@@ -88,7 +101,7 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 		// Left Ballfall
 		for (auto i = 0; i < num_balls / 2; i++)
 		{
-			auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sphere_model);
+			auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, &phys_engine, m_sphere_model);
 			ball->SetMass(0.004f);
 			ball->SetupSimpleSphereColl(phys_engine, 1.f);
 			ball->m_rigid_body->setRestitution(0.5);
@@ -104,7 +117,7 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 		// Right Ballfall
 		for (auto i = 0; i < num_balls / 2; i++)
 		{
-			auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sphere_model);
+			auto ball = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, &phys_engine, m_sphere_model);
 			ball->SetMass(0.004f);
 			ball->SetupSimpleSphereColl(phys_engine, 1.f);
 			ball->m_rigid_body->setRestitution(0.5);

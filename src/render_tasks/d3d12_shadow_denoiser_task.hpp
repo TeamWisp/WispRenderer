@@ -594,16 +594,6 @@ namespace wr
 		{
 			auto& data = fg.GetData<ShadowDenoiserData>(handle);
 
-			DescriptorAllocation temp1 = std::move(data.out_allocation);
-
-			if (!resize)
-			{
-				for (auto buffer : data.m_denoiser_settings_buffer)
-				{
-					data.m_constant_buffer_pool->Destroy(buffer);
-				}
-			}
-
 			d3d12::Destroy(data.m_in_hist_length);
 			d3d12::Destroy(data.m_in_prev_color);
 			d3d12::Destroy(data.m_in_prev_moments);
@@ -612,6 +602,13 @@ namespace wr
 			d3d12::Destroy(data.m_out_hist_length_render_target);
 			d3d12::Destroy(data.m_out_moments_render_target);
 			d3d12::Destroy(data.m_ping_pong_render_target);
+
+			if (!resize) {
+				for (auto buffer : data.m_denoiser_settings_buffer)
+				{
+					data.m_constant_buffer_pool->Destroy(buffer);
+				}
+			}
 		}
 
 	} /* internal */

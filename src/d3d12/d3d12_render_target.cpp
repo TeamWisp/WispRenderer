@@ -262,16 +262,9 @@ namespace wr::d3d12
 
 	void Resize(RenderTarget** render_target, Device* device, unsigned int width, unsigned int height)
 	{
-		(*render_target)->m_width = width;
-		(*render_target)->m_height = height;
-
-		if ((*render_target)->m_create_info.m_dsv_format == Format::D32_FLOAT && (*render_target)->m_create_info.m_create_dsv_buffer)
-		{
-			DestroyDepthStencilBuffer((*render_target));
-		}
-		DestroyRenderTargetViews((*render_target));
-
-		(*render_target) = CreateRenderTarget(device, width, height, (*render_target)->m_create_info);
+		auto create_info = (*render_target)->m_create_info;
+		Destroy(*render_target);
+		(*render_target) = CreateRenderTarget(device, width, height, create_info);
 	}
 
 	void IncrementFrameIdx(RenderTarget* render_target)
@@ -297,6 +290,11 @@ namespace wr::d3d12
 
 	void Destroy(RenderTarget* render_target)
 	{
+		if(!render_target)
+		{
+			return;
+		}
+
 		if (render_target->m_create_info.m_create_dsv_buffer)
 		{
 			DestroyDepthStencilBuffer(render_target);

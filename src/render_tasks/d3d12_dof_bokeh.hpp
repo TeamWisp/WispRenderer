@@ -202,9 +202,6 @@ namespace wr
 			if (!resize)
 			{
 				auto& data = fg.GetData<DoFBokehData>(handle);
-
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_allocation);
 				data.camera_cb_pool->Destroy(data.cb_handle);
 				delete data.out_allocator;
 			}

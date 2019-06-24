@@ -44,7 +44,9 @@ namespace wr
 	}
 
 	RTDescriptorHeap::~RTDescriptorHeap()
-	{}
+	{
+		delete m_heap;
+	}
 
 	void RTDescriptorHeap::ParseRootSignature(const d3d12::RootSignature& root_signature)
 	{

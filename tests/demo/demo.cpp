@@ -191,6 +191,7 @@ int WispEntry()
 
 	fg_manager::Destroy();
 	render_system.reset();
+	delete file_watcher;
 
 	return 0;
 }
