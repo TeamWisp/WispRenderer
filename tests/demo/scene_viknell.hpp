@@ -29,6 +29,7 @@ class ViknellScene : public Scene
 {
 public:
 	ViknellScene();
+	~ViknellScene();
 
 	void Update(float delta_time) final;
 

@@ -38,7 +38,13 @@ namespace wr
 	}
 
 	DynamicDescriptorHeap::~DynamicDescriptorHeap()
-	{}
+	{
+		while(!m_descriptor_heap_pool.empty())
+		{
+			delete m_descriptor_heap_pool.front();
+			m_descriptor_heap_pool.pop();
+		}
+	}
 
 	void DynamicDescriptorHeap::ParseRootSignature(const d3d12::RootSignature& root_signature)
 	{

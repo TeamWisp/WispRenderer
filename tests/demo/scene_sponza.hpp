@@ -29,6 +29,7 @@ class SponzaScene : public Scene
 {
 public:
 	SponzaScene();
+	~SponzaScene();
 
 	void Update(float delta_time) final;
 

@@ -205,7 +205,9 @@ namespace wr
 		desc.m_destroy_func = [](FrameGraph & fg, RenderTaskHandle handle, bool resize) { 
 			if (!resize)
 			{
-				fg.GetData<SpatialReconstructionData>(handle).~SpatialReconstructionData();
+				auto& data = fg.GetData<SpatialReconstructionData>(handle);
+				delete data.allocator;
+				data.m_cb_pool.reset();
 			}
 		};
 

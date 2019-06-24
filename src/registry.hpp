@@ -54,8 +54,8 @@ namespace wr::internal
 
 		static C& Get()
 		{
-			static C* instance = new C();
-			return *instance;
+			static C instance = {};
+			return instance;
 		}
 
 		void Lock()

@@ -39,6 +39,7 @@ namespace util
 	{
 		if (m_thread.joinable())
 		{
+			m_running = false;
 			m_thread.join();
 		}
 	}

@@ -420,15 +420,24 @@ namespace wr
 
 		inline void DestroyPathTracerTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
+			if(!resize)
 			{
-				auto& data = fg.GetData<PathTracerData>(handle);
+				PathTracerData& data = fg.GetData<PathTracerData>(handle);
 
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				std::move(data.out_output_alloc);
-				std::move(data.out_gbuffer_albedo_alloc);
-				std::move(data.out_gbuffer_normal_alloc);
-				std::move(data.out_gbuffer_depth_alloc);
+				for (d3d12::ShaderTable* shader : data.out_raygen_shader_table)
+				{
+					delete shader;
+				}
+
+				for (d3d12::ShaderTable* shader : data.out_miss_shader_table)
+				{
+					delete shader;
+				}
+
+				for (d3d12::ShaderTable* shader : data.out_hitgroup_shader_table)
+				{
+					delete shader;
+				}
 			}
 		}
 

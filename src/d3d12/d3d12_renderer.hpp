@@ -216,6 +216,7 @@ namespace wr
 		void SetRenderTargetName(RenderTarget* cmd_list, std::wstring const& name);
 		void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height);
 		void RequestFullscreenChange(bool fullscreen_state);
+		void DestroyRenderTarget(RenderTarget **render_target) override;
 
 		void ResetCommandList(CommandList* cmd_list);
 		void CloseCommandList(CommandList* cmd_list);

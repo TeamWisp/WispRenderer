@@ -142,7 +142,7 @@ namespace phys
 		{
 			if (auto & node = std::dynamic_pointer_cast<PhysicsMeshNode>(n))
 			{
-				if (!node->m_rigid_bodys.has_value() && node->m_rigid_body)
+				if (!node->m_rigid_bodies.has_value() && node->m_rigid_body)
 				{
 					auto world_position = node->m_rigid_body->getWorldTransform().getOrigin();
 					node->m_position = util::BV3toDXV3(world_position);
@@ -152,14 +152,13 @@ namespace phys
 		}
 	}
 
-	void PhysicsEngine::Destroy()
+	PhysicsEngine::~PhysicsEngine()
 	{
-
+		delete phys_world;
 		delete broadphase;
 		delete coll_dispatcher;
 		delete constraint_solver;
 		delete collision_config;
-		delete phys_world;
 	}
 
 } /* phys*/

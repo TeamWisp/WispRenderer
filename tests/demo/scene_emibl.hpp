@@ -27,6 +27,7 @@ class EmiblScene : public Scene
 {
 public:
 	EmiblScene();
+	~EmiblScene();
 
 	void Update(float delta_time) final;
 

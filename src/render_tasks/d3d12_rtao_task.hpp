@@ -254,14 +254,24 @@ namespace wr
 
 		inline void DestroyAOTask(FrameGraph& fg, RenderTaskHandle handle, bool resize) 
 		{
-			auto& data = fg.GetData<RTAOData>(handle);
-
-			if (!resize)
+			if(!resize)
 			{
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
-				DescriptorAllocation temp2 = std::move(data.in_gbuffers);
-				DescriptorAllocation temp3 = std::move(data.in_depthbuffer);
+				RTAOData& data = fg.GetData<RTAOData>(handle);
+
+				for(d3d12::ShaderTable* shader : data.in_raygen_shader_table)
+				{
+					delete shader;
+				}
+
+				for(d3d12::ShaderTable* shader : data.in_miss_shader_table)
+				{
+					delete shader;
+				}
+
+				for(d3d12::ShaderTable* shader : data.in_hitgroup_shader_table)
+				{
+					delete shader;
+				}
 			}
 		}
 	}

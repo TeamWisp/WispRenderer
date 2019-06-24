@@ -54,11 +54,11 @@ namespace wr
 		GFSDK_SSAO_InputData_D3D12 ssao_input_data;
 #endif
 
-		d3d12::DescHeapCPUHandle cpu_depth_handle = d3d12::DescHeapCPUHandle();
-		d3d12::DescHeapGPUHandle gpu_depth_handle = d3d12::DescHeapGPUHandle();
-		d3d12::DescHeapCPUHandle cpu_normal_handle = d3d12::DescHeapCPUHandle();
-		d3d12::DescHeapGPUHandle gpu_normal_handle = d3d12::DescHeapGPUHandle();
-		d3d12::DescHeapCPUHandle cpu_target_handle = d3d12::DescHeapCPUHandle();
+		d3d12::DescHeapCPUHandle cpu_depth_handle{};
+		d3d12::DescHeapGPUHandle gpu_depth_handle{};
+		d3d12::DescHeapCPUHandle cpu_normal_handle{};
+		d3d12::DescHeapGPUHandle gpu_normal_handle{};
+		d3d12::DescHeapCPUHandle cpu_target_handle{};
 	};
 
 	namespace internal

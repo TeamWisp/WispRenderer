@@ -529,15 +529,6 @@ namespace wr
 
 		inline void DestroyBuildASTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
-			{
-				auto& data = fg.GetData<ASBuildData>(handle);
-
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_scene_ib_alloc);
-				DescriptorAllocation temp2 = std::move(data.out_scene_mat_alloc);
-				DescriptorAllocation temp3 = std::move(data.out_scene_offset_alloc);
-			}
 		}
 
 	} /* internal */
