@@ -293,6 +293,14 @@ void reprojection_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	bool success = LoadPrevData(screen_coord, prev_direct, prev_moments, history_length);
 
+	if(isnan(prev_direct.x) || isnan(prev_direct.y) || isnan(prev_direct.z))
+	{
+		success = false;
+		prev_direct = 0.f;
+		prev_moments = 0.f;
+		history_length = 0.f;
+	}
+
 	float3 moment_1 = float3(0.0, 0.0, 0.0);
 	float3 moment_2 = float3(0.0, 0.0, 0.0);
 
@@ -399,6 +407,11 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 					const float3 direct_p = input_texture[p].xyz;
 					const float2 moments_p = prev_moments_texture[p].xy;
 
+					if(isnan(direct_p.x) || isnan(direct_p.y) || isnan(direct_p.z) || isnan(moments_p.x) || isnan(moments_p.y))
+					{
+						continue;
+					}
+
 					const float l_direct_p = Luminance(direct_p);
 
 					float3 normal_p;
@@ -409,6 +422,11 @@ void filter_moments_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 						depth_center.x, z_p.x, phi_depth * length(float2(x, y)),
 						normal_center, normal_p, n_phi,
 						luminance_direct_center, l_direct_p, l_phi);
+
+					if(isnan(w))
+					{
+						continue;
+					}
 
 					sum_weights += w;
 					sum_direct += direct_p * w;
@@ -489,6 +507,11 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			{
 				const float4 direct_p = input_texture[p];
 
+				if(isnan(direct_p.x) || isnan(direct_p.y) || isnan(direct_p.z) || isnan(direct_p.w))
+				{
+					continue;
+				}
+
 				float3 normal_p;
 				float2 depth_p;
 				FetchNormalAndLinearZ(p, normal_p, depth_p);
@@ -501,6 +524,11 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 					luminance_direct_center, luminance_direct_p, phi_l_direct
 				);
 
+				if(isnan(w))
+				{
+					continue;
+				}
+
 				const float w_direct = w * kernel;
 
 				sum_weights += w_direct;
@@ -508,6 +536,8 @@ void wavelet_filter_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			}
 		}
 	}
+
+	sum_weights = max(sum_weights, 1e-6f);
 
 	out_color_texture[screen_coord] = float4(sum_direct / float4(sum_weights.xxx, sum_weights * sum_weights));
 }
