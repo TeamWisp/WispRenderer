@@ -237,15 +237,13 @@ namespace wr
 				CreateShaderTables(device, data, frame_idx);
 #endif // _DEBUG
 
-				scalar = fg.GetRenderTargetResolutionScale(handle);
-
 				// Dispatch hybrid ray tracing rays
 				d3d12::DispatchRays(cmd_list, 
 					data.in_hitgroup_shader_table[frame_idx], 
 					data.in_miss_shader_table[frame_idx], 
 					data.in_raygen_shader_table[frame_idx], 
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetWidth(render_target))),
-					static_cast<std::uint32_t>(std::ceil(scalar * d3d12::GetRenderTargetHeight(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetWidth(render_target))),
+					static_cast<std::uint32_t>(std::ceil(d3d12::GetRenderTargetHeight(render_target))),
 					1,
 					frame_idx);
 

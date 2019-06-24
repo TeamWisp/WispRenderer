@@ -79,6 +79,24 @@ void PhysicsMeshNode::SetupConvex(phys::PhysicsEngine& phys_engine, wr::ModelDat
 	}
 }
 
+void PhysicsMeshNode::SetupTriangleMesh(phys::PhysicsEngine& phys_engine, wr::ModelData* model)
+{
+	m_rigid_bodys = std::vector<btRigidBody*>();
+	m_shapes = std::vector<btCollisionShape*>();
+
+	auto hulls = phys_engine.CreateTriangleMeshShape(model);
+
+	for (auto& hull : hulls)
+	{
+		m_shapes->push_back(hull);
+
+		btTransform transform;
+		transform.setIdentity();
+		auto body = phys_engine.CreateRigidBody(0.f, transform, hull);
+		m_rigid_bodys->push_back(body);
+	}
+}
+
 void PhysicsMeshNode::SetPosition(DirectX::XMVECTOR position)
 {
 	if (m_rigid_bodys.has_value())

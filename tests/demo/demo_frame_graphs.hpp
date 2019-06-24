@@ -28,6 +28,8 @@
 #include "render_tasks/d3d12_shadow_denoiser_task.hpp"
 #include "render_tasks/d3d12_equirect_to_cubemap.hpp"
 #include "render_tasks/d3d12_cubemap_convolution.hpp"
+#include "render_tasks/d3d12_spatial_reconstruction.hpp"
+#include "render_tasks/d3d12_reflection_denoiser.hpp"
 #include "render_tasks/d3d12_rtao_task.hpp"
 #include "render_tasks/d3d12_post_processing.hpp"
 #include "render_tasks/d3d12_build_acceleration_structures.hpp"
@@ -143,7 +145,7 @@ namespace fg_manager
 		// Path Tracer
 		{
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::PATH_TRACER];
-			fg = new wr::FrameGraph(11);
+			fg = new wr::FrameGraph(18);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -162,6 +164,10 @@ namespace fg_manager
 			// Raytracing task
 			wr::AddRTReflectionTask(*fg);
 			wr::AddRTShadowTask(*fg);
+
+			wr::AddShadowDenoiserTask(*fg);
+			wr::AddSpatialReconstructionTask(*fg);
+			wr::AddReflectionDenoiserTask(*fg);
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
@@ -187,7 +193,7 @@ namespace fg_manager
 		// Hybrid raytracing
 		{
 			auto& fg = frame_graphs[(int) PrebuildFrameGraph::RT_HYBRID];
-			fg = new wr::FrameGraph(27);
+			fg = new wr::FrameGraph(31);
 
 			// Precalculate BRDF Lut
 			wr::AddBrdfLutPrecalculationTask(*fg);
@@ -205,6 +211,9 @@ namespace fg_manager
 			wr::AddRTShadowTask(*fg);
 
 			wr::AddShadowDenoiserTask(*fg);
+			wr::AddSpatialReconstructionTask(*fg);
+
+			wr::AddReflectionDenoiserTask(*fg);
 
 			//Raytraced Ambient Occlusion task
 			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);

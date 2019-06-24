@@ -197,6 +197,14 @@ void EmiblScene::LoadResources()
 		bw_tiles_internal->SetTexture(wr::TextureType::ROUGHNESS, bw_tiles_roughness);
 		bw_tiles_internal->SetTexture(wr::TextureType::METALLIC, bw_tiles_metallic);
 		bw_tiles_internal->SetTexture(wr::TextureType::EMISSIVE, bw_tiles_emissive);
+
+		m_material_handles[10] = m_material_pool->Create(m_texture_pool.get());
+
+		wr::Material* mirror_internal = m_material_pool->GetMaterial(m_material_handles[10]);
+
+		mirror_internal->SetConstant<wr::MaterialConstant::COLOR>({ 1.f, 1.f, 1.f });
+		mirror_internal->SetConstant<wr::MaterialConstant::METALLIC>(1.f);
+		mirror_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0.f);
 	}
 
 	{

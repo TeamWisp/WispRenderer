@@ -38,14 +38,20 @@ protected:
 
 private:
 	// Models
+	wr::Model* m_sphere_model;
 	wr::Model* m_sponza_model;
+	wr::ModelData* m_sponza_model_data;
 
 	// Textures
 	wr::TextureHandle m_skybox;
 
+	// Materials
+	std::vector<wr::MaterialHandle> m_mirror_materials;
+
 	// Nodes
 	std::shared_ptr<DebugCamera> m_camera;
 	std::shared_ptr<SplineNode> m_camera_spline_node;
+	std::shared_ptr<PhysicsMeshNode> m_sponza_node;
 
 	float m_time;
 };

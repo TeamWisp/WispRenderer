@@ -53,13 +53,24 @@ struct VS_OUTPUT
 cbuffer CameraProperties : register(b0)
 {
 	float4x4 view;
+
 	float4x4 projection;
+
 	float4x4 inv_projection;
+
 	float4x4 inv_view;
+
 	float4x4 prev_projection;
+
 	float4x4 prev_view;
+
 	uint is_hybrid;
 	uint is_path_tracer;
+	uint is_ao;
+	uint has_shadows;
+
+	float3 padding1;
+	uint has_reflections;
 };
 
 struct ObjectData
@@ -114,6 +125,7 @@ struct PS_OUTPUT
 	#ifdef IS_HYBRID
 	float4 velocity : SV_TARGET3;
 	float4 depth : SV_TARGET4;
+	float4 world_position : SV_TARGET5;
 	#endif
 };
 
@@ -183,6 +195,8 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 	float max_change_z = max(abs(ddx(linear_z)), abs(ddy(linear_z)));
 	float compressed_obj_normal = asfloat(dirToOct(normalize(obj_normal)));
 	output.depth = float4(linear_z, max_change_z, prev_z, compressed_obj_normal);
+
+	output.world_position = input.world_pos;
 	#endif
 
 	return output;
