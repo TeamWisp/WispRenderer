@@ -105,10 +105,10 @@ OutputMaterialData InterpretMaterialDataRT(MaterialData data,
 		use_albedo_texture);
 
 	#ifdef COMPRESSED
-	const float roughness = lerp(data.roughness, max(0.05, material_roughness.SampleLevel(s0, uv * data.roughness_uv_scale, mip_level).z), use_roughness_texture);
+	const float roughness = lerp(data.roughness, max(0, material_roughness.SampleLevel(s0, uv * data.roughness_uv_scale, mip_level).z), use_roughness_texture);
 	const float metallic = lerp(data.metallic, material_metallic.SampleLevel(s0, uv * data.metallic_uv_scale, mip_level).y, use_metallic_texture); 
 	#else
-	const float roughness = lerp(data.roughness, max(0.05, material_roughness.SampleLevel(s0, uv * data.roughness_uv_scale, mip_level).x), use_roughness_texture);
+	const float roughness = lerp(data.roughness, max(0, material_roughness.SampleLevel(s0, uv * data.roughness_uv_scale, mip_level).x), use_roughness_texture);
 	const float metallic = lerp(data.metallic, material_metallic.SampleLevel(s0, uv * data.metallic_uv_scale, mip_level).x, use_metallic_texture); 
 	#endif
 	

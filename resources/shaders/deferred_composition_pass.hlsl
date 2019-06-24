@@ -151,7 +151,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			has_reflections);
 
 		// Shade pixel
-		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, has_shadows);
+		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, 0, 0, 0, sampled_brdf, shadow_factor, has_shadows);
 	}
 	else
 	{	

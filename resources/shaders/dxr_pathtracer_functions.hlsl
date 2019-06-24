@@ -203,10 +203,15 @@ float3 ggxIndirect(float3 hit_pos, float3 fN, float3 N, float3 V, float3 albedo,
 	else
 	{
 		nextRand(seed);
-		float3 H = getGGXMicrofacet(seed, roughness, N);
+		//float3 H = getGGXMicrofacet(seed, roughness, N);
+
+		float2 xi = hammersley2d(seed, 8192);
+		float pdf = 0;
+		float3 H = importanceSamplePdf(xi, roughness, N, pdf);
+		float3 L = reflect(-V, H);
 
 		// ### BRDF ###
-		float3 L = normalize(2.f * dot(V, H) * H - V);
+		//float3 L = normalize(2.f * dot(V, H) * H - V);
 
 		// Compute some dot products needed for shading
 		float NdotV = saturate(dot(N, V));
