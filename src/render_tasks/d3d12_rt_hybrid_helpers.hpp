@@ -59,6 +59,7 @@ namespace wr
 		DescriptorAllocation out_gbuffer_albedo_alloc;
 		DescriptorAllocation out_gbuffer_normal_alloc;
 		DescriptorAllocation out_gbuffer_depth_alloc;
+		DescriptorAllocation out_gbuffer_position_alloc;
 
 		bool tlas_requires_init = false;
 	};
@@ -147,11 +148,13 @@ namespace wr
 				auto albedo_handle = data.out_gbuffer_albedo_alloc.GetDescriptorHandle();
 				auto normal_handle = data.out_gbuffer_normal_alloc.GetDescriptorHandle();
 				auto depth_handle = data.out_gbuffer_depth_alloc.GetDescriptorHandle();
+				auto position_handle = data.out_gbuffer_position_alloc.GetDescriptorHandle();
 
 				auto deferred_main_rt = data.out_deferred_main_rt = static_cast<d3d12::RenderTarget*>(fg.GetPredecessorRenderTarget<DeferredMainTaskData>());
 
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, albedo_handle, 0, deferred_main_rt->m_create_info.m_rtv_formats[0]);
 				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, normal_handle, 1, deferred_main_rt->m_create_info.m_rtv_formats[1]);
+				d3d12::CreateSRVFromSpecificRTV(deferred_main_rt, position_handle, 5, deferred_main_rt->m_create_info.m_rtv_formats[5]);
 
 				d3d12::CreateSRVFromDSV(deferred_main_rt, depth_handle);
 			}

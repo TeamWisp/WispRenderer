@@ -70,6 +70,7 @@ namespace wr
 				data.base_data.out_gbuffer_albedo_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.base_data.out_gbuffer_normal_alloc = std::move(as_build_data.out_allocator->Allocate());
 				data.base_data.out_gbuffer_depth_alloc = std::move(as_build_data.out_allocator->Allocate());
+				data.base_data.out_gbuffer_position_alloc = std::move(as_build_data.out_allocator->Allocate());
 
 				data.base_data.tlas_requires_init = true;
 			}
@@ -156,6 +157,9 @@ namespace wr
 
 				auto out_scene_depth_handle = data.base_data.out_gbuffer_depth_alloc.GetDescriptorHandle();
 				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 2, out_scene_depth_handle);
+
+				auto out_scene_position_handle = data.base_data.out_gbuffer_position_alloc.GetDescriptorHandle();
+				d3d12::SetRTShaderSRV(cmd_list, 0, COMPILATION_EVAL(rs_layout::GetHeapLoc(params::rt_hybrid, params::RTHybridE::GBUFFERS)) + 3, out_scene_position_handle);
 
 				/*
 				To keep the CopyDescriptors function happy, we need to fill the descriptor table with valid descriptors
@@ -311,6 +315,7 @@ namespace wr
 				std::move(data.base_data.out_gbuffer_albedo_alloc);
 				std::move(data.base_data.out_gbuffer_normal_alloc);
 				std::move(data.base_data.out_gbuffer_depth_alloc);
+				std::move(data.base_data.out_gbuffer_position_alloc);
 			}
 		}
 
