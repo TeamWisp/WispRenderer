@@ -206,6 +206,11 @@ namespace wr
 			}
 		}
 
+		if (last_occupied_block == nullptr)
+		{
+			LOGW("You're trying to shrink an empty vertex heap, returning instead.");
+			return;
+		}
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
 		new_size = SizeAlignAnyAlignment(new_size, 65536);
 
@@ -355,7 +360,7 @@ namespace wr
 
 	void D3D12ModelPool::ShrinkIndexHeapToFit()
 	{
-		MemoryBlock* last_occupied_block;
+		MemoryBlock* last_occupied_block = nullptr;
 		for (MemoryBlock* mem_block = m_index_heap_start_block; mem_block != nullptr; mem_block = mem_block->m_next_block)
 		{
 			if (mem_block->m_free == false)
@@ -363,7 +368,10 @@ namespace wr
 				last_occupied_block = mem_block;
 			}
 		}
-
+		if (last_occupied_block == nullptr)
+		{
+			LOGW("You're trying to shrink an empty index heap, returning instead.");
+		}
 		size_t new_size = last_occupied_block->m_offset + last_occupied_block->m_size;
 		new_size = SizeAlignAnyAlignment(new_size, 65536);
 
@@ -1202,24 +1210,31 @@ namespace wr
 
 			m_command_queue.push(stageCommand);
 
-			if (last_occupied_block->m_offset + last_occupied_block->m_size < new_size)
+			if (last_occupied_block != nullptr)
 			{
-				if (last_occupied_block->m_next_block != nullptr)
+				if (last_occupied_block->m_offset + last_occupied_block->m_size < new_size)
 				{
-					last_occupied_block->m_next_block->m_size = new_size - (last_occupied_block->m_offset + last_occupied_block->m_size);
-				}
-				else
-				{
-					MemoryBlock* new_block = new MemoryBlock;
+					if (last_occupied_block->m_next_block != nullptr)
+					{
+						last_occupied_block->m_next_block->m_size = new_size - (last_occupied_block->m_offset + last_occupied_block->m_size);
+					}
+					else
+					{
+						MemoryBlock* new_block = new MemoryBlock;
 
-					last_occupied_block->m_next_block = new_block;
-					new_block->m_prev_block = last_occupied_block;
-					new_block->m_free = true;
-					new_block->m_alignment = 1;
-					new_block->m_offset = last_occupied_block->m_offset + last_occupied_block->m_size;
-					new_block->m_next_block = nullptr;
-					new_block->m_size = new_size - new_block->m_offset;
+						last_occupied_block->m_next_block = new_block;
+						new_block->m_prev_block = last_occupied_block;
+						new_block->m_free = true;
+						new_block->m_alignment = 1;
+						new_block->m_offset = last_occupied_block->m_offset + last_occupied_block->m_size;
+						new_block->m_next_block = nullptr;
+						new_block->m_size = new_size - new_block->m_offset;
+					}
 				}
+			}
+			else
+			{
+				m_vertex_heap_start_block->m_size = new_size;
 			}
 		}
 		m_updated = true;
@@ -1392,24 +1407,31 @@ namespace wr
 
 			m_command_queue.push(stageCommand);
 
-			if (last_occupied_block->m_offset + last_occupied_block->m_size < new_size)
+			if (last_occupied_block != nullptr)
 			{
-				if (last_occupied_block->m_next_block != nullptr)
+				if (last_occupied_block->m_offset + last_occupied_block->m_size < new_size)
 				{
-					last_occupied_block->m_next_block->m_size = new_size - (last_occupied_block->m_offset + last_occupied_block->m_size);
-				}
-				else
-				{
-					MemoryBlock* new_block = new MemoryBlock;
+					if (last_occupied_block->m_next_block != nullptr)
+					{
+						last_occupied_block->m_next_block->m_size = new_size - (last_occupied_block->m_offset + last_occupied_block->m_size);
+					}
+					else
+					{
+						MemoryBlock* new_block = new MemoryBlock;
 
-					last_occupied_block->m_next_block = new_block;
-					new_block->m_prev_block = last_occupied_block;
-					new_block->m_free = true;
-					new_block->m_alignment = 1;
-					new_block->m_offset = last_occupied_block->m_offset + last_occupied_block->m_size;
-					new_block->m_next_block = nullptr;
-					new_block->m_size = new_size - new_block->m_offset;
+						last_occupied_block->m_next_block = new_block;
+						new_block->m_prev_block = last_occupied_block;
+						new_block->m_free = true;
+						new_block->m_alignment = 1;
+						new_block->m_offset = last_occupied_block->m_offset + last_occupied_block->m_size;
+						new_block->m_next_block = nullptr;
+						new_block->m_size = new_size - new_block->m_offset;
+					}
 				}
+			}
+			else
+			{
+				m_index_heap_start_block->m_size = new_size;
 			}
 		}
 		m_updated = true;
