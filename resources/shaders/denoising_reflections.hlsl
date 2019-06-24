@@ -112,10 +112,10 @@ float ComputeWeight(
 	float luminance_direct_center, float luminance_direct_p, float phi_direct)
 {
 	const float w_normal    = NormalDistanceCos(normal_center, normal_p, norm_power);
-	const float w_z         = (phi_depth == 0) ? 0.0f : abs(depth_center - depth_p) / phi_depth;
+	const float w_z         = (phi_depth == 0.f) ? 0.0f : abs(depth_center - depth_p) / phi_depth;
 	const float w_l_direct   = abs(luminance_direct_center - luminance_direct_p) / phi_direct;
 
-	const float w_direct   = exp(0.0 - max(w_l_direct, 0.0)   - max(w_z, 0.0)) * w_normal;
+	const float w_direct   = exp(0.0f - max(w_l_direct, 0.0f)   - max(w_z, 0.0f)) * w_normal;
 
 	return w_direct;
 }
@@ -134,8 +134,6 @@ bool IsReprojectionValid(float2 coord, float z, float z_prev, float fwidth_z, fl
 	output_texture.GetDimensions(screen_size.x, screen_size.y);
 
 	bool ret = (coord.x >= 0.f && coord.x < screen_size.x && coord.y >= 0.f && coord.y < screen_size.y);
-
-	//ret = ret && ((abs(z_prev - z) / (fwidth_z + 1e-4)) < 8.0);
 
 	ret = ret && ((distance(normal, normal_prev) / (fwidth_normal + 1e-2)) < 16.0);
 
@@ -374,27 +372,27 @@ void variance_estimator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 	[branch]
 	if(history < 5.f)
 	{		
-		float sum_weights = 0.0;
-		float3 sum_direct = float3(0.0, 0.0, 0.0);
-		float2 sum_moments = float2(0.0, 0.0);
+		float sum_weights = 0.0f;
+		float3 sum_direct = float3(0.0f, 0.0f, 0.0f);
+		float2 sum_moments = float2(0.0f, 0.0f);
 
 		const float4 direct_center = input_texture[screen_coord];
 
-		float3 normal_center = float3(0.0, 0.0, 0.0);
-		float2 depth_center = float2(0.0, 0.0);
+		float3 normal_center = float3(0.0f, 0.0f, 0.0f);
+		float2 depth_center = float2(0.0f, 0.0f);
 
 		FetchNormalAndLinearZ(screen_coord, normal_center, depth_center);
 
-		if(depth_center.x < 0.0)
+		if(depth_center.x < 0.0f)
 		{
 			output_texture[screen_coord] = direct_center;
 			return;
 		}
 		
 		const float phi_direct = l_phi;
-		const float phi_depth = max(depth_center.y, 1e-8) * 3.0;
+		const float phi_depth = max(depth_center.y, 1e-8) * 3.0f;
 
-		const int radius = 3;
+		const int radius = 3.f;
 		[unroll]
 		for(int y = -radius; y <= radius; ++y)
 		{
@@ -402,9 +400,9 @@ void variance_estimator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			for(int x = -radius; x <= radius; ++x)
 			{				
 				const int2 p = screen_coord + int2(x, y);
-				const bool inside = p.x >= 0 && p.x < screen_size.x && p.y >= 0 && p.y < screen_size.y;
-				const bool same_pixel = (x==0) && (y==0);
-				const float kernel = 1.0;
+				const bool inside = p.x >= 0.f && p.x < screen_size.x && p.y >= 0.f && p.y < screen_size.y;
+				const bool same_pixel = (x==0.f) && (y==0.f);
+				const float kernel = 1.0f;
 
 				if(inside)
 				{
@@ -439,7 +437,7 @@ void variance_estimator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		float variance = sum_moments.y - sum_moments.x * sum_moments.x;
 
-		variance *= 5.0/history;
+		variance *= 5.0f/history;
 
 		output_texture[screen_coord] = float4(sum_direct.xyz, variance);
 	}
@@ -519,7 +517,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				const float w = ComputeWeight(
 					depth_center.x, depth_p.x, phi_depth*length(float2(x, y)),
 					normal_center, normal_p, n_phi,
-					luminance_direct_center, luminance_direct_p, phi_l_direct) * sqrt(max(1e-15, roughness)); 
+					luminance_direct_center, luminance_direct_p, phi_l_direct) * sqrt(max(1e-15f, roughness)); 
 
 				const float w_direct = w * kernel;
 
