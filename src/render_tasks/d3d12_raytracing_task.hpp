@@ -52,6 +52,16 @@ namespace wr
 		DirectX::XMVECTOR last_cam_rot = {};
 	};
 
+	struct RaytracingSettings
+	{
+		struct Runtime
+		{
+			bool m_reset_accumulation = false;
+		};
+
+		Runtime m_runtime;
+	};
+
 	namespace internal
 	{
 
@@ -208,6 +218,14 @@ namespace wr
 				if (DirectX::XMVector3Length(DirectX::XMVectorSubtract(scene_graph.GetActiveCamera()->m_rotation_radians, data.last_cam_rot)).m128_f32[0] > 0.001)
 				{
 					data.last_cam_rot = scene_graph.GetActiveCamera()->m_rotation_radians;
+					n_render_system.temp_rough = -1;
+				}
+
+				auto settings = fg.GetSettings<RaytracingSettings>(handle);
+				if (settings.m_runtime.m_reset_accumulation)
+				{
+					settings.m_runtime.m_reset_accumulation = false;
+					fg.UpdateSettings<RaytracingData>(settings);
 					n_render_system.temp_rough = -1;
 				}
 
@@ -392,6 +410,7 @@ namespace wr
 		desc.m_allow_multithreading = true;
 
 		frame_graph.AddTask<RaytracingData>(desc, L"Full Raytracing");
+		frame_graph.UpdateSettings<RaytracingData>(RaytracingSettings());
 	}
 
 } /* wr */

@@ -53,5 +53,9 @@ private:
 	std::shared_ptr<SplineNode> m_camera_spline_node;
 	std::shared_ptr<PhysicsMeshNode> m_sponza_node;
 
+	std::shared_ptr<wr::LightNode> red_light;
+	std::shared_ptr<wr::LightNode> blue_light;
+	std::shared_ptr<wr::LightNode> green_light;
+
 	float m_time;
 };

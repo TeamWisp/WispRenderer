@@ -29,20 +29,19 @@ class SplineNode : public wr::Node
 	};
 
 public:
-	explicit SplineNode(std::string name, bool looping = false);
+	explicit SplineNode(std::string name, bool looping = false, bool play_once = false);
 	~SplineNode();
 
 	void UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node);
-
-private:
+	void SaveSplineToFile(std::string const & path);
+	void LoadSplineFromFile(std::string const & path);
 	void UpdateNaturalSpline();
+
+	bool m_animate;
 
 	static std::optional<std::string> LoadDialog();
 	static std::optional<std::string> SaveDialog();
-	void SaveSplineToFile(std::string const & path);
-	void LoadSplineFromFile(std::string const & path);
 
-	bool m_animate;
 
 	void* m_spline;
 	void* m_quat_spline;
@@ -52,6 +51,7 @@ private:
 	float m_time;
 
 	bool m_looping;
+	bool m_play_once;
 
 	std::string m_name;
 };

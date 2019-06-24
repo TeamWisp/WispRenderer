@@ -134,9 +134,16 @@ namespace phys
 		return body;
 	}
 
-	void PhysicsEngine::UpdateSim(float delta, wr::SceneGraph& sg)
+	void PhysicsEngine::UpdateSim(float delta, wr::SceneGraph& sg, std::optional<float> fixed_delta, int steps)
 	{
-		phys_world->stepSimulation(delta);
+		if (fixed_delta.has_value())
+		{
+			phys_world->stepSimulation(delta, steps);
+		}
+		else
+		{
+			phys_world->stepSimulation(delta);
+		}
 
 		for (auto& n : sg.GetMeshNodes())
 		{

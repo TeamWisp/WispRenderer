@@ -139,7 +139,7 @@ namespace engine
 		if (!show_imgui)
 		{
 			stats_window.Draw(*render_system, viewport_pos);
-			sg->GetActiveCamera()->SetAspectRatio(render_system->m_viewport.m_viewport.Width / render_system->m_viewport.m_viewport.Height);
+			sg->GetActiveCamera()->SetAspectRatio((float)render_system->m_window.value()->GetWidth() / (float)render_system->m_window.value()->GetHeight());
 		}
 		else
 		{
@@ -243,13 +243,23 @@ namespace engine
 				{
 					recorder.Start(recorder_name, recorder_base_dir);
 
-					switch (selected_scene)
+					if (recorder_reset_scene)
 					{
-						case 0: (*new_scene) = new ViknellScene(); break;
-						case 1: (*new_scene) = new EmiblScene(); break;
-						case 2: (*new_scene) = new SponzaScene(); break;
-						case 3: (*new_scene) = new AlienScene(); break;
-						default: LOGW("Tried to load a scene that is not supported"); break;
+						switch (selected_scene)
+						{
+							case 0: (*new_scene) = new ViknellScene(); break;
+							case 1: (*new_scene) = new EmiblScene(); break;
+							case 2: (*new_scene) = new SponzaScene(); break;
+							case 3: (*new_scene) = new AlienScene(); break;
+							default: LOGW("Tried to load a scene that is not supported"); break;
+						}
+
+						if (fg_manager::Get()->HasTask<wr::ASBuildData>())
+						{
+							auto settings = fg_manager::Get()->GetSettings<wr::ASBuildData, wr::ASBuildSettings>();
+							settings.m_runtime.m_full_rebuild = true;
+							fg_manager::Get()->UpdateSettings<wr::ASBuildData>(settings);
+						}
 					}
 				}
 
@@ -258,13 +268,6 @@ namespace engine
 				ImGui::InputInt("Target Framerate", &recorder.m_target_framerate);
 				ImGui::InputInt("Frame Interval", &recorder.m_record_frame_inverval);
 				ImGui::Checkbox("Reload Scene", &recorder_reset_scene);
-
-				if (recorder_reset_scene && fg_manager::Get()->HasTask<wr::ASBuildData>())
-				{
-					auto settings = fg_manager::Get()->GetSettings<wr::ASBuildData, wr::ASBuildSettings>();
-					settings.m_runtime.m_full_rebuild = true;
-					fg_manager::Get()->UpdateSettings<wr::ASBuildData>(settings);
-				}
 
 				ImGui::End();
 			}

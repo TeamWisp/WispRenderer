@@ -63,7 +63,7 @@ namespace phys
 
 		btRigidBody* CreateRigidBody(float mass, const btTransform& startTransform, btCollisionShape* shape);
 
-		void UpdateSim(float delta, wr::SceneGraph& sg);
+		void UpdateSim(float delta, wr::SceneGraph& sg, std::optional<float> fixed_delta = std::nullopt, int steps = 1);
 
 		void Destroy();
 	};

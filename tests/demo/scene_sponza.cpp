@@ -17,7 +17,9 @@
 
 #include "scene_sponza.hpp"
 
-static constexpr bool spawn_physics_balls = true;
+#include <algorithm>
+
+static constexpr bool spawn_physics_balls = false;
 static constexpr int num_materials = 60;
 static constexpr int num_balls = 600;
 
@@ -67,10 +69,16 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	auto& phys_engine = *reinterpret_cast<phys::PhysicsEngine*>(extra);
 
 	m_camera = m_scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)width / (float)height);
+	//m_camera->SetFovFromFocalLength(m_camera->m_aspect_ratio, m_camera->m_film_size);
 	m_camera->SetPosition({ 0, 1, 11 });
+	m_camera->m_film_size = 60;
 	m_camera->SetSpeed(10);
 
-	m_camera_spline_node = m_scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline", false);
+	m_camera_spline_node = m_scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline", false, true);
+	m_camera_spline_node->LoadSplineFromFile("resources/splines/sponza_lion_camera.spl");
+	m_camera_spline_node->m_animate = true;
+	m_camera_spline_node->UpdateNaturalSpline();
+	m_camera_spline_node->m_speed = 0.25;
 
 	auto skybox = m_scene_graph->CreateChild<wr::SkyboxNode>(nullptr, m_skybox);
 
@@ -119,11 +127,38 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	}
 
 	// Lights
-	LoadLightsFromJSON();
+	//LoadLightsFromJSON();
+
+	red_light = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT);
+	red_light->SetColor({ 1, 0, 0 });
+	red_light->SetPosition({ -3.5, 2, -11 });
+	red_light->SetLightSize(5);
+	red_light->SetRadius(0);
+
+	green_light = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT);
+	green_light->SetColor({ 0, 0, 1 });
+	green_light->SetPosition({ 4, 2, -11 });
+	green_light->SetLightSize(5);
+	green_light->SetRadius(0);
+
+	blue_light = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT);
+	blue_light->SetColor({ 0, 0.72, 1 });
+	blue_light->SetPosition({ 0.345, 1, -12 });
+	blue_light->SetLightSize(5);
+	blue_light->SetRadius(0);
 }
 
 void SponzaScene::Update(float delta)
 {
 	m_camera->Update(delta);
 	m_camera_spline_node->UpdateSplineNode(delta, m_camera);
+
+	m_time += delta * 1.5;
+	float blue_delay = 2;
+	float delay_rg = 5;
+	green_light->SetRadius(std::clamp(m_time - delay_rg, 0.f, 6.f));
+	blue_light->SetRadius(std::clamp(m_time - blue_delay, 0.f, 5.f));
+	red_light->SetRadius(std::clamp(m_time - delay_rg, 0.f, 6.f));
+
+	//m_time = std::fmodf(m_time, 10.f);
 }

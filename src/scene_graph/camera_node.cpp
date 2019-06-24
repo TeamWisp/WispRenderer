@@ -37,6 +37,8 @@ namespace wr
 	void CameraNode::SetAspectRatio(float ratio)
 	{
 		m_aspect_ratio = ratio;
+		float verticalSize = m_film_size / m_aspect_ratio;
+		m_fov.m_fov = 2.0f * std::atan2(verticalSize, 2.0f * m_focal_length);
 		SignalChange();
 	}
 

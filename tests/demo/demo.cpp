@@ -90,9 +90,9 @@ int WispEntry()
 
 	render_system = std::make_unique<wr::D3D12RenderSystem>();
 
-	phys::PhysicsEngine phys_engine;
+	phys::PhysicsEngine* phys_engine = new phys::PhysicsEngine();
 
-	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1920, 1080);
 
 	window->SetKeyCallback([](int key, int action, int mods)
 	{
@@ -132,10 +132,10 @@ int WispEntry()
 
 	render_system->Init(window.get());	
 
-	phys_engine.CreatePhysicsWorld();
+	phys_engine->CreatePhysicsWorld();
 
 	current_scene = new DefaultScene();
-	current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), &phys_engine);
+	current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), phys_engine);
 
 	fg_manager::Setup(*render_system, &RenderEditor);
 
@@ -148,25 +148,40 @@ int WispEntry()
 		fg_manager::Resize(*render_system, width, height);
 	});
 
-	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
-	file_watcher->StartAsync(&ShaderDirChangeDetected);
+	CoInitializeEx(NULL, COINIT_MULTITHREADED);
 
-	window->SetRenderLoop([&]() {
+//	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
+//	file_watcher->StartAsync(&ShaderDirChangeDetected);
+
+	while (window->IsRunning())
+	{
+		window->PollEvents();
+	//window->SetRenderLoop([&]() {
 		// Find delta
 		float delta = ImGui::GetIO().DeltaTime;
 		bool capture_frame = engine::recorder.ShouldCaptureAndIncrement(delta);
 		if (capture_frame)
 		{
 			fg_manager::Get()->SaveTaskToDisc<wr::PostProcessingData>(engine::recorder.GetNextFilename(".tga"), 0);
+			if (fg_manager::Get()->HasTask<wr::RaytracingData>())
+			{
+				auto settings = fg_manager::Get()->GetSettings<wr::RaytracingData, wr::RaytracingSettings>();
+				settings.m_runtime.m_reset_accumulation = true;
+				fg_manager::Get()->UpdateSettings<wr::RaytracingData>(settings);
+			}
 		}
 
 		if (new_scene && new_scene != current_scene)
 		{
+
 			fg_manager::Get()->Wait();
 			render_system->WaitForAllPreviousWork();
 			delete current_scene;
+			delete phys_engine;
+			phys_engine = new phys::PhysicsEngine();
+			phys_engine->CreatePhysicsWorld();
 			current_scene = new_scene;
-			current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), &phys_engine);
+			current_scene->Init(render_system.get(), window->GetWidth(), window->GetHeight(), phys_engine);
 			fg_manager::Get()->SetShouldExecute<wr::EquirectToCubemapTaskData>(true);
 			fg_manager::Get()->SetShouldExecute<wr::CubemapConvolutionTaskData>(true);
 		}
@@ -174,12 +189,12 @@ int WispEntry()
 		current_scene->Update(delta);
 
 #ifdef ENABLE_PHYSICS
-		phys_engine.UpdateSim(delta, *current_scene->GetSceneGraph());
+		phys_engine->UpdateSim(delta, *current_scene->GetSceneGraph());
 #endif
 
 		auto texture = render_system->Render(*current_scene->GetSceneGraph(), *fg_manager::Get());
 
-	});
+	}/*);*/
 
 	window->StartRenderLoop();
 

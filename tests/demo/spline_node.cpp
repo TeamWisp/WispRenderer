@@ -23,7 +23,8 @@
 
 static bool initialized = false;
 
-SplineNode::SplineNode(std::string name, bool looping) : Node(typeid(SplineNode)), m_name(name), m_animate(false), m_speed(1), m_time(0), m_spline(nullptr), m_quat_spline(nullptr), m_looping(looping)
+SplineNode::SplineNode(std::string name, bool looping, bool play_once) : Node(typeid(SplineNode)),
+	m_name(name), m_animate(false), m_speed(1), m_time(0), m_spline(nullptr), m_quat_spline(nullptr), m_looping(looping), m_play_once(play_once)
 {
 	if (initialized) return;
 	initialized = true;
@@ -136,7 +137,15 @@ void SplineNode::UpdateSplineNode(float delta, std::shared_ptr<wr::Node> node)
 	auto impl = [&](auto spline, auto quat_spline)
 	{
 		m_time += delta * m_speed;
-		m_time = std::fmod(m_time, spline->getMaxT());
+
+		if (!m_play_once)
+		{
+			m_time = std::fmod(m_time, spline->getMaxT());
+		}
+		else if (m_time >= spline->getMaxT())
+		{
+			m_time = spline->getMaxT();
+		}
 
 		auto new_pos = spline->getPosition(m_time);
 		auto new_rot = quat_spline->getPosition(m_time);

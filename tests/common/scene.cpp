@@ -114,7 +114,7 @@ void Scene::SaveLightsToJSON()
 		j_light["color"] = { light->m_light->col.x, light->m_light->col.y, light->m_light->col.z };
 		j_light["pos"] = light->m_position.m128_f32;
 		j_light["rot"] = light->m_rotation_radians.m128_f32;
-		j_light["size"] = light->m_light->light_size;
+		j_light["size"] = DirectX::XMConvertToDegrees(light->m_light->light_size);
 		j_light["radius"] = light->m_light->rad;
 		j_light["angle"] = light->m_light->ang;
 
