@@ -28,6 +28,7 @@ namespace wr
 	struct ReflectionDenoiserData
 	{
 		d3d12::PipelineState* m_temporal_denoiser_pipeline;
+		d3d12::PipelineState* m_variance_estimator_pipeline;
 		d3d12::PipelineState* m_spatial_denoiser_pipeline;
 
 		DescriptorAllocator* m_descriptor_allocator;
@@ -296,6 +297,7 @@ namespace wr
 
 			auto& ps_registry = PipelineRegistry::Get();
 			data.m_temporal_denoiser_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::reflection_temporal_denoiser);
+			data.m_variance_estimator_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::reflection_variance_estimator);
 			data.m_spatial_denoiser_pipeline = (d3d12::PipelineState*)ps_registry.Find(pipelines::reflection_spatial_denoiser);
 		}
 
@@ -420,6 +422,45 @@ namespace wr
 				1);
 		}
 
+		inline void VarianceEstimator(D3D12RenderSystem& n_render_system, SceneGraph& sg, ReflectionDenoiserData& data, d3d12::CommandList* cmd_list)
+		{
+			const auto viewport = n_render_system.m_viewport;
+			auto frame_idx = n_render_system.GetFrameIdx();
+
+			d3d12::BindComputePipeline(cmd_list, data.m_variance_estimator_pipeline);
+
+			BindRenderTargets(data, cmd_list);
+
+			d3d12::HeapResource* camera_buffer = static_cast<D3D12ConstantBufferHandle*>(sg.GetActiveCamera()->m_camera_cb)->m_native;
+
+			d3d12::BindComputeConstantBuffer(cmd_list, camera_buffer, 1, frame_idx);
+
+			d3d12::HeapResource* denoiser_settings = static_cast<D3D12ConstantBufferHandle*>(data.m_denoiser_settings_buffer)->m_native;
+
+			d3d12::BindComputeConstantBuffer(cmd_list, denoiser_settings, 2, frame_idx);
+
+			d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
+
+			{
+				constexpr unsigned int input = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::INPUT);
+				auto cpu_handle = data.m_output_allocation.GetDescriptorHandle(1);
+				d3d12::SetShaderSRV(cmd_list, 0, input, cpu_handle);
+			}
+
+			d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::UNORDERED_ACCESS);
+
+			{
+				constexpr unsigned int output = rs_layout::GetHeapLoc(params::reflection_denoiser, params::ReflectionDenoiserE::OUTPUT);
+				auto cpu_handle = data.m_ping_pong_allocation.GetDescriptorHandle(0);
+				d3d12::SetShaderUAV(cmd_list, 0, output, cpu_handle);
+			}
+
+			d3d12::Dispatch(cmd_list,
+				uint32_t(std::ceil(viewport.m_viewport.Width / 16.f)),
+				uint32_t(std::ceil(viewport.m_viewport.Height / 16.f)),
+				1);
+		}
+
 		inline void SpatialDenoiser(D3D12RenderSystem& n_render_system, SceneGraph& sg, ReflectionDenoiserData& data, d3d12::CommandList* cmd_list)
 		{
 			const auto viewport = n_render_system.m_viewport;
@@ -442,7 +483,7 @@ namespace wr
 				d3d12::HeapResource* wavelet_size = static_cast<D3D12ConstantBufferHandle*>(data.m_wavelet_sizes[i])->m_native;
 				d3d12::BindComputeConstantBuffer(cmd_list, wavelet_size, 3, frame_idx);
 
-				if (i % 2 == 0)
+				if (i % 2 != 0)
 				{
 					d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 
@@ -486,7 +527,7 @@ namespace wr
 
 				if (i == d3d12::settings::shadow_denoiser_feedback_tap)
 				{
-					if (i % 2 == 0)
+					if (i % 2 != 0)
 					{
 						d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
 						d3d12::Transition(cmd_list, data.m_prev_data_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
@@ -508,7 +549,7 @@ namespace wr
 					}
 				}
 			}
-			if (data.m_wavelet_sizes.size() % 2 == 0)
+			if (data.m_wavelet_sizes.size() % 2 != 0)
 			{
 				d3d12::Transition(cmd_list, data.m_output_render_target, ResourceState::NON_PIXEL_SHADER_RESOURCE, ResourceState::COPY_DEST);
 				d3d12::Transition(cmd_list, data.m_ping_pong_render_target, ResourceState::UNORDERED_ACCESS, ResourceState::COPY_SOURCE);
@@ -558,6 +599,8 @@ namespace wr
 			d3d12::Transition(cmd_list, data.m_out_history_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
 			d3d12::Transition(cmd_list, data.m_in_moments_render_target, ResourceState::COPY_DEST, ResourceState::NON_PIXEL_SHADER_RESOURCE);
 			d3d12::Transition(cmd_list, data.m_out_moments_render_target, ResourceState::COPY_SOURCE, ResourceState::UNORDERED_ACCESS);
+
+			VarianceEstimator(n_render_system, sg, data, cmd_list);
 
 			SpatialDenoiser(n_render_system, sg, data, cmd_list);
 

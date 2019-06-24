@@ -106,6 +106,20 @@ float NormalDistanceCos(float3 n1, float3 n2, float power)
 	return pow(max(0.0f, dot(n1, n2)), power);
 }
 
+float ComputeWeight(
+	float depth_center, float depth_p, float phi_depth,
+	float3 normal_center, float3 normal_p, float norm_power, 
+	float luminance_direct_center, float luminance_direct_p, float phi_direct)
+{
+	const float w_normal    = NormalDistanceCos(normal_center, normal_p, norm_power);
+	const float w_z         = (phi_depth == 0.f) ? 0.0f : abs(depth_center - depth_p) / phi_depth;
+	const float w_l_direct   = abs(luminance_direct_center - luminance_direct_p) / phi_direct;
+
+	const float w_direct   = exp(0.0f - max(w_l_direct, 0.0f)   - max(w_z, 0.0f)) * w_normal;
+
+	return w_direct;
+}
+
 float ComputeWeightNoLuminance(float depth_center, float depth_p, float phi_depth, float3 normal_center, float3 normal_p)
 {
 	const float w_normal    = NormalDistanceCos(normal_center, normal_p, 128.f);
@@ -120,8 +134,6 @@ bool IsReprojectionValid(float2 coord, float z, float z_prev, float fwidth_z, fl
 	output_texture.GetDimensions(screen_size.x, screen_size.y);
 
 	bool ret = (coord.x >= 0.f && coord.x < screen_size.x && coord.y >= 0.f && coord.y < screen_size.y);
-
-	ret = ret && ((abs(z_prev - z) / (fwidth_z + 1e-4)) < 8.0);
 
 	ret = ret && ((distance(normal, normal_prev) / (fwidth_normal + 1e-2)) < 16.0);
 
@@ -347,6 +359,95 @@ void temporal_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 }
 
 [numthreads(16, 16, 1)]
+void variance_estimator_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
+{
+	float2 screen_coord = float2(dispatch_thread_id.xy);
+
+	float2 screen_size = float2(0.f, 0.f);
+	output_texture.GetDimensions(screen_size.x, screen_size.y);
+
+	float2 uv = screen_coord / screen_size;
+
+	float history = in_history_texture[screen_coord].r;
+	[branch]
+	if(history < 5.f)
+	{		
+		float sum_weights = 0.0f;
+		float3 sum_direct = float3(0.0f, 0.0f, 0.0f);
+		float2 sum_moments = float2(0.0f, 0.0f);
+
+		const float4 direct_center = input_texture[screen_coord];
+
+		float3 normal_center = float3(0.0f, 0.0f, 0.0f);
+		float2 depth_center = float2(0.0f, 0.0f);
+
+		FetchNormalAndLinearZ(screen_coord, normal_center, depth_center);
+
+		if(depth_center.x < 0.0f)
+		{
+			output_texture[screen_coord] = direct_center;
+			return;
+		}
+		
+		const float phi_direct = l_phi;
+		const float phi_depth = max(depth_center.y, 1e-8) * 3.0f;
+
+		const int radius = 3.f;
+		[unroll]
+		for(int y = -radius; y <= radius; ++y)
+		{
+			[unroll]
+			for(int x = -radius; x <= radius; ++x)
+			{				
+				const int2 p = screen_coord + int2(x, y);
+				const bool inside = p.x >= 0.f && p.x < screen_size.x && p.y >= 0.f && p.y < screen_size.y;
+				const bool same_pixel = (x==0.f) && (y==0.f);
+				const float kernel = 1.0f;
+
+				if(inside)
+				{
+					const float3 direct_p = input_texture[p].xyz;
+					const float2 moments_p = in_moments_texture[p].xy;
+
+					float3 normal_p;
+					float2 z_p;
+					FetchNormalAndLinearZ(p, normal_p, z_p);
+
+					const float w = ComputeWeightNoLuminance(
+						depth_center.x, z_p.x, phi_depth * length(float2(x, y)),
+						normal_center, normal_p);
+
+					if(isnan(direct_p.x) || isnan(direct_p.y) || isnan(direct_p.z) || isnan(w))
+					{
+						continue;
+					}
+
+					sum_weights += w;
+					sum_direct += direct_p * w;
+
+					sum_moments += moments_p * float2(w.xx);
+				}
+			}
+		}
+
+		sum_weights = max(sum_weights, 1e-6f);
+
+		sum_direct /= sum_weights;
+		sum_moments /= float2(sum_weights.xx);
+
+		float variance = sum_moments.y - sum_moments.x * sum_moments.x;
+
+		variance *= 5.0f/history;
+
+		output_texture[screen_coord] = float4(sum_direct.xyz, variance);
+	}
+	else
+	{
+		output_texture[screen_coord] = input_texture[screen_coord];
+	}
+}
+
+[numthreads(16, 16, 1)]
 void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
     float2 screen_coord = float2(dispatch_thread_id.xy);
@@ -387,7 +488,7 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	const float roughness = albedo_roughness_texture[screen_coord].w;
 
-	const float phi_l_direct = l_phi * sqrt(sqrt(max(0.0f, roughness)));
+	const float phi_l_direct = l_phi * sqrt(max(0.0f, variance));
 	const float phi_depth = max(depth_center.y, 1e-8) * wavelet_size;
 
 	float sum_weights = 1.0f;
@@ -413,9 +514,10 @@ void spatial_denoiser_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float2 depth_p;
 				FetchNormalAndLinearZ(p, normal_p, depth_p);		
 
-				const float w = ComputeWeightNoLuminance(
+				const float w = ComputeWeight(
 					depth_center.x, depth_p.x, phi_depth*length(float2(x, y)),
-					normal_center, normal_p) * sqrt(max(1e-15, roughness)) * sqrt(max(1e-15, variance)); 
+					normal_center, normal_p, n_phi,
+					luminance_direct_center, luminance_direct_p, phi_l_direct) * sqrt(max(1e-15f, roughness)); 
 
 				const float w_direct = w * kernel;
 
