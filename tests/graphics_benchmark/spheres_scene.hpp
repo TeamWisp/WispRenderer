@@ -1,17 +1,17 @@
 #pragma once
 
-#include "scene.hpp"
+#include "..//common/scene.hpp"
 
 class SpheresScene : public Scene
 {
 public:
 	SpheresScene();
 
-	void Update() final;
+//	void Update() final;
 
 protected:
 	void LoadResources() final;
-	void BuildScene(unsigned int width, unsigned int height) final;
+	//void BuildScene(unsigned int width, unsigned int height) final;
 
 private:
 	float Lerp(float v0, float v1, float t);

@@ -201,7 +201,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<DownScaleData>(desc, L"Down Scale");
+		frame_graph.AddTask<DownScaleData>(desc, L"DoF Down Scale");
 	}
 
 } /* wr */

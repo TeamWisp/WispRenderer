@@ -97,6 +97,8 @@ namespace wr
 		desc.m_type = RenderTaskType::COPY;
 		desc.m_allow_multithreading = true;
 
+		//Temporarry stuff for FG editor 
+		w_name = L"Copy render target"
 		frame_graph.AddTask<RenderTargetCopyTaskData>(desc, w_name, FG_DEPS<T>());
 	}
 

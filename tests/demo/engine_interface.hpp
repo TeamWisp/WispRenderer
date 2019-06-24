@@ -317,7 +317,7 @@ namespace engine
 			wr::imgui::window::RootSignatureRegistry();
 			wr::imgui::window::D3D12HardwareInfo(*render_system);
 			wr::imgui::window::D3D12Settings();
-			wr::imgui::window::GraphicsSettings(fg_manager::Get());
+			wr::imgui::window::GraphicsSettings(fg_manager::Get(), RenderEngine( output, render_system, scene, new_scene));
 		}
 	}
 }

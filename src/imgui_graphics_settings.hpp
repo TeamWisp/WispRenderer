@@ -15,12 +15,34 @@
  */
 #pragma once
 
-#include "render_tasks/d3d12_rtao_task.hpp"
-#include "render_tasks/d3d12_hbao.hpp"
-#include "render_tasks/d3d12_ansel.hpp"
-#include "render_tasks/d3d12_build_acceleration_structures.hpp"
+#include "render_tasks/d3d12_imgui_render_task.hpp"
+#include "render_tasks/d3d12_brdf_lut_precalculation.hpp"
+#include "render_tasks/d3d12_deferred_main.hpp"
+#include "render_tasks/d3d12_deferred_composition.hpp"
+#include "render_tasks/d3d12_deferred_render_target_copy.hpp"
+#include "render_tasks/d3d12_raytracing_task.hpp"
+#include "render_tasks/d3d12_rt_reflection_task.hpp"
 #include "render_tasks/d3d12_rt_shadow_task.hpp"
 #include "render_tasks/d3d12_shadow_denoiser_task.hpp"
+#include "render_tasks/d3d12_equirect_to_cubemap.hpp"
+#include "render_tasks/d3d12_cubemap_convolution.hpp"
+#include "render_tasks/d3d12_rtao_task.hpp"
+#include "render_tasks/d3d12_post_processing.hpp"
+#include "render_tasks/d3d12_build_acceleration_structures.hpp"
+#include "render_tasks/d3d12_path_tracer.hpp"
+#include "render_tasks/d3d12_accumulation.hpp"
+#include "render_tasks/d3d12_dof_bokeh.hpp"
+#include "render_tasks/d3d12_dof_bokeh_postfilter.hpp"
+#include "render_tasks/d3d12_dof_coc.hpp"
+#include "render_tasks/d3d12_down_scale.hpp"
+#include "render_tasks/d3d12_dof_composition.hpp"
+#include "render_tasks/d3d12_dof_dilate_near.hpp"
+#include "render_tasks/d3d12_hbao.hpp"
+#include "render_tasks/d3d12_ansel.hpp"
+#include "render_tasks/d3d12_bloom_extract_bright.hpp"
+#include "render_tasks/d3d12_bloom_composition.hpp"
+#include "render_tasks/d3d12_bloom_horizontal_blur.hpp"
+#include "render_tasks/d3d12_bloom_vertical_blur.hpp"
 
 namespace wr::imgui::window
 {
@@ -35,11 +57,47 @@ namespace wr::imgui::window
 	static RenderTaskHandle selected_task = -1;
 
 	wr::FrameGraph* fg = nullptr;
-	auto hbaoptr = [&]() {wr::AddHBAOTask(*fg); };
+	util::Delegate<void(ImTextureID)> imgui_function;
 
-	void GraphicsSettings(FrameGraph* frame_graph)
+	std::pair<std::string, std::function<void()>> available_add_functions[] =
+	{
+		std::pair("BRDF LUT Precalculation", [&]() {wr::AddBrdfLutPrecalculationTask(*fg); }),
+		std::pair("Equire To Cubemap", [&]() {wr::AddEquirectToCubemapTask(*fg); }),
+		std::pair("Cubemap Convolution", [&]() {wr::AddCubemapConvolutionTask(*fg); }),
+		std::pair("Deferred Main", [&]() {wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, false); }),
+		std::pair("HBAO+", [&]() {wr::AddHBAOTask(*fg); }),
+		std::pair("Deferred Composition", [&]() {wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt); }),
+		
+		//Bloom tasks
+		std::pair("Bloom extract bright", [&]() {wr::AddBloomExtractBrightTask<wr::DeferredCompositionTaskData, wr::DeferredMainTaskData>(*fg); }),
+		std::pair("Bloom blur horizontal", [&]() {wr::AddBloomBlurHorizontalTask<wr::BloomExtractBrightData>(*fg);}),
+		std::pair("Bloom blur vertical", [&]() {wr::AddBloomBlurVerticalTask<wr::BloomBlurHorizontalData>(*fg); }),
+		std::pair("Bloom Composition", [&]() {wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomBlurVerticalData>(*fg); }),
+
+		// Depth of field tasks
+		std::pair("DoF Cone of Confusion", [&]() {wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg); }),
+		std::pair("DoF Down Scale", [&]() {wr::AddDownScaleTask<wr::BloomCompostionData, wr::DoFCoCData>(*fg); }),
+		std::pair("DoF Dilate", [&]() {wr::AddDoFDilateTask<wr::DownScaleData>(*fg); }),
+		std::pair("DoF Bokeh Pass", [&]() {wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateData>(*fg); }),
+		std::pair("DoF Bokeh Post Filter", [&]() {wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg); }),
+		std::pair("DoF Composition", [&]() {wr::AddDoFCompositionTask<wr::BloomCompostionData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg); }),
+
+		std::pair("Post Processing", [&]() {wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg); }),
+
+		// Copy the scene render pixel data to the final render target
+		std::pair("Copy render target", [&]() {wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg); }),
+
+		std::pair("NVIDIA Ansel", [&]() {wr::AddAnselTask(*fg); }),
+
+		// Display ImGui
+		std::pair("ImGui",[&]() { fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_function), L"ImGui"); })
+
+	};
+
+	void GraphicsSettings(FrameGraph* frame_graph, util::Delegate<void(ImTextureID)> const& imgui_func)
 	{
 		fg = frame_graph;
+		imgui_function = imgui_func;
 		if (frame_graph->HasTask<wr::RTAOData>() && rtao_settings_open)
 		{
 			auto rtao_user_settings = frame_graph->GetSettings<RTAOData, RTAOSettings>();
@@ -162,7 +220,7 @@ namespace wr::imgui::window
 
 				if (ImGui::Button("Add HBAO+"))
 				{
-					frame_graph->functions.push_back(hbaoptr);
+				//	frame_graph->functions.push_back(hbaoptr);
 				}
 
 				for (int i = 0; i < names.size(); i++)

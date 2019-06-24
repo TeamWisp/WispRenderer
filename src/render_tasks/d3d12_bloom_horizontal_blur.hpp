@@ -212,7 +212,7 @@ namespace wr
 		desc.m_type = RenderTaskType::COMPUTE;
 		desc.m_allow_multithreading = true;
 
-		frame_graph.AddTask<BloomBlurHorizontalData>(desc, L"Bloom blur test");
+		frame_graph.AddTask<BloomBlurHorizontalData>(desc, L"Bloom blur horizontal");
 		frame_graph.UpdateSettings<BloomBlurHorizontalData>(BloomSettings());
 	}
 
