@@ -41,21 +41,31 @@ private:
 	wr::Model* m_sphere_model;
 	wr::Model* m_sponza_model;
 	wr::ModelData* m_sponza_model_data;
+	wr::Model* m_logo_outside;
+	wr::Model* m_logo_core;
 
 	// Textures
 	wr::TextureHandle m_skybox;
 
 	// Materials
 	std::vector<wr::MaterialHandle> m_mirror_materials;
+	wr::MaterialHandle m_wisp_material;
 
 	// Nodes
 	std::shared_ptr<DebugCamera> m_camera;
 	std::shared_ptr<SplineNode> m_camera_spline_node;
 	std::shared_ptr<PhysicsMeshNode> m_sponza_node;
+	std::shared_ptr<wr::MeshNode> m_core;
+	std::shared_ptr<wr::MeshNode> m_outside;
+
 
 	std::shared_ptr<wr::LightNode> red_light;
 	std::shared_ptr<wr::LightNode> blue_light;
 	std::shared_ptr<wr::LightNode> green_light;
+	std::shared_ptr<wr::LightNode> white_light;
+
+	DirectX::XMVECTOR start_logo_pos = { 0.5, -4, -3 };
+	DirectX::XMVECTOR end_logo_pos =   { 0.5, 0.5, -3 };
 
 	float m_time;
 };
