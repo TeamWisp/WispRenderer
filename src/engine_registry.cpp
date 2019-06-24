@@ -1094,12 +1094,19 @@ namespace wr
 		.defines = {}
 		});
 
+	REGISTER(shaders::reflection_variance_estimator, ShaderRegistry)({
+		.path = "resources/shaders/denoising_reflections.hlsl",
+		.entry = "variance_estimator_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
+		});
+
 	REGISTER(shaders::reflection_spatial_denoiser, ShaderRegistry)({
 	  .path = "resources/shaders/denoising_reflections.hlsl",
 	  .entry = "spatial_denoiser_cs",
 	  .type = ShaderType::DIRECT_COMPUTE_SHADER,
 	  .defines = {}
-	});
+		});
 
 	DESC_RANGE_ARRAY(reflection_denoiser_ranges,
 		DESC_RANGE(params::reflection_denoiser, Type::SRV_RANGE, params::ReflectionDenoiserE::INPUT),
@@ -1150,6 +1157,21 @@ namespace wr
 		.m_counter_clockwise = true,
 		.m_topology_type = TopologyType::TRIANGLE
 	});
+
+	REGISTER(pipelines::reflection_variance_estimator, PipelineRegistry) < Vertex2D > ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::reflection_variance_estimator,
+		.m_root_signature_handle = root_signatures::reflection_denoiser,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = { Format::R16G16B16A16_FLOAT },
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
+		});
 
 	REGISTER(pipelines::reflection_spatial_denoiser, PipelineRegistry) <Vertex2D> ({
 		.m_vertex_shader_handle = std::nullopt,
