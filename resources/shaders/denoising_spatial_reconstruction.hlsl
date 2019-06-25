@@ -44,15 +44,18 @@ float linearize_depth(float D)
 }
 
 //Get total weight from neighbor using normal and normalized depth from both neighbor and center
-float neighbor_edge_weight(float3 N, float3 N_neighbor, float D, float D_neighbor, float2 uv)
+float neighbor_edge_weight(float3 N, float3 N_neighbor, float D, float D_neighbor, float a, float a_neighbor, float2 uv)
 {
-	return float(uv.x >= 0.f && uv.y >= 0.f && uv.x <= 1.f && uv.y <= 1.f) * (D != 1.0f && D_neighbor != 1.0f);
+	return float(
+		uv.x >= 0.f && uv.y >= 0.f && uv.x <= 1.f && uv.y <= 1.f		//On screen
+		&& D != 1.0f && D_neighbor != 1.0f								//Valid pixel
+	) * pow(saturate(dot(N, N_neighbor)), 16)							//Discard pixels that have normals that don't match up
+	  * exp(-abs(a - a_neighbor));										//Discard pixels whose roughness don't match up
 }
 
 //Hardcode the samples for now; settings: kernelSize=5, points=16
 //https://github.com/Nielsbishere/NoisePlayground/blob/master/bluenoise_test.py
 
-static const uint sample_count = 16;
 static const float2 samples[4][16] = {
 		{
 				float2(0.f ,  0.f), float2(-1.f ,  -1.f), float2(1.f ,  0.f), float2(-2.f ,  -1.f),
@@ -168,9 +171,11 @@ void main(int3 pix3 : SV_DispatchThreadID)
 				const float pdf_neighbor = max(reflection_pdf_neighbor.w, 1e-5);
 				const float3 N_neighbor = normalize(normal_metallic.SampleLevel(nearest_sampler, neighbor_uv, 0).xyz);
 	
+				float roughness_neighbor = albedo_roughness.SampleLevel(nearest_sampler, neighbor_uv, 0).w;
+
 				//Calculate weight and weight sum
 	
-				const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, neighbor_uv);
+				const float neighbor_weight = neighbor_edge_weight(N, N_neighbor, depth, depth_neighbor, roughness, roughness_neighbor, neighbor_uv);
 				
 				float weight = (brdf_weight(-V, L, N, roughness) / pdf_neighbor) * neighbor_weight;
 				weight = isnan(weight) || isinf(weight) ? 0 : weight;
@@ -182,13 +187,13 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		result3 = result / weight_sum;
 		if(weight_sum == 0.0f)
 		{
-			result3 = reflection_pdf.SampleLevel(nearest_sampler, uv, 0).xyz;
+			result3 = float3(1, 0, 0);
 		}
 
 		
-		if(isnan(weight_sum) == true)
+		if(isnan(weight_sum))
 		{
-			result3 = float3(0, 0, 1);
+			result3 = float3(1, 0, 1);
 			filtered[pix] = float4(result3, 1);
 			return;
 		}
