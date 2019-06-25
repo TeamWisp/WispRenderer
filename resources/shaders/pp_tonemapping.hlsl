@@ -36,26 +36,26 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	
 	float2 uv = (float2(DTid.xy + 0.5f) / resolution);
 
-	float gamma = 2.2;
-	float exposure = 1;
+	float gamma = 2.0;
+	float exposure = 6;
 
 	float3 color = input.SampleLevel(s0, uv, 0).rgb;
-	//color = SampleFXAA(input, s0, DTid.xy + 0.5f, resolution);
+	color = SampleFXAA(input, s0, DTid.xy + 0.5f, resolution);
 	//uv = ZoomUV(uv, 0.75);
 	//float3 color = input.SampleLevel(s0, BarrelDistortUV(uv, 2), 0);
 	//float3 color = ChromaticAberrationV2(input, s0, uv, 0.2, 0.96f).rgb;
 
 	if (hdr == 0)
 	{
+		color = ACESToneMapping(color, exposure, gamma);
 		//color = linearToneMapping(color, exposure, gamma);
 		//color = simpleReinhardToneMapping(color, exposure, gamma);
 		//color = lumaBasedReinhardToneMapping(color, gamma);
 		//color = whitePreservingLumaBasedReinhardToneMapping(color, gamma);
 		//color = RomBinDaHouseToneMapping(color, gamma);
 		//color = filmicToneMapping(color);
-		//color = Uncharted2ToneMapping(color, gamma, exposure);
+		color = Uncharted2ToneMapping(color, gamma, exposure);
 		//color = GrayscaleToneMapping(color);
-		color = ACESToneMapping(color, exposure, gamma);
 		//color = AllTonemappingAlgorithms(color.rgb, uv.x + uv.y, exposure, gamma);
 		//color = Vignette(color, uv, 1.5, 0.5, 0.5);
 	}

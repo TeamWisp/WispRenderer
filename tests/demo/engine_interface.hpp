@@ -45,6 +45,7 @@ namespace engine
 	static bool open_recorder = true;
 	static char recorder_name[256] = "unamed";
 	static char recorder_base_dir[256] = "D:\\WispRecorder\\";
+	static bool recorder_reset_scene = false;
 	static int selected_scene = 0;
 	static bool show_imgui = true;
 	static bool fullscreen = false;
@@ -212,6 +213,10 @@ namespace engine
 				{
 					scene->SaveLightsToJSON();
 				}
+				if (ImGui::Button("Save Models"))
+				{
+					scene->SaveMeshesToJSON();
+				}
 
 				ImGui::Separator();
 
@@ -241,6 +246,25 @@ namespace engine
 				if (ImGui::Button("Record"))
 				{
 					recorder.Start(recorder_name, recorder_base_dir);
+
+					if (recorder_reset_scene)
+					{
+						switch (selected_scene)
+						{
+						case 0: (*new_scene) = new ViknellScene(); break;
+						case 1: (*new_scene) = new EmiblScene(); break;
+						case 2: (*new_scene) = new SponzaScene(); break;
+						case 3: (*new_scene) = new AlienScene(); break;
+						default: LOGW("Tried to load a scene that is not supported"); break;
+						}
+						if (fg_manager::Get()->HasTask<wr::ASBuildData>())
+						{
+							auto settings = fg_manager::Get()->GetSettings<wr::ASBuildData, wr::ASBuildSettings>();
+							settings.m_runtime.m_full_rebuild = true;
+							fg_manager::Get()->UpdateSettings<wr::ASBuildData>(settings);
+						}
+					}
+
 				}
 
 				ImGui::InputText("Recording Name", recorder_name, IM_ARRAYSIZE(recorder_name));

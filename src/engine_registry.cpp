@@ -399,7 +399,7 @@ namespace wr
 		.m_rtv_formats = { wr::Format::R16G16B16A16_FLOAT },
 		.m_num_rtv_formats = 1,
 		.m_type = PipelineType::COMPUTE_PIPELINE,
-		.m_cull_mode = CullMode::CULL_BACK,
+		.m_cull_mode = CullMode::CULL_NONE,
 		.m_depth_enabled = false,
 		.m_counter_clockwise = true,
 		.m_topology_type = TopologyType::TRIANGLE

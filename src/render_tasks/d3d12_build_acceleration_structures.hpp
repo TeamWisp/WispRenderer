@@ -36,6 +36,7 @@ namespace wr
 			bool m_rebuild_as = false;
 			bool m_allow_transparency = false;
 			bool m_rebuild_bot_level = false;
+			bool m_full_rebuild = false;
 		};
 		Runtime m_runtime;
 	};

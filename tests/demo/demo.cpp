@@ -92,7 +92,7 @@ int WispEntry()
 
 	phys::PhysicsEngine phys_engine;
 
-	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1280, 720);
+	auto window = std::make_unique<wr::Window>(GetModuleHandleA(nullptr), "D3D12 Test App", 1920, 1080);
 
 	window->SetKeyCallback([](int key, int action, int mods)
 	{
@@ -158,6 +158,13 @@ int WispEntry()
 		if (capture_frame)
 		{
 			fg_manager::Get()->SaveTaskToDisc<wr::PostProcessingData>(engine::recorder.GetNextFilename(".tga"), 0);
+
+			if (fg_manager::Get()->HasTask<wr::RaytracingData>())
+			{
+				//auto settings = fg_manager::Get()->GetSettings<wr::RaytracingData, wr::RaytracingSettings>();
+				//settings.m_runtime.m_reset_accumulation = true;
+				//fg_manager::Get()->UpdateSettings<wr::RaytracingData>(settings);
+			}
 		}
 
 		if (new_scene && new_scene != current_scene)

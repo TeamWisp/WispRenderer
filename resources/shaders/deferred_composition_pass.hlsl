@@ -152,10 +152,12 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 		// Shade pixel
 		retval = shade_pixel(pos, V, albedo, metallic, roughness, emissive, normal, irradiance, ao, reflection, sampled_brdf, shadow_factor, has_shadows);
+		//retval = saturate(dot(normal,V).xxx);
 	}
 	else
 	{	
 		retval = skybox.SampleLevel(linear_sampler, -V, 0.0f);
+		//retval = float3(2.0f / 255.0f, 3.0f / 255.0f, 7.0f / 255.0f);
 	}
 
 	//Temporary hackfix for NaN pixels

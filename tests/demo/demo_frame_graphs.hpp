@@ -162,12 +162,12 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTReflectionTask(*fg);
+			//wr::AddRTReflectionTask(*fg);
 			wr::AddRTShadowTask(*fg);
 
 			wr::AddShadowDenoiserTask(*fg);
-			wr::AddSpatialReconstructionTask(*fg);
-			wr::AddReflectionDenoiserTask(*fg);
+			//wr::AddSpatialReconstructionTask(*fg);
+			//wr::AddReflectionDenoiserTask(*fg);
 
 			// Global Illumination Path Tracing
 			wr::AddPathTracerTask(*fg);
@@ -175,8 +175,23 @@ namespace fg_manager
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
+			//High quality bloom pass
+			wr::AddBloomExtractBrightTask<wr::DeferredCompositionTaskData, wr::DeferredMainTaskData>(*fg);
+			wr::AddBloomBlurHorizontalTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomBlurVerticalTask<wr::BloomBlurHorizontalData>(*fg);
+			wr::AddBloomCompositionTask<wr::DeferredCompositionTaskData, wr::BloomBlurVerticalData>(*fg);
+
+			// Do Depth of field task
+			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
+			wr::AddDownScaleTask<wr::BloomCompostionData, wr::DoFCoCData>(*fg);
+			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateData>(*fg);
+			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
+
+			wr::AddDoFCompositionTask<wr::BloomCompostionData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);
+
 			// Do some post processing
-			wr::AddPostProcessingTask<wr::DeferredCompositionTaskData>(*fg);
+			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 
 			// Copy the raytracing pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
@@ -207,13 +222,13 @@ namespace fg_manager
 			wr::AddBuildAccelerationStructuresTask(*fg);
 
 			// Raytracing task
-			wr::AddRTReflectionTask(*fg);
+			//wr::AddRTReflectionTask(*fg);
 			wr::AddRTShadowTask(*fg);
 
-			wr::AddShadowDenoiserTask(*fg);
-			wr::AddSpatialReconstructionTask(*fg);
+			//wr::AddShadowDenoiserTask(*fg);
+			//wr::AddSpatialReconstructionTask(*fg);
 
-			wr::AddReflectionDenoiserTask(*fg);
+			//wr::AddReflectionDenoiserTask(*fg);
 
 			//Raytraced Ambient Occlusion task
 			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);

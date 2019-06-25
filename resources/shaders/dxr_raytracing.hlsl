@@ -22,6 +22,8 @@
 #include "lighting.hlsl"
 #include "material_util.hlsl"
 
+#define FOUR_X_AA
+
 // Definitions for: 
 // - Vertex, Material, Offset
 // - Ray, RayCone, ReflectionHitInfo
@@ -145,7 +147,7 @@ void RaygenEntry()
 
 	if (any(isnan(result)))
 	{
-		result = float3(1000, 0, 0);
+		result = float3(0, 0, 0);
 	}
 
 	float4 prev = gOutput[DispatchRaysIndex().xy];
@@ -159,6 +161,16 @@ void RaygenEntry()
 void MissEntry(inout FullRTHitInfo payload)
 {
 	payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
+
+	if (payload.depth > 0)
+	{
+		payload.color = skybox.SampleLevel(s0, WorldRayDirection(), 0).rgb;
+	}
+	else
+	{
+
+		payload.color = float3(0.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f);
+	}
 }
 
 [shader("closesthit")]

@@ -66,8 +66,8 @@ void main_cs(uint3 dt_id : SV_DispatchThreadID)
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
 
-	float2 screen_coord = int2(dt_id.x, dt_id.y) + 0.5f;
-	float2 uv = screen_coord / screen_size;
+	float2 screen_coord = int2(dt_id.x, dt_id.y);
+	float2 uv = screen_coord / (screen_size - 1);
 
 	output[dt_id.xy] = IntegrateBRDF(uv.x, uv.y);
 }

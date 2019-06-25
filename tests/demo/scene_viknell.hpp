@@ -38,22 +38,32 @@ protected:
 
 private:
 	// Models
-	wr::Model* m_sphere_model;
-	wr::Model* m_plane_model;
-	wr::ModelData* m_plane_model_data;
-	wr::Model* m_xbot_model;
+	wr::Model* m_car_model;
+	wr::Model* m_walls_model;
+	wr::Model* m_cube_model;
+	wr::Model* m_coin_model;
 
 	// Textures
 	wr::TextureHandle m_skybox;
 
 	// Materials
-	wr::MaterialHandle m_bamboo_material;
-	wr::MaterialHandle m_mirror_material;
+	wr::MaterialHandle m_material_1;
+	wr::MaterialHandle m_material_2;
+	wr::MaterialHandle m_material_3;
+	wr::MaterialHandle m_material_4;
+	wr::MaterialHandle m_material_5;
+
+	wr::MaterialHandle m_abdomen;
+	wr::MaterialHandle m_eyes;
+	wr::MaterialHandle m_hair;
+	wr::MaterialHandle m_lowerTorso;
+	wr::MaterialHandle m_upperTorso;
 
 	// Nodes
 	std::shared_ptr<DebugCamera> m_camera;
 	std::shared_ptr<SplineNode> m_camera_spline_node;
-	std::shared_ptr<PhysicsMeshNode> m_xbot_node;
+	std::shared_ptr<wr::MeshNode> m_car_node;
+	std::shared_ptr<wr::MeshNode> m_walls_node;
 
 	float m_time;
 };

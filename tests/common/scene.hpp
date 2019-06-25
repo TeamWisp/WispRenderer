@@ -37,6 +37,8 @@ public:
 
 	void LoadLightsFromJSON();
 	void SaveLightsToJSON();
+	void LoadMeshesFromJSON(std::vector<DirectX::XMVECTOR>& pos, std::vector<DirectX::XMVECTOR>& rot, std::vector<DirectX::XMVECTOR>& scale);
+	void SaveMeshesToJSON();
 
 protected:
 	virtual void LoadResources() = 0;
@@ -52,6 +54,7 @@ protected:
 	std::shared_ptr<wr::MaterialPool> m_material_pool;
 
 	std::optional<std::string> m_lights_path;
+	std::optional<std::string> m_models_path;
 };
 
 template<typename T>

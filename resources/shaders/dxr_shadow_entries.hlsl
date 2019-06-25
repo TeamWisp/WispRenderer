@@ -77,7 +77,7 @@ void ShadowAnyHitEntry(inout ShadowHitInfo hit, Attributes attr)
 		s0,
 		uv);
 
-	if (material.data.use_alpha_masking == 1.0f)
+	if (true)
 	{
 		float alpha = output_data.alpha;
 

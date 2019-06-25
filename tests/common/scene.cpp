@@ -128,3 +128,68 @@ void Scene::SaveLightsToJSON()
 	std::ofstream o(m_lights_path.value());
 	o << std::setw(4) << json << std::endl;
 }
+
+
+
+void Scene::LoadMeshesFromJSON(std::vector<DirectX::XMVECTOR>& pos_vec, std::vector<DirectX::XMVECTOR>& rot_vec, std::vector<DirectX::XMVECTOR>& scale_vec)
+{
+	if (!m_models_path.has_value())
+	{
+		LOGW("Tried to load lights from json without a path specified.");
+		return;
+	}
+
+	// Read JSON file.
+	std::ifstream f(m_models_path.value());
+	nlohmann::json json;
+	f >> json;
+
+	// Loop over models
+	auto j_models = json["models"];
+
+	LOG("Number of models: {}", j_models.size());
+
+	for (std::size_t i = 0; i < j_models.size(); i++)
+	{
+		auto j_model = j_models[i];
+
+		auto pos = j_model["pos"].get<std::vector<float>>();
+		auto rot = j_model["rot"].get<std::vector<float>>();
+		auto scale = j_model["scale"].get<std::vector<float>>();
+
+		pos_vec.push_back({ pos[0], pos[1], pos[2] });
+		rot_vec.push_back({ rot[0], rot[1], rot[2] });
+		scale_vec.push_back({ scale[0], scale[1], scale[2] });
+	}
+}
+
+void Scene::SaveMeshesToJSON()
+{
+	if (!m_models_path.has_value())
+	{
+		LOGW("Tried to save models to json without a path specified.");
+		return;
+	}
+
+	nlohmann::json j_models = nlohmann::json::array();
+
+	auto models = m_scene_graph->GetMeshNodes();
+
+	for (auto& model : models)
+	{
+		nlohmann::json j_model = nlohmann::json::object();
+
+		j_model["pos"] = model->m_position.m128_f32;
+		j_model["rot"] = model->m_rotation_radians.m128_f32;
+		j_model["scale"] = model->m_scale.m128_f32;
+
+		j_models.push_back(j_model);
+	}
+
+	// write JSON to  file
+	nlohmann::json json;
+	json["models"] = j_models;
+
+	std::ofstream o(m_models_path.value());
+	o << std::setw(4) << json << std::endl;
+}
