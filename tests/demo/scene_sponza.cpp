@@ -70,7 +70,7 @@ void SponzaScene::LoadResources()
 	mat_internal->SetConstant<wr::MaterialConstant::ROUGHNESS>(0);
 	mat_internal->SetConstant<wr::MaterialConstant::METALLIC>(0.9);
 	mat_internal->SetConstant<wr::MaterialConstant::EMISSIVE_MULTIPLIER>(0);
-	mat_internal->SetConstant<wr::MaterialConstant::COLOR>({ 101.f /255.f, 1, 183.f / 255.f });
+	mat_internal->SetConstant<wr::MaterialConstant::COLOR>({ 175.f /255.f, 1, 1 });
 }
 
 void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extra)
@@ -94,10 +94,10 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	// Geometry
 	m_core = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_logo_core);
 	m_core->SetMaterials({ m_wisp_material });
-	m_core->SetScale({ 0.1, 0.1, 0.1});
+	m_core->SetScale({ 0.075, 0.075, 0.075 });
 	m_outside = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_logo_outside);
 	m_outside->SetMaterials({ m_wisp_material });
-	m_outside->SetScale({ 0.1, 0.1, 0.1 });
+	m_outside->SetScale({ 0.075, 0.075, 0.075 });
 
 	m_sponza_node = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sponza_model);
 	m_sponza_node->SetupTriangleMesh(phys_engine, m_sponza_model_data);
@@ -176,13 +176,13 @@ void SponzaScene::Update(float delta)
 	m_camera_spline_node->UpdateSplineNode(delta, m_camera);
 
 	m_time += delta * 1.5;
-	float blue_delay = 1;
-	float delay_rg = 4;
-	float logo_delay = 6;
+	float blue_delay = 0;
+	float delay_rg = 1;
+	float logo_delay = 4.5;
 	green_light->SetRadius(std::clamp(m_time - delay_rg, 0.f, 6.f));
 	blue_light->SetRadius(std::clamp(m_time - blue_delay, 0.f, 5.f));
 	red_light->SetRadius(std::clamp(m_time - delay_rg, 0.f, 6.f));
-	white_light->SetRadius(std::clamp(m_time, 0.f, 100.f));
+	white_light->SetRadius(std::clamp(m_time + 6, 0.f, 100.f));
 
 	float logo_alpha = std::clamp((m_time - logo_delay) / 10.f, 0.f, 1.f);
 	auto logo_pos = DirectX::XMVectorLerp(start_logo_pos, end_logo_pos, logo_alpha);

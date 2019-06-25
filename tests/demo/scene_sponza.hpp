@@ -65,7 +65,7 @@ private:
 	std::shared_ptr<wr::LightNode> white_light;
 
 	DirectX::XMVECTOR start_logo_pos = { 0.5, -4, -3 };
-	DirectX::XMVECTOR end_logo_pos =   { 0.5, 0.5, -3 };
+	DirectX::XMVECTOR end_logo_pos =   { 0.5, 0.7, -3 };
 
 	float m_time;
 };
