@@ -43,11 +43,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	source_near.GetDimensions(screen_size.x, screen_size.y);
+	screen_size -= 1.0f;
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
+
 	float2 texel_size = 1.0f / screen_size;
 
-	float2 uv = screen_coord / screen_size;
+	float2 uv = screen_coord / (screen_size) ;
 
 	const uint NUMSAMPLES = NUMDOFSAMPLES * NUMDOFSAMPLES;
 	const float MAXKERNELSIZE = MAXBOKEHSIZE * 0.5f;
@@ -74,7 +76,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount);
 				float4 s = source_far.SampleLevel(s0, (screen_coord + kernel_offset * kernel_radius) / screen_size, 0.0f);
-				float samplecoc = s.w;
+				float samplecoc = s.w * MAXKERNELSIZE;
 
 				s *= saturate(1.0f + (samplecoc - far_coc));
 				s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.01f), SHAPECURVE) * shape_curve;
@@ -86,13 +88,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 		else
 		{
-			bgcolor = source_far.SampleLevel(s1, uv, 0);
+			bgcolor = source_far.SampleLevel(s0, uv, 0);
 		}
 
 		float nearMask = SampleTextureBSpline(near_mask, s0, uv).x;
 		nearMask = saturate(nearMask * 1.0f);
 		near_coc = max(near_coc, nearMask);
-		kernel_radius = MAXKERNELSIZE * near_coc;
+		kernel_radius = near_coc * MAXKERNELSIZE;
 		[branch]
 		if (kernel_radius > 0.25f)
 		{
@@ -103,21 +105,20 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			{
 				float lensX = saturate((i % NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
+
 				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount);
 				float4 s = source_near.SampleLevel(s0, (screen_coord + kernel_offset * kernel_radius) / screen_size , 0.0f);
-				float samplecoc = s.w * MAXKERNELSIZE;
+				float samplecoc = saturate(s.w * MAXKERNELSIZE);
 
-				float sw = 1.0f;  
+				float sw = 1.0f;
 
-				//s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.001f), SHAPECURVE) * shape_curve;
-
-				fgcolor.xyz += s.xyz * sw;
+				fgcolor.xyz += s.xyz * s.w;
 
 				float samplealpha = 1.0f;
-				samplealpha *= saturate(samplecoc * 1.0f);
+				samplealpha *= saturate(s.w * 1.0f);
 				fgcolor.w += samplealpha * sw;
 
-				weightsum += sw;
+				weightsum += s.w;
 			}
 
 			fgcolor.xyz /= weightsum;
@@ -126,11 +127,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		}
 		else
 		{
-			fgcolor = float4(source_near.SampleLevel(s0, uv, 0).rgb, 0.0f);
+			fgcolor = float4(source_near.SampleLevel(s1, uv, 0).rgb, 0.0f);
 		}
-		//fgcolor.w = source_near.SampleLevel(s1, uv, 0).w;
 	}
-
+	
+	//fgcolor = source_near.SampleLevel(s1, uv, 0).wwww;
 	output_near[int2(dispatch_thread_id.xy)] = fgcolor;
 	output_far[int2(dispatch_thread_id.xy)] = bgcolor;
 }
