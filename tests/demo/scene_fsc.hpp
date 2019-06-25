@@ -37,8 +37,12 @@ protected:
 
 private:
 	// Models
-	wr::Model* m_scene_model;
-	wr::ModelData* m_scene_model_data;
+	wr::Model* m_stalker_model;
+	wr::ModelData* m_stalker_model_data;
+	wr::Model* m_dragon_model;
+	wr::ModelData* m_dragon_model_data;
+	wr::Model* m_environment_model;
+	wr::ModelData* m_environment_model_data;
 
 	// Textures
 	wr::TextureHandle m_skybox;
@@ -49,6 +53,10 @@ private:
 	// Nodes
 	std::shared_ptr<DebugCamera> m_camera;
 	std::shared_ptr<SplineNode> m_camera_spline_node;
-	std::shared_ptr<wr::MeshNode> m_scene_node;
+	std::shared_ptr<wr::MeshNode> m_stalker_node;
+	std::shared_ptr<wr::MeshNode> m_dragon_node;
+	std::shared_ptr<wr::MeshNode> m_environment_node;
+
+
 	float m_time;
 };
