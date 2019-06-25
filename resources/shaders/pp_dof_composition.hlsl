@@ -74,7 +74,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float3 result = lerp(original_sample, far.rgb, far_blend);
 
-	float near_blend = saturate(near_sample.w * 3.0f);
+	float near_blend = saturate(near_sample.w * 2.0f);
 
 	result = lerp(result, near.rgb, smoothstep(0.0f, 1.0f, near_blend));
 

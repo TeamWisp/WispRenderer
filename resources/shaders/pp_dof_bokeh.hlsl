@@ -77,7 +77,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount) * m_bokeh_shape_modifier;
 				float4 s = source_far.SampleLevel(s0, (screen_coord + kernel_offset * kernel_radius) / screen_size, 0.0f);
-				float samplecoc = s.w * MAXKERNELSIZE;
+				float samplecoc = s.w;
 
 				s *= saturate(1.0f + (samplecoc - far_coc));
 				s *= (1.0f - shape_curve) + pow(max(length(kernel_offset), 0.01f), SHAPECURVE) * shape_curve;

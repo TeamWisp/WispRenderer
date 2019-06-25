@@ -35,9 +35,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 
 	float2 uv = (screen_coord) / screen_size;
 
-	static const int sample_radius = 2;
+	static const int sample_radius = 3;
 
-	float output = source_near.SampleLevel(s0, uv , 0).a;
+	float output = source_near.SampleLevel(s0, uv , 0).r;
 
 	[unroll]
 	for (int y = -sample_radius; y <= sample_radius; ++y)
@@ -45,7 +45,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		[unroll]
 		for (int x = -sample_radius; x <= sample_radius; ++x)
 		{
-			output = max(output, source_near.SampleLevel(s0, saturate((screen_coord + float2(x, y)) / screen_size), 0).a);
+			output = max(output, source_near.SampleLevel(s0, saturate((screen_coord + float2(x, y)) / screen_size), 0).r);
 		}
 	}
 
