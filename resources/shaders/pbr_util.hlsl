@@ -188,8 +188,8 @@ float2 SampleSphericalMap(float3 v)
 // Brian Karis, Epic Games "Real Shading in Unreal Engine 4"
 // Modified version to do pdf and tangent to world conversions
 float3 importanceSamplePdf(float2 xi, float a, float3 N, inout float pdf) {
-	float m = a * a;
-	float m2 = m * m;
+	
+	float m2 = a * a;
 
 	float phi = 2 * M_PI * xi.x;
 	float cosTheta = sqrt((1.0 - xi.y) / (1.0 + (m2 - 1.0) * xi.y));

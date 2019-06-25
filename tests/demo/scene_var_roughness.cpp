@@ -74,9 +74,9 @@ void VarRoughnessScene::BuildScene(unsigned int width, unsigned int height, void
 {
 	auto& phys_engine = *reinterpret_cast<phys::PhysicsEngine*>(extra);
 
-	m_camera = m_scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)width / (float)height);
-	m_camera->SetPosition({ 3.576, 3.657, -5.008 });
-	m_camera->SetRotation({ -14.043_deg, 60.378_deg, 0.905_deg });
+	m_camera = m_scene_graph->CreateChild<DebugCamera>(nullptr, 35.f, (float)width / (float)height);
+	m_camera->SetPosition({ 3.906f, 2.349f, -13.859f });
+	m_camera->SetRotation({ -2.865_deg, 90.573_deg, 0.905_deg });
 	m_camera->SetSpeed(1);
 
 	m_camera_spline_node = m_scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline", false);
@@ -86,11 +86,11 @@ void VarRoughnessScene::BuildScene(unsigned int width, unsigned int height, void
 	// Left Ballfall
 	for (auto i = 0; i < num_divisions; i++) {
 		auto floor = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_cube_model);
-		floor->SetPosition({ -1.f, 1.f, -7.f - 2 * i });
+		floor->SetPosition({ -2.5f, 1.f, -7.f - 2 * i });
 		floor->SetScale({ 3.f, 0.1f, 1.f });
 		floor->AddMaterial(m_roughness_materials[i]);
 		auto cube = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_cube_model);
-		cube->SetPosition({ -4.f, .9f + .8f, -7.f -2 * i });
+		cube->SetPosition({ -5.f, .9f + .8f, -7.f -2 * i });
 		cube->SetScale({ .8f, 0.8f, 0.8f });		
 		cube->AddMaterial(m_roughness_materials[i]);
 	}

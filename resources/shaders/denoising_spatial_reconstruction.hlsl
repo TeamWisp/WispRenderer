@@ -146,15 +146,17 @@ void main(int3 pix3 : SV_DispatchThreadID)
 		float sampleCountScalar = lerp(1.f, (1.f - distance / far_plane) * roughness, 1);
 		roughness = max(roughness, 1e-2);
 
-		float kernel_size = 8.f;
+		//Run through the 8 samples; retry ~2x if the pixel doesn't contribute
+		const uint max_tries = 2;
+		
+		for (uint i = 0, j = 0, k = 0; i < 24 && j < 8; ++i) {
 
-		for (uint i = 0; i < max(ceil(kernel_size), 1); ++i) {
-
-			//Get sample related data
+			//Repeat same sample until it randomly ends up at the correct place
 
 			float2 random = float2(nextRand(rand_seed), nextRand(rand_seed));
+			const float2 neighbor_uv = sample_neighbor_uv(j, pix, uint2(width, height), random, 1);
 
-			const float2 neighbor_uv = sample_neighbor_uv(i, pix, uint2(width, height), random, 1);
+			//Get pixel attributes
 
 			const float depth_neighbor = depth_buffer.SampleLevel(nearest_sampler, neighbor_uv, 0).r;
 			const float3 pos_neighbor = unpack_position(neighbor_uv, depth_neighbor);
@@ -164,7 +166,9 @@ void main(int3 pix3 : SV_DispatchThreadID)
 			const float3 V_neighbor = normalize(camera_pos - pos_neighbor);
 
 			const float4 reflection_pdf_neighbor = reflection_pdf.SampleLevel(nearest_sampler, neighbor_uv, 0);
-			if(reflection_pdf_neighbor.w>0.0)
+
+			//Validate pixel
+			if(reflection_pdf_neighbor.w > 0.0)
 			{
 				const float3 color = clamp(reflection_pdf_neighbor.xyz, 0, 1);
 				const float3 L = hit_t.xyz;
@@ -181,6 +185,11 @@ void main(int3 pix3 : SV_DispatchThreadID)
 				weight = isnan(weight) || isinf(weight) ? 0 : weight;
 				result += color * weight;
 				weight_sum += weight;
+
+				//Go to next pixel if this pixel contributes; otherwise redo it
+				float b = float(weight != 0 || k + 1 > max_tries);
+				k = lerp(k + 1, 0, b);
+				j = lerp(j, j + 1, b);
 			}
 		}
 
