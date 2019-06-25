@@ -141,8 +141,8 @@ namespace wr
 
 
 
-			int enable_dof = settings.m_runtime.m_enable_bloom;
-			d3d12::BindCompute32BitConstants(cmd_list, &enable_dof, 1, 0, 1);
+			int enable_bloom = settings.m_runtime.m_enable_bloom;
+			d3d12::BindCompute32BitConstants(cmd_list, &enable_bloom, 1, 0, 1);
 
 			//cmd_list->m_dynamic_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(0, 0, 3, data.out_allocation.GetDescriptorHandle());
 			{
