@@ -33,11 +33,14 @@ struct PhysicsMeshNode : public wr::MeshNode
 	btRigidBody* m_rigid_body = nullptr;
 
 	std::optional<std::vector<btCollisionShape*>> m_shapes;
-	std::optional<std::vector<btRigidBody*>> m_rigid_bodys;
+	std::optional<std::vector<btRigidBody*>> m_rigid_bodies;
+
+	phys::PhysicsEngine& m_phys_engine;
 
 	float m_mass = 0;
 
-	PhysicsMeshNode(wr::Model* model) : MeshNode(model) { }
+	PhysicsMeshNode(phys::PhysicsEngine* phys_engine, wr::Model* model) : MeshNode(model), m_phys_engine(*phys_engine) { }
+	~PhysicsMeshNode();
 
 	void SetMass(float mass);
 	void SetRestitution(float value);

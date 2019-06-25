@@ -64,6 +64,12 @@ namespace wr
 		{
 			m_structured_buffer_pools[i].reset();
 		}
+
+		for (auto* shape : m_simple_shapes)
+		{
+			m_shapes_pool->Destroy(shape);
+		}
+
 		for (int i = 0; i < m_model_pools.size(); ++i)
 		{
 			m_model_pools[i].reset();
@@ -74,9 +80,10 @@ namespace wr
 			m_texture_pools[i].reset();
 		}
 
-		for (auto iter : m_fences)
+		for (auto* fence : m_fences)
 		{
-			SAFE_RELEASE(iter->m_native);
+			SAFE_RELEASE(fence->m_native);
+			delete fence;
 		}
 
 		DestroyShaderRegistry();
@@ -447,6 +454,11 @@ namespace wr
 		d3d12::Resize((d3d12::RenderTarget**)&n_render_target, m_device, width, height);
 
 		(*render_target) = n_render_target;
+	}
+	void D3D12RenderSystem::DestroyRenderTarget(RenderTarget** render_target)
+	{
+		Destroy((d3d12::RenderTarget*)*render_target);
+		*render_target = nullptr;
 	}
 
 	void D3D12RenderSystem::RequestFullscreenChange(bool fullscreen_state)

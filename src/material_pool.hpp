@@ -195,7 +195,7 @@ namespace wr
 	{
 	public:
 		explicit MaterialPool();
-		virtual ~MaterialPool() = default;
+		virtual ~MaterialPool();
 
 		MaterialPool(MaterialPool const &) = delete;
 		MaterialPool& operator=(MaterialPool const &) = delete;

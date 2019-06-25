@@ -76,6 +76,7 @@ namespace wr
 		virtual RenderTarget* GetRenderTarget(RenderTargetProperties properties) = 0;
 		virtual void SetRenderTargetName(RenderTarget* cmd_list, std::wstring const & name) = 0;
 		virtual void ResizeRenderTarget(RenderTarget** render_target, std::uint32_t width, std::uint32_t height) = 0;
+		virtual void DestroyRenderTarget(RenderTarget** render_target) = 0;
 
 		virtual void ResetCommandList(CommandList* cmd_list) = 0;
 		virtual void CloseCommandList(CommandList* cmd_list) = 0;

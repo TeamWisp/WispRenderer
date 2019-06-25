@@ -146,6 +146,7 @@ namespace wr
 				ImGui_ImplDX12_Shutdown();
 				ImGui_ImplWin32_Shutdown();
 				ImGui::DestroyContext();
+				delete ImGuiTaskData::out_descriptor_heap;
 			}
 		}
 

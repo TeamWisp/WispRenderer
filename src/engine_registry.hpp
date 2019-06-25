@@ -893,7 +893,8 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
-    WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_variance_estimator;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
 	};
 
 	struct pipelines
@@ -924,7 +925,8 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
-    WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_variance_estimator;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
 	};
 
 	struct state_objects

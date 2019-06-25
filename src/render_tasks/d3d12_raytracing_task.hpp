@@ -334,7 +334,6 @@ namespace wr
 //#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
 //#endif
-
 				d3d12::DispatchRays(cmd_list,
 					data.out_hitgroup_shader_table[frame_idx], 
 					data.out_miss_shader_table[frame_idx], 
@@ -348,12 +347,24 @@ namespace wr
 
 		inline void DestroyRaytracingTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			if (!resize)
+			if(!resize)
 			{
-				auto& data = fg.GetData<RaytracingData>(handle);
+				RaytracingData& data = fg.GetData<RaytracingData>(handle);
 
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				DescriptorAllocation temp1 = std::move(data.out_uav_from_rtv);
+				for (d3d12::ShaderTable* shader : data.out_raygen_shader_table)
+				{
+					delete shader;
+				}
+
+				for (d3d12::ShaderTable* shader : data.out_miss_shader_table)
+				{
+					delete shader;
+				}
+
+				for (d3d12::ShaderTable* shader : data.out_hitgroup_shader_table)
+				{
+					delete shader;
+				}
 			}
 		}
 

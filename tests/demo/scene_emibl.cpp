@@ -29,6 +29,22 @@ EmiblScene::EmiblScene() :
 
 }
 
+EmiblScene::~EmiblScene()
+{
+	if (m_plane_model)
+	{
+		m_model_pool->Destroy(m_plane_model);
+		m_model_pool->Destroy(m_material_knob_model);
+		m_model_pool->Destroy(m_cube_model);
+	}
+
+	for (wr::MaterialHandle m : m_material_handles)
+	{
+		m_material_pool->DestroyMaterial(m);
+	}
+	m_material_pool->DestroyMaterial(m_rusty_metal_material);
+}
+
 void EmiblScene::LoadResources()
 {
 	// Textures

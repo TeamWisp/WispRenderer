@@ -241,7 +241,7 @@ namespace wr
 		desc.m_execute_func = [](RenderSystem& rs, FrameGraph& fg, SceneGraph& sg, RenderTaskHandle handle) {
 			internal::ExecuteCubemapConvolutionTask(rs, fg, sg, handle);
 		};
-		desc.m_destroy_func = [](FrameGraph&, RenderTaskHandle, bool) {
+		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
 		};
 
 		desc.m_properties = rt_properties;

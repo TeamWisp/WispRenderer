@@ -116,7 +116,7 @@ namespace wr::d3d12
 				"Couldn't create DirectX Fallback Raytracing state object.");
 		}
 
-		//n_desc.DeleteHelpers();
+		n_desc.DeleteHelpers();
 
 		return state_object;
 	}
@@ -182,6 +182,7 @@ namespace wr::d3d12
 		SAFE_RELEASE(obj->m_native);
 		SAFE_RELEASE(obj->m_properties);
 		SAFE_RELEASE(obj->m_fallback_native);
+		delete obj;
 	}
 
 } /* wr::d3d12 */

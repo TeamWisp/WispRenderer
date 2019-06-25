@@ -351,12 +351,20 @@ namespace wr
 			// Make sure we free the data objects we allocated.
 			for (auto& data : m_data)
 			{
-				delete data;
+				data.reset();
 			}
 
 			for (auto& cmd_list : m_cmd_lists)
 			{
 				m_render_system->DestroyCommandList(cmd_list);
+			}
+
+			for(decltype(m_num_tasks) i = 0; i < m_num_tasks; ++i)
+			{
+				if(m_rt_properties[i].has_value() && !m_rt_properties[i]->m_is_render_window)
+				{
+					m_render_system->DestroyRenderTarget(&m_render_targets[i]);
+				}
 			}
 
 			// Reset all members in the case of the user wanting to reuse this frame graph after `FrameGraph::Destroy`.
@@ -437,7 +445,7 @@ namespace wr
 			static_assert(!std::is_pointer<T>::value,
 				"The template variable type should not be a pointer. Its implicitly converted to a pointer.");
 
-			return *static_cast<T*>(m_data[handle]);
+			return *static_cast<T*>(m_data[handle].get());
 		}
 
 		/*! Get the data of a previously ran task. (Constant) */
@@ -462,7 +470,7 @@ namespace wr
 				{
 					WaitForCompletion(i);
 
-					return *static_cast<T*>(m_data[i]);
+					return *static_cast<T*>(m_data[i].get());
 				}
 			}
 
@@ -658,7 +666,7 @@ namespace wr
 			m_settings.resize(m_num_tasks + 1ull);
 			m_types.emplace_back(desc.m_type);
 			m_rt_properties.emplace_back(desc.m_properties);
-			m_data.emplace_back(new (std::nothrow) T());
+			m_data.emplace_back(std::make_shared<T>());
 			m_data_type_info.emplace_back(typeid(T));
 
 			// If we are allowed to do multithreading place the task in the appropriate vector
@@ -1017,7 +1025,7 @@ namespace wr
 		std::vector<CommandList*> m_cmd_lists;
 		std::vector<RenderTarget*> m_render_targets;
 		/*! Task data and the type information of the original data structure. */
-		std::vector<void*> m_data;
+		std::vector<std::shared_ptr<void>> m_data;
 		std::vector<std::reference_wrapper<const std::type_info>> m_data_type_info;
 		/*! Task settings that can be passed to the frame graph from outside the task. */
 		std::vector<std::optional<std::any>> m_settings;

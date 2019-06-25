@@ -288,16 +288,24 @@ namespace wr
 
 		inline void DestroyRTReflectionTask(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& data = fg.GetData<RTReflectionData>(handle);
-
-			if (!resize)
+			if(!resize)
 			{
-				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
-				std::move(data.base_data.out_output_alloc);
-				std::move(data.base_data.out_gbuffer_albedo_alloc);
-				std::move(data.base_data.out_gbuffer_normal_alloc);
-				std::move(data.base_data.out_gbuffer_depth_alloc);
-				std::move(data.base_data.out_gbuffer_position_alloc);
+				RTReflectionData& data = fg.GetData<RTReflectionData>(handle);
+
+				for(d3d12::ShaderTable* shader : data.base_data.out_raygen_shader_table)
+				{
+					delete shader;
+				}
+
+				for(d3d12::ShaderTable* shader : data.base_data.out_miss_shader_table)
+				{
+					delete shader;
+				}
+
+				for(d3d12::ShaderTable* shader : data.base_data.out_hitgroup_shader_table)
+				{
+					delete shader;
+				}
 			}
 		}
 

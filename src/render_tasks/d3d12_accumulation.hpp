@@ -110,12 +110,8 @@ namespace wr
 				1);
 		}
 
-		inline void DestroyAccumulation(FrameGraph& fg, RenderTaskHandle handle, bool)
+		inline void DestroyAccumulation(FrameGraph& fg, RenderTaskHandle handle, bool resize)
 		{
-			auto& data = fg.GetData<AccumulationData>(handle);
-
-			// Small hack to force the allocations to go out of scope, which will tell the texture pool to free them
-			DescriptorAllocation temp = std::move(data.out_allocation);
 		}
 
 	} /* internal */
