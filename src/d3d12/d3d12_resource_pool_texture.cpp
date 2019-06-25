@@ -489,6 +489,7 @@ namespace wr
 
 				// Return an invalid texture handle when texture couldn't be loaded
 				LOGE("ERROR: DirectXTex error: {}", errMsg);
+				LOGE("Texure causing error: {}", path);
 				return {};
 			}
 		}

@@ -39,12 +39,14 @@
 #include "scene_alien.hpp"
 #include "scene_emibl.hpp"
 #include "scene_sponza.hpp"
+#include "scene_fsc.hpp"
+#include "scene_car.hpp"
 
 #include "model_loader_assimp.hpp"
 #include "model_loader_tinygltf.hpp"
 #include "d3d12/d3d12_dynamic_descriptor_heap.hpp"
 
-using DefaultScene = ViknellScene;
+using DefaultScene = FscScene;
 //#define ENABLE_PHYSICS
 
 std::unique_ptr<wr::D3D12RenderSystem> render_system;
