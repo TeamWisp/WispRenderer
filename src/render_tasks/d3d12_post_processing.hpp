@@ -32,7 +32,7 @@ namespace wr
 		DescriptorAllocation out_allocation;
 	};
 
-	int versions = 1;
+	const constexpr int versions = 1;
 
 	namespace internal
 	{
