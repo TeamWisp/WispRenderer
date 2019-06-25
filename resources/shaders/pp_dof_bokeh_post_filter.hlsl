@@ -50,22 +50,13 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 		[unroll]
 		for (int x = -SampleRadius; x <= SampleRadius; ++x)
 		{
-			near_color += source_near.SampleLevel(s0, (screen_coord + float2(x, y)) / screen_size, 0).rgb;//[screen_coord + float2(x, y)].rgb;
+			near_color += source_near.SampleLevel(s0, (screen_coord + float2(x, y)) / screen_size, 0).rgb;
 			far_color += source_far.SampleLevel(s0, (screen_coord + float2(x, y)) / screen_size, 0).rgb;
 		}
 	}
 
 	near_color /= float(SampleDiameter * SampleDiameter);
 	far_color /= float(SampleDiameter * SampleDiameter);
-
-	//float3 near_color = 
-	//	source_near.SampleLevel(s0, uv + offset.xy, 0).rgb +
-	//	source_near.SampleLevel(s0, uv + offset.zy, 0).rgb +
-	//	source_near.SampleLevel(s0, uv + offset.xw, 0).rgb +
-	//	source_near.SampleLevel(s0, uv + offset.zw, 0).rgb;
-	//
-	//near_color *= 0.25f;
-
 
 	output_near[int2(dispatch_thread_id.xy)] = float4(near_color, nearcoc);
 	output_far[int2(dispatch_thread_id.xy)] = float4(far_color, farcoc);

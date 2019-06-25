@@ -19,5 +19,4 @@
 static const float MAXBOKEHSIZE = 25.f;
 static const float MAXCOCSIZE = 16.0f;
 static const uint NUMDOFSAMPLES = 9;
-
 #endif //__PP_DOF_PROPERTIES_HLSL__

@@ -33,7 +33,8 @@ cbuffer CameraProperties : register(b0)
 	float shape_curve;
 	float bokeh_poly_amount;
 	uint num_blades;
-	float3 _padding;
+	float m_padding;
+	float2 m_bokeh_shape_modifier;
 	int enable_dof;
 };
 
@@ -74,7 +75,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			{
 				float lensX = saturate((i % NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
-				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount);
+				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount) * m_bokeh_shape_modifier;
 				float4 s = source_far.SampleLevel(s0, (screen_coord + kernel_offset * kernel_radius) / screen_size, 0.0f);
 				float samplecoc = s.w * MAXKERNELSIZE;
 
@@ -106,7 +107,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float lensX = saturate((i % NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 				float lensY = saturate((i / NUMDOFSAMPLES) / max(NUMDOFSAMPLES - 1.0f, 1.0f));
 
-				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount);
+				float2 kernel_offset = SquareToConcentricDiskMapping(lensX, lensY, float(num_blades), bokeh_poly_amount) * m_bokeh_shape_modifier;
 				float4 s = source_near.SampleLevel(s0, (screen_coord + kernel_offset * kernel_radius) / screen_size , 0.0f);
 				float samplecoc = saturate(s.w * MAXKERNELSIZE);
 
@@ -130,8 +131,7 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 			fgcolor = float4(source_near.SampleLevel(s1, uv, 0).rgb, 0.0f);
 		}
 	}
-	
-	//fgcolor = source_near.SampleLevel(s1, uv, 0).wwww;
+
 	output_near[int2(dispatch_thread_id.xy)] = fgcolor;
 	output_far[int2(dispatch_thread_id.xy)] = bgcolor;
 }

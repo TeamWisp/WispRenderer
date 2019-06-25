@@ -37,7 +37,6 @@ float GetLinearDepth(float depth)
 {
 	float z = (2 * FNEAR) / (FFAR + FNEAR - (depth * (FFAR - FNEAR)));
 	return z;
-	//return depth * FFAR;
 }
 
 // Calculates the gaussian blur weight for a given distance and sigmas

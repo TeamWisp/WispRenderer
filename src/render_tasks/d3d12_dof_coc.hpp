@@ -48,7 +48,7 @@ namespace wr
 			float m_f_number = 0.0f;
 			float m_film_size = 0.0f;
 			float m_focus_dist = 0.0f;
-			float _pad[2];
+			float m_pad[2];
 			int m_enable_dof = 0;
 			float m_dof_range = 1.0f;
 		};

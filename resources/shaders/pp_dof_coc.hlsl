@@ -30,7 +30,7 @@ cbuffer CameraProperties : register(b0)
 	float f_number;
 	float film_size;
 	float focus_dist;
-	float2 _pad;
+	float2 m_pad;
 	int enable_dof;
 	float dof_range;
 };

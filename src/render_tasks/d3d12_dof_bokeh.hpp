@@ -41,6 +41,11 @@ namespace wr
 
 	namespace internal
 	{
+		struct BokehShapeModifier
+		{
+			float x = 1.0f;
+			float y = 1.0f;
+		};
 
 		struct Bokeh_CB
 		{
@@ -48,7 +53,8 @@ namespace wr
 			float m_shape = 0.0f;
 			float m_bokeh_poly = 0.0f;
 			uint32_t m_blades = 0u;
-			float _padding[3] = { 0.0f };
+			float _padding;
+			BokehShapeModifier m_bokeh_shape_modifier;
 			int m_enable_dof = false;
 		};
 
@@ -147,12 +153,14 @@ namespace wr
 
 			d3d12::BindComputePipeline(cmd_list, data.out_pipeline);
 
+			BokehShapeModifier shape_modifier;
 			Bokeh_CB cb_data;
 			cb_data.m_f_number = sg.GetActiveCamera()->m_f_number;
 			cb_data.m_shape = sg.GetActiveCamera()->m_shape_amt;
 			cb_data.m_blades = sg.GetActiveCamera()->m_aperture_blades;
 			cb_data.m_bokeh_poly = sqrt(std::clamp((sg.GetActiveCamera()->m_f_number - 1.8f) / (7.0f - 1.8f), 0.f, 1.f));
 			cb_data.m_enable_dof = sg.GetActiveCamera()->m_enable_dof;
+			cb_data.m_bokeh_shape_modifier = shape_modifier;
 
 			data.cb_handle->m_pool->Update(data.cb_handle, sizeof(Bokeh_CB), 0, frame_idx, (uint8_t*)&cb_data);
 
