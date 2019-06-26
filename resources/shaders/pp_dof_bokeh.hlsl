@@ -111,13 +111,11 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 				float4 s = source_near.SampleLevel(s0, (screen_coord + kernel_offset * kernel_radius) / screen_size , 0.0f);
 				float samplecoc = saturate(s.w * MAXKERNELSIZE);
 
-				float sw = 1.0f;
-
 				fgcolor.xyz += s.xyz * s.w;
 
 				float samplealpha = 1.0f;
 				samplealpha *= saturate(s.w * 1.0f);
-				fgcolor.w += samplealpha * sw;
+				fgcolor.w += samplealpha;
 
 				weightsum += s.w;
 			}

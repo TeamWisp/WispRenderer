@@ -70,7 +70,7 @@ namespace wr
 			m_film_size(45.0f),
 			m_fov(FovFocalLength(m_focal_length), FovAspectRatio(aspect_ratio), FovFilmSize(m_film_size)),
 			m_f_number(32.0f),
-			m_shape_amt(0.5f),
+			m_shape_amt(0.0f),
 			m_aperture_blades(5),
 			m_focus_dist(0),
 			m_dof_range(1.0f),
