@@ -70,9 +70,10 @@ namespace wr
 			m_film_size(45.0f),
 			m_fov(FovFocalLength(m_focal_length), FovAspectRatio(aspect_ratio), FovFilmSize(m_film_size)),
 			m_f_number(32.0f),
-			m_shape_amt(0.5f),
+			m_shape_amt(0.0f),
 			m_aperture_blades(5),
 			m_focus_dist(0),
+			m_dof_range(1.0f),
 			m_override_projection(false),
 			m_projection_offset_x(0),
 			m_projection_offset_y(0),
@@ -114,6 +115,7 @@ namespace wr
 		float m_f_number;
 		float m_focus_dist;
 		float m_shape_amt;
+		float m_dof_range;
 		int m_aperture_blades;
 		bool m_enable_dof = false;
 		bool m_override_projection = false;

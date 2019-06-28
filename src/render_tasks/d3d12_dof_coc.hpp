@@ -48,7 +48,9 @@ namespace wr
 			float m_f_number = 0.0f;
 			float m_film_size = 0.0f;
 			float m_focus_dist = 0.0f;
+			float m_pad[2];
 			int m_enable_dof = 0;
+			float m_dof_range = 1.0f;
 		};
 
 		template<typename T>
@@ -107,6 +109,7 @@ namespace wr
 			cb_data.m_f_number = sg.GetActiveCamera()->m_f_number;
 			cb_data.m_focus_dist = sg.GetActiveCamera()->m_focus_dist;
 			cb_data.m_enable_dof = sg.GetActiveCamera()->m_enable_dof;
+			cb_data.m_dof_range = sg.GetActiveCamera()->m_dof_range;
 
 			data.cb_handle->m_pool->Update(data.cb_handle, sizeof(DoFProperties_CB), 0, frame_idx, (uint8_t*)&cb_data);
 			
@@ -153,6 +156,9 @@ namespace wr
 			if (!resize)
 			{
 				auto& data = fg.GetData<DoFCoCData>(handle);
+
+				// Small hack to force the allocations to go out of scope, which will tell the allocator to free them
+				DescriptorAllocation temp1 = std::move(data.out_allocation);
 				data.camera_cb_pool->Destroy(data.cb_handle);
 				delete data.out_allocator;
 			}

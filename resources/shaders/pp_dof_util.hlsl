@@ -17,7 +17,7 @@
 #define __PP_DOF_UTIL_HLSL__
 
 static const float FNEAR = 0.1f;
-static const float FFAR = 1000.f;
+static const float FFAR = 10000.f;
 
 static const float PI = 3.141592654f;
 static const float PI2 = 6.283185308f;

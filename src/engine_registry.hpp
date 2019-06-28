@@ -668,6 +668,18 @@ namespace wr
 			rs_layout::Entry{(int)DoFCoCE::CAMERA_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST}
 		};
 
+		enum class DoFNearMaskE
+		{
+			INPUT,
+			OUTPUT
+		};
+
+		constexpr std::array<rs_layout::Entry, 2> dof_near_mask = {
+			rs_layout::Entry{(int)DoFNearMaskE::INPUT, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)DoFNearMaskE::OUTPUT, 1, rs_layout::Type::UAV_RANGE},
+
+		};
+
 		enum class DownScaleE
 		{
 			SOURCE,
@@ -842,6 +854,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle post_processing;
 		WISPRENDERER_EXPORT static RegistryHandle accumulation;
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
+		WISPRENDERER_EXPORT static RegistryHandle dof_near_mask;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
@@ -881,6 +894,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle post_processing;
 		WISPRENDERER_EXPORT static RegistryHandle accumulation;
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
+		WISPRENDERER_EXPORT static RegistryHandle dof_near_mask;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;
@@ -913,6 +927,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle post_processing;
 		WISPRENDERER_EXPORT static RegistryHandle accumulation;
 		WISPRENDERER_EXPORT static RegistryHandle dof_coc;
+		WISPRENDERER_EXPORT static RegistryHandle dof_near_mask;
 		WISPRENDERER_EXPORT static RegistryHandle down_scale;
 		WISPRENDERER_EXPORT static RegistryHandle dof_dilate;
 		WISPRENDERER_EXPORT static RegistryHandle dof_bokeh;

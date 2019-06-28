@@ -38,6 +38,7 @@
 #include "render_tasks/d3d12_dof_bokeh.hpp"
 #include "render_tasks/d3d12_dof_bokeh_postfilter.hpp"
 #include "render_tasks/d3d12_dof_coc.hpp"
+#include "render_tasks/d3d12_dof_compute_near_mask.hpp"
 #include "render_tasks/d3d12_down_scale.hpp"
 #include "render_tasks/d3d12_dof_composition.hpp"
 #include "render_tasks/d3d12_dof_dilate_near.hpp"
@@ -123,7 +124,8 @@ namespace fg_manager
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 			wr::AddDownScaleTask<wr::BloomCompostionData, wr::DoFCoCData>(*fg);
-			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFNearMaskTask<wr::DownScaleData>(*fg);
+			wr::AddDoFDilateTask<wr::DoFNearMaskData>(*fg);
 			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateData>(*fg);
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 
@@ -229,7 +231,8 @@ namespace fg_manager
 			// Do Depth of field task
 			wr::AddDoFCoCTask<wr::DeferredMainTaskData>(*fg);
 			wr::AddDownScaleTask<wr::BloomCompostionData, wr::DoFCoCData>(*fg);
-			wr::AddDoFDilateTask<wr::DownScaleData>(*fg);
+			wr::AddDoFNearMaskTask<wr::DownScaleData>(*fg);
+			wr::AddDoFDilateTask<wr::DoFNearMaskData>(*fg);
 			wr::AddDoFBokehTask<wr::DownScaleData, wr::DoFDilateData>(*fg);
 			wr::AddDoFBokehPostFilterTask<wr::DoFBokehData>(*fg);
 			wr::AddDoFCompositionTask<wr::BloomCompostionData, wr::DoFBokehPostFilterData, wr::DoFCoCData>(*fg);

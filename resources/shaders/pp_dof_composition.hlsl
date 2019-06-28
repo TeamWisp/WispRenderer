@@ -46,37 +46,39 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
+	screen_size -= 1.0f;
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 
-	float2 texel_size = 1.0 / screen_size;
-	float2 uv = (screen_coord + 0.5f) / screen_size;
-	float2 uvc = (screen_coord) / screen_size;
 
-	float coc = GetDownSampledCoC(uvc, texel_size);//coc_buffer.SampleLevel(s0, uvc, 0);
+	float2 texel_size = 1.0 / screen_size;
+	float2 uv = (screen_coord) / (screen_size);
+
+	float coc = coc_buffer.SampleLevel(s0, uv, 0);
 	
 	float3 original_sample = source.SampleLevel(s0, uv, 0).rgb;
 	float4 near_sample = bokeh_near.SampleLevel(s1, uv, 0);
 	float4 far_sample = bokeh_far.SampleLevel(s1, uv, 0);
 
-	float3 near = original_sample.rgb;
-	float3 far = original_sample.rgb;
+	float near_w = bokeh_near.SampleLevel(s0, uv, 0).a;
 
-	near = near_sample.rgb;
+	float3 near = near_sample.rgb;
+	float3 far = original_sample.rgb; 
 
-	if (far_sample.w > 0.f)
+	if (far_sample.w > 0.0f)
 	{
 		far = far_sample.rgb / far_sample.w;
 	}
 
-	float far_blend = saturate(coc * coc ) * MAXBOKEHSIZE * 0.5f -0.5f;
+	float far_blend = saturate(saturate(coc) * MAXCOCSIZE - 0.5f);
 
-	float3 result = lerp(original_sample, far.rgb, smoothstep(0.0f, 1.0f, far_blend));
+	float3 result = lerp(original_sample, far.rgb, far_blend);
 
 	float near_blend = saturate(near_sample.w * 2.0f);
+
 	result = lerp(result, near.rgb, smoothstep(0.0f, 1.0f, near_blend));
 
-	output[int2(dispatch_thread_id.xy)] = float4(result, 1.0f);
+	output[int2(dispatch_thread_id.xy)] = float4(result, coc);
 }
 
 #endif //__PP_DOF_COMPOSITION_HLSL__

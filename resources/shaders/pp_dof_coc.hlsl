@@ -30,7 +30,9 @@ cbuffer CameraProperties : register(b0)
 	float f_number;
 	float film_size;
 	float focus_dist;
+	float2 m_pad;
 	int enable_dof;
+	float dof_range;
 };
 
 float GetCoC(float lineardepth, float focusdist)
@@ -45,7 +47,7 @@ float GetCoC(float lineardepth, float focusdist)
 	//// Convert to pixels
 	coc = (coc / film_size) * screen_size.x;
 
-	coc = clamp(coc / MAXBOKEHSIZE, -1.f, 1.f);
+	coc = clamp(coc / (MAXCOCSIZE * dof_range), -1.f, 1.f);
 	return coc;
 }
 
@@ -74,8 +76,9 @@ void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
 	output.GetDimensions(screen_size.x, screen_size.y);
+	screen_size -= 1.0f;
 
-	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
+	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y);
 
 	float2 uv = screen_coord / screen_size;
 	

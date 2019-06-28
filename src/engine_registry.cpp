@@ -645,6 +645,44 @@ namespace wr
 		.m_topology_type = TopologyType::TRIANGLE
 	});
 
+	// Compute Near mask
+	REGISTER(shaders::dof_near_mask, ShaderRegistry) ({
+		.path = "resources/shaders/pp_dof_compute_near_mask.hlsl",
+		.entry = "main_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
+		});
+
+	DESC_RANGE_ARRAY(dofnear_r,
+		DESC_RANGE(params::dof_near_mask, Type::SRV_RANGE, params::DoFNearMaskE::INPUT),
+		DESC_RANGE(params::dof_near_mask, Type::UAV_RANGE, params::DoFNearMaskE::OUTPUT),
+		);
+
+	REGISTER(root_signatures::dof_near_mask, RootSignatureRegistry)({
+		.m_parameters = {
+			ROOT_PARAM_DESC_TABLE(dofnear_r, D3D12_SHADER_VISIBILITY_ALL),
+
+		},
+		.m_samplers = {
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP}
+		}
+		});
+
+	REGISTER(pipelines::dof_near_mask, PipelineRegistry) < Vertex2D > ({
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::dof_near_mask,
+		.m_root_signature_handle = root_signatures::dof_near_mask,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = { Format::R16G16_FLOAT },
+		.m_num_rtv_formats = 1,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_BACK,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = true,
+		.m_topology_type = TopologyType::TRIANGLE
+		});
+
 	// Down Scale texture
 	REGISTER(shaders::down_scale, ShaderRegistry)({
 		.path = "resources/shaders/pp_dof_downscale.hlsl",
