@@ -76,7 +76,7 @@ void ViknellScene::BuildScene(unsigned int width, unsigned int height, void* ext
 	auto& phys_engine = *reinterpret_cast<phys::PhysicsEngine*>(extra);
 
 	m_camera = m_scene_graph->CreateChild<DebugCamera>(nullptr, 90.f, (float)width / (float)height);
-	m_camera->SetPosition({ 0, 0, 2 });
+	m_camera->SetPosition({ 0, 0, 1.5f });
 	m_camera->SetSpeed(10);
 
 	m_camera_spline_node = m_scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline", false);
