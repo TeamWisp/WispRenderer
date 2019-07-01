@@ -322,7 +322,7 @@ namespace wr
 			internal::ExecuteEquirectToCubemapTask(rs, fg, sg, handle);
 		};
 		desc.m_destroy_func = [](FrameGraph& fg, RenderTaskHandle handle, bool resize) {
-			if(resize)
+			if(!resize)
 			{
 				auto &data = fg.GetData<EquirectToCubemapTaskData>(handle);
 				data.camera_cb_pool.reset();
