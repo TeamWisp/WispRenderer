@@ -85,8 +85,9 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 
 		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
 
-		if (depth > 0 || roughness < 0.05f)
+		if (depth > 0 || roughness < 0.075f)
 			return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dir_t), 1);
+	#endif
 
 		#ifdef GROUND_TRUTH_REFLECTIONS
 
@@ -165,9 +166,5 @@ float4 DoReflection(float3 wpos, float3 V, float3 N, uint rand_seed, uint depth,
 
 		#endif
 
-	#else
-		// Shoot perfect mirror ray if enabled or if it's a recursion or it's almost a perfect mirror
-		return float4(TraceReflectionRay(wpos, N, reflected, rand_seed, depth, cone, dir_t), -1.f);
-	#endif
 }
 #endif //__DXR_REFLECTION_FUNCTIONS_HLSL__
