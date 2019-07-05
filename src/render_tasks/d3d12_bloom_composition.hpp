@@ -139,8 +139,6 @@ namespace wr
 				d3d12::CreateSRVFromSpecificRTV(bloom_rt_half, cpu_handle, 1, bloom_rt_half->m_create_info.m_rtv_formats[1]);
 			}
 
-
-
 			int enable_dof = settings.m_runtime.m_enable_bloom;
 			d3d12::BindCompute32BitConstants(cmd_list, &enable_dof, 1, 0, 1);
 

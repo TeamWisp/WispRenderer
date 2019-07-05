@@ -349,9 +349,9 @@ namespace wr
 					d3d12::BindComputeShaderResourceView(cmd_list, as_build_data.out_scene_vb->m_buffer, 3);
 				}
 
-//#ifdef _DEBUG
+#ifdef _DEBUG
 				CreateShaderTables(device, data, frame_idx);
-//#endif
+#endif
 
 				d3d12::DispatchRays(cmd_list,
 					data.out_hitgroup_shader_table[frame_idx], 

@@ -19,9 +19,9 @@
 
 #include <algorithm>
 
-static constexpr bool spawn_physics_balls = false;
+static constexpr bool spawn_physics_balls = true;
 static constexpr int num_materials = 60;
-static constexpr int num_balls = 600;
+static constexpr int num_balls = 300;
 
 SponzaScene::SponzaScene() :
 	Scene(256, 20_mb, 20_mb),
@@ -29,7 +29,7 @@ SponzaScene::SponzaScene() :
 	m_skybox({}),
 	m_time(0)
 {
-	m_lights_path = "resources/sponza_lights.json";
+	m_lights_path = "resources/sponza_lights_waterfall.json";
 }
 
 inline float RandRange(float min, float max)
@@ -85,19 +85,19 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 
 	m_camera_spline_node = m_scene_graph->CreateChild<SplineNode>(nullptr, "Camera Spline", false, true);
 	m_camera_spline_node->LoadSplineFromFile("resources/splines/sponza_lion_camera.spl");
-	m_camera_spline_node->m_animate = true;
+	m_camera_spline_node->m_animate = false;
 	m_camera_spline_node->UpdateNaturalSpline();
 	m_camera_spline_node->m_speed = 0.2;
 
 	auto skybox = m_scene_graph->CreateChild<wr::SkyboxNode>(nullptr, m_skybox);
 
 	// Geometry
-	m_core = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_logo_core);
+	/*m_core = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_logo_core);
 	m_core->SetMaterials({ m_wisp_material });
 	m_core->SetScale({ 0.075, 0.075, 0.075 });
 	m_outside = m_scene_graph->CreateChild<wr::MeshNode>(nullptr, m_logo_outside);
 	m_outside->SetMaterials({ m_wisp_material });
-	m_outside->SetScale({ 0.075, 0.075, 0.075 });
+	m_outside->SetScale({ 0.075, 0.075, 0.075 });*/
 
 	m_sponza_node = m_scene_graph->CreateChild<PhysicsMeshNode>(nullptr, m_sponza_model);
 	m_sponza_node->SetupTriangleMesh(phys_engine, m_sponza_model_data);
@@ -143,9 +143,9 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	}
 
 	// Lights
-	//LoadLightsFromJSON();
+	LoadLightsFromJSON();
 
-	red_light = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT);
+	/*red_light = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT);
 	red_light->SetColor({ 1, 0, 0 });
 	red_light->SetPosition({ -3.5, 2, -11 });
 	red_light->SetLightSize(5);
@@ -163,11 +163,12 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	blue_light->SetLightSize(5);
 	blue_light->SetRadius(0);
 
-	white_light = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::POINT);
-	white_light->SetColor({ 1, 1, 1 });
+	white_light = m_scene_graph->CreateChild<wr::LightNode>(nullptr, wr::LightType::DIRECTIONAL);
+	white_light->SetColor({ 0, 0, 0 });
 	white_light->SetPosition({ 0, 5, 0 });
-	white_light->SetLightSize(5);
-	white_light->SetRadius(0);
+	white_light->SetRotation({ -70_deg, 15_deg, 0 });
+	white_light->SetLightSize(0);
+	white_light->SetRadius(3000);*/
 }
 
 void SponzaScene::Update(float delta)
@@ -175,20 +176,23 @@ void SponzaScene::Update(float delta)
 	m_camera->Update(delta);
 	m_camera_spline_node->UpdateSplineNode(delta, m_camera);
 
-	m_time += delta * 1.5;
+	/*m_time += delta * 1.5;
 	float blue_delay = 0;
 	float delay_rg = 1;
 	float logo_delay = 4.5;
 	green_light->SetRadius(std::clamp(m_time - delay_rg, 0.f, 6.f));
 	blue_light->SetRadius(std::clamp(m_time - blue_delay, 0.f, 5.f));
 	red_light->SetRadius(std::clamp(m_time - delay_rg, 0.f, 6.f));
-	white_light->SetRadius(std::clamp(m_time + 6, 0.f, 100.f));
+	float cc = std::clamp(m_time - 5.f, 0.f, 10.f);
+	white_light->m_light->col = { cc,  cc, cc };
+	white_light->SignalTransformChange();
+	white_light->SignalChange();*/
 
-	float logo_alpha = std::clamp((m_time - logo_delay) / 10.f, 0.f, 1.f);
+	/*float logo_alpha = std::clamp((m_time - logo_delay) / 10.f, 0.f, 1.f);
 	auto logo_pos = DirectX::XMVectorLerp(start_logo_pos, end_logo_pos, logo_alpha);
 	m_core->SetPosition(logo_pos);
 	m_outside->SetPosition(logo_pos);
-	m_core->SetRotation({ 0, m_time, 0 });
+	m_core->SetRotation({ 0, m_time, 0 });*/
 
 	//m_time = std::fmodf(m_time, 10.f);
 }

@@ -86,12 +86,18 @@ namespace fg_manager
 			auto& fg = frame_graphs[(int)PrebuildFrameGraph::RAYTRACING];
 			fg = new wr::FrameGraph(4);
 
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, false);
 			wr::AddBuildAccelerationStructuresTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
 			wr::AddRaytracingTask(*fg);
 
-			wr::AddPostProcessingTask<wr::RaytracingData>(*fg);
+			wr::AddBloomExtractBrightTask<wr::RaytracingData, wr::DeferredMainTaskData>(*fg);
+			wr::AddBloomBlurHorizontalTask<wr::BloomExtractBrightData>(*fg);
+			wr::AddBloomBlurVerticalTask<wr::BloomBlurHorizontalData>(*fg);
+			wr::AddBloomCompositionTask<wr::RaytracingData, wr::BloomBlurVerticalData>(*fg);
+
+			wr::AddPostProcessingTask<wr::BloomCompostionData>(*fg);
 			
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
@@ -134,7 +140,7 @@ namespace fg_manager
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
-			wr::AddAnselTask(*fg);
+			//wr::AddAnselTask(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");
@@ -181,7 +187,7 @@ namespace fg_manager
 			// Copy the raytracing pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
-			wr::AddAnselTask(*fg);
+			//wr::AddAnselTask(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");
@@ -216,7 +222,8 @@ namespace fg_manager
 			wr::AddReflectionDenoiserTask(*fg);
 
 			//Raytraced Ambient Occlusion task
-			wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
+			//wr::AddRTAOTask(*fg, static_cast<wr::D3D12RenderSystem&>(rs).m_device);
+			wr::AddHBAOTask(*fg);
 
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
@@ -239,7 +246,7 @@ namespace fg_manager
 			// Copy the scene render pixel data to the final render target
 			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
 
-			wr::AddAnselTask(*fg);
+			//wr::AddAnselTask(*fg);
 
 			// Display ImGui
 			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");

@@ -214,7 +214,7 @@ namespace wr
 		{
 			if (m_num_free_handles[frame_idx] < num_descriptors_to_commit)
 			{
-				LOGC("ERROR: Descriptor Heap for RT is full");
+				//LOGC("ERROR: Descriptor Heap for RT is full");
 			}
 
 			d3d12::BindDescriptorHeap(&cmd_list, m_heap, m_desc_heap_type, frame_idx, d3d12::GetRaytracingType(m_device) == RaytracingType::FALLBACK);

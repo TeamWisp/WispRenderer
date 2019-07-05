@@ -13,51 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PP_BLOOM_EXTRACT_BRIGHT_HLSL__
-#define __PP_BLOOM_EXTRACT_BRIGHT_HLSL__
+#ifndef __PP_BLOOM_BLUR_HLSL__
+#define __PP_BLOOM_BLUR_HLSL__
 
 #include "pp_dof_util.hlsl"
+#include "pp_bloom_util.hlsl"
 
 Texture2D source : register(t0);
-Texture2D g_emissive : register(t1);
-Texture2D g_depth : register(t2);
-
-RWTexture2D<float4> output_bright : register(u0);
+RWTexture2D<float4> output : register(u0);
 SamplerState s0 : register(s0);
-SamplerState s1 : register(s1);
 
+cbuffer BloomDirection : register(b0)
+{
+	int blur_direction;
+	float sigma_amt;
+};
 
 [numthreads(16, 16, 1)]
 void main_cs(int3 dispatch_thread_id : SV_DispatchThreadID)
 {
 	float2 screen_size = float2(0.f, 0.f);
-	output_bright.GetDimensions(screen_size.x, screen_size.y);
+	output.GetDimensions(screen_size.x, screen_size.y);
 
 	float2 screen_coord = int2(dispatch_thread_id.x, dispatch_thread_id.y) + 0.5f;
-	float2 uv = screen_coord / screen_size;
+	float2 texel_size = 1.0f / screen_size;
 
-	float4 out_bright = float4(0.0f, 0.0f, 0.0f, 1.0f);
-	float3 final_color = source.SampleLevel(s1, uv, 0).rgb;
+	float2 uv = (screen_coord) / screen_size;
 
-	float brightness = dot(final_color, float3(0.2126f, 0.7152f, 0.0722f));
-    if(brightness > 0.2)
-        out_bright = float4(final_color, 1.0);
+	float sigma = sigma_amt - 1.0f;
 
-	/*for (int i = -1; i < 2; ++i)
+	float2 blur_dir = float2(0.0f, 1.0f);
+
+	if (blur_direction == 1)
 	{
-		uv = float2(screen_coord.x + i, screen_coord.y + i) / screen_size;
-
-		if (brightness > 1.0f && g_depth.SampleLevel(s1, uv, 0).r < 1)
-		{
-			out_bright = saturate(float4(final_color, 1.0f));
-		}
-
-		out_bright += float4(g_emissive.SampleLevel(s0, uv, 0).rgb, 1.0f);
+		blur_dir = float2(1.0f, 0.0f);
 	}
 
-	out_bright /= 3;*/
+	float4 color = 0;
+	float weightSum = 0.0f;
+	for (int i = -7; i < 7; i++)
+	{
+		float weight = CalcGaussianWeight(i, sigma);
+		weightSum += weight;
+		float2 o_uv = saturate((screen_coord + (blur_dir * i)) / screen_size);
+		float4 s = source.SampleLevel(s0, o_uv, 0);
+		color += s * weight;
+	}
 
-	output_bright[int2(dispatch_thread_id.xy)] = out_bright;
+	output[int2(dispatch_thread_id.xy)] = color;
 }
 
-#endif //__PP_BLOOM_EXTRACT_BRIGHT_HLSL__
+#endif //__PP_BLOOM_BLUR_HLSL__
