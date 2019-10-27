@@ -82,6 +82,7 @@ namespace wr
 			m_projection(),
 			m_inverse_projection(),
 			m_view_projection(),
+			m_taa_dither(),
 			m_camera_cb(),
 			m_planes(),
 			m_ortho_res(OrthographicWidth(1280), OrthographicHeight(720))
@@ -131,6 +132,7 @@ namespace wr
 		DirectX::XMMATRIX m_view_projection;
 		DirectX::XMMATRIX m_inverse_projection;
 		DirectX::XMMATRIX m_inverse_view;
+		DirectX::XMMATRIX m_taa_dither;
 		float m_projection_offset_x; // Used By Ansel For Super Resolution
 		float m_projection_offset_y; // Used By Ansel For Super Resolution
 

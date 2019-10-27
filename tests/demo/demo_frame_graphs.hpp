@@ -48,6 +48,7 @@
 #include "render_tasks/d3d12_bloom_composition.hpp"
 #include "render_tasks/d3d12_bloom_horizontal_blur.hpp"
 #include "render_tasks/d3d12_bloom_vertical_blur.hpp"
+#include "render_tasks/d3d12_taa_task.hpp"
 
 namespace fg_manager
 {
@@ -111,7 +112,7 @@ namespace fg_manager
 			wr::AddBrdfLutPrecalculationTask(*fg);
 			wr::AddEquirectToCubemapTask(*fg);
 			wr::AddCubemapConvolutionTask(*fg);
-			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, false);
+			wr::AddDeferredMainTask(*fg, std::nullopt, std::nullopt, true);
 			wr::AddHBAOTask(*fg);
 			wr::AddDeferredCompositionTask(*fg, std::nullopt, std::nullopt);
 
@@ -133,13 +134,15 @@ namespace fg_manager
 
 			wr::AddPostProcessingTask<wr::DoFCompositionData>(*fg);
 
+			wr::AddTAATask<wr::PostProcessingData>(*fg);
+
 			// Copy the scene render pixel data to the final render target
-			wr::AddRenderTargetCopyTask<wr::PostProcessingData>(*fg);
+			wr::AddRenderTargetCopyTask<wr::TAAData>(*fg);
 
 			wr::AddAnselTask(*fg);
 
 			// Display ImGui
-			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::PostProcessingData>(imgui_func), L"ImGui");
+			fg->AddTask<wr::ImGuiTaskData>(wr::GetImGuiTask<wr::TAAData>(imgui_func), L"ImGui");
 
 			fg->Setup(rs);
 		}

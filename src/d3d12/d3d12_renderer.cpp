@@ -1053,6 +1053,12 @@ namespace wr
 			data.m_view = node->m_view;
 			data.m_inverse_view = node->m_inverse_view;
 			data.m_prev_view = node->m_prev_view;
+			data.m_taa_dither_matrix = node->m_taa_dither;
+
+			data.m_gbuffer_size.x = m_viewport.m_viewport.Width;
+			data.m_gbuffer_size.y = m_viewport.m_viewport.Height;
+			data.m_gbuffer_size.z = 1.f / data.m_gbuffer_size.x;
+			data.m_gbuffer_size.w = 1.f / data.m_gbuffer_size.y;
 			
 			data.m_is_hybrid = 0;
 

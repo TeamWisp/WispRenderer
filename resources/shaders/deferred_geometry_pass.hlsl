@@ -64,6 +64,10 @@ cbuffer CameraProperties : register(b0)
 
 	float4x4 prev_view;
 
+	float4x4 taa_dither_matrix;
+
+	float4 gbuffer_size;
+
 	uint is_hybrid;
 	uint is_path_tracer;
 	uint is_ao;
@@ -96,11 +100,17 @@ VS_OUTPUT main_vs(VS_INPUT input, uint instid : SV_InstanceId)
 	float4x4 vm = mul(view, inst.model);
 	float4x4 mvp = mul(projection, vm);
 
+	float4x4 curr_mvp = mvp;
+
 	float4x4 prev_mvp = mul(prev_projection, mul(prev_view, inst.prev_model));
-	
+
+	#ifdef IS_HYBRID
+	//mvp = mul(taa_dither_matrix, mvp);
+	#endif
+
 	output.pos =  mul(mvp, float4(pos, 1.0f));
 	#ifdef IS_HYBRID
-	output.curr_pos = output.pos;
+	output.curr_pos = mul(curr_mvp, float4(pos, 1.0f));
 	output.prev_pos = mul(prev_mvp, float4(pos, 1.0f));
 	output.world_pos = mul(inst.model, float4(pos, 1.0f));
 	#endif
@@ -181,12 +191,12 @@ PS_OUTPUT main_ps(VS_OUTPUT input) : SV_TARGET
 
 	float3 obj_normal = normalize(mul(output_data.normal, obj_tbn));
 
-	float2 curr_pos = float2(input.curr_pos.xy / input.curr_pos.w) * 0.5 + 0.5;
-	float2 prev_pos = float2(input.prev_pos.xy / input.prev_pos.w) * 0.5 + 0.5;
+	float2 prev_motion_NDC = (input.prev_pos.xy / input.prev_pos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
+	float2 curr_motion_NDC = (input.curr_pos.xy / input.curr_pos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
 
-	const float epsilon = 1e-5;
+	const float epsilon = 1e-5f;
 
-	float2 motion_vec = lerp(float2(curr_pos.x - prev_pos.x, -(curr_pos.y - prev_pos.y)), float2(0.0, 0.0), input.prev_pos.w < epsilon);
+	float2 motion_vec = lerp(prev_motion_NDC - curr_motion_NDC, float2(0.0, 0.0), input.prev_pos.w < epsilon || input.curr_pos.w < epsilon);
 
 	output.velocity = float4(motion_vec.xy, length(fwidth(input.world_pos.xyz)), length(fwidth(normal)));
 

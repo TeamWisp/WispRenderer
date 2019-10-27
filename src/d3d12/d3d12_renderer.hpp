@@ -58,6 +58,10 @@ namespace wr
 
 			DirectX::XMMATRIX m_prev_view = DirectX::XMMatrixIdentity();
 
+			DirectX::XMMATRIX m_taa_dither_matrix = DirectX::XMMatrixIdentity();
+
+			DirectX::XMFLOAT4 m_gbuffer_size;
+
 			unsigned int m_is_hybrid = 0u;
 			unsigned int m_is_path_tracer = 0u;
 			unsigned int m_is_ao = 0u;

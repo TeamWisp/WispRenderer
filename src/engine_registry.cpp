@@ -133,6 +133,26 @@ namespace wr
 		}
 	});
 
+	DESC_RANGE_ARRAY(taa_ranges,
+		DESC_RANGE(params::temporal_anti_aliasing, Type::SRV_RANGE, params::TemporalAntiAliasingE::INPUT_TEXTURE),
+		DESC_RANGE(params::temporal_anti_aliasing, Type::SRV_RANGE, params::TemporalAntiAliasingE::MOTION_TEXTURE),
+		DESC_RANGE(params::temporal_anti_aliasing, Type::SRV_RANGE, params::TemporalAntiAliasingE::ACCUM_TEXTURE),
+		DESC_RANGE(params::temporal_anti_aliasing, Type::SRV_RANGE, params::TemporalAntiAliasingE::HISTORY_IN_TEXTURE),
+
+		DESC_RANGE(params::temporal_anti_aliasing, Type::UAV_RANGE, params::TemporalAntiAliasingE::OUTPUT_TEXTURE),
+		DESC_RANGE(params::temporal_anti_aliasing, Type::UAV_RANGE, params::TemporalAntiAliasingE::HISTORY_OUT_TEXTURE),
+		);
+
+	REGISTER(root_signatures::temporal_anti_aliasing, RootSignatureRegistry)({
+		.m_parameters = {
+			ROOT_PARAM_DESC_TABLE(taa_ranges, D3D12_SHADER_VISIBILITY_ALL),
+		},
+		.m_samplers = {
+			{ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP },
+			{ TextureFilter::FILTER_LINEAR, TextureAddressMode::TAM_CLAMP }
+		}
+	});
+
 	//MipMapping Root Signature
 	DESC_RANGE_ARRAY(mip_in_out_ranges,
 		DESC_RANGE(params::mip_mapping, Type::SRV_RANGE, params::MipMappingE::SOURCE),
@@ -300,6 +320,13 @@ namespace wr
 		.defines = {}
 	});
 
+	REGISTER(shaders::temporal_anti_aliasing_cs, ShaderRegistry)({
+		.path = "resources/shaders/pp_taa.hlsl",
+		.entry = "main_cs",
+		.type = ShaderType::DIRECT_COMPUTE_SHADER,
+		.defines = {}
+	});
+
 	REGISTER(pipelines::brdf_lut_precalculation, PipelineRegistry) < Vertex2D > ({
 		.m_vertex_shader_handle = std::nullopt,
 		.m_pixel_shader_handle = std::nullopt,
@@ -458,6 +485,22 @@ namespace wr
 		.m_pixel_shader_handle = std::nullopt,
 		.m_compute_shader_handle = shaders::cubemap_prefiltering_cs,
 		.m_root_signature_handle = root_signatures::cubemap_prefiltering,
+		.m_dsv_format = Format::UNKNOWN,
+		.m_rtv_formats = { Format::UNKNOWN },
+		.m_num_rtv_formats = 0,
+		.m_type = PipelineType::COMPUTE_PIPELINE,
+		.m_cull_mode = CullMode::CULL_NONE,
+		.m_depth_enabled = false,
+		.m_counter_clockwise = false,
+		.m_topology_type = TopologyType::TRIANGLE
+	});
+
+	REGISTER(pipelines::temporal_anti_aliasing, PipelineRegistry) < Vertex > (
+	{
+		.m_vertex_shader_handle = std::nullopt,
+		.m_pixel_shader_handle = std::nullopt,
+		.m_compute_shader_handle = shaders::temporal_anti_aliasing_cs,
+		.m_root_signature_handle = root_signatures::temporal_anti_aliasing,
 		.m_dsv_format = Format::UNKNOWN,
 		.m_rtv_formats = { Format::UNKNOWN },
 		.m_num_rtv_formats = 0,

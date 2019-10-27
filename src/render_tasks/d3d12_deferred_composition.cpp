@@ -266,6 +266,13 @@ namespace wr
 				camera_data.m_view = active_camera->m_view;
 				camera_data.m_inverse_view = active_camera->m_inverse_view;
 				camera_data.m_prev_view = active_camera->m_prev_view;
+				camera_data.m_taa_dither_matrix = active_camera->m_taa_dither;
+
+				camera_data.m_gbuffer_size.x = viewport.m_viewport.Width;
+				camera_data.m_gbuffer_size.y = viewport.m_viewport.Height;
+				camera_data.m_gbuffer_size.z = 1.f / camera_data.m_gbuffer_size.x;
+				camera_data.m_gbuffer_size.w = 1.f / camera_data.m_gbuffer_size.y;
+
 				camera_data.m_is_hybrid = data.is_hybrid;
 				camera_data.m_has_reflections = data.has_rt_reflection;
 				camera_data.m_has_shadows = data.has_rt_shadows || data.has_rt_shadows_denoiser;

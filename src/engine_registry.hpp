@@ -835,6 +835,27 @@ namespace wr
 			rs_layout::Entry{(int)BloomCompositionE::BLOOM_PROPERTIES, 1, rs_layout::Type::CBV_OR_CONST},
 		};
 
+		enum class TemporalAntiAliasingE
+		{
+			INPUT_TEXTURE,
+			MOTION_TEXTURE,
+			ACCUM_TEXTURE,
+			HISTORY_IN_TEXTURE,
+
+			OUTPUT_TEXTURE, 
+			HISTORY_OUT_TEXTURE
+		};
+
+		constexpr std::array<rs_layout::Entry, 6> temporal_anti_aliasing = {
+			rs_layout::Entry{(int)TemporalAntiAliasingE::INPUT_TEXTURE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)TemporalAntiAliasingE::MOTION_TEXTURE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)TemporalAntiAliasingE::ACCUM_TEXTURE, 1, rs_layout::Type::SRV_RANGE},
+			rs_layout::Entry{(int)TemporalAntiAliasingE::HISTORY_IN_TEXTURE, 1, rs_layout::Type::SRV_RANGE},
+
+			rs_layout::Entry{(int)TemporalAntiAliasingE::OUTPUT_TEXTURE, 1, rs_layout::Type::UAV_RANGE},
+			rs_layout::Entry{(int)TemporalAntiAliasingE::HISTORY_OUT_TEXTURE, 1, rs_layout::Type::UAV_RANGE},
+		};
+
 	} /* srv */
 
 	struct root_signatures
@@ -865,8 +886,9 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_horizontal;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
+		WISPRENDERER_EXPORT static RegistryHandle temporal_anti_aliasing;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
-    WISPRENDERER_EXPORT static RegistryHandle reflection_denoiser;
+		WISPRENDERER_EXPORT static RegistryHandle reflection_denoiser;
 	};
 
 	struct shaders
@@ -905,6 +927,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_horizontal;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
+		WISPRENDERER_EXPORT static RegistryHandle temporal_anti_aliasing_cs;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_variance_estimator;
@@ -939,6 +962,7 @@ namespace wr
 		WISPRENDERER_EXPORT static RegistryHandle bloom_blur_vertical;
 		WISPRENDERER_EXPORT static RegistryHandle bloom_composition;
 		WISPRENDERER_EXPORT static RegistryHandle spatial_reconstruction;
+		WISPRENDERER_EXPORT static RegistryHandle temporal_anti_aliasing;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_temporal_denoiser;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_variance_estimator;
 		WISPRENDERER_EXPORT static RegistryHandle reflection_spatial_denoiser;
