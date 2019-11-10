@@ -76,9 +76,8 @@ Need help, want to get updates as soon as they happen or just want a chat? Join 
 
 ## Trailer
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=JsqF1jyyz2M" 
-target="_blank"><img src="http://img.youtube.com/vi/JsqF1jyyz2M/0.jpg" 
-alt="Torque 6 Material Editor" border="0" /></a>
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=cOxVArIFmEg" 
+target="_blank"><img src="http://img.youtube.com/vi/cOxVArIFmEg/0.jpg" border="0" /></a>
 
 ## Media
 
