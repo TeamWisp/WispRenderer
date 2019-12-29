@@ -31,7 +31,7 @@ namespace util
 	{
 		// Record all files
 		for (auto &file : std::filesystem::recursive_directory_iterator(path)) {
-			m_paths[file.path().u8string()] = std::filesystem::last_write_time(file);
+			m_paths[file.path().string()] = std::filesystem::last_write_time(file);
 		}
 	}
 
@@ -85,7 +85,7 @@ namespace util
 			for (auto& file : std::filesystem::recursive_directory_iterator(m_watch_path))
 			{
 				auto last_write_time = std::filesystem::last_write_time(file);
-				auto file_path = file.path().u8string();
+				auto file_path = file.path().string();
 
 				// File Created
 				if (!m_paths.contains(file_path))
