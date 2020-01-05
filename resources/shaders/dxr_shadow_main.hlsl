@@ -44,6 +44,7 @@ Texture2D g_textures[1000] : register(t10);
 Texture2D gbuffer_albedo : register(t1010);
 Texture2D gbuffer_normal : register(t1011);
 Texture2D gbuffer_depth : register(t1012);
+Texture2D gbuffer_position : register(t1013);
 TextureCube skybox : register(t6);
 Texture2D brdf_lut : register(t8);
 TextureCube irradiance_map : register(t9);
@@ -83,7 +84,7 @@ void ShadowRaygenEntry()
 
 	// Unpack G-Buffer
 	float depth = gbuffer_depth[screen_co].x;
-	float3 wpos = unpack_position(float2(uv.x, 1.f - uv.y), depth, inv_vp);
+	float3 wpos = gbuffer_position.SampleLevel(s0, uv, 0).xyz;
 	float3 normal = normal_metallic.xyz;
 
 	// Do lighting
