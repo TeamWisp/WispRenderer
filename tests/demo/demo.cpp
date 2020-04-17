@@ -130,6 +130,7 @@ int WispEntry()
 	wr::ModelLoader* assimp_model_loader = new wr::AssimpModelLoader();
 	wr::ModelLoader* gltf_model_loader = new wr::TinyGLTFModelLoader();
 
+	TRY_M(CoInitialize(nullptr), "Couldn't CoInitialize");
 	render_system->Init(window.get());	
 
 	phys_engine.CreatePhysicsWorld();
@@ -151,12 +152,10 @@ int WispEntry()
 	auto file_watcher = new util::FileWatcher("resources/shaders", std::chrono::milliseconds(100));
 	file_watcher->StartAsync(&ShaderDirChangeDetected);
 
-	window->SetRenderLoop([&]() {
-		// Find delta
-		float delta = ImGui::GetIO().DeltaTime;
-		bool capture_frame = engine::recorder.ShouldCaptureAndIncrement(delta);
-		if (capture_frame)
-		{
+	window->SetRenderLoop([&](float dt) {
+
+		bool capture_frame = engine::recorder.ShouldCaptureAndIncrement(dt);
+		if (capture_frame) {
 			fg_manager::Get()->SaveTaskToDisc<wr::PostProcessingData>(engine::recorder.GetNextFilename(".tga"), 0);
 		}
 
@@ -170,7 +169,7 @@ int WispEntry()
 			fg_manager::Get()->SetShouldExecute<wr::CubemapConvolutionTaskData>(true);
 		}
 
-		current_scene->Update(delta);
+		current_scene->Update(dt);
 
 #ifdef ENABLE_PHYSICS
 		phys_engine.UpdateSim(delta, *current_scene->GetSceneGraph());

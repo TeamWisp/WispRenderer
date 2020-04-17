@@ -26,7 +26,7 @@ namespace wr
 {
 
 
-	Window::Window(HINSTANCE instance, int show_cmd, std::string const & name, std::uint32_t width, std::uint32_t height)
+	Window::Window(HINSTANCE instance, std::string const &name, std::uint32_t width, std::uint32_t height, bool show)
 		: m_title(name), m_instance(instance)
 	{
 		WNDCLASSEX wc;
@@ -85,26 +85,53 @@ namespace wr
 
 		SetWindowLongPtr(m_handle, GWLP_USERDATA, (LONG_PTR)this);
 
-		ShowWindow(m_handle, show_cmd);
+		ShowWindow(m_handle, show ? SW_SHOWNORMAL : SW_HIDE);
 		UpdateWindow(m_handle);
-
-		m_running = true;
 	}
-
-	Window::Window(HINSTANCE instance, std::string const& name, std::uint32_t width, std::uint32_t height, bool show)
-		: Window(instance, show ? SW_SHOWNORMAL : SW_HIDE, name, width, height)
-	{
+	
+	Window::Window( std::string const &name, std::uint32_t width, std::uint32_t height)
+		: m_title(name), m_window_width(width), m_window_height(height) {
 
 	}
 
 	Window::~Window()
 	{
 		Stop();
-		UnregisterClassA(m_title.c_str(), m_instance);
+
+		if (m_instance)
+		{
+			UnregisterClassA(m_title.c_str(), m_instance);
+		}
 	}
 
 	void Window::PollEvents()
 	{
+		//Handle virtual window
+
+		if(!m_handle)
+		{
+			if (m_render_func)
+			{
+				float dt = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - m_prev_time).count();
+
+				if (!m_has_time_point) {
+					dt = 0;
+					m_has_time_point = true;
+
+					if (m_resize_callback) {
+						m_resize_callback(m_window_width, m_window_height);
+					}
+				}
+
+				m_prev_time = std::chrono::high_resolution_clock::now();
+				m_render_func(dt);
+			}
+
+			return;
+		}
+
+		//Handle physical window
+
 		MSG msg;
 		if (PeekMessage(&msg, m_handle, 0, 0, PM_REMOVE))
 		{
@@ -118,15 +145,25 @@ namespace wr
 
 	void Window::Show()
 	{
-		ShowWindow(m_handle, SW_SHOW);
+		if(m_handle)
+		{
+			ShowWindow(m_handle, SW_SHOW);
+		}
+		else
+		{
+			LOGW("Window::show called on virtual window");
+		}
 	}
 
 	void Window::Stop()
 	{
-		DestroyWindow(m_handle);
+		if (m_handle)
+		{
+			DestroyWindow(m_handle);
+		}
 	}
 
-	void Window::SetRenderLoop(std::function<void()> render_func)
+	void Window::SetRenderLoop(std::function<void (float dt)> render_func)
 	{
 		m_render_func = std::move(render_func);
 	}
@@ -138,22 +175,38 @@ namespace wr
 			PollEvents();
 		}
 
-		UnregisterClassA(m_title.c_str(), m_instance);
+		if(m_instance)
+		{
+			UnregisterClassA(m_title.c_str(), m_instance);
+		}
 	}
 
 	void Window::SetKeyCallback(KeyCallback callback)
 	{
 		m_key_callback = std::move(callback);
+
+		if(!m_handle)
+		{
+			LOGW("Window::SetKeyCallback called on virtual window");
+		}
 	}
 
 	void Window::SetMouseCallback(MouseCallback callback)
 	{
 		m_mouse_callback = std::move(callback);
+
+		if (!m_handle) {
+			LOGW("Window::SetMouseCallback called on virtual window");
+		}
 	}
 
 	void Window::SetMouseWheelCallback(MouseWheelCallback callback)
 	{
 		m_mouse_wheel_callback = std::move(callback);
+
+		if (!m_handle) {
+			LOGW("Window::SetMouseWheelCallback called on virtual window");
+		}
 	}
 
 	void Window::SetResizeCallback(ResizeCallback callback)
@@ -168,6 +221,11 @@ namespace wr
 
 	std::int32_t Window::GetWidth() const
 	{
+		if (!m_handle)
+		{
+			return m_window_width;
+		}
+
 		RECT r;
 		GetClientRect(m_handle, &r);
 		return static_cast<std::int32_t>(r.right - r.left);
@@ -175,6 +233,10 @@ namespace wr
 
 	std::int32_t Window::GetHeight() const
 	{
+		if (!m_handle) {
+			return m_window_height;
+		}
+
 		RECT r;
 		GetClientRect(m_handle, &r);
 		return static_cast<std::int32_t>(r.bottom - r.top);
@@ -190,8 +252,18 @@ namespace wr
 		return m_handle;
 	}
 
+	bool Window::HasPhysicalWindow() const
+	{
+		return m_handle;
+	}
+
 	bool Window::IsFullscreen() const
 	{
+		if(!m_handle)
+		{
+			return true;
+		}
+
 		RECT a, b;
 		GetWindowRect(m_handle, &a);
 		GetWindowRect(GetDesktopWindow(), &b);
@@ -220,7 +292,15 @@ namespace wr
 		case WM_PAINT:
 			if (m_render_func)
 			{
-				m_render_func();
+				float dt = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - m_prev_time).count();
+
+				if (!m_has_time_point) {
+					dt = 0;
+					m_has_time_point = true;
+				}
+
+				m_prev_time = std::chrono::high_resolution_clock::now();
+				m_render_func(dt);
 			}
 			return 0;
 		case WM_DESTROY:

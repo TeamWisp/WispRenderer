@@ -58,10 +58,9 @@ namespace wr
 			auto& data = fg.GetData<DeferredMainTaskData>(handle);
 			auto cmd_list = fg.GetCommandList<d3d12::CommandList>(handle);
 
-			if (n_render_system.m_render_window.has_value())
 			{
 				const auto viewport = n_render_system.m_viewport;
-				const auto frame_idx = n_render_system.GetRenderWindow()->m_frame_idx;
+				const auto frame_idx = n_render_system.GetFrameIdx();
 
 				d3d12::BindViewport(cmd_list, viewport);
 				d3d12::BindPipeline(cmd_list, data.in_pipeline);

@@ -50,9 +50,9 @@ namespace wr
 		d3d12::AccelerationStructure out_tlas = {};
 
 		// Shader tables
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_raygen_shader_table = { nullptr, nullptr, nullptr };
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_miss_shader_table = { nullptr, nullptr, nullptr };
-		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_hitgroup_shader_table = { nullptr, nullptr, nullptr };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_raygen_shader_table = { };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_miss_shader_table = { };
+		std::array<d3d12::ShaderTable*, d3d12::settings::num_back_buffers> in_hitgroup_shader_table = { };
 
 		// Pipeline objects
 		d3d12::StateObject* in_state_object;
@@ -66,7 +66,6 @@ namespace wr
 		DescriptorAllocation in_depthbuffer;
 
 		bool tlas_requires_init = false;
-
 	};
 	
 	namespace internal
@@ -165,9 +164,8 @@ namespace wr
 				data.in_root_signature = static_cast<d3d12::RootSignature*>(rs_registry.Find(root_signatures::rt_ao_global));
 
 				// Create Shader Tables
-				CreateShaderTables(device, data, 0);
-				CreateShaderTables(device, data, 1);
-				CreateShaderTables(device, data, 2);
+				for (int i = 0; i < d3d12::settings::num_back_buffers; ++i)
+					CreateShaderTables(device, data, i);
 			}
 		}
 
@@ -186,7 +184,6 @@ namespace wr
 			fg.WaitForPredecessorTask<CubemapConvolutionTaskData>();
 			float scalar = 1.0f;
 
-			if (n_render_system.m_render_window.has_value())
 			{
 
 				d3d12::BindRaytracingPipeline(cmd_list, data.in_state_object, false);

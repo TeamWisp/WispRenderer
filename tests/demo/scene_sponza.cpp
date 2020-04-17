@@ -136,8 +136,8 @@ void SponzaScene::BuildScene(unsigned int width, unsigned int height, void* extr
 	LoadLightsFromJSON();
 }
 
-void SponzaScene::Update(float delta)
+void SponzaScene::Update(float dt)
 {
-	m_camera->Update(delta);
-	m_camera_spline_node->UpdateSplineNode(delta, m_camera);
+	m_camera->Update(dt);
+	m_camera_spline_node->UpdateSplineNode(dt, m_camera);
 }

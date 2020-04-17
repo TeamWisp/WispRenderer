@@ -305,6 +305,7 @@ namespace wr
 		MaterialHandle m_last_material = { nullptr, 0 };
 
 		bool m_skybox_changed = false;
+		std::uint32_t frame_counter = 0;
 
 	};
 

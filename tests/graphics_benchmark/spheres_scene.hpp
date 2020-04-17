@@ -7,7 +7,7 @@ class SpheresScene : public Scene
 public:
 	SpheresScene();
 
-	void Update() final;
+	void Update(float dt) final;
 
 protected:
 	void LoadResources() final;

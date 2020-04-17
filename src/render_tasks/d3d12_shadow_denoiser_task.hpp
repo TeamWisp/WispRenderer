@@ -571,7 +571,6 @@ namespace wr
 				data.m_constant_buffer_pool->Update(data.m_denoiser_settings_buffer[i], sizeof(temp::ShadowDenoiserSettings_CBData), 0, n_render_system.GetFrameIdx(), (uint8_t*)& data.m_denoiser_settings);
 			}
 
-			if (n_render_system.m_render_window.has_value())
 			{
 				const auto viewport = n_render_system.m_viewport;
 				const auto frame_idx = n_render_system.GetFrameIdx();

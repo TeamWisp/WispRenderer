@@ -61,7 +61,7 @@ void SpheresScene::BuildScene(unsigned int width, unsigned int height)
 	dir_light->SetDirectional({ 136._deg, 0, 0 }, { 4, 4, 4 });
 }
 
-void SpheresScene::Update()
+void SpheresScene::Update(float dt)
 {
 
 }

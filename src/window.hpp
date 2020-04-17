@@ -17,6 +17,7 @@
 
 #include <Windows.h>
 #include <functional>
+#include <chrono>
 
 namespace wr
 {
@@ -28,7 +29,9 @@ namespace wr
 		using ResizeCallback = std::function<void(std::uint32_t width, std::uint32_t height)>;
 		using MouseWheelCallback = std::function<void(int key, int action, int mods)>;
 	public:
+
 		/*!
+		Creates a physical window
 		* @param instance A handle to the current instance of the application.
 		* @param name Window title.
 		* @param width Initial window width.
@@ -36,7 +39,15 @@ namespace wr
 		* @param show Controls whether the window will be shown. Default is true.
 		*/
 		Window(HINSTANCE instance, std::string const& name, std::uint32_t width, std::uint32_t height, bool show = true);
-		Window(HINSTANCE instance, int show_cmd, std::string const& name, std::uint32_t width, std::uint32_t height);
+
+		/*!
+		Creates a non-physical window
+		* @param name Window title.
+		* @param width Initial window width.
+		* @param height Initial window height.
+		*/
+		Window(std::string const &name, std::uint32_t width, std::uint32_t height);
+
 		~Window();
 
 		Window(const Window&) = delete;
@@ -52,7 +63,7 @@ namespace wr
 		void Stop();
 
 		/*! Give the window a function to call on repaint */
-		void SetRenderLoop(std::function<void()> render_func);
+		void SetRenderLoop(std::function<void (float dt)> render_func);
 		/*! Start a loop that runs until the window is closed. */
 		void StartRenderLoop();
 
@@ -77,6 +88,8 @@ namespace wr
 		HWND GetWindowHandle() const;
 		/*! Checks whether the window is fullscreen */
 		bool IsFullscreen() const;
+		/*! Checks whether the window is OS backed or not */
+		bool HasPhysicalWindow() const;
 
 	private:
 		/*! WindowProc that calls `WindowProc_Impl` */
@@ -89,16 +102,19 @@ namespace wr
 		ResizeCallback m_resize_callback;
 		MouseWheelCallback m_mouse_wheel_callback;
 
-		std::function<void()> m_render_func;
+		std::function<void (float dt)> m_render_func;
 
 		std::string m_title;
 
-		bool m_running;
-		HWND m_handle;
-		HINSTANCE m_instance;
+		bool m_running = true;
+		HWND m_handle = nullptr;
+		HINSTANCE m_instance = nullptr;
 
 		std::int32_t m_window_width = 0;
 		std::int32_t m_window_height = 0;
+
+		decltype(std::chrono::high_resolution_clock::now()) m_prev_time;
+		bool m_has_time_point = false;
 	};
 
 } /* wr */

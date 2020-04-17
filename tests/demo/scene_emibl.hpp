@@ -29,7 +29,7 @@ public:
 	EmiblScene();
 	~EmiblScene();
 
-	void Update(float delta = 0) final;
+	void Update(float delta_time) final;
 
 protected:
 	void LoadResources() final;
