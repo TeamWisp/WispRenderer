@@ -184,7 +184,7 @@ namespace wr
 		void Resize(std::uint32_t width, std::uint32_t height);
 
 		std::shared_ptr<TexturePool> CreateTexturePool();
-		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t size_in_bytes);
+		std::shared_ptr<MaterialPool> CreateMaterialPool(std::size_t material_count);
 		std::shared_ptr<ModelPool> CreateModelPool(std::size_t vertex_buffer_pool_size_in_bytes, std::size_t index_buffer_pool_size_in_bytes);
 		std::shared_ptr<ConstantBufferPool> CreateConstantBufferPool(std::size_t size_in_bytes);
 		std::shared_ptr<StructuredBufferPool> CreateStructuredBufferPool(std::size_t size_in_bytes);
